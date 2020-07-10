@@ -3,9 +3,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
+use crate::avm1::object::script_object::ScriptObject;
+use crate::avm1::object::xml_object::XMLObject;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::script_object::ScriptObject;
-use crate::avm1::xml_object::XMLObject;
 use crate::avm1::{Object, TObject, UpdateContext, Value};
 use crate::backend::navigator::RequestOptions;
 use crate::xml;

@@ -2,9 +2,9 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::{Attribute, Attribute::*};
 use crate::avm1::scope::Scope;
-use crate::avm1::super_object::SuperObject;
 use crate::avm1::value::Value;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, UpdateContext};
 use crate::display_object::{DisplayObject, TDisplayObject};

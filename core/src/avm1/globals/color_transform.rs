@@ -8,7 +8,7 @@ use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
-use crate::avm1::color_transform_object::ColorTransformObject;
+use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::color_transform::ColorTransform;
 use std::convert::Into;
 

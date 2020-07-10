@@ -1,7 +1,7 @@
 //! XML Tree structure
 
-use crate::avm1::xml_attributes_object::XMLAttributesObject;
-use crate::avm1::xml_object::XMLObject;
+use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
+use crate::avm1::object::xml_object::XMLObject;
 use crate::avm1::{Object, TObject};
 use crate::xml;
 use crate::xml::{Error, Step, XMLDocument, XMLName};

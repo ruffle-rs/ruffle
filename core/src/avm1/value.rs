@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::value_object::ValueObject;
+use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::{Object, TObject, UpdateContext};
 use std::borrow::Cow;
 use std::f64::NAN;
@@ -602,8 +602,8 @@ mod test {
     use crate::avm1::error::Error;
     use crate::avm1::function::{Executable, FunctionObject};
     use crate::avm1::globals::create_globals;
+    use crate::avm1::object::script_object::ScriptObject;
     use crate::avm1::object::{Object, TObject};
-    use crate::avm1::script_object::ScriptObject;
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::Value;
     use crate::context::UpdateContext;
