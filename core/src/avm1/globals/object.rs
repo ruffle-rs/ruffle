@@ -188,7 +188,7 @@ fn watch<'gc>(
     };
     let user_data = args.get(2).cloned().unwrap_or(Value::Undefined);
 
-    this.set_watcher(context.gc_context, name, callback, user_data);
+    this.set_watcher(activation, context.gc_context, name, callback, user_data);
 
     Ok(true.into())
 }
@@ -206,7 +206,7 @@ fn unwatch<'gc>(
         return Ok(false.into());
     };
 
-    let result = this.remove_watcher(context.gc_context, name);
+    let result = this.remove_watcher(activation, context.gc_context, name);
 
     Ok(result.into())
 }

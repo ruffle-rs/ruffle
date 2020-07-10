@@ -626,16 +626,23 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn set_watcher(
         &self,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Executable<'gc>,
         user_data: Value<'gc>,
     ) {
-        self.base.set_watcher(gc_context, name, callback, user_data);
+        self.base
+            .set_watcher(activation, gc_context, name, callback, user_data);
     }
 
-    fn remove_watcher(&self, gc_context: MutationContext<'gc, '_>, name: Cow<str>) -> bool {
-        self.base.remove_watcher(gc_context, name)
+    fn remove_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: Cow<str>,
+    ) -> bool {
+        self.base.remove_watcher(activation, gc_context, name)
     }
 
     fn has_property(

@@ -8,7 +8,6 @@ use core::fmt;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
-use std::collections::HashMap;
 
 pub const TYPE_OF_OBJECT: &str = "object";
 
@@ -73,7 +72,7 @@ pub struct ScriptObjectData<'gc> {
     interfaces: Vec<Object<'gc>>,
     type_of: &'static str,
     array: ArrayStorage<'gc>,
-    watchers: HashMap<String, Watcher<'gc>>,
+    watchers: PropertyMap<Watcher<'gc>>,
 }
 
 unsafe impl<'gc> Collect for ScriptObjectData<'gc> {
@@ -110,7 +109,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
-                watchers: HashMap::new(),
+                watchers: PropertyMap::new(),
             },
         ))
     }
@@ -127,7 +126,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: PropertyMap::new(),
                 array: ArrayStorage::Vector(Vec::new()),
                 interfaces: vec![],
-                watchers: HashMap::new(),
+                watchers: PropertyMap::new(),
             },
         ));
         object.sync_native_property("length", gc_context, Some(0.into()), false);
@@ -147,7 +146,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
-                watchers: HashMap::new(),
+                watchers: PropertyMap::new(),
             },
         ))
         .into()
@@ -167,7 +166,7 @@ impl<'gc> ScriptObject<'gc> {
                 values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
-                watchers: HashMap::new(),
+                watchers: PropertyMap::new(),
             },
         ))
     }
@@ -309,7 +308,12 @@ impl<'gc> ScriptObject<'gc> {
             //we'd resolve and return up there, but we have borrows that need
             //to end before we can do so.
             if !worked {
-                let watcher = self.0.read().watchers.get(name).cloned();
+                let watcher = self
+                    .0
+                    .read()
+                    .watchers
+                    .get(name, activation.is_case_sensitive())
+                    .cloned();
                 let mut return_value = Ok(());
                 if let Some(watcher) = watcher {
                     let old_value = self.get(name, activation, context)?;
@@ -557,19 +561,30 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn set_watcher(
         &self,
+        activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Executable<'gc>,
         user_data: Value<'gc>,
     ) {
-        self.0
-            .write(gc_context)
-            .watchers
-            .insert(name.to_string(), Watcher::new(callback, user_data));
+        self.0.write(gc_context).watchers.insert(
+            &name,
+            Watcher::new(callback, user_data),
+            activation.is_case_sensitive(),
+        );
     }
 
-    fn remove_watcher(&self, gc_context: MutationContext<'gc, '_>, name: Cow<str>) -> bool {
-        let old = self.0.write(gc_context).watchers.remove(name.as_ref());
+    fn remove_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        gc_context: MutationContext<'gc, '_>,
+        name: Cow<str>,
+    ) -> bool {
+        let old = self
+            .0
+            .write(gc_context)
+            .watchers
+            .remove(name.as_ref(), activation.is_case_sensitive());
         old.is_some()
     }
 

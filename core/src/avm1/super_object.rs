@@ -239,6 +239,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn set_watcher(
         &self,
+        _activation: &mut Activation<'_, 'gc>,
         _gc_context: MutationContext<'gc, '_>,
         _name: Cow<str>,
         _callback: Executable<'gc>,
@@ -247,7 +248,12 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //`super` cannot have properties defined on it
     }
 
-    fn remove_watcher(&self, _gc_context: MutationContext<'gc, '_>, _name: Cow<str>) -> bool {
+    fn remove_watcher(
+        &self,
+        _activation: &mut Activation<'_, 'gc>,
+        _gc_context: MutationContext<'gc, '_>,
+        _name: Cow<str>,
+    ) -> bool {
         //`super` cannot have properties defined on it
         false
     }
