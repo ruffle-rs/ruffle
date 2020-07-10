@@ -1,0 +1,10 @@
+2 == "2"
+2 == 2
+true == true
+false == false
+1 == true
+0 == false
+"abc" == "abc"
+undefined == undefined
+null == null
+undefined == null
