@@ -22,6 +22,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 
 pub mod color_transform_object;
+mod custom_object;
 pub mod script_object;
 pub mod shared_object;
 pub mod sound_object;
