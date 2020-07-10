@@ -41,17 +41,23 @@ impl Namespace {
             .ok_or_else(|| format!("Unknown namespace constant {}", namespace_index.0).into());
 
         Ok(match abc_namespace? {
-            AbcNamespace::Namespace(idx) => Self::Namespace(abc_string(file, idx.clone())?),
-            AbcNamespace::Package(idx) => Self::Package(abc_string(file, idx.clone())?),
+            AbcNamespace::Namespace(idx) => {
+                Self::Namespace(abc_string(file, idx.clone())?.to_string())
+            }
+            AbcNamespace::Package(idx) => Self::Package(abc_string(file, idx.clone())?.to_string()),
             AbcNamespace::PackageInternal(idx) => {
-                Self::PackageInternal(abc_string(file, idx.clone())?)
+                Self::PackageInternal(abc_string(file, idx.clone())?.to_string())
             }
-            AbcNamespace::Protected(idx) => Self::Protected(abc_string(file, idx.clone())?),
-            AbcNamespace::Explicit(idx) => Self::Explicit(abc_string(file, idx.clone())?),
+            AbcNamespace::Protected(idx) => {
+                Self::Protected(abc_string(file, idx.clone())?.to_string())
+            }
+            AbcNamespace::Explicit(idx) => {
+                Self::Explicit(abc_string(file, idx.clone())?.to_string())
+            }
             AbcNamespace::StaticProtected(idx) => {
-                Self::StaticProtected(abc_string(file, idx.clone())?)
+                Self::StaticProtected(abc_string(file, idx.clone())?.to_string())
             }
-            AbcNamespace::Private(idx) => Self::Private(abc_string(file, idx.clone())?),
+            AbcNamespace::Private(idx) => Self::Private(abc_string(file, idx.clone())?.to_string()),
         })
     }
 
@@ -131,7 +137,7 @@ impl QName {
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } => Self {
                 ns: Namespace::from_abc_namespace(file, namespace.clone())?,
-                name: abc_string(file, name.clone())?,
+                name: abc_string(file, name.clone())?.to_string(),
             },
             _ => return Err("Attempted to pull QName from non-QName multiname".into()),
         })
@@ -210,14 +216,14 @@ impl Multiname {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
                     ns: vec![Namespace::from_abc_namespace(file, namespace.clone())?],
-                    name: abc_string_option(file, name.clone())?,
+                    name: abc_string_option(file, name.clone())?.map(|s| s.to_string()),
                 }
             }
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => {
                 let ns = avm.pop().as_namespace()?.clone();
                 Self {
                     ns: vec![ns],
-                    name: abc_string_option(file, name.clone())?,
+                    name: abc_string_option(file, name.clone())?.map(|s| s.to_string()),
                 }
             }
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => {
@@ -237,7 +243,7 @@ impl Multiname {
                 name,
             } => Self {
                 ns: Self::abc_namespace_set(file, namespace_set.clone())?,
-                name: abc_string_option(file, name.clone())?,
+                name: abc_string_option(file, name.clone())?.map(|s| s.to_string()),
             },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => {
@@ -273,7 +279,7 @@ impl Multiname {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
                     ns: vec![Namespace::from_abc_namespace(file, namespace.clone())?],
-                    name: abc_string_option(file, name.clone())?,
+                    name: abc_string_option(file, name.clone())?.map(|s| s.to_string()),
                 }
             }
             AbcMultiname::Multiname {
@@ -285,7 +291,7 @@ impl Multiname {
                 name,
             } => Self {
                 ns: Self::abc_namespace_set(file, namespace_set.clone())?,
-                name: abc_string_option(file, name.clone())?,
+                name: abc_string_option(file, name.clone())?.map(|s| s.to_string()),
             },
             _ => return Err(format!("Multiname {} is not static", multiname_index.0).into()),
         })

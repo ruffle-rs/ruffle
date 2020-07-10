@@ -176,15 +176,15 @@ pub fn abc_double(file: &AbcFile, index: Index<f64>) -> Result<f64, Error> {
 
 /// Retrieve a string from an ABC constant pool, yielding `""` if the string
 /// is the zero string.
-pub fn abc_string(file: &AbcFile, index: Index<String>) -> Result<String, Error> {
+pub fn abc_string<'a>(file: &'a AbcFile, index: Index<String>) -> Result<&'a str, Error> {
     if index.0 == 0 {
-        return Ok("".to_string());
+        return Ok("");
     }
 
     file.constant_pool
         .strings
         .get(index.0 as usize - 1)
-        .cloned()
+        .map(|s| s.as_str())
         .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
 }
 
@@ -195,7 +195,10 @@ pub fn abc_string(file: &AbcFile, index: Index<String>) -> Result<String, Error>
 /// should cause the runtime to halt. `None` indicates that the zero string is
 /// in use, which callers are free to interpret as necessary (although this
 /// usually means "any name").
-pub fn abc_string_option(file: &AbcFile, index: Index<String>) -> Result<Option<String>, Error> {
+pub fn abc_string_option<'a>(
+    file: &'a AbcFile,
+    index: Index<String>,
+) -> Result<Option<&'a str>, Error> {
     if index.0 == 0 {
         return Ok(None);
     }
@@ -203,7 +206,7 @@ pub fn abc_string_option(file: &AbcFile, index: Index<String>) -> Result<Option<
     file.constant_pool
         .strings
         .get(index.0 as usize - 1)
-        .cloned()
+        .map(|s| s.as_str())
         .map(Some)
         .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
 }

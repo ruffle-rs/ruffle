@@ -327,7 +327,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<String>,
     ) -> Result<String, Error> {
-        value::abc_string(&method.abc(), index)
+        Ok(value::abc_string(&method.abc(), index)?.to_string())
     }
 
     /// Retrieve a namespace from the current constant pool.
