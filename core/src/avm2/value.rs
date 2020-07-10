@@ -537,4 +537,87 @@ impl<'gc> Value<'gc> {
             _ => Ok(self.clone()),
         }
     }
+
+    /// Determine if two values are abstractly equal to each other.
+    ///
+    /// This abstract equality algorithm is intended to match ECMA-262 3rd
+    /// edition, section 11.9.3. Inequality is the direct opposite of equality,
+    /// and this function always returns a boolean.
+    pub fn abstract_eq(
+        &self,
+        other: &Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<bool, Error> {
+        match (self, other) {
+            (Value::Undefined, Value::Undefined) => Ok(true),
+            (Value::Null, Value::Null) => Ok(true),
+            (Value::Number(a), Value::Number(b)) => {
+                if a.is_nan() || b.is_nan() {
+                    return Ok(false);
+                }
+
+                if a == b {
+                    return Ok(true);
+                }
+
+                if a.abs() == 0.0 && b.abs() == 0.0 {
+                    return Ok(true);
+                }
+
+                Ok(false)
+            }
+            (Value::String(a), Value::String(b)) => Ok(a == b),
+            (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
+            (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b)),
+            (Value::Undefined, Value::Null) => Ok(true),
+            (Value::Null, Value::Undefined) => Ok(true),
+            (Value::Number(_), Value::String(_)) => {
+                let number_other = Value::from(other.coerce_to_number(activation, context)?);
+
+                self.abstract_eq(&number_other, activation, context)
+            }
+            (Value::String(_), Value::Number(_)) => {
+                let number_self = Value::from(self.coerce_to_number(activation, context)?);
+
+                number_self.abstract_eq(other, activation, context)
+            }
+            (Value::Bool(_), _) => {
+                let number_self = Value::from(self.coerce_to_number(activation, context)?);
+
+                number_self.abstract_eq(other, activation, context)
+            }
+            (_, Value::Bool(_)) => {
+                let number_other = Value::from(other.coerce_to_number(activation, context)?);
+
+                self.abstract_eq(&number_other, activation, context)
+            }
+            (Value::String(_), Value::Object(_)) | (Value::Number(_), Value::Object(_)) => {
+                //TODO: Should this be `Hint::Number`, `Hint::String`, or no-hint?
+                let primitive_other =
+                    other.coerce_to_primitive(Hint::Number, activation, context)?;
+
+                self.abstract_eq(&primitive_other, activation, context)
+            }
+            (Value::Object(_), Value::String(_)) | (Value::Object(_), Value::Number(_)) => {
+                //TODO: Should this be `Hint::Number`, `Hint::String`, or no-hint?
+                let primitive_self = self.coerce_to_primitive(Hint::Number, activation, context)?;
+
+                primitive_self.abstract_eq(other, activation, context)
+            }
+            //TODO: This is entirely a shot in the dark.
+            (Value::Namespace(_), _) => {
+                let string_self = self.coerce_to_primitive(Hint::String, activation, context)?;
+
+                string_self.abstract_eq(other, activation, context)
+            }
+            //TODO: So is this.
+            (_, Value::Namespace(_)) => {
+                let string_other = other.coerce_to_primitive(Hint::String, activation, context)?;
+
+                self.abstract_eq(&string_other, activation, context)
+            }
+            _ => Ok(false),
+        }
+    }
 }
