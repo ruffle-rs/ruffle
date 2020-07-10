@@ -486,6 +486,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
                 Op::IfStrictEq { offset } => self.op_if_strict_eq(offset, reader),
                 Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader),
+                Op::IfEq { offset } => self.op_if_eq(context, offset, reader),
+                Op::IfNe { offset } => self.op_if_ne(context, offset, reader),
                 Op::StrictEquals => self.op_strict_equals(),
                 Op::Not => self.op_not(),
                 Op::HasNext => self.op_has_next(),
@@ -1439,6 +1441,38 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value1 = self.context.avm2.pop();
 
         if value1 != value2 {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_if_eq(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.avm2.pop();
+        let value1 = self.avm2.pop();
+
+        if value1.abstract_eq(&value2, self, context)? {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_if_ne(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.avm2.pop();
+        let value1 = self.avm2.pop();
+
+        if !value1.abstract_eq(&value2, self, context)? {
             reader.seek(offset as i64)?;
         }
 
