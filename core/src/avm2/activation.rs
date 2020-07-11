@@ -1586,6 +1586,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     #[allow(unused_variables)]
+    #[cfg(avm_debug)]
     fn op_debug(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
@@ -1606,6 +1607,19 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     #[allow(unused_variables)]
+    #[cfg(not(avm_debug))]
+    fn op_debug(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        is_local_register: bool,
+        register_name: Index<String>,
+        register: u8,
+    ) -> Result<FrameControl<'gc>, Error> {
+        Ok(FrameControl::Continue)
+    }
+
+    #[allow(unused_variables)]
+    #[cfg(avm_debug)]
     fn op_debug_file(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
@@ -1615,6 +1629,16 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
         avm_debug!("File: {}", file_name);
 
+        Ok(FrameControl::Continue)
+    }
+
+    #[allow(unused_variables)]
+    #[cfg(not(avm_debug))]
+    fn op_debug_file(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        file_name: Index<String>,
+    ) -> Result<FrameControl<'gc>, Error> {
         Ok(FrameControl::Continue)
     }
 
