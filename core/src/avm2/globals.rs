@@ -6,6 +6,7 @@ use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::r#trait::Trait;
+use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -92,12 +93,13 @@ fn oldstyle_class<'gc>(
 /// Add a class builtin to the global scope.
 fn class<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut global_scope: Object<'gc>,
+    mut global: Object<'gc>,
     class_def: GcCell<'gc, Class<'gc>>,
 ) -> Result<(), Error> {
     let class_trait = Trait::from_class(class_def);
+    let global_scope = Scope::push_scope(global.get_scope(), global, activation.context.gc_context);
 
-    global_scope.install_trait(activation, class_trait, global_scope)
+    global.install_foreign_trait(activation, class_trait, Some(global_scope), global)
 }
 
 /// Add a builtin constant to the global scope.
