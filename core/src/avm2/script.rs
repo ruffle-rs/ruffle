@@ -5,6 +5,7 @@ use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::r#trait::Trait;
 use crate::avm2::Error;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use std::cell::Ref;
 use std::collections::HashMap;
 use std::mem::drop;
 use std::rc::Rc;
@@ -62,6 +63,12 @@ impl<'gc> TranslationUnit<'gc> {
     /// Retrieve the underlying `AbcFile` for this translation unit.
     pub fn abc(self) -> Rc<AbcFile> {
         self.0.read().abc.0.clone()
+    }
+
+    /// Retrieve a reference to the underlying `AbcFile` for this translation
+    /// unit.
+    pub fn abc_ref(&self) -> Ref<AbcFile> {
+        Ref::map(self.0.read(), |tu| &*tu.abc.0)
     }
 
     /// Load a method from the ABC file and return it's method definition.

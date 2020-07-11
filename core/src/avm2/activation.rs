@@ -13,6 +13,7 @@ use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
+use std::cell::Ref;
 use std::io::Cursor;
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
@@ -322,12 +323,27 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     /// Retrieve a string from the current constant pool.
-    fn pool_string(
+    fn pool_string<'b>(
         &self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method: &'b BytecodeMethod<'gc>,
         index: Index<String>,
-    ) -> Result<String, Error> {
-        Ok(value::abc_string(&method.abc(), index)?.to_string())
+    ) -> Result<Ref<'b, str>, Error> {
+        let mut maybe_error = None;
+        let maybe_ref = Ref::map(method.abc_ref(), |abc| {
+            match value::abc_string(abc, index) {
+                Ok(s) => s,
+                Err(e) => {
+                    maybe_error = Some(e);
+                    ""
+                }
+            }
+        });
+
+        if let Some(err) = maybe_error {
+            Err(err)
+        } else {
+            Ok(maybe_ref)
+        }
     }
 
     /// Retrieve a namespace from the current constant pool.
@@ -585,7 +601,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<String>,
     ) -> Result<FrameControl<'gc>, Error> {
-        self.avm2.push(self.pool_string(method, value)?);
+        self.avm2
+            .push(self.pool_string(&method, value)?.to_string());
         Ok(FrameControl::Continue)
     }
 
