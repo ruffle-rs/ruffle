@@ -92,6 +92,15 @@ impl<'gc> Trait<'gc> {
         }
     }
 
+    pub fn from_method(name: QName<'gc>, method: Method<'gc>) -> Self {
+        Trait {
+            name,
+            is_final: false,
+            is_override: false,
+            kind: TraitKind::Method { disp_id: 0, method },
+        }
+    }
+
     /// Convert an ABC trait into a loaded trait.
     pub fn from_abc_trait(
         unit: TranslationUnit<'gc>,
