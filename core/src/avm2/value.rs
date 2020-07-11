@@ -278,9 +278,12 @@ impl<'gc> Value<'gc> {
     /// ToPrimitive algorithm which appears to match AVM2.
     pub fn coerce_to_primitive(
         &self,
-        hint: Hint,
+        hint: Option<Hint>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
+        // TODO: `Date` is default-hinted as a `String` for some reason
+        let hint = hint.unwrap_or(Hint::Number);
+
         match self {
             Value::Object(o) if hint == Hint::String => {
                 let mut prim = self.clone();
@@ -408,7 +411,7 @@ impl<'gc> Value<'gc> {
             ))
             .coerce_to_number(activation)?,
             Value::Object(_) => self
-                .coerce_to_primitive(Hint::Number, activation)?
+                .coerce_to_primitive(Some(Hint::Number), activation)?
                 .coerce_to_number(activation)?,
         })
     }
@@ -517,7 +520,7 @@ impl<'gc> Value<'gc> {
             Value::String(s) => *s,
             Value::Namespace(ns) => ns.as_uri(),
             Value::Object(_) => self
-                .coerce_to_primitive(Hint::String, activation)?
+                .coerce_to_primitive(Some(Hint::String), activation)?
                 .coerce_to_string(activation)?,
         })
     }
@@ -546,8 +549,7 @@ impl<'gc> Value<'gc> {
     pub fn abstract_eq(
         &self,
         other: &Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<bool, Error> {
         match (self, other) {
             (Value::Undefined, Value::Undefined) => Ok(true),
@@ -573,49 +575,48 @@ impl<'gc> Value<'gc> {
             (Value::Undefined, Value::Null) => Ok(true),
             (Value::Null, Value::Undefined) => Ok(true),
             (Value::Number(_), Value::String(_)) => {
-                let number_other = Value::from(other.coerce_to_number(activation, context)?);
+                let number_other = Value::from(other.coerce_to_number(activation)?);
 
-                self.abstract_eq(&number_other, activation, context)
+                self.abstract_eq(&number_other, activation)
             }
             (Value::String(_), Value::Number(_)) => {
-                let number_self = Value::from(self.coerce_to_number(activation, context)?);
+                let number_self = Value::from(self.coerce_to_number(activation)?);
 
-                number_self.abstract_eq(other, activation, context)
+                number_self.abstract_eq(other, activation)
             }
             (Value::Bool(_), _) => {
-                let number_self = Value::from(self.coerce_to_number(activation, context)?);
+                let number_self = Value::from(self.coerce_to_number(activation)?);
 
-                number_self.abstract_eq(other, activation, context)
+                number_self.abstract_eq(other, activation)
             }
             (_, Value::Bool(_)) => {
-                let number_other = Value::from(other.coerce_to_number(activation, context)?);
+                let number_other = Value::from(other.coerce_to_number(activation)?);
 
-                self.abstract_eq(&number_other, activation, context)
+                self.abstract_eq(&number_other, activation)
             }
             (Value::String(_), Value::Object(_)) | (Value::Number(_), Value::Object(_)) => {
                 //TODO: Should this be `Hint::Number`, `Hint::String`, or no-hint?
-                let primitive_other =
-                    other.coerce_to_primitive(Hint::Number, activation, context)?;
+                let primitive_other = other.coerce_to_primitive(Some(Hint::Number), activation)?;
 
-                self.abstract_eq(&primitive_other, activation, context)
+                self.abstract_eq(&primitive_other, activation)
             }
             (Value::Object(_), Value::String(_)) | (Value::Object(_), Value::Number(_)) => {
                 //TODO: Should this be `Hint::Number`, `Hint::String`, or no-hint?
-                let primitive_self = self.coerce_to_primitive(Hint::Number, activation, context)?;
+                let primitive_self = self.coerce_to_primitive(Some(Hint::Number), activation)?;
 
-                primitive_self.abstract_eq(other, activation, context)
+                primitive_self.abstract_eq(other, activation)
             }
             //TODO: This is entirely a shot in the dark.
             (Value::Namespace(_), _) => {
-                let string_self = self.coerce_to_primitive(Hint::String, activation, context)?;
+                let string_self = self.coerce_to_primitive(Some(Hint::String), activation)?;
 
-                string_self.abstract_eq(other, activation, context)
+                string_self.abstract_eq(other, activation)
             }
             //TODO: So is this.
             (_, Value::Namespace(_)) => {
-                let string_other = other.coerce_to_primitive(Hint::String, activation, context)?;
+                let string_other = other.coerce_to_primitive(Some(Hint::String), activation)?;
 
-                self.abstract_eq(&string_other, activation, context)
+                self.abstract_eq(&string_other, activation)
             }
             _ => Ok(false),
         }
