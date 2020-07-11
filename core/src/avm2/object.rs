@@ -790,7 +790,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Option<RefMut<ArrayStorage<'gc>>> {
         None
     }
-    
+
     /// Get this object's `DisplayObject`, if it has one.
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         None
