@@ -401,4 +401,8 @@ impl<'gc> Class<'gc> {
     pub fn interfaces(&self) -> &[Multiname<'gc>] {
         &self.interfaces
     }
+
+    pub fn implements(&mut self, iface: Multiname<'gc>) {
+        self.interfaces.push(iface)
+    }
 }
