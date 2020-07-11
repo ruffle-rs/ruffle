@@ -4,6 +4,7 @@ use crate::avm2::names::Namespace;
 use crate::avm2::object::Object;
 use crate::avm2::Error;
 use gc_arena::Collect;
+use std::borrow::Cow;
 use std::f64::NAN;
 use swf::avm2::types::{AbcFile, DefaultValue as AbcDefaultValue, Index};
 
@@ -257,12 +258,12 @@ impl<'gc> Value<'gc> {
     }
 
     /// Coerce a value into a string.
-    pub fn coerce_string(self) -> String {
+    pub fn coerce_string(self) -> Cow<'static, str> {
         match self {
-            Value::String(s) => s,
-            Value::Bool(true) => "true".to_string(),
-            Value::Bool(false) => "false".to_string(),
-            _ => "".to_string(),
+            Value::String(s) => Cow::Owned(s),
+            Value::Bool(true) => Cow::Borrowed("true"),
+            Value::Bool(false) => Cow::Borrowed("false"),
+            _ => Cow::Borrowed(""),
         }
     }
 
