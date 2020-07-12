@@ -1299,7 +1299,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     .coerce_to_object(self, context);
                 let (url, opts) = self.locals_into_request_options(
                     context,
-                    url,
+                    Cow::Borrowed(&url),
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
                 let fetch = context.navigator.fetch(&url, opts);
@@ -1317,7 +1317,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             if let Some(clip_target) = clip_target {
                 let (url, opts) = self.locals_into_request_options(
                     context,
-                    url,
+                    Cow::Borrowed(&url),
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
                 let fetch = context.navigator.fetch(&url, opts);
@@ -2277,7 +2277,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         // trace always prints "undefined" even though SWF6 and below normally
         // coerce undefined to "".
         let out = if val == Value::Undefined {
-            Cow::Borrowed("undefined")
+            "undefined".into()
         } else {
             val.coerce_to_string(self, context)?
         };
@@ -2480,7 +2480,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 v.ok()
                     .unwrap_or_else(|| Value::Undefined)
                     .coerce_to_string(self, context)
-                    .unwrap_or_else(|_| Cow::Borrowed("undefined"))
+                    .unwrap_or_else(|_| "undefined".into())
                     .to_string(),
             );
         }

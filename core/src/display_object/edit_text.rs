@@ -733,7 +733,7 @@ impl<'gc> EditText<'gc> {
                                     value
                                         .coerce_to_string(activation, context)
                                         .unwrap_or_default()
-                                        .into_owned(),
+                                        .to_string(),
                                     context,
                                 );
                             } else {

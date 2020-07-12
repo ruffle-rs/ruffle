@@ -112,7 +112,7 @@ pub fn set_html_text<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_string(activation, context)?;
-            let _ = text_field.set_html_text(text.into_owned(), context);
+            let _ = text_field.set_html_text(text.to_string(), context);
             // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
         }
     }
@@ -326,7 +326,7 @@ fn set_variable<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
     {
-        etext.set_variable(variable.map(|v| v.into_owned()), activation, context);
+        etext.set_variable(variable.map(|v| v.to_string()), activation, context);
     }
 
     Ok(Value::Undefined)
@@ -627,7 +627,7 @@ fn replace_text<'gc>(
         .cloned()
         .unwrap_or(Value::Undefined)
         .coerce_to_string(activation, context)?
-        .into_owned();
+        .to_string();
 
     text_field.replace_text(from as usize, to as usize, &text, context);
 

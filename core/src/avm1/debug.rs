@@ -198,7 +198,7 @@ mod tests {
     use super::*;
     use crate::avm1::error::Error;
     use crate::avm1::test_utils::with_avm;
-    use crate::avm1::{Avm1String, ScriptObject};
+    use crate::avm1::ScriptObject;
 
     #[test]
     fn dump_undefined() {

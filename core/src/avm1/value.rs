@@ -457,26 +457,29 @@ impl<'gc> Value<'gc> {
         &'a self,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Cow<'a, str>, Error<'gc>> {
+    ) -> Result<Avm1String<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Object(object) => {
                 match object.call_method("toString", &[], activation, context)? {
-                    Value::String(s) => Cow::Owned(s.to_string()),
-                    _ => Cow::Borrowed("[type Object]"),
+                    Value::String(s) => s,
+                    _ => "[type Object]".into(),
                 }
             }
             Value::Undefined => {
                 if activation.current_swf_version() >= 7 {
-                    Cow::Borrowed("undefined")
+                    "undefined".into()
                 } else {
-                    Cow::Borrowed("")
+                    "".into()
                 }
             }
-            Value::Null => Cow::Borrowed("null"),
-            Value::Bool(true) => Cow::Borrowed("true"),
-            Value::Bool(false) => Cow::Borrowed("false"),
-            Value::Number(v) => f64_to_string(*v),
-            Value::String(v) => Cow::Borrowed(v),
+            Value::Null => "null".into(),
+            Value::Bool(true) => "true".into(),
+            Value::Bool(false) => "false".into(),
+            Value::Number(v) => match f64_to_string(*v) {
+                Cow::Borrowed(str) => str.into(),
+                Cow::Owned(str) => Avm1String::new(context.gc_context, str),
+            },
+            Value::String(v) => v.to_owned(),
         })
     }
 

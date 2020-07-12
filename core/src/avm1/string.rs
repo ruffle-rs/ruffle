@@ -1,4 +1,5 @@
 use gc_arena::{Collect, Gc, MutationContext};
+use std::fmt;
 use std::ops::Deref;
 
 #[derive(Debug, Clone, Collect)]
@@ -26,11 +27,25 @@ impl<'gc> Avm1String<'gc> {
     }
 }
 
+impl Default for Avm1String<'_> {
+    fn default() -> Self {
+        Self {
+            source: Source::Static(""),
+        }
+    }
+}
+
 impl<'gc> From<&'static str> for Avm1String<'gc> {
     fn from(str: &'static str) -> Self {
         Self {
             source: Source::Static(str),
         }
+    }
+}
+
+impl fmt::Display for Avm1String<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self)
     }
 }
 
@@ -53,6 +68,13 @@ impl AsRef<str> for Avm1String<'_> {
             Source::Owned(str) => str,
             Source::Static(str) => str,
         }
+    }
+}
+
+impl<'gc> PartialEq<Avm1String<'gc>> for Avm1String<'gc> {
+    #[inline]
+    fn eq(&self, other: &Avm1String<'gc>) -> bool {
+        PartialEq::eq(self.as_str(), other.as_str())
     }
 }
 

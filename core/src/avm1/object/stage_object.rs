@@ -187,7 +187,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .filter(|binding| binding.variable_name == name)
         {
             let _ = binding.text_field.set_html_text(
-                value.coerce_to_string(activation, context)?.into_owned(),
+                value.coerce_to_string(activation, context)?.to_string(),
                 context,
             );
         }

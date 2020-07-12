@@ -29,7 +29,7 @@ pub fn add_property<'gc>(
     let name = args
         .get(0)
         .and_then(|v| v.coerce_to_string(activation, context).ok())
-        .unwrap_or_else(|| Cow::Borrowed("undefined"));
+        .unwrap_or_else(|| "undefined".into());
     let getter = args.get(1).unwrap_or(&Value::Undefined);
     let setter = args.get(2).unwrap_or(&Value::Undefined);
 
@@ -188,7 +188,13 @@ fn watch<'gc>(
     };
     let user_data = args.get(2).cloned().unwrap_or(Value::Undefined);
 
-    this.set_watcher(activation, context.gc_context, name, callback, user_data);
+    this.set_watcher(
+        activation,
+        context.gc_context,
+        Cow::Borrowed(&name),
+        callback,
+        user_data,
+    );
 
     Ok(true.into())
 }
@@ -206,7 +212,7 @@ fn unwatch<'gc>(
         return Ok(false.into());
     };
 
-    let result = this.remove_watcher(activation, context.gc_context, name);
+    let result = this.remove_watcher(activation, context.gc_context, Cow::Borrowed(&name));
 
     Ok(result.into())
 }
