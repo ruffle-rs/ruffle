@@ -234,7 +234,7 @@ pub fn xmlnode_to_string<'gc>(
         .into());
     }
 
-    Ok(Avm1String::new(ac.gc_context, "".to_string()).into())
+    Ok(Avm1String::from("").into())
 }
 
 pub fn xmlnode_local_name<'gc>(

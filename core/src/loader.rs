@@ -323,7 +323,7 @@ impl<'gc> Loader<'gc> {
                             uc,
                             "broadcastMessage",
                             &[
-                                Avm1String::new(uc.gc_context, "onLoadStart".to_string()).into(),
+                                Avm1String::from("onLoadStart").into(),
                                 Value::Object(broadcaster),
                             ],
                         );
@@ -359,8 +359,7 @@ impl<'gc> Loader<'gc> {
                                 uc,
                                 "broadcastMessage",
                                 &[
-                                    Avm1String::new(uc.gc_context, "onLoadProgress".to_string())
-                                        .into(),
+                                    Avm1String::from("onLoadProgress").into(),
                                     Value::Object(broadcaster),
                                     length.into(),
                                     length.into(),
@@ -397,8 +396,7 @@ impl<'gc> Loader<'gc> {
                                 uc,
                                 "broadcastMessage",
                                 &[
-                                    Avm1String::new(uc.gc_context, "onLoadComplete".to_string())
-                                        .into(),
+                                    Avm1String::from("onLoadComplete").into(),
                                     Value::Object(broadcaster),
                                 ],
                             );
@@ -438,14 +436,9 @@ impl<'gc> Loader<'gc> {
                                 uc,
                                 "broadcastMessage",
                                 &[
-                                    Avm1String::new(uc.gc_context, "onLoadError".to_string())
-                                        .into(),
+                                    Avm1String::from("onLoadError").into(),
                                     Value::Object(broadcaster),
-                                    Avm1String::new(
-                                        uc.gc_context,
-                                        "LoadNeverCompleted".to_string(),
-                                    )
-                                    .into(),
+                                    Avm1String::from("LoadNeverCompleted").into(),
                                 ],
                             );
                         }
@@ -520,7 +513,7 @@ impl<'gc> Loader<'gc> {
         loaded_clip: DisplayObject<'gc>,
         clip_object: Option<Object<'gc>>,
         queue: &mut ActionQueue<'gc>,
-        gc_context: MutationContext<'gc, '_>,
+        _gc_context: MutationContext<'gc, '_>,
     ) -> bool {
         let (clip, broadcaster, load_complete) = match self {
             Loader::Movie {
@@ -540,7 +533,7 @@ impl<'gc> Loader<'gc> {
                         object: broadcaster,
                         name: "broadcastMessage",
                         args: vec![
-                            Avm1String::new(gc_context, "onLoadInit".to_string()).into(),
+                            Avm1String::from("onLoadInit").into(),
                             clip_object.map(|co| co.into()).unwrap_or(Value::Undefined),
                         ],
                     },

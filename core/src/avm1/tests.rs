@@ -9,7 +9,7 @@ fn locals_into_form_values() {
         my_locals
             .set(
                 "value1",
-                Avm1String::new(context.gc_context, "string".to_string()).into(),
+                Avm1String::from("string").into(),
                 activation,
                 context,
             )

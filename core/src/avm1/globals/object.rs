@@ -89,11 +89,11 @@ pub fn has_own_property<'gc>(
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
     _: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Avm1String::new(context.gc_context, "[object Object]".to_string()).into())
+    Ok(Avm1String::from("[object Object]").into())
 }
 
 /// Implements `Object.prototype.isPropertyEnumerable`

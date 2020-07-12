@@ -29,11 +29,11 @@ fn do_conversion<'gc>(
 
 fn get_conversion_mode<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Avm1String::new(context.gc_context, "KOREAN".to_string()).into())
+    Ok(Avm1String::from("KOREAN").into())
 }
 
 fn get_enabled<'gc>(
@@ -85,49 +85,49 @@ pub fn create<'gc>(
     ime.define_value(
         gc_context,
         "ALPHANUMERIC_FULL",
-        Avm1String::new(gc_context, "ALPHANUMERIC_FULL".to_string()).into(),
+        Avm1String::from("ALPHANUMERIC_FULL").into(),
         Attribute::DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "ALPHANUMERIC_HALF",
-        Avm1String::new(gc_context, "ALPHANUMERIC_HALF".to_string()).into(),
+        Avm1String::from("ALPHANUMERIC_HALF").into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "CHINESE",
-        Avm1String::new(gc_context, "CHINESE".to_string()).into(),
+        Avm1String::from("CHINESE").into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "JAPANESE_HIRAGANA",
-        Avm1String::new(gc_context, "JAPANESE_HIRAGANA".to_string()).into(),
+        Avm1String::from("JAPANESE_HIRAGANA").into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "JAPANESE_KATAKANA_FULL",
-        Avm1String::new(gc_context, "JAPANESE_KATAKANA_FULL".to_string()).into(),
+        Avm1String::from("JAPANESE_KATAKANA_FULL").into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "KOREAN",
-        Avm1String::new(gc_context, "KOREAN".to_string()).into(),
+        Avm1String::from("KOREAN").into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "UNKNOWN",
-        Avm1String::new(gc_context, "UNKNOWN".to_string()).into(),
+        Avm1String::from("UNKNOWN").into(),
         DontDelete | ReadOnly | DontEnum,
     );
 

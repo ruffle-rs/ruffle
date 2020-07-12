@@ -372,7 +372,7 @@ pub fn set_word_wrap<'gc>(
 
 pub fn auto_size<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -381,12 +381,10 @@ pub fn auto_size<'gc>(
         .and_then(|dobj| dobj.as_edit_text())
     {
         return Ok(match etext.autosize() {
-            AutoSizeMode::None => Avm1String::new(context.gc_context, "none".to_string()).into(),
-            AutoSizeMode::Left => Avm1String::new(context.gc_context, "left".to_string()).into(),
-            AutoSizeMode::Center => {
-                Avm1String::new(context.gc_context, "center".to_string()).into()
-            }
-            AutoSizeMode::Right => Avm1String::new(context.gc_context, "right".to_string()).into(),
+            AutoSizeMode::None => Avm1String::from("none").into(),
+            AutoSizeMode::Left => Avm1String::from("left").into(),
+            AutoSizeMode::Center => Avm1String::from("center").into(),
+            AutoSizeMode::Right => Avm1String::from("right").into(),
         });
     }
 

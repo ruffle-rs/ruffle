@@ -257,7 +257,7 @@ mod tests {
         with_avm(19, |activation, context, _root| -> Result<(), Error> {
             assert_eq!(
                 VariableDumper::dump(
-                    &Value::String(Avm1String::new(context.gc_context, "".to_string())),
+                    &Value::String(Avm1String::from("")),
                     " ",
                     activation,
                     context
@@ -266,10 +266,7 @@ mod tests {
             );
             assert_eq!(
                 VariableDumper::dump(
-                    &Value::String(Avm1String::new(
-                        context.gc_context,
-                        "HELLO WORLD".to_string()
-                    )),
+                    &Value::String(Avm1String::from("HELLO WORLD")),
                     " ",
                     activation,
                     context
@@ -278,9 +275,8 @@ mod tests {
             );
             assert_eq!(
                 VariableDumper::dump(
-                    &Value::String(Avm1String::new(
-                        context.gc_context,
-                        "Escape \"this\" string\nplease! \u{0008}\u{000C}\n\r\t\"\\".to_string()
+                    &Value::String(Avm1String::from(
+                        "Escape \"this\" string\nplease! \u{0008}\u{000C}\n\r\t\"\\"
                     )),
                     " ",
                     activation,
@@ -312,7 +308,7 @@ mod tests {
             object.set("self", object.into(), activation, context)?;
             object.set(
                 "test",
-                Value::String(Avm1String::new(context.gc_context, "value".to_string())),
+                Value::String(Avm1String::from("value")),
                 activation,
                 context,
             )?;
@@ -335,7 +331,7 @@ mod tests {
             object.set("self", object.into(), activation, context)?;
             object.set(
                 "test",
-                Value::String(Avm1String::new(context.gc_context, "value".to_string())),
+                Value::String(Avm1String::from("value")),
                 activation,
                 context,
             )?;
