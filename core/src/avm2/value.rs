@@ -621,4 +621,48 @@ impl<'gc> Value<'gc> {
             _ => Ok(false),
         }
     }
+
+    /// Determine if this value is abstractly less than the other.
+    ///
+    /// This abstract relational comparison algorithm is intended to match
+    /// ECMA-262 3rd edition, section 11.8.5. It returns `true`, `false`, *or*
+    /// `undefined` (to signal NaN), the latter of which we represent as `None`.
+    #[allow(clippy::float_cmp)]
+    pub fn abstract_lt(
+        &self,
+        other: &Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<Option<bool>, Error> {
+        let prim_self = self.coerce_to_primitive(Some(Hint::Number), activation, context)?;
+        let prim_other = other.coerce_to_primitive(Some(Hint::Number), activation, context)?;
+
+        if let (Value::String(s), Value::String(o)) = (&prim_self, &prim_other) {
+            return Ok(Some(s.to_string().bytes().lt(o.to_string().bytes())));
+        }
+
+        let num_self = prim_self.coerce_to_number(activation, context)?;
+        let num_other = prim_other.coerce_to_number(activation, context)?;
+
+        if num_self.is_nan() || num_other.is_nan() {
+            return Ok(None);
+        }
+
+        if num_self == num_other
+            || num_self == 0.0 && num_other == -0.0
+            || num_self == -0.0 && num_other == 0.0
+            || num_self.is_infinite() && num_self.is_sign_positive()
+            || num_other.is_infinite() && num_other.is_sign_negative()
+        {
+            return Ok(Some(false));
+        }
+
+        if num_self.is_infinite() && num_self.is_sign_negative()
+            || num_other.is_infinite() && num_other.is_sign_positive()
+        {
+            return Ok(Some(true));
+        }
+
+        Ok(Some(num_self < num_other))
+    }
 }
