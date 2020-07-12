@@ -2,11 +2,11 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, ExecutionReason, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
-use crate::avm1::{Object, ObjectPtr, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1String, Object, ObjectPtr, TObject, UpdateContext, Value};
 use crate::property_map::{Entry, PropertyMap};
 use core::fmt;
 use enumset::EnumSet;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
 
 pub const TYPE_OF_OBJECT: &str = "object";
@@ -45,7 +45,7 @@ impl<'gc> Watcher<'gc> {
         base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, crate::avm1::error::Error<'gc>> {
         let args = [
-            Value::String(Gc::allocate(context.gc_context, name.to_string())),
+            Value::String(Avm1String::new(context.gc_context, name.to_string())),
             old_value,
             new_value,
             self.user_data.clone(),
@@ -853,7 +853,7 @@ mod tests {
     use crate::avm1::activation::ActivationIdentifier;
     use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute::*;
-    use crate::avm1::{Avm1, Timers};
+    use crate::avm1::{Avm1, Avm1String, Timers};
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::input::NullInputBackend;
     use crate::backend::navigator::NullNavigatorBackend;
@@ -864,7 +864,7 @@ mod tests {
     use crate::loader::LoadManager;
     use crate::prelude::*;
     use crate::tag_utils::{SwfMovie, SwfSlice};
-    use gc_arena::{rootless_arena, Gc};
+    use gc_arena::rootless_arena;
     use rand::{rngs::SmallRng, SeedableRng};
     use std::collections::{BTreeMap, HashMap};
     use std::sync::Arc;
@@ -955,13 +955,13 @@ mod tests {
             object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "forced",
-                Gc::allocate(context.gc_context, "forced".to_string()).into(),
+                Avm1String::new(context.gc_context, "forced".to_string()).into(),
                 EnumSet::empty(),
             );
             object
                 .set(
                     "natural",
-                    Gc::allocate(context.gc_context, "natural".to_string()).into(),
+                    Avm1String::new(context.gc_context, "natural".to_string()).into(),
                     activation,
                     context,
                 )
@@ -969,11 +969,11 @@ mod tests {
 
             assert_eq!(
                 object.get("forced", activation, context).unwrap(),
-                Gc::allocate(context.gc_context, "forced".to_string()).into()
+                Avm1String::new(context.gc_context, "forced".to_string()).into()
             );
             assert_eq!(
                 object.get("natural", activation, context).unwrap(),
-                Gc::allocate(context.gc_context, "natural".to_string()).into()
+                Avm1String::new(context.gc_context, "natural".to_string()).into()
             );
         })
     }
@@ -984,20 +984,20 @@ mod tests {
             object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "normal",
-                Gc::allocate(context.gc_context, "initial".to_string()).into(),
+                Avm1String::new(context.gc_context, "initial".to_string()).into(),
                 EnumSet::empty(),
             );
             object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "readonly",
-                Gc::allocate(context.gc_context, "initial".to_string()).into(),
+                Avm1String::new(context.gc_context, "initial".to_string()).into(),
                 ReadOnly.into(),
             );
 
             object
                 .set(
                     "normal",
-                    Gc::allocate(context.gc_context, "replaced".to_string()).into(),
+                    Avm1String::new(context.gc_context, "replaced".to_string()).into(),
                     activation,
                     context,
                 )
@@ -1005,7 +1005,7 @@ mod tests {
             object
                 .set(
                     "readonly",
-                    Gc::allocate(context.gc_context, "replaced".to_string()).into(),
+                    Avm1String::new(context.gc_context, "replaced".to_string()).into(),
                     activation,
                     context,
                 )
@@ -1013,11 +1013,11 @@ mod tests {
 
             assert_eq!(
                 object.get("normal", activation, context).unwrap(),
-                Gc::allocate(context.gc_context, "replaced".to_string()).into()
+                Avm1String::new(context.gc_context, "replaced".to_string()).into()
             );
             assert_eq!(
                 object.get("readonly", activation, context).unwrap(),
-                Gc::allocate(context.gc_context, "initial".to_string()).into()
+                Avm1String::new(context.gc_context, "initial".to_string()).into()
             );
         })
     }
@@ -1028,14 +1028,14 @@ mod tests {
             object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "test",
-                Gc::allocate(context.gc_context, "initial".to_string()).into(),
+                Avm1String::new(context.gc_context, "initial".to_string()).into(),
                 DontDelete.into(),
             );
 
             assert_eq!(object.delete(activation, context.gc_context, "test"), false);
             assert_eq!(
                 object.get("test", activation, context).unwrap(),
-                Gc::allocate(context.gc_context, "initial".to_string()).into()
+                Avm1String::new(context.gc_context, "initial".to_string()).into()
             );
 
             object
@@ -1043,7 +1043,7 @@ mod tests {
                 .unwrap()
                 .set(
                     "test",
-                    Gc::allocate(context.gc_context, "replaced".to_string()).into(),
+                    Avm1String::new(context.gc_context, "replaced".to_string()).into(),
                     activation,
                     context,
                 )
@@ -1052,7 +1052,7 @@ mod tests {
             assert_eq!(object.delete(activation, context.gc_context, "test"), false);
             assert_eq!(
                 object.get("test", activation, context).unwrap(),
-                Gc::allocate(context.gc_context, "replaced".to_string()).into()
+                Avm1String::new(context.gc_context, "replaced".to_string()).into()
             );
         })
     }
@@ -1061,7 +1061,7 @@ mod tests {
     fn test_virtual_get() {
         with_object(0, |activation, context, object| {
             let getter = Executable::Native(|_avm, context, _this, _args| {
-                Ok(Gc::allocate(context.gc_context, "Virtual!".to_string()).into())
+                Ok(Avm1String::new(context.gc_context, "Virtual!".to_string()).into())
             });
 
             object.as_script_object().unwrap().add_property(
@@ -1074,21 +1074,21 @@ mod tests {
 
             assert_eq!(
                 object.get("test", activation, context).unwrap(),
-                Gc::allocate(context.gc_context, "Virtual!".to_string()).into()
+                Avm1String::new(context.gc_context, "Virtual!".to_string()).into()
             );
 
             // This set should do nothing
             object
                 .set(
                     "test",
-                    Gc::allocate(context.gc_context, "Ignored!".to_string()).into(),
+                    Avm1String::new(context.gc_context, "Ignored!".to_string()).into(),
                     activation,
                     context,
                 )
                 .unwrap();
             assert_eq!(
                 object.get("test", activation, context).unwrap(),
-                Gc::allocate(context.gc_context, "Virtual!".to_string()).into()
+                Avm1String::new(context.gc_context, "Virtual!".to_string()).into()
             );
         })
     }
@@ -1097,7 +1097,7 @@ mod tests {
     fn test_delete() {
         with_object(0, |activation, context, object| {
             let getter = Executable::Native(|_avm, context, _this, _args| {
-                Ok(Gc::allocate(context.gc_context, "Virtual!".to_string()).into())
+                Ok(Avm1String::new(context.gc_context, "Virtual!".to_string()).into())
             });
 
             object.as_script_object().unwrap().add_property(
@@ -1117,13 +1117,13 @@ mod tests {
             object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "stored",
-                Gc::allocate(context.gc_context, "Stored!".to_string()).into(),
+                Avm1String::new(context.gc_context, "Stored!".to_string()).into(),
                 EnumSet::empty(),
             );
             object.as_script_object().unwrap().define_value(
                 context.gc_context,
                 "stored_un",
-                Gc::allocate(context.gc_context, "Stored!".to_string()).into(),
+                Avm1String::new(context.gc_context, "Stored!".to_string()).into(),
                 DontDelete.into(),
             );
 
@@ -1154,7 +1154,7 @@ mod tests {
             );
             assert_eq!(
                 object.get("virtual_un", activation, context).unwrap(),
-                Gc::allocate(context.gc_context, "Virtual!".to_string()).into()
+                Avm1String::new(context.gc_context, "Virtual!".to_string()).into()
             );
             assert_eq!(
                 object.get("stored", activation, context).unwrap(),
@@ -1162,7 +1162,7 @@ mod tests {
             );
             assert_eq!(
                 object.get("stored_un", activation, context).unwrap(),
-                Gc::allocate(context.gc_context, "Stored!".to_string()).into()
+                Avm1String::new(context.gc_context, "Stored!".to_string()).into()
             );
         })
     }

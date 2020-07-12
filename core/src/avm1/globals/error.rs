@@ -3,9 +3,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1String, Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -32,13 +32,13 @@ pub fn create_proto<'gc>(
     object.define_value(
         gc_context,
         "message",
-        Gc::allocate(gc_context, "Error".to_string()).into(),
+        Avm1String::new(gc_context, "Error".to_string()).into(),
         EnumSet::empty(),
     );
     object.define_value(
         gc_context,
         "name",
-        Gc::allocate(gc_context, "Error".to_string()).into(),
+        Avm1String::new(gc_context, "Error".to_string()).into(),
         EnumSet::empty(),
     );
 
@@ -60,7 +60,7 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let message = this.get("message", activation, context)?;
-    Ok(Gc::allocate(
+    Ok(Avm1String::new(
         context.gc_context,
         message.coerce_to_string(activation, context)?.to_string(),
     )

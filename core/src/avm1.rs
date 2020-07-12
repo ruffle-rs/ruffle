@@ -25,6 +25,7 @@ pub mod globals;
 pub mod object;
 mod property;
 mod scope;
+mod string;
 mod timer;
 mod value;
 
@@ -41,6 +42,7 @@ pub use object::stage_object::StageObject;
 pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
 use smallvec::alloc::borrow::Cow;
+pub use string::Avm1String;
 pub use timer::Timers;
 pub use value::Value;
 

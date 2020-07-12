@@ -5,10 +5,10 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Object, TObject, Value};
+use crate::avm1::{Avm1String, Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::MutationContext;
 
 /// `Number` constructor/function
 pub fn number<'gc>(
@@ -143,7 +143,7 @@ fn to_string<'gc>(
 
     if radix == 10 {
         // Output number as floating-point decimal.
-        Ok(Gc::allocate(
+        Ok(Avm1String::new(
             context.gc_context,
             Value::from(this)
                 .coerce_to_string(activation, context)?
@@ -159,7 +159,7 @@ fn to_string<'gc>(
             Ordering::Greater => (n as u32, false),
             Ordering::Equal => {
                 // Bail out immediately if we're 0.
-                return Ok(Gc::allocate(context.gc_context, "0".to_string()).into());
+                return Ok(Avm1String::new(context.gc_context, "0".to_string()).into());
             }
         };
 
@@ -177,7 +177,7 @@ fn to_string<'gc>(
             i += 1;
         }
         let out: String = digits[..i].iter().rev().collect();
-        Ok(Gc::allocate(context.gc_context, out).into())
+        Ok(Avm1String::new(context.gc_context, out).into())
     } else {
         // NaN or large numbers.
         // Player version specific behavior:
@@ -185,7 +185,7 @@ fn to_string<'gc>(
         // for example, NaN.toString(3) gives "-/.//./..././/0.0./0.".
         // Flash Player 6 will print a much more sane value of 0, so let's go with that.
         // TODO: Allow configuration of player version.
-        Ok(Gc::allocate(context.gc_context, "0".to_string()).into())
+        Ok(Avm1String::new(context.gc_context, "0".to_string()).into())
     }
 }
 

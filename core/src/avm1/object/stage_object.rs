@@ -5,12 +5,12 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
+use crate::avm1::{Avm1String, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip};
 use crate::property_map::PropertyMap;
 use enumset::EnumSet;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
 
@@ -853,7 +853,7 @@ fn target<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(context.gc_context, this.slash_path()).into())
+    Ok(Avm1String::new(context.gc_context, this.slash_path()).into())
 }
 
 fn frames_loaded<'gc>(
@@ -873,7 +873,7 @@ fn name<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(context.gc_context, this.name().to_string()).into())
+    Ok(Avm1String::new(context.gc_context, this.name().to_string()).into())
 }
 
 fn set_name<'gc>(
@@ -893,7 +893,7 @@ fn drop_target<'gc>(
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _droptarget");
-    Ok(Gc::allocate(context.gc_context, "".to_string()).into())
+    Ok(Avm1String::new(context.gc_context, "".to_string()).into())
 }
 
 fn url<'gc>(
@@ -902,7 +902,7 @@ fn url<'gc>(
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _url");
-    Ok(Gc::allocate(context.gc_context, "".to_string()).into())
+    Ok(Avm1String::new(context.gc_context, "".to_string()).into())
 }
 
 fn high_quality<'gc>(
@@ -968,7 +968,7 @@ fn quality<'gc>(
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _quality");
-    Ok(Gc::allocate(context.gc_context, "HIGH".to_string()).into())
+    Ok(Avm1String::new(context.gc_context, "HIGH".to_string()).into())
 }
 
 fn set_quality<'gc>(

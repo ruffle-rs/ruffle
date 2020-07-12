@@ -1,7 +1,6 @@
 use crate::avm1::error::Error;
 use crate::avm1::test_utils::with_avm;
-use crate::avm1::TObject;
-use gc_arena::Gc;
+use crate::avm1::{Avm1String, TObject};
 
 #[test]
 fn locals_into_form_values() {
@@ -10,7 +9,7 @@ fn locals_into_form_values() {
         my_locals
             .set(
                 "value1",
-                Gc::allocate(context.gc_context, "string".to_string()).into(),
+                Avm1String::new(context.gc_context, "string".to_string()).into(),
                 activation,
                 context,
             )

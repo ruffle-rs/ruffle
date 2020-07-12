@@ -63,8 +63,8 @@ pub fn getURL<'a, 'gc>(
             None
         };
         let method = match args.get(2) {
-            Some(Value::String(s)) if **s == "GET" => Some(NavigationMethod::GET),
-            Some(Value::String(s)) if **s == "POST" => Some(NavigationMethod::POST),
+            Some(Value::String(s)) if *s == "GET" => Some(NavigationMethod::GET),
+            Some(Value::String(s)) if *s == "POST" => Some(NavigationMethod::POST),
             _ => None,
         };
         let vars_method = method.map(|m| (m, activation.locals_into_form_values(context)));

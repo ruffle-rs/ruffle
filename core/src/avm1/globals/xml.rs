@@ -6,12 +6,12 @@ use crate::avm1::function::Executable;
 use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::xml_object::XMLObject;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Object, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1String, Object, TObject, UpdateContext, Value};
 use crate::backend::navigator::RequestOptions;
 use crate::xml;
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::MutationContext;
 use quick_xml::Error as ParseError;
 use std::borrow::Cow;
 
@@ -156,7 +156,7 @@ pub fn xmlnode_get_namespace_for_prefix<'gc>(
         args.get(0).map(|v| v.coerce_to_string(activation, ac)),
     ) {
         if let Some(uri) = xmlnode.lookup_uri_for_namespace(&prefix_string?) {
-            Ok(Gc::allocate(ac.gc_context, uri).into())
+            Ok(Avm1String::new(ac.gc_context, uri).into())
         } else {
             Ok(Value::Null)
         }
@@ -176,7 +176,7 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
         args.get(0).map(|v| v.coerce_to_string(activation, ac)),
     ) {
         if let Some(prefix) = xmlnode.lookup_namespace_for_uri(&uri_string?) {
-            Ok(Gc::allocate(ac.gc_context, prefix).into())
+            Ok(Avm1String::new(ac.gc_context, prefix).into())
         } else {
             Ok(Value::Null)
         }
@@ -224,7 +224,7 @@ pub fn xmlnode_to_string<'gc>(
     if let Some(node) = this.as_xml_node() {
         let result = node.into_string(&mut is_as2_compatible);
 
-        return Ok(Gc::allocate(
+        return Ok(Avm1String::new(
             ac.gc_context,
             result.unwrap_or_else(|e| {
                 log::warn!("XMLNode toString failed: {}", e);
@@ -234,7 +234,7 @@ pub fn xmlnode_to_string<'gc>(
         .into());
     }
 
-    Ok(Gc::allocate(ac.gc_context, "".to_string()).into())
+    Ok(Avm1String::new(ac.gc_context, "".to_string()).into())
 }
 
 pub fn xmlnode_local_name<'gc>(
@@ -246,7 +246,7 @@ pub fn xmlnode_local_name<'gc>(
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| Gc::allocate(ac.gc_context, n.local_name().to_string()).into())
+        .map(|n| Avm1String::new(ac.gc_context, n.local_name().to_string()).into())
         .unwrap_or_else(|| Value::Null))
 }
 
@@ -259,7 +259,7 @@ pub fn xmlnode_node_name<'gc>(
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| Gc::allocate(ac.gc_context, n.node_name().to_string()).into())
+        .map(|n| Avm1String::new(ac.gc_context, n.node_name().to_string()).into())
         .unwrap_or_else(|| Value::Null))
 }
 
@@ -292,7 +292,7 @@ pub fn xmlnode_node_value<'gc>(
     Ok(this
         .as_xml_node()
         .and_then(|n| n.node_value())
-        .map(|n| Gc::allocate(ac.gc_context, n).into())
+        .map(|n| Avm1String::new(ac.gc_context, n).into())
         .unwrap_or_else(|| Value::Null))
 }
 
@@ -306,7 +306,7 @@ pub fn xmlnode_prefix<'gc>(
         .as_xml_node()
         .and_then(|n| n.tag_name())
         .map(|n| {
-            Gc::allocate(
+            Avm1String::new(
                 ac.gc_context,
                 n.prefix()
                     .map(|n| n.to_string())
@@ -493,7 +493,7 @@ pub fn xmlnode_namespace_uri<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(name) = node.tag_name() {
-            return Ok(Gc::allocate(
+            return Ok(Avm1String::new(
                 ac.gc_context,
                 node.lookup_uri_for_namespace(name.prefix().unwrap_or(""))
                     .unwrap_or_else(|| "".to_string()),
@@ -861,7 +861,7 @@ pub fn xml_on_data<'gc>(
         let src = src.coerce_to_string(activation, ac)?;
         this.call_method(
             "parseXML",
-            &[Gc::allocate(ac.gc_context, src.to_string()).into()],
+            &[Avm1String::new(ac.gc_context, src.to_string()).into()],
             activation,
             ac,
         )?;
@@ -884,7 +884,7 @@ pub fn xml_doc_type_decl<'gc>(
         if let Some(doctype) = node.document().doctype() {
             let result = doctype.into_string(&mut |_| true);
 
-            return Ok(Gc::allocate(
+            return Ok(Avm1String::new(
                 ac.gc_context,
                 result.unwrap_or_else(|e| {
                     log::warn!("Error occured when serializing DOCTYPE: {}", e);
@@ -910,7 +910,7 @@ pub fn xml_xml_decl<'gc>(
         if let Err(e) = result {
             log::warn!("Could not generate XML declaration for document: {}", e);
         } else if let Ok(Some(result_str)) = result {
-            return Ok(Gc::allocate(ac.gc_context, result_str).into());
+            return Ok(Avm1String::new(ac.gc_context, result_str).into());
         }
     }
 

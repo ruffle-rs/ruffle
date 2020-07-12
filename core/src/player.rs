@@ -3,7 +3,7 @@ use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::listeners::SystemListener;
 use crate::avm1::object::Object;
-use crate::avm1::{Avm1, TObject, Timers, Value};
+use crate::avm1::{Avm1, Avm1String, TObject, Timers, Value};
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::storage::StorageBackend;
 use crate::backend::{
@@ -18,7 +18,7 @@ use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
 use enumset::EnumSet;
-use gc_arena::{make_arena, ArenaParameters, Collect, Gc, GcCell};
+use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{BTreeMap, HashMap};
@@ -292,7 +292,7 @@ impl Player {
             object.define_value(
                 context.gc_context,
                 "$version",
-                Gc::allocate(
+                Avm1String::new(
                     context.gc_context,
                     context.system.get_version_string(&mut activation),
                 )

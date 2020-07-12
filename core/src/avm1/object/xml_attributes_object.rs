@@ -5,10 +5,10 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Avm1String, Object, ScriptObject, UpdateContext, Value};
 use crate::xml::{XMLName, XMLNode};
 use enumset::EnumSet;
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
 
@@ -67,7 +67,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         Ok(self
             .node()
             .attribute_value(&XMLName::from_str(name))
-            .map(|s| Gc::allocate(context.gc_context, s).into())
+            .map(|s| Avm1String::new(context.gc_context, s).into())
             .unwrap_or_else(|| Value::Undefined))
     }
 
