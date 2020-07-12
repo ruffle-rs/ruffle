@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu" }
 env_logger = "0.7.1"
-image = "0.23.6"
+image = "0.23.7"
 log = "0.4"
 sample = "0.11.0"
 structopt = "0.3.15"
