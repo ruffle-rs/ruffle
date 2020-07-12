@@ -32,13 +32,13 @@ pub fn create_proto<'gc>(
     object.define_value(
         gc_context,
         "message",
-        Avm1String::new(gc_context, "Error".to_string()).into(),
+        Avm1String::from("Error").into(),
         EnumSet::empty(),
     );
     object.define_value(
         gc_context,
         "name",
-        Avm1String::new(gc_context, "Error".to_string()).into(),
+        Avm1String::from("Error").into(),
         EnumSet::empty(),
     );
 

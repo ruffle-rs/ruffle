@@ -93,11 +93,11 @@ pub fn apply<'gc>(
 /// Implements `Function.prototype.toString`
 fn to_string<'gc>(
     _: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Avm1String::new(context.gc_context, "[type Function]".to_string()).into())
+    Ok(Avm1String::from("[type Function]").into())
 }
 
 /// Partially construct `Function.prototype`.

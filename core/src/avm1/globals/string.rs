@@ -395,7 +395,7 @@ fn slice<'gc>(
         );
         Ok(Avm1String::new(context.gc_context, ret).into())
     } else {
-        Ok(Avm1String::new(context.gc_context, "".to_string()).into())
+        Ok(Avm1String::from("").into())
     }
 }
 

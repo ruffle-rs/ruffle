@@ -889,20 +889,20 @@ fn set_name<'gc>(
 
 fn drop_target<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _droptarget");
-    Ok(Avm1String::new(context.gc_context, "".to_string()).into())
+    Ok(Avm1String::from("").into())
 }
 
 fn url<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _url");
-    Ok(Avm1String::new(context.gc_context, "".to_string()).into())
+    Ok(Avm1String::from("").into())
 }
 
 fn high_quality<'gc>(
@@ -964,11 +964,11 @@ fn set_sound_buf_time<'gc>(
 
 fn quality<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _quality");
-    Ok(Avm1String::new(context.gc_context, "HIGH".to_string()).into())
+    Ok(Avm1String::from("HIGH").into())
 }
 
 fn set_quality<'gc>(

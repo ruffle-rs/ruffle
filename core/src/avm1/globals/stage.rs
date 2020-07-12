@@ -87,12 +87,12 @@ fn add_listener<'gc>(
 
 fn align<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.align: unimplemented");
-    Ok(Avm1String::new(context.gc_context, "".to_string()).into())
+    Ok(Avm1String::from("").into())
 }
 
 fn set_align<'gc>(
@@ -116,22 +116,22 @@ fn height<'gc>(
 
 fn remove_listener<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.removeListener: unimplemented");
-    Ok(Avm1String::new(context.gc_context, "".to_string()).into())
+    Ok(Avm1String::from("").into())
 }
 
 fn scale_mode<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.scaleMode: unimplemented");
-    Ok(Avm1String::new(context.gc_context, "noScale".to_string()).into())
+    Ok(Avm1String::from("noScale").into())
 }
 
 fn set_scale_mode<'gc>(

@@ -448,7 +448,7 @@ impl<'gc> FunctionObject<'gc> {
                 gc_context,
                 FunctionObjectData {
                     function: Some(function.into()),
-                    primitive: Avm1String::new(gc_context, "[type Function]".to_string()).into(),
+                    primitive: Avm1String::from("[type Function]").into(),
                 },
             ),
         }
@@ -553,8 +553,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 context.gc_context,
                 FunctionObjectData {
                     function: None,
-                    primitive: Avm1String::new(context.gc_context, "[type Function]".to_string())
-                        .into(),
+                    primitive: Avm1String::from("[type Function]").into(),
                 },
             ),
         };
