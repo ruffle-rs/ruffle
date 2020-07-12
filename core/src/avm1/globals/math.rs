@@ -414,7 +414,7 @@ mod tests {
             [NAN] => NAN,
             [Value::Null] => NAN,
             [Value::Undefined] => NAN,
-            // ["5"] => NAN,
+            ["5"] => NAN,
             [1.0, 2.0] => 1.0,
             [3.0, 2.0, 1.0] => 9.0
         },
@@ -445,7 +445,7 @@ mod tests {
             [NAN] => NAN,
             [Value::Null] => NAN,
             [Value::Undefined] => NAN,
-            // ["5"] => NAN,
+            ["5"] => NAN,
             [1.0, 2.0] => 2.0,
             [3.0, 2.0, 1.0] => 3.0
         },
@@ -466,7 +466,7 @@ mod tests {
             [NAN] => NAN,
             [Value::Null] => NAN,
             [Value::Undefined] => NAN,
-            // ["5"] => NAN,
+            ["5"] => NAN,
             [1.0, 2.0] => 1.0,
             [3.0, 2.0, 1.0] => 2.0
         },
