@@ -318,8 +318,9 @@ pub fn create_globals<'gc>(
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(gc_context, object_proto, function_proto);
 
-    let context_menu_proto = context_menu::create_proto(gc_context, object_proto);
-    let context_menu_item_proto = context_menu_item::create_proto(gc_context, object_proto);
+    let context_menu_proto = context_menu::create_proto(gc_context, object_proto, function_proto);
+    let context_menu_item_proto =
+        context_menu_item::create_proto(gc_context, object_proto, function_proto);
 
     let button = FunctionObject::function(
         gc_context,

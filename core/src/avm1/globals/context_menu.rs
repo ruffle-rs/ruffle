@@ -13,30 +13,12 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut so = this.as_script_object().unwrap();
-
     let callback = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation, context);
 
-    so.set("onSelect", callback.into(), activation, context)?;
-
-    so.force_set_function(
-        "copy",
-        copy,
-        context.gc_context,
-        Attribute::DontEnum,
-        Some(context.system_prototypes.function),
-    );
-
-    so.force_set_function(
-        "hideBuiltInItems",
-        hide_builtin_items,
-        context.gc_context,
-        Attribute::DontEnum,
-        Some(context.system_prototypes.function),
-    );
+    this.set("onSelect", callback.into(), activation, context)?;
 
     let obj_proto = activation.avm.prototypes.object;
     let built_in_items = obj_proto.new(activation, context, obj_proto, &[])?;
@@ -149,6 +131,28 @@ pub fn hide_builtin_items<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
-    ScriptObject::object(gc_context, Some(proto)).into()
+pub fn create_proto<'gc>(
+    gc_context: MutationContext<'gc, '_>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
+    let mut object = ScriptObject::object(gc_context, Some(proto));
+
+    object.force_set_function(
+        "copy",
+        copy,
+        gc_context,
+        Attribute::DontEnum | Attribute::DontDelete,
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "hideBuiltInItems",
+        hide_builtin_items,
+        gc_context,
+        Attribute::DontEnum | Attribute::DontDelete,
+        Some(fn_proto),
+    );
+
+    object.into()
 }
