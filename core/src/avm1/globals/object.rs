@@ -3,10 +3,10 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
-use crate::avm1::{Object, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1String, Object, TObject, UpdateContext, Value};
 use crate::character::Character;
 use enumset::EnumSet;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::MutationContext;
 use std::borrow::Cow;
 
 /// Implements `Object`
@@ -93,7 +93,7 @@ fn to_string<'gc>(
     _: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(context.gc_context, "[object Object]".to_string()).into())
+    Ok(Avm1String::new(context.gc_context, "[object Object]".to_string()).into())
 }
 
 /// Implements `Object.prototype.isPropertyEnumerable`

@@ -3,9 +3,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1String, Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::MutationContext;
 
 /// Implements `Function`
 pub fn constructor<'gc>(
@@ -97,7 +97,7 @@ fn to_string<'gc>(
     _: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(context.gc_context, "[type Function]".to_string()).into())
+    Ok(Avm1String::new(context.gc_context, "[type Function]".to_string()).into())
 }
 
 /// Partially construct `Function.prototype`.

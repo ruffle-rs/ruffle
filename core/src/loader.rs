@@ -1,14 +1,14 @@
 //! Management of async loaders
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::{Object, TObject, Value};
+use crate::avm1::{Avm1String, Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
 use crate::xml::XMLNode;
-use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
+use gc_arena::{Collect, CollectionContext, MutationContext};
 use generational_arena::{Arena, Index};
 use std::string::FromUtf8Error;
 use std::sync::{Arc, Mutex, Weak};
@@ -323,7 +323,7 @@ impl<'gc> Loader<'gc> {
                             uc,
                             "broadcastMessage",
                             &[
-                                Gc::allocate(uc.gc_context, "onLoadStart".to_string()).into(),
+                                Avm1String::new(uc.gc_context, "onLoadStart".to_string()).into(),
                                 Value::Object(broadcaster),
                             ],
                         );
@@ -359,7 +359,7 @@ impl<'gc> Loader<'gc> {
                                 uc,
                                 "broadcastMessage",
                                 &[
-                                    Gc::allocate(uc.gc_context, "onLoadProgress".to_string())
+                                    Avm1String::new(uc.gc_context, "onLoadProgress".to_string())
                                         .into(),
                                     Value::Object(broadcaster),
                                     length.into(),
@@ -397,7 +397,7 @@ impl<'gc> Loader<'gc> {
                                 uc,
                                 "broadcastMessage",
                                 &[
-                                    Gc::allocate(uc.gc_context, "onLoadComplete".to_string())
+                                    Avm1String::new(uc.gc_context, "onLoadComplete".to_string())
                                         .into(),
                                     Value::Object(broadcaster),
                                 ],
@@ -438,10 +438,14 @@ impl<'gc> Loader<'gc> {
                                 uc,
                                 "broadcastMessage",
                                 &[
-                                    Gc::allocate(uc.gc_context, "onLoadError".to_string()).into(),
-                                    Value::Object(broadcaster),
-                                    Gc::allocate(uc.gc_context, "LoadNeverCompleted".to_string())
+                                    Avm1String::new(uc.gc_context, "onLoadError".to_string())
                                         .into(),
+                                    Value::Object(broadcaster),
+                                    Avm1String::new(
+                                        uc.gc_context,
+                                        "LoadNeverCompleted".to_string(),
+                                    )
+                                    .into(),
                                 ],
                             );
                         }
@@ -495,7 +499,7 @@ impl<'gc> Loader<'gc> {
                 for (k, v) in form_urlencoded::parse(&data) {
                     that.set(
                         &k,
-                        Gc::allocate(uc.gc_context, v.into_owned()).into(),
+                        Avm1String::new(uc.gc_context, v.into_owned()).into(),
                         &mut activation,
                         uc,
                     )?;
@@ -536,7 +540,7 @@ impl<'gc> Loader<'gc> {
                         object: broadcaster,
                         name: "broadcastMessage",
                         args: vec![
-                            Gc::allocate(gc_context, "onLoadInit".to_string()).into(),
+                            Avm1String::new(gc_context, "onLoadInit".to_string()).into(),
                             clip_object.map(|co| co.into()).unwrap_or(Value::Undefined),
                         ],
                     },
@@ -598,7 +602,7 @@ impl<'gc> Loader<'gc> {
                             NEWEST_PLAYER_VERSION,
                             uc,
                             "onData",
-                            &[Gc::allocate(uc.gc_context, xmlstring).into()],
+                            &[Avm1String::new(uc.gc_context, xmlstring).into()],
                         );
 
                         Ok(())

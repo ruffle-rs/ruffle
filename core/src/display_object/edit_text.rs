@@ -1,7 +1,7 @@
 //! `EditText` display object and support code.
 use crate::avm1::activation::Activation;
 use crate::avm1::globals::text_field::attach_virtual_properties;
-use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
+use crate::avm1::{Avm1, Avm1String, Object, StageObject, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
@@ -743,7 +743,7 @@ impl<'gc> EditText<'gc> {
                                 if !text.is_empty() {
                                     let _ = object.set(
                                         property,
-                                        Gc::allocate(context.gc_context, self.text()).into(),
+                                        Avm1String::new(context.gc_context, self.text()).into(),
                                         activation,
                                         context,
                                     );
@@ -814,7 +814,7 @@ impl<'gc> EditText<'gc> {
                         |activation, context| {
                             let _ = object.set(
                                 property,
-                                Gc::allocate(context.gc_context, text).into(),
+                                Avm1String::new(context.gc_context, text).into(),
                                 activation,
                                 context,
                             );

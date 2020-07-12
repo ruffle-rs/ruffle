@@ -5,8 +5,8 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
-use gc_arena::{Gc, MutationContext};
+use crate::avm1::{Avm1String, Object, ScriptObject, TObject, UpdateContext, Value};
+use gc_arena::MutationContext;
 
 pub fn create_stage_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
@@ -92,7 +92,7 @@ fn align<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.align: unimplemented");
-    Ok(Gc::allocate(context.gc_context, "".to_string()).into())
+    Ok(Avm1String::new(context.gc_context, "".to_string()).into())
 }
 
 fn set_align<'gc>(
@@ -121,7 +121,7 @@ fn remove_listener<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.removeListener: unimplemented");
-    Ok(Gc::allocate(context.gc_context, "".to_string()).into())
+    Ok(Avm1String::new(context.gc_context, "".to_string()).into())
 }
 
 fn scale_mode<'gc>(
@@ -131,7 +131,7 @@ fn scale_mode<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Stage.scaleMode: unimplemented");
-    Ok(Gc::allocate(context.gc_context, "noScale".to_string()).into())
+    Ok(Avm1String::new(context.gc_context, "noScale".to_string()).into())
 }
 
 fn set_scale_mode<'gc>(

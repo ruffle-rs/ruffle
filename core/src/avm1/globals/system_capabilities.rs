@@ -3,10 +3,10 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
-use crate::avm1::{ScriptObject, TObject, Value};
+use crate::avm1::{Avm1String, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::MutationContext;
 
 macro_rules! capabilities_func {
     ($func_name: ident, $capability: expr) => {
@@ -82,7 +82,7 @@ pub fn get_player_type<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(context.gc_context, context.system.player_type.to_string()).into())
+    Ok(Avm1String::new(context.gc_context, context.system.player_type.to_string()).into())
 }
 
 pub fn get_screen_color<'gc>(
@@ -91,7 +91,7 @@ pub fn get_screen_color<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(context.gc_context, context.system.screen_color.to_string()).into())
+    Ok(Avm1String::new(context.gc_context, context.system.screen_color.to_string()).into())
 }
 
 pub fn get_language<'gc>(
@@ -100,7 +100,7 @@ pub fn get_language<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(
+    Ok(Avm1String::new(
         context.gc_context,
         context
             .system
@@ -153,7 +153,7 @@ pub fn get_manufacturer<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(
+    Ok(Avm1String::new(
         context.gc_context,
         context
             .system
@@ -169,7 +169,7 @@ pub fn get_os_name<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(context.gc_context, context.system.os.to_string()).into())
+    Ok(Avm1String::new(context.gc_context, context.system.os.to_string()).into())
 }
 
 pub fn get_version<'gc>(
@@ -178,7 +178,7 @@ pub fn get_version<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(
+    Ok(Avm1String::new(
         context.gc_context,
         context.system.get_version_string(activation),
     )
@@ -191,7 +191,7 @@ pub fn get_server_string<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(
+    Ok(Avm1String::new(
         context.gc_context,
         context.system.get_server_string(activation),
     )
@@ -204,7 +204,7 @@ pub fn get_cpu_architecture<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(
+    Ok(Avm1String::new(
         context.gc_context,
         context.system.cpu_architecture.to_string(),
     )
@@ -217,7 +217,7 @@ pub fn get_max_idc_level<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(context.gc_context, context.system.idc_level.clone()).into())
+    Ok(Avm1String::new(context.gc_context, context.system.idc_level.clone()).into())
 }
 
 pub fn create<'gc>(

@@ -1,8 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::{Object, TObject, UpdateContext};
-use gc_arena::Gc;
+use crate::avm1::{Avm1String, Object, TObject, UpdateContext};
 use std::borrow::Cow;
 use std::f64::NAN;
 
@@ -13,12 +12,12 @@ pub enum Value<'gc> {
     Null,
     Bool(bool),
     Number(f64),
-    String(Gc<'gc, String>),
+    String(Avm1String<'gc>),
     Object(Object<'gc>),
 }
 
-impl<'gc> From<Gc<'gc, String>> for Value<'gc> {
-    fn from(string: Gc<'gc, String>) -> Self {
+impl<'gc> From<Avm1String<'gc>> for Value<'gc> {
+    fn from(string: Avm1String<'gc>) -> Self {
         Value::String(string)
     }
 }
@@ -596,10 +595,9 @@ mod test {
     use crate::avm1::object::script_object::ScriptObject;
     use crate::avm1::object::{Object, TObject};
     use crate::avm1::test_utils::with_avm;
-    use crate::avm1::Value;
+    use crate::avm1::{Avm1String, Value};
     use crate::context::UpdateContext;
     use enumset::EnumSet;
-    use gc_arena::Gc;
     use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
     #[test]
@@ -792,8 +790,8 @@ mod test {
     #[test]
     fn abstract_lt_str() {
         with_avm(8, |activation, context, _this| -> Result<(), Error> {
-            let a = Value::String(Gc::allocate(context.gc_context, "a".to_owned()));
-            let b = Value::String(Gc::allocate(context.gc_context, "b".to_owned()));
+            let a = Value::String(Avm1String::new(context.gc_context, "a".to_owned()));
+            let b = Value::String(Avm1String::new(context.gc_context, "b".to_owned()));
 
             assert_eq!(
                 a.abstract_lt(b, activation, context).unwrap(),
@@ -807,8 +805,8 @@ mod test {
     #[test]
     fn abstract_gt_str() {
         with_avm(8, |activation, context, _this| -> Result<(), Error> {
-            let a = Value::String(Gc::allocate(context.gc_context, "a".to_owned()));
-            let b = Value::String(Gc::allocate(context.gc_context, "b".to_owned()));
+            let a = Value::String(Avm1String::new(context.gc_context, "a".to_owned()));
+            let b = Value::String(Avm1String::new(context.gc_context, "b".to_owned()));
 
             assert_eq!(
                 b.abstract_lt(a, activation, context).unwrap(),

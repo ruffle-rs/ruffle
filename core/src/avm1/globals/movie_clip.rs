@@ -5,13 +5,13 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1String, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfSlice;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::MutationContext;
 use swf::{
     FillStyle, Gradient, GradientInterpolation, GradientRecord, GradientSpread, LineCapStyle,
     LineJoinStyle, LineStyle, Twips,
@@ -900,7 +900,7 @@ fn to_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Gc::allocate(context.gc_context, movie_clip.path()).into())
+    Ok(Avm1String::new(context.gc_context, movie_clip.path()).into())
 }
 
 fn local_to_global<'gc>(
@@ -945,7 +945,7 @@ fn get_bounds<'gc>(
             activation.resolve_target_display_object(
                 context,
                 movie_clip.into(),
-                Gc::allocate(context.gc_context, path.to_string()).into(),
+                Avm1String::new(context.gc_context, path.to_string()).into(),
             )?
         }
         None => Some(movie_clip.into()),

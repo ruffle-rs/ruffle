@@ -3,10 +3,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Avm1String, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::MutationContext;
 use swf::{Matrix, Twips};
 
 pub fn value_to_matrix<'gc>(
@@ -403,7 +403,7 @@ fn to_string<'gc>(
     let tx = this.get("tx", activation, context)?;
     let ty = this.get("ty", activation, context)?;
 
-    Ok(Gc::allocate(
+    Ok(Avm1String::new(
         context.gc_context,
         format!(
             "(a={}, b={}, c={}, d={}, tx={}, ty={})",

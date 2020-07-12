@@ -5,9 +5,9 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Avm1String, Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::MutationContext;
 use smallvec::alloc::borrow::Cow;
 use std::cmp::Ordering;
 
@@ -247,7 +247,7 @@ pub fn join<'gc>(
         .unwrap_or_else(|| Cow::Borrowed(","));
     let values: Vec<Value<'gc>> = this.array();
 
-    Ok(Gc::allocate(
+    Ok(Avm1String::new(
         context.gc_context,
         values
             .iter()

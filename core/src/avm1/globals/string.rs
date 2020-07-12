@@ -5,11 +5,11 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Avm1String, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::string_utils;
 use enumset::EnumSet;
-use gc_arena::{Gc, MutationContext};
+use gc_arena::MutationContext;
 
 /// `String` constructor
 pub fn string<'gc>(
@@ -20,17 +20,17 @@ pub fn string<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
-        Some(v) => Gc::allocate(
+        Some(v) => Avm1String::new(
             ac.gc_context,
             v.coerce_to_string(activation, ac)?.to_string(),
         ),
-        _ => Gc::allocate(ac.gc_context, String::new()),
+        _ => Avm1String::new(ac.gc_context, String::new()),
     };
 
     if let Some(mut vbox) = this.as_value_object() {
         let len = value.encode_utf16().count();
         vbox.set_length(ac.gc_context, len);
-        vbox.replace_value(ac.gc_context, value.into());
+        vbox.replace_value(ac.gc_context, value.clone().into());
     }
 
     Ok(value.into())
@@ -184,7 +184,7 @@ fn char_at<'gc>(
     let this_val = Value::from(this);
     let string = match this_val {
         Value::String(string) => string,
-        other => Gc::allocate(
+        other => Avm1String::new(
             context.gc_context,
             other.coerce_to_string(activation, context)?.to_string(),
         ),
@@ -202,7 +202,7 @@ fn char_at<'gc>(
     } else {
         "".into()
     };
-    Ok(Gc::allocate(context.gc_context, ret).into())
+    Ok(Avm1String::new(context.gc_context, ret).into())
 }
 
 fn char_code_at<'gc>(
@@ -241,7 +241,7 @@ fn concat<'gc>(
         let s = arg.coerce_to_string(activation, context)?;
         ret.push_str(&s)
     }
-    Ok(Gc::allocate(context.gc_context, ret).into())
+    Ok(Avm1String::new(context.gc_context, ret).into())
 }
 
 fn from_char_code<'gc>(
@@ -260,7 +260,7 @@ fn from_char_code<'gc>(
         }
         out.push(utf16_code_unit_to_char(i));
     }
-    Ok(Gc::allocate(context.gc_context, out).into())
+    Ok(Avm1String::new(context.gc_context, out).into())
 }
 
 fn index_of<'gc>(
@@ -393,9 +393,9 @@ fn slice<'gc>(
                 .skip(start_index)
                 .take(end_index - start_index),
         );
-        Ok(Gc::allocate(context.gc_context, ret).into())
+        Ok(Avm1String::new(context.gc_context, ret).into())
     } else {
-        Ok(Gc::allocate(context.gc_context, "".to_string()).into())
+        Ok(Avm1String::new(context.gc_context, "".to_string()).into())
     }
 }
 
@@ -408,7 +408,7 @@ fn split<'gc>(
     let this_val = Value::from(this);
     let this = match this_val {
         Value::String(string) => string,
-        other => Gc::allocate(
+        other => Avm1String::new(
             context.gc_context,
             other.coerce_to_string(activation, context)?.to_string(),
         ),
@@ -424,7 +424,7 @@ fn split<'gc>(
         for (i, token) in this.split(delimiter.as_ref()).take(limit).enumerate() {
             array.set_array_element(
                 i,
-                Gc::allocate(context.gc_context, token.to_string()).into(),
+                Avm1String::new(context.gc_context, token.to_string()).into(),
                 context.gc_context,
             );
         }
@@ -435,7 +435,7 @@ fn split<'gc>(
         for (i, token) in this.chars().take(limit).enumerate() {
             array.set_array_element(
                 i,
-                Gc::allocate(context.gc_context, token.to_string()).into(),
+                Avm1String::new(context.gc_context, token.to_string()).into(),
                 context.gc_context,
             );
         }
@@ -456,7 +456,7 @@ fn substr<'gc>(
     let this_val = Value::from(this);
     let this = match this_val {
         Value::String(string) => string,
-        other => Gc::allocate(
+        other => Avm1String::new(
             context.gc_context,
             other.coerce_to_string(activation, context)?.to_string(),
         ),
@@ -473,7 +473,7 @@ fn substr<'gc>(
     };
 
     let ret = utf16_iter_to_string(this.encode_utf16().skip(start_index).take(len));
-    Ok(Gc::allocate(context.gc_context, ret).into())
+    Ok(Avm1String::new(context.gc_context, ret).into())
 }
 
 fn substring<'gc>(
@@ -489,7 +489,7 @@ fn substring<'gc>(
     let this_val = Value::from(this);
     let this = match this_val {
         Value::String(string) => string,
-        other => Gc::allocate(
+        other => Avm1String::new(
             context.gc_context,
             other.coerce_to_string(activation, context)?.to_string(),
         ),
@@ -514,7 +514,7 @@ fn substring<'gc>(
             .skip(start_index)
             .take(end_index - start_index),
     );
-    Ok(Gc::allocate(context.gc_context, ret).into())
+    Ok(Avm1String::new(context.gc_context, ret).into())
 }
 
 fn to_lower_case<'gc>(
@@ -525,7 +525,7 @@ fn to_lower_case<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation, context)?;
-    Ok(Gc::allocate(
+    Ok(Avm1String::new(
         context.gc_context,
         this.chars()
             .map(string_utils::swf_char_to_lowercase)
@@ -561,7 +561,7 @@ fn to_upper_case<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation, context)?;
-    Ok(Gc::allocate(
+    Ok(Avm1String::new(
         context.gc_context,
         this.chars()
             .map(string_utils::swf_char_to_uppercase)
