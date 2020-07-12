@@ -488,6 +488,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader),
                 Op::IfEq { offset } => self.op_if_eq(offset, reader),
                 Op::IfNe { offset } => self.op_if_ne(offset, reader),
+                Op::IfGe { offset } => self.op_if_ge(offset, reader),
+                Op::IfGt { offset } => self.op_if_gt(offset, reader),
+                Op::IfLe { offset } => self.op_if_le(offset, reader),
+                Op::IfLt { offset } => self.op_if_lt(offset, reader),
+                Op::IfNge { offset } => self.op_if_nge(offset, reader),
+                Op::IfNgt { offset } => self.op_if_ngt(offset, reader),
+                Op::IfNle { offset } => self.op_if_nle(offset, reader),
+                Op::IfNlt { offset } => self.op_if_nlt(offset, reader),
                 Op::StrictEquals => self.op_strict_equals(),
                 Op::Equals => self.op_equals(),
                 Op::Not => self.op_not(),
@@ -1472,6 +1480,126 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value1 = self.context.avm2.pop();
 
         if !value1.abstract_eq(&value2, self)? {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_if_ge(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        if value1.abstract_lt(&value2, self)? == Some(false) {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_if_gt(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        if value2.abstract_lt(&value1, self)? == Some(true) {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_if_le(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        if value2.abstract_lt(&value1, self)? == Some(false) {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_if_lt(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        if value1.abstract_lt(&value2, self)? == Some(true) {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_if_nge(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        if value1.abstract_lt(&value2, self)?.unwrap_or(true) {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_if_ngt(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        if !value2.abstract_lt(&value1, self)?.unwrap_or(false) {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_if_nle(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        if value2.abstract_lt(&value1, self)?.unwrap_or(true) {
+            reader.seek(offset as i64)?;
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_if_nlt(
+        &mut self,
+        offset: i32,
+        reader: &mut Reader<Cursor<&[u8]>>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        if !value1.abstract_lt(&value2, self)?.unwrap_or(false) {
             reader.seek(offset as i64)?;
         }
 
