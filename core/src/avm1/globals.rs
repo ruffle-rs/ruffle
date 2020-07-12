@@ -167,7 +167,7 @@ pub fn create_timer<'a, 'gc>(
                     .get(1)
                     .unwrap_or(&Value::Undefined)
                     .coerce_to_string(activation, context)?
-                    .into_owned(),
+                    .to_string(),
             },
             2,
         ),

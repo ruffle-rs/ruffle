@@ -13,7 +13,6 @@ use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use quick_xml::Error as ParseError;
-use std::borrow::Cow;
 
 pub const XML_NO_ERROR: f64 = 0.0;
 #[allow(dead_code)]
@@ -791,7 +790,7 @@ pub fn xml_parse_xml<'gc>(
             if let Some(Ok(xmlstring)) = args.get(0).map(|s| s.coerce_to_string(activation, ac)) {
                 xmlstring
             } else {
-                Cow::Borrowed("")
+                "".into()
             };
 
         if let Some(children) = node.children() {

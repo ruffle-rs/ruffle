@@ -20,10 +20,7 @@ pub fn string<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
-        Some(v) => Avm1String::new(
-            ac.gc_context,
-            v.coerce_to_string(activation, ac)?.to_string(),
-        ),
+        Some(v) => v.coerce_to_string(activation, ac)?,
         _ => Avm1String::new(ac.gc_context, String::new()),
     };
 
@@ -182,13 +179,7 @@ fn char_at<'gc>(
     // TODO: Will return REPLACEMENT_CHAR if this indexes a character outside the BMP, losing info about the surrogate.
     // When we improve our string representation, the unpaired surrogate should be returned.
     let this_val = Value::from(this);
-    let string = match this_val {
-        Value::String(string) => string,
-        other => Avm1String::new(
-            context.gc_context,
-            other.coerce_to_string(activation, context)?.to_string(),
-        ),
-    };
+    let string = this_val.coerce_to_string(activation, context)?;
     let i = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -406,13 +397,7 @@ fn split<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
-    let this = match this_val {
-        Value::String(string) => string,
-        other => Avm1String::new(
-            context.gc_context,
-            other.coerce_to_string(activation, context)?.to_string(),
-        ),
-    };
+    let this = this_val.coerce_to_string(activation, context)?;
     let delimiter_val = args.get(0).unwrap_or(&Value::Undefined);
     let delimiter = delimiter_val.coerce_to_string(activation, context)?;
     let limit = match args.get(1) {
@@ -454,13 +439,7 @@ fn substr<'gc>(
     }
 
     let this_val = Value::from(this);
-    let this = match this_val {
-        Value::String(string) => string,
-        other => Avm1String::new(
-            context.gc_context,
-            other.coerce_to_string(activation, context)?.to_string(),
-        ),
-    };
+    let this = this_val.coerce_to_string(activation, context)?;
     let this_len = this.encode_utf16().count();
     let start_index = string_wrapping_index(
         args.get(0).unwrap().coerce_to_i32(activation, context)?,
@@ -487,13 +466,7 @@ fn substring<'gc>(
     }
 
     let this_val = Value::from(this);
-    let this = match this_val {
-        Value::String(string) => string,
-        other => Avm1String::new(
-            context.gc_context,
-            other.coerce_to_string(activation, context)?.to_string(),
-        ),
-    };
+    let this = this_val.coerce_to_string(activation, context)?;
     let this_len = this.encode_utf16().count();
     let mut start_index = string_index(
         args.get(0).unwrap().coerce_to_i32(activation, context)?,

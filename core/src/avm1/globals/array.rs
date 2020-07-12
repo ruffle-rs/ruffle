@@ -8,7 +8,6 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1String, Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
-use smallvec::alloc::borrow::Cow;
 use std::cmp::Ordering;
 
 // Flags used by `Array.sort` and `sortOn`.
@@ -244,7 +243,7 @@ pub fn join<'gc>(
     let separator = args
         .get(0)
         .and_then(|v| v.coerce_to_string(activation, context).ok())
-        .unwrap_or_else(|| Cow::Borrowed(","));
+        .unwrap_or_else(|| ",".into());
     let values: Vec<Value<'gc>> = this.array();
 
     Ok(Avm1String::new(
@@ -253,9 +252,10 @@ pub fn join<'gc>(
             .iter()
             .map(|v| {
                 v.coerce_to_string(activation, context)
-                    .unwrap_or_else(|_| Cow::Borrowed("undefined"))
+                    .unwrap_or_else(|_| "undefined".into())
+                    .to_string()
             })
-            .collect::<Vec<Cow<str>>>()
+            .collect::<Vec<String>>()
             .join(&separator),
     )
     .into())
