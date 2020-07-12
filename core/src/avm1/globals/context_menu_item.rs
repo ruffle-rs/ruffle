@@ -53,16 +53,6 @@ pub fn constructor<'gc>(
     this.set("enabled", enabled.into(), activation, context)?;
     this.set("visible", visible.into(), activation, context)?;
 
-    let mut so = this.as_script_object().unwrap();
-
-    so.force_set_function(
-        "copy",
-        copy,
-        context.gc_context,
-        Attribute::DontEnum,
-        Some(context.system_prototypes.function),
-    );
-
     Ok(Value::Undefined)
 }
 
@@ -108,7 +98,20 @@ pub fn copy<'gc>(
     Ok(copy.into())
 }
 
-pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
-    let object = ScriptObject::object(gc_context, Some(proto));
+pub fn create_proto<'gc>(
+    gc_context: MutationContext<'gc, '_>,
+    proto: Object<'gc>,
+    fn_proto: Object<'gc>,
+) -> Object<'gc> {
+    let mut object = ScriptObject::object(gc_context, Some(proto));
+
+    object.force_set_function(
+        "copy",
+        copy,
+        gc_context,
+        Attribute::DontEnum | Attribute::DontDelete,
+        Some(fn_proto),
+    );
+
     object.into()
 }
