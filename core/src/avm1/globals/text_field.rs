@@ -381,10 +381,10 @@ pub fn auto_size<'gc>(
         .and_then(|dobj| dobj.as_edit_text())
     {
         return Ok(match etext.autosize() {
-            AutoSizeMode::None => Avm1String::from("none").into(),
-            AutoSizeMode::Left => Avm1String::from("left").into(),
-            AutoSizeMode::Center => Avm1String::from("center").into(),
-            AutoSizeMode::Right => Avm1String::from("right").into(),
+            AutoSizeMode::None => "none".into(),
+            AutoSizeMode::Left => "left".into(),
+            AutoSizeMode::Center => "center".into(),
+            AutoSizeMode::Right => "right".into(),
         });
     }
 

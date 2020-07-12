@@ -1,18 +1,13 @@
 use crate::avm1::error::Error;
 use crate::avm1::test_utils::with_avm;
-use crate::avm1::{Avm1String, TObject};
+use crate::avm1::TObject;
 
 #[test]
 fn locals_into_form_values() {
     with_avm(19, |activation, context, _this| -> Result<(), Error> {
         let my_locals = activation.scope().locals().to_owned();
         my_locals
-            .set(
-                "value1",
-                Avm1String::from("string").into(),
-                activation,
-                context,
-            )
+            .set("value1", "string".into(), activation, context)
             .unwrap();
         my_locals
             .set("value2", 2.0.into(), activation, context)

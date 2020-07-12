@@ -322,10 +322,7 @@ impl<'gc> Loader<'gc> {
                             NEWEST_PLAYER_VERSION,
                             uc,
                             "broadcastMessage",
-                            &[
-                                Avm1String::from("onLoadStart").into(),
-                                Value::Object(broadcaster),
-                            ],
+                            &["onLoadStart".into(), Value::Object(broadcaster)],
                         );
                     }
 
@@ -359,7 +356,7 @@ impl<'gc> Loader<'gc> {
                                 uc,
                                 "broadcastMessage",
                                 &[
-                                    Avm1String::from("onLoadProgress").into(),
+                                    "onLoadProgress".into(),
                                     Value::Object(broadcaster),
                                     length.into(),
                                     length.into(),
@@ -395,10 +392,7 @@ impl<'gc> Loader<'gc> {
                                 NEWEST_PLAYER_VERSION,
                                 uc,
                                 "broadcastMessage",
-                                &[
-                                    Avm1String::from("onLoadComplete").into(),
-                                    Value::Object(broadcaster),
-                                ],
+                                &["onLoadComplete".into(), Value::Object(broadcaster)],
                             );
                         }
 
@@ -436,9 +430,9 @@ impl<'gc> Loader<'gc> {
                                 uc,
                                 "broadcastMessage",
                                 &[
-                                    Avm1String::from("onLoadError").into(),
+                                    "onLoadError".into(),
                                     Value::Object(broadcaster),
-                                    Avm1String::from("LoadNeverCompleted").into(),
+                                    "LoadNeverCompleted".into(),
                                 ],
                             );
                         }
@@ -533,7 +527,7 @@ impl<'gc> Loader<'gc> {
                         object: broadcaster,
                         name: "broadcastMessage",
                         args: vec![
-                            Avm1String::from("onLoadInit").into(),
+                            "onLoadInit".into(),
                             clip_object.map(|co| co.into()).unwrap_or(Value::Undefined),
                         ],
                     },

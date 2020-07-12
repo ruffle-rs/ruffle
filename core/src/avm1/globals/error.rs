@@ -29,18 +29,8 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let mut object = ScriptObject::object(gc_context, Some(proto));
 
-    object.define_value(
-        gc_context,
-        "message",
-        Avm1String::from("Error").into(),
-        EnumSet::empty(),
-    );
-    object.define_value(
-        gc_context,
-        "name",
-        Avm1String::from("Error").into(),
-        EnumSet::empty(),
-    );
+    object.define_value(gc_context, "message", "Error".into(), EnumSet::empty());
+    object.define_value(gc_context, "name", "Error".into(), EnumSet::empty());
 
     object.force_set_function(
         "toString",

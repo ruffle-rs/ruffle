@@ -22,6 +22,12 @@ impl<'gc> From<Avm1String<'gc>> for Value<'gc> {
     }
 }
 
+impl<'gc> From<&'static str> for Value<'gc> {
+    fn from(string: &'static str) -> Self {
+        Value::String(string.into())
+    }
+}
+
 impl<'gc> From<bool> for Value<'gc> {
     fn from(value: bool) -> Self {
         Value::Bool(value)

@@ -893,7 +893,7 @@ fn drop_target<'gc>(
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _droptarget");
-    Ok(Avm1String::from("").into())
+    Ok("".into())
 }
 
 fn url<'gc>(
@@ -902,7 +902,7 @@ fn url<'gc>(
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _url");
-    Ok(Avm1String::from("").into())
+    Ok("".into())
 }
 
 fn high_quality<'gc>(
@@ -968,7 +968,7 @@ fn quality<'gc>(
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Unimplemented property _quality");
-    Ok(Avm1String::from("HIGH").into())
+    Ok("HIGH".into())
 }
 
 fn set_quality<'gc>(

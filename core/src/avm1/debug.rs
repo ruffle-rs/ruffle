@@ -256,28 +256,16 @@ mod tests {
     fn dump_string() {
         with_avm(19, |activation, context, _root| -> Result<(), Error> {
             assert_eq!(
-                VariableDumper::dump(
-                    &Value::String(Avm1String::from("")),
-                    " ",
-                    activation,
-                    context
-                ),
+                VariableDumper::dump(&"".into(), " ", activation, context),
                 "\"\""
             );
             assert_eq!(
-                VariableDumper::dump(
-                    &Value::String(Avm1String::from("HELLO WORLD")),
-                    " ",
-                    activation,
-                    context
-                ),
+                VariableDumper::dump(&"HELLO WORLD".into(), " ", activation, context),
                 "\"HELLO WORLD\""
             );
             assert_eq!(
                 VariableDumper::dump(
-                    &Value::String(Avm1String::from(
-                        "Escape \"this\" string\nplease! \u{0008}\u{000C}\n\r\t\"\\"
-                    )),
+                    &"Escape \"this\" string\nplease! \u{0008}\u{000C}\n\r\t\"\\".into(),
                     " ",
                     activation,
                     context
@@ -306,12 +294,7 @@ mod tests {
             let object = ScriptObject::object(context.gc_context, None);
             let child = ScriptObject::object(context.gc_context, None);
             object.set("self", object.into(), activation, context)?;
-            object.set(
-                "test",
-                Value::String(Avm1String::from("value")),
-                activation,
-                context,
-            )?;
+            object.set("test", "value".into(), activation, context)?;
             object.set("child", child.into(), activation, context)?;
             child.set("parent", object.into(), activation, context)?;
             child.set("age", Value::Number(6.0), activation, context)?;
@@ -329,12 +312,7 @@ mod tests {
             let object = ScriptObject::object(context.gc_context, None);
             let child = ScriptObject::object(context.gc_context, None);
             object.set("self", object.into(), activation, context)?;
-            object.set(
-                "test",
-                Value::String(Avm1String::from("value")),
-                activation,
-                context,
-            )?;
+            object.set("test", "value".into(), activation, context)?;
             object.set("child", child.into(), activation, context)?;
             child.set("parent", object.into(), activation, context)?;
             child.set("age", Value::Number(6.0), activation, context)?;

@@ -159,7 +159,7 @@ fn to_string<'gc>(
             Ordering::Greater => (n as u32, false),
             Ordering::Equal => {
                 // Bail out immediately if we're 0.
-                return Ok(Avm1String::from("0").into());
+                return Ok("0".into());
             }
         };
 
@@ -185,7 +185,7 @@ fn to_string<'gc>(
         // for example, NaN.toString(3) gives "-/.//./..././/0.0./0.".
         // Flash Player 6 will print a much more sane value of 0, so let's go with that.
         // TODO: Allow configuration of player version.
-        Ok(Avm1String::from("0").into())
+        Ok("0".into())
     }
 }
 

@@ -6,7 +6,7 @@ use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::{Attribute, Attribute::*};
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{Avm1String, Object, ObjectPtr, ScriptObject, TObject, UpdateContext};
+use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, UpdateContext};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use enumset::EnumSet;
@@ -448,7 +448,7 @@ impl<'gc> FunctionObject<'gc> {
                 gc_context,
                 FunctionObjectData {
                     function: Some(function.into()),
-                    primitive: Avm1String::from("[type Function]").into(),
+                    primitive: "[type Function]".into(),
                 },
             ),
         }
@@ -553,7 +553,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 context.gc_context,
                 FunctionObjectData {
                     function: None,
-                    primitive: Avm1String::from("[type Function]").into(),
+                    primitive: "[type Function]".into(),
                 },
             ),
         };
