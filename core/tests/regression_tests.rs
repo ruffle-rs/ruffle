@@ -284,6 +284,10 @@ swf_tests! {
     (as3_if_eq, "avm2/if_eq", 1),
     (as3_if_ne, "avm2/if_ne", 1),
     (as3_equals, "avm2/equals", 1),
+    (as3_if_lt, "avm2/if_lt", 1),
+    (as3_if_lte, "avm2/if_lte", 1),
+    (as3_if_gte, "avm2/if_gte", 1),
+    (as3_if_gt, "avm2/if_gt", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

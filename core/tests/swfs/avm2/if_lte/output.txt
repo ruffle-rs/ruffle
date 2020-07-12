@@ -1,0 +1,10 @@
+2 <= "2"
+2 <= 2
+2 <= 5
+true <= true
+false <= false
+1 <= true
+0 <= false
+"abc" <= "abc"
+0 <= null
+null <= null
