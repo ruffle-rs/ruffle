@@ -4,7 +4,7 @@ use crate::avm1::listeners::Listeners;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
-use crate::avm1::{Avm1String, ScriptObject, TObject, Value};
+use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::MutationContext;
 use std::convert::Into;
@@ -33,7 +33,7 @@ fn get_conversion_mode<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Avm1String::from("KOREAN").into())
+    Ok("KOREAN".into())
 }
 
 fn get_enabled<'gc>(
@@ -85,49 +85,49 @@ pub fn create<'gc>(
     ime.define_value(
         gc_context,
         "ALPHANUMERIC_FULL",
-        Avm1String::from("ALPHANUMERIC_FULL").into(),
+        "ALPHANUMERIC_FULL".into(),
         Attribute::DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "ALPHANUMERIC_HALF",
-        Avm1String::from("ALPHANUMERIC_HALF").into(),
+        "ALPHANUMERIC_HALF".into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "CHINESE",
-        Avm1String::from("CHINESE").into(),
+        "CHINESE".into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "JAPANESE_HIRAGANA",
-        Avm1String::from("JAPANESE_HIRAGANA").into(),
+        "JAPANESE_HIRAGANA".into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "JAPANESE_KATAKANA_FULL",
-        Avm1String::from("JAPANESE_KATAKANA_FULL").into(),
+        "JAPANESE_KATAKANA_FULL".into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "KOREAN",
-        Avm1String::from("KOREAN").into(),
+        "KOREAN".into(),
         DontDelete | ReadOnly | DontEnum,
     );
 
     ime.define_value(
         gc_context,
         "UNKNOWN",
-        Avm1String::from("UNKNOWN").into(),
+        "UNKNOWN".into(),
         DontDelete | ReadOnly | DontEnum,
     );
 

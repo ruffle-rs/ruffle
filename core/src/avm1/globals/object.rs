@@ -3,7 +3,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
-use crate::avm1::{Avm1String, Object, TObject, UpdateContext, Value};
+use crate::avm1::{Object, TObject, UpdateContext, Value};
 use crate::character::Character;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -93,7 +93,7 @@ fn to_string<'gc>(
     _: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Avm1String::from("[object Object]").into())
+    Ok("[object Object]".into())
 }
 
 /// Implements `Object.prototype.isPropertyEnumerable`
