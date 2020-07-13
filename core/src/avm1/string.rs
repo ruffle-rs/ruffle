@@ -11,11 +11,11 @@ enum Source<'gc> {
 
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
-pub struct Avm1String<'gc> {
+pub struct AvmString<'gc> {
     source: Source<'gc>,
 }
 
-impl<'gc> Avm1String<'gc> {
+impl<'gc> AvmString<'gc> {
     pub fn new<S: Into<String>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
         Self {
             source: Source::Owned(Gc::allocate(gc_context, string.into())),
@@ -27,7 +27,7 @@ impl<'gc> Avm1String<'gc> {
     }
 }
 
-impl Default for Avm1String<'_> {
+impl Default for AvmString<'_> {
     fn default() -> Self {
         Self {
             source: Source::Static(""),
@@ -35,7 +35,7 @@ impl Default for Avm1String<'_> {
     }
 }
 
-impl<'gc> From<&'static str> for Avm1String<'gc> {
+impl<'gc> From<&'static str> for AvmString<'gc> {
     fn from(str: &'static str) -> Self {
         Self {
             source: Source::Static(str),
@@ -43,13 +43,13 @@ impl<'gc> From<&'static str> for Avm1String<'gc> {
     }
 }
 
-impl fmt::Display for Avm1String<'_> {
+impl fmt::Display for AvmString<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self)
     }
 }
 
-impl Deref for Avm1String<'_> {
+impl Deref for AvmString<'_> {
     type Target = str;
 
     #[inline]
@@ -61,7 +61,7 @@ impl Deref for Avm1String<'_> {
     }
 }
 
-impl AsRef<str> for Avm1String<'_> {
+impl AsRef<str> for AvmString<'_> {
     #[inline]
     fn as_ref(&self) -> &str {
         match &self.source {
@@ -71,9 +71,9 @@ impl AsRef<str> for Avm1String<'_> {
     }
 }
 
-impl<'gc> PartialEq<Avm1String<'gc>> for Avm1String<'gc> {
+impl<'gc> PartialEq<AvmString<'gc>> for AvmString<'gc> {
     #[inline]
-    fn eq(&self, other: &Avm1String<'gc>) -> bool {
+    fn eq(&self, other: &AvmString<'gc>) -> bool {
         PartialEq::eq(self.as_str(), other.as_str())
     }
 }
@@ -98,6 +98,6 @@ macro_rules! impl_eq {
     };
 }
 
-impl_eq! { Avm1String<'_>, str }
-impl_eq! { Avm1String<'_>, &'a str }
-impl_eq! { Avm1String<'_>, String }
+impl_eq! { AvmString<'_>, str }
+impl_eq! { AvmString<'_>, &'a str }
+impl_eq! { AvmString<'_>, String }

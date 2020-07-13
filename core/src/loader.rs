@@ -1,7 +1,7 @@
 //! Management of async loaders
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::{Avm1String, Object, TObject, Value};
+use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
@@ -486,7 +486,7 @@ impl<'gc> Loader<'gc> {
                 for (k, v) in form_urlencoded::parse(&data) {
                     that.set(
                         &k,
-                        Avm1String::new(uc.gc_context, v.into_owned()).into(),
+                        AvmString::new(uc.gc_context, v.into_owned()).into(),
                         &mut activation,
                         uc,
                     )?;
@@ -589,7 +589,7 @@ impl<'gc> Loader<'gc> {
                             NEWEST_PLAYER_VERSION,
                             uc,
                             "onData",
-                            &[Avm1String::new(uc.gc_context, xmlstring).into()],
+                            &[AvmString::new(uc.gc_context, xmlstring).into()],
                         );
 
                         Ok(())

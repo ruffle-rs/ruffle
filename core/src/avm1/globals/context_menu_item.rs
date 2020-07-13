@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1String, Object};
+use crate::avm1::{AvmString, Object};
 use crate::avm1::{ScriptObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::MutationContext;
@@ -40,7 +40,7 @@ pub fn constructor<'gc>(
 
     this.set(
         "caption",
-        Avm1String::new(context.gc_context, caption).into(),
+        AvmString::new(context.gc_context, caption).into(),
         activation,
         context,
     )?;
@@ -92,7 +92,7 @@ pub fn copy<'gc>(
         context,
         copy,
         &[
-            Avm1String::new(context.gc_context, caption).into(),
+            AvmString::new(context.gc_context, caption).into(),
             callback.into(),
             separator_before.into(),
             enabled.into(),

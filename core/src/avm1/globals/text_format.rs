@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::{Avm1String, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::MutationContext;
 
 fn map_defined_to_string<'gc>(
@@ -16,7 +16,7 @@ fn map_defined_to_string<'gc>(
         Some(Value::Undefined) => Value::Null,
         Some(Value::Null) => Value::Null,
         None => Value::Null,
-        Some(v) => Avm1String::new(
+        Some(v) => AvmString::new(
             ac.gc_context,
             v.coerce_to_string(activation, ac)?.to_string(),
         )

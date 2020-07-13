@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Avm1String, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
 use crate::prelude::*;
@@ -901,7 +901,7 @@ fn to_string<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Avm1String::new(context.gc_context, movie_clip.path()).into())
+    Ok(AvmString::new(context.gc_context, movie_clip.path()).into())
 }
 
 fn local_to_global<'gc>(
@@ -946,7 +946,7 @@ fn get_bounds<'gc>(
             activation.resolve_target_display_object(
                 context,
                 movie_clip.into(),
-                Avm1String::new(context.gc_context, path.to_string()).into(),
+                AvmString::new(context.gc_context, path.to_string()).into(),
             )?
         }
         None => Some(movie_clip.into()),

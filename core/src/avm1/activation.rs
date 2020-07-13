@@ -5,7 +5,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::f64_to_wrapping_u32;
 use crate::avm1::{
-    fscommand, globals, scope, skip_actions, start_drag, Avm1, Avm1String, ScriptObject, Value,
+    fscommand, globals, scope, skip_actions, start_drag, Avm1, AvmString, ScriptObject, Value,
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
@@ -589,11 +589,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         if let Value::String(a) = a {
             let mut s = b.coerce_to_string(self, context)?.to_string();
             s.push_str(&a);
-            self.avm.push(Avm1String::new(context.gc_context, s));
+            self.avm.push(AvmString::new(context.gc_context, s));
         } else if let Value::String(b) = b {
             let mut b = b.to_string();
             b.push_str(&a.coerce_to_string(self, context)?);
-            self.avm.push(Avm1String::new(context.gc_context, b));
+            self.avm.push(AvmString::new(context.gc_context, b));
         } else {
             let result = b.coerce_to_f64(self, context)? + a.coerce_to_f64(self, context)?;
             self.avm.push(result);
@@ -622,7 +622,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         // TODO(Herschel): Results on incorrect operands?
         let val = (self.avm.pop().coerce_to_f64(self, context)? as u8) as char;
         self.avm
-            .push(Avm1String::new(context.gc_context, val.to_string()));
+            .push(AvmString::new(context.gc_context, val.to_string()));
         Ok(FrameControl::Continue)
     }
 
@@ -1061,7 +1061,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         match object {
             Value::Object(ob) => {
                 for k in ob.get_keys(self).into_iter().rev() {
-                    self.avm.push(Avm1String::new(context.gc_context, k));
+                    self.avm.push(AvmString::new(context.gc_context, k));
                 }
             }
             _ => log::error!("Cannot enumerate properties of {}", name),
@@ -1080,7 +1080,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
         if let Value::Object(object) = value {
             for k in object.get_keys(self).into_iter().rev() {
-                self.avm.push(Avm1String::new(context.gc_context, k));
+                self.avm.push(AvmString::new(context.gc_context, k));
             }
         } else {
             log::warn!("Cannot enumerate {:?}", value);
@@ -1574,7 +1574,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         match result {
             Ok(val) => self
                 .avm
-                .push(Avm1String::new(context.gc_context, val.to_string())),
+                .push(AvmString::new(context.gc_context, val.to_string())),
             Err(e) => log::warn!("Couldn't parse char for action_mb_ascii_to_char: {}", e),
         }
         Ok(FrameControl::Continue)
@@ -1602,7 +1602,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let val = self.avm.pop();
         let s = val.coerce_to_string(self, context)?;
         let result = s[len..len + start].to_string(); // TODO(Herschel): Flash uses UTF-16 internally.
-        self.avm.push(Avm1String::new(context.gc_context, result));
+        self.avm.push(AvmString::new(context.gc_context, result));
         Ok(FrameControl::Continue)
     }
 
@@ -1828,11 +1828,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 SwfValue::Int(v) => f64::from(*v).into(),
                 SwfValue::Float(v) => f64::from(*v).into(),
                 SwfValue::Double(v) => (*v).into(),
-                SwfValue::Str(v) => Avm1String::new(context.gc_context, (*v).to_string()).into(),
+                SwfValue::Str(v) => AvmString::new(context.gc_context, (*v).to_string()).into(),
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool().read().get(*i as usize) {
-                        Avm1String::new(context.gc_context, value.to_string()).into()
+                        AvmString::new(context.gc_context, value.to_string()).into()
                     } else {
                         log::warn!(
                             "ActionPush: Constant pool index {} out of range (len = {})",
@@ -2125,7 +2125,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let a = self.avm.pop();
         let mut b = self.avm.pop().coerce_to_string(self, context)?.to_string();
         b.push_str(&a.coerce_to_string(self, context)?);
-        self.avm.push(Avm1String::new(context.gc_context, b));
+        self.avm.push(AvmString::new(context.gc_context, b));
         Ok(FrameControl::Continue)
     }
 
@@ -2160,7 +2160,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             .take(len)
             .map(|c| c as char)
             .collect::<String>();
-        self.avm.push(Avm1String::new(context.gc_context, result));
+        self.avm.push(AvmString::new(context.gc_context, result));
         Ok(FrameControl::Continue)
     }
 
@@ -2265,7 +2265,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let val = self.avm.pop();
         let string = val.coerce_to_string(self, context)?;
         self.avm
-            .push(Avm1String::new(context.gc_context, string.to_string()));
+            .push(AvmString::new(context.gc_context, string.to_string()));
         Ok(FrameControl::Continue)
     }
 
@@ -2291,7 +2291,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let type_of = self.avm.pop().type_of();
         self.avm
-            .push(Avm1String::new(context.gc_context, type_of.to_string()));
+            .push(AvmString::new(context.gc_context, type_of.to_string()));
         Ok(FrameControl::Continue)
     }
 

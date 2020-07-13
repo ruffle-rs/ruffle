@@ -42,7 +42,7 @@ pub use object::stage_object::StageObject;
 pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
 use smallvec::alloc::borrow::Cow;
-pub use string::Avm1String;
+pub use string::AvmString;
 pub use timer::Timers;
 pub use value::Value;
 

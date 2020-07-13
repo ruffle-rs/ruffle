@@ -1,6 +1,6 @@
 //! Classes that store formatting options
 use crate::avm1::activation::Activation;
-use crate::avm1::{Avm1String, Object, ScriptObject, TObject, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::tag_utils::SwfMovie;
@@ -362,7 +362,7 @@ impl TextFormat {
             "font",
             self.font
                 .clone()
-                .map(|v| Avm1String::new(uc.gc_context, v).into())
+                .map(|v| AvmString::new(uc.gc_context, v).into())
                 .unwrap_or(Value::Null),
             activation,
             uc,
@@ -386,7 +386,7 @@ impl TextFormat {
             "align",
             self.align
                 .map(|v| {
-                    Avm1String::new(
+                    AvmString::new(
                         uc.gc_context,
                         match v {
                             swf::TextAlign::Left => "left",
@@ -472,7 +472,7 @@ impl TextFormat {
             "url",
             self.url
                 .clone()
-                .map(|v| Avm1String::new(uc.gc_context, v).into())
+                .map(|v| AvmString::new(uc.gc_context, v).into())
                 .unwrap_or(Value::Null),
             activation,
             uc,
@@ -481,7 +481,7 @@ impl TextFormat {
             "target",
             self.target
                 .clone()
-                .map(|v| Avm1String::new(uc.gc_context, v).into())
+                .map(|v| AvmString::new(uc.gc_context, v).into())
                 .unwrap_or(Value::Null),
             activation,
             uc,

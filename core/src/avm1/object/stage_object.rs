@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1String, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
+use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip};
 use crate::property_map::PropertyMap;
@@ -853,7 +853,7 @@ fn target<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Avm1String::new(context.gc_context, this.slash_path()).into())
+    Ok(AvmString::new(context.gc_context, this.slash_path()).into())
 }
 
 fn frames_loaded<'gc>(
@@ -873,7 +873,7 @@ fn name<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Avm1String::new(context.gc_context, this.name().to_string()).into())
+    Ok(AvmString::new(context.gc_context, this.name().to_string()).into())
 }
 
 fn set_name<'gc>(

@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1String, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::cmp::Ordering;
@@ -246,7 +246,7 @@ pub fn join<'gc>(
         .unwrap_or_else(|| ",".into());
     let values: Vec<Value<'gc>> = this.array();
 
-    Ok(Avm1String::new(
+    Ok(AvmString::new(
         context.gc_context,
         values
             .iter()

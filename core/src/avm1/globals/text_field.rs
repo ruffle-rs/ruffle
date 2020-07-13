@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::globals::display_object;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Avm1String, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::html::TextFormat;
 use gc_arena::MutationContext;
@@ -26,7 +26,7 @@ pub fn get_text<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
-            return Ok(Avm1String::new(context.gc_context, text_field.text()).into());
+            return Ok(AvmString::new(context.gc_context, text_field.text()).into());
         }
     }
     Ok(Value::Undefined)
@@ -93,7 +93,7 @@ pub fn get_html_text<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Ok(text) = text_field.html_text(context) {
-                return Ok(Avm1String::new(context.gc_context, text).into());
+                return Ok(AvmString::new(context.gc_context, text).into());
             }
         }
     }
@@ -303,7 +303,7 @@ fn variable<'gc>(
         .and_then(|dobj| dobj.as_edit_text())
     {
         if let Some(variable) = etext.variable() {
-            return Ok(Avm1String::new(context.gc_context, variable.to_string()).into());
+            return Ok(AvmString::new(context.gc_context, variable.to_string()).into());
         }
     }
 
