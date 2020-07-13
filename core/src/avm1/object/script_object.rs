@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, ExecutionReason, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
-use crate::avm1::{Avm1String, Object, ObjectPtr, TObject, UpdateContext, Value};
+use crate::avm1::{AvmString, Object, ObjectPtr, TObject, UpdateContext, Value};
 use crate::property_map::{Entry, PropertyMap};
 use core::fmt;
 use enumset::EnumSet;
@@ -45,7 +45,7 @@ impl<'gc> Watcher<'gc> {
         base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, crate::avm1::error::Error<'gc>> {
         let args = [
-            Value::String(Avm1String::new(context.gc_context, name.to_string())),
+            Value::String(AvmString::new(context.gc_context, name.to_string())),
             old_value,
             new_value,
             self.user_data.clone(),

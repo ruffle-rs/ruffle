@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
-use crate::avm1::{Avm1String, Object, TObject, Value};
+use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -264,10 +264,7 @@ fn to_string<'gc>(
             this.get("alphaOffset", activation, context)?.coerce_to_string(activation, context)?
     );
 
-    Ok(Value::String(Avm1String::new(
-        context.gc_context,
-        formatted,
-    )))
+    Ok(Value::String(AvmString::new(context.gc_context, formatted)))
 }
 
 fn concat<'gc>(

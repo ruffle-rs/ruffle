@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Avm1String, Object, TObject, Value};
+use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -143,7 +143,7 @@ fn to_string<'gc>(
 
     if radix == 10 {
         // Output number as floating-point decimal.
-        Ok(Avm1String::new(
+        Ok(AvmString::new(
             context.gc_context,
             Value::from(this)
                 .coerce_to_string(activation, context)?
@@ -177,7 +177,7 @@ fn to_string<'gc>(
             i += 1;
         }
         let out: String = digits[..i].iter().rev().collect();
-        Ok(Avm1String::new(context.gc_context, out).into())
+        Ok(AvmString::new(context.gc_context, out).into())
     } else {
         // NaN or large numbers.
         // Player version specific behavior:

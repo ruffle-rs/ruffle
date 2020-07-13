@@ -1,7 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::{Avm1String, Object, TObject, Value};
+use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -83,7 +83,7 @@ fn recursive_deserialize<'gc>(
                 object.define_value(
                     context.gc_context,
                     entry.0,
-                    Value::String(Avm1String::new(context.gc_context, val)),
+                    Value::String(AvmString::new(context.gc_context, val)),
                     EnumSet::empty(),
                 );
             }
@@ -91,7 +91,7 @@ fn recursive_deserialize<'gc>(
                 object.define_value(
                     context.gc_context,
                     entry.0,
-                    Value::String(Avm1String::new(context.gc_context, s.clone())),
+                    Value::String(AvmString::new(context.gc_context, s.clone())),
                     EnumSet::empty(),
                 );
             }

@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::point::{construct_new_point, point_to_object, value_to_point};
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1String, Object, ScriptObject, TObject, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -63,7 +63,7 @@ fn to_string<'gc>(
     let width = this.get("width", activation, context)?;
     let height = this.get("height", activation, context)?;
 
-    Ok(Avm1String::new(
+    Ok(AvmString::new(
         context.gc_context,
         format!(
             "(x={}, y={}, w={}, h={})",

@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1String, Object, ScriptObject, TObject, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -233,7 +233,7 @@ fn to_string<'gc>(
     let x = this.get("x", activation, context)?;
     let y = this.get("y", activation, context)?;
 
-    Ok(Avm1String::new(
+    Ok(AvmString::new(
         context.gc_context,
         format!(
             "(x={}, y={})",

@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::{Avm1String, Object, TObject, Value};
+use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -83,7 +83,7 @@ pub fn to_string<'gc>(
         // Must be a bool.
         // Boolean.prototype.toString.call(x) returns undefined for non-bools.
         if let Value::Bool(b) = vbox.unbox() {
-            return Ok(Avm1String::new(context.gc_context, b.to_string()).into());
+            return Ok(AvmString::new(context.gc_context, b.to_string()).into());
         }
     }
 

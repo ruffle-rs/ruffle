@@ -1,7 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::{Avm1String, Object, TObject, UpdateContext};
+use crate::avm1::{AvmString, Object, TObject, UpdateContext};
 use std::borrow::Cow;
 use std::f64::NAN;
 
@@ -12,12 +12,12 @@ pub enum Value<'gc> {
     Null,
     Bool(bool),
     Number(f64),
-    String(Avm1String<'gc>),
+    String(AvmString<'gc>),
     Object(Object<'gc>),
 }
 
-impl<'gc> From<Avm1String<'gc>> for Value<'gc> {
-    fn from(string: Avm1String<'gc>) -> Self {
+impl<'gc> From<AvmString<'gc>> for Value<'gc> {
+    fn from(string: AvmString<'gc>) -> Self {
         Value::String(string)
     }
 }
@@ -457,7 +457,7 @@ impl<'gc> Value<'gc> {
         &'a self,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Avm1String<'gc>, Error<'gc>> {
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Object(object) => {
                 match object.call_method("toString", &[], activation, context)? {
@@ -477,7 +477,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(false) => "false".into(),
             Value::Number(v) => match f64_to_string(*v) {
                 Cow::Borrowed(str) => str.into(),
-                Cow::Owned(str) => Avm1String::new(context.gc_context, str),
+                Cow::Owned(str) => AvmString::new(context.gc_context, str),
             },
             Value::String(v) => v.to_owned(),
         })
@@ -604,7 +604,7 @@ mod test {
     use crate::avm1::object::script_object::ScriptObject;
     use crate::avm1::object::{Object, TObject};
     use crate::avm1::test_utils::with_avm;
-    use crate::avm1::{Avm1String, Value};
+    use crate::avm1::{AvmString, Value};
     use crate::context::UpdateContext;
     use enumset::EnumSet;
     use std::f64::{INFINITY, NAN, NEG_INFINITY};
@@ -799,8 +799,8 @@ mod test {
     #[test]
     fn abstract_lt_str() {
         with_avm(8, |activation, context, _this| -> Result<(), Error> {
-            let a = Value::String(Avm1String::new(context.gc_context, "a".to_owned()));
-            let b = Value::String(Avm1String::new(context.gc_context, "b".to_owned()));
+            let a = Value::String(AvmString::new(context.gc_context, "a".to_owned()));
+            let b = Value::String(AvmString::new(context.gc_context, "b".to_owned()));
 
             assert_eq!(
                 a.abstract_lt(b, activation, context).unwrap(),
@@ -814,8 +814,8 @@ mod test {
     #[test]
     fn abstract_gt_str() {
         with_avm(8, |activation, context, _this| -> Result<(), Error> {
-            let a = Value::String(Avm1String::new(context.gc_context, "a".to_owned()));
-            let b = Value::String(Avm1String::new(context.gc_context, "b".to_owned()));
+            let a = Value::String(AvmString::new(context.gc_context, "a".to_owned()));
+            let b = Value::String(AvmString::new(context.gc_context, "b".to_owned()));
 
             assert_eq!(
                 b.abstract_lt(a, activation, context).unwrap(),
