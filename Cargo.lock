@@ -668,7 +668,7 @@ dependencies = [
  "sample 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "walkdir 2.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "wgpu 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wgpu 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "wgpu-native 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2094,7 +2094,7 @@ dependencies = [
  "lyon 0.15.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "raw-window-handle 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_core 0.1.0",
- "wgpu 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wgpu 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "wgpu-native 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2754,7 +2754,7 @@ dependencies = [
 
 [[package]]
 name = "wgpu"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "arrayvec 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3265,7 +3265,7 @@ dependencies = [
 "checksum weak-table 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9a8f3bf74f2d43500dea6a8291b6ac943e3465ea9936b94bd017e61b7b21dd01"
 "checksum web-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)" = "863539788676619aac1a23e2df3655e96b32b0e05eb72ca34ba045ad573c625d"
 "checksum webbrowser 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)" = "a83a4b8838569b89d2a3e7353995088e3b80c420a1269cd3d92ba8196875fc16"
-"checksum wgpu 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "af5f6afb1bbcfa2ae6bc4947377edf6b233dd78c2936a0246b972f85bf762ca8"
+"checksum wgpu 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b5dece29f3cd403aabf4056595eabe4b9af56b8bfae12445f097cf8666a41829"
 "checksum wgpu-core 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)" = "f07fd0b6b3b340465bce96286350d34b7661fb623ef24c3c2b8902ea654cd4e0"
 "checksum wgpu-native 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5f1ac9838b0715d7911352db1268e34dfd05ef347fbef0b65ae211268316a432"
 "checksum wgpu-types 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "67b69dfe001a8a6b78810c7e479717cd1898b9177dbf646611fa1f258f5a2512"
