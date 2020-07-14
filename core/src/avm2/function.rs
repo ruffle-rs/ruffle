@@ -184,7 +184,7 @@ impl<'gc> FunctionObject<'gc> {
                             .super_class_name()
                             .as_ref()
                             .map(|p| p.local_name())
-                            .unwrap_or(Some("Object".into()))
+                            .unwrap_or_else(|| Some("Object".into()))
                     )
                     .into()
                 });

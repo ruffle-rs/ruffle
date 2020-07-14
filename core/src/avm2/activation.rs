@@ -329,7 +329,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<String>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<AvmString<'gc>, Error> {
-        value::abc_string_copy(&method.abc_ref(), index, mc)
+        value::abc_string(&method.abc_ref(), index, mc)
     }
 
     /// Retrieve a namespace from the current constant pool.

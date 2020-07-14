@@ -175,23 +175,9 @@ pub fn abc_double(file: &AbcFile, index: Index<f64>) -> Result<f64, Error> {
         .ok_or_else(|| format!("Unknown double constant {}", index.0).into())
 }
 
-/// Borrow a string from an ABC constant pool, yielding `""` if the string is
-/// the zero string.
-pub fn abc_string<'a>(file: &'a AbcFile, index: Index<String>) -> Result<&'a str, Error> {
-    if index.0 == 0 {
-        return Ok("");
-    }
-
-    file.constant_pool
-        .strings
-        .get(index.0 as usize - 1)
-        .map(|s| s.as_str())
-        .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
-}
-
 /// Copy a string from an ABC constant pool, yielding `""` if the string is the
 /// zero string.
-pub fn abc_string_copy<'gc>(
+pub fn abc_string<'gc>(
     file: &AbcFile,
     index: Index<String>,
     mc: MutationContext<'gc, '_>,
@@ -241,9 +227,7 @@ pub fn abc_default_value<'gc>(
         AbcDefaultValue::Int(i) => abc_int(file, *i).map(|v| v.into()),
         AbcDefaultValue::Uint(u) => abc_uint(file, *u).map(|v| v.into()),
         AbcDefaultValue::Double(d) => abc_double(file, *d).map(|v| v.into()),
-        AbcDefaultValue::String(s) => {
-            abc_string(file, s.clone()).map(|v| AvmString::new(mc, v).into())
-        }
+        AbcDefaultValue::String(s) => abc_string(file, s.clone(), mc).map(|v| v.into()),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
         AbcDefaultValue::Null => Ok(Value::Null),

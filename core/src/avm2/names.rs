@@ -1,7 +1,7 @@
 //! AVM2 names & namespacing
 
 use crate::avm1::AvmString;
-use crate::avm2::value::{abc_string_copy, abc_string_option};
+use crate::avm2::value::{abc_string, abc_string_option};
 use crate::avm2::{Avm2, Error};
 use gc_arena::{Collect, MutationContext};
 use swf::avm2::types::{
@@ -43,21 +43,17 @@ impl<'gc> Namespace<'gc> {
             .ok_or_else(|| format!("Unknown namespace constant {}", namespace_index.0).into());
 
         Ok(match abc_namespace? {
-            AbcNamespace::Namespace(idx) => {
-                Self::Namespace(abc_string_copy(file, idx.clone(), mc)?)
-            }
-            AbcNamespace::Package(idx) => Self::Package(abc_string_copy(file, idx.clone(), mc)?),
+            AbcNamespace::Namespace(idx) => Self::Namespace(abc_string(file, idx.clone(), mc)?),
+            AbcNamespace::Package(idx) => Self::Package(abc_string(file, idx.clone(), mc)?),
             AbcNamespace::PackageInternal(idx) => {
-                Self::PackageInternal(abc_string_copy(file, idx.clone(), mc)?)
+                Self::PackageInternal(abc_string(file, idx.clone(), mc)?)
             }
-            AbcNamespace::Protected(idx) => {
-                Self::Protected(abc_string_copy(file, idx.clone(), mc)?)
-            }
-            AbcNamespace::Explicit(idx) => Self::Explicit(abc_string_copy(file, idx.clone(), mc)?),
+            AbcNamespace::Protected(idx) => Self::Protected(abc_string(file, idx.clone(), mc)?),
+            AbcNamespace::Explicit(idx) => Self::Explicit(abc_string(file, idx.clone(), mc)?),
             AbcNamespace::StaticProtected(idx) => {
-                Self::StaticProtected(abc_string_copy(file, idx.clone(), mc)?)
+                Self::StaticProtected(abc_string(file, idx.clone(), mc)?)
             }
-            AbcNamespace::Private(idx) => Self::Private(abc_string_copy(file, idx.clone(), mc)?),
+            AbcNamespace::Private(idx) => Self::Private(abc_string(file, idx.clone(), mc)?),
         })
     }
 
@@ -138,7 +134,7 @@ impl<'gc> QName<'gc> {
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } => Self {
                 ns: Namespace::from_abc_namespace(file, namespace.clone(), mc)?,
-                name: abc_string_copy(file, name.clone(), mc)?,
+                name: abc_string(file, name.clone(), mc)?,
             },
             _ => return Err("Attempted to pull QName from non-QName multiname".into()),
         })
@@ -231,7 +227,7 @@ impl<'gc> Multiname<'gc> {
             }
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => {
                 let ns = avm.pop().as_namespace()?.clone();
-                let name = avm.pop().as_string()?.clone();
+                let name = avm.pop().as_string()?;
                 Self {
                     ns: vec![ns],
                     name: Some(name),
@@ -250,7 +246,7 @@ impl<'gc> Multiname<'gc> {
             },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => {
-                let name = avm.pop().as_string()?.clone();
+                let name = avm.pop().as_string()?;
                 Self {
                     ns: Self::abc_namespace_set(file, namespace_set.clone(), mc)?,
                     name: Some(name),
