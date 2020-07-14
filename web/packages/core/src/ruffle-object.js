@@ -49,16 +49,17 @@ module.exports = class RuffleObject extends RufflePlayer {
             }
         }
         if (
-            elem.type === FLASH_MIMETYPE ||
-            elem.type === FUTURESPLASH_MIMETYPE ||
-            elem.type == FLASH7_AND_8_MIMETYPE ||
-            elem.type == FLASH_MOVIE_MIMETYPE
+            elem.type.toLowerCase() === FLASH_MIMETYPE.toLowerCase() ||
+            elem.type.toLowerCase() === FUTURESPLASH_MIMETYPE.toLowerCase() ||
+            elem.type.toLowerCase() == FLASH7_AND_8_MIMETYPE.toLowerCase() ||
+            elem.type.toLowerCase() == FLASH_MOVIE_MIMETYPE.toLowerCase()
         ) {
             return true;
         } else if (
             elem.attributes &&
             elem.attributes.classid &&
-            elem.attributes.classid.value === FLASH_ACTIVEX_CLASSID
+            elem.attributes.classid.value.toLowerCase() ===
+                FLASH_ACTIVEX_CLASSID.toLowerCase()
         ) {
             return true;
         } else if (
