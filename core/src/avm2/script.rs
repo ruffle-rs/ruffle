@@ -1,5 +1,6 @@
 //! Whole script representation
 
+use crate::avm1::AvmString;
 use crate::avm2::class::Class;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::r#trait::Trait;
@@ -45,6 +46,9 @@ pub struct TranslationUnitData<'gc> {
 
     /// All scripts loaded from the ABC's scripts list.
     scripts: HashMap<u32, GcCell<'gc, Script<'gc>>>,
+
+    /// All strings loaded from the ABC's strings list.
+    strings: HashMap<u32, AvmString<'gc>>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -56,6 +60,7 @@ impl<'gc> TranslationUnit<'gc> {
                 classes: HashMap::new(),
                 methods: HashMap::new(),
                 scripts: HashMap::new(),
+                strings: HashMap::new(),
             },
         ))
     }
@@ -137,6 +142,57 @@ impl<'gc> TranslationUnit<'gc> {
         script.write(mc).load_traits(self, script_index, mc)?;
 
         Ok(script)
+    }
+
+    /// Load a string from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such string index exists.
+    ///
+    /// This function yields `None` to signal string index zero, which callers
+    /// are free to interpret as the context demands.
+    pub fn pool_string_option(
+        self,
+        string_index: u32,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Option<AvmString<'gc>>, Error> {
+        let mut write = self.0.write(mc);
+        if let Some(string) = write.strings.get(&string_index) {
+            return Ok(Some(*string));
+        }
+
+        if string_index == 0 {
+            return Ok(None);
+        }
+
+        let avm_string = AvmString::new(
+            mc,
+            write
+                .abc
+                .0
+                .constant_pool
+                .strings
+                .get(string_index as usize - 1)
+                .ok_or_else(|| format!("Unknown string constant {}", string_index))?,
+        );
+        write.strings.insert(string_index, avm_string);
+
+        Ok(Some(avm_string))
+    }
+
+    /// Load a string from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such string index exists.
+    ///
+    /// String index 0 is always `""`. If you need to instead treat 0 as
+    /// something else, then please use `pool_string_option`.
+    pub fn pool_string(
+        self,
+        string_index: u32,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<AvmString<'gc>, Error> {
+        Ok(self
+            .pool_string_option(string_index, mc)?
+            .unwrap_or_else(|| "".into()))
     }
 }
 
