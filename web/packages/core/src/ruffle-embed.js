@@ -45,10 +45,10 @@ module.exports = class RuffleEmbed extends RufflePlayer {
             return false;
         }
         if (
-            elem.type === FLASH_MIMETYPE ||
-            elem.type === FUTURESPLASH_MIMETYPE ||
-            elem.type == FLASH7_AND_8_MIMETYPE ||
-            elem.type == FLASH_MOVIE_MIMETYPE
+            elem.type.toLowerCase() === FLASH_MIMETYPE.toLowerCase() ||
+            elem.type.toLowerCase() === FUTURESPLASH_MIMETYPE.toLowerCase() ||
+            elem.type.toLowerCase() == FLASH7_AND_8_MIMETYPE.toLowerCase() ||
+            elem.type.toLowerCase() == FLASH_MOVIE_MIMETYPE.toLowerCase()
         ) {
             return true;
         } else if (elem.type === undefined || elem.type === "") {
