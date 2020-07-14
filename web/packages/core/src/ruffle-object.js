@@ -67,8 +67,14 @@ module.exports = class RuffleObject extends RufflePlayer {
             elem.attributes.classid === undefined
         ) {
             let params = RuffleObject.params_of(elem);
-            if (params && params.movie) {
-                return is_swf_filename(params.movie);
+            if (elem.data && is_swf_filename(elem.data)) {
+                return true;
+            } else if (
+                params &&
+                params.movie &&
+                is_swf_filename(params.movie)
+            ) {
+                return true;
             }
         }
 
