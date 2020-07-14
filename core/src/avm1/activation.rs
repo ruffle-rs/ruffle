@@ -2670,15 +2670,12 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// Returns the parent object that owns the variable, and the variable name.
     /// Returns `None` if the path does not yet point to a valid object.
     /// TODO: This can probably be merged with some of the above `resolve_target_path` methods.
-    pub fn resolve_text_field_variable_path<'s>(
+    pub fn resolve_variable_path<'s>(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        text_field_parent: DisplayObject<'gc>,
+        start: DisplayObject<'gc>,
         path: &'s str,
     ) -> Result<Option<(Object<'gc>, &'s str)>, Error<'gc>> {
-        // Resolve a variable path for a GetVariable action.
-        let start = text_field_parent;
-
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
         // We also check for a / to skip some unnecessary work later.

@@ -722,7 +722,7 @@ impl<'gc> EditText<'gc> {
                 context,
                 |activation, context| {
                     if let Ok(Some((object, property))) =
-                        activation.resolve_text_field_variable_path(context, parent, &variable)
+                        activation.resolve_variable_path(context, parent, &variable)
                     {
                         // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
                         if set_initial_value {
@@ -791,7 +791,7 @@ impl<'gc> EditText<'gc> {
                 let variable_path = variable.to_string();
                 drop(variable);
 
-                if let Ok(Some((object, property))) = activation.resolve_text_field_variable_path(
+                if let Ok(Some((object, property))) = activation.resolve_variable_path(
                     context,
                     self.parent().unwrap(),
                     &variable_path,
