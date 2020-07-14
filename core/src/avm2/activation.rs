@@ -1,5 +1,6 @@
 //! Activation frames
 
+use crate::avm1::AvmString;
 use crate::avm2::class::Class;
 use crate::avm2::function::FunctionObject;
 use crate::avm2::method::BytecodeMethod;
@@ -13,7 +14,6 @@ use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
-use std::cell::Ref;
 use std::io::Cursor;
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
@@ -327,23 +327,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         &self,
         method: &'b BytecodeMethod<'gc>,
         index: Index<String>,
-    ) -> Result<Ref<'b, str>, Error> {
-        let mut maybe_error = None;
-        let maybe_ref = Ref::map(method.abc_ref(), |abc| {
-            match value::abc_string(abc, index) {
-                Ok(s) => s,
-                Err(e) => {
-                    maybe_error = Some(e);
-                    ""
-                }
-            }
-        });
-
-        if let Some(err) = maybe_error {
-            Err(err)
-        } else {
-            Ok(maybe_ref)
-        }
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<AvmString<'gc>, Error> {
+        value::abc_string_copy(&method.abc_ref(), index, mc)
     }
 
     /// Retrieve a namespace from the current constant pool.
@@ -351,8 +337,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         &self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcNamespace>,
-    ) -> Result<Namespace, Error> {
-        Namespace::from_abc_namespace(&method.abc(), index)
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Namespace<'gc>, Error> {
+        Namespace::from_abc_namespace(&method.abc(), index, mc)
     }
 
     /// Retrieve a multiname from the current constant pool.
@@ -360,8 +347,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
-    ) -> Result<Multiname, Error> {
-        Multiname::from_abc_multiname(&method.abc(), index, self.avm2)
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Multiname<'gc>, Error> {
+        Multiname::from_abc_multiname(&method.abc(), index, self.avm2, mc)
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
@@ -370,8 +358,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
-    ) -> Result<Multiname, Error> {
-        Multiname::from_abc_multiname_static(&method.abc(), index)
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Multiname<'gc>, Error> {
+        Multiname::from_abc_multiname_static(&method.abc(), index, mc)
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
@@ -433,11 +422,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 Op::PushDouble { value } => self.op_push_double(method, value),
                 Op::PushFalse => self.op_push_false(),
                 Op::PushInt { value } => self.op_push_int(method, value),
-                Op::PushNamespace { value } => self.op_push_namespace(method, value),
+                Op::PushNamespace { value } => self.op_push_namespace(context, method, value),
                 Op::PushNaN => self.op_push_nan(),
                 Op::PushNull => self.op_push_null(),
                 Op::PushShort { value } => self.op_push_short(value),
-                Op::PushString { value } => self.op_push_string(method, value),
+                Op::PushString { value } => self.op_push_string(context, method, value),
                 Op::PushTrue => self.op_push_true(),
                 Op::PushUint { value } => self.op_push_uint(method, value),
                 Op::PushUndefined => self.op_push_undefined(),
@@ -574,10 +563,12 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_push_namespace(
         &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<AbcNamespace>,
     ) -> Result<FrameControl<'gc>, Error> {
-        self.avm2.push(self.pool_namespace(method, value)?);
+        self.avm2
+            .push(self.pool_namespace(method, value, context.gc_context)?);
         Ok(FrameControl::Continue)
     }
 
@@ -598,11 +589,12 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn op_push_string(
         &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<String>,
     ) -> Result<FrameControl<'gc>, Error> {
         self.avm2
-            .push(self.pool_string(&method, value)?.to_string());
+            .push(self.pool_string(&method, value, context.gc_context)?);
         Ok(FrameControl::Continue)
     }
 
@@ -708,7 +700,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let mut receiver = self.avm2.pop().as_object()?;
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
@@ -733,7 +725,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let mut receiver = self.avm2.pop().as_object()?;
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
@@ -756,7 +748,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let mut receiver = self.avm2.pop().as_object()?;
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
@@ -805,7 +797,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let receiver = self.avm2.pop().as_object()?;
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
@@ -838,7 +830,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let receiver = self.avm2.pop().as_object()?;
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
@@ -877,7 +869,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let mut object = self.avm2.pop().as_object()?;
 
         let name: Result<QName, Error> = object.resolve_multiname(&multiname)?.ok_or_else(|| {
@@ -897,7 +889,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.avm2.pop();
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let mut object = self.avm2.pop().as_object()?;
 
         if let Some(name) = object.resolve_multiname(&multiname)? {
@@ -905,7 +897,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         } else {
             //TODO: Non-dynamic objects should fail
             //TODO: This should only work if the public namespace is present
-            let local_name: Result<&str, Error> = multiname
+            let local_name: Result<AvmString<'gc>, Error> = multiname
                 .local_name()
                 .ok_or_else(|| "Cannot set property using any name".into());
             let name = QName::dynamic_name(local_name?);
@@ -922,7 +914,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.avm2.pop();
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let mut object = self.avm2.pop().as_object()?;
 
         if let Some(name) = object.resolve_multiname(&multiname)? {
@@ -930,7 +922,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         } else {
             //TODO: Non-dynamic objects should fail
             //TODO: This should only work if the public namespace is present
-            let local_name: Result<&str, Error> = multiname
+            let local_name: Result<AvmString<'gc>, Error> = multiname
                 .local_name()
                 .ok_or_else(|| "Cannot set property using any name".into());
             let name = QName::dynamic_name(local_name?);
@@ -946,7 +938,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let object = self.avm2.pop().as_object()?;
 
         if let Some(name) = object.resolve_multiname(&multiname)? {
@@ -965,7 +957,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let object = self.avm2.pop().as_object()?;
         let base_proto: Result<Object<'gc>, Error> = self
             .base_proto()
@@ -996,7 +988,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.avm2.pop();
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let object = self.avm2.pop().as_object()?;
         let base_proto: Result<Object<'gc>, Error> = self
             .base_proto()
@@ -1100,7 +1092,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         avm_debug!("Resolving {:?}", multiname);
         let result = if let Some(scope) = self.scope() {
             scope.read().find(&multiname, self, context)?
@@ -1120,7 +1112,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         avm_debug!("Resolving {:?}", multiname);
         let found: Result<Object<'gc>, Error> = if let Some(scope) = self.scope() {
             scope.read().find(&multiname, self, context)?
@@ -1141,7 +1133,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname_static(method, index)?;
+        let multiname = self.pool_multiname_static(method, index, context.gc_context)?;
         avm_debug!("Resolving {:?}", multiname);
         let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
             scope
@@ -1235,7 +1227,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname(method, index, context.gc_context)?;
         let mut source = self.avm2.pop().as_object()?;
 
         let ctor_name: Result<QName, Error> =
@@ -1553,7 +1545,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.avm2.pop().as_object()?;
 
-        let type_name = self.pool_multiname_static(method, type_name_index)?;
+        let type_name = self.pool_multiname_static(method, type_name_index, context.gc_context)?;
         let type_object = if let Some(scope) = self.scope() {
             scope.read().find(&type_name, self, context)?
         } else {

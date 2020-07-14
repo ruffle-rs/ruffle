@@ -22,35 +22,37 @@ pub fn constructor<'gc>(
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
     _: &mut Activation<'_, 'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     Ok(this
-        .map(|t| t.to_string())
+        .map(|t| t.to_string(context.gc_context))
         .unwrap_or(Ok(Value::Undefined))?)
 }
 
 /// Implements `Object.prototype.toLocaleString`
 fn to_locale_string<'gc>(
     _: &mut Activation<'_, 'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     Ok(this
-        .map(|t| t.to_string())
+        .map(|t| t.to_string(context.gc_context))
         .unwrap_or(Ok(Value::Undefined))?)
 }
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
     _: &mut Activation<'_, 'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Ok(this.map(|t| t.value_of()).unwrap_or(Ok(Value::Undefined))?)
+    Ok(this
+        .map(|t| t.value_of(context.gc_context))
+        .unwrap_or(Ok(Value::Undefined))?)
 }
 
 /// `Object.prototype.hasOwnProperty`
@@ -65,9 +67,9 @@ pub fn has_own_property<'gc>(
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.as_string()?;
 
-    if let Some(ns) = this.resolve_any(&name)? {
+    if let Some(ns) = this.resolve_any(name)? {
         if !ns.is_private() {
-            let qname = QName::new(ns, &name);
+            let qname = QName::new(ns, name);
             return Ok(this.has_own_property(&qname)?.into());
         }
     }
@@ -110,9 +112,9 @@ pub fn property_is_enumerable<'gc>(
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.as_string()?;
 
-    if let Some(ns) = this.resolve_any(&name)? {
+    if let Some(ns) = this.resolve_any(name)? {
         if !ns.is_private() {
-            let qname = QName::new(ns, &name);
+            let qname = QName::new(ns, name);
             return Ok(this.property_is_enumerable(&qname).into());
         }
     }
@@ -137,9 +139,9 @@ pub fn set_property_is_enumerable<'gc>(
         .unwrap_or(Value::Bool(true))
         .as_bool()?;
 
-    if let Some(ns) = this.resolve_any(&name)? {
+    if let Some(ns) = this.resolve_any(name)? {
         if !ns.is_private() {
-            let qname = QName::new(ns, &name);
+            let qname = QName::new(ns, name);
             this.set_local_property_is_enumerable(context.gc_context, &qname, is_enum)?;
         }
     }

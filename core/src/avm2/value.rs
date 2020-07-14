@@ -1,10 +1,10 @@
 //! AVM2 values
 
+use crate::avm1::AvmString;
 use crate::avm2::names::Namespace;
 use crate::avm2::object::Object;
 use crate::avm2::Error;
-use gc_arena::Collect;
-use std::borrow::Cow;
+use gc_arena::{Collect, MutationContext};
 use std::f64::NAN;
 use swf::avm2::types::{AbcFile, DefaultValue as AbcDefaultValue, Index};
 
@@ -18,20 +18,20 @@ pub enum Value<'gc> {
     Null,
     Bool(bool),
     Number(f64),
-    String(String),
-    Namespace(Namespace),
+    String(AvmString<'gc>),
+    Namespace(Namespace<'gc>),
     Object(Object<'gc>),
 }
 
-impl<'gc> From<String> for Value<'gc> {
-    fn from(string: String) -> Self {
+impl<'gc> From<AvmString<'gc>> for Value<'gc> {
+    fn from(string: AvmString<'gc>) -> Self {
         Value::String(string)
     }
 }
 
-impl<'gc> From<&str> for Value<'gc> {
-    fn from(string: &str) -> Self {
-        Value::String(string.to_owned())
+impl<'gc> From<&'static str> for Value<'gc> {
+    fn from(string: &'static str) -> Self {
+        Value::String(string.into())
     }
 }
 
@@ -98,8 +98,8 @@ impl<'gc> From<usize> for Value<'gc> {
     }
 }
 
-impl<'gc> From<Namespace> for Value<'gc> {
-    fn from(value: Namespace) -> Self {
+impl<'gc> From<Namespace<'gc>> for Value<'gc> {
+    fn from(value: Namespace<'gc>) -> Self {
         Value::Namespace(value)
     }
 }
@@ -175,8 +175,8 @@ pub fn abc_double(file: &AbcFile, index: Index<f64>) -> Result<f64, Error> {
         .ok_or_else(|| format!("Unknown double constant {}", index.0).into())
 }
 
-/// Retrieve a string from an ABC constant pool, yielding `""` if the string
-/// is the zero string.
+/// Borrow a string from an ABC constant pool, yielding `""` if the string is
+/// the zero string.
 pub fn abc_string<'a>(file: &'a AbcFile, index: Index<String>) -> Result<&'a str, Error> {
     if index.0 == 0 {
         return Ok("");
@@ -189,6 +189,24 @@ pub fn abc_string<'a>(file: &'a AbcFile, index: Index<String>) -> Result<&'a str
         .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
 }
 
+/// Copy a string from an ABC constant pool, yielding `""` if the string is the
+/// zero string.
+pub fn abc_string_copy<'gc>(
+    file: &AbcFile,
+    index: Index<String>,
+    mc: MutationContext<'gc, '_>,
+) -> Result<AvmString<'gc>, Error> {
+    if index.0 == 0 {
+        return Ok("".into());
+    }
+
+    file.constant_pool
+        .strings
+        .get(index.0 as usize - 1)
+        .map(|s| AvmString::new(mc, s.as_str()))
+        .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
+}
+
 /// Retrieve a string from an ABC constant pool, yielding `None` if the string
 /// is the zero string.
 ///
@@ -196,10 +214,11 @@ pub fn abc_string<'a>(file: &'a AbcFile, index: Index<String>) -> Result<&'a str
 /// should cause the runtime to halt. `None` indicates that the zero string is
 /// in use, which callers are free to interpret as necessary (although this
 /// usually means "any name").
-pub fn abc_string_option<'a>(
-    file: &'a AbcFile,
+pub fn abc_string_option<'gc>(
+    file: &AbcFile,
     index: Index<String>,
-) -> Result<Option<&'a str>, Error> {
+    mc: MutationContext<'gc, '_>,
+) -> Result<Option<AvmString<'gc>>, Error> {
     if index.0 == 0 {
         return Ok(None);
     }
@@ -207,7 +226,7 @@ pub fn abc_string_option<'a>(
     file.constant_pool
         .strings
         .get(index.0 as usize - 1)
-        .map(|s| s.as_str())
+        .map(|s| AvmString::new(mc, s.as_str()))
         .map(Some)
         .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
 }
@@ -216,12 +235,15 @@ pub fn abc_string_option<'a>(
 pub fn abc_default_value<'gc>(
     file: &AbcFile,
     default: &AbcDefaultValue,
+    mc: MutationContext<'gc, '_>,
 ) -> Result<Value<'gc>, Error> {
     match default {
         AbcDefaultValue::Int(i) => abc_int(file, *i).map(|v| v.into()),
         AbcDefaultValue::Uint(u) => abc_uint(file, *u).map(|v| v.into()),
         AbcDefaultValue::Double(d) => abc_double(file, *d).map(|v| v.into()),
-        AbcDefaultValue::String(s) => abc_string(file, s.clone()).map(|v| v.into()),
+        AbcDefaultValue::String(s) => {
+            abc_string(file, s.clone()).map(|v| AvmString::new(mc, v).into())
+        }
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
         AbcDefaultValue::Null => Ok(Value::Null),
@@ -233,7 +255,7 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
         | AbcDefaultValue::Private(ns) => {
-            Namespace::from_abc_namespace(file, ns.clone()).map(|v| v.into())
+            Namespace::from_abc_namespace(file, ns.clone(), mc).map(|v| v.into())
         }
     }
 }
@@ -250,20 +272,20 @@ impl<'gc> Value<'gc> {
     /// Demand a string value, erroring out if one is not found.
     ///
     /// TODO: This should be replaced with `coerce_string` where possible.
-    pub fn as_string(&self) -> Result<&String, Error> {
+    pub fn as_string(&self) -> Result<AvmString<'gc>, Error> {
         match self {
-            Value::String(s) => Ok(s),
+            Value::String(s) => Ok(*s),
             _ => Err(format!("Expected String, found {:?}", self).into()),
         }
     }
 
     /// Coerce a value into a string.
-    pub fn coerce_string(self) -> Cow<'static, str> {
+    pub fn coerce_string(self) -> AvmString<'gc> {
         match self {
-            Value::String(s) => Cow::Owned(s),
-            Value::Bool(true) => Cow::Borrowed("true"),
-            Value::Bool(false) => Cow::Borrowed("false"),
-            _ => Cow::Borrowed(""),
+            Value::String(s) => s,
+            Value::Bool(true) => "true".into(),
+            Value::Bool(false) => "false".into(),
+            _ => "".into(),
         }
     }
 
@@ -282,7 +304,7 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn as_namespace(&self) -> Result<&Namespace, Error> {
+    pub fn as_namespace(&self) -> Result<&Namespace<'gc>, Error> {
         match self {
             Value::Namespace(ns) => Ok(ns),
             _ => Err(format!("Expected Namespace, found {:?}", self).into()),

@@ -1,5 +1,6 @@
 //! AVM2 classes
 
+use crate::avm1::AvmString;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::r#trait::{Trait, TraitKind};
@@ -13,10 +14,10 @@ use swf::avm2::types::{Class as AbcClass, Instance as AbcInstance};
 #[collect(no_drop)]
 pub struct Class<'gc> {
     /// The name of the class.
-    name: QName,
+    name: QName<'gc>,
 
     /// The name of this class's superclass.
-    super_class: Option<Multiname>,
+    super_class: Option<Multiname<'gc>>,
 
     /// If this class is sealed (dynamic property writes should fail)
     is_sealed: bool,
@@ -28,10 +29,10 @@ pub struct Class<'gc> {
     is_interface: bool,
 
     /// The namespace that protected traits of this class are stored into.
-    protected_namespace: Option<Namespace>,
+    protected_namespace: Option<Namespace<'gc>>,
 
     /// The list of interfaces this class implements.
-    interfaces: Vec<Multiname>,
+    interfaces: Vec<Multiname<'gc>>,
 
     /// The instance initializer for this class.
     ///
@@ -66,7 +67,7 @@ pub struct Class<'gc> {
 ///
 /// TODO: This is an O(n^2) algorithm, it sucks.
 fn do_trait_lookup<'gc>(
-    name: &QName,
+    name: &QName<'gc>,
     known_traits: &mut Vec<Trait<'gc>>,
     all_traits: &[Trait<'gc>],
 ) -> Result<(), Error> {
@@ -119,18 +120,19 @@ impl<'gc> Class<'gc> {
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let name = QName::from_abc_multiname(&unit.abc(), abc_instance.name.clone())?;
+        let name = QName::from_abc_multiname(&unit.abc(), abc_instance.name.clone(), mc)?;
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
             Some(Multiname::from_abc_multiname_static(
                 &unit.abc(),
                 abc_instance.super_name.clone(),
+                mc,
             )?)
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
-            Some(Namespace::from_abc_namespace(&unit.abc(), ns.clone())?)
+            Some(Namespace::from_abc_namespace(&unit.abc(), ns.clone(), mc)?)
         } else {
             None
         };
@@ -140,6 +142,7 @@ impl<'gc> Class<'gc> {
             interfaces.push(Multiname::from_abc_multiname_static(
                 &unit.abc(),
                 interface_name.clone(),
+                mc,
             )?);
         }
 
@@ -209,11 +212,11 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
-    pub fn name(&self) -> &QName {
+    pub fn name(&self) -> &QName<'gc> {
         &self.name
     }
 
-    pub fn super_class_name(&self) -> &Option<Multiname> {
+    pub fn super_class_name(&self) -> &Option<Multiname<'gc>> {
         &self.super_class
     }
 
@@ -229,14 +232,14 @@ impl<'gc> Class<'gc> {
     /// returns an error.
     pub fn lookup_class_traits(
         &self,
-        name: &QName,
+        name: &QName<'gc>,
         known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         do_trait_lookup(name, known_traits, &self.class_traits)
     }
 
     /// Determines if this class provides a given trait on itself.
-    pub fn has_class_trait(&self, name: &QName) -> bool {
+    pub fn has_class_trait(&self, name: &QName<'gc>) -> bool {
         for trait_entry in self.class_traits.iter() {
             if name == trait_entry.name() {
                 return true;
@@ -251,7 +254,7 @@ impl<'gc> Class<'gc> {
     ///
     /// TODO: Matching multiple namespaces with the same local name is at least
     /// claimed by the AVM2 specification to be a `VerifyError`.
-    pub fn resolve_any_class_trait(&self, local_name: &str) -> Option<Namespace> {
+    pub fn resolve_any_class_trait(&self, local_name: AvmString<'gc>) -> Option<Namespace<'gc>> {
         for trait_entry in self.class_traits.iter() {
             if local_name == trait_entry.name().local_name() {
                 return Some(trait_entry.name().namespace().clone());
@@ -273,14 +276,14 @@ impl<'gc> Class<'gc> {
     /// returns an error.
     pub fn lookup_instance_traits(
         &self,
-        name: &QName,
+        name: &QName<'gc>,
         known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         do_trait_lookup(name, known_traits, &self.instance_traits)
     }
 
     /// Determines if this class provides a given trait on it's instances.
-    pub fn has_instance_trait(&self, name: &QName) -> bool {
+    pub fn has_instance_trait(&self, name: &QName<'gc>) -> bool {
         for trait_entry in self.instance_traits.iter() {
             if name == trait_entry.name() {
                 return true;
@@ -295,7 +298,7 @@ impl<'gc> Class<'gc> {
     ///
     /// TODO: Matching multiple namespaces with the same local name is at least
     /// claimed by the AVM2 specification to be a `VerifyError`.
-    pub fn resolve_any_instance_trait(&self, local_name: &str) -> Option<Namespace> {
+    pub fn resolve_any_instance_trait(&self, local_name: AvmString<'gc>) -> Option<Namespace<'gc>> {
         for trait_entry in self.instance_traits.iter() {
             if local_name == trait_entry.name().local_name() {
                 return Some(trait_entry.name().namespace().clone());
@@ -315,7 +318,7 @@ impl<'gc> Class<'gc> {
         self.class_init.clone()
     }
 
-    pub fn interfaces(&self) -> &[Multiname] {
+    pub fn interfaces(&self) -> &[Multiname<'gc>] {
         &self.interfaces
     }
 }

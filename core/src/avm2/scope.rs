@@ -99,7 +99,7 @@ impl<'gc> Scope<'gc> {
     /// This function yields `None` if no such scope exists.
     pub fn find(
         &self,
-        name: &Multiname,
+        name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Option<Object<'gc>>, Error> {
@@ -122,7 +122,7 @@ impl<'gc> Scope<'gc> {
     /// property's value.
     pub fn resolve(
         &mut self,
-        name: &Multiname,
+        name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Option<Value<'gc>>, Error> {

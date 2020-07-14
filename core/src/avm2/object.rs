@@ -1,5 +1,6 @@
 //! AVM2 objects.
 
+use crate::avm1::AvmString;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::{Executable, FunctionObject};
@@ -30,7 +31,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_property_local(
         self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error>;
@@ -39,7 +40,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_property(
         &mut self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
@@ -66,7 +67,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// This function returns `None` for non-trait properties, such as actually
     /// defined prototype methods for ES3-style classes.
-    fn get_base_proto(self, name: &QName) -> Result<Option<Object<'gc>>, Error> {
+    fn get_base_proto(self, name: &QName<'gc>) -> Result<Option<Object<'gc>>, Error> {
         if self.provides_trait(name)? {
             return Ok(Some(self.into()));
         }
@@ -82,7 +83,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_property_local(
         self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -92,7 +93,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_property(
         &mut self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -126,7 +127,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn init_property_local(
         self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -136,7 +137,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn init_property(
         &mut self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -193,7 +194,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This function returns `None` if no such trait exists, or the object
     /// does not have traits. It returns `Err` if *any* trait in the object is
     /// malformed in some way.
-    fn get_trait(self, name: &QName) -> Result<Vec<Trait<'gc>>, Error>;
+    fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error>;
 
     /// Populate a list of traits that this object provides.
     ///
@@ -203,7 +204,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// has a given trait.
     fn get_provided_trait(
         &self,
-        name: &QName,
+        name: &QName<'gc>,
         known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error>;
 
@@ -217,7 +218,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
-    fn resolve_multiname(self, multiname: &Multiname) -> Result<Option<QName>, Error> {
+    fn resolve_multiname(self, multiname: &Multiname<'gc>) -> Result<Option<QName<'gc>>, Error> {
         for ns in multiname.namespace_set() {
             if ns.is_any() {
                 if let Some(name) = multiname.local_name() {
@@ -251,17 +252,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Trait names will be resolve on class constructors and object instances,
     /// but not prototypes. If you want to search a prototype's provided traits
     /// you must walk the prototype chain using `resolve_any_trait`.
-    fn resolve_any(self, local_name: &str) -> Result<Option<Namespace>, Error>;
+    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error>;
 
     /// Given a local name of a trait, find the namespace it resides in, if any.
     ///
     /// This function only works for names which are trait properties, not
     /// dynamic or prototype properties. Furthermore, instance prototypes *will*
     /// resolve trait names here, contrary to their behavior in `resolve_any.`
-    fn resolve_any_trait(self, local_name: &str) -> Result<Option<Namespace>, Error>;
+    fn resolve_any_trait(self, local_name: AvmString<'gc>)
+        -> Result<Option<Namespace<'gc>>, Error>;
 
     /// Indicates whether or not a property exists on an object.
-    fn has_property(self, name: &QName) -> Result<bool, Error> {
+    fn has_property(self, name: &QName<'gc>) -> Result<bool, Error> {
         if self.has_own_property(name)? {
             Ok(true)
         } else if let Some(proto) = self.proto() {
@@ -273,38 +275,42 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Indicates whether or not a property or trait exists on an object and is
     /// not part of the prototype chain.
-    fn has_own_property(self, name: &QName) -> Result<bool, Error>;
+    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error>;
 
     /// Returns true if an object has one or more traits of a given name.
-    fn has_trait(self, name: &QName) -> Result<bool, Error>;
+    fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error>;
 
     /// Returns true if an object is part of a class that defines a trait of a
     /// given name on itself (as opposed to merely inheriting a superclass
     /// trait.)
-    fn provides_trait(self, name: &QName) -> Result<bool, Error>;
+    fn provides_trait(self, name: &QName<'gc>) -> Result<bool, Error>;
 
     /// Indicates whether or not a property or *instantiated* trait exists on
     /// an object and is not part of the prototype chain.
     ///
     /// Unlike `has_own_property`, this will not yield `true` for traits this
     /// object can have but has not yet instantiated.
-    fn has_instantiated_property(self, name: &QName) -> bool;
+    fn has_instantiated_property(self, name: &QName<'gc>) -> bool;
 
     /// Check if a particular object contains a virtual getter by the given
     /// name.
-    fn has_own_virtual_getter(self, name: &QName) -> bool;
+    fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool;
 
     /// Check if a particular object contains a virtual setter by the given
     /// name.
-    fn has_own_virtual_setter(self, name: &QName) -> bool;
+    fn has_own_virtual_setter(self, name: &QName<'gc>) -> bool;
 
     /// Indicates whether or not a property is overwritable.
-    fn is_property_overwritable(self, gc_context: MutationContext<'gc, '_>, _name: &QName) -> bool;
+    fn is_property_overwritable(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        _name: &QName<'gc>,
+    ) -> bool;
 
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName) -> bool;
+    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool;
 
     /// Retrieve the `__proto__` of a given object.
     ///
@@ -322,18 +328,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Objects are responsible for maintaining a consistently ordered and
     /// indexed list of enumerable names which can be queried by this
     /// mechanism.
-    fn get_enumerant_name(&self, index: u32) -> Option<QName>;
+    fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>>;
 
     /// Determine if a property is currently enumerable.
     ///
     /// Properties that do not exist are also not enumerable.
-    fn property_is_enumerable(&self, name: &QName) -> bool;
+    fn property_is_enumerable(&self, name: &QName<'gc>) -> bool;
 
     /// Mark a dynamic property on this object as enumerable.
     fn set_local_property_is_enumerable(
         &self,
         mc: MutationContext<'gc, '_>,
-        name: &QName,
+        name: &QName<'gc>,
         is_enumerable: bool,
     ) -> Result<(), Error>;
 
@@ -341,7 +347,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn install_method(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
     );
@@ -350,7 +356,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn install_getter(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
     ) -> Result<(), Error>;
@@ -359,7 +365,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn install_setter(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
     ) -> Result<(), Error>;
@@ -368,7 +374,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn install_dynamic_property(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         value: Value<'gc>,
     ) -> Result<(), Error>;
 
@@ -376,7 +382,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn install_slot(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
     );
@@ -385,7 +391,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn install_const(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
     );
@@ -607,14 +613,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions happen by defining `toString` in a downstream class or
     /// prototype; this is then picked up by the VM runtime when doing
     /// coercions.
-    fn to_string(&self) -> Result<Value<'gc>, Error>;
+    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error>;
 
     /// Implement the result of calling `Object.prototype.valueOf` on this
     /// object class.
     ///
     /// `valueOf` is a method used to request an object be coerced to a
     /// primitive value. Typically, this would be a number of some kind.
-    fn value_of(&self) -> Result<Value<'gc>, Error>;
+    fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error>;
 
     /// Enumerate all interfaces implemented by this object.
     fn interfaces(&self) -> Vec<Object<'gc>>;

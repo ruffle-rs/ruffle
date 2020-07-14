@@ -1,5 +1,6 @@
 //! Global scope built-ins
 
+use crate::avm1::AvmString;
 use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionObject;
 use crate::avm2::method::NativeMethod;
@@ -43,8 +44,8 @@ pub struct SystemPrototypes<'gc> {
 fn function<'gc>(
     mc: MutationContext<'gc, '_>,
     mut global_scope: Object<'gc>,
-    package: &str,
-    name: &str,
+    package: impl Into<AvmString<'gc>>,
+    name: impl Into<AvmString<'gc>>,
     nf: NativeMethod<'gc>,
     fn_proto: Object<'gc>,
 ) {
@@ -61,8 +62,8 @@ fn function<'gc>(
 fn class<'gc>(
     mc: MutationContext<'gc, '_>,
     mut global_scope: Object<'gc>,
-    package: &str,
-    name: &str,
+    package: impl Into<AvmString<'gc>>,
+    name: impl Into<AvmString<'gc>>,
     constr: NativeMethod<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
@@ -82,8 +83,8 @@ fn class<'gc>(
 fn constant<'gc>(
     mc: MutationContext<'gc, '_>,
     mut global_scope: Object<'gc>,
-    package: &str,
-    name: &str,
+    package: impl Into<AvmString<'gc>>,
+    name: impl Into<AvmString<'gc>>,
     value: Value<'gc>,
 ) {
     global_scope.install_const(mc, QName::new(Namespace::package(package), name), 0, value)

@@ -23,7 +23,7 @@ use swf::avm2::types::{Trait as AbcTrait, TraitKind as AbcTraitKind};
 #[collect(no_drop)]
 pub struct Trait<'gc> {
     /// The name of this trait.
-    name: QName,
+    name: QName<'gc>,
 
     /// Whether or not traits in downstream classes are allowed to override
     /// this trait.
@@ -48,7 +48,7 @@ pub enum TraitKind<'gc> {
     /// to.
     Slot {
         slot_id: u32,
-        type_name: Multiname,
+        type_name: Multiname<'gc>,
         default_value: Option<Value<'gc>>,
     },
 
@@ -75,7 +75,7 @@ pub enum TraitKind<'gc> {
     /// be overridden.
     Const {
         slot_id: u32,
-        type_name: Multiname,
+        type_name: Multiname<'gc>,
         default_value: Option<Value<'gc>>,
     },
 }
@@ -87,7 +87,7 @@ impl<'gc> Trait<'gc> {
         abc_trait: &AbcTrait,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Self, Error> {
-        let name = QName::from_abc_multiname(&unit.abc(), abc_trait.name.clone())?;
+        let name = QName::from_abc_multiname(&unit.abc(), abc_trait.name.clone(), mc)?;
 
         Ok(match &abc_trait.kind {
             AbcTraitKind::Slot {
@@ -103,10 +103,10 @@ impl<'gc> Trait<'gc> {
                     type_name: if type_name.0 == 0 {
                         Multiname::any()
                     } else {
-                        Multiname::from_abc_multiname_static(&unit.abc(), type_name.clone())?
+                        Multiname::from_abc_multiname_static(&unit.abc(), type_name.clone(), mc)?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(&unit.abc(), &dv)?)
+                        Some(abc_default_value(&unit.abc(), &dv, mc)?)
                     } else {
                         None
                     },
@@ -170,10 +170,10 @@ impl<'gc> Trait<'gc> {
                     type_name: if type_name.0 == 0 {
                         Multiname::any()
                     } else {
-                        Multiname::from_abc_multiname_static(&unit.abc(), type_name.clone())?
+                        Multiname::from_abc_multiname_static(&unit.abc(), type_name.clone(), mc)?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(&unit.abc(), &dv)?)
+                        Some(abc_default_value(&unit.abc(), &dv, mc)?)
                     } else {
                         None
                     },
@@ -182,7 +182,7 @@ impl<'gc> Trait<'gc> {
         })
     }
 
-    pub fn name(&self) -> &QName {
+    pub fn name(&self) -> &QName<'gc> {
         &self.name
     }
 

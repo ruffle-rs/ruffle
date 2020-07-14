@@ -1,5 +1,6 @@
 //! Default AVM2 object impl
 
+use crate::avm1::AvmString;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
@@ -52,7 +53,7 @@ pub enum ScriptObjectClass<'gc> {
 #[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
     /// Properties stored on this object.
-    values: HashMap<QName, Property<'gc>>,
+    values: HashMap<QName<'gc>, Property<'gc>>,
 
     /// Slots stored on this object.
     slots: Vec<Slot<'gc>>,
@@ -67,7 +68,7 @@ pub struct ScriptObjectData<'gc> {
     class: ScriptObjectClass<'gc>,
 
     /// Enumeratable property names.
-    enumerants: Vec<QName>,
+    enumerants: Vec<QName<'gc>>,
 
     /// Interfaces implemented by this object. (prototypes only)
     interfaces: Vec<Object<'gc>>,
@@ -77,7 +78,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn get_property_local(
         self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
@@ -92,7 +93,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn set_property_local(
         self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -110,7 +111,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn init_property_local(
         self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -125,11 +126,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         Ok(())
     }
 
-    fn is_property_overwritable(self, gc_context: MutationContext<'gc, '_>, name: &QName) -> bool {
+    fn is_property_overwritable(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &QName<'gc>,
+    ) -> bool {
         self.0.write(gc_context).is_property_overwritable(name)
     }
 
-    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName) -> bool {
+    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
         self.0.write(gc_context).delete_property(name)
     }
 
@@ -159,13 +164,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_method(id)
     }
 
-    fn get_trait(self, name: &QName) -> Result<Vec<Trait<'gc>>, Error> {
+    fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
         self.0.read().get_trait(name)
     }
 
     fn get_provided_trait(
         &self,
-        name: &QName,
+        name: &QName<'gc>,
         known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         self.0.read().get_provided_trait(name, known_traits)
@@ -175,35 +180,38 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_scope()
     }
 
-    fn resolve_any(self, local_name: &str) -> Result<Option<Namespace>, Error> {
+    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
         self.0.read().resolve_any(local_name)
     }
 
-    fn resolve_any_trait(self, local_name: &str) -> Result<Option<Namespace>, Error> {
+    fn resolve_any_trait(
+        self,
+        local_name: AvmString<'gc>,
+    ) -> Result<Option<Namespace<'gc>>, Error> {
         self.0.read().resolve_any_trait(local_name)
     }
 
-    fn has_own_property(self, name: &QName) -> Result<bool, Error> {
+    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
         self.0.read().has_own_property(name)
     }
 
-    fn has_trait(self, name: &QName) -> Result<bool, Error> {
+    fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
         self.0.read().has_trait(name)
     }
 
-    fn provides_trait(self, name: &QName) -> Result<bool, Error> {
+    fn provides_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
         self.0.read().provides_trait(name)
     }
 
-    fn has_instantiated_property(self, name: &QName) -> bool {
+    fn has_instantiated_property(self, name: &QName<'gc>) -> bool {
         self.0.read().has_instantiated_property(name)
     }
 
-    fn has_own_virtual_getter(self, name: &QName) -> bool {
+    fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool {
         self.0.read().has_own_virtual_getter(name)
     }
 
-    fn has_own_virtual_setter(self, name: &QName) -> bool {
+    fn has_own_virtual_setter(self, name: &QName<'gc>) -> bool {
         self.0.read().has_own_virtual_setter(name)
     }
 
@@ -211,18 +219,18 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().proto
     }
 
-    fn get_enumerant_name(&self, index: u32) -> Option<QName> {
+    fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {
         self.0.read().get_enumerant_name(index)
     }
 
-    fn property_is_enumerable(&self, name: &QName) -> bool {
+    fn property_is_enumerable(&self, name: &QName<'gc>) -> bool {
         self.0.read().property_is_enumerable(name)
     }
 
     fn set_local_property_is_enumerable(
         &self,
         mc: MutationContext<'gc, '_>,
-        name: &QName,
+        name: &QName<'gc>,
         is_enumerable: bool,
     ) -> Result<(), Error> {
         self.0
@@ -260,18 +268,18 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         ))
     }
 
-    fn to_string(&self) -> Result<Value<'gc>, Error> {
+    fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok("[object Object]".into())
     }
 
-    fn value_of(&self) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }
 
     fn install_method(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
     ) {
@@ -281,7 +289,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn install_getter(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
     ) -> Result<(), Error> {
@@ -291,7 +299,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn install_setter(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
     ) -> Result<(), Error> {
@@ -301,7 +309,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn install_dynamic_property(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         value: Value<'gc>,
     ) -> Result<(), Error> {
         self.0.write(mc).install_dynamic_property(name, value)
@@ -310,7 +318,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn install_slot(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
     ) {
@@ -320,7 +328,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn install_const(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName,
+        name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
     ) {
@@ -409,7 +417,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn get_property_local(
         &self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<ReturnValue<'gc>, Error> {
         let prop = self.values.get(name);
@@ -424,7 +432,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn set_property_local(
         &mut self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -459,7 +467,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn init_property_local(
         &mut self,
         reciever: Object<'gc>,
-        name: &QName,
+        name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -481,14 +489,14 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn is_property_overwritable(&self, name: &QName) -> bool {
+    pub fn is_property_overwritable(&self, name: &QName<'gc>) -> bool {
         self.values
             .get(name)
             .map(|p| p.is_overwritable())
             .unwrap_or(true)
     }
 
-    pub fn delete_property(&mut self, name: &QName) -> bool {
+    pub fn delete_property(&mut self, name: &QName<'gc>) -> bool {
         let can_delete = if let Some(prop) = self.values.get(name) {
             prop.can_delete()
         } else {
@@ -544,7 +552,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.methods.get(id as usize).and_then(|v| *v)
     }
 
-    pub fn get_trait(&self, name: &QName) -> Result<Vec<Trait<'gc>>, Error> {
+    pub fn get_trait(&self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
         match &self.class {
             //Class constructors have local traits only.
             ScriptObjectClass::ClassConstructor(..) => {
@@ -581,7 +589,7 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn get_provided_trait(
         &self,
-        name: &QName,
+        name: &QName<'gc>,
         known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         match &self.class {
@@ -595,7 +603,7 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn has_trait(&self, name: &QName) -> Result<bool, Error> {
+    pub fn has_trait(&self, name: &QName<'gc>) -> Result<bool, Error> {
         match &self.class {
             //Class constructors have local traits only.
             ScriptObjectClass::ClassConstructor(..) => self.provides_trait(name),
@@ -622,7 +630,7 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn provides_trait(&self, name: &QName) -> Result<bool, Error> {
+    pub fn provides_trait(&self, name: &QName<'gc>) -> Result<bool, Error> {
         match &self.class {
             ScriptObjectClass::ClassConstructor(class, ..) => {
                 Ok(class.read().has_class_trait(name))
@@ -642,7 +650,7 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn resolve_any(&self, local_name: &str) -> Result<Option<Namespace>, Error> {
+    pub fn resolve_any(&self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
         for (key, _value) in self.values.iter() {
             if key.local_name() == local_name {
                 return Ok(Some(key.namespace().clone()));
@@ -656,7 +664,10 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn resolve_any_trait(&self, local_name: &str) -> Result<Option<Namespace>, Error> {
+    pub fn resolve_any_trait(
+        &self,
+        local_name: AvmString<'gc>,
+    ) -> Result<Option<Namespace<'gc>>, Error> {
         if let Some(proto) = self.proto {
             let proto_trait_name = proto.resolve_any_trait(local_name)?;
             if let Some(ns) = proto_trait_name {
@@ -675,22 +686,22 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn has_own_property(&self, name: &QName) -> Result<bool, Error> {
+    pub fn has_own_property(&self, name: &QName<'gc>) -> Result<bool, Error> {
         Ok(self.values.get(name).is_some() || self.has_trait(name)?)
     }
 
-    pub fn has_instantiated_property(&self, name: &QName) -> bool {
+    pub fn has_instantiated_property(&self, name: &QName<'gc>) -> bool {
         self.values.get(name).is_some()
     }
 
-    pub fn has_own_virtual_getter(&self, name: &QName) -> bool {
+    pub fn has_own_virtual_getter(&self, name: &QName<'gc>) -> bool {
         match self.values.get(name) {
             Some(Property::Virtual { get: Some(_), .. }) => true,
             _ => false,
         }
     }
 
-    pub fn has_own_virtual_setter(&self, name: &QName) -> bool {
+    pub fn has_own_virtual_setter(&self, name: &QName<'gc>) -> bool {
         match self.values.get(name) {
             Some(Property::Virtual { set: Some(_), .. }) => true,
             _ => false,
@@ -701,7 +712,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.proto
     }
 
-    pub fn get_enumerant_name(&self, index: u32) -> Option<QName> {
+    pub fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {
         // NOTE: AVM2 object enumeration is one of the weakest parts of an
         // otherwise well-designed VM. Notably, because of the way they
         // implemented `hasnext` and `hasnext2`, all enumerants start from ONE.
@@ -713,13 +724,13 @@ impl<'gc> ScriptObjectData<'gc> {
         self.enumerants.get(true_index).cloned()
     }
 
-    pub fn property_is_enumerable(&self, name: &QName) -> bool {
+    pub fn property_is_enumerable(&self, name: &QName<'gc>) -> bool {
         self.enumerants.contains(name)
     }
 
     pub fn set_local_property_is_enumerable(
         &mut self,
-        name: &QName,
+        name: &QName<'gc>,
         is_enumerable: bool,
     ) -> Result<(), Error> {
         if is_enumerable && self.values.contains_key(name) && !self.enumerants.contains(name) {
@@ -750,7 +761,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     /// Install a method into the object.
-    pub fn install_method(&mut self, name: QName, disp_id: u32, function: Object<'gc>) {
+    pub fn install_method(&mut self, name: QName<'gc>, disp_id: u32, function: Object<'gc>) {
         if disp_id > 0 {
             if self.methods.len() <= disp_id as usize {
                 self.methods
@@ -770,7 +781,7 @@ impl<'gc> ScriptObjectData<'gc> {
     /// installing them in either order.
     pub fn install_getter(
         &mut self,
-        name: QName,
+        name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
     ) -> Result<(), Error> {
@@ -805,7 +816,7 @@ impl<'gc> ScriptObjectData<'gc> {
     /// installing them in either order.
     pub fn install_setter(
         &mut self,
-        name: QName,
+        name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
     ) -> Result<(), Error> {
@@ -835,7 +846,7 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn install_dynamic_property(
         &mut self,
-        name: QName,
+        name: QName<'gc>,
         value: Value<'gc>,
     ) -> Result<(), Error> {
         self.values
@@ -849,7 +860,7 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Slot number zero indicates a slot ID that is unknown and should be
     /// allocated by the VM - as far as I know, there is no way to discover
     /// slot IDs, so we don't allocate a slot for them at all.
-    pub fn install_slot(&mut self, name: QName, id: u32, value: Value<'gc>) {
+    pub fn install_slot(&mut self, name: QName<'gc>, id: u32, value: Value<'gc>) {
         if id == 0 {
             self.values.insert(name, Property::new_stored(value));
         } else {
@@ -869,7 +880,7 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Slot number zero indicates a slot ID that is unknown and should be
     /// allocated by the VM - as far as I know, there is no way to discover
     /// slot IDs, so we don't allocate a slot for them at all.
-    pub fn install_const(&mut self, name: QName, id: u32, value: Value<'gc>) {
+    pub fn install_const(&mut self, name: QName<'gc>, id: u32, value: Value<'gc>) {
         if id == 0 {
             self.values.insert(name, Property::new_const(value));
         } else {
