@@ -498,6 +498,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::IfNlt { offset } => self.op_if_nlt(offset, reader),
                 Op::StrictEquals => self.op_strict_equals(),
                 Op::Equals => self.op_equals(),
+                Op::GreaterEquals => self.op_greater_equals(),
+                Op::GreaterThan => self.op_greater_than(),
+                Op::LessEquals => self.op_less_equals(),
+                Op::LessThan => self.op_less_than(),
                 Op::Not => self.op_not(),
                 Op::HasNext => self.op_has_next(),
                 Op::HasNext2 {
@@ -1620,6 +1624,50 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value1 = self.context.avm2.pop();
 
         let result = value1.abstract_eq(&value2, self)?;
+
+        self.context.avm2.push(result);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_greater_equals(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        let result = !value1.abstract_lt(&value2, self)?.unwrap_or(true);
+
+        self.context.avm2.push(result);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_greater_than(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        let result = value2.abstract_lt(&value1, self)?.unwrap_or(false);
+
+        self.context.avm2.push(result);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_less_equals(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        let result = !value2.abstract_lt(&value1, self)?.unwrap_or(true);
+
+        self.context.avm2.push(result);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_less_than(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        let result = value1.abstract_lt(&value2, self)?.unwrap_or(false);
 
         self.context.avm2.push(result);
 
