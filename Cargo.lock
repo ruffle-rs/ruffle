@@ -400,7 +400,7 @@ dependencies = [
  "alsa 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "core-foundation-sys 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "coreaudio-rs 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "js-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.69 (registry+https://github.com/rust-lang/crates.io-index)",
  "mach 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1108,7 +1108,7 @@ dependencies = [
 
 [[package]]
 name = "js-sys"
-version = "0.3.41"
+version = "0.3.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "wasm-bindgen 0.2.65 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2045,7 +2045,7 @@ dependencies = [
  "base64 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "fnv 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "jpeg-decoder 0.1.20 (registry+https://github.com/rust-lang/crates.io-index)",
- "js-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "percent-encoding 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "png 0.16.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2071,7 +2071,7 @@ version = "0.1.0"
 dependencies = [
  "fnv 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "jpeg-decoder 0.1.20 (registry+https://github.com/rust-lang/crates.io-index)",
- "js-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "percent-encoding 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "png 0.16.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2122,7 +2122,7 @@ dependencies = [
  "console_log 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fnv 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "generational-arena 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "js-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_core 0.1.0",
  "ruffle_render_canvas 0.1.0",
@@ -2139,7 +2139,7 @@ dependencies = [
 name = "ruffle_web_common"
 version = "0.1.0"
 dependencies = [
- "js-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.65 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2313,7 +2313,7 @@ version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cc 1.0.52 (registry+https://github.com/rust-lang/crates.io-index)",
- "js-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.65 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2621,7 +2621,7 @@ version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "js-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.65 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -2658,7 +2658,7 @@ version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "console_error_panic_hook 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "js-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "scoped-tls 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.65 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen-futures 0.4.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2739,7 +2739,7 @@ name = "web-sys"
 version = "0.3.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "js-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.65 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -3090,7 +3090,7 @@ dependencies = [
 "checksum itoa 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "b8b7a7c0c47db5545ed3fef7468ee7bb5b74691498139e4b3f6a20685dc6dd8e"
 "checksum jni-sys 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8eaf4bc02d17cbdd7ff4c7438cafcdf7fb9a4613313ad11b4f8fefe7d3fa0130"
 "checksum jpeg-decoder 0.1.20 (registry+https://github.com/rust-lang/crates.io-index)" = "cc797adac5f083b8ff0ca6f6294a999393d76e197c36488e2ef732c4715f6fa3"
-"checksum js-sys 0.3.41 (registry+https://github.com/rust-lang/crates.io-index)" = "c4b9172132a62451e56142bff9afc91c8e4a4500aa5b847da36815b63bfda916"
+"checksum js-sys 0.3.42 (registry+https://github.com/rust-lang/crates.io-index)" = "52732a3d3ad72c58ad2dc70624f9c17b46ecd0943b9a4f1ee37c4c18c5d983e2"
 "checksum json 0.12.4 (registry+https://github.com/rust-lang/crates.io-index)" = "078e285eafdfb6c4b434e0d31e8cfcb5115b651496faca5749b88fafd4f23bfd"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
