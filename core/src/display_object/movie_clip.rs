@@ -562,28 +562,33 @@ impl<'gc> MovieClip<'gc> {
         use swf::{read::Reader, TagCode};
 
         let mut actions: SmallVec<[SwfSlice; 2]> = SmallVec::new();
-        let mut cur_frame = 1;
-        let clip = self.0.read();
-        let len = clip.tag_stream_len();
-        let mut reader = clip.static_data.swf.read_from(0);
 
         // Iterate through this clip's tags, counting frames until we reach the target frame.
-        while cur_frame <= frame && reader.get_ref().position() < len as u64 {
-            let tag_callback = |reader: &mut Reader<std::io::Cursor<&[u8]>>, tag_code, tag_len| {
-                match tag_code {
-                    TagCode::ShowFrame => cur_frame += 1,
-                    TagCode::DoAction if cur_frame == frame => {
-                        // On the target frame, add any DoAction tags to the array.
-                        if let Some(code) = clip.static_data.swf.resize_to_reader(reader, tag_len) {
-                            actions.push(code)
+        if frame > 0 && frame <= self.total_frames() {
+            let mut cur_frame = 1;
+            let clip = self.0.read();
+            let len = clip.tag_stream_len();
+            let mut reader = clip.static_data.swf.read_from(0);
+            while cur_frame <= frame && reader.get_ref().position() < len as u64 {
+                let tag_callback =
+                    |reader: &mut Reader<std::io::Cursor<&[u8]>>, tag_code, tag_len| {
+                        match tag_code {
+                            TagCode::ShowFrame => cur_frame += 1,
+                            TagCode::DoAction if cur_frame == frame => {
+                                // On the target frame, add any DoAction tags to the array.
+                                if let Some(code) =
+                                    clip.static_data.swf.resize_to_reader(reader, tag_len)
+                                {
+                                    actions.push(code)
+                                }
+                            }
+                            _ => (),
                         }
-                    }
-                    _ => (),
-                }
-                Ok(())
-            };
+                        Ok(())
+                    };
 
-            let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+                let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+            }
         }
 
         actions.into_iter()

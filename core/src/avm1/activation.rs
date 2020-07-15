@@ -734,38 +734,48 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Runs any actions on the given frame.
-        let frame = self.avm.pop();
-        let clip = self.target_clip_or_root();
-        if let Some(clip) = clip.as_movie_clip() {
-            // Use frame # if parameter is a number, otherwise cast to string and check for frame labels.
-            let frame = if let Value::Number(frame) = frame {
-                let frame = f64_to_wrapping_u32(frame);
-                if frame >= 1 && frame <= u32::from(clip.total_frames()) {
-                    Some(frame as u16)
-                } else {
-                    None
-                }
-            } else {
-                let frame_label = frame.coerce_to_string(self, context)?;
-                clip.frame_label_to_number(&frame_label)
-            };
+        let arg = self.avm.pop();
+        let target = self.target_clip_or_root();
 
-            if let Some(frame) = frame {
-                for action in clip.actions_on_frame(context, frame) {
+        // The parameter can be a frame # or a path to a movie clip with a frame number.
+        let mut call_frame = None;
+        if let Value::Number(frame) = arg {
+            // Frame # on the current clip.
+            if let Some(target) = target.as_movie_clip() {
+                call_frame = Some((target, f64_to_wrapping_u32(frame)));
+            }
+        } else {
+            // An optional path to a movieclip and a frame #/label, such as "/clip:framelabel".
+            let frame_path = arg.coerce_to_string(self, context)?;
+            if let Some((clip, frame)) = self.resolve_variable_path(context, target, &frame_path)? {
+                if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
+                    if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
+                        // First try to parse as a frame number.
+                        call_frame = Some((clip, frame));
+                    } else if let Some(frame) = clip.frame_label_to_number(&frame) {
+                        // Otherwise, it's a frame label.
+                        call_frame = Some((clip, frame.into()));
+                    }
+                }
+            }
+        };
+
+        if let Some((clip, frame)) = call_frame {
+            if frame <= u32::from(std::u16::MAX) {
+                for action in clip.actions_on_frame(context, frame as u16) {
                     let _ = self.run_child_frame_for_action(
                         "[Frame Call]",
-                        self.target_clip_or_root(),
+                        clip.into(),
                         self.current_swf_version(),
                         action,
                         context,
                     )?;
                 }
-            } else {
-                log::warn!("Call: Invalid frame {:?}", frame);
             }
         } else {
-            log::warn!("Call: Expected MovieClip");
+            log::warn!("Call: Invalid call");
         }
+
         Ok(FrameControl::Continue)
     }
 
