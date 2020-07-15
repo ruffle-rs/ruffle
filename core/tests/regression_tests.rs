@@ -288,6 +288,10 @@ swf_tests! {
     (as3_if_lte, "avm2/if_lte", 1),
     (as3_if_gte, "avm2/if_gte", 1),
     (as3_if_gt, "avm2/if_gt", 1),
+    (as3_greaterequals, "avm2/greaterequals", 1),
+    (as3_greaterthan, "avm2/greaterthan", 1),
+    (as3_lessequals, "avm2/lessequals", 1),
+    (as3_lessthan, "avm2/lessthan", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
