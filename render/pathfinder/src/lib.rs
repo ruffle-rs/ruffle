@@ -1,5 +1,5 @@
 use pathfinder_color::{rgbau, rgbu, ColorF};
-use pathfinder_content::gradient::Gradient;
+use pathfinder_content::gradient::{Gradient, GradientWrap};
 use pathfinder_content::outline::{Contour, Outline};
 use pathfinder_content::pattern::{Image, Pattern};
 use pathfinder_content::stroke::{LineCap, LineJoin};
@@ -137,98 +137,9 @@ impl PathfinderRenderBackend {
                         FillStyle::Color(color) => {
                             Paint::from_color(rgbau(color.r, color.g, color.b, color.a))
                         }
-                        FillStyle::LinearGradient(swf_gradient) => {
-                            let mut gradient =
-                                Gradient::linear_from_points(vec2f(-1.0, 0.0), vec2f(1.0, 0.0));
-                            for record in &swf_gradient.records {
-                                gradient.add_color_stop(
-                                    rgbau(
-                                        record.color.r,
-                                        record.color.g,
-                                        record.color.b,
-                                        record.color.a,
-                                    ),
-                                    f32::from(record.ratio) / 255.0,
-                                );
-                            }
-                            let transform = Transform2F {
-                                matrix: Matrix2x2F::row_major(
-                                    swf_gradient.matrix.a * 16384.0 / 20.0,
-                                    swf_gradient.matrix.c * 16384.0 / 20.0,
-                                    swf_gradient.matrix.b * 16384.0 / 20.0,
-                                    swf_gradient.matrix.d * 16384.0 / 20.0,
-                                ),
-                                vector: Vector2F::new(
-                                    swf_gradient.matrix.tx.to_pixels() as f32,
-                                    swf_gradient.matrix.ty.to_pixels() as f32,
-                                ),
-                            };
-                            gradient.apply_transform(transform);
-                            Paint::from_gradient(gradient)
-                        }
-                        FillStyle::RadialGradient(swf_gradient) => {
-                            let mut gradient =
-                                Gradient::radial(vec2f(0.0, 0.0), F32x2::new(0.0, 1.0));
-                            for record in &swf_gradient.records {
-                                gradient.add_color_stop(
-                                    rgbau(
-                                        record.color.r,
-                                        record.color.g,
-                                        record.color.b,
-                                        record.color.a,
-                                    ),
-                                    f32::from(record.ratio) / 255.0,
-                                );
-                            }
-                            let transform = Transform2F {
-                                matrix: Matrix2x2F::row_major(
-                                    swf_gradient.matrix.a * 16384.0 / 20.0,
-                                    swf_gradient.matrix.c * 16384.0 / 20.0,
-                                    swf_gradient.matrix.b * 16384.0 / 20.0,
-                                    swf_gradient.matrix.d * 16384.0 / 20.0,
-                                ),
-                                vector: Vector2F::new(
-                                    swf_gradient.matrix.tx.to_pixels() as f32,
-                                    swf_gradient.matrix.ty.to_pixels() as f32,
-                                ),
-                            };
-                            gradient.apply_transform(transform);
-                            Paint::from_gradient(gradient)
-                        }
-                        FillStyle::FocalGradient {
-                            gradient: swf_gradient,
-                            focal_point,
-                        } => {
-                            let mut gradient = Gradient::radial(
-                                LineSegment2F::new(vec2f(*focal_point, 0.0), vec2f(0.0, 0.0)),
-                                F32x2::new(0.0, 1.0),
-                            );
-                            for record in &swf_gradient.records {
-                                gradient.add_color_stop(
-                                    rgbau(
-                                        record.color.r,
-                                        record.color.g,
-                                        record.color.b,
-                                        record.color.a,
-                                    ),
-                                    f32::from(record.ratio) / 255.0,
-                                );
-                            }
-                            let transform = Transform2F {
-                                matrix: Matrix2x2F::row_major(
-                                    swf_gradient.matrix.a * 16384.0 / 20.0,
-                                    swf_gradient.matrix.c * 16384.0 / 20.0,
-                                    swf_gradient.matrix.b * 16384.0 / 20.0,
-                                    swf_gradient.matrix.d * 16384.0 / 20.0,
-                                ),
-                                vector: Vector2F::new(
-                                    swf_gradient.matrix.tx.to_pixels() as f32,
-                                    swf_gradient.matrix.ty.to_pixels() as f32,
-                                ),
-                            };
-                            gradient.apply_transform(transform);
-                            Paint::from_gradient(gradient)
-                        }
+                        FillStyle::LinearGradient(_)
+                        | FillStyle::RadialGradient(_)
+                        | FillStyle::FocalGradient { .. } => swf_to_pathfinder_gradient(style),
                         FillStyle::Bitmap {
                             id,
                             matrix,
@@ -764,4 +675,84 @@ fn color_transform_paint(
         (a * 255.0) as u8,
     ));
     paint
+}
+
+/// Copies color stops, transforms, and other parameters from an SWF gradient to a
+/// Pathfinder gradient.
+fn swf_to_pathfinder_gradient(fill_style: &FillStyle) -> Paint {
+    let swf_gradient = match fill_style {
+        FillStyle::LinearGradient(gradient) => gradient,
+        FillStyle::RadialGradient(gradient) => gradient,
+        FillStyle::FocalGradient { gradient, .. } => gradient,
+        _ => unreachable!("Expected gradient"),
+    };
+
+    // Pathfinder does not explicitly implement the Reflect spread mode,
+    // so we simulate it by duplicated the mirrored colors and using Repeat.
+    let ratio_scale = if swf_gradient.spread != swf::GradientSpread::Reflect {
+        1.0
+    } else {
+        2.0
+    };
+
+    let mut gradient = match fill_style {
+        FillStyle::LinearGradient(_) => {
+            Gradient::linear_from_points(vec2f(-1.0, 0.0), vec2f(ratio_scale, 0.0))
+        }
+        FillStyle::RadialGradient(_) => {
+            Gradient::radial(vec2f(0.0, 0.0), F32x2::new(0.0, ratio_scale))
+        }
+        FillStyle::FocalGradient { focal_point, .. } => Gradient::radial(
+            LineSegment2F::new(vec2f(*focal_point * ratio_scale, 0.0), vec2f(0.0, 0.0)),
+            F32x2::new(0.0, ratio_scale),
+        ),
+        _ => unreachable!("Expected gradient"),
+    };
+
+    for record in &swf_gradient.records {
+        gradient.add_color_stop(
+            rgbau(
+                record.color.r,
+                record.color.g,
+                record.color.b,
+                record.color.a,
+            ),
+            f32::from(record.ratio) / (255.0 * ratio_scale),
+        );
+    }
+
+    gradient.wrap = match swf_gradient.spread {
+        swf::GradientSpread::Pad => GradientWrap::Clamp,
+        swf::GradientSpread::Repeat => GradientWrap::Repeat,
+        swf::GradientSpread::Reflect => {
+            // Repeat the colors, mirrored.
+            for record in &swf_gradient.records {
+                gradient.add_color_stop(
+                    rgbau(
+                        record.color.r,
+                        record.color.g,
+                        record.color.b,
+                        record.color.a,
+                    ),
+                    1.0 - f32::from(record.ratio) / (255.0 * ratio_scale),
+                );
+            }
+            GradientWrap::Repeat
+        }
+    };
+
+    let transform = Transform2F {
+        matrix: Matrix2x2F::row_major(
+            swf_gradient.matrix.a * 16384.0 / 20.0,
+            swf_gradient.matrix.c * 16384.0 / 20.0,
+            swf_gradient.matrix.b * 16384.0 / 20.0,
+            swf_gradient.matrix.d * 16384.0 / 20.0,
+        ),
+        vector: Vector2F::new(
+            swf_gradient.matrix.tx.to_pixels() as f32,
+            swf_gradient.matrix.ty.to_pixels() as f32,
+        ),
+    };
+    gradient.apply_transform(transform);
+    Paint::from_gradient(gradient)
 }
