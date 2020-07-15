@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 base64 = "0.12.3"
 fnv = "1.0.7"
-js-sys = "0.3.41"
+js-sys = "0.3.42"
 log = "0.4" 
 ruffle_web_common = { path = "../../web/common" }
 svg = "0.8.0"
