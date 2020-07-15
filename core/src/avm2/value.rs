@@ -146,7 +146,7 @@ pub fn abc_int(translation_unit: TranslationUnit<'_>, index: Index<i32>) -> Resu
     }
 
     translation_unit
-        .abc_ref()
+        .abc()
         .constant_pool
         .ints
         .get(index.0 as usize - 1)
@@ -160,7 +160,7 @@ pub fn abc_uint(translation_unit: TranslationUnit<'_>, index: Index<u32>) -> Res
     }
 
     translation_unit
-        .abc_ref()
+        .abc()
         .constant_pool
         .uints
         .get(index.0 as usize - 1)
@@ -174,7 +174,7 @@ pub fn abc_double(translation_unit: TranslationUnit<'_>, index: Index<f64>) -> R
     }
 
     translation_unit
-        .abc_ref()
+        .abc()
         .constant_pool
         .doubles
         .get(index.0 as usize - 1)

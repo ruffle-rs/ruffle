@@ -7,7 +7,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
 use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
-use std::cell::Ref;
 use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody};
@@ -97,11 +96,6 @@ impl<'gc> BytecodeMethod<'gc> {
     #[allow(dead_code)]
     pub fn abc(&self) -> Rc<AbcFile> {
         self.txunit.abc()
-    }
-
-    /// Retrieve a reference to the underlying ABC file.
-    pub fn abc_ref(&self) -> Ref<AbcFile> {
-        self.txunit.abc_ref()
     }
 
     /// Get the underlying translation unit this method was defined in.
