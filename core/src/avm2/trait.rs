@@ -87,7 +87,7 @@ impl<'gc> Trait<'gc> {
         abc_trait: &AbcTrait,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Self, Error> {
-        let name = QName::from_abc_multiname(&unit.abc(), abc_trait.name.clone(), mc)?;
+        let name = QName::from_abc_multiname(unit, abc_trait.name.clone(), mc)?;
 
         Ok(match &abc_trait.kind {
             AbcTraitKind::Slot {
@@ -103,10 +103,10 @@ impl<'gc> Trait<'gc> {
                     type_name: if type_name.0 == 0 {
                         Multiname::any()
                     } else {
-                        Multiname::from_abc_multiname_static(&unit.abc(), type_name.clone(), mc)?
+                        Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(&unit.abc(), &dv, mc)?)
+                        Some(abc_default_value(unit, &dv, mc)?)
                     } else {
                         None
                     },
@@ -170,10 +170,10 @@ impl<'gc> Trait<'gc> {
                     type_name: if type_name.0 == 0 {
                         Multiname::any()
                     } else {
-                        Multiname::from_abc_multiname_static(&unit.abc(), type_name.clone(), mc)?
+                        Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(&unit.abc(), &dv, mc)?)
+                        Some(abc_default_value(unit, &dv, mc)?)
                     } else {
                         None
                     },

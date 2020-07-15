@@ -120,19 +120,19 @@ impl<'gc> Class<'gc> {
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let name = QName::from_abc_multiname(&unit.abc(), abc_instance.name.clone(), mc)?;
+        let name = QName::from_abc_multiname(unit, abc_instance.name.clone(), mc)?;
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
             Some(Multiname::from_abc_multiname_static(
-                &unit.abc(),
+                unit,
                 abc_instance.super_name.clone(),
                 mc,
             )?)
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
-            Some(Namespace::from_abc_namespace(&unit.abc(), ns.clone(), mc)?)
+            Some(Namespace::from_abc_namespace(unit, ns.clone(), mc)?)
         } else {
             None
         };
@@ -140,7 +140,7 @@ impl<'gc> Class<'gc> {
         let mut interfaces = Vec::new();
         for interface_name in abc_instance.interfaces.iter() {
             interfaces.push(Multiname::from_abc_multiname_static(
-                &unit.abc(),
+                unit,
                 interface_name.clone(),
                 mc,
             )?);

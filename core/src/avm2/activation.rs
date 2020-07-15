@@ -301,7 +301,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<i32>,
     ) -> Result<i32, Error> {
-        value::abc_int(&method.abc(), index)
+        value::abc_int(method.translation_unit(), index)
     }
 
     /// Retrieve a int from the current constant pool.
@@ -310,7 +310,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<u32>,
     ) -> Result<u32, Error> {
-        value::abc_uint(&method.abc(), index)
+        value::abc_uint(method.translation_unit(), index)
     }
 
     /// Retrieve a double from the current constant pool.
@@ -319,7 +319,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<f64>,
     ) -> Result<f64, Error> {
-        value::abc_double(&method.abc(), index)
+        value::abc_double(method.translation_unit(), index)
     }
 
     /// Retrieve a string from the current constant pool.
@@ -329,7 +329,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<String>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<AvmString<'gc>, Error> {
-        value::abc_string(&method.abc_ref(), index, mc)
+        method.translation_unit().pool_string(index.0, mc)
     }
 
     /// Retrieve a namespace from the current constant pool.
@@ -339,7 +339,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<AbcNamespace>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Namespace<'gc>, Error> {
-        Namespace::from_abc_namespace(&method.abc(), index, mc)
+        Namespace::from_abc_namespace(method.translation_unit(), index, mc)
     }
 
     /// Retrieve a multiname from the current constant pool.
@@ -349,7 +349,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<AbcMultiname>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Multiname<'gc>, Error> {
-        Multiname::from_abc_multiname(&method.abc(), index, self.avm2, mc)
+        Multiname::from_abc_multiname(method.translation_unit(), index, self.avm2, mc)
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
@@ -360,7 +360,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<AbcMultiname>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Multiname<'gc>, Error> {
-        Multiname::from_abc_multiname_static(&method.abc(), index, mc)
+        Multiname::from_abc_multiname_static(method.translation_unit(), index, mc)
     }
 
     /// Retrieve a method entry from the current ABC file's method table.

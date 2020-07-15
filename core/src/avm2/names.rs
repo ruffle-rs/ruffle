@@ -1,12 +1,11 @@
 //! AVM2 names & namespacing
 
 use crate::avm1::AvmString;
-use crate::avm2::value::{abc_string, abc_string_option};
+use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error};
 use gc_arena::{Collect, MutationContext};
 use swf::avm2::types::{
-    AbcFile, Index, Multiname as AbcMultiname, Namespace as AbcNamespace,
-    NamespaceSet as AbcNamespaceSet,
+    Index, Multiname as AbcMultiname, Namespace as AbcNamespace, NamespaceSet as AbcNamespaceSet,
 };
 
 /// Represents the name of a namespace.
@@ -27,7 +26,7 @@ impl<'gc> Namespace<'gc> {
     /// Read a namespace declaration from the ABC constant pool and copy it to
     /// a namespace value.
     pub fn from_abc_namespace(
-        file: &AbcFile,
+        translation_unit: TranslationUnit<'gc>,
         namespace_index: Index<AbcNamespace>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Self, Error> {
@@ -36,24 +35,29 @@ impl<'gc> Namespace<'gc> {
         }
 
         let actual_index = namespace_index.0 as usize - 1;
-        let abc_namespace: Result<&AbcNamespace, Error> = file
+        let abc = translation_unit.abc();
+        let abc_namespace: Result<_, Error> = abc
             .constant_pool
             .namespaces
             .get(actual_index)
             .ok_or_else(|| format!("Unknown namespace constant {}", namespace_index.0).into());
 
         Ok(match abc_namespace? {
-            AbcNamespace::Namespace(idx) => Self::Namespace(abc_string(file, idx.clone(), mc)?),
-            AbcNamespace::Package(idx) => Self::Package(abc_string(file, idx.clone(), mc)?),
+            AbcNamespace::Namespace(idx) => {
+                Self::Namespace(translation_unit.pool_string(idx.0, mc)?)
+            }
+            AbcNamespace::Package(idx) => Self::Package(translation_unit.pool_string(idx.0, mc)?),
             AbcNamespace::PackageInternal(idx) => {
-                Self::PackageInternal(abc_string(file, idx.clone(), mc)?)
+                Self::PackageInternal(translation_unit.pool_string(idx.0, mc)?)
             }
-            AbcNamespace::Protected(idx) => Self::Protected(abc_string(file, idx.clone(), mc)?),
-            AbcNamespace::Explicit(idx) => Self::Explicit(abc_string(file, idx.clone(), mc)?),
+            AbcNamespace::Protected(idx) => {
+                Self::Protected(translation_unit.pool_string(idx.0, mc)?)
+            }
+            AbcNamespace::Explicit(idx) => Self::Explicit(translation_unit.pool_string(idx.0, mc)?),
             AbcNamespace::StaticProtected(idx) => {
-                Self::StaticProtected(abc_string(file, idx.clone(), mc)?)
+                Self::StaticProtected(translation_unit.pool_string(idx.0, mc)?)
             }
-            AbcNamespace::Private(idx) => Self::Private(abc_string(file, idx.clone(), mc)?),
+            AbcNamespace::Private(idx) => Self::Private(translation_unit.pool_string(idx.0, mc)?),
         })
     }
 
@@ -120,12 +124,13 @@ impl<'gc> QName<'gc> {
     /// This function returns an Err if the multiname does not exist or is not
     /// a `QName`.
     pub fn from_abc_multiname(
-        file: &AbcFile,
+        translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Self, Error> {
         let actual_index = multiname_index.0 as usize - 1;
-        let abc_multiname: Result<&AbcMultiname, Error> = file
+        let abc = translation_unit.abc();
+        let abc_multiname: Result<_, Error> = abc
             .constant_pool
             .multinames
             .get(actual_index)
@@ -133,8 +138,8 @@ impl<'gc> QName<'gc> {
 
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } => Self {
-                ns: Namespace::from_abc_namespace(file, namespace.clone(), mc)?,
-                name: abc_string(file, name.clone(), mc)?,
+                ns: Namespace::from_abc_namespace(translation_unit, namespace.clone(), mc)?,
+                name: translation_unit.pool_string(name.0, mc)?,
             },
             _ => return Err("Attempted to pull QName from non-QName multiname".into()),
         })
@@ -167,7 +172,7 @@ impl<'gc> Multiname<'gc> {
     /// Read a namespace set from the ABC constant pool, and return a list of
     /// copied namespaces.
     fn abc_namespace_set(
-        file: &AbcFile,
+        translation_unit: TranslationUnit<'gc>,
         namespace_set_index: Index<AbcNamespaceSet>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Vec<Namespace<'gc>>, Error> {
@@ -177,7 +182,8 @@ impl<'gc> Multiname<'gc> {
         }
 
         let actual_index = namespace_set_index.0 as usize - 1;
-        let ns_set: Result<&AbcNamespaceSet, Error> = file
+        let abc = translation_unit.abc();
+        let ns_set: Result<_, Error> = abc
             .constant_pool
             .namespace_sets
             .get(actual_index)
@@ -187,7 +193,11 @@ impl<'gc> Multiname<'gc> {
         let mut result = vec![];
 
         for ns in ns_set? {
-            result.push(Namespace::from_abc_namespace(file, ns.clone(), mc)?)
+            result.push(Namespace::from_abc_namespace(
+                translation_unit,
+                ns.clone(),
+                mc,
+            )?)
         }
 
         Ok(result)
@@ -196,7 +206,7 @@ impl<'gc> Multiname<'gc> {
     /// Read a multiname from the ABC constant pool, copying it into the most
     /// general form of multiname.
     pub fn from_abc_multiname(
-        file: &AbcFile,
+        translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
         avm: &mut Avm2<'gc>,
         mc: MutationContext<'gc, '_>,
@@ -205,7 +215,8 @@ impl<'gc> Multiname<'gc> {
             .checked_sub(1)
             .ok_or_else(|| "Attempted to resolve a multiname at index zero. This is a bug.".into());
         let actual_index = actual_index?;
-        let abc_multiname: Result<&AbcMultiname, Error> = file
+        let abc = translation_unit.abc();
+        let abc_multiname: Result<_, Error> = abc
             .constant_pool
             .multinames
             .get(actual_index)
@@ -214,15 +225,19 @@ impl<'gc> Multiname<'gc> {
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
-                    ns: vec![Namespace::from_abc_namespace(file, namespace.clone(), mc)?],
-                    name: abc_string_option(file, name.clone(), mc)?,
+                    ns: vec![Namespace::from_abc_namespace(
+                        translation_unit,
+                        namespace.clone(),
+                        mc,
+                    )?],
+                    name: translation_unit.pool_string_option(name.0, mc)?,
                 }
             }
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => {
                 let ns = avm.pop().as_namespace()?.clone();
                 Self {
                     ns: vec![ns],
-                    name: abc_string_option(file, name.clone(), mc)?,
+                    name: translation_unit.pool_string_option(name.0, mc)?,
                 }
             }
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => {
@@ -241,14 +256,14 @@ impl<'gc> Multiname<'gc> {
                 namespace_set,
                 name,
             } => Self {
-                ns: Self::abc_namespace_set(file, namespace_set.clone(), mc)?,
-                name: abc_string_option(file, name.clone(), mc)?,
+                ns: Self::abc_namespace_set(translation_unit, namespace_set.clone(), mc)?,
+                name: translation_unit.pool_string_option(name.0, mc)?,
             },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => {
                 let name = avm.pop().as_string()?;
                 Self {
-                    ns: Self::abc_namespace_set(file, namespace_set.clone(), mc)?,
+                    ns: Self::abc_namespace_set(translation_unit, namespace_set.clone(), mc)?,
                     name: Some(name),
                 }
             }
@@ -260,7 +275,7 @@ impl<'gc> Multiname<'gc> {
     /// This function prohibits the use of runtime-qualified and late-bound
     /// names. Runtime multinames will instead result in an error.
     pub fn from_abc_multiname_static(
-        file: &AbcFile,
+        translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Self, Error> {
@@ -269,7 +284,8 @@ impl<'gc> Multiname<'gc> {
                 "Attempted to resolve a (static) multiname at index zero. This is a bug.".into()
             });
         let actual_index = actual_index?;
-        let abc_multiname: Result<&AbcMultiname, Error> = file
+        let abc = translation_unit.abc();
+        let abc_multiname: Result<_, Error> = abc
             .constant_pool
             .multinames
             .get(actual_index)
@@ -278,8 +294,12 @@ impl<'gc> Multiname<'gc> {
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
-                    ns: vec![Namespace::from_abc_namespace(file, namespace.clone(), mc)?],
-                    name: abc_string_option(file, name.clone(), mc)?,
+                    ns: vec![Namespace::from_abc_namespace(
+                        translation_unit,
+                        namespace.clone(),
+                        mc,
+                    )?],
+                    name: translation_unit.pool_string_option(name.0, mc)?,
                 }
             }
             AbcMultiname::Multiname {
@@ -290,8 +310,8 @@ impl<'gc> Multiname<'gc> {
                 namespace_set,
                 name,
             } => Self {
-                ns: Self::abc_namespace_set(file, namespace_set.clone(), mc)?,
-                name: abc_string_option(file, name.clone(), mc)?,
+                ns: Self::abc_namespace_set(translation_unit, namespace_set.clone(), mc)?,
+                name: translation_unit.pool_string_option(name.0, mc)?,
             },
             _ => return Err(format!("Multiname {} is not static", multiname_index.0).into()),
         })

@@ -260,7 +260,7 @@ impl<'gc> Script<'gc> {
         self.traits_loaded = true;
 
         let abc = unit.abc();
-        let script: Result<&AbcScript, Error> = abc
+        let script: Result<_, Error> = abc
             .scripts
             .get(script_index as usize)
             .ok_or_else(|| "LoadError: Script index not valid".into());

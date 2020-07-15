@@ -3,10 +3,11 @@
 use crate::avm1::AvmString;
 use crate::avm2::names::Namespace;
 use crate::avm2::object::Object;
+use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use gc_arena::{Collect, MutationContext};
 use std::f64::NAN;
-use swf::avm2::types::{AbcFile, DefaultValue as AbcDefaultValue, Index};
+use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
 /// An AVM2 value.
 ///
@@ -139,95 +140,59 @@ impl PartialEq for Value<'_> {
     }
 }
 
-pub fn abc_int(file: &AbcFile, index: Index<i32>) -> Result<i32, Error> {
+pub fn abc_int(translation_unit: TranslationUnit<'_>, index: Index<i32>) -> Result<i32, Error> {
     if index.0 == 0 {
         return Ok(0);
     }
 
-    file.constant_pool
+    translation_unit
+        .abc_ref()
+        .constant_pool
         .ints
         .get(index.0 as usize - 1)
         .cloned()
         .ok_or_else(|| format!("Unknown int constant {}", index.0).into())
 }
 
-pub fn abc_uint(file: &AbcFile, index: Index<u32>) -> Result<u32, Error> {
+pub fn abc_uint(translation_unit: TranslationUnit<'_>, index: Index<u32>) -> Result<u32, Error> {
     if index.0 == 0 {
         return Ok(0);
     }
 
-    file.constant_pool
+    translation_unit
+        .abc_ref()
+        .constant_pool
         .uints
         .get(index.0 as usize - 1)
         .cloned()
         .ok_or_else(|| format!("Unknown uint constant {}", index.0).into())
 }
 
-pub fn abc_double(file: &AbcFile, index: Index<f64>) -> Result<f64, Error> {
+pub fn abc_double(translation_unit: TranslationUnit<'_>, index: Index<f64>) -> Result<f64, Error> {
     if index.0 == 0 {
         return Ok(NAN);
     }
 
-    file.constant_pool
+    translation_unit
+        .abc_ref()
+        .constant_pool
         .doubles
         .get(index.0 as usize - 1)
         .cloned()
         .ok_or_else(|| format!("Unknown double constant {}", index.0).into())
 }
 
-/// Copy a string from an ABC constant pool, yielding `""` if the string is the
-/// zero string.
-pub fn abc_string<'gc>(
-    file: &AbcFile,
-    index: Index<String>,
-    mc: MutationContext<'gc, '_>,
-) -> Result<AvmString<'gc>, Error> {
-    if index.0 == 0 {
-        return Ok("".into());
-    }
-
-    file.constant_pool
-        .strings
-        .get(index.0 as usize - 1)
-        .map(|s| AvmString::new(mc, s.as_str()))
-        .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
-}
-
-/// Retrieve a string from an ABC constant pool, yielding `None` if the string
-/// is the zero string.
-///
-/// This function still yields `Err` for out-of-bounds string constants, which
-/// should cause the runtime to halt. `None` indicates that the zero string is
-/// in use, which callers are free to interpret as necessary (although this
-/// usually means "any name").
-pub fn abc_string_option<'gc>(
-    file: &AbcFile,
-    index: Index<String>,
-    mc: MutationContext<'gc, '_>,
-) -> Result<Option<AvmString<'gc>>, Error> {
-    if index.0 == 0 {
-        return Ok(None);
-    }
-
-    file.constant_pool
-        .strings
-        .get(index.0 as usize - 1)
-        .map(|s| AvmString::new(mc, s.as_str()))
-        .map(Some)
-        .ok_or_else(|| format!("Unknown string constant {}", index.0).into())
-}
-
 /// Retrieve a default value as an AVM2 `Value`.
 pub fn abc_default_value<'gc>(
-    file: &AbcFile,
+    translation_unit: TranslationUnit<'gc>,
     default: &AbcDefaultValue,
     mc: MutationContext<'gc, '_>,
 ) -> Result<Value<'gc>, Error> {
     match default {
-        AbcDefaultValue::Int(i) => abc_int(file, *i).map(|v| v.into()),
-        AbcDefaultValue::Uint(u) => abc_uint(file, *u).map(|v| v.into()),
-        AbcDefaultValue::Double(d) => abc_double(file, *d).map(|v| v.into()),
-        AbcDefaultValue::String(s) => abc_string(file, s.clone(), mc).map(|v| v.into()),
+        AbcDefaultValue::Int(i) => abc_int(translation_unit, *i).map(|v| v.into()),
+        AbcDefaultValue::Uint(u) => abc_uint(translation_unit, *u).map(|v| v.into()),
+        AbcDefaultValue::Double(d) => abc_double(translation_unit, *d).map(|v| v.into()),
+        AbcDefaultValue::String(s) => translation_unit.pool_string(s.0, mc).map(|v| v.into()),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
         AbcDefaultValue::Null => Ok(Value::Null),
@@ -239,7 +204,7 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
         | AbcDefaultValue::Private(ns) => {
-            Namespace::from_abc_namespace(file, ns.clone(), mc).map(|v| v.into())
+            Namespace::from_abc_namespace(translation_unit, ns.clone(), mc).map(|v| v.into())
         }
     }
 }
