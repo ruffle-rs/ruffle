@@ -31,7 +31,7 @@ ruffle_render_canvas = { path = "../render/canvas", optional = true }
 ruffle_web_common = { path = "common" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 url = "2.1.1"
-wasm-bindgen = "0.2.64"
+wasm-bindgen = "0.2.65"
 wasm-bindgen-futures = "0.4.14"
 
 [dependencies.ruffle_core]
