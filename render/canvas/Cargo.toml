@@ -28,7 +28,7 @@ path = "../../core"
 default-features = false
 
 [dependencies.web-sys]
-version = "0.3.41"
+version = "0.3.42"
 features = [
     "CanvasRenderingContext2d", "CssStyleDeclaration", "Document", "Element", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement",
     "Navigator", "Node", "UiEvent", "Window", "Path2d", "CanvasGradient", "CanvasPattern", "SvgMatrix", "SvgsvgElement"
