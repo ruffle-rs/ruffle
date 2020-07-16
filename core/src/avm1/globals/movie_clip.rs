@@ -639,6 +639,10 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         // Copy display properties from previous clip to new clip.
         new_clip.set_matrix(context.gc_context, &*movie_clip.matrix());
         new_clip.set_color_transform(context.gc_context, &*movie_clip.color_transform());
+        new_clip
+            .as_movie_clip()
+            .unwrap()
+            .set_clip_actions(context.gc_context, movie_clip.clip_actions().to_vec());
         // TODO: Any other properties we should copy...?
         // Definitely not ScriptObject properties.
 
