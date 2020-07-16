@@ -12,6 +12,7 @@ members = [
     "render/wgpu",
     "render/common_tess",
     "render/webgl",
+    "render/pathfinder",
 ]
 
 # Don't optimize build scripts and macros.

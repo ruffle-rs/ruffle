@@ -1,0 +1,21 @@
+[package]
+name = "ruffle_render_pathfinder"
+version = "0.1.0"
+authors = ["Mike Welsh <mwelsh@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+gl = "0.14"
+image = "0.23.4"
+jpeg-decoder = "0.1.18"
+log = "0.4"
+pathfinder_color = { git = "https://github.com/servo/pathfinder", rev = "e75b347" }
+pathfinder_content = { git = "https://github.com/servo/pathfinder", rev = "e75b347" }
+pathfinder_geometry = { git = "https://github.com/servo/pathfinder", rev = "e75b347" }
+pathfinder_gl = { git = "https://github.com/servo/pathfinder", rev = "e75b347" }
+pathfinder_renderer = { git = "https://github.com/servo/pathfinder", rev = "e75b347" }
+pathfinder_resources = { git = "https://github.com/servo/pathfinder", rev = "e75b347" }
+pathfinder_simd = { git = "https://github.com/servo/pathfinder", rev = "e75b347" }
+raw-window-handle = "0.3.3"
+ruffle_core = { path = "../../core" }
+surfman = { git = "https://github.com/servo/surfman", rev = "afea998", features = ["sm-raw-window-handle"] }

@@ -9,6 +9,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 cpal = "0.12.0"
 ruffle_core = { path = "../core" }
+ruffle_render_pathfinder = { path = "../render/pathfinder" }
 ruffle_render_wgpu = { path = "../render/wgpu" }
 env_logger = "0.7.1"
 generational-arena = "0.2.8"
@@ -16,6 +17,7 @@ image = "0.23.7"
 jpeg-decoder = "0.1.20"
 log = "0.4"
 lyon = "0.15.9"
+raw-window-handle = "0.3.3"
 sample = "0.11.0"
 structopt = "0.3.15"
 winit = "0.22"

@@ -15,12 +15,14 @@ use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
     Player,
 };
+use ruffle_render_pathfinder::PathfinderRenderBackend;
 use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::PathBuf;
 use std::time::Instant;
 use structopt::StructOpt;
 
 use crate::storage::DiskStorageBackend;
+use raw_window_handle::HasRawWindowHandle;
 use ruffle_core::tag_utils::SwfMovie;
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
@@ -75,9 +77,14 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             Box::new(NullAudioBackend::new())
         }
     };
-    let renderer = Box::new(WgpuRenderBackend::for_window(
-        window.as_ref(),
-        (viewport_size.width, viewport_size.height),
+    // let renderer = Box::new(WgpuRenderBackend::for_window(
+    //     window.as_ref(),
+    //     (viewport_size.width, viewport_size.height),
+    // )?);
+    let renderer = Box::new(PathfinderRenderBackend::new(
+        window.raw_window_handle(),
+        viewport_size.width,
+        viewport_size.height,
     )?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
     let navigator = Box::new(navigator::ExternalNavigatorBackend::with_base_path(
