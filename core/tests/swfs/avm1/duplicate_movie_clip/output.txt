@@ -10,3 +10,6 @@ undefined
 undefined
 _level0.clip2
 undefined
+load: src
+load: clip1
+load: clip2
