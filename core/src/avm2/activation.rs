@@ -1369,7 +1369,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_convert_o(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let value: Value<'gc> = self.context.avm2.pop().coerce_to_object()?;
+        let value = self.context.avm2.pop().coerce_to_object(self)?;
 
         self.context.avm2.push(value);
 
