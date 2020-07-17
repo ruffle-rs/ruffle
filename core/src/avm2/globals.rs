@@ -12,10 +12,16 @@ use crate::avm2::Error;
 use gc_arena::{Collect, MutationContext};
 use std::f64::NAN;
 
+mod boolean;
 mod class;
 mod flash;
 mod function;
+mod int;
+mod namespace;
+mod number;
 mod object;
+mod string;
+mod r#uint;
 
 fn trace<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -36,6 +42,12 @@ pub struct SystemPrototypes<'gc> {
     pub object: Object<'gc>,
     pub function: Object<'gc>,
     pub class: Object<'gc>,
+    pub string: Object<'gc>,
+    pub boolean: Object<'gc>,
+    pub number: Object<'gc>,
+    pub int: Object<'gc>,
+    pub uint: Object<'gc>,
+    pub namespace: Object<'gc>,
 }
 
 /// Add a free-function builtin to the global scope.
@@ -101,6 +113,12 @@ pub fn construct_global_scope<'gc>(
     let object_proto = ScriptObject::bare_object(mc);
     let fn_proto = function::create_proto(mc, object_proto);
     let class_proto = class::create_proto(mc, object_proto, fn_proto);
+    let string_proto = string::create_proto(mc, object_proto, fn_proto);
+    let boolean_proto = boolean::create_proto(mc, object_proto, fn_proto);
+    let number_proto = number::create_proto(mc, object_proto, fn_proto);
+    let int_proto = int::create_proto(mc, object_proto, fn_proto);
+    let uint_proto = uint::create_proto(mc, object_proto, fn_proto);
+    let namespace_proto = namespace::create_proto(mc, object_proto, fn_proto);
 
     object::fill_proto(mc, object_proto, fn_proto);
 
@@ -129,6 +147,44 @@ pub fn construct_global_scope<'gc>(
         "Class",
         class::constructor,
         class_proto,
+        fn_proto,
+    );
+    class(
+        mc,
+        gs,
+        "",
+        "String",
+        string::constructor,
+        string_proto,
+        fn_proto,
+    );
+    class(
+        mc,
+        gs,
+        "",
+        "Boolean",
+        boolean::constructor,
+        boolean_proto,
+        fn_proto,
+    );
+    class(
+        mc,
+        gs,
+        "",
+        "Number",
+        number::constructor,
+        number_proto,
+        fn_proto,
+    );
+    class(mc, gs, "", "int", int::constructor, int_proto, fn_proto);
+    class(mc, gs, "", "uint", uint::constructor, uint_proto, fn_proto);
+    class(
+        mc,
+        gs,
+        "",
+        "Namespace",
+        namespace::constructor,
+        namespace_proto,
         fn_proto,
     );
     function(mc, gs, "", "trace", trace, fn_proto);
@@ -212,6 +268,12 @@ pub fn construct_global_scope<'gc>(
         object: object_proto,
         function: fn_proto,
         class: class_proto,
+        string: string_proto,
+        boolean: boolean_proto,
+        number: number_proto,
+        int: int_proto,
+        uint: uint_proto,
+        namespace: namespace_proto,
     };
 
     (gs, system_prototypes)
