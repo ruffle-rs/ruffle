@@ -503,7 +503,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
                     let super_class: Result<Object<'gc>, Error> = self
                         .get_property(reciever, &super_name, activation)?
-                        .as_object()
+                        .coerce_to_object(activation)
                         .map_err(|_e| {
                             format!("Could not resolve superclass {:?}", super_name.local_name())
                                 .into()
@@ -656,7 +656,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<bool, Error> {
         let type_proto = constructor
             .get_property(constructor, &QName::dynamic_name("prototype"), activation)?
-            .as_object()?;
+            .coerce_to_object(activation)?;
         let mut my_proto = self.proto();
 
         //TODO: Is it a verification error to do `obj instanceof bare_object`?
