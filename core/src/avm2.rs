@@ -29,6 +29,7 @@ mod globals;
 mod method;
 mod names;
 mod object;
+mod primitive_object;
 mod property;
 mod property_map;
 mod return_value;

@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::{Executable, FunctionObject};
 use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::primitive_object::PrimitiveObject;
 use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
@@ -21,7 +22,8 @@ use std::fmt::Debug;
     #[collect(no_drop)]
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
-        FunctionObject(FunctionObject<'gc>)
+        FunctionObject(FunctionObject<'gc>),
+        PrimitiveObject(PrimitiveObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
