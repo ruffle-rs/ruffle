@@ -24,7 +24,9 @@ fn call<'gc>(
     func: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let this = args.get(0).and_then(|v| v.as_object().ok());
+    let this = args
+        .get(0)
+        .and_then(|v| v.coerce_to_object(activation).ok());
     let base_proto = this.and_then(|that| that.proto());
 
     if let Some(func) = func {

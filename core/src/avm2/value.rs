@@ -206,14 +206,6 @@ pub fn abc_default_value<'gc>(
 }
 
 impl<'gc> Value<'gc> {
-    pub fn as_object(&self) -> Result<Object<'gc>, Error> {
-        if let Value::Object(object) = self {
-            Ok(*object)
-        } else {
-            Err(format!("Expected Object, found {:?}", self).into())
-        }
-    }
-
     /// Demand a string value, erroring out if one is not found.
     ///
     /// TODO: This should be replaced with `coerce_string` where possible.

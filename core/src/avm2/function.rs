@@ -168,7 +168,7 @@ impl<'gc> FunctionObject<'gc> {
                     &QName::new(Namespace::public_namespace(), "prototype"),
                     activation,
                 )?
-                .as_object()
+                .coerce_to_object(activation)
                 .map_err(|_| {
                     format!(
                         "Could not resolve superclass prototype {:?}",
@@ -201,14 +201,14 @@ impl<'gc> FunctionObject<'gc> {
                 return Err(format!("Could not resolve interface {:?}", interface_name).into());
             }
 
-            let mut interface = interface.unwrap().as_object()?;
+            let mut interface = interface.unwrap().coerce_to_object(activation)?;
             let iface_proto = interface
                 .get_property(
                     interface,
                     &QName::new(Namespace::public_namespace(), "prototype"),
                     activation,
                 )?
-                .as_object()?;
+                .coerce_to_object(activation)?;
 
             interfaces.push(iface_proto);
         }
