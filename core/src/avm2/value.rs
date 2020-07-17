@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::names::Namespace;
 use crate::avm2::names::QName;
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::primitive_object::PrimitiveObject;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::Error;
@@ -533,12 +534,30 @@ impl<'gc> Value<'gc> {
     /// `undefined` or `null` are present. For the time being, this is what
     /// that does. If we implement primitive boxing, then we should also box
     /// them here, and this should change type to return `Object<'gc>`.
-    pub fn coerce_to_object(&self) -> Result<Value<'gc>, Error> {
+    pub fn coerce_to_object(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Object<'gc>, Error> {
         match self {
-            Value::Undefined => Err("TypeError: undefined is not an Object".into()),
-            Value::Null => Err("TypeError: null is not an Object".into()),
-            _ => Ok(self.clone()),
-        }
+            Value::Undefined => return Err("TypeError: undefined is not an Object".into()),
+            Value::Null => return Err("TypeError: null is not an Object".into()),
+            Value::Object(o) => return Ok(*o),
+            _ => {}
+        };
+
+        let proto = match self {
+            Value::Bool(_) => activation.avm2().prototypes().boolean,
+            Value::Number(_) => activation.avm2().prototypes().number,
+            Value::String(_) => activation.avm2().prototypes().string,
+            Value::Namespace(_) => activation.avm2().prototypes().namespace,
+            _ => unreachable!(),
+        };
+
+        Ok(PrimitiveObject::from_primitive(
+            self.clone(),
+            proto,
+            activation.context.gc_context,
+        )?)
     }
 
     /// Determine if two values are abstractly equal to each other.
