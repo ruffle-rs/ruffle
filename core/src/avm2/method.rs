@@ -93,7 +93,6 @@ impl<'gc> BytecodeMethod<'gc> {
     }
 
     /// Get the underlying ABC file.
-    #[allow(dead_code)]
     pub fn abc(&self) -> Rc<AbcFile> {
         self.txunit.abc()
     }

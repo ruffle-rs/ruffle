@@ -8,7 +8,6 @@ use gc_arena::{Collect, CollectionContext};
 
 /// Represents a single slot on an object.
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 pub enum Slot<'gc> {
     /// An unoccupied slot.
     ///

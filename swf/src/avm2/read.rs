@@ -100,7 +100,6 @@ impl<R: Read> Reader<R> {
         self.read_u30()
     }
 
-    #[allow(dead_code)]
     fn read_i24(&mut self) -> Result<i32> {
         Ok(i32::from(self.read_u8()? as i8)
             | (i32::from(self.read_u8()? as i8) << 8)
@@ -527,7 +526,6 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    #[allow(dead_code)]
     pub fn read_op(&mut self) -> Result<Option<Op>> {
         use crate::avm2::opcode::OpCode;
         use num_traits::FromPrimitive;
