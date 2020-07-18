@@ -64,10 +64,10 @@ impl<'gc> Executable<'gc> {
     ) -> Self {
         match method {
             Method::Native(nf) => Self::Native(nf, reciever),
-            Method::Entry(a2me) => Self::Action(Gc::allocate(
+            Method::Entry(method) => Self::Action(Gc::allocate(
                 mc,
                 BytecodeExecutable {
-                    method: a2me,
+                    method,
                     scope,
                     reciever,
                 },

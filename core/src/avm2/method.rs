@@ -134,7 +134,7 @@ unsafe impl<'gc> Collect for Method<'gc> {
     fn trace(&self, cc: CollectionContext) {
         match self {
             Method::Native(_nf) => {}
-            Method::Entry(a2me) => a2me.trace(cc),
+            Method::Entry(entry) => entry.trace(cc),
         }
     }
 }
@@ -146,7 +146,7 @@ impl<'gc> fmt::Debug for Method<'gc> {
                 .debug_tuple("Method::Native")
                 .field(&"<native code>".to_string())
                 .finish(),
-            Method::Entry(a2me) => f.debug_tuple("Method::Entry").field(a2me).finish(),
+            Method::Entry(entry) => f.debug_tuple("Method::Entry").field(entry).finish(),
         }
     }
 }
