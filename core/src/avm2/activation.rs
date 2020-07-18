@@ -1,6 +1,5 @@
 //! Activation frames
 
-use crate::avm1::AvmString;
 use crate::avm2::class::Class;
 use crate::avm2::function::FunctionObject;
 use crate::avm2::method::BytecodeMethod;
@@ -9,6 +8,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
 use crate::avm2::script_object::ScriptObject;
+use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;

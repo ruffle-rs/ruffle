@@ -1,9 +1,9 @@
 //! Whole script representation
 
-use crate::avm1::AvmString;
 use crate::avm2::class::Class;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::r#trait::Trait;
+use crate::avm2::string::AvmString;
 use crate::avm2::Error;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::collections::HashMap;

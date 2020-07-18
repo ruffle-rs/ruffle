@@ -34,6 +34,7 @@ mod scope;
 mod script;
 mod script_object;
 mod slot;
+mod string;
 mod r#trait;
 mod value;
 

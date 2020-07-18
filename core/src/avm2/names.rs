@@ -1,7 +1,7 @@
 //! AVM2 names & namespacing
 
-use crate::avm1::AvmString;
 use crate::avm2::script::TranslationUnit;
+use crate::avm2::string::AvmString;
 use crate::avm2::{Avm2, Error};
 use gc_arena::{Collect, MutationContext};
 use swf::avm2::types::{

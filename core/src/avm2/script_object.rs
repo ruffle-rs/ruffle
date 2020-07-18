@@ -1,6 +1,5 @@
 //! Default AVM2 object impl
 
-use crate::avm1::AvmString;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
@@ -11,6 +10,7 @@ use crate::avm2::r#trait::Trait;
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::slot::Slot;
+use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
