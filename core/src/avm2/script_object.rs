@@ -6,6 +6,7 @@ use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
+use crate::avm2::property_map::PropertyMap;
 use crate::avm2::r#trait::Trait;
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
@@ -53,7 +54,7 @@ pub enum ScriptObjectClass<'gc> {
 #[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
     /// Properties stored on this object.
-    values: HashMap<QName<'gc>, Property<'gc>>,
+    values: PropertyMap<'gc, Property<'gc>>,
 
     /// Slots stored on this object.
     slots: Vec<Slot<'gc>>,
