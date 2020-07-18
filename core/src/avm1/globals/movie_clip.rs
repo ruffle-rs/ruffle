@@ -113,6 +113,7 @@ pub fn create_proto<'gc>(
         "getBytesTotal" => get_bytes_total,
         "getNextHighestDepth" => get_next_highest_depth,
         "getRect" => get_rect,
+        "getURL" => get_url,
         "globalToLocal" => global_to_local,
         "gotoAndPlay" => goto_and_play,
         "gotoAndStop" => goto_and_stop,
@@ -1012,6 +1013,43 @@ fn get_rect<'gc>(
     // TODO: This should get the bounds ignoring strokes. Always equal to or smaller than getBounds.
     // Just defer to getBounds for now. Will have to store edge_bounds vs. shape_bounds in Graphic.
     get_bounds(movie_clip, activation, context, args)
+}
+
+#[allow(unused_must_use)] //can't use errors yet
+pub fn get_url<'a, 'gc>(
+    _movie_clip: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'a, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    use crate::avm1::fscommand;
+
+    //TODO: Error behavior if no arguments are present
+    if let Some(url_val) = args.get(0) {
+        let url = url_val.coerce_to_string(activation, context)?;
+        if let Some(fscommand) = fscommand::parse(&url) {
+            fscommand::handle(fscommand, activation, context);
+            return Ok(Value::Undefined);
+        }
+
+        let window = if let Some(window) = args.get(1) {
+            Some(window.coerce_to_string(activation, context)?.to_string())
+        } else {
+            None
+        };
+        let method = match args.get(2) {
+            Some(Value::String(s)) if *s == "GET" => Some(NavigationMethod::GET),
+            Some(Value::String(s)) if *s == "POST" => Some(NavigationMethod::POST),
+            _ => None,
+        };
+        let vars_method = method.map(|m| (m, activation.locals_into_form_values(context)));
+
+        context
+            .navigator
+            .navigate_to_url(url.to_string(), window, vars_method);
+    }
+
+    Ok(Value::Undefined)
 }
 
 fn global_to_local<'gc>(
