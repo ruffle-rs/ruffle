@@ -185,7 +185,7 @@ impl<'gc> TranslationUnit<'gc> {
     ) -> Result<AvmString<'gc>, Error> {
         Ok(self
             .pool_string_option(string_index, mc)?
-            .unwrap_or_else(|| "".into()))
+            .unwrap_or_default())
     }
 }
 
