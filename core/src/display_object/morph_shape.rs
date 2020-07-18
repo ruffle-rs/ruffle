@@ -124,7 +124,7 @@ impl MorphShapeStatic {
         }
 
         // Interpolate MorphShapes into a Shape.
-        use swf::{FillStyle, Gradient, LineStyle, ShapeRecord, ShapeStyles};
+        use swf::{FillStyle, LineStyle, ShapeRecord, ShapeStyles};
         // Start shape is ratio 65535, end shape is ratio 0.
         let b = f32::from(ratio) / 65535.0;
         let a = 1.0 - b;
@@ -133,45 +133,7 @@ impl MorphShapeStatic {
             .fill_styles
             .iter()
             .zip(self.end.fill_styles.iter())
-            .map(|(start, end)| match (start, end) {
-                (FillStyle::Color(start), FillStyle::Color(end)) => FillStyle::Color(Color {
-                    r: (a * f32::from(start.r) + b * f32::from(end.r)) as u8,
-                    g: (a * f32::from(start.g) + b * f32::from(end.g)) as u8,
-                    b: (a * f32::from(start.b) + b * f32::from(end.b)) as u8,
-                    a: (a * f32::from(start.a) + b * f32::from(end.a)) as u8,
-                }),
-                (FillStyle::LinearGradient(start), FillStyle::LinearGradient(end)) => {
-                    let records: Vec<swf::GradientRecord> = start
-                        .records
-                        .iter()
-                        .zip(end.records.iter())
-                        .map(|(start, end)| swf::GradientRecord {
-                            ratio: (f32::from(start.ratio) * a + f32::from(end.ratio) * b) as u8,
-                            color: Color {
-                                r: (a * f32::from(start.color.r) + b * f32::from(end.color.r))
-                                    as u8,
-                                g: (a * f32::from(start.color.g) + b * f32::from(end.color.g))
-                                    as u8,
-                                b: (a * f32::from(start.color.b) + b * f32::from(end.color.b))
-                                    as u8,
-                                a: (a * f32::from(start.color.a) + b * f32::from(end.color.a))
-                                    as u8,
-                            },
-                        })
-                        .collect();
-
-                    FillStyle::LinearGradient(Gradient {
-                        matrix: start.matrix,
-                        spread: start.spread,
-                        interpolation: start.interpolation,
-                        records,
-                    })
-                }
-                _ => {
-                    log::info!("Unhandled morph shape combination: {:?} {:?}", start, end);
-                    start.clone()
-                }
-            })
+            .map(|(start, end)| lerp_fill(start, end, a, b))
             .collect();
         let line_styles: Vec<LineStyle> = self
             .start
@@ -179,15 +141,8 @@ impl MorphShapeStatic {
             .iter()
             .zip(self.end.line_styles.iter())
             .map(|(start, end)| LineStyle {
-                width: Twips::new(
-                    ((start.width.get() as f32) * a + (end.width.get() as f32) * b) as i32,
-                ),
-                color: Color {
-                    r: (a * f32::from(start.color.r) + b * f32::from(end.color.r)) as u8,
-                    g: (a * f32::from(start.color.g) + b * f32::from(end.color.g)) as u8,
-                    b: (a * f32::from(start.color.b) + b * f32::from(end.color.b)) as u8,
-                    a: (a * f32::from(start.color.a) + b * f32::from(end.color.a)) as u8,
-                },
+                width: lerp_twips(start.width, end.width, a, b),
+                color: lerp_color(&start.color, &end.color, a, b),
                 start_cap: start.start_cap,
                 end_cap: start.end_cap,
                 join_style: start.join_style,
@@ -225,12 +180,8 @@ impl MorphShapeStatic {
                             end_x = e_x;
                             end_y = e_y;
                             style_change.move_to = Some((
-                                Twips::new(
-                                    (start_x.get() as f32 * a + end_x.get() as f32 * b) as i32,
-                                ),
-                                Twips::new(
-                                    (start_y.get() as f32 * a + end_y.get() as f32 * b) as i32,
-                                ),
+                                lerp_twips(start_x, end_x, a, b),
+                                lerp_twips(start_y, end_y, a, b),
                             ));
                         } else {
                             panic!("Expected move_to for morph shape")
@@ -246,8 +197,8 @@ impl MorphShapeStatic {
                         start_x = s_x;
                         start_y = s_y;
                         style_change.move_to = Some((
-                            Twips::new((start_x.get() as f32 * a + end_x.get() as f32 * b) as i32),
-                            Twips::new((start_y.get() as f32 * a + end_y.get() as f32 * b) as i32),
+                            lerp_twips(start_x, end_x, a, b),
+                            lerp_twips(start_y, end_y, a, b),
                         ));
                     }
                     shape.push(ShapeRecord::StyleChange(style_change));
@@ -260,8 +211,8 @@ impl MorphShapeStatic {
                         end_x = e_x;
                         end_y = e_y;
                         style_change.move_to = Some((
-                            Twips::new((start_x.get() as f32 * a + end_x.get() as f32 * b) as i32),
-                            Twips::new((start_y.get() as f32 * a + end_y.get() as f32 * b) as i32),
+                            lerp_twips(start_x, end_x, a, b),
+                            lerp_twips(start_y, end_y, a, b),
                         ));
                     }
                     shape.push(ShapeRecord::StyleChange(style_change));
@@ -270,7 +221,7 @@ impl MorphShapeStatic {
                     continue;
                 }
                 _ => {
-                    shape.push(Self::interpolate_edges(s, e, a));
+                    shape.push(lerp_edges(s, e, a, b));
                     Self::update_pos(&mut start_x, &mut start_y, s);
                     Self::update_pos(&mut end_x, &mut end_y, e);
                     start = start_iter.next();
@@ -328,128 +279,222 @@ impl MorphShapeStatic {
             }
         }
     }
-
-    fn interpolate_edges(
-        start: &swf::ShapeRecord,
-        end: &swf::ShapeRecord,
-        a: f32,
-    ) -> swf::ShapeRecord {
-        use swf::ShapeRecord;
-        let b = 1.0 - a;
-        match (start, end) {
-            (
-                ShapeRecord::StraightEdge {
-                    delta_x: start_dx,
-                    delta_y: start_dy,
-                },
-                ShapeRecord::StraightEdge {
-                    delta_x: end_dx,
-                    delta_y: end_dy,
-                },
-            ) => ShapeRecord::StraightEdge {
-                delta_x: Twips::new((start_dx.get() as f32 * a + end_dx.get() as f32 * b) as i32),
-                delta_y: Twips::new((start_dy.get() as f32 * a + end_dy.get() as f32 * b) as i32),
-            },
-
-            (
-                ShapeRecord::CurvedEdge {
-                    control_delta_x: start_cdx,
-                    control_delta_y: start_cdy,
-                    anchor_delta_x: start_adx,
-                    anchor_delta_y: start_ady,
-                },
-                ShapeRecord::CurvedEdge {
-                    control_delta_x: end_cdx,
-                    control_delta_y: end_cdy,
-                    anchor_delta_x: end_adx,
-                    anchor_delta_y: end_ady,
-                },
-            ) => ShapeRecord::CurvedEdge {
-                control_delta_x: Twips::new(
-                    (start_cdx.get() as f32 * a + end_cdx.get() as f32 * b) as i32,
-                ),
-                control_delta_y: Twips::new(
-                    (start_cdy.get() as f32 * a + end_cdy.get() as f32 * b) as i32,
-                ),
-                anchor_delta_x: Twips::new(
-                    (start_adx.get() as f32 * a + end_adx.get() as f32 * b) as i32,
-                ),
-                anchor_delta_y: Twips::new(
-                    (start_ady.get() as f32 * a + end_ady.get() as f32 * b) as i32,
-                ),
-            },
-
-            (
-                ShapeRecord::StraightEdge {
-                    delta_x: start_dx,
-                    delta_y: start_dy,
-                },
-                ShapeRecord::CurvedEdge {
-                    control_delta_x: end_cdx,
-                    control_delta_y: end_cdy,
-                    anchor_delta_x: end_adx,
-                    anchor_delta_y: end_ady,
-                },
-            ) => {
-                let start_cdx = *start_dx / 2;
-                let start_cdy = *start_dy / 2;
-                let start_adx = start_cdx;
-                let start_ady = start_cdy;
-                ShapeRecord::CurvedEdge {
-                    control_delta_x: Twips::new(
-                        (start_cdx.get() as f32 * a + end_cdx.get() as f32 * b) as i32,
-                    ),
-                    control_delta_y: Twips::new(
-                        (start_cdy.get() as f32 * a + end_cdy.get() as f32 * b) as i32,
-                    ),
-                    anchor_delta_x: Twips::new(
-                        (start_adx.get() as f32 * a + end_adx.get() as f32 * b) as i32,
-                    ),
-                    anchor_delta_y: Twips::new(
-                        (start_ady.get() as f32 * a + end_ady.get() as f32 * b) as i32,
-                    ),
-                }
-            }
-
-            (
-                ShapeRecord::CurvedEdge {
-                    control_delta_x: start_cdx,
-                    control_delta_y: start_cdy,
-                    anchor_delta_x: start_adx,
-                    anchor_delta_y: start_ady,
-                },
-                ShapeRecord::StraightEdge {
-                    delta_x: end_dx,
-                    delta_y: end_dy,
-                },
-            ) => {
-                let end_cdx = *end_dx / 2;
-                let end_cdy = *end_dy / 2;
-                let end_adx = end_cdx;
-                let end_ady = end_cdy;
-                ShapeRecord::CurvedEdge {
-                    control_delta_x: Twips::new(
-                        (start_cdx.get() as f32 * a + end_cdx.get() as f32 * b) as i32,
-                    ),
-                    control_delta_y: Twips::new(
-                        (start_cdy.get() as f32 * a + end_cdy.get() as f32 * b) as i32,
-                    ),
-                    anchor_delta_x: Twips::new(
-                        (start_adx.get() as f32 * a + end_adx.get() as f32 * b) as i32,
-                    ),
-                    anchor_delta_y: Twips::new(
-                        (start_ady.get() as f32 * a + end_ady.get() as f32 * b) as i32,
-                    ),
-                }
-            }
-            _ => unreachable!("{:?} {:?}", start, end),
-        }
-    }
 }
 
 unsafe impl<'gc> gc_arena::Collect for MorphShapeStatic {
     #[inline]
     fn needs_trace() -> bool {
         false
+    }
+}
+
+// Interpolation functions
+// These interpolate between two SWF shape structures.
+// a + b should = 1.0
+
+fn lerp_color(start: &Color, end: &Color, a: f32, b: f32) -> Color {
+    // f32 -> u8 cast is defined to saturate for out of bounds values,
+    // so we don't have to worry about clamping.
+    Color {
+        r: (a * f32::from(start.r) + b * f32::from(end.r)) as u8,
+        g: (a * f32::from(start.g) + b * f32::from(end.g)) as u8,
+        b: (a * f32::from(start.b) + b * f32::from(end.b)) as u8,
+        a: (a * f32::from(start.a) + b * f32::from(end.a)) as u8,
+    }
+}
+
+fn lerp_twips(start: Twips, end: Twips, a: f32, b: f32) -> Twips {
+    Twips::new((start.get() as f32 * a + end.get() as f32 * b) as i32)
+}
+
+fn lerp_fill(start: &swf::FillStyle, end: &swf::FillStyle, a: f32, b: f32) -> swf::FillStyle {
+    use swf::FillStyle;
+    match (start, end) {
+        // Color-to-color
+        (FillStyle::Color(start), FillStyle::Color(end)) => {
+            FillStyle::Color(lerp_color(start, end, a, b))
+        }
+
+        // Bitmap-to-bitmap
+        // ID should be the same.
+        (
+            FillStyle::Bitmap {
+                id: start_id,
+                matrix: start,
+                is_smoothed,
+                is_repeating,
+            },
+            FillStyle::Bitmap { matrix: end, .. },
+        ) => FillStyle::Bitmap {
+            id: *start_id,
+            matrix: lerp_matrix(start, end, a, b),
+            is_smoothed: *is_smoothed,
+            is_repeating: *is_repeating,
+        },
+
+        // Linear-to-linear
+        (FillStyle::LinearGradient(start), FillStyle::LinearGradient(end)) => {
+            FillStyle::LinearGradient(lerp_gradient(start, end, a, b))
+        }
+
+        // Radial-to-radial
+        (FillStyle::RadialGradient(start), FillStyle::RadialGradient(end)) => {
+            FillStyle::RadialGradient(lerp_gradient(start, end, a, b))
+        }
+
+        // Focal gradients also interpolate focal point.
+        (
+            FillStyle::FocalGradient {
+                gradient: start,
+                focal_point: start_focal,
+            },
+            FillStyle::FocalGradient {
+                gradient: end,
+                focal_point: end_focal,
+            },
+        ) => FillStyle::FocalGradient {
+            gradient: lerp_gradient(start, end, a, b),
+            focal_point: a * start_focal + b * end_focal,
+        },
+
+        // All other combinations should not occur, because SWF stores the start/end fill as the same type, always.
+        // If you happened to make, say, a solid color-to-radial gradient tween in the IDE, this would get baked down into
+        // a radial-to-radial gradient on export.
+        _ => {
+            log::warn!(
+                "Unexpected morph shape fill style combination: {:#?}, {:#?}",
+                start,
+                end
+            );
+            start.clone()
+        }
+    }
+}
+
+fn lerp_edges(
+    start: &swf::ShapeRecord,
+    end: &swf::ShapeRecord,
+    a: f32,
+    b: f32,
+) -> swf::ShapeRecord {
+    use swf::ShapeRecord;
+    match (start, end) {
+        (
+            &ShapeRecord::StraightEdge {
+                delta_x: start_dx,
+                delta_y: start_dy,
+            },
+            &ShapeRecord::StraightEdge {
+                delta_x: end_dx,
+                delta_y: end_dy,
+            },
+        ) => ShapeRecord::StraightEdge {
+            delta_x: lerp_twips(start_dx, end_dx, a, b),
+            delta_y: lerp_twips(start_dy, end_dy, a, b),
+        },
+
+        (
+            &ShapeRecord::CurvedEdge {
+                control_delta_x: start_cdx,
+                control_delta_y: start_cdy,
+                anchor_delta_x: start_adx,
+                anchor_delta_y: start_ady,
+            },
+            &ShapeRecord::CurvedEdge {
+                control_delta_x: end_cdx,
+                control_delta_y: end_cdy,
+                anchor_delta_x: end_adx,
+                anchor_delta_y: end_ady,
+            },
+        ) => ShapeRecord::CurvedEdge {
+            control_delta_x: lerp_twips(start_cdx, end_cdx, a, b),
+            control_delta_y: lerp_twips(start_cdy, end_cdy, a, b),
+            anchor_delta_x: lerp_twips(start_adx, end_adx, a, b),
+            anchor_delta_y: lerp_twips(start_ady, end_ady, a, b),
+        },
+
+        (
+            &ShapeRecord::StraightEdge {
+                delta_x: start_dx,
+                delta_y: start_dy,
+            },
+            &ShapeRecord::CurvedEdge {
+                control_delta_x: end_cdx,
+                control_delta_y: end_cdy,
+                anchor_delta_x: end_adx,
+                anchor_delta_y: end_ady,
+            },
+        ) => {
+            let start_cdx = start_dx / 2;
+            let start_cdy = start_dy / 2;
+            let start_adx = start_cdx;
+            let start_ady = start_cdy;
+            ShapeRecord::CurvedEdge {
+                control_delta_x: lerp_twips(start_cdx, end_cdx, a, b),
+                control_delta_y: lerp_twips(start_cdy, end_cdy, a, b),
+                anchor_delta_x: lerp_twips(start_adx, end_adx, a, b),
+                anchor_delta_y: lerp_twips(start_ady, end_ady, a, b),
+            }
+        }
+
+        (
+            &ShapeRecord::CurvedEdge {
+                control_delta_x: start_cdx,
+                control_delta_y: start_cdy,
+                anchor_delta_x: start_adx,
+                anchor_delta_y: start_ady,
+            },
+            &ShapeRecord::StraightEdge {
+                delta_x: end_dx,
+                delta_y: end_dy,
+            },
+        ) => {
+            let end_cdx = end_dx / 2;
+            let end_cdy = end_dy / 2;
+            let end_adx = end_cdx;
+            let end_ady = end_cdy;
+            ShapeRecord::CurvedEdge {
+                control_delta_x: lerp_twips(start_cdx, end_cdx, a, b),
+                control_delta_y: lerp_twips(start_cdy, end_cdy, a, b),
+                anchor_delta_x: lerp_twips(start_adx, end_adx, a, b),
+                anchor_delta_y: lerp_twips(start_ady, end_ady, a, b),
+            }
+        }
+        _ => unreachable!("{:?} {:?}", start, end),
+    }
+}
+
+fn lerp_matrix(start: &swf::Matrix, end: &swf::Matrix, a: f32, b: f32) -> swf::Matrix {
+    // TODO: Lerping a matrix element-wise is geometrically wrong,
+    // but I doubt Flash is decomposing the matrix into scale-rotate-translate?
+    swf::Matrix {
+        a: start.a * a + end.a * b,
+        b: start.b * a + end.b * b,
+        c: start.c * a + end.c * b,
+        d: start.d * a + end.d * b,
+        tx: lerp_twips(start.tx, end.tx, a, b),
+        ty: lerp_twips(start.ty, end.ty, a, b),
+    }
+}
+
+fn lerp_gradient(start: &swf::Gradient, end: &swf::Gradient, a: f32, b: f32) -> swf::Gradient {
+    use swf::{Gradient, GradientRecord};
+    // Morph gradients are guaranteed to have the same number of records in the start/end gradient.
+    debug_assert!(start.records.len() == end.records.len());
+    let records: Vec<GradientRecord> = start
+        .records
+        .iter()
+        .zip(end.records.iter())
+        .map(|(start, end)| swf::GradientRecord {
+            ratio: (f32::from(start.ratio) * a + f32::from(end.ratio) * b) as u8,
+            color: lerp_color(&start.color, &end.color, a, b),
+        })
+        .collect();
+
+    Gradient {
+        matrix: lerp_matrix(&start.matrix, &end.matrix, a, b),
+        spread: start.spread,
+        interpolation: start.interpolation,
+        records,
     }
 }
