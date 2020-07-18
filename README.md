@@ -30,9 +30,10 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 
 ### Desktop
 
-* `cargo run --package=ruffle_desktop -- test.swf`
+- `cargo run --package=ruffle_desktop -- test.swf`
 
 ### Web or Extension
+
 Follow [the instructions in the web directory](web/README.md#building-from-source) for building
 either the web or browser extension version of Ruffle.
 
@@ -42,15 +43,15 @@ If you have a collection of "real world" SWFs to test against, the scanner may b
 ruffle's parsing capabilities. Provided with a folder and an output filename, it will attempt to read
 all of the flash files and report on the success of such a task.
 
-* `cargo run --package=ruffle_scanner -- folder/with/swfs/ results.csv`
+- `cargo run --package=ruffle_scanner -- folder/with/swfs/ results.csv`
 
 ### Exporter
 
 If you have a swf and would like to capture an image of it, you may use the exporter tool.
 This currently requires hardware acceleration, but can be run headless (with no window).
 
-* `cargo run --package=exporter -- path/to/file.swf`
-* `cargo run --package=exporter -- path/to/file.swf path/to/screenshots --frames 5`
+- `cargo run --package=exporter -- path/to/file.swf`
+- `cargo run --package=exporter -- path/to/file.swf path/to/screenshots --frames 5`
 
 ## Structure
 
@@ -68,25 +69,29 @@ Sincere thanks to the diamond level sponsors of Ruffle:
 
 <p align="center">
   <a href="https://www.newgrounds.com">
-    <img src="assets/ng_logo.png" alt="Newgrounds.com">
+    <img src="https://ruffle.rs/assets/sponsors/newgrounds.png" alt="Newgrounds.com">
   </a>
   <a href="https://www.cpmstar.com">
-    <img src="assets/cpmstar_logo.png" alt="CPMStar">
+    <img src="https://ruffle.rs/assets/sponsors/cpmstar.png" alt="CPMStar">
   </a>
   <a href="https://deepnight.net">
-    <img src="assets/deepnight_logo.png" alt="Sébastien Bénard">
+    <img src="https://ruffle.rs/assets/sponsors/deepnight.png" alt="Sébastien Bénard">
   </a>
   <a href="https://www.crazygames.com">
-    <img src="assets/crazygames_logo.png" alt="Crazy Games">
+    <img src="https://ruffle.rs/assets/sponsors/crazygames.png" alt="Crazy Games">
+  </a>
+  <a href="https://www.coolmathgames.com">
+    <img src="https://ruffle.rs/assets/sponsors/coolmathgames.png" alt="Cool Math Games">
   </a>
 </p>
 
 ## License
 
 Licensed under either of
- * Apache License, Version 2.0 ([LICENSE_APACHE](LICENSE_APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE_MIT](LICENSE_MIT) or http://opensource.org/licenses/MIT)
-at your option.
+
+- Apache License, Version 2.0 ([LICENSE_APACHE](LICENSE_APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE_MIT](LICENSE_MIT) or http://opensource.org/licenses/MIT)
+  at your option.
 
 ### Contribution
 
