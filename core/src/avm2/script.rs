@@ -5,8 +5,8 @@ use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::r#trait::Trait;
 use crate::avm2::string::AvmString;
 use crate::avm2::Error;
+use fnv::FnvHashMap;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
-use std::collections::HashMap;
 use std::mem::drop;
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Index, Script as AbcScript};
@@ -38,16 +38,16 @@ pub struct TranslationUnitData<'gc> {
     abc: CollectWrapper<Rc<AbcFile>>,
 
     /// All classes loaded from the ABC's class list.
-    classes: HashMap<u32, GcCell<'gc, Class<'gc>>>,
+    classes: FnvHashMap<u32, GcCell<'gc, Class<'gc>>>,
 
     /// All methods loaded from the ABC's method list.
-    methods: HashMap<u32, Method<'gc>>,
+    methods: FnvHashMap<u32, Method<'gc>>,
 
     /// All scripts loaded from the ABC's scripts list.
-    scripts: HashMap<u32, GcCell<'gc, Script<'gc>>>,
+    scripts: FnvHashMap<u32, GcCell<'gc, Script<'gc>>>,
 
     /// All strings loaded from the ABC's strings list.
-    strings: HashMap<u32, AvmString<'gc>>,
+    strings: FnvHashMap<u32, AvmString<'gc>>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -56,10 +56,10 @@ impl<'gc> TranslationUnit<'gc> {
             mc,
             TranslationUnitData {
                 abc: CollectWrapper(abc),
-                classes: HashMap::new(),
-                methods: HashMap::new(),
-                scripts: HashMap::new(),
-                strings: HashMap::new(),
+                classes: FnvHashMap::default(),
+                methods: FnvHashMap::default(),
+                scripts: FnvHashMap::default(),
+                strings: FnvHashMap::default(),
             },
         ))
     }
