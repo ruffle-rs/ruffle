@@ -75,12 +75,12 @@ impl<'gc> TranslationUnit<'gc> {
         method_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Method<'gc>, Error> {
-        let write = self.0.write(mc);
-        if let Some(method) = write.methods.get(&method_index) {
+        let read = self.0.read();
+        if let Some(method) = read.methods.get(&method_index) {
             return Ok(method.clone());
         }
 
-        drop(write);
+        drop(read);
 
         let method: Result<Gc<'gc, BytecodeMethod<'gc>>, Error> =
             BytecodeMethod::from_method_index(self, Index::new(method_index), mc)
@@ -101,12 +101,12 @@ impl<'gc> TranslationUnit<'gc> {
         class_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
-        let write = self.0.write(mc);
-        if let Some(class) = write.classes.get(&class_index) {
+        let read = self.0.read();
+        if let Some(class) = read.classes.get(&class_index) {
             return Ok(*class);
         }
 
-        drop(write);
+        drop(read);
 
         let class = Class::from_abc_index(self, class_index, mc)?;
         self.0.write(mc).classes.insert(class_index, class);
@@ -122,12 +122,12 @@ impl<'gc> TranslationUnit<'gc> {
         script_index: u32,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Script<'gc>>, Error> {
-        let write = self.0.write(mc);
-        if let Some(scripts) = write.scripts.get(&script_index) {
+        let read = self.0.read();
+        if let Some(scripts) = read.scripts.get(&script_index) {
             return Ok(*scripts);
         }
 
-        drop(write);
+        drop(read);
 
         let script = Script::from_abc_index(self, script_index, mc)?;
         self.0.write(mc).scripts.insert(script_index, script);
