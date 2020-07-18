@@ -1,10 +1,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::fscommand;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::listeners::SystemListeners;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
-use crate::backend::navigator::NavigationMethod;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use rand::Rng;
@@ -41,41 +39,6 @@ pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
 mod xml;
-
-#[allow(non_snake_case, unused_must_use)] //can't use errors yet
-pub fn getURL<'a, 'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'a, 'gc, '_>,
-    _this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    //TODO: Error behavior if no arguments are present
-    if let Some(url_val) = args.get(0) {
-        let url = url_val.coerce_to_string(activation, context)?;
-        if let Some(fscommand) = fscommand::parse(&url) {
-            fscommand::handle(fscommand, activation, context);
-            return Ok(Value::Undefined);
-        }
-
-        let window = if let Some(window) = args.get(1) {
-            Some(window.coerce_to_string(activation, context)?.to_string())
-        } else {
-            None
-        };
-        let method = match args.get(2) {
-            Some(Value::String(s)) if *s == "GET" => Some(NavigationMethod::GET),
-            Some(Value::String(s)) if *s == "POST" => Some(NavigationMethod::POST),
-            _ => None,
-        };
-        let vars_method = method.map(|m| (m, activation.locals_into_form_values(context)));
-
-        context
-            .navigator
-            .navigate_to_url(url.to_string(), window, vars_method);
-    }
-
-    Ok(Value::Undefined)
-}
 
 pub fn random<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -555,13 +518,6 @@ pub fn create_globals<'gc>(
     globals.force_set_function(
         "isNaN",
         is_nan,
-        gc_context,
-        EnumSet::empty(),
-        Some(function_proto),
-    );
-    globals.force_set_function(
-        "getURL",
-        getURL,
         gc_context,
         EnumSet::empty(),
         Some(function_proto),
