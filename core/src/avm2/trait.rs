@@ -131,6 +131,40 @@ impl<'gc> Trait<'gc> {
         }
     }
 
+    pub fn from_slot(
+        name: QName<'gc>,
+        type_name: Multiname<'gc>,
+        default_value: Option<Value<'gc>>,
+    ) -> Self {
+        Trait {
+            name,
+            is_final: false,
+            is_override: false,
+            kind: TraitKind::Slot {
+                slot_id: 0,
+                type_name,
+                default_value,
+            },
+        }
+    }
+
+    pub fn from_const(
+        name: QName<'gc>,
+        type_name: Multiname<'gc>,
+        default_value: Option<Value<'gc>>,
+    ) -> Self {
+        Trait {
+            name,
+            is_final: false,
+            is_override: false,
+            kind: TraitKind::Slot {
+                slot_id: 0,
+                type_name,
+                default_value,
+            },
+        }
+    }
+
     /// Convert an ABC trait into a loaded trait.
     pub fn from_abc_trait(
         unit: TranslationUnit<'gc>,
