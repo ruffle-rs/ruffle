@@ -293,4 +293,17 @@ impl<'gc> Trait<'gc> {
     pub fn set_attributes(&mut self, attribs: EnumSet<TraitAttributes>) {
         self.attributes.0 = attribs;
     }
+
+    /// Set the slot or dispatch ID of this trait.
+    pub fn set_slot_id(&mut self, id: u32) {
+        match &mut self.kind {
+            TraitKind::Slot { slot_id, .. } => *slot_id = id,
+            TraitKind::Method { disp_id, .. } => *disp_id = id,
+            TraitKind::Getter { disp_id, .. } => *disp_id = id,
+            TraitKind::Setter { disp_id, .. } => *disp_id = id,
+            TraitKind::Class { slot_id, .. } => *slot_id = id,
+            TraitKind::Function { slot_id, .. } => *slot_id = id,
+            TraitKind::Const { slot_id, .. } => *slot_id = id,
+        }
+    }
 }
