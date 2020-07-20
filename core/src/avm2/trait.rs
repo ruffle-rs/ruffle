@@ -289,4 +289,8 @@ impl<'gc> Trait<'gc> {
     pub fn is_override(&self) -> bool {
         self.attributes.0.contains(TraitAttributes::Override)
     }
+
+    pub fn set_attributes(&mut self, attribs: EnumSet<TraitAttributes>) {
+        self.attributes.0 = attribs;
+    }
 }
