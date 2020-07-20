@@ -148,6 +148,11 @@ impl<'gc> Class<'gc> {
         self.attributes = CollectWrapper(attributes);
     }
 
+    /// Add a protected namespace to this class.
+    pub fn set_protected_namespace(&mut self, ns: Namespace<'gc>) {
+        self.protected_namespace = Some(ns)
+    }
+
     /// Construct a class from a `TranslationUnit` and it's class index.
     ///
     /// The returned class will be allocated, but no traits will be loaded. The
