@@ -1,0 +1,4 @@
+//freeFunction.toLocaleString()
+function Function() {}
+//namedFunction.toLocaleString()
+function Function() {}

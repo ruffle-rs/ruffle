@@ -1,0 +1,2 @@
+//(new Object()).toLocaleString()
+[object Object]

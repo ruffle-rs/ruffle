@@ -1,0 +1,85 @@
+//es4inst.propertyIsEnumerable('test_var')
+false
+//es4inst.setPropertyIsEnumerable('test_var', true)
+//es4inst.propertyIsEnumerable('test_var')
+false
+//es4inst.propertyIsEnumerable('test_const')
+false
+//es4inst.setPropertyIsEnumerable('test_const', true)
+//es4inst.propertyIsEnumerable('test_const')
+false
+//es4inst.propertyIsEnumerable('test_function')
+false
+//es4inst.setPropertyIsEnumerable('test_function', true)
+//es4inst.propertyIsEnumerable('test_function')
+false
+//es4inst.propertyIsEnumerable('test_virt')
+false
+//es4inst.setPropertyIsEnumerable('test_virt', true)
+//es4inst.propertyIsEnumerable('test_virt')
+false
+//es4inst.propertyIsEnumerable('test_private_var')
+false
+//es4inst.setPropertyIsEnumerable('test_private_var', true)
+//es4inst.propertyIsEnumerable('test_private_var')
+false
+//es4inst.propertyIsEnumerable('test_private_const')
+false
+//es4inst.setPropertyIsEnumerable('test_private_const', true)
+//es4inst.propertyIsEnumerable('test_private_const')
+false
+//es4inst.propertyIsEnumerable('test_private_function')
+false
+//es4inst.setPropertyIsEnumerable('test_private_function', true)
+//es4inst.propertyIsEnumerable('test_private_function')
+false
+//es4inst.propertyIsEnumerable('test_private_virt')
+false
+//es4inst.setPropertyIsEnumerable('test_private_virt', true)
+//es4inst.propertyIsEnumerable('test_private_virt')
+false
+//ES4Class.propertyIsEnumerable('test_static_var')
+false
+//ES4Class.setPropertyIsEnumerable('test_static_var', true)
+//ES4Class.propertyIsEnumerable('test_static_var')
+false
+//ES4Class.propertyIsEnumerable('test_static_const')
+false
+//ES4Class.setPropertyIsEnumerable('test_static_const', true)
+//ES4Class.propertyIsEnumerable('test_static_const')
+false
+//ES4Class.propertyIsEnumerable('test_static_function')
+false
+//ES4Class.setPropertyIsEnumerable('test_static_function', true)
+//ES4Class.propertyIsEnumerable('test_static_function')
+false
+//ES4Class.propertyIsEnumerable('test_static_virt')
+false
+//ES4Class.setPropertyIsEnumerable('test_static_virt', true)
+//ES4Class.propertyIsEnumerable('test_static_virt')
+false
+//es3inst.propertyIsEnumerable('test_var')
+true
+//es3inst.setPropertyIsEnumerable('test_var', false)
+//es3inst.propertyIsEnumerable('test_var')
+false
+//ES3Class.propertyIsEnumerable('test_static_var')
+true
+//ES3Class.setPropertyIsEnumerable('test_static_var', false)
+//ES3Class.propertyIsEnumerable('test_static_var')
+false
+//ES3Class.propertyIsEnumerable('test_static_function')
+true
+//ES3Class.setPropertyIsEnumerable('test_static_function', false)
+//ES3Class.propertyIsEnumerable('test_static_function')
+false
+//ES3Class.prototype.propertyIsEnumerable('test_function')
+true
+//ES3Class.prototype.setPropertyIsEnumerable('test_function', false)
+//ES3Class.prototype.propertyIsEnumerable('test_function')
+false
+//ES3Class.prototype.propertyIsEnumerable('test_proto')
+true
+//ES3Class.prototype.setPropertyIsEnumerable('test_proto', false)
+//ES3Class.prototype.propertyIsEnumerable('test_proto')
+false

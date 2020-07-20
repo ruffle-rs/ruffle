@@ -1,0 +1,12 @@
+//ES4Class.prototype.isPrototypeOf(es4inst);
+true
+//Object.prototype.isPrototypeOf(es4inst);
+true
+//ES3Class.prototype.isPrototypeOf(es4inst);
+false
+//ES4Class.prototype.isPrototypeOf(es3inst);
+false
+//Object.prototype.isPrototypeOf(es3inst);
+true
+//ES3Class.prototype.isPrototypeOf(es3inst);
+true

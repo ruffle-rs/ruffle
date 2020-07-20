@@ -1,7 +1,7 @@
 use crate::avm2::types::*;
 use crate::error::{Error, Result};
 use crate::read::SwfRead;
-use std::io::Read;
+use std::io::{Read, Seek, SeekFrom};
 
 pub struct Reader<R: Read> {
     inner: R,
@@ -10,6 +10,16 @@ pub struct Reader<R: Read> {
 impl<R: Read> SwfRead<R> for Reader<R> {
     fn get_inner(&mut self) -> &mut R {
         &mut self.inner
+    }
+}
+
+impl<R> Reader<R>
+where
+    R: Read + Seek,
+{
+    #[inline]
+    pub fn seek(&mut self, relative_offset: i64) -> std::io::Result<u64> {
+        self.inner.seek(SeekFrom::Current(relative_offset as i64))
     }
 }
 
@@ -90,11 +100,10 @@ impl<R: Read> Reader<R> {
         self.read_u30()
     }
 
-    #[allow(dead_code)]
     fn read_i24(&mut self) -> Result<i32> {
-        Ok(i32::from(self.read_u8()?)
-            | (i32::from(self.read_u8()?) << 8)
-            | (i32::from(self.read_u8()?) << 16))
+        Ok(i32::from(self.read_u8()? as i8)
+            | (i32::from(self.read_u8()? as i8) << 8)
+            | (i32::from(self.read_u8()? as i8) << 16))
     }
     fn read_i32(&mut self) -> Result<i32> {
         let mut n: i32 = 0;
@@ -517,8 +526,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    #[allow(dead_code)]
-    fn read_op(&mut self) -> Result<Option<Op>> {
+    pub fn read_op(&mut self) -> Result<Option<Op>> {
         use crate::avm2::opcode::OpCode;
         use num_traits::FromPrimitive;
 

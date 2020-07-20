@@ -1,0 +1,2 @@
+//ES4Class.valueOf() === ES4Class
+true

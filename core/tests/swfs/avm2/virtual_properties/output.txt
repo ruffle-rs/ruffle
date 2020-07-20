@@ -1,0 +1,16 @@
+Test2 Prop
+Setting Test2 Prop
+Test2 Set Prop2
+Test2 Prop3
+Test2 Prop
+Setting Test3 Prop
+Test3 Prop2
+Setting Test3 Prop3
+Child Prop2 getter
+Test2 Prop
+Child Prop2 Setter
+Setting Test4 Prop
+Test3 Prop2
+Test2 Set Prop2
+Test2 Prop3
+Setting Test4 Prop3

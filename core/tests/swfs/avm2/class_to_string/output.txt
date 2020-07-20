@@ -1,0 +1,2 @@
+//ES4Class.toString()
+[class ES4Class]

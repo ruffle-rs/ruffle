@@ -10,6 +10,7 @@ extern crate smallvec;
 extern crate downcast_rs;
 
 mod avm1;
+mod avm2;
 mod bounding_box;
 mod character;
 pub mod color_transform;

@@ -1,0 +1,31 @@
+Instance constructor
+Child instance constructor pre-super
+Instance constructor
+Child instance constructor post-super
+Script initializer
+Child instance constructor pre-super
+Instance constructor
+Child instance constructor post-super
+Child instance method pre-super
+Instance method
+Child instance method post-super
+Instance method 2
+Child instance method3 pre-super
+Instance method
+Child instance method3 post-super
+Grandchild instance constructor pre-super
+Child instance constructor pre-super
+Instance constructor
+Child instance constructor post-super
+Grandchild instance constructor post-super
+Child instance method pre-super
+Instance method
+Child instance method post-super
+Grandchild instance method2 pre-super
+Instance method 2
+Grandchild instance method2 post-super
+Grandchild instance method3 pre-super
+Child instance method3 pre-super
+Instance method
+Child instance method3 post-super
+Grandchild instance method3 post-super

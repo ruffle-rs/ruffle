@@ -1,15 +1,17 @@
 use gc_arena::{Collect, Gc, MutationContext};
+use std::cmp::{Eq, Ord, Ordering, PartialOrd};
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
-#[derive(Debug, Clone, Collect)]
+#[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
     Owned(Gc<'gc, String>),
     Static(&'static str),
 }
 
-#[derive(Debug, Clone, Collect)]
+#[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct AvmString<'gc> {
     source: Source<'gc>,
@@ -75,6 +77,29 @@ impl<'gc> PartialEq<AvmString<'gc>> for AvmString<'gc> {
     #[inline]
     fn eq(&self, other: &AvmString<'gc>) -> bool {
         PartialEq::eq(self.as_str(), other.as_str())
+    }
+}
+
+impl<'gc> Eq for AvmString<'gc> {}
+
+impl<'gc> PartialOrd<AvmString<'gc>> for AvmString<'gc> {
+    fn partial_cmp(&self, other: &AvmString<'gc>) -> Option<Ordering> {
+        self.as_ref().partial_cmp(other.as_ref())
+    }
+}
+
+impl<'gc> Ord for AvmString<'gc> {
+    fn cmp(&self, other: &AvmString<'gc>) -> Ordering {
+        self.as_ref().cmp(other.as_ref())
+    }
+}
+
+impl<'gc> Hash for AvmString<'gc> {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        self.as_ref().hash(state)
     }
 }
 

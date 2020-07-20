@@ -1,0 +1,6 @@
+Using ES4 Class method...
+var x: ES4Class
+var y: ES4Class
+Using prototype method...
+var y: ES4Class
+var x: ES4Class
