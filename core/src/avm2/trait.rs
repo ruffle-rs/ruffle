@@ -101,6 +101,36 @@ impl<'gc> Trait<'gc> {
         }
     }
 
+    pub fn from_getter(name: QName<'gc>, method: Method<'gc>) -> Self {
+        Trait {
+            name,
+            is_final: false,
+            is_override: false,
+            kind: TraitKind::Getter { disp_id: 0, method },
+        }
+    }
+
+    pub fn from_setter(name: QName<'gc>, method: Method<'gc>) -> Self {
+        Trait {
+            name,
+            is_final: false,
+            is_override: false,
+            kind: TraitKind::Setter { disp_id: 0, method },
+        }
+    }
+
+    pub fn from_function(name: QName<'gc>, function: Method<'gc>) -> Self {
+        Trait {
+            name,
+            is_final: false,
+            is_override: false,
+            kind: TraitKind::Function {
+                slot_id: 0,
+                function,
+            },
+        }
+    }
+
     /// Convert an ABC trait into a loaded trait.
     pub fn from_abc_trait(
         unit: TranslationUnit<'gc>,
