@@ -7,6 +7,7 @@ default-run = "ruffle_desktop"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+clap = "3.0.0-beta.1"
 cpal = "0.12.1"
 ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu" }
@@ -17,7 +18,6 @@ jpeg-decoder = "0.1.20"
 log = "0.4"
 lyon = "0.16.0"
 sample = "0.11.0"
-structopt = "0.3.15"
 winit = "0.22.1"
 webbrowser = "0.5.5"
 url = "2.1.1"

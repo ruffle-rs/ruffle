@@ -10,6 +10,7 @@ mod task;
 
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
+use clap::Clap;
 use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
     Player,
@@ -18,7 +19,6 @@ use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
-use structopt::StructOpt;
 
 use crate::storage::DiskStorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
@@ -28,10 +28,10 @@ use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Icon, WindowBuilder};
 
-#[derive(StructOpt, Debug)]
-#[structopt(name = "basic")]
+#[derive(Clap, Debug)]
+#[clap(name = "basic")]
 struct Opt {
-    #[structopt(name = "FILE", parse(from_os_str))]
+    #[clap(name = "FILE", parse(from_os_str))]
     input_path: PathBuf,
 }
 
@@ -40,7 +40,7 @@ fn main() {
 
     env_logger::init();
 
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     let ret = run_player(opt.input_path);
 
