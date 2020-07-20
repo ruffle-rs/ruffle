@@ -6,8 +6,25 @@ use crate::avm2::names::{Multiname, QName};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::{Avm2, Error};
+use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::types::{Trait as AbcTrait, TraitKind as AbcTraitKind};
+
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
+pub struct CollectWrapper<T>(T);
+
+/// All attributes a trait can have.
+#[derive(Debug, EnumSetType)]
+pub enum TraitAttributes {
+    /// Whether or not traits in downstream classes are allowed to override
+    /// this trait.
+    Final,
+
+    /// Whether or not this trait is intended to override an upstream class's
+    /// trait.
+    Override,
+}
 
 /// Represents a trait as loaded into the VM.
 ///
@@ -25,16 +42,20 @@ pub struct Trait<'gc> {
     /// The name of this trait.
     name: QName<'gc>,
 
-    /// Whether or not traits in downstream classes are allowed to override
-    /// this trait.
-    is_final: bool,
-
-    /// Whether or not this trait is intended to override an upstream class's
-    /// trait.
-    is_override: bool,
+    /// The attributes set on this trait.
+    attributes: CollectWrapper<EnumSet<TraitAttributes>>,
 
     /// The kind of trait in use.
     kind: TraitKind<'gc>,
+}
+
+fn trait_attribs_from_abc_traits(abc_trait: &AbcTrait) -> CollectWrapper<EnumSet<TraitAttributes>> {
+    CollectWrapper(match (abc_trait.is_final, abc_trait.is_override) {
+        (true, true) => TraitAttributes::Final | TraitAttributes::Override,
+        (true, false) => TraitAttributes::Final.into(),
+        (false, true) => TraitAttributes::Override.into(),
+        (false, false) => EnumSet::empty(),
+    })
 }
 
 /// The fields for a particular kind of trait.
@@ -86,8 +107,7 @@ impl<'gc> Trait<'gc> {
 
         Trait {
             name,
-            is_final: false,
-            is_override: false,
+            attributes: CollectWrapper(EnumSet::empty()),
             kind: TraitKind::Class { slot_id: 0, class },
         }
     }
@@ -95,8 +115,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_method(name: QName<'gc>, method: Method<'gc>) -> Self {
         Trait {
             name,
-            is_final: false,
-            is_override: false,
+            attributes: CollectWrapper(EnumSet::empty()),
             kind: TraitKind::Method { disp_id: 0, method },
         }
     }
@@ -104,8 +123,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_getter(name: QName<'gc>, method: Method<'gc>) -> Self {
         Trait {
             name,
-            is_final: false,
-            is_override: false,
+            attributes: CollectWrapper(EnumSet::empty()),
             kind: TraitKind::Getter { disp_id: 0, method },
         }
     }
@@ -113,8 +131,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_setter(name: QName<'gc>, method: Method<'gc>) -> Self {
         Trait {
             name,
-            is_final: false,
-            is_override: false,
+            attributes: CollectWrapper(EnumSet::empty()),
             kind: TraitKind::Setter { disp_id: 0, method },
         }
     }
@@ -122,8 +139,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_function(name: QName<'gc>, function: Method<'gc>) -> Self {
         Trait {
             name,
-            is_final: false,
-            is_override: false,
+            attributes: CollectWrapper(EnumSet::empty()),
             kind: TraitKind::Function {
                 slot_id: 0,
                 function,
@@ -138,8 +154,7 @@ impl<'gc> Trait<'gc> {
     ) -> Self {
         Trait {
             name,
-            is_final: false,
-            is_override: false,
+            attributes: CollectWrapper(EnumSet::empty()),
             kind: TraitKind::Slot {
                 slot_id: 0,
                 type_name,
@@ -155,8 +170,7 @@ impl<'gc> Trait<'gc> {
     ) -> Self {
         Trait {
             name,
-            is_final: false,
-            is_override: false,
+            attributes: CollectWrapper(EnumSet::empty()),
             kind: TraitKind::Slot {
                 slot_id: 0,
                 type_name,
@@ -181,8 +195,7 @@ impl<'gc> Trait<'gc> {
                 value,
             } => Trait {
                 name,
-                is_final: abc_trait.is_final,
-                is_override: abc_trait.is_override,
+                attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Slot {
                     slot_id: *slot_id,
                     type_name: if type_name.0 == 0 {
@@ -199,8 +212,7 @@ impl<'gc> Trait<'gc> {
             },
             AbcTraitKind::Method { disp_id, method } => Trait {
                 name,
-                is_final: abc_trait.is_final,
-                is_override: abc_trait.is_override,
+                attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Method {
                     disp_id: *disp_id,
                     method: unit.load_method(method.0, mc)?,
@@ -208,8 +220,7 @@ impl<'gc> Trait<'gc> {
             },
             AbcTraitKind::Getter { disp_id, method } => Trait {
                 name,
-                is_final: abc_trait.is_final,
-                is_override: abc_trait.is_override,
+                attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Getter {
                     disp_id: *disp_id,
                     method: unit.load_method(method.0, mc)?,
@@ -217,8 +228,7 @@ impl<'gc> Trait<'gc> {
             },
             AbcTraitKind::Setter { disp_id, method } => Trait {
                 name,
-                is_final: abc_trait.is_final,
-                is_override: abc_trait.is_override,
+                attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Setter {
                     disp_id: *disp_id,
                     method: unit.load_method(method.0, mc)?,
@@ -226,8 +236,7 @@ impl<'gc> Trait<'gc> {
             },
             AbcTraitKind::Class { slot_id, class } => Trait {
                 name,
-                is_final: abc_trait.is_final,
-                is_override: abc_trait.is_override,
+                attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Class {
                     slot_id: *slot_id,
                     class: unit.load_class(class.0, avm2, mc)?,
@@ -235,8 +244,7 @@ impl<'gc> Trait<'gc> {
             },
             AbcTraitKind::Function { slot_id, function } => Trait {
                 name,
-                is_final: abc_trait.is_final,
-                is_override: abc_trait.is_override,
+                attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Function {
                     slot_id: *slot_id,
                     function: unit.load_method(function.0, mc)?,
@@ -248,8 +256,7 @@ impl<'gc> Trait<'gc> {
                 value,
             } => Trait {
                 name,
-                is_final: abc_trait.is_final,
-                is_override: abc_trait.is_override,
+                attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Const {
                     slot_id: *slot_id,
                     type_name: if type_name.0 == 0 {
@@ -276,10 +283,10 @@ impl<'gc> Trait<'gc> {
     }
 
     pub fn is_final(&self) -> bool {
-        self.is_final
+        self.attributes.0.contains(TraitAttributes::Final)
     }
 
     pub fn is_override(&self) -> bool {
-        self.is_override
+        self.attributes.0.contains(TraitAttributes::Override)
     }
 }
