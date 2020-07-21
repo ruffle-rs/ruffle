@@ -1,4 +1,3 @@
-#![windows_subsystem = "windows"]
 #![allow(clippy::unneeded_field_pattern)]
 
 mod audio;
@@ -36,6 +35,8 @@ struct Opt {
 }
 
 fn main() {
+    win32_hide_console();
+
     env_logger::init();
 
     let opt = Opt::from_args();
@@ -208,5 +209,24 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                 *control_flow = ControlFlow::WaitUntil(next_frame_time);
             }
         });
+    }
+}
+
+/// Hides the Win32 console if we were not launched from the command line.
+fn win32_hide_console() {
+    #[cfg(windows)]
+    unsafe {
+        use winapi::um::{wincon::*, winuser::*};
+        // If we have a console, and we are the exclusive process using that console,
+        // then we were not launched from the command-line; hide the console to act like a GUI app.
+        let hwnd = GetConsoleWindow();
+        if !hwnd.is_null() {
+            let mut pids = [0; 2];
+            let num_pids = GetConsoleProcessList(pids.as_mut_ptr(), 2);
+            let is_exclusive = num_pids <= 1;
+            if is_exclusive {
+                ShowWindow(hwnd, SW_HIDE);
+            }
+        }
     }
 }
