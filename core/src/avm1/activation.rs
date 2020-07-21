@@ -2349,7 +2349,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             "Thrown exception: {}",
             value
                 .coerce_to_string(self, context)
-                .unwrap_or_else(|_| Cow::Borrowed("undefined"))
+                .unwrap_or_else(|_| "undefined".into())
         );
         Err(Error::ThrownValue(value))
     }
