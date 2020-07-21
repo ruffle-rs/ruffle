@@ -1,0 +1,82 @@
+// dump()
+// arguments
+
+
+// arguments.length
+0
+
+// arguments instanceof Array
+true
+
+// arguments.__proto__ === Array.prototype
+true
+
+
+
+// dump("a")
+// arguments
+a
+
+// arguments.length
+1
+
+// arguments instanceof Array
+true
+
+// arguments.__proto__ === Array.prototype
+true
+
+// arguments[0]
+a
+
+
+
+// dump("a", "b")
+// arguments
+a,b
+
+// arguments.length
+2
+
+// arguments instanceof Array
+true
+
+// arguments.__proto__ === Array.prototype
+true
+
+// arguments[1]
+b
+
+// arguments[0]
+a
+
+
+
+// indirectDump("a", "b", undefined, "d")
+// dump.apply(dump, arguments)
+// arguments
+a,b,undefined,d
+
+// arguments.length
+4
+
+// arguments instanceof Array
+true
+
+// arguments.__proto__ === Array.prototype
+true
+
+// arguments[3]
+d
+
+// arguments[2]
+undefined
+
+// arguments[1]
+b
+
+// arguments[0]
+a
+
+
+

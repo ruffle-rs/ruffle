@@ -222,6 +222,7 @@ swf_tests! {
     (error, "avm1/error", 1),
     (color_transform, "avm1/color_transform", 1),
     (with, "avm1/with", 1),
+    (arguments, "avm1/arguments", 1),
     (prototype_properties, "avm1/prototype_properties", 1),
     (stage_object_properties_get_var, "avm1/stage_object_properties_get_var", 1),
     (set_interval, "avm1/set_interval", 20),
