@@ -29,7 +29,11 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Icon, WindowBuilder};
 
 #[derive(Clap, Debug)]
-#[clap(name = "basic")]
+#[clap(
+    name = "Ruffle",
+    author,
+    version = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt")),
+)]
 struct Opt {
     #[clap(name = "FILE", parse(from_os_str))]
     input_path: PathBuf,
