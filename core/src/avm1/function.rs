@@ -161,7 +161,7 @@ impl<'gc> Avm1Function<'gc> {
             preload_root: swf_function.preload_root,
             suppress_super: swf_function.suppress_super,
             preload_super: swf_function.preload_super,
-            suppress_arguments: swf_function.suppress_super,
+            suppress_arguments: swf_function.suppress_arguments,
             preload_arguments: swf_function.preload_arguments,
             suppress_this: swf_function.suppress_this,
             preload_this: swf_function.preload_this,
@@ -249,23 +249,13 @@ impl<'gc> Executable<'gc> {
                     Scope::new_local_scope(af.scope(), ac.gc_context),
                 );
                 let arguments =
-                    ScriptObject::object(ac.gc_context, Some(activation.avm.prototypes().object));
+                    ScriptObject::array(ac.gc_context, Some(activation.avm.prototypes().array));
+                arguments.define_value(ac.gc_context, "callee", this.into(), DontEnum.into());
+
                 if !af.suppress_arguments {
                     for i in 0..args.len() {
-                        arguments.define_value(
-                            ac.gc_context,
-                            &format!("{}", i),
-                            args.get(i).unwrap().clone(),
-                            DontDelete.into(),
-                        )
+                        arguments.set_array_element(i, args.get(i).unwrap().clone(), ac.gc_context);
                     }
-
-                    arguments.define_value(
-                        ac.gc_context,
-                        "length",
-                        args.len().into(),
-                        DontDelete | DontEnum,
-                    );
                 }
 
                 let argcell = arguments.into();
