@@ -12,6 +12,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::tag_utils::SwfSlice;
+use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
 use enumset::EnumSet;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -2714,7 +2715,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             level.set_depth(self.context.gc_context, level_id as i32);
             self.context.levels.insert(level_id, level);
-            level.post_instantiation(&mut self.context, level, None, false, false);
+            level.post_instantiation(&mut self.context, level, None, Instantiator::Movie, false);
 
             level
         }

@@ -15,6 +15,7 @@ use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfSlice;
+use crate::vminterface::Instantiator;
 use gc_arena::MutationContext;
 use std::borrow::Cow;
 use swf::{
@@ -521,7 +522,13 @@ fn attach_movie<'gc>(
         } else {
             None
         };
-        new_clip.post_instantiation(&mut activation.context, new_clip, init_object, true, true);
+        new_clip.post_instantiation(
+            &mut activation.context,
+            new_clip,
+            init_object,
+            Instantiator::Avm1,
+            true,
+        );
 
         Ok(new_clip.object().coerce_to_object(activation).into())
     } else {
@@ -558,7 +565,13 @@ fn create_empty_movie_clip<'gc>(
     // Set name and attach to parent.
     new_clip.set_name(activation.context.gc_context, &new_instance_name);
     movie_clip.add_child_from_avm(&mut activation.context, new_clip.into(), depth);
-    new_clip.post_instantiation(&mut activation.context, new_clip.into(), None, true, true);
+    new_clip.post_instantiation(
+        &mut activation.context,
+        new_clip.into(),
+        None,
+        Instantiator::Avm1,
+        true,
+    );
 
     Ok(new_clip.object())
 }
@@ -607,7 +620,13 @@ fn create_text_field<'gc>(
         text_field,
         (depth as Depth).wrapping_add(AVM_DEPTH_BIAS),
     );
-    text_field.post_instantiation(&mut activation.context, text_field, None, true, false);
+    text_field.post_instantiation(
+        &mut activation.context,
+        text_field,
+        None,
+        Instantiator::Avm1,
+        false,
+    );
 
     if activation.current_swf_version() >= 8 {
         //SWF8+ returns the `TextField` instance here
@@ -682,7 +701,13 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         // Definitely not ScriptObject properties.
 
         let init_object = init_object.map(|v| v.coerce_to_object(activation));
-        new_clip.post_instantiation(&mut activation.context, new_clip, init_object, true, true);
+        new_clip.post_instantiation(
+            &mut activation.context,
+            new_clip,
+            init_object,
+            Instantiator::Avm1,
+            true,
+        );
 
         Ok(new_clip.object().coerce_to_object(activation).into())
     } else {

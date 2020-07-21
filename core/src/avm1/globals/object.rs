@@ -153,7 +153,7 @@ pub fn register_class<'gc>(
                 if let Some(constructor) = args.get(1) {
                     movie_clip.set_avm1_constructor(
                         activation.context.gc_context,
-                        Some(constructor.coerce_to_object(activation)),
+                        Some(constructor.coerce_to_object(activation).into()),
                     );
                 } else {
                     movie_clip.set_avm1_constructor(activation.context.gc_context, None);

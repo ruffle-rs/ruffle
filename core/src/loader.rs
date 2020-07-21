@@ -7,6 +7,7 @@ use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
+use crate::vminterface::Instantiator;
 use crate::xml::XMLNode;
 use gc_arena::{Collect, CollectionContext, MutationContext};
 use generational_arena::{Arena, Index};
@@ -491,7 +492,7 @@ impl<'gc> Loader<'gc> {
                             .expect("Attempted to load movie into not movie clip");
 
                         mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
-                        mc.post_instantiation(uc, clip, None, false, false);
+                        mc.post_instantiation(uc, clip, None, Instantiator::Movie, false);
 
                         let mut morph_shapes = fnv::FnvHashMap::default();
                         mc.preload(uc, &mut morph_shapes);

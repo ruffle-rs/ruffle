@@ -1,10 +1,12 @@
-use crate::avm1::{Object, TObject, Value};
+use crate::avm1::{Object as Avm1Object, TObject, Value as Avm1Value};
+use crate::avm2::Value as Avm2Value;
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
+use crate::vminterface::Instantiator;
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -739,7 +741,7 @@ pub trait TDisplayObject<'gc>:
         }
 
         // Unregister any text field variable bindings, and replace them on the unbound list.
-        if let Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object() {
             if let Some(stage_object) = object.as_stage_object() {
                 stage_object.unregister_text_field_bindings(context);
             }
@@ -823,8 +825,12 @@ pub trait TDisplayObject<'gc>:
         // TODO: More in here eventually.
     }
 
-    fn object(&self) -> Value<'gc> {
-        Value::Undefined // todo: impl for every type and delete this fallback
+    fn object(&self) -> Avm1Value<'gc> {
+        Avm1Value::Undefined // todo: impl for every type and delete this fallback
+    }
+
+    fn object2(&self) -> Avm2Value<'gc> {
+        Avm2Value::Undefined // todo: see above
     }
 
     /// Tests if a given stage position point intersects with the world bounds of this object.
@@ -855,8 +861,8 @@ pub trait TDisplayObject<'gc>:
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _display_object: DisplayObject<'gc>,
-        _init_object: Option<Object<'gc>>,
-        _instantiated_from_avm: bool,
+        _init_object: Option<Avm1Object<'gc>>,
+        _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
         if run_frame {
@@ -906,7 +912,7 @@ pub trait TDisplayObject<'gc>:
 
         parent
             .or_else(|| {
-                if let Value::Object(object) = self.object() {
+                if let Avm1Value::Object(object) = self.object() {
                     object.as_display_object()
                 } else {
                     None

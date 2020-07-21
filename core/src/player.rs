@@ -21,6 +21,7 @@ use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
+use crate::vminterface::Instantiator;
 use enumset::EnumSet;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use log::info;
@@ -277,7 +278,13 @@ impl Player {
         player.mutate_with_update_context(|context| {
             // Instantiate an empty root before the main movie loads.
             let fake_root = MovieClip::from_movie(context.gc_context, fake_movie);
-            fake_root.post_instantiation(context, fake_root.into(), None, false, false);
+            fake_root.post_instantiation(
+                context,
+                fake_root.into(),
+                None,
+                Instantiator::Movie,
+                false,
+            );
             context.levels.insert(0 as u32, fake_root.into());
 
             Avm2::load_player_globals(context)
@@ -334,7 +341,7 @@ impl Player {
             let root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
             root.set_depth(context.gc_context, 0);
-            root.post_instantiation(context, root, None, false, false);
+            root.post_instantiation(context, root, None, Instantiator::Movie, false);
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
