@@ -4,6 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::listeners::SystemListeners;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
+use gc_arena::Collect;
 use gc_arena::MutationContext;
 use rand::Rng;
 use std::f64;
@@ -185,7 +186,8 @@ pub fn update_after_event<'a, 'gc>(
 /// This structure represents all system builtins that are used regardless of
 /// whatever the hell happens to `_global`. These are, of course,
 /// user-modifiable.
-#[derive(Clone)]
+#[derive(Collect, Clone)]
+#[collect(no_drop)]
 pub struct SystemPrototypes<'gc> {
     pub button: Object<'gc>,
     pub object: Object<'gc>,
@@ -207,29 +209,6 @@ pub struct SystemPrototypes<'gc> {
     pub color_transform: Object<'gc>,
     pub context_menu: Object<'gc>,
     pub context_menu_item: Object<'gc>,
-}
-
-unsafe impl<'gc> gc_arena::Collect for SystemPrototypes<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.object.trace(cc);
-        self.function.trace(cc);
-        self.movie_clip.trace(cc);
-        self.button.trace(cc);
-        self.sound.trace(cc);
-        self.text_field.trace(cc);
-        self.text_format.trace(cc);
-        self.array.trace(cc);
-        self.xml_node.trace(cc);
-        self.string.trace(cc);
-        self.number.trace(cc);
-        self.boolean.trace(cc);
-        self.matrix.trace(cc);
-        self.point.trace(cc);
-        self.rectangle.trace(cc);
-        self.rectangle_constructor.trace(cc);
-        self.shared_object.trace(cc);
-    }
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
