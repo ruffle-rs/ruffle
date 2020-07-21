@@ -16,6 +16,7 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::vminterface::Instantiator;
 use gc_arena::{rootless_arena, MutationContext};
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{BTreeMap, HashMap};
@@ -78,7 +79,7 @@ where
             avm2: &mut avm2,
             external_interface: &mut Default::default(),
         };
-        root.post_instantiation(&mut context, root, None, false, false);
+        root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
         root.set_name(context.gc_context, "");
 
         fn run_test<'a, 'gc: 'a, F>(

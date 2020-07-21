@@ -5,6 +5,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::types::{Degrees, Percent};
+use crate::vminterface::Instantiator;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
@@ -166,7 +167,7 @@ impl<'gc> Button<'gc> {
                 self.set_first_child(context.gc_context, Some(child));
             }
             // Initialize child.
-            child.post_instantiation(context, child, None, false, false);
+            child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.run_frame(context);
             self.0
                 .write(context.gc_context)
@@ -193,7 +194,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
-        _instantiated_from_avm: bool,
+        _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
         self.set_default_instance_name(context);
@@ -254,7 +255,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             drop(read);
 
             for (child, depth) in new_children {
-                child.post_instantiation(context, child, None, false, false);
+                child.post_instantiation(context, child, None, Instantiator::Movie, false);
                 self.0
                     .write(context.gc_context)
                     .hit_area

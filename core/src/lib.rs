@@ -36,6 +36,7 @@ pub mod string_utils;
 pub mod tag_utils;
 mod transform;
 mod types;
+mod vminterface;
 mod xml;
 
 pub mod backend;

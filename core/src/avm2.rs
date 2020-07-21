@@ -2,11 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::SystemPrototypes;
-use crate::avm2::object::{Object, ScriptObject, TObject};
+use crate::avm2::object::{ScriptObject, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::value::Value;
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -39,6 +38,9 @@ mod slot;
 mod string;
 mod traits;
 mod value;
+
+pub use crate::avm2::object::Object;
+pub use crate::avm2::value::Value;
 
 /// Boxed error alias.
 ///

@@ -1,5 +1,5 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{Avm1, Object, StageObject, TObject, Value};
+use crate::avm1::{Avm1, Object as Avm1Object, StageObject, TObject, Value as Avm1Value};
 use crate::backend::audio::AudioStreamHandle;
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
@@ -15,6 +15,7 @@ use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use crate::types::{Degrees, Percent};
+use crate::vminterface::{AvmObject, Instantiator};
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -44,11 +45,11 @@ pub struct MovieClipData<'gc> {
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
     children: BTreeMap<Depth, DisplayObject<'gc>>,
-    object: Option<Object<'gc>>,
+    object: Option<AvmObject<'gc>>,
     clip_actions: Vec<ClipAction>,
     has_button_clip_event: bool,
     flags: EnumSet<MovieClipFlags>,
-    avm1_constructor: Option<Object<'gc>>,
+    avm_constructor: Option<AvmObject<'gc>>,
     drawing: Drawing,
 }
 
@@ -68,7 +69,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_actions: Vec::new(),
                 has_button_clip_event: false,
                 flags: EnumSet::empty(),
-                avm1_constructor: None,
+                avm_constructor: None,
                 drawing: Drawing::new(),
             },
         ))
@@ -102,7 +103,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_actions: Vec::new(),
                 has_button_clip_event: false,
                 flags: MovieClipFlags::Playing.into(),
-                avm1_constructor: None,
+                avm_constructor: None,
                 drawing: Drawing::new(),
             },
         ))
@@ -502,9 +503,9 @@ impl<'gc> MovieClip<'gc> {
     pub fn set_avm1_constructor(
         self,
         gc_context: MutationContext<'gc, '_>,
-        prototype: Option<Object<'gc>>,
+        prototype: Option<AvmObject<'gc>>,
     ) {
-        self.0.write(gc_context).avm1_constructor = prototype;
+        self.0.write(gc_context).avm_constructor = prototype;
     }
 
     pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
@@ -782,7 +783,7 @@ impl<'gc> MovieClip<'gc> {
                 }
                 // Run first frame.
                 child.apply_place_object(context.gc_context, place_object);
-                child.post_instantiation(context, child, None, false, false);
+                child.post_instantiation(context, child, None, Instantiator::Movie, false);
                 child.run_frame(context);
             }
             Some(child)
@@ -1151,19 +1152,20 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        init_object: Option<Object<'gc>>,
-        instantiated_from_avm: bool,
+        init_object: Option<Avm1Object<'gc>>,
+        instantiated_by: Instantiator,
         run_frame: bool,
     ) {
         self.set_default_instance_name(context);
 
+        //TODO: This will break horribly when AVM2 starts touching the display list
         if self.0.read().object.is_none() {
             let version = context.swf.version();
             let globals = context.avm1.global_object_cell();
 
             // If we are running within the AVM, this must be an immediate action.
             // If we are not, then this must be queued to be ran first-thing
-            if instantiated_from_avm && self.0.read().avm1_constructor.is_some() {
+            if instantiated_by.is_avm() && self.0.read().avm_constructor.is_some() {
                 let mut activation = Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Construct]"),
@@ -1172,12 +1174,18 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     (*self).into(),
                 );
 
-                let constructor = self.0.read().avm1_constructor.unwrap();
+                let constructor = self
+                    .0
+                    .read()
+                    .avm_constructor
+                    .unwrap()
+                    .as_avm1_object()
+                    .unwrap();
                 if let Ok(prototype) = constructor
                     .get("prototype", &mut activation)
                     .map(|v| v.coerce_to_object(&mut activation))
                 {
-                    let object: Object<'gc> = StageObject::for_display_object(
+                    let object: Avm1Object<'gc> = StageObject::for_display_object(
                         activation.context.gc_context,
                         (*self).into(),
                         Some(prototype),
@@ -1190,7 +1198,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                             }
                         }
                     }
-                    self.0.write(activation.context.gc_context).object = Some(object);
+                    self.0.write(activation.context.gc_context).object = Some(object.into());
                     if run_frame {
                         self.run_frame(&mut activation.context);
                     }
@@ -1200,11 +1208,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 return;
             }
 
-            let object = StageObject::for_display_object(
+            let object: Avm1Object<'gc> = StageObject::for_display_object(
                 context.gc_context,
                 display_object,
                 Some(context.system_prototypes.movie_clip),
-            );
+            )
+            .into();
             if let Some(init_object) = init_object {
                 let mut activation = Activation::from_nothing(
                     context.reborrow(),
@@ -1236,7 +1245,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             context.action_queue.queue_actions(
                 display_object,
                 ActionType::Construct {
-                    constructor: mc.avm1_constructor,
+                    constructor: mc.avm_constructor.map(|a| a.as_avm1_object().unwrap()),
                     events,
                 },
                 false,
@@ -1258,12 +1267,13 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         );
     }
 
-    fn object(&self) -> Value<'gc> {
+    fn object(&self) -> Avm1Value<'gc> {
         self.0
             .read()
             .object
-            .map(Value::from)
-            .unwrap_or(Value::Undefined)
+            .and_then(|o| o.as_avm1_object().ok())
+            .map(Avm1Value::from)
+            .unwrap_or(Avm1Value::Undefined)
     }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -1272,7 +1282,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // Unregister any text field variable bindings.
-        if let Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object() {
             if let Some(stage_object) = object.as_stage_object() {
                 stage_object.unregister_text_field_bindings(context);
             }
@@ -1304,7 +1314,7 @@ unsafe impl<'gc> Collect for MovieClipData<'gc> {
         self.base.trace(cc);
         self.static_data.trace(cc);
         self.object.trace(cc);
-        self.avm1_constructor.trace(cc);
+        self.avm_constructor.trace(cc);
     }
 }
 
@@ -1531,7 +1541,8 @@ impl<'gc> MovieClipData<'gc> {
                     context.action_queue.queue_actions(
                         self_display_object,
                         ActionType::Method {
-                            object: self.object.unwrap(),
+                            //TODO: This should have an AVM2 load path.
+                            object: self.object.unwrap().as_avm1_object().unwrap(),
                             name,
                             args: vec![],
                         },
@@ -1563,7 +1574,8 @@ impl<'gc> MovieClipData<'gc> {
         if let ClipEvent::Load = event {
             context.load_manager.movie_clip_on_load(
                 self_display_object,
-                self.object,
+                //TODO: This should have an AVM2 onload path.
+                self.object.and_then(|o| o.as_avm1_object().ok()),
                 context.action_queue,
                 context.gc_context,
             );
