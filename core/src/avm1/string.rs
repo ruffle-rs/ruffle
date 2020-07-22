@@ -4,11 +4,20 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
-#[derive(Debug, Clone, Copy, Collect)]
+#[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
     Owned(Gc<'gc, String>),
     Static(&'static str),
+}
+
+impl fmt::Debug for Source<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Source::Owned(str) => f.debug_tuple("Owned").field(str.deref()).finish(),
+            Source::Static(str) => f.debug_tuple("Static").field(str).finish(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Collect)]
