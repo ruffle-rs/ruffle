@@ -44,6 +44,7 @@ pub fn call<'gc>(
             None,
             args,
             ExecutionReason::FunctionCall,
+            func,
         ),
         _ => Ok(Value::Undefined),
     }
@@ -85,6 +86,7 @@ pub fn apply<'gc>(
             None,
             &child_args,
             ExecutionReason::FunctionCall,
+            func,
         ),
         _ => Ok(Value::Undefined),
     }
