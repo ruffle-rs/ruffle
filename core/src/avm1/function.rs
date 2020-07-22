@@ -240,6 +240,7 @@ impl<'gc> Executable<'gc> {
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
         reason: ExecutionReason,
+        callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
             Executable::Native(nf) => nf(activation, ac, this, args),
@@ -250,7 +251,7 @@ impl<'gc> Executable<'gc> {
                 );
                 let arguments =
                     ScriptObject::array(ac.gc_context, Some(activation.avm.prototypes().array));
-                arguments.define_value(ac.gc_context, "callee", this.into(), DontEnum.into());
+                arguments.define_value(ac.gc_context, "callee", callee.into(), DontEnum.into());
 
                 if !af.suppress_arguments {
                     for i in 0..args.len() {
@@ -494,6 +495,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         self.base.set(name, value, activation, context)
     }
+
     fn call(
         &self,
         name: &str,
@@ -512,6 +514,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 base_proto,
                 args,
                 ExecutionReason::FunctionCall,
+                (*self).into(),
             )
         } else {
             Ok(Value::Undefined)

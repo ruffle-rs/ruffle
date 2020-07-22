@@ -59,6 +59,7 @@ impl<'gc> Watcher<'gc> {
                 base_proto,
                 &args,
                 ExecutionReason::Special,
+                self.callback,
             )
         } else {
             Ok(Value::Undefined)
@@ -292,19 +293,21 @@ impl<'gc> ScriptObject<'gc> {
 
                 if let Some(this_proto) = proto {
                     worked = true;
-                    if let Some(rval) = this_proto
-                        .call_setter(name, value.clone(), activation, context)
-                        .and_then(|o| o.as_executable())
+                    if let Some(rval) =
+                        this_proto.call_setter(name, value.clone(), activation, context)
                     {
-                        let _ = rval.exec(
-                            "[Setter]",
-                            activation,
-                            context,
-                            this,
-                            Some(this_proto),
-                            &[value.clone()],
-                            ExecutionReason::Special,
-                        );
+                        if let Some(exec) = rval.as_executable() {
+                            let _ = exec.exec(
+                                "[Setter]",
+                                activation,
+                                context,
+                                this,
+                                Some(this_proto),
+                                &[value.clone()],
+                                ExecutionReason::Special,
+                                rval,
+                            );
+                        }
                     }
                 }
             }
@@ -357,16 +360,19 @@ impl<'gc> ScriptObject<'gc> {
                     }
                 };
 
-                if let Some(rval) = rval.and_then(|o| o.as_executable()) {
-                    let _ = rval.exec(
-                        "[Setter]",
-                        activation,
-                        context,
-                        this,
-                        base_proto,
-                        &[value],
-                        ExecutionReason::Special,
-                    );
+                if let Some(rval) = rval {
+                    if let Some(exec) = rval.as_executable() {
+                        let _ = exec.exec(
+                            "[Setter]",
+                            activation,
+                            context,
+                            this,
+                            base_proto,
+                            &[value],
+                            ExecutionReason::Special,
+                            rval,
+                        );
+                    }
                 }
 
                 return return_value;
@@ -397,7 +403,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             return Ok(self.proto().map_or(Value::Undefined, Value::Object));
         }
 
-        let mut exec = None;
+        let mut getter = None;
 
         if let Some(value) = self
             .0
@@ -406,24 +412,29 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .get(name, activation.is_case_sensitive())
         {
             match value {
-                Property::Virtual { get, .. } => exec = Some(get.to_owned()),
+                Property::Virtual { get, .. } => getter = Some(get.to_owned()),
                 Property::Stored { value, .. } => return Ok(value.to_owned()),
             }
         }
 
-        if let Some(get) = exec.and_then(|o| o.as_executable()) {
-            // Errors, even fatal ones, are completely and silently ignored here.
-            match get.exec(
-                "[Getter]",
-                activation,
-                context,
-                this,
-                Some((*self).into()),
-                &[],
-                ExecutionReason::Special,
-            ) {
-                Ok(value) => Ok(value),
-                Err(_) => Ok(Value::Undefined),
+        if let Some(getter) = getter {
+            if let Some(exec) = getter.as_executable() {
+                // Errors, even fatal ones, are completely and silently ignored here.
+                match exec.exec(
+                    "[Getter]",
+                    activation,
+                    context,
+                    this,
+                    Some((*self).into()),
+                    &[],
+                    ExecutionReason::Special,
+                    getter,
+                ) {
+                    Ok(value) => Ok(value),
+                    Err(_) => Ok(Value::Undefined),
+                }
+            } else {
+                Ok(Value::Undefined)
             }
         } else {
             Ok(Value::Undefined)

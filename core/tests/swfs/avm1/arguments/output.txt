@@ -11,6 +11,12 @@ true
 // arguments.__proto__ === Array.prototype
 true
 
+// arguments.callee
+[type Function]
+
+// arguments.callee === dump
+true
+
 
 
 // dump("a")
@@ -24,6 +30,12 @@ a
 true
 
 // arguments.__proto__ === Array.prototype
+true
+
+// arguments.callee
+[type Function]
+
+// arguments.callee === dump
 true
 
 // arguments[0]
@@ -42,6 +54,12 @@ a,b
 true
 
 // arguments.__proto__ === Array.prototype
+true
+
+// arguments.callee
+[type Function]
+
+// arguments.callee === dump
 true
 
 // arguments[1]
@@ -64,6 +82,12 @@ a,b,undefined,d
 true
 
 // arguments.__proto__ === Array.prototype
+true
+
+// arguments.callee
+[type Function]
+
+// arguments.callee === dump
 true
 
 // arguments[3]
