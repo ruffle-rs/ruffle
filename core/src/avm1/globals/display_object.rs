@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
@@ -54,26 +54,58 @@ pub fn define_display_object_proto<'gc>(
     object.add_property(
         gc_context,
         "_global",
-        Executable::Native(|activation, context, _this, _args| {
-            Ok(activation.avm.global_object(context))
-        }),
-        Some(Executable::Native(overwrite_global)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(|activation, context, _this, _args| {
+                Ok(activation.avm.global_object(context))
+            }),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(overwrite_global),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         DontDelete | ReadOnly | DontEnum,
     );
 
     object.add_property(
         gc_context,
         "_root",
-        Executable::Native(|activation, context, _this, _args| Ok(activation.root_object(context))),
-        Some(Executable::Native(overwrite_root)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(|activation, context, _this, _args| {
+                Ok(activation.root_object(context))
+            }),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(overwrite_root),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         DontDelete | ReadOnly | DontEnum,
     );
 
     object.add_property(
         gc_context,
         "_parent",
-        Executable::Native(get_parent),
-        Some(Executable::Native(overwrite_parent)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_parent),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(overwrite_parent),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         DontDelete | ReadOnly | DontEnum,
     );
 }

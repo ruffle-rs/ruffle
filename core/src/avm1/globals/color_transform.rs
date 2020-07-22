@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::context::UpdateContext;
 use enumset::EnumSet;
@@ -13,13 +13,13 @@ use crate::color_transform::ColorTransform;
 use std::convert::Into;
 
 macro_rules! with_color_transform {
-    ($obj: ident, $gc: ident, $($name: expr => [$get: ident, $set: ident],)*) => {
+    ($obj: ident, $gc: ident, $fn_proto: ident, $($name: expr => [$get: ident, $set: ident],)*) => {
         $(
             $obj.add_property(
                 $gc,
                 $name,
-                Executable::Native($get),
-                Some(Executable::Native($set)),
+                FunctionObject::function($gc, Executable::Native($get), Some($fn_proto), Some($fn_proto)),
+                Some(FunctionObject::function($gc, Executable::Native($set), Some($fn_proto), Some($fn_proto))),
                 EnumSet::empty(),
             );
         )*
@@ -216,7 +216,7 @@ pub fn create_proto<'gc>(
         ColorTransformObject::empty_color_transform_object(gc_context, Some(proto));
     let mut object = color_transform_object.as_script_object().unwrap();
 
-    with_color_transform!(object, gc_context,
+    with_color_transform!(object, gc_context, fn_proto,
         "alphaMultiplier" => [get_alpha_multiplier, set_alpha_multiplier],
         "redMultiplier" => [get_red_multiplier, set_red_multiplier],
         "greenMultiplier" => [get_green_multiplier, set_green_multiplier],

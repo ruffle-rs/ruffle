@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::Object;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
@@ -514,16 +514,36 @@ pub fn create<'gc>(
     system.add_property(
         gc_context,
         "exactSettings",
-        Executable::Native(get_exact_settings),
-        Some(Executable::Native(set_exact_settings)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_exact_settings),
+            fn_proto,
+            fn_proto,
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_exact_settings),
+            fn_proto,
+            fn_proto,
+        )),
         EnumSet::empty(),
     );
 
     system.add_property(
         gc_context,
         "useCodepage",
-        Executable::Native(get_use_code_page),
-        Some(Executable::Native(set_use_code_page)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_use_code_page),
+            fn_proto,
+            fn_proto,
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_use_code_page),
+            fn_proto,
+            fn_proto,
+        )),
         EnumSet::empty(),
     );
 

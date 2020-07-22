@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
@@ -104,7 +103,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Option<Executable<'gc>> {
+    ) -> Option<Object<'gc>> {
         self.base().call_setter(name, value, activation, context)
     }
 
@@ -134,8 +133,8 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
         self.base()
@@ -147,8 +146,8 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
         self.base()

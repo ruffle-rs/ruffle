@@ -3,7 +3,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{Object, SoundObject, TObject, UpdateContext, Value};
 use crate::character::Character;
@@ -48,7 +48,12 @@ pub fn create_proto<'gc>(
     object.add_property(
         gc_context,
         "duration",
-        Executable::Native(duration),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(duration),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         DontDelete | ReadOnly | DontEnum,
     );
@@ -56,7 +61,12 @@ pub fn create_proto<'gc>(
     object.add_property(
         gc_context,
         "id3",
-        Executable::Native(id3),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(id3),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         DontDelete | ReadOnly | DontEnum,
     );
@@ -112,7 +122,12 @@ pub fn create_proto<'gc>(
     object.add_property(
         gc_context,
         "position",
-        Executable::Native(position),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(position),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         DontDelete | ReadOnly | DontEnum,
     );

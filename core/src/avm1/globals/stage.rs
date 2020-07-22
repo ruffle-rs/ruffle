@@ -3,7 +3,7 @@
 //! TODO: This is a very rough stub with not much implementation.
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::MutationContext;
@@ -27,15 +27,20 @@ pub fn create_stage_object<'gc>(
     stage.add_property(
         gc_context,
         "align",
-        Executable::Native(align),
-        Some(Executable::Native(set_align)),
+        FunctionObject::function(gc_context, Executable::Native(align), fn_proto, fn_proto),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_align),
+            fn_proto,
+            fn_proto,
+        )),
         Attribute::DontEnum | Attribute::DontDelete,
     );
 
     stage.add_property(
         gc_context,
         "height",
-        Executable::Native(height),
+        FunctionObject::function(gc_context, Executable::Native(height), fn_proto, fn_proto),
         None,
         Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
     );
@@ -51,23 +56,43 @@ pub fn create_stage_object<'gc>(
     stage.add_property(
         gc_context,
         "scaleMode",
-        Executable::Native(scale_mode),
-        Some(Executable::Native(set_scale_mode)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(scale_mode),
+            fn_proto,
+            fn_proto,
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_scale_mode),
+            fn_proto,
+            fn_proto,
+        )),
         Attribute::DontEnum | Attribute::DontDelete,
     );
 
     stage.add_property(
         gc_context,
         "showMenu",
-        Executable::Native(show_menu),
-        Some(Executable::Native(set_show_menu)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(show_menu),
+            fn_proto,
+            fn_proto,
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_show_menu),
+            fn_proto,
+            fn_proto,
+        )),
         Attribute::DontEnum | Attribute::DontDelete,
     );
 
     stage.add_property(
         gc_context,
         "width",
-        Executable::Native(width),
+        FunctionObject::function(gc_context, Executable::Native(width), fn_proto, fn_proto),
         None,
         Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
     );

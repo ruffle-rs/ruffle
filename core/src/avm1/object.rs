@@ -153,7 +153,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Option<Executable<'gc>>;
+    ) -> Option<Object<'gc>>;
 
     /// Construct a host object of some kind and return it's cell.
     ///
@@ -246,8 +246,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     );
 
@@ -266,8 +266,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     );
 

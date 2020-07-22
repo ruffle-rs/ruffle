@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, ExecutionReason, FunctionObject, NativeFunction};
+use crate::avm1::function::{ExecutionReason, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::{AvmString, Object, ObjectPtr, TObject, UpdateContext, Value};
 use crate::property_map::{Entry, PropertyMap};
@@ -292,8 +292,9 @@ impl<'gc> ScriptObject<'gc> {
 
                 if let Some(this_proto) = proto {
                     worked = true;
-                    if let Some(rval) =
-                        this_proto.call_setter(name, value.clone(), activation, context)
+                    if let Some(rval) = this_proto
+                        .call_setter(name, value.clone(), activation, context)
+                        .and_then(|o| o.as_executable())
                     {
                         let _ = rval.exec(
                             "[Setter]",
@@ -356,7 +357,7 @@ impl<'gc> ScriptObject<'gc> {
                     }
                 };
 
-                if let Some(rval) = rval {
+                if let Some(rval) = rval.and_then(|o| o.as_executable()) {
                     let _ = rval.exec(
                         "[Setter]",
                         activation,
@@ -410,7 +411,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             }
         }
 
-        if let Some(get) = exec {
+        if let Some(get) = exec.and_then(|o| o.as_executable()) {
             // Errors, even fatal ones, are completely and silently ignored here.
             match get.exec(
                 "[Getter]",
@@ -474,7 +475,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Option<Executable<'gc>> {
+    ) -> Option<Object<'gc>> {
         match self
             .0
             .write(context.gc_context)
@@ -528,8 +529,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
         self.0.write(gc_context).values.insert(
@@ -548,8 +549,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
         self.0.write(gc_context).values.insert(
@@ -855,6 +856,7 @@ mod tests {
     use super::*;
 
     use crate::avm1::activation::ActivationIdentifier;
+    use crate::avm1::function::Executable;
     use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute::*;
     use crate::avm1::{Avm1, Timers};
@@ -1044,7 +1046,12 @@ mod tests {
     #[test]
     fn test_virtual_get() {
         with_object(0, |activation, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| Ok("Virtual!".into()));
+            let getter = FunctionObject::function(
+                context.gc_context,
+                Executable::Native(|_avm, _context, _this, _args| Ok("Virtual!".into())),
+                None,
+                None,
+            );
 
             object.as_script_object().unwrap().add_property(
                 context.gc_context,
@@ -1073,12 +1080,17 @@ mod tests {
     #[test]
     fn test_delete() {
         with_object(0, |activation, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| Ok("Virtual!".into()));
+            let getter = FunctionObject::function(
+                context.gc_context,
+                Executable::Native(|_avm, _context, _this, _args| Ok("Virtual!".into())),
+                None,
+                None,
+            );
 
             object.as_script_object().unwrap().add_property(
                 context.gc_context,
                 "virtual",
-                getter.clone(),
+                getter,
                 None,
                 EnumSet::empty(),
             );
@@ -1145,7 +1157,12 @@ mod tests {
     #[test]
     fn test_iter_values() {
         with_object(0, |activation, context, object| {
-            let getter = Executable::Native(|_avm, _context, _this, _args| Ok(Value::Null));
+            let getter = FunctionObject::function(
+                context.gc_context,
+                Executable::Native(|_avm, _context, _this, _args| Ok(Value::Null)),
+                None,
+                None,
+            );
 
             object.as_script_object().unwrap().define_value(
                 context.gc_context,
@@ -1162,7 +1179,7 @@ mod tests {
             object.as_script_object().unwrap().add_property(
                 context.gc_context,
                 "virtual",
-                getter.clone(),
+                getter,
                 None,
                 EnumSet::empty(),
             );

@@ -35,7 +35,7 @@ macro_rules! impl_custom_object_without_set {
             value: crate::avm1::Value<'gc>,
             activation: &mut crate::avm1::Activation<'_, 'gc>,
             context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
-        ) -> Option<crate::avm1::function::Executable<'gc>> {
+        ) -> Option<crate::avm1::object::Object<'gc>> {
             self.0
                 .read()
                 .$field
@@ -95,8 +95,8 @@ macro_rules! impl_custom_object_without_set {
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: &str,
-            get: crate::avm1::function::Executable<'gc>,
-            set: Option<crate::avm1::function::Executable<'gc>>,
+            get: crate::avm1::object::Object<'gc>,
+            set: Option<crate::avm1::object::Object<'gc>>,
             attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
         ) {
             self.0
@@ -110,8 +110,8 @@ macro_rules! impl_custom_object_without_set {
             activation: &mut crate::avm1::Activation<'_, 'gc>,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: &str,
-            get: crate::avm1::function::Executable<'gc>,
-            set: Option<crate::avm1::function::Executable<'gc>>,
+            get: crate::avm1::object::Object<'gc>,
+            set: Option<crate::avm1::object::Object<'gc>>,
             attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
         ) {
             self.0

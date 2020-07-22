@@ -239,7 +239,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Option<Executable<'gc>> {
+    ) -> Option<Object<'gc>> {
         self.0
             .read()
             .base
@@ -307,8 +307,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
         self.0
@@ -322,8 +322,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
         self.0
