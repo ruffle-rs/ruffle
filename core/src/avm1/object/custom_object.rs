@@ -240,7 +240,7 @@ macro_rules! impl_custom_object_without_set {
             activation: &mut crate::avm1::Activation<'_, 'gc>,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: std::borrow::Cow<str>,
-            callback: crate::avm1::function::Executable<'gc>,
+            callback: crate::avm1::object::Object<'gc>,
             user_data: crate::avm1::Value<'gc>,
         ) {
             self.0

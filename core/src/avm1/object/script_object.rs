@@ -21,12 +21,12 @@ pub enum ArrayStorage<'gc> {
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
 pub struct Watcher<'gc> {
-    callback: Executable<'gc>,
+    callback: Object<'gc>,
     user_data: Value<'gc>,
 }
 
 impl<'gc> Watcher<'gc> {
-    pub fn new(callback: Executable<'gc>, user_data: Value<'gc>) -> Self {
+    pub fn new(callback: Object<'gc>, user_data: Value<'gc>) -> Self {
         Self {
             callback,
             user_data,
@@ -50,15 +50,19 @@ impl<'gc> Watcher<'gc> {
             new_value,
             self.user_data.clone(),
         ];
-        self.callback.exec(
-            name,
-            activation,
-            context,
-            this,
-            base_proto,
-            &args,
-            ExecutionReason::Special,
-        )
+        if let Some(executable) = self.callback.as_executable() {
+            executable.exec(
+                name,
+                activation,
+                context,
+                this,
+                base_proto,
+                &args,
+                ExecutionReason::Special,
+            )
+        } else {
+            Ok(Value::Undefined)
+        }
     }
 }
 
@@ -564,7 +568,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
-        callback: Executable<'gc>,
+        callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
         self.0.write(gc_context).watchers.insert(

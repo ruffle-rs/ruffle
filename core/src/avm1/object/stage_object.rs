@@ -337,7 +337,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
-        callback: Executable<'gc>,
+        callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
         self.0

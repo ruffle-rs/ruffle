@@ -279,7 +279,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
-        callback: Executable<'gc>,
+        callback: Object<'gc>,
         user_data: Value<'gc>,
     );
 
