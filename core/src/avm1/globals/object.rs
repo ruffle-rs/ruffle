@@ -174,18 +174,13 @@ fn watch<'gc>(
     } else {
         return Ok(false.into());
     };
-    let callback = if let Some(callback) = args.get(1) {
-        if let Some(callback) = callback
-            .coerce_to_object(activation, context)
-            .as_executable()
-        {
-            callback
-        } else {
-            return Ok(false.into());
-        }
-    } else {
+    let callback = args
+        .get(1)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation, context);
+    if callback.as_executable().is_none() {
         return Ok(false.into());
-    };
+    }
     let user_data = args.get(2).cloned().unwrap_or(Value::Undefined);
 
     this.set_watcher(

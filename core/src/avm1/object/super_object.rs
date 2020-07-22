@@ -242,7 +242,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _activation: &mut Activation<'_, 'gc>,
         _gc_context: MutationContext<'gc, '_>,
         _name: Cow<str>,
-        _callback: Executable<'gc>,
+        _callback: Object<'gc>,
         _user_data: Value<'gc>,
     ) {
         //`super` cannot have properties defined on it
