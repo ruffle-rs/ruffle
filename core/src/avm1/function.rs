@@ -524,7 +524,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Option<Executable<'gc>> {
+    ) -> Option<Object<'gc>> {
         self.base.call_setter(name, value, activation, context)
     }
 
@@ -593,8 +593,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
         self.base
@@ -606,8 +606,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     ) {
         self.base

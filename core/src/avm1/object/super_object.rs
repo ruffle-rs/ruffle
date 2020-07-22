@@ -150,7 +150,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Option<Executable<'gc>> {
+    ) -> Option<Object<'gc>> {
         self.0
             .read()
             .child
@@ -218,8 +218,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         _gc_context: MutationContext<'gc, '_>,
         _name: &str,
-        _get: Executable<'gc>,
-        _set: Option<Executable<'gc>>,
+        _get: Object<'gc>,
+        _set: Option<Object<'gc>>,
         _attributes: EnumSet<Attribute>,
     ) {
         //`super` cannot have properties defined on it
@@ -230,8 +230,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _activation: &mut Activation<'_, 'gc>,
         _gc_context: MutationContext<'gc, '_>,
         _name: &str,
-        _get: Executable<'gc>,
-        _set: Option<Executable<'gc>>,
+        _get: Object<'gc>,
+        _set: Option<Object<'gc>>,
         _attributes: EnumSet<Attribute>,
     ) {
         //`super` cannot have properties defined on it

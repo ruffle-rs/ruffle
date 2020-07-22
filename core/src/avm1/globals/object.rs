@@ -35,32 +35,26 @@ pub fn add_property<'gc>(
 
     match getter {
         Value::Object(get) if !name.is_empty() => {
-            if let Some(get_func) = get.as_executable() {
-                if let Value::Object(set) = setter {
-                    if let Some(set_func) = set.as_executable() {
-                        this.add_property_with_case(
-                            activation,
-                            context.gc_context,
-                            &name,
-                            get_func.clone(),
-                            Some(set_func.clone()),
-                            EnumSet::empty(),
-                        );
-                    } else {
-                        return Ok(false.into());
-                    }
-                } else if let Value::Null = setter {
-                    this.add_property_with_case(
-                        activation,
-                        context.gc_context,
-                        &name,
-                        get_func.clone(),
-                        None,
-                        ReadOnly.into(),
-                    );
-                } else {
-                    return Ok(false.into());
-                }
+            if let Value::Object(set) = setter {
+                this.add_property_with_case(
+                    activation,
+                    context.gc_context,
+                    &name,
+                    get.to_owned(),
+                    Some(set.to_owned()),
+                    EnumSet::empty(),
+                );
+            } else if let Value::Null = setter {
+                this.add_property_with_case(
+                    activation,
+                    context.gc_context,
+                    &name,
+                    get.to_owned(),
+                    None,
+                    ReadOnly.into(),
+                );
+            } else {
+                return Ok(false.into());
             }
 
             Ok(true.into())

@@ -388,7 +388,12 @@ pub fn create_proto<'gc>(
     object.add_property(
         gc_context,
         "length",
-        Executable::Native(length),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(length),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         Attribute::ReadOnly.into(),
     );

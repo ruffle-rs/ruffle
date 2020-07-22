@@ -434,7 +434,8 @@ pub fn create_globals<'gc>(
 
     let system_security =
         system_security::create(gc_context, Some(object_proto), Some(function_proto));
-    let system_capabilities = system_capabilities::create(gc_context, Some(object_proto));
+    let system_capabilities =
+        system_capabilities::create(gc_context, Some(object_proto), function_proto);
     let system_ime = system_ime::create(
         gc_context,
         Some(object_proto),
@@ -547,14 +548,24 @@ pub fn create_globals<'gc>(
     globals.add_property(
         gc_context,
         "NaN",
-        Executable::Native(get_nan),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_nan),
+            Some(function_proto),
+            Some(function_proto),
+        ),
         None,
         EnumSet::empty(),
     );
     globals.add_property(
         gc_context,
         "Infinity",
-        Executable::Native(get_infinity),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_infinity),
+            Some(function_proto),
+            Some(function_proto),
+        ),
         None,
         EnumSet::empty(),
     );

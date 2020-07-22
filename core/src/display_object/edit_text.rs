@@ -865,7 +865,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             )
             .into();
 
-            attach_virtual_properties(context.gc_context, object);
+            attach_virtual_properties(
+                context.gc_context,
+                object,
+                context.system_prototypes.function,
+            );
 
             text.object = Some(object);
         }

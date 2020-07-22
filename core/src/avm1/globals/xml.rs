@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::xml_object::XMLObject;
 use crate::avm1::property::Attribute::*;
@@ -517,91 +517,156 @@ pub fn create_xmlnode_proto<'gc>(
     xmlnode_proto.add_property(
         gc_context,
         "localName",
-        Executable::Native(xmlnode_local_name),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_local_name),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "nodeName",
-        Executable::Native(xmlnode_node_name),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_node_name),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "nodeType",
-        Executable::Native(xmlnode_node_type),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_node_type),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "nodeValue",
-        Executable::Native(xmlnode_node_value),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_node_value),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "prefix",
-        Executable::Native(xmlnode_prefix),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_prefix),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "childNodes",
-        Executable::Native(xmlnode_child_nodes),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_child_nodes),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "firstChild",
-        Executable::Native(xmlnode_first_child),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_first_child),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "lastChild",
-        Executable::Native(xmlnode_last_child),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_last_child),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "parentNode",
-        Executable::Native(xmlnode_parent_node),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_parent_node),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "previousSibling",
-        Executable::Native(xmlnode_previous_sibling),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_previous_sibling),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "nextSibling",
-        Executable::Native(xmlnode_next_sibling),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_next_sibling),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "attributes",
-        Executable::Native(xmlnode_attributes),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_attributes),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xmlnode_proto.add_property(
         gc_context,
         "namespaceURI",
-        Executable::Native(xmlnode_namespace_uri),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xmlnode_namespace_uri),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
@@ -969,28 +1034,48 @@ pub fn create_xml_proto<'gc>(
     xml_proto.add_property(
         gc_context,
         "docTypeDecl",
-        Executable::Native(xml_doc_type_decl),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xml_doc_type_decl),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xml_proto.add_property(
         gc_context,
         "xmlDecl",
-        Executable::Native(xml_xml_decl),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xml_xml_decl),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xml_proto.add_property(
         gc_context,
         "idMap",
-        Executable::Native(xml_id_map),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xml_id_map),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     xml_proto.add_property(
         gc_context,
         "status",
-        Executable::Native(xml_status),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(xml_status),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );

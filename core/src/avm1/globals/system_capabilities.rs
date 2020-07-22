@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
 use crate::avm1::{AvmString, ScriptObject, TObject, Value};
@@ -35,12 +35,12 @@ macro_rules! inverse_capabilities_func {
 }
 
 macro_rules! capabilities_prop {
-    ($gc_ctx: expr, $capabilities: expr, $($name:expr => $func:expr),* ) => {{
+    ($gc_ctx: expr, $capabilities: expr, $fn_proto: ident, $($name:expr => $func:expr),* ) => {{
         $(
             $capabilities.add_property(
                 $gc_ctx,
                 $name,
-                Executable::Native($func),
+                FunctionObject::function($gc_ctx, Executable::Native($func), Some($fn_proto), Some($fn_proto)),
                 None,
                 EnumSet::empty()
             );
@@ -223,10 +223,11 @@ pub fn get_max_idc_level<'gc>(
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let capabilities = ScriptObject::object(gc_context, proto);
 
-    capabilities_prop!(gc_context, capabilities,
+    capabilities_prop!(gc_context, capabilities, fn_proto,
         "supports64BitProcesses" => get_has_64_bit_support,
         "supports32BitProcesses" => get_has_32_bit_support,
         "isEmbeddedInAcrobat" => get_is_acrobat_embedded,

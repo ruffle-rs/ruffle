@@ -1033,56 +1033,126 @@ pub fn create_proto<'gc>(
     object.add_property(
         gc_context,
         "left",
-        Executable::Native(get_left),
-        Some(Executable::Native(set_left)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_left),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_left),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         Attribute::DontDelete | Attribute::DontEnum,
     );
 
     object.add_property(
         gc_context,
         "top",
-        Executable::Native(get_top),
-        Some(Executable::Native(set_top)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_top),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_top),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         Attribute::DontDelete | Attribute::DontEnum,
     );
 
     object.add_property(
         gc_context,
         "right",
-        Executable::Native(get_right),
-        Some(Executable::Native(set_right)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_right),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_right),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         Attribute::DontDelete | Attribute::DontEnum,
     );
 
     object.add_property(
         gc_context,
         "bottom",
-        Executable::Native(get_bottom),
-        Some(Executable::Native(set_bottom)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_bottom),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_bottom),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         Attribute::DontDelete | Attribute::DontEnum,
     );
 
     object.add_property(
         gc_context,
         "size",
-        Executable::Native(get_size),
-        Some(Executable::Native(set_size)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_size),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_size),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         Attribute::DontDelete | Attribute::DontEnum,
     );
 
     object.add_property(
         gc_context,
         "topLeft",
-        Executable::Native(get_top_left),
-        Some(Executable::Native(set_top_left)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_top_left),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_top_left),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         Attribute::DontDelete | Attribute::DontEnum,
     );
 
     object.add_property(
         gc_context,
         "bottomRight",
-        Executable::Native(get_bottom_right),
-        Some(Executable::Native(set_bottom_right)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_bottom_right),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_bottom_right),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         Attribute::DontDelete | Attribute::DontEnum,
     );
 

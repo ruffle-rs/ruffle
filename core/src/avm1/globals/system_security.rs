@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::Object;
 use crate::avm1::{AvmString, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
@@ -127,7 +127,12 @@ pub fn create<'gc>(
     security.add_property(
         gc_context,
         "sandboxType",
-        Executable::Native(get_sandbox_type),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_sandbox_type),
+            fn_proto,
+            fn_proto,
+        ),
         None,
         EnumSet::empty(),
     );
@@ -135,7 +140,12 @@ pub fn create<'gc>(
     security.add_property(
         gc_context,
         "chooseLocalSwfPath",
-        Executable::Native(get_choose_local_swf_path),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_choose_local_swf_path),
+            fn_proto,
+            fn_proto,
+        ),
         None,
         EnumSet::empty(),
     );

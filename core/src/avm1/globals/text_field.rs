@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::display_object;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
@@ -439,89 +439,198 @@ pub fn create_proto<'gc>(
     object.into()
 }
 
-pub fn attach_virtual_properties<'gc>(gc_context: MutationContext<'gc, '_>, object: Object<'gc>) {
+pub fn attach_virtual_properties<'gc>(
+    gc_context: MutationContext<'gc, '_>,
+    object: Object<'gc>,
+    fn_proto: Object<'gc>,
+) {
     object.add_property(
         gc_context,
         "text",
-        Executable::Native(get_text),
-        Some(Executable::Native(set_text)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_text),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_text),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "html",
-        Executable::Native(get_html),
-        Some(Executable::Native(set_html)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_html),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_html),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "htmlText",
-        Executable::Native(get_html_text),
-        Some(Executable::Native(set_html_text)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_html_text),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_html_text),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "length",
-        Executable::Native(get_length),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_length),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "textWidth",
-        Executable::Native(text_width),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(text_width),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "textHeight",
-        Executable::Native(text_height),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(text_height),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
         None,
         ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "multiline",
-        Executable::Native(multiline),
-        Some(Executable::Native(set_multiline)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(multiline),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_multiline),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "variable",
-        Executable::Native(variable),
-        Some(Executable::Native(set_variable)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(variable),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_variable),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         DontDelete | ReadOnly | DontEnum,
     );
     object.add_property(
         gc_context,
         "wordWrap",
-        Executable::Native(word_wrap),
-        Some(Executable::Native(set_word_wrap)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(word_wrap),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_word_wrap),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "autoSize",
-        Executable::Native(auto_size),
-        Some(Executable::Native(set_auto_size)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(auto_size),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_auto_size),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "border",
-        Executable::Native(get_border),
-        Some(Executable::Native(set_border)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_border),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_border),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         ReadOnly.into(),
     );
     object.add_property(
         gc_context,
         "embedFonts",
-        Executable::Native(get_embed_fonts),
-        Some(Executable::Native(set_embed_fonts)),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(get_embed_fonts),
+            Some(fn_proto),
+            Some(fn_proto),
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_embed_fonts),
+            Some(fn_proto),
+            Some(fn_proto),
+        )),
         ReadOnly.into(),
     );
 }

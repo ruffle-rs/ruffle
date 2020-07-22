@@ -1,7 +1,7 @@
 //! User-defined properties
 
 use self::Attribute::*;
-use crate::avm1::function::Executable;
+use crate::avm1::object::Object;
 use crate::avm1::Value;
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
@@ -19,8 +19,8 @@ pub enum Attribute {
 #[derive(Clone)]
 pub enum Property<'gc> {
     Virtual {
-        get: Executable<'gc>,
-        set: Option<Executable<'gc>>,
+        get: Object<'gc>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     },
     Stored {
@@ -35,7 +35,7 @@ impl<'gc> Property<'gc> {
     /// This function may return an `Executable` of the property's virtual
     /// function, if any happen to exist. It should be resolved, and it's value
     /// discarded.
-    pub fn set(&mut self, new_value: impl Into<Value<'gc>>) -> Option<Executable<'gc>> {
+    pub fn set(&mut self, new_value: impl Into<Value<'gc>>) -> Option<Object<'gc>> {
         match self {
             Property::Virtual { set, .. } => {
                 if let Some(function) = set {
