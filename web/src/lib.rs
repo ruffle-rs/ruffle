@@ -113,7 +113,7 @@ impl Ruffle {
         let movie = {
             let mut data = vec![0; swf_data.length() as usize];
             swf_data.copy_to(&mut data[..]);
-            SwfMovie::from_data(&data)?
+            SwfMovie::from_data(&data, None)?
         };
 
         let window = web_sys::window().ok_or_else(|| "Expected window")?;

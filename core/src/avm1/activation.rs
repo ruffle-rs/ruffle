@@ -1246,6 +1246,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                         context.player.clone().unwrap(),
                         level,
                         fetch,
+                        url,
                         None,
                     );
                     context.navigator.spawn_future(process);
@@ -1336,6 +1337,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     context.player.clone().unwrap(),
                     clip_target,
                     fetch,
+                    url.to_string(),
                     None,
                 );
                 context.navigator.spawn_future(process);

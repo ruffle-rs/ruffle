@@ -34,7 +34,8 @@ impl<'gc> Button<'gc> {
     ) -> Self {
         let mut actions = vec![];
         for action in &button.actions {
-            let action_data = source_movie.owned_subslice(action.action_data.clone());
+            let action_data =
+                source_movie.owned_subslice(action.action_data.clone(), &source_movie.movie);
             for condition in &action.conditions {
                 let button_action = ButtonAction {
                     action_data: action_data.clone(),

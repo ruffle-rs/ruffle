@@ -17,6 +17,9 @@ pub struct SwfMovie {
 
     /// Uncompressed SWF data.
     data: Vec<u8>,
+
+    /// The URL the SWF was downloaded from.
+    url: Option<String>,
 }
 
 impl SwfMovie {
@@ -31,25 +34,32 @@ impl SwfMovie {
                 num_frames: 0,
             },
             data: vec![],
+            url: None,
         }
     }
 
-    /// Construct a movie from an existing movie with any particular data on it.
-    pub fn from_movie_and_subdata(&self, data: Vec<u8>) -> Self {
+    /// Construct a movie from an existing movie with any particular data on
+    /// it.
+    ///
+    /// Use of this method is discouraged. SWF data should be borrowed or
+    /// sliced as necessary to refer to partial sections of a file.
+    pub fn from_movie_and_subdata(&self, data: Vec<u8>, source: &SwfMovie) -> Self {
         Self {
             header: self.header.clone(),
             data,
+            url: source.url.clone(),
         }
     }
 
     /// Utility method to construct a movie from a file on disk.
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+        let url = path.as_ref().to_string_lossy().to_owned().to_string();
         let data = std::fs::read(path)?;
-        Self::from_data(&data)
+        Self::from_data(&data, Some(url))
     }
 
     /// Construct a movie based on the contents of the SWF datastream.
-    pub fn from_data(swf_data: &[u8]) -> Result<Self, Error> {
+    pub fn from_data(swf_data: &[u8], url: Option<String>) -> Result<Self, Error> {
         let swf_stream = swf::read::read_swf_header(&swf_data[..])?;
         let header = swf_stream.header;
         let mut reader = swf_stream.reader;
@@ -74,7 +84,7 @@ impl SwfMovie {
             data
         };
 
-        Ok(Self { header, data })
+        Ok(Self { header, data, url })
     }
 
     pub fn header(&self) -> &Header {
@@ -141,12 +151,12 @@ impl SwfSlice {
     /// Construct a new slice with a given dataset only.
     ///
     /// This is used primarily for converting owned data back into a slice: we
-    /// reattach the SWF data that we can
-    pub fn owned_subslice(&self, data: Vec<u8>) -> Self {
+    /// reattach the SWF data to a fresh movie and return a new slice into it.
+    pub fn owned_subslice(&self, data: Vec<u8>, source: &SwfMovie) -> Self {
         let len = data.len();
 
         Self {
-            movie: Arc::new(self.movie.from_movie_and_subdata(data)),
+            movie: Arc::new(self.movie.from_movie_and_subdata(data, source)),
             start: 0,
             end: len,
         }

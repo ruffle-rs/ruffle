@@ -135,6 +135,7 @@ pub fn load_clip<'gc>(
                 context.player.clone().unwrap(),
                 DisplayObject::MovieClip(movieclip),
                 fetch,
+                url.to_string(),
                 Some(this),
             );
 

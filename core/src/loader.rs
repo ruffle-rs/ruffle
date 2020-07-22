@@ -116,6 +116,7 @@ impl<'gc> LoadManager<'gc> {
         player: Weak<Mutex<Player>>,
         target_clip: DisplayObject<'gc>,
         fetch: OwnedFuture<Vec<u8>, Error>,
+        url: String,
         target_broadcaster: Option<Object<'gc>>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
@@ -129,7 +130,7 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.introduce_loader_handle(handle);
 
-        loader.movie_loader(player, fetch)
+        loader.movie_loader(player, fetch, url)
     }
 
     /// Indicates that a movie clip has initialized (ran it's first frame).
@@ -331,6 +332,7 @@ impl<'gc> Loader<'gc> {
         &mut self,
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
+        url: String,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
@@ -375,7 +377,8 @@ impl<'gc> Loader<'gc> {
                 },
             )?;
 
-            let data = (fetch.await).and_then(|data| Ok((data.len(), SwfMovie::from_data(&data)?)));
+            let data = (fetch.await)
+                .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url))?)));
             if let Ok((length, movie)) = data {
                 let movie = Arc::new(movie);
 
