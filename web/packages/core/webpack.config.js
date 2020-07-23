@@ -5,9 +5,15 @@ const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 const path = require("path");
 
 module.exports = (env, argv) => {
+    let extraArgs = "";
+
     let mode = "production";
     if (argv && argv.mode) {
         mode = argv.mode;
+    }
+
+    if (env && env.features) {
+        extraArgs = `-- --features ${env.features}`;
     }
 
     console.log(`Building ${mode}...`);
@@ -27,6 +33,7 @@ module.exports = (env, argv) => {
                 crateDirectory: path.resolve(__dirname, "../.."),
                 outName: "ruffle",
                 forceMode: mode,
+                extraArgs,
             }),
         ],
     };
