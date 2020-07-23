@@ -37,6 +37,9 @@ pub enum Error {
     #[error("Non-XML loader spawned as XML loader")]
     NotXmlLoader,
 
+    #[error("Could not fetch movie {0}")]
+    FetchError(String),
+
     #[error("Invalid SWF")]
     InvalidSwf(#[from] crate::tag_utils::Error),
 
@@ -388,11 +391,7 @@ impl<'gc> Loader<'gc> {
 
                 Ok(())
             } else {
-                //TODO: Seriously?
-                Err(Error::Avm1Error(format!(
-                    "Failed to fetch root movie {}",
-                    url
-                )))
+                Err(Error::FetchError(url))
             }
         })
     }
@@ -456,7 +455,7 @@ impl<'gc> Loader<'gc> {
             )?;
 
             let data = (fetch.await)
-                .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url))?)));
+                .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
             if let Ok((length, movie)) = data {
                 let movie = Arc::new(movie);
 
