@@ -113,6 +113,11 @@ impl SwfMovie {
     pub fn height(&self) -> u32 {
         (self.header.stage_size.y_max - self.header.stage_size.y_min).to_pixels() as u32
     }
+
+    /// Get the URL this SWF was fetched from.
+    pub fn url(&self) -> Option<&str> {
+        self.url.as_deref()
+    }
 }
 
 /// A shared-ownership reference to some portion of an SWF datastream.

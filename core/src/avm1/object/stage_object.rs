@@ -898,11 +898,15 @@ fn drop_target<'gc>(
 
 fn url<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: DisplayObject<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Unimplemented property _url");
-    Ok("".into())
+    Ok(this
+        .as_movie_clip()
+        .and_then(|mc| mc.movie())
+        .and_then(|mov| mov.url().map(|s| s.to_string()))
+        .map(|s| AvmString::new(context.gc_context, s).into())
+        .unwrap_or_else(|| "".into()))
 }
 
 fn high_quality<'gc>(
