@@ -1,0 +1,35 @@
+// loadVars.load()
+false
+
+// loadVars.load('test.txt')
+true
+
+// loadVars.sendAndLoad()
+false
+
+// loadVars.sendAndLoad('testvars.txt', loadVars2, 'POST')
+true
+loadVars2.loaded: false
+loadVars2.getBytesLoaded(): 0
+
+// loadVars.sendAndLoad('bogus.txt', undefined, 'POST')
+false
+
+// loadVars.decode('test=foo&test2=bar')
+loadVars.test: foo
+loadVars.test2: bar
+
+// loadVars.load('testvars.txt') with onData
+true
+
+Load: true
+this.myVar: Hurray
+this.also: The test passed
+this.loaded: true
+
+Load: true
+this.myVar: Hurray
+this.also: The test passed
+this.loaded: true
+
+data: myVar=Hurray&also=The%20test%20passed

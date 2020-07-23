@@ -188,6 +188,7 @@ swf_tests! {
     (mcl_loadclip, "avm1/mcl_loadclip", 11),
     (mcl_unloadclip, "avm1/mcl_unloadclip", 11),
     (mcl_getprogress, "avm1/mcl_getprogress", 6),
+    (load_vars, "avm1/load_vars", 2),
     (loadvariables, "avm1/loadvariables", 3),
     (loadvariablesnum, "avm1/loadvariablesnum", 3),
     (loadvariables_method, "avm1/loadvariables_method", 3),
