@@ -2488,23 +2488,22 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         }
     }
 
-    /// Convert the current locals pool into a set of form values.
+    /// Convert the enumerable properties of an object into a set of form values.
     ///
     /// This is necessary to support form submission from Flash via a couple of
     /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
     ///
     /// WARNING: This does not support user defined virtual properties!
-    pub fn locals_into_form_values(
+    pub fn object_into_form_values(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        object: Object<'gc>,
     ) -> HashMap<String, String> {
         let mut form_values = HashMap::new();
-        let scope = self.scope_cell();
-        let locals = scope.read().locals_cell();
-        let keys = locals.get_keys(self);
+        let keys = object.get_keys(self);
 
         for k in keys {
-            let v = locals.get(&k, self, context);
+            let v = object.get(&k, self, context);
 
             //TODO: What happens if an error occurs inside a virtual property?
             form_values.insert(
@@ -2520,17 +2519,18 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         form_values
     }
 
-    /// Construct request options for a fetch operation that may send locals as
+    /// Construct request options for a fetch operation that may sends object properties as
     /// form data in the request body or URL.
-    pub fn locals_into_request_options<'b>(
+    pub fn object_into_request_options<'b>(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        object: Object<'gc>,
         url: Cow<'b, str>,
         method: Option<NavigationMethod>,
     ) -> (Cow<'b, str>, RequestOptions) {
         match method {
             Some(method) => {
-                let vars = self.locals_into_form_values(context);
+                let vars = self.object_into_form_values(context, object);
                 let qstring = form_urlencoded::Serializer::new(String::new())
                     .extend_pairs(vars.iter())
                     .finish();
@@ -2555,6 +2555,34 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             }
             None => (url, RequestOptions::get()),
         }
+    }
+
+    /// Convert the current locals pool into a set of form values.
+    ///
+    /// This is necessary to support form submission from Flash via a couple of
+    /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
+    ///
+    /// WARNING: This does not support user defined virtual properties!
+    pub fn locals_into_form_values(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> HashMap<String, String> {
+        let scope = self.scope_cell();
+        let locals = scope.read().locals_cell();
+        self.object_into_form_values(context, locals)
+    }
+
+    /// Construct request options for a fetch operation that may send locals as
+    /// form data in the request body or URL.
+    pub fn locals_into_request_options<'b>(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        url: Cow<'b, str>,
+        method: Option<NavigationMethod>,
+    ) -> (Cow<'b, str>, RequestOptions) {
+        let scope = self.scope_cell();
+        let locals = scope.read().locals_cell();
+        self.object_into_request_options(context, locals, url, method)
     }
 
     /// Resolves a target value to a display object, relative to a starting display object.
