@@ -14,6 +14,36 @@ use std::time::Duration;
 use swf::avm1::types::SendVarsMethod;
 use url::{ParseError, Url};
 
+/// Attempt to convert a relative filesystem path into an absolute `file:///`
+/// URL.
+///
+/// If the relative path is an absolute path, the base will not be used, but it
+/// will still be parsed into a `Url`.
+pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result<Url, ParseError> {
+    let parsed = Url::parse(relative);
+    if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
+        let base =
+            Url::from_directory_path(base).map_err(|_| ParseError::RelativeUrlWithoutBase)?;
+        return base.join(relative);
+    }
+
+    parsed
+}
+
+/// Attempt to convert a relative URL into an absolute URL, using the base URL
+/// if necessary.
+///
+/// If the relative URL is actually absolute, then the base will not be used.
+pub fn url_from_relative_url(base: &str, relative: &str) -> Result<Url, ParseError> {
+    let parsed = Url::parse(relative);
+    if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
+        let base = Url::parse(base)?;
+        return base.join(relative);
+    }
+
+    parsed
+}
+
 /// Enumerates all possible navigation methods.
 #[derive(Copy, Clone)]
 pub enum NavigationMethod {
