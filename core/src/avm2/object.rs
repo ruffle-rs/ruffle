@@ -431,6 +431,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let fn_proto = activation.avm2().prototypes().function;
         let trait_name = trait_entry.name().clone();
         avm_debug!(
+            activation.avm2(),
             "Installing trait {:?} of kind {:?}",
             trait_name,
             trait_entry.kind()

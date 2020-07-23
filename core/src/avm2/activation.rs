@@ -415,7 +415,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error> {
         let op = reader.read_op();
         if let Ok(Some(op)) = op {
-            avm_debug!("Opcode: {:?}", op);
+            avm_debug!(self.avm2, "Opcode: {:?}", op);
 
             let result = match op {
                 Op::PushByte { value } => self.op_push_byte(value),
@@ -1093,7 +1093,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let multiname = self.pool_multiname(method, index, context.gc_context)?;
-        avm_debug!("Resolving {:?}", multiname);
+        avm_debug!(self.avm2, "Resolving {:?}", multiname);
         let result = if let Some(scope) = self.scope() {
             scope.read().find(&multiname, self, context)?
         } else {
@@ -1113,7 +1113,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let multiname = self.pool_multiname(method, index, context.gc_context)?;
-        avm_debug!("Resolving {:?}", multiname);
+        avm_debug!(self.avm2, "Resolving {:?}", multiname);
         let found: Result<Object<'gc>, Error> = if let Some(scope) = self.scope() {
             scope.read().find(&multiname, self, context)?
         } else {
@@ -1134,7 +1134,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let multiname = self.pool_multiname_static(method, index, context.gc_context)?;
-        avm_debug!("Resolving {:?}", multiname);
+        avm_debug!(self.avm2, "Resolving {:?}", multiname);
         let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
             scope
                 .write(context.gc_context)
@@ -1607,9 +1607,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             let register_name = self.pool_string(method, register_name)?;
             let value = self.local_register(register as u32)?;
 
-            avm_debug!("Debug: {} = {:?}", register_name, value);
+            avm_debug!(self.avm2, "Debug: {} = {:?}", register_name, value);
         } else {
-            avm_debug!("Unknown debugging mode!");
+            avm_debug!(self.avm2, "Unknown debugging mode!");
         }
 
         Ok(FrameControl::Continue)
@@ -1636,7 +1636,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error> {
         let file_name = self.pool_string(method, file_name)?;
 
-        avm_debug!("File: {}", file_name);
+        avm_debug!(self.avm2, "File: {}", file_name);
 
         Ok(FrameControl::Continue)
     }
@@ -1653,7 +1653,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     #[allow(unused_variables)]
     fn op_debug_line(&mut self, line_num: u32) -> Result<FrameControl<'gc>, Error> {
-        avm_debug!("Line: {}", line_num);
+        avm_debug!(self.avm2, "Line: {}", line_num);
 
         Ok(FrameControl::Continue)
     }

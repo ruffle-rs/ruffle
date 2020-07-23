@@ -24,9 +24,10 @@ use swf::avm1::types::{Action, CatchVar, Function, TryBlock};
 use url::form_urlencoded;
 
 macro_rules! avm_debug {
-    ($($arg:tt)*) => (
-        #[cfg(feature = "avm_debug")]
-        log::debug!($($arg)*)
+    ($avm: expr, $($arg:tt)*) => (
+        if $avm.show_debug_output() {
+            log::debug!($($arg)*)
+        }
     )
 }
 
@@ -227,7 +228,7 @@ pub struct Activation<'a, 'gc: 'a> {
 
 impl Drop for Activation<'_, '_> {
     fn drop(&mut self) {
-        avm_debug!("END {}", self.id);
+        avm_debug!(self.avm, "END {}", self.id);
     }
 }
 
@@ -243,7 +244,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         this: Object<'gc>,
         arguments: Option<Object<'gc>>,
     ) -> Self {
-        avm_debug!("START {}", id);
+        avm_debug!(avm, "START {}", id);
         Self {
             avm,
             id,
@@ -265,7 +266,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         scope: GcCell<'gc, Scope<'gc>>,
     ) -> Activation<'b, 'gc> {
         let id = self.id.child(name);
-        avm_debug!("START {}", id);
+        avm_debug!(self.avm, "START {}", id);
         Activation {
             avm: self.avm,
             id,
@@ -295,7 +296,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
         let child_scope = GcCell::allocate(mc, Scope::new_local_scope(global_scope, mc));
         let empty_constant_pool = GcCell::allocate(mc, Vec::new());
-        avm_debug!("START {}", id);
+        avm_debug!(avm, "START {}", id);
 
         Self {
             avm,
@@ -419,7 +420,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
         } else if let Some(action) = reader.read_action()? {
-            avm_debug!("({}) Action: {:?}", self.id.depth(), action);
+            avm_debug!(self.avm, "({}) Action: {:?}", self.id.depth(), action);
 
             match action {
                 Action::Add => self.action_add(context),
@@ -2368,6 +2369,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.avm.pop();
         avm_debug!(
+            self.avm,
             "Thrown exception: {}",
             value
                 .coerce_to_string(self, context)

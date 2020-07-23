@@ -15,9 +15,10 @@ use swf::avm2::read::Reader;
 
 #[macro_export]
 macro_rules! avm_debug {
-    ($($arg:tt)*) => (
-        #[cfg(feature = "avm_debug")]
-        log::debug!($($arg)*)
+    ($avm: expr, $($arg:tt)*) => (
+        if $avm.show_debug_output() {
+            log::debug!($($arg)*)
+        }
     )
 }
 
@@ -57,6 +58,9 @@ pub struct Avm2<'gc> {
 
     /// System prototypes.
     system_prototypes: SystemPrototypes<'gc>,
+
+    #[cfg(feature = "avm_debug")]
+    pub debug_output: bool,
 }
 
 impl<'gc> Avm2<'gc> {
@@ -68,6 +72,9 @@ impl<'gc> Avm2<'gc> {
             stack: Vec::new(),
             globals,
             system_prototypes,
+
+            #[cfg(feature = "avm_debug")]
+            debug_output: false,
         }
     }
 
@@ -135,7 +142,7 @@ impl<'gc> Avm2<'gc> {
     /// Push a value onto the operand stack.
     fn push(&mut self, value: impl Into<Value<'gc>>) {
         let value = value.into();
-        avm_debug!("Stack push {}: {:?}", self.stack.len(), value);
+        avm_debug!(self, "Stack push {}: {:?}", self.stack.len(), value);
         self.stack.push(value);
     }
 
@@ -147,7 +154,7 @@ impl<'gc> Avm2<'gc> {
             Value::Undefined
         });
 
-        avm_debug!("Stack pop {}: {:?}", self.stack.len(), value);
+        avm_debug!(self, "Stack pop {}: {:?}", self.stack.len(), value);
 
         value
     }
@@ -161,4 +168,23 @@ impl<'gc> Avm2<'gc> {
 
         args
     }
+
+    #[cfg(feature = "avm_debug")]
+    #[inline]
+    pub fn show_debug_output(&self) -> bool {
+        self.debug_output
+    }
+
+    #[cfg(not(feature = "avm_debug"))]
+    pub const fn show_debug_output(&self) -> bool {
+        false
+    }
+
+    #[cfg(feature = "avm_debug")]
+    pub fn set_show_debug_output(&mut self, visible: bool) {
+        self.debug_output = visible;
+    }
+
+    #[cfg(not(feature = "avm_debug"))]
+    pub const fn set_show_debug_output(&self, _visible: bool) {}
 }
