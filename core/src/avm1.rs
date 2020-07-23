@@ -47,9 +47,10 @@ pub use timer::Timers;
 pub use value::Value;
 
 macro_rules! avm_debug {
-    ($($arg:tt)*) => (
-        #[cfg(feature = "avm_debug")]
-        log::debug!($($arg)*)
+    ($avm: expr, $($arg:tt)*) => (
+        if $avm.show_debug_output() {
+            log::debug!($($arg)*)
+        }
     )
 }
 
@@ -87,6 +88,9 @@ pub struct Avm1<'gc> {
     /// The maximum amount of functions that can be called before a `Error::FunctionRecursionLimit`
     /// is raised. This defaults to 256 but can be changed per movie.
     max_recursion_depth: u16,
+
+    #[cfg(feature = "avm_debug")]
+    pub debug_output: bool,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
@@ -125,6 +129,9 @@ impl<'gc> Avm1<'gc> {
             ],
             halted: false,
             max_recursion_depth: 255,
+
+            #[cfg(feature = "avm_debug")]
+            debug_output: false,
         }
     }
 
@@ -346,7 +353,7 @@ impl<'gc> Avm1<'gc> {
 
     fn push(&mut self, value: impl Into<Value<'gc>>) {
         let value = value.into();
-        avm_debug!("Stack push {}: {:?}", self.stack.len(), value);
+        avm_debug!(self, "Stack push {}: {:?}", self.stack.len(), value);
         self.stack.push(value);
     }
 
@@ -357,7 +364,7 @@ impl<'gc> Avm1<'gc> {
             Value::Undefined
         });
 
-        avm_debug!("Stack pop {}: {:?}", self.stack.len(), value);
+        avm_debug!(self, "Stack pop {}: {:?}", self.stack.len(), value);
 
         value
     }
@@ -384,6 +391,25 @@ impl<'gc> Avm1<'gc> {
     pub fn set_max_recursion_depth(&mut self, max_recursion_depth: u16) {
         self.max_recursion_depth = max_recursion_depth
     }
+
+    #[cfg(feature = "avm_debug")]
+    #[inline]
+    pub fn show_debug_output(&self) -> bool {
+        self.debug_output
+    }
+
+    #[cfg(not(feature = "avm_debug"))]
+    pub const fn show_debug_output(&self) -> bool {
+        false
+    }
+
+    #[cfg(feature = "avm_debug")]
+    pub fn set_show_debug_output(&mut self, visible: bool) {
+        self.debug_output = visible;
+    }
+
+    #[cfg(not(feature = "avm_debug"))]
+    pub const fn set_show_debug_output(&self, _visible: bool) {}
 }
 
 pub fn root_error_handler<'gc>(

@@ -451,6 +451,32 @@ impl Player {
             }
         }
 
+        if cfg!(feature = "avm_debug") {
+            if let PlayerEvent::KeyDown {
+                key_code: KeyCode::D,
+            } = event
+            {
+                if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt)
+                {
+                    self.mutate_with_update_context(|avm1, avm2, _context| {
+                        if avm1.show_debug_output() {
+                            log::info!(
+                                "AVM Debugging turned off! Press CTRL+ALT+D to turn off again."
+                            );
+                            avm1.set_show_debug_output(false);
+                            avm2.set_show_debug_output(false);
+                        } else {
+                            log::info!(
+                                "AVM Debugging turned on! Press CTRL+ALT+D to turn on again."
+                            );
+                            avm1.set_show_debug_output(true);
+                            avm2.set_show_debug_output(true);
+                        }
+                    });
+                }
+            }
+        }
+
         // Update mouse position from mouse events.
         if let PlayerEvent::MouseMove { x, y }
         | PlayerEvent::MouseDown { x, y }

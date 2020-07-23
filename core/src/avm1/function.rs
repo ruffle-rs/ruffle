@@ -282,7 +282,7 @@ impl<'gc> Executable<'gc> {
                         .unwrap_or(ac.player_version)
                 };
 
-                let name = if cfg!(feature = "avm_debug") {
+                let name = if activation.avm.show_debug_output() {
                     let mut result = match &af.name {
                         None => name.to_string(),
                         Some(name) => name.to_string(),
