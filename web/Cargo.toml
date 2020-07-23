@@ -16,6 +16,7 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = ["canvas", "console_error_panic_hook", "console_log", "webgl"]
 lzma = ["ruffle_core/lzma"]
+avm_debug = ["ruffle_core/avm_debug"]
 canvas = ["ruffle_render_canvas"]
 webgl = ["ruffle_render_webgl"]
 
