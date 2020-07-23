@@ -1341,6 +1341,29 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             }
 
             return Ok(FrameControl::Continue);
+        } else if window_target.starts_with("_level") && url.len() > 6 {
+            // target of `_level#` indicates a `loadMovieNum` call.
+            match window_target[6..].parse::<u32>() {
+                Ok(level_id) => {
+                    let fetch = context.navigator.fetch(&url, RequestOptions::get());
+                    let level = self.resolve_level(level_id, context);
+
+                    let process = context.load_manager.load_movie_into_clip(
+                        context.player.clone().unwrap(),
+                        level,
+                        fetch,
+                        None,
+                    );
+                    context.navigator.spawn_future(process);
+                }
+                Err(e) => log::warn!(
+                    "Couldn't parse level id {} for action_get_url_2: {}",
+                    url,
+                    e
+                ),
+            }
+
+            return Ok(FrameControl::Continue);
         } else {
             let vars = match NavigationMethod::from_send_vars_method(swf_method) {
                 Some(method) => Some((method, self.locals_into_form_values(context))),
@@ -1353,7 +1376,6 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 vars,
             );
         }
-
         Ok(FrameControl::Continue)
     }
 

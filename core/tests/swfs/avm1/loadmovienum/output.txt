@@ -1,2 +1,3 @@
-Loading movie
+Loading movies
+Child movie loaded!
 Child movie loaded!
