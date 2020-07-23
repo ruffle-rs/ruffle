@@ -6,10 +6,9 @@ use crate::avm1::object::Object;
 use crate::avm1::{Avm1, AvmString, TObject, Timers, Value};
 use crate::avm2::Avm2;
 use crate::backend::input::{InputBackend, MouseCursor};
+use crate::backend::navigator::{NavigatorBackend, RequestOptions};
 use crate::backend::storage::StorageBackend;
-use crate::backend::{
-    audio::AudioBackend, navigator::NavigatorBackend, render::Letterbox, render::RenderBackend,
-};
+use crate::backend::{audio::AudioBackend, render::Letterbox, render::RenderBackend};
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{EditText, MorphShape, MovieClip};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
@@ -183,29 +182,21 @@ pub struct Player {
 
 impl Player {
     pub fn new(
-        mut renderer: Renderer,
+        renderer: Renderer,
         audio: Audio,
         navigator: Navigator,
         input: Input,
-        movie: SwfMovie,
         storage: Storage,
     ) -> Result<Arc<Mutex<Self>>, Error> {
-        let movie = Arc::new(movie);
-
-        info!(
-            "Loaded SWF version {}, with a resolution of {}x{}",
-            movie.header().version,
-            movie.header().stage_size.x_max,
-            movie.header().stage_size.y_max
-        );
-
-        let movie_width = movie.width();
-        let movie_height = movie.height();
+        let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
+        let movie_width = 550;
+        let movie_height = 400;
+        let frame_rate = 12.0;
 
         let mut player = Player {
             player_version: NEWEST_PLAYER_VERSION,
 
-            swf: movie.clone(),
+            swf: fake_movie,
 
             is_playing: false,
             needs_render: true,
@@ -223,26 +214,10 @@ impl Player {
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
-                // Load and parse the device font.
-                let device_font =
-                    match Self::load_device_font(gc_context, DEVICE_FONT_TAG, &mut renderer) {
-                        Ok(font) => Some(font),
-                        Err(e) => {
-                            log::error!("Unable to load device font: {}", e);
-                            None
-                        }
-                    };
-
-                let mut library = Library::default();
-
-                library
-                    .library_for_movie_mut(movie.clone())
-                    .set_device_font(device_font);
-
                 GcRoot(GcCell::allocate(
                     gc_context,
                     GcRootData {
-                        library,
+                        library: Library::default(),
                         levels: BTreeMap::new(),
                         mouse_hovered_object: None,
                         drag_object: None,
@@ -257,7 +232,7 @@ impl Player {
                 ))
             }),
 
-            frame_rate: movie.header().frame_rate.into(),
+            frame_rate,
             frame_accumulator: 0.0,
 
             movie_width,
@@ -281,14 +256,76 @@ impl Player {
             storage,
         };
 
-        player.mutate_with_update_context(|avm1, _avm2, context| {
+        player.build_matrices();
+
+        let player_box = Arc::new(Mutex::new(player));
+        let mut player_lock = player_box.lock().unwrap();
+        player_lock.self_reference = Some(Arc::downgrade(&player_box));
+        std::mem::drop(player_lock);
+
+        Ok(player_box)
+    }
+
+    /// Fetch the root movie.
+    ///
+    /// This should not be called if a root movie fetch has already been kicked
+    /// off.
+    pub fn fetch_root_movie(&mut self, movie_url: &str) {
+        self.mutate_with_update_context(|_avm1, _avm2, context| {
+            let fetch = context.navigator.fetch(movie_url, RequestOptions::get());
+            let process = context.load_manager.load_root_movie(
+                context.player.clone().unwrap(),
+                fetch,
+                movie_url.to_string(),
+            );
+
+            context.navigator.spawn_future(process);
+        });
+    }
+
+    /// Change the root movie.
+    ///
+    /// This should only be called once, as it makes no attempt at removing
+    /// previous stage contents. If you need to load a new root movie, you
+    /// should destroy and recreate the player instance.
+    pub fn set_root_movie(&mut self, movie: Arc<SwfMovie>) {
+        info!(
+            "Loaded SWF version {}, with a resolution of {}x{}",
+            movie.header().version,
+            movie.header().stage_size.x_max,
+            movie.header().stage_size.y_max
+        );
+
+        self.movie_width = movie.width();
+        self.movie_height = movie.height();
+        self.frame_rate = movie.header().frame_rate.into();
+        self.swf = movie;
+
+        self.mutate_with_update_context(|avm1, _avm2, context| {
             let mut root: DisplayObject =
-                MovieClip::from_movie(context.gc_context, movie.clone()).into();
+                MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
             root.set_depth(context.gc_context, 0);
             root.post_instantiation(avm1, context, root, None, false);
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
+            // Load and parse the device font.
+            let device_font =
+                match Self::load_device_font(context.gc_context, DEVICE_FONT_TAG, context.renderer)
+                {
+                    Ok(font) => Some(font),
+                    Err(e) => {
+                        log::error!("Unable to load device font: {}", e);
+                        None
+                    }
+                };
+
+            context
+                .library
+                .library_for_movie_mut(context.swf.clone())
+                .set_device_font(device_font);
+
+            // Set the version parameter on the root.
             let mut activation = Activation::from_nothing(
                 avm1,
                 ActivationIdentifier::root("[Version Setter]"),
@@ -310,15 +347,8 @@ impl Player {
             );
         });
 
-        player.build_matrices();
-        player.preload();
-
-        let player_box = Arc::new(Mutex::new(player));
-        let mut player_lock = player_box.lock().unwrap();
-        player_lock.self_reference = Some(Arc::downgrade(&player_box));
-        std::mem::drop(player_lock);
-
-        Ok(player_box)
+        self.build_matrices();
+        self.preload();
     }
 
     pub fn tick(&mut self, dt: f64) {
@@ -1051,14 +1081,11 @@ impl Player {
     pub fn load_device_font<'gc>(
         gc_context: gc_arena::MutationContext<'gc, '_>,
         data: &[u8],
-        renderer: &mut Renderer,
+        renderer: &mut dyn RenderBackend,
     ) -> Result<crate::font::Font<'gc>, Error> {
         let mut reader = swf::read::Reader::new(data, 8);
-        let device_font = crate::font::Font::from_swf_tag(
-            gc_context,
-            renderer.deref_mut(),
-            &reader.read_define_font_2(3)?,
-        )?;
+        let device_font =
+            crate::font::Font::from_swf_tag(gc_context, renderer, &reader.read_define_font_2(3)?)?;
         Ok(device_font)
     }
 

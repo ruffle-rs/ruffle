@@ -424,6 +424,7 @@ mod tests {
     use crate::font::{EvalParameters, Font};
     use crate::player::{Player, DEVICE_FONT_TAG};
     use gc_arena::{rootless_arena, MutationContext};
+    use std::ops::DerefMut;
     use swf::Twips;
 
     fn with_device_font<F>(callback: F)
@@ -432,7 +433,8 @@ mod tests {
     {
         rootless_arena(|mc| {
             let mut renderer: Box<dyn RenderBackend> = Box::new(NullRenderer::new());
-            let device_font = Player::load_device_font(mc, DEVICE_FONT_TAG, &mut renderer).unwrap();
+            let device_font =
+                Player::load_device_font(mc, DEVICE_FONT_TAG, renderer.deref_mut()).unwrap();
 
             callback(mc, device_font);
         })

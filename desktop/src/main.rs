@@ -16,6 +16,7 @@ use ruffle_core::{
 };
 use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Instant;
 use structopt::StructOpt;
 
@@ -92,7 +93,8 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let storage = Box::new(DiskStorageBackend::new(
         input_path.file_name().unwrap_or_default().as_ref(),
     ));
-    let player = Player::new(renderer, audio, navigator, input, movie, storage)?;
+    let player = Player::new(renderer, audio, navigator, input, storage)?;
+    player.lock().unwrap().set_root_movie(Arc::new(movie));
     player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.
 
     player

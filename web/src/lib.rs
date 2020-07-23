@@ -57,8 +57,38 @@ pub struct Ruffle(Index);
 
 #[wasm_bindgen]
 impl Ruffle {
-    pub fn new(parent: HtmlElement, swf_data: Uint8Array) -> Result<Ruffle, JsValue> {
-        Ruffle::new_internal(parent, swf_data).map_err(|_| "Error creating player".into())
+    pub fn new(parent: HtmlElement) -> Result<Ruffle, JsValue> {
+        Ruffle::new_internal(parent).map_err(|_| "Error creating player".into())
+    }
+
+    /// Stream an arbitrary movie file from (presumably) the Internet.
+    ///
+    /// This method should only be called once per player.
+    pub fn stream_from(&mut self, movie_url: &str) {
+        INSTANCES.with(|instances| {
+            let mut instances = instances.borrow_mut();
+            let instance = instances.get_mut(self.0).unwrap();
+            instance.core.lock().unwrap().fetch_root_movie(movie_url);
+        });
+    }
+
+    /// Play an arbitrary movie on this instance.
+    ///
+    /// This method should only be called once per player.
+    pub fn load_data(&mut self, swf_data: Uint8Array) -> Result<(), JsValue> {
+        let movie = Arc::new({
+            let mut data = vec![0; swf_data.length() as usize];
+            swf_data.copy_to(&mut data[..]);
+            SwfMovie::from_data(&data, None).map_err(|e| format!("Error loading movie: {}", e))?
+        });
+
+        INSTANCES.with(|instances| {
+            let mut instances = instances.borrow_mut();
+            let instance = instances.get_mut(self.0).unwrap();
+            instance.core.lock().unwrap().set_root_movie(movie);
+        });
+
+        Ok(())
     }
 
     pub fn play(&mut self) {
@@ -106,15 +136,9 @@ impl Ruffle {
 }
 
 impl Ruffle {
-    fn new_internal(parent: HtmlElement, swf_data: Uint8Array) -> Result<Ruffle, Box<dyn Error>> {
+    fn new_internal(parent: HtmlElement) -> Result<Ruffle, Box<dyn Error>> {
         console_error_panic_hook::set_once();
         let _ = console_log::init_with_level(log::Level::Trace);
-
-        let movie = {
-            let mut data = vec![0; swf_data.length() as usize];
-            swf_data.copy_to(&mut data[..]);
-            SwfMovie::from_data(&data, None)?
-        };
 
         let window = web_sys::window().ok_or_else(|| "Expected window")?;
         let document = window.document().ok_or("Expected document")?;
@@ -138,8 +162,7 @@ impl Ruffle {
             })
             .unwrap_or_else(|| Box::new(MemoryStorageBackend::default()));
 
-        let core =
-            ruffle_core::Player::new(renderer, audio, navigator, input, movie, local_storage)?;
+        let core = ruffle_core::Player::new(renderer, audio, navigator, input, local_storage)?;
         let mut core_lock = core.lock().unwrap();
         let frame_rate = core_lock.frame_rate();
         core_lock.audio_mut().set_frame_rate(frame_rate);
