@@ -20,6 +20,7 @@ pub(crate) mod display_object;
 pub(crate) mod error;
 mod function;
 mod key;
+mod load_vars;
 mod math;
 mod matrix;
 pub(crate) mod mouse;
@@ -250,6 +251,8 @@ pub fn create_globals<'gc>(
     let number_proto: Object<'gc> = number::create_proto(gc_context, object_proto, function_proto);
     let boolean_proto: Object<'gc> =
         boolean::create_proto(gc_context, object_proto, function_proto);
+    let load_vars_proto: Object<'gc> =
+        load_vars::create_proto(gc_context, object_proto, function_proto);
     let matrix_proto: Object<'gc> = matrix::create_proto(gc_context, object_proto, function_proto);
     let point_proto: Object<'gc> = point::create_proto(gc_context, object_proto, function_proto);
     let rectangle_proto: Object<'gc> =
@@ -287,6 +290,12 @@ pub fn create_globals<'gc>(
         Executable::Native(function::constructor),
         Some(function_proto),
         Some(function_proto),
+    );
+    let load_vars = FunctionObject::function(
+        gc_context,
+        Executable::Native(load_vars::constructor),
+        Some(function_proto),
+        Some(load_vars_proto),
     );
     let movie_clip = FunctionObject::function(
         gc_context,
@@ -371,6 +380,7 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "Error", error.into(), EnumSet::empty());
     globals.define_value(gc_context, "Object", object.into(), EnumSet::empty());
     globals.define_value(gc_context, "Function", function.into(), EnumSet::empty());
+    globals.define_value(gc_context, "LoadVars", load_vars.into(), EnumSet::empty());
     globals.define_value(gc_context, "MovieClip", movie_clip.into(), EnumSet::empty());
     globals.define_value(
         gc_context,

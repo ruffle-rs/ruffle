@@ -3,7 +3,7 @@
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
-use crate::context::{ActionQueue, ActionType};
+use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
@@ -28,6 +28,9 @@ pub enum Error {
     #[error("Non-form loader spawned as form loader")]
     NotFormLoader,
 
+    #[error("Non-load vars loader spawned as load vars loader")]
+    NotLoadVarsLoader,
+
     #[error("Non-XML loader spawned as XML loader")]
     NotXmlLoader,
 
@@ -45,6 +48,16 @@ pub enum Error {
     #[error("Error running avm1 script: {0}")]
     Avm1Error(String),
 }
+
+pub type FormLoadHandler<'gc> = fn(
+    &mut Activation<'_, 'gc>,
+    &mut UpdateContext<'_, 'gc, '_>,
+    Object<'gc>,
+    data: &[u8],
+) -> Result<(), Error>;
+
+pub type FormErrorHandler<'gc> =
+    fn(&mut Activation<'_, 'gc>, &mut UpdateContext<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error>;
 
 impl From<crate::avm1::error::Error<'_>> for Error {
     fn from(error: crate::avm1::error::Error<'_>) -> Self {
@@ -163,6 +176,27 @@ impl<'gc> LoadManager<'gc> {
         loader.form_loader(player, fetch)
     }
 
+    /// Kick off a form data load into an AVM1 object.
+    ///
+    /// Returns the loader's async process, which you will need to spawn.
+    pub fn load_form_into_load_vars(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: Object<'gc>,
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::LoadVars {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.introduce_loader_handle(handle);
+
+        loader.load_vars_loader(player, fetch)
+    }
+
     /// Kick off an XML data load into an XML node.
     ///
     /// Returns the loader's async process, which you will need to spawn.
@@ -227,6 +261,15 @@ pub enum Loader<'gc> {
         target_object: Object<'gc>,
     },
 
+    /// Loader that is loading form data into an AVM1 LoadVars object.
+    LoadVars {
+        /// The handle to refer to this loader instance.
+        self_handle: Option<Handle>,
+
+        /// The target AVM1 object to load form data into.
+        target_object: Object<'gc>,
+    },
+
     /// Loader that is loading XML data into an XML tree.
     XML {
         /// The handle to refer to this loader instance.
@@ -257,6 +300,7 @@ unsafe impl<'gc> Collect for Loader<'gc> {
                 target_broadcaster.trace(cc);
             }
             Loader::Form { target_object, .. } => target_object.trace(cc),
+            Loader::LoadVars { target_object, .. } => target_object.trace(cc),
             Loader::XML { target_node, .. } => target_node.trace(cc),
         }
     }
@@ -271,6 +315,7 @@ impl<'gc> Loader<'gc> {
         match self {
             Loader::Movie { self_handle, .. } => *self_handle = Some(handle),
             Loader::Form { self_handle, .. } => *self_handle = Some(handle),
+            Loader::LoadVars { self_handle, .. } => *self_handle = Some(handle),
             Loader::XML { self_handle, .. } => *self_handle = Some(handle),
         }
     }
@@ -467,12 +512,13 @@ impl<'gc> Loader<'gc> {
         Box::pin(async move {
             let data = fetch.await?;
 
+            // Fire the load handler.
             player.lock().unwrap().update(|avm1, _avm2, uc| {
                 let loader = uc.load_manager.get_loader(handle);
                 let that = match loader {
-                    Some(Loader::Form { target_object, .. }) => *target_object,
+                    Some(&Loader::Form { target_object, .. }) => target_object,
                     None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotMovieLoader),
+                    _ => return Err(Error::NotFormLoader),
                 };
 
                 let mut activation = Activation::from_nothing(
@@ -491,6 +537,70 @@ impl<'gc> Loader<'gc> {
                         &mut activation,
                         uc,
                     )?;
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    /// Creates a future for a LoadVars load call.
+    pub fn load_vars_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        fetch: OwnedFuture<Vec<u8>, Error>,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::LoadVars { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotLoadVarsLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let data = fetch.await;
+
+            // Fire the load handler.
+            player.lock().unwrap().update(|avm1, _avm2, uc| {
+                let loader = uc.load_manager.get_loader(handle);
+                let that = match loader {
+                    Some(&Loader::LoadVars { target_object, .. }) => target_object,
+                    None => return Err(Error::Cancelled),
+                    _ => return Err(Error::NotLoadVarsLoader),
+                };
+
+                let mut activation = Activation::from_nothing(
+                    avm1,
+                    ActivationIdentifier::root("[Form Loader]"),
+                    uc.swf.version(),
+                    avm1.global_object_cell(),
+                    uc.gc_context,
+                    *uc.levels.get(&0).unwrap(),
+                );
+
+                match data {
+                    Ok(data) => {
+                        // Fire the onData method with the loaded string.
+                        let string_data =
+                            AvmString::new(uc.gc_context, String::from_utf8_lossy(&data));
+                        let _ =
+                            that.call_method("onData", &[string_data.into()], &mut activation, uc);
+                    }
+                    Err(_) => {
+                        // TODO: Log "Error opening URL" trace similar to the Flash Player?
+                        // Simulate 404 HTTP status. This should probably be fired elsewhere
+                        // because a failed local load doesn't fire a 404.
+                        let _ =
+                            that.call_method("onHTTPStatus", &[404.into()], &mut activation, uc);
+
+                        // Fire the onData method with no data to indicate an unsuccessful load.
+                        let _ =
+                            that.call_method("onData", &[Value::Undefined], &mut activation, uc);
+                    }
                 }
 
                 Ok(())
