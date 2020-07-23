@@ -1,6 +1,7 @@
 //! Browser-related platform functions
 
 use crate::loader::Error;
+use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::future::Future;
@@ -11,6 +12,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 use std::time::Duration;
 use swf::avm1::types::SendVarsMethod;
+use url::{ParseError, Url};
 
 /// Enumerates all possible navigation methods.
 #[derive(Copy, Clone)]
@@ -132,6 +134,16 @@ pub trait NavigatorBackend {
     /// TODO: For some reason, `wasm_bindgen_futures` wants unpinnable futures.
     /// This seems highly limiting.
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>);
+
+    /// Resolve a relative URL.
+    ///
+    /// This function must not change URLs which are already protocol, domain,
+    /// and path absolute. For URLs that are relative, the implementator of
+    /// this function may opt to convert them to absolute using an implementor
+    /// defined base. For a web browser, the most obvious base would be the
+    /// current document's base URL, while the most obvious base for a desktop
+    /// client would be the file-URL form of the current path.
+    fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str>;
 }
 
 /// A null implementation of an event loop that only supports blocking.
@@ -302,5 +314,23 @@ impl NavigatorBackend for NullNavigatorBackend {
         if let Some(channel) = self.channel.as_ref() {
             channel.send(future).unwrap();
         }
+    }
+
+    fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
+        let parsed = Url::parse(url);
+        if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
+            if let Ok(cwd) = std::env::current_dir() {
+                let base = Url::from_directory_path(cwd);
+                if let Ok(base) = base {
+                    let abs = base.join(url);
+
+                    if let Ok(abs) = abs {
+                        return abs.into_string().into();
+                    }
+                }
+            }
+        }
+
+        url.into()
     }
 }

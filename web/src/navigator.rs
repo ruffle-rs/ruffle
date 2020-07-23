@@ -5,8 +5,10 @@ use ruffle_core::backend::navigator::{
     NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
 use ruffle_core::loader::Error;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::time::Duration;
+use url::{ParseError, Url};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{window, Blob, BlobPropertyBag, Performance, Request, RequestInit, Response};
@@ -157,5 +159,25 @@ impl NavigatorBackend for WebNavigatorBackend {
                 log::error!("Asynchronous error occured: {}", e);
             }
         })
+    }
+
+    fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
+        let parsed = Url::parse(url);
+        if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
+            let window = web_sys::window().expect("window()");
+            let document = window.document().expect("document()");
+            if let Ok(Some(base_uri)) = document.base_uri() {
+                let base = Url::parse(&base_uri);
+                if let Ok(base) = base {
+                    let abs = base.join(url);
+
+                    if let Ok(abs) = abs {
+                        return abs.into_string().into();
+                    }
+                }
+            }
+        }
+
+        url.into()
     }
 }

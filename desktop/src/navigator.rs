@@ -5,12 +5,13 @@ use ruffle_core::backend::navigator::{
     NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
 use ruffle_core::loader::Error;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
-use url::Url;
+use url::{ParseError, Url};
 use winit::event_loop::EventLoopProxy;
 
 /// Implementation of `NavigatorBackend` for non-web environments that can call
@@ -128,5 +129,23 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 "A task was queued on an event loop that has already ended. It will not be polled."
             );
         }
+    }
+
+    fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
+        let parsed = Url::parse(url);
+        if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
+            if let Ok(cwd) = std::env::current_dir() {
+                let base = Url::from_directory_path(cwd);
+                if let Ok(base) = base {
+                    let abs = base.join(url);
+
+                    if let Ok(abs) = abs {
+                        return abs.into_string().into();
+                    }
+                }
+            }
+        }
+
+        url.into()
     }
 }
