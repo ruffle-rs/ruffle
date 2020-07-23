@@ -257,6 +257,7 @@ impl Player {
         };
 
         player.build_matrices();
+        player.audio.set_frame_rate(frame_rate);
 
         let player_box = Arc::new(Mutex::new(player));
         let mut player_lock = player_box.lock().unwrap();
@@ -349,6 +350,7 @@ impl Player {
 
         self.build_matrices();
         self.preload();
+        self.audio.set_frame_rate(self.frame_rate);
     }
 
     pub fn tick(&mut self, dt: f64) {

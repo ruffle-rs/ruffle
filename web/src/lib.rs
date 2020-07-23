@@ -14,7 +14,6 @@ use ruffle_core::backend::storage::StorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerEvent;
 use ruffle_web_common::JsResult;
-use std::mem::drop;
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
@@ -163,10 +162,6 @@ impl Ruffle {
             .unwrap_or_else(|| Box::new(MemoryStorageBackend::default()));
 
         let core = ruffle_core::Player::new(renderer, audio, navigator, input, local_storage)?;
-        let mut core_lock = core.lock().unwrap();
-        let frame_rate = core_lock.frame_rate();
-        core_lock.audio_mut().set_frame_rate(frame_rate);
-        drop(core_lock);
 
         // Create instance.
         let instance = RuffleInstance {
