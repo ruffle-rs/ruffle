@@ -358,7 +358,7 @@ impl<'gc> Loader<'gc> {
         &mut self,
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
-        url: String,
+        mut url: String,
     ) -> OwnedFuture<(), Error> {
         let _handle = match self {
             Loader::RootMovie { self_handle, .. } => {
@@ -372,6 +372,14 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
+            player.lock().expect("Could not lock player!!").update(
+                |_avm1, _avm2, uc| -> Result<(), Error> {
+                    url = uc.navigator.resolve_relative_url(&url).into_owned();
+
+                    Ok(())
+                },
+            )?;
+
             let data = (fetch.await)
                 .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
 
@@ -400,7 +408,7 @@ impl<'gc> Loader<'gc> {
         &mut self,
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
-        url: String,
+        mut url: String,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
@@ -414,6 +422,8 @@ impl<'gc> Loader<'gc> {
         Box::pin(async move {
             player.lock().expect("Could not lock player!!").update(
                 |avm1, _avm2, uc| -> Result<(), Error> {
+                    url = uc.navigator.resolve_relative_url(&url).into_owned();
+
                     let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                         Some(Loader::Movie {
                             target_clip,
