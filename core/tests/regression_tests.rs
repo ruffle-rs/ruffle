@@ -232,6 +232,7 @@ swf_tests! {
     (context_menu, "avm1/context_menu", 1),
     (context_menu_item, "avm1/context_menu_item", 1),
     (constructor_function, "avm1/constructor_function", 1),
+    (global_array, "avm1/global_array", 1),
     (as3_hello_world, "avm2/hello_world", 1),
     (as3_function_call, "avm2/function_call", 1),
     (as3_function_call_via_call, "avm2/function_call_via_call", 1),

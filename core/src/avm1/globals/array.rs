@@ -95,12 +95,25 @@ pub fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut consumed = false;
+    let called_as_function = this.as_stage_object().is_some();
+    println!("Called as func = {:?}", this);
+
+    let mut array_obj = this;
+
+    // If called from a constructor, populate `this`.
+    if called_as_function {
+        let p = activation.avm.prototypes.array;
+        array_obj = p.new(activation, context, p, &[])?;
+    }
 
     if args.len() == 1 {
         let arg = args.get(0).unwrap();
         if let Ok(length) = arg.coerce_to_f64(activation, context) {
             if length >= 0.0 {
-                this.set_length(context.gc_context, length as usize);
+                array_obj.set_length(context.gc_context, length as usize);
+                consumed = true;
+            } else if called_as_function && !length.is_nan() {
+                array_obj.set_length(context.gc_context, 0);
                 consumed = true;
             }
         }
@@ -109,18 +122,30 @@ pub fn constructor<'gc>(
     if !consumed {
         let mut length = 0;
         for arg in args {
-            this.define_value(
-                context.gc_context,
-                &length.to_string(),
-                arg.to_owned(),
-                EnumSet::empty(),
-            );
+            if called_as_function {
+                array_obj.set_array_element(
+                    length,
+                    arg.to_owned(),
+                    context.gc_context
+                );
+            }else {
+                array_obj.define_value(
+                    context.gc_context,
+                    &length.to_string(),
+                    arg.to_owned(),
+                    EnumSet::empty(),
+                );
+            }
             length += 1;
         }
-        this.set_length(context.gc_context, length);
+        array_obj.set_length(context.gc_context, length);
     }
 
-    Ok(Value::Undefined)
+    if called_as_function {
+        Ok(array_obj.into())
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 pub fn push<'gc>(
