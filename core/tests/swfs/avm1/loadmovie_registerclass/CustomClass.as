@@ -1,0 +1,3 @@
+class CustomClip extends MovieClip {
+
+}

@@ -182,6 +182,7 @@ swf_tests! {
     (try_finally_simple, "avm1/try_finally_simple", 1),
     (loadmovie, "avm1/loadmovie", 2),
     (loadmovienum, "avm1/loadmovienum", 2),
+    (loadmovie_registerclass, "avm1/loadmovie_registerclass", 2),
     (loadmovie_method, "avm1/loadmovie_method", 2),
     (unloadmovie, "avm1/unloadmovie", 11),
     (unloadmovienum, "avm1/unloadmovienum", 11),
