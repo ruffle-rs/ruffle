@@ -96,7 +96,6 @@ pub fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut consumed = false;
     let called_as_function = this.as_stage_object().is_some();
-    println!("Called as func = {:?}", this);
 
     let mut array_obj = this;
 
@@ -123,12 +122,8 @@ pub fn constructor<'gc>(
         let mut length = 0;
         for arg in args {
             if called_as_function {
-                array_obj.set_array_element(
-                    length,
-                    arg.to_owned(),
-                    context.gc_context
-                );
-            }else {
+                array_obj.set_array_element(length, arg.to_owned(), context.gc_context);
+            } else {
                 array_obj.define_value(
                     context.gc_context,
                     &length.to_string(),
