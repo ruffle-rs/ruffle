@@ -2,6 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::listeners::SystemListeners;
+use crate::avm1::property::Attribute::*;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
 use gc_arena::Collect;
@@ -52,6 +53,20 @@ pub fn random<'gc>(
         Some(Value::Number(max)) => Ok(action_context.rng.gen_range(0.0f64, max).floor().into()),
         _ => Ok(Value::Undefined), //TODO: Shouldn't this be an error condition?
     }
+}
+
+pub fn is_finite<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let ret = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_f64(activation, action_context)?
+        .is_finite();
+    Ok(ret.into())
 }
 
 pub fn is_nan<'gc>(
@@ -506,6 +521,13 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
     );
     globals.force_set_function(
+        "isFinite",
+        is_finite,
+        gc_context,
+        DontEnum,
+        Some(function_proto),
+    );
+    globals.force_set_function(
         "isNaN",
         is_nan,
         gc_context,
@@ -680,6 +702,36 @@ mod tests {
             ["0xUIXUIDFKHJDF012345678"] => true,
             ["123e-1"] => false,
             [] => true
+        }
+    );
+
+    test_method!(is_finite, "isFinite", setup,
+        [19] => {
+            [true] => true,
+            [false] => true,
+            [10.0] => true,
+            [-10.0] => true,
+            [0.0] => true,
+            [std::f64::INFINITY] => false,
+            [std::f64::NEG_INFINITY] => false,
+            [std::f64::NAN] => false,
+            [""] => false,
+            ["Hello"] => false,
+            [" "] => false,
+            ["  5  "] => false,
+            ["0"] => true,
+            ["1"] => true,
+            ["Infinity"] => false,
+            ["-Infinity"] => false,
+            ["100a"] => false,
+            ["0x10"] => true,
+            ["0xhello"] => false,
+            ["0x1999999981ffffff"] => true,
+            ["0xUIXUIDFKHJDF012345678"] => false,
+            ["123e-1"] => true,
+            [Value::Undefined] => false,
+            [Value::Null] => false,
+            [] => false
         }
     );
 
