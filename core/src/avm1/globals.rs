@@ -388,34 +388,34 @@ pub fn create_globals<'gc>(
     let listeners = SystemListeners::new(gc_context, Some(array_proto));
 
     let mut globals = ScriptObject::bare_object(gc_context);
-    globals.define_value(gc_context, "flash", flash.into(), EnumSet::empty());
-    globals.define_value(gc_context, "Array", array.into(), EnumSet::empty());
-    globals.define_value(gc_context, "Button", button.into(), EnumSet::empty());
-    globals.define_value(gc_context, "Color", color.into(), EnumSet::empty());
-    globals.define_value(gc_context, "Error", error.into(), EnumSet::empty());
-    globals.define_value(gc_context, "Object", object.into(), EnumSet::empty());
-    globals.define_value(gc_context, "Function", function.into(), EnumSet::empty());
-    globals.define_value(gc_context, "LoadVars", load_vars.into(), EnumSet::empty());
-    globals.define_value(gc_context, "MovieClip", movie_clip.into(), EnumSet::empty());
+    globals.define_value(gc_context, "flash", flash.into(), DontEnum.into());
+    globals.define_value(gc_context, "Array", array.into(), DontEnum.into());
+    globals.define_value(gc_context, "Button", button.into(), DontEnum.into());
+    globals.define_value(gc_context, "Color", color.into(), DontEnum.into());
+    globals.define_value(gc_context, "Error", error.into(), DontEnum.into());
+    globals.define_value(gc_context, "Object", object.into(), DontEnum.into());
+    globals.define_value(gc_context, "Function", function.into(), DontEnum.into());
+    globals.define_value(gc_context, "LoadVars", load_vars.into(), DontEnum.into());
+    globals.define_value(gc_context, "MovieClip", movie_clip.into(), DontEnum.into());
     globals.define_value(
         gc_context,
         "MovieClipLoader",
         movie_clip_loader.into(),
-        EnumSet::empty(),
+        DontEnum.into(),
     );
-    globals.define_value(gc_context, "Sound", sound.into(), EnumSet::empty());
-    globals.define_value(gc_context, "TextField", text_field.into(), EnumSet::empty());
+    globals.define_value(gc_context, "Sound", sound.into(), DontEnum.into());
+    globals.define_value(gc_context, "TextField", text_field.into(), DontEnum.into());
     globals.define_value(
         gc_context,
         "TextFormat",
         text_format.into(),
-        EnumSet::empty(),
+        DontEnum.into(),
     );
-    globals.define_value(gc_context, "XMLNode", xmlnode.into(), EnumSet::empty());
-    globals.define_value(gc_context, "XML", xml.into(), EnumSet::empty());
-    globals.define_value(gc_context, "String", string.into(), EnumSet::empty());
-    globals.define_value(gc_context, "Number", number.into(), EnumSet::empty());
-    globals.define_value(gc_context, "Boolean", boolean.into(), EnumSet::empty());
+    globals.define_value(gc_context, "XMLNode", xmlnode.into(), DontEnum.into());
+    globals.define_value(gc_context, "XML", xml.into(), DontEnum.into());
+    globals.define_value(gc_context, "String", string.into(), DontEnum.into());
+    globals.define_value(gc_context, "Number", number.into(), DontEnum.into());
+    globals.define_value(gc_context, "Boolean", boolean.into(), DontEnum.into());
 
     let shared_object_proto = shared_object::create_proto(gc_context, object_proto, function_proto);
 
@@ -428,7 +428,7 @@ pub fn create_globals<'gc>(
         gc_context,
         "SharedObject",
         shared_obj.into(),
-        EnumSet::empty(),
+        DontEnum.into(),
     );
 
     globals.define_value(
@@ -441,7 +441,7 @@ pub fn create_globals<'gc>(
             Some(context_menu_proto),
         )
         .into(),
-        EnumSet::empty(),
+        DontEnum.into(),
     );
 
     globals.define_value(
@@ -454,7 +454,7 @@ pub fn create_globals<'gc>(
             Some(context_menu_item_proto),
         )
         .into(),
-        EnumSet::empty(),
+        DontEnum.into(),
     );
 
     let system_security =
@@ -476,7 +476,7 @@ pub fn create_globals<'gc>(
         system_capabilities,
         system_ime,
     );
-    globals.define_value(gc_context, "System", system.into(), EnumSet::empty());
+    globals.define_value(gc_context, "System", system.into(), DontEnum.into());
 
     globals.define_value(
         gc_context,
@@ -486,7 +486,7 @@ pub fn create_globals<'gc>(
             Some(object_proto),
             Some(function_proto),
         )),
-        EnumSet::empty(),
+        DontEnum.into(),
     );
     globals.define_value(
         gc_context,
@@ -497,7 +497,7 @@ pub fn create_globals<'gc>(
             Some(function_proto),
             &listeners.mouse,
         )),
-        EnumSet::empty(),
+        DontEnum.into(),
     );
     globals.define_value(
         gc_context,
@@ -507,7 +507,7 @@ pub fn create_globals<'gc>(
             Some(object_proto),
             Some(function_proto),
         )),
-        EnumSet::empty(),
+        DontEnum.into(),
     );
     globals.define_value(
         gc_context,
@@ -518,7 +518,7 @@ pub fn create_globals<'gc>(
             Some(array_proto),
             Some(function_proto),
         )),
-        EnumSet::empty(),
+        DontEnum.into(),
     );
     globals.force_set_function(
         "isFinite",
@@ -527,53 +527,41 @@ pub fn create_globals<'gc>(
         DontEnum,
         Some(function_proto),
     );
-    globals.force_set_function(
-        "isNaN",
-        is_nan,
-        gc_context,
-        EnumSet::empty(),
-        Some(function_proto),
-    );
-    globals.force_set_function(
-        "random",
-        random,
-        gc_context,
-        EnumSet::empty(),
-        Some(function_proto),
-    );
+    globals.force_set_function("isNaN", is_nan, gc_context, DontEnum, Some(function_proto));
+    globals.force_set_function("random", random, gc_context, DontEnum, Some(function_proto));
     globals.force_set_function(
         "ASSetPropFlags",
         object::as_set_prop_flags,
         gc_context,
-        EnumSet::empty(),
+        DontEnum,
         Some(function_proto),
     );
     globals.force_set_function(
         "clearInterval",
         clear_interval,
         gc_context,
-        EnumSet::empty(),
+        DontEnum,
         Some(function_proto),
     );
     globals.force_set_function(
         "setInterval",
         set_interval,
         gc_context,
-        EnumSet::empty(),
+        DontEnum,
         Some(function_proto),
     );
     globals.force_set_function(
         "setTimeout",
         set_timeout,
         gc_context,
-        EnumSet::empty(),
+        DontEnum,
         Some(function_proto),
     );
     globals.force_set_function(
         "updateAfterEvent",
         update_after_event,
         gc_context,
-        EnumSet::empty(),
+        DontEnum,
         Some(function_proto),
     );
 
@@ -587,7 +575,7 @@ pub fn create_globals<'gc>(
             Some(function_proto),
         ),
         None,
-        EnumSet::empty(),
+        DontEnum.into(),
     );
     globals.add_property(
         gc_context,
@@ -599,7 +587,7 @@ pub fn create_globals<'gc>(
             Some(function_proto),
         ),
         None,
-        EnumSet::empty(),
+        DontEnum.into(),
     );
 
     (
