@@ -99,7 +99,7 @@ pub fn constructor<'gc>(
 
     let mut array_obj = this;
 
-    // If called from a constructor, populate `this`.
+    // If called as a function, create a new array object
     if called_as_function {
         let p = activation.avm.prototypes.array;
         array_obj = p.new(activation, context, p, &[])?;
