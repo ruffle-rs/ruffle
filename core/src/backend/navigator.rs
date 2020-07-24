@@ -19,6 +19,7 @@ use url::{ParseError, Url};
 ///
 /// If the relative path is an absolute path, the base will not be used, but it
 /// will still be parsed into a `Url`.
+#[cfg(any(unix, windows, target_os = "redox"))]
 pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result<Url, ParseError> {
     let parsed = Url::parse(relative);
     if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
@@ -346,21 +347,18 @@ impl NavigatorBackend for NullNavigatorBackend {
         }
     }
 
+    #[cfg(any(unix, windows, target_os = "redox"))]
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
-        let parsed = Url::parse(url);
-        if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
-            if let Ok(cwd) = std::env::current_dir() {
-                let base = Url::from_directory_path(cwd);
-                if let Ok(base) = base {
-                    let abs = base.join(url);
-
-                    if let Ok(abs) = abs {
-                        return abs.into_string().into();
-                    }
-                }
-            }
+        let relative = url_from_relative_path(&self.relative_base_path, url);
+        if let Ok(relative) = relative {
+            relative.into_string().into()
+        } else {
+            url.into()
         }
+    }
 
+    #[cfg(not(any(unix, windows, target_os = "redox")))]
+    fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
         url.into()
     }
 }
