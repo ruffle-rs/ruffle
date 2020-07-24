@@ -21,14 +21,15 @@ use url::{ParseError, Url};
 /// will still be parsed into a `Url`.
 #[cfg(any(unix, windows, target_os = "redox"))]
 pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result<Url, ParseError> {
-    let parsed = Url::parse(relative);
-    if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
+    let parsed = Url::from_file_path(relative);
+    if let Err(()) = parsed {
         let base =
             Url::from_directory_path(base).map_err(|_| ParseError::RelativeUrlWithoutBase)?;
+
         return base.join(relative);
     }
 
-    parsed
+    Ok(parsed.unwrap())
 }
 
 /// Attempt to convert a relative URL into an absolute URL, using the base URL
