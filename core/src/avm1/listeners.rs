@@ -138,6 +138,7 @@ impl<'gc> Listeners<'gc> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SystemListener {
+    Key,
     Mouse,
     Ime,
 }
@@ -145,6 +146,7 @@ pub enum SystemListener {
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
 pub struct SystemListeners<'gc> {
+    pub key: Listeners<'gc>,
     pub mouse: Listeners<'gc>,
     pub ime: Listeners<'gc>,
 }
@@ -152,6 +154,7 @@ pub struct SystemListeners<'gc> {
 impl<'gc> SystemListeners<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, array_proto: Option<Object<'gc>>) -> Self {
         Self {
+            key: Listeners::new(gc_context, array_proto),
             mouse: Listeners::new(gc_context, array_proto),
             ime: Listeners::new(gc_context, array_proto),
         }
@@ -159,6 +162,7 @@ impl<'gc> SystemListeners<'gc> {
 
     pub fn get(&self, listener: SystemListener) -> Listeners<'gc> {
         match listener {
+            SystemListener::Key => self.key,
             SystemListener::Mouse => self.mouse,
             SystemListener::Ime => self.ime,
         }

@@ -526,16 +526,31 @@ impl Player {
         }
 
         // Propagte clip events.
-        let (clip_event, mouse_event_name) = match event {
-            PlayerEvent::KeyDown { .. } => (Some(ClipEvent::KeyDown), Some("onKeyDown")),
-            PlayerEvent::KeyUp { .. } => (Some(ClipEvent::KeyUp), Some("onKeyUp")),
-            PlayerEvent::MouseMove { .. } => (Some(ClipEvent::MouseMove), Some("onMouseMove")),
-            PlayerEvent::MouseUp { .. } => (Some(ClipEvent::MouseUp), Some("onMouseUp")),
-            PlayerEvent::MouseDown { .. } => (Some(ClipEvent::MouseDown), Some("onMouseDown")),
+        let (clip_event, listener) = match event {
+            PlayerEvent::KeyDown { .. } => (
+                Some(ClipEvent::KeyDown),
+                Some((SystemListener::Key, "onKeyDown")),
+            ),
+            PlayerEvent::KeyUp { .. } => (
+                Some(ClipEvent::KeyUp),
+                Some((SystemListener::Key, "onKeyUp")),
+            ),
+            PlayerEvent::MouseMove { .. } => (
+                Some(ClipEvent::MouseMove),
+                Some((SystemListener::Mouse, "onMouseMove")),
+            ),
+            PlayerEvent::MouseUp { .. } => (
+                Some(ClipEvent::MouseUp),
+                Some((SystemListener::Mouse, "onMouseUp")),
+            ),
+            PlayerEvent::MouseDown { .. } => (
+                Some(ClipEvent::MouseDown),
+                Some((SystemListener::Mouse, "onMouseDown")),
+            ),
             _ => (None, None),
         };
 
-        if clip_event.is_some() || mouse_event_name.is_some() {
+        if clip_event.is_some() || listener.is_some() {
             self.mutate_with_update_context(|avm1, _avm2, context| {
                 let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
 
@@ -545,12 +560,12 @@ impl Player {
                     }
                 }
 
-                if let Some(mouse_event_name) = mouse_event_name {
+                if let Some((listener_type, event_name)) = listener {
                     context.action_queue.queue_actions(
                         *context.levels.get(&0).expect("root level"),
                         ActionType::NotifyListeners {
-                            listener: SystemListener::Mouse,
-                            method: mouse_event_name,
+                            listener: listener_type,
+                            method: event_name,
                             args: vec![],
                         },
                         false,
