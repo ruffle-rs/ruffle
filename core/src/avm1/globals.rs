@@ -506,6 +506,7 @@ pub fn create_globals<'gc>(
             gc_context,
             Some(object_proto),
             Some(function_proto),
+            &listeners.key,
         )),
         DontEnum.into(),
     );
