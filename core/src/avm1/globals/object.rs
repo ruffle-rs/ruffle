@@ -151,6 +151,8 @@ pub fn register_class<'gc>(
             } else {
                 movie_clip.set_avm1_constructor(context.gc_context, None);
             }
+        } else {
+            log::warn!("Tried to register_class on an unknown export {}", class_name);
         }
     }
     Ok(Value::Undefined)
