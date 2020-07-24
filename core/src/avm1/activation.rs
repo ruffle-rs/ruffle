@@ -1355,6 +1355,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                         context.player.clone().unwrap(),
                         level,
                         fetch,
+                        url.to_string(),
                         None,
                     );
                     context.navigator.spawn_future(process);
