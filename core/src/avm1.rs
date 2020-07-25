@@ -54,20 +54,22 @@ macro_rules! avm_debug {
     )
 }
 
+#[macro_export]
 macro_rules! avm_warn {
     ($activation: ident, $($arg:tt)*) => (
         if cfg!(feature = "avm_debug") {
-            log::warn!("{} -- in {}", format!($($arg)*), $activation.id())
+            log::warn!("{} -- in {}", format!($($arg)*), $activation.id)
         } else {
             log::warn!($($arg)*)
         }
     )
 }
 
+#[macro_export]
 macro_rules! avm_error {
     ($activation: ident, $($arg:tt)*) => (
         if cfg!(feature = "avm_debug") {
-            log::error!("{} -- in {}", format!($($arg)*), $activation.id())
+            log::error!("{} -- in {}", format!($($arg)*), $activation.id)
         } else {
             log::error!($($arg)*)
         }

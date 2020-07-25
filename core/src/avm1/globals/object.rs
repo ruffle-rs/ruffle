@@ -4,6 +4,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
 use crate::avm1::{Object, TObject, UpdateContext, Value};
+use crate::avm_warn;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use enumset::EnumSet;
@@ -304,7 +305,10 @@ pub fn as_set_prop_flags<'gc>(
     let mut object = if let Some(object) = args.get(0).map(|v| v.coerce_to_object(activation, ac)) {
         object
     } else {
-        log::warn!("ASSetPropFlags called without object to apply to!");
+        avm_warn!(
+            activation,
+            "ASSetPropFlags called without object to apply to!"
+        );
         return Ok(Value::Undefined);
     };
 
@@ -329,7 +333,7 @@ pub fn as_set_prop_flags<'gc>(
         Some(Value::String(s)) => Some(s.split(',').map(String::from).collect()),
         Some(_) => None,
         None => {
-            log::warn!("ASSetPropFlags called without object list!");
+            avm_warn!(activation, "ASSetPropFlags called without object list!");
             return Ok(Value::Undefined);
         }
     };

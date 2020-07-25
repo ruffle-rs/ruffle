@@ -9,6 +9,7 @@ extern crate smallvec;
 #[macro_use]
 extern crate downcast_rs;
 
+#[macro_use]
 mod avm1;
 mod avm2;
 mod bounding_box;

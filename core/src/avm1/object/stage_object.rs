@@ -6,6 +6,7 @@ use crate::avm1::function::Executable;
 use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
+use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip};
 use crate::property_map::PropertyMap;
@@ -888,11 +889,11 @@ fn set_name<'gc>(
 }
 
 fn drop_target<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Unimplemented property _droptarget");
+    avm_warn!(activation, "Unimplemented property _droptarget");
     Ok("".into())
 }
 
@@ -910,78 +911,78 @@ fn url<'gc>(
 }
 
 fn high_quality<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Unimplemented property _highquality");
+    avm_warn!(activation, "Unimplemented property _highquality");
     Ok(1.into())
 }
 
 fn set_high_quality<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    log::warn!("Unimplemented property _highquality");
+    avm_warn!(activation, "Unimplemented property _highquality");
     Ok(())
 }
 
 fn focus_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Unimplemented property _focusrect");
+    avm_warn!(activation, "Unimplemented property _focusrect");
     Ok(Value::Null)
 }
 
 fn set_focus_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    log::warn!("Unimplemented property _focusrect");
+    avm_warn!(activation, "Unimplemented property _focusrect");
     Ok(())
 }
 
 fn sound_buf_time<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Unimplemented property _soundbuftime");
+    avm_warn!(activation, "Unimplemented property _soundbuftime");
     Ok(5.into())
 }
 
 fn set_sound_buf_time<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    log::warn!("Unimplemented property _soundbuftime");
+    avm_warn!(activation, "Unimplemented property _soundbuftime");
     Ok(())
 }
 
 fn quality<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Unimplemented property _quality");
+    avm_warn!(activation, "Unimplemented property _quality");
     Ok("HIGH".into())
 }
 
 fn set_quality<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
     _val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    log::warn!("Unimplemented property _quality");
+    avm_warn!(activation, "Unimplemented property _quality");
     Ok(())
 }
 

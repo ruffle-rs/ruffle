@@ -6,6 +6,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm_warn;
 use gc_arena::MutationContext;
 
 pub fn create_stage_object<'gc>(
@@ -101,32 +102,32 @@ pub fn create_stage_object<'gc>(
 }
 
 fn add_listener<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Stage.addListener: unimplemented");
+    avm_warn!(activation, "Stage.addListener: unimplemented");
     Ok(Value::Undefined)
 }
 
 fn align<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Stage.align: unimplemented");
+    avm_warn!(activation, "Stage.align: unimplemented");
     Ok("".into())
 }
 
 fn set_align<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Stage.align: unimplemented");
+    avm_warn!(activation, "Stage.align: unimplemented");
     Ok(Value::Undefined)
 }
 
@@ -140,52 +141,52 @@ fn height<'gc>(
 }
 
 fn remove_listener<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Stage.removeListener: unimplemented");
+    avm_warn!(activation, "Stage.removeListener: unimplemented");
     Ok("".into())
 }
 
 fn scale_mode<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Stage.scaleMode: unimplemented");
+    avm_warn!(activation, "Stage.scaleMode: unimplemented");
     Ok("noScale".into())
 }
 
 fn set_scale_mode<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Stage.scaleMode: unimplemented");
+    avm_warn!(activation, "Stage.scaleMode: unimplemented");
     Ok(Value::Undefined)
 }
 
 fn show_menu<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Stage.showMenu: unimplemented");
+    avm_warn!(activation, "Stage.showMenu: unimplemented");
     Ok(true.into())
 }
 
 fn set_show_menu<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Stage.showMenu: unimplemented");
+    avm_warn!(activation, "Stage.showMenu: unimplemented");
     Ok(Value::Undefined)
 }
 

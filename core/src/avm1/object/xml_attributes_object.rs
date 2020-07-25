@@ -11,6 +11,7 @@ use gc_arena::{Collect, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
 
+use crate::avm_warn;
 /// A ScriptObject that is inherently tied to an XML node's attributes.
 ///
 /// Note that this is *not* the same as the XMLNode object itself; for example,
@@ -116,7 +117,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: `new xmlnode.attributes()` returns undefined, not an object
-        log::warn!("Cannot create new XML Attributes object");
+        avm_warn!(activation, "Cannot create new XML Attributes object");
         Ok(Value::Undefined.coerce_to_object(activation, context))
     }
 

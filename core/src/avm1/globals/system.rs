@@ -3,6 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::Object;
 use crate::avm1::{ScriptObject, TObject, Value};
+use crate::avm_warn;
 use crate::context::UpdateContext;
 use core::fmt;
 use enumset::{EnumSet, EnumSetType};
@@ -435,7 +436,11 @@ pub fn show_settings<'gc>(
 
     let panel = SettingsPanel::try_from(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);
 
-    log::warn!("System.showSettings({:?}) not not implemented", panel);
+    avm_warn!(
+        activation,
+        "System.showSettings({:?}) not not implemented",
+        panel
+    );
     Ok(Value::Undefined)
 }
 
@@ -492,12 +497,12 @@ pub fn get_exact_settings<'gc>(
 }
 
 pub fn on_status<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("System.onStatus() not implemented");
+    avm_warn!(activation, "System.onStatus() not implemented");
     Ok(Value::Undefined)
 }
 

@@ -7,6 +7,7 @@ use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::xml_object::XMLObject;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, TObject, UpdateContext, Value};
+use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
 use crate::xml;
 use crate::xml::{XMLDocument, XMLNode};
@@ -85,7 +86,11 @@ pub fn xmlnode_append_child<'gc>(
         if let Ok(None) = child_xmlnode.parent() {
             let position = xmlnode.children_len();
             if let Err(e) = xmlnode.insert_child(ac.gc_context, position, child_xmlnode) {
-                log::warn!("Couldn't insert_child inside of XMLNode.appendChild: {}", e);
+                avm_warn!(
+                    activation,
+                    "Couldn't insert_child inside of XMLNode.appendChild: {}",
+                    e
+                );
             }
         }
     }
@@ -109,7 +114,8 @@ pub fn xmlnode_insert_before<'gc>(
         if let Ok(None) = child_xmlnode.parent() {
             if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
                 if let Err(e) = xmlnode.insert_child(ac.gc_context, position, child_xmlnode) {
-                    log::warn!(
+                    avm_warn!(
+                        activation,
                         "Couldn't insert_child inside of XMLNode.insertBefore: {}",
                         e
                     );
@@ -198,7 +204,7 @@ pub fn xmlnode_has_child_nodes<'gc>(
 }
 
 pub fn xmlnode_remove_node<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -206,7 +212,7 @@ pub fn xmlnode_remove_node<'gc>(
     if let Some(node) = this.as_xml_node() {
         if let Ok(Some(mut parent)) = node.parent() {
             if let Err(e) = parent.remove_child(ac.gc_context, node) {
-                log::warn!("Error in XML.removeNode: {}", e);
+                avm_warn!(activation, "Error in XML.removeNode: {}", e);
             }
         }
     }
@@ -215,7 +221,7 @@ pub fn xmlnode_remove_node<'gc>(
 }
 
 pub fn xmlnode_to_string<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -226,7 +232,7 @@ pub fn xmlnode_to_string<'gc>(
         return Ok(AvmString::new(
             ac.gc_context,
             result.unwrap_or_else(|e| {
-                log::warn!("XMLNode toString failed: {}", e);
+                avm_warn!(activation, "XMLNode toString failed: {}", e);
                 "".to_string()
             }),
         )
@@ -772,7 +778,11 @@ pub fn xml_constructor<'gc>(
             this_node.swap(ac.gc_context, xmlnode);
 
             if let Err(e) = this_node.replace_with_str(ac.gc_context, string, true) {
-                log::warn!("Couldn't replace_with_str inside of XML constructor: {}", e);
+                avm_warn!(
+                    activation,
+                    "Couldn't replace_with_str inside of XML constructor: {}",
+                    e
+                );
             }
         }
         (None, Some(ref mut this_node)) => {
@@ -862,7 +872,11 @@ pub fn xml_parse_xml<'gc>(
             for child in children.rev() {
                 let result = node.remove_child(ac.gc_context, child);
                 if let Err(e) = result {
-                    log::warn!("XML.parseXML: Error removing node contents: {}", e);
+                    avm_warn!(
+                        activation,
+                        "XML.parseXML: Error removing node contents: {}",
+                        e
+                    );
                     return Ok(Value::Undefined);
                 }
             }
@@ -870,7 +884,7 @@ pub fn xml_parse_xml<'gc>(
 
         let result = node.replace_with_str(ac.gc_context, &xmlstring, true);
         if let Err(e) = result {
-            log::warn!("XML parsing error: {}", e);
+            avm_warn!(activation, "XML parsing error: {}", e);
         }
     }
 
@@ -939,7 +953,7 @@ pub fn xml_on_data<'gc>(
 }
 
 pub fn xml_doc_type_decl<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -951,7 +965,7 @@ pub fn xml_doc_type_decl<'gc>(
             return Ok(AvmString::new(
                 ac.gc_context,
                 result.unwrap_or_else(|e| {
-                    log::warn!("Error occured when serializing DOCTYPE: {}", e);
+                    avm_warn!(activation, "Error occured when serializing DOCTYPE: {}", e);
                     "".to_string()
                 }),
             )
@@ -963,7 +977,7 @@ pub fn xml_doc_type_decl<'gc>(
 }
 
 pub fn xml_xml_decl<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     ac: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -972,7 +986,11 @@ pub fn xml_xml_decl<'gc>(
         let result = node.document().xmldecl_string();
 
         if let Err(e) = result {
-            log::warn!("Could not generate XML declaration for document: {}", e);
+            avm_warn!(
+                activation,
+                "Could not generate XML declaration for document: {}",
+                e
+            );
         } else if let Ok(Some(result_str)) = result {
             return Ok(AvmString::new(ac.gc_context, result_str).into());
         }

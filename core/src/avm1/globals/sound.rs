@@ -6,6 +6,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{Object, SoundObject, TObject, UpdateContext, Value};
+use crate::avm_warn;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use gc_arena::MutationContext;
@@ -201,16 +202,17 @@ fn attach_sound<'gc>(
                 );
                 sound_object.set_position(context.gc_context, 0);
             } else {
-                log::warn!("Sound.attachSound: Sound '{}' not found", name);
+                avm_warn!(activation, "Sound.attachSound: Sound '{}' not found", name);
             }
         } else {
-            log::warn!(
+            avm_warn!(
+                activation,
                 "Sound.attachSound: Cannot attach Sound '{}' without a library to reference",
                 name
             );
         }
     } else {
-        log::warn!("Sound.attachSound: this is not a Sound");
+        avm_warn!(activation, "Sound.attachSound: this is not a Sound");
     }
     Ok(Value::Undefined)
 }
@@ -225,7 +227,7 @@ fn duration<'gc>(
         if let Some(sound_object) = this.as_sound_object() {
             return Ok(sound_object.duration().into());
         } else {
-            log::warn!("Sound.duration: this is not a Sound");
+            avm_warn!(activation, "Sound.duration: this is not a Sound");
         }
     }
 
@@ -239,7 +241,7 @@ fn get_bytes_loaded<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.current_swf_version() >= 6 {
-        log::warn!("Sound.getBytesLoaded: Unimplemented");
+        avm_warn!(activation, "Sound.getBytesLoaded: Unimplemented");
         Ok(1.into())
     } else {
         Ok(Value::Undefined)
@@ -253,7 +255,7 @@ fn get_bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.current_swf_version() >= 6 {
-        log::warn!("Sound.getBytesTotal: Unimplemented");
+        avm_warn!(activation, "Sound.getBytesTotal: Unimplemented");
         Ok(1.into())
     } else {
         Ok(Value::Undefined)
@@ -261,32 +263,32 @@ fn get_bytes_total<'gc>(
 }
 
 fn get_pan<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Sound.getPan: Unimplemented");
+    avm_warn!(activation, "Sound.getPan: Unimplemented");
     Ok(0.into())
 }
 
 fn get_transform<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Sound.getTransform: Unimplemented");
+    avm_warn!(activation, "Sound.getTransform: Unimplemented");
     Ok(Value::Undefined)
 }
 
 fn get_volume<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Sound.getVolume: Unimplemented");
+    avm_warn!(activation, "Sound.getVolume: Unimplemented");
     Ok(100.into())
 }
 
@@ -297,7 +299,7 @@ fn id3<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.current_swf_version() >= 6 {
-        log::warn!("Sound.id3: Unimplemented");
+        avm_warn!(activation, "Sound.id3: Unimplemented");
     }
     Ok(Value::Undefined)
 }
@@ -309,7 +311,7 @@ fn load_sound<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.current_swf_version() >= 6 {
-        log::warn!("Sound.loadSound: Unimplemented");
+        avm_warn!(activation, "Sound.loadSound: Unimplemented");
     }
     Ok(Value::Undefined)
 }
@@ -327,44 +329,44 @@ fn position<'gc>(
             // Needs some audio backend work for this.
             if sound_object.sound().is_some() {
                 if let Some(_sound_instance) = sound_object.sound_instance() {
-                    log::warn!("Sound.position: Unimplemented");
+                    avm_warn!(activation, "Sound.position: Unimplemented");
                 }
                 return Ok(sound_object.position().into());
             }
         } else {
-            log::warn!("Sound.position: this is not a Sound");
+            avm_warn!(activation, "Sound.position: this is not a Sound");
         }
     }
     Ok(Value::Undefined)
 }
 
 fn set_pan<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Sound.setPan: Unimplemented");
+    avm_warn!(activation, "Sound.setPan: Unimplemented");
     Ok(Value::Undefined)
 }
 
 fn set_transform<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Sound.setTransform: Unimplemented");
+    avm_warn!(activation, "Sound.setTransform: Unimplemented");
     Ok(Value::Undefined)
 }
 
 fn set_volume<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Sound.setVolume: Unimplemented");
+    avm_warn!(activation, "Sound.setVolume: Unimplemented");
     Ok(Value::Undefined)
 }
 
@@ -410,10 +412,10 @@ fn start<'gc>(
                 sound_object.set_sound_instance(context.gc_context, Some(sound_instance));
             }
         } else {
-            log::warn!("Sound.start: No sound is attached");
+            avm_warn!(activation, "Sound.start: No sound is attached");
         }
     } else {
-        log::warn!("Sound.start: Invalid sound");
+        avm_warn!(activation, "Sound.start: Invalid sound");
     }
 
     Ok(Value::Undefined)
@@ -442,10 +444,11 @@ fn stop<'gc>(
                     // Stop all sounds with the given name.
                     context.audio.stop_sounds_with_handle(*sound);
                 } else {
-                    log::warn!("Sound.stop: Sound '{}' not found", name);
+                    avm_warn!(activation, "Sound.stop: Sound '{}' not found", name);
                 }
             } else {
-                log::warn!(
+                avm_warn!(
+                    activation,
                     "Sound.stop: Cannot stop Sound '{}' without a library to reference",
                     name
                 )
@@ -461,7 +464,7 @@ fn stop<'gc>(
             context.audio.stop_all_sounds();
         }
     } else {
-        log::warn!("Sound.stop: this is not a Sound");
+        avm_warn!(activation, "Sound.stop: this is not a Sound");
     }
 
     Ok(Value::Undefined)
