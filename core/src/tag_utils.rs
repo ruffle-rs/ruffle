@@ -54,7 +54,6 @@ impl SwfMovie {
     }
 
     /// Utility method to construct a movie from a file on disk.
-    #[cfg(any(unix, windows, target_os = "redox"))]
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         let mut url = path.as_ref().to_string_lossy().to_owned().to_string();
         let cwd = std::env::current_dir()?;
@@ -62,13 +61,6 @@ impl SwfMovie {
             url = abs_url.into_string();
         }
 
-        let data = std::fs::read(path)?;
-        Self::from_data(&data, Some(url))
-    }
-
-    #[cfg(not(any(unix, windows, target_os = "redox")))]
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
-        let url = path.as_ref().to_string_lossy().to_owned().to_string();
         let data = std::fs::read(path)?;
         Self::from_data(&data, Some(url))
     }

@@ -19,6 +19,10 @@ use url::{ParseError, Url};
 ///
 /// If the relative path is an absolute path, the base will not be used, but it
 /// will still be parsed into a `Url`.
+///
+/// This is the desktop version of this function, which actually carries out
+/// the above instructions. On non-Unix, non-Windows, non-Redox environments,
+/// this function always yields an error.
 #[cfg(any(unix, windows, target_os = "redox"))]
 pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result<Url, ParseError> {
     let parsed = Url::from_file_path(relative);
@@ -30,6 +34,20 @@ pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result
     }
 
     Ok(parsed.unwrap())
+}
+
+/// Attempt to convert a relative filesystem path into an absolute `file:///`
+/// URL.
+///
+/// If the relative path is an absolute path, the base will not be used, but it
+/// will still be parsed into a `Url`.
+///
+/// This is the web version of this function, which always yields an error. On
+/// Unix, Windows, or Redox, this function actually carries out the above
+/// instructions.
+#[cfg(not(any(unix, windows, target_os = "redox")))]
+pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result<Url, ParseError> {
+    Err(ParseError::RelativeUrlWithoutBase)
 }
 
 /// Attempt to convert a relative URL into an absolute URL, using the base URL
@@ -348,7 +366,6 @@ impl NavigatorBackend for NullNavigatorBackend {
         }
     }
 
-    #[cfg(any(unix, windows, target_os = "redox"))]
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
         let relative = url_from_relative_path(&self.relative_base_path, url);
         if let Ok(relative) = relative {
@@ -356,10 +373,5 @@ impl NavigatorBackend for NullNavigatorBackend {
         } else {
             url.into()
         }
-    }
-
-    #[cfg(not(any(unix, windows, target_os = "redox")))]
-    fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
-        url.into()
     }
 }
