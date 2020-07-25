@@ -5,6 +5,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
 use crate::avm1::{Object, TObject, UpdateContext, Value};
 use crate::character::Character;
+use crate::display_object::TDisplayObject;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::borrow::Cow;
@@ -138,22 +139,31 @@ pub fn register_class<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(class_name) = args.get(0).cloned() {
         let class_name = class_name.coerce_to_string(activation, context)?;
-        if let Some(Character::MovieClip(movie_clip)) = context
-            .library
-            .library_for_movie_mut(context.swf.clone())
-            .get_character_by_export_name(&class_name)
-        {
-            if let Some(constructor) = args.get(1) {
-                movie_clip.set_avm1_constructor(
-                    context.gc_context,
-                    Some(constructor.coerce_to_object(activation, context)),
-                );
+        if let Some(movie) = activation.base_clip().movie() {
+            if let Some(Character::MovieClip(movie_clip)) = context
+                .library
+                .library_for_movie_mut(movie)
+                .get_character_by_export_name(&class_name)
+            {
+                if let Some(constructor) = args.get(1) {
+                    movie_clip.set_avm1_constructor(
+                        context.gc_context,
+                        Some(constructor.coerce_to_object(activation, context)),
+                    );
+                } else {
+                    movie_clip.set_avm1_constructor(context.gc_context, None);
+                }
             } else {
-                movie_clip.set_avm1_constructor(context.gc_context, None);
+                log::warn!(
+                    "Tried to register_class on an unknown export {}",
+                    class_name
+                );
             }
         } else {
-            log::warn!("Tried to register_class on an unknown export {}", class_name);
+            log::warn!("Tried to register_class on an unknown movie");
         }
+    } else {
+        log::warn!("Tried to register_class with an unknown class");
     }
     Ok(Value::Undefined)
 }
