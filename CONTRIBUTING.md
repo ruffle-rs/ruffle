@@ -53,14 +53,23 @@ Ruffle is a young project, and there is still much Flash functionality that is u
 ## Debugging ActionScript Content
 
 If you build Ruffle with `--features avm_debug` and enable debug logging (`RUST_LOG=warn,ruffle_core=debug`) then you will
-be able to follow the flow of ActionScript inside of a SWF movie. Please note that this will likely slow down Ruffle,
-and it may spam quite a lot of output.
+activate a few built-in debugging utilities inside Ruffle, listed below.
+ 
+### Warnings and Errors
+All AVM errors and warnings will print their stack trace so that you can view where they are in relation to the 
+ActionScript inside the movie. This requires no extra configuration and will be visible by default.
+
+### Step-By-Step Output
+If you use the hotkey `CTRL + ALT + D` you will toggle verbose AVM debugging output on and off (default off). 
+You will be able to follow the flow of ActionScript inside of a SWF movie, as each action is performed.
+Please note that this will likely slow down Ruffle, and it may significantly spam output. Please use sparingly.
 
 When paired with a tool such as [JPEXS](https://github.com/jindrapetrik/jpexs-decompiler), you can compare the ActionScript
 you see being executed in Ruffle with the actual ActionScript inside of the game, and attempt to find whatever problem
 it is that you're looking for.
 
-In addition to this, the hotkey `CTRL + ALT + V` will dump every variable inside the AVM at the moment you press it.
+### Complete Variable Dumping
+The hotkey `CTRL + ALT + V` will dump every variable inside the AVM at the moment you press it.
 This can be very useful to inspect the internal state of games and see, for example, if a coordinate is NaN, your lives
 are negative, or maybe an important object just didn't get initialized.
 
