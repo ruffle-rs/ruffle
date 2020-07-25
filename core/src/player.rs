@@ -866,7 +866,7 @@ impl Player {
                         context.swf.version(),
                         avm1.global_object_cell(),
                         context.gc_context,
-                        *context.levels.get(&0).unwrap(),
+                        actions.clip,
                     );
                     if let Ok(prototype) = constructor
                         .get("prototype", &mut activation, context)

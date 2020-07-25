@@ -388,7 +388,7 @@ impl<'gc> MovieClip<'gc> {
             })?;
 
         avm.run_stack_frame_for_init_action(
-            *context.levels.get(&0).unwrap(),
+            self.into(),
             context.swf.header().version,
             slice,
             context,
@@ -1151,7 +1151,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     context.swf.version(),
                     avm.global_object_cell(),
                     context.gc_context,
-                    *context.levels.get(&0).unwrap(),
+                    (*self).into(),
                 );
 
                 let constructor = self.0.read().avm1_constructor.unwrap();
@@ -1191,7 +1191,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     context.swf.version(),
                     avm.global_object_cell(),
                     context.gc_context,
-                    *context.levels.get(&0).unwrap(),
+                    (*self).into(),
                 );
 
                 for key in init_object.get_keys(&mut activation) {
