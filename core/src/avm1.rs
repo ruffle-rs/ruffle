@@ -54,6 +54,26 @@ macro_rules! avm_debug {
     )
 }
 
+macro_rules! avm_warn {
+    ($activation: ident, $($arg:tt)*) => (
+        if cfg!(feature = "avm_debug") {
+            log::warn!("{} -- in {}", format!($($arg)*), $activation.id())
+        } else {
+            log::warn!($($arg)*)
+        }
+    )
+}
+
+macro_rules! avm_error {
+    ($activation: ident, $($arg:tt)*) => (
+        if cfg!(feature = "avm_debug") {
+            log::error!("{} -- in {}", format!($($arg)*), $activation.id())
+        } else {
+            log::error!($($arg)*)
+        }
+    )
+}
+
 pub struct Avm1<'gc> {
     /// The Flash Player version we're emulating.
     player_version: u8,
