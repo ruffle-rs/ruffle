@@ -441,49 +441,50 @@ impl Player {
     pub fn handle_event(&mut self, event: PlayerEvent) {
         let mut needs_render = self.needs_render;
 
-        if let PlayerEvent::KeyDown {
-            key_code: KeyCode::V,
-        } = event
-        {
-            if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt) {
-                self.mutate_with_update_context(|avm1, _avm2, context| {
-                    let mut dumper = VariableDumper::new("  ");
+        if cfg!(feature = "avm_debug") {
+            if let PlayerEvent::KeyDown {
+                key_code: KeyCode::V,
+            } = event
+            {
+                if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt)
+                {
+                    self.mutate_with_update_context(|avm1, _avm2, context| {
+                        let mut dumper = VariableDumper::new("  ");
 
-                    let mut activation = Activation::from_nothing(
-                        avm1,
-                        ActivationIdentifier::root("[Variable Dumper]"),
-                        context.swf.version(),
-                        avm1.global_object_cell(),
-                        context.gc_context,
-                        *context.levels.get(&0).unwrap(),
-                    );
+                        let mut activation = Activation::from_nothing(
+                            avm1,
+                            ActivationIdentifier::root("[Variable Dumper]"),
+                            context.swf.version(),
+                            avm1.global_object_cell(),
+                            context.gc_context,
+                            *context.levels.get(&0).unwrap(),
+                        );
 
-                    dumper.print_variables(
-                        "Global Variables:",
-                        "_global",
-                        &activation.avm.global_object_cell(),
-                        &mut activation,
-                        context,
-                    );
-                    let levels = context.levels.clone();
-                    for (level, display_object) in levels {
-                        let object = display_object
-                            .object()
-                            .coerce_to_object(&mut activation, context);
                         dumper.print_variables(
-                            &format!("Level #{}:", level),
-                            &format!("_level{}", level),
-                            &object,
+                            "Global Variables:",
+                            "_global",
+                            &activation.avm.global_object_cell(),
                             &mut activation,
                             context,
                         );
-                    }
-                    log::info!("Variable dump:\n{}", dumper.output());
-                });
+                        let levels = context.levels.clone();
+                        for (level, display_object) in levels {
+                            let object = display_object
+                                .object()
+                                .coerce_to_object(&mut activation, context);
+                            dumper.print_variables(
+                                &format!("Level #{}:", level),
+                                &format!("_level{}", level),
+                                &object,
+                                &mut activation,
+                                context,
+                            );
+                        }
+                        log::info!("Variable dump:\n{}", dumper.output());
+                    });
+                }
             }
-        }
 
-        if cfg!(feature = "avm_debug") {
             if let PlayerEvent::KeyDown {
                 key_code: KeyCode::D,
             } = event
