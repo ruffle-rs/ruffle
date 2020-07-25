@@ -6,6 +6,8 @@ use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm_error;
+use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
 use crate::prelude::*;
@@ -64,7 +66,7 @@ pub fn hit_test<'gc>(
             .map(|v| v.as_bool(activation.current_swf_version()))
             .unwrap_or(false);
         if shape {
-            log::warn!("Ignoring shape hittest and using bounding box instead. Shape based hit detection is not yet implemented. See https://github.com/ruffle-rs/ruffle/issues/177");
+            avm_warn!(activation, "Ignoring shape hittest and using bounding box instead. Shape based hit detection is not yet implemented. See https://github.com/ruffle-rs/ruffle/issues/177");
         }
         if x.is_finite() && y.is_finite() {
             // The docs say the point is in "Stage coordinates", but actually they are in root coordinates.
@@ -283,7 +285,8 @@ fn begin_gradient_fill<'gc>(
         let ratios = ratios.coerce_to_object(activation, context).array();
         let matrix_object = matrix.coerce_to_object(activation, context);
         if colors.len() != alphas.len() || colors.len() != ratios.len() {
-            log::warn!(
+            avm_warn!(
+                activation,
                 "beginGradientFill() received different sized arrays for colors, alphas and ratios"
             );
             return Ok(Value::Undefined);
@@ -342,7 +345,11 @@ fn begin_gradient_fill<'gc>(
                 }
             }
             other => {
-                log::warn!("beginGradientFill() received invalid fill type {:?}", other);
+                avm_warn!(
+                    activation,
+                    "beginGradientFill() received invalid fill type {:?}",
+                    other
+                );
                 return Ok(Value::Undefined);
             }
         };
@@ -454,7 +461,7 @@ fn attach_movie<'gc>(
                 .wrapping_add(AVM_DEPTH_BIAS),
         ),
         _ => {
-            log::error!("MovieClip.attachMovie: Too few parameters");
+            avm_error!(activation, "MovieClip.attachMovie: Too few parameters");
             return Ok(Value::Undefined);
         }
     };
@@ -488,7 +495,7 @@ fn attach_movie<'gc>(
             .coerce_to_object(activation, context)
             .into())
     } else {
-        log::warn!("Unable to attach '{}'", export_name);
+        avm_warn!(activation, "Unable to attach '{}'", export_name);
         Ok(Value::Undefined)
     }
 }
@@ -507,7 +514,7 @@ fn create_empty_movie_clip<'gc>(
                 .wrapping_add(AVM_DEPTH_BIAS),
         ),
         _ => {
-            log::error!("MovieClip.attachMovie: Too few parameters");
+            avm_error!(activation, "MovieClip.attachMovie: Too few parameters");
             return Ok(Value::Undefined);
         }
     };
@@ -608,7 +615,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
                 .wrapping_add(depth_bias),
         ),
         _ => {
-            log::error!("MovieClip.attachMovie: Too few parameters");
+            avm_error!(activation, "MovieClip.attachMovie: Too few parameters");
             return Ok(Value::Undefined);
         }
     };
@@ -656,7 +663,11 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
             .coerce_to_object(activation, context)
             .into())
     } else {
-        log::warn!("Unable to duplicate clip '{}'", movie_clip.name());
+        avm_warn!(
+            activation,
+            "Unable to duplicate clip '{}'",
+            movie_clip.name()
+        );
         Ok(Value::Undefined)
     }
 }
@@ -879,11 +890,14 @@ fn swap_depths<'gc>(
             if DisplayObject::ptr_eq(target_parent, parent.into()) {
                 depth = Some(target.depth())
             } else {
-                log::warn!("MovieClip.swapDepths: Objects do not have the same parent");
+                avm_warn!(
+                    activation,
+                    "MovieClip.swapDepths: Objects do not have the same parent"
+                );
             }
         }
     } else {
-        log::warn!("MovieClip.swapDepths: Invalid target");
+        avm_warn!(activation, "MovieClip.swapDepths: Invalid target");
     };
 
     if let Some(depth) = depth {
@@ -928,10 +942,16 @@ fn local_to_global<'gc>(
             point.set("x", out_x.to_pixels().into(), activation, context)?;
             point.set("y", out_y.to_pixels().into(), activation, context)?;
         } else {
-            log::warn!("MovieClip.localToGlobal: Invalid x and y properties");
+            avm_warn!(
+                activation,
+                "MovieClip.localToGlobal: Invalid x and y properties"
+            );
         }
     } else {
-        log::warn!("MovieClip.localToGlobal: Missing point parameter");
+        avm_warn!(
+            activation,
+            "MovieClip.localToGlobal: Missing point parameter"
+        );
     }
 
     Ok(Value::Undefined)
@@ -1071,10 +1091,16 @@ fn global_to_local<'gc>(
             point.set("x", out_x.to_pixels().into(), activation, context)?;
             point.set("y", out_y.to_pixels().into(), activation, context)?;
         } else {
-            log::warn!("MovieClip.globalToLocal: Invalid x and y properties");
+            avm_warn!(
+                activation,
+                "MovieClip.globalToLocal: Invalid x and y properties"
+            );
         }
     } else {
-        log::warn!("MovieClip.globalToLocal: Missing point parameter");
+        avm_warn!(
+            activation,
+            "MovieClip.globalToLocal: Missing point parameter"
+        );
     }
 
     Ok(Value::Undefined)

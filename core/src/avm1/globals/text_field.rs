@@ -4,6 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::display_object;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm_error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::html::TextFormat;
 use gc_arena::MutationContext;
@@ -45,7 +46,7 @@ pub fn set_text<'gc>(
                     value.coerce_to_string(activation, context)?.to_string(),
                     context,
                 ) {
-                    log::error!("Error when setting TextField.text: {}", err);
+                    avm_error!(activation, "Error when setting TextField.text: {}", err);
                 }
                 text_field.propagate_text_binding(activation, context);
             }

@@ -2,6 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::{AvmString, Object, TObject, Value};
+use crate::avm_warn;
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -11,22 +12,22 @@ use crate::avm1::object::shared_object::SharedObject;
 use json::JsonValue;
 
 pub fn delete_all<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.deleteAll() not implemented");
+    avm_warn!(activation, "SharedObject.deleteAll() not implemented");
     Ok(Value::Undefined)
 }
 
 pub fn get_disk_usage<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.getDiskUsage() not implemented");
+    avm_warn!(activation, "SharedObject.getDiskUsage() not implemented");
     Ok(Value::Undefined)
 }
 
@@ -150,7 +151,10 @@ pub fn get_local<'gc>(
     }
 
     if args.len() > 1 {
-        log::warn!("SharedObject.getLocal() doesn't support localPath or secure yet");
+        avm_warn!(
+            activation,
+            "SharedObject.getLocal() doesn't support localPath or secure yet"
+        );
     }
 
     // Data property only should exist when created with getLocal/Remote
@@ -187,42 +191,42 @@ pub fn get_local<'gc>(
 }
 
 pub fn get_remote<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.getRemote() not implemented");
+    avm_warn!(activation, "SharedObject.getRemote() not implemented");
     Ok(Value::Undefined)
 }
 
 pub fn get_max_size<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.getMaxSize() not implemented");
+    avm_warn!(activation, "SharedObject.getMaxSize() not implemented");
     Ok(Value::Undefined)
 }
 
 pub fn add_listener<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.addListener() not implemented");
+    avm_warn!(activation, "SharedObject.addListener() not implemented");
     Ok(Value::Undefined)
 }
 
 pub fn remove_listener<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.removeListener() not implemented");
+    avm_warn!(activation, "SharedObject.removeListener() not implemented");
     Ok(Value::Undefined)
 }
 
@@ -321,22 +325,22 @@ pub fn clear<'gc>(
 }
 
 pub fn close<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.close() not implemented");
+    avm_warn!(activation, "SharedObject.close() not implemented");
     Ok(Value::Undefined)
 }
 
 pub fn connect<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.connect() not implemented");
+    avm_warn!(activation, "SharedObject.connect() not implemented");
     Ok(Value::Undefined)
 }
 
@@ -363,52 +367,52 @@ pub fn flush<'gc>(
 }
 
 pub fn get_size<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.getSize() not implemented");
+    avm_warn!(activation, "SharedObject.getSize() not implemented");
     Ok(Value::Undefined)
 }
 
 pub fn send<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.send() not implemented");
+    avm_warn!(activation, "SharedObject.send() not implemented");
     Ok(Value::Undefined)
 }
 
 pub fn set_fps<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.setFps() not implemented");
+    avm_warn!(activation, "SharedObject.setFps() not implemented");
     Ok(Value::Undefined)
 }
 
 pub fn on_status<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.onStatus() not implemented");
+    avm_warn!(activation, "SharedObject.onStatus() not implemented");
     Ok(Value::Undefined)
 }
 
 pub fn on_sync<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.onSync() not implemented");
+    avm_warn!(activation, "SharedObject.onSync() not implemented");
     Ok(Value::Undefined)
 }
 

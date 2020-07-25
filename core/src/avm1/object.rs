@@ -13,6 +13,7 @@ use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::object::xml_object::XMLObject;
 use crate::avm1::{ScriptObject, SoundObject, StageObject, UpdateContext, Value};
+use crate::avm_warn;
 use crate::display_object::DisplayObject;
 use crate::xml::XMLNode;
 use enumset::EnumSet;
@@ -132,7 +133,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         if let Value::Object(_) = method {
         } else {
-            log::warn!("Object method {} is not callable", name);
+            avm_warn!(activation, "Object method {} is not callable", name);
         }
 
         method.call(name, activation, context, (*self).into(), base_proto, args)

@@ -5,6 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
+use crate::avm_warn;
 use crate::xml::{XMLDocument, XMLNode};
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
@@ -116,7 +117,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: `new xmlnode.attributes()` returns undefined, not an object
-        log::warn!("Cannot create new XML Attributes object");
+        avm_warn!(activation, "Cannot create new XML Attributes object");
         Ok(Value::Undefined.coerce_to_object(activation, context))
     }
 

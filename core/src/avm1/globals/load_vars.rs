@@ -5,6 +5,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm_warn;
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use gc_arena::MutationContext;
 use std::borrow::Cow;
@@ -120,12 +121,12 @@ pub fn create_proto<'gc>(
 }
 
 fn add_request_header<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("LoadVars.addRequestHeader: Unimplemented");
+    avm_warn!(activation, "LoadVars.addRequestHeader: Unimplemented");
     Ok(Value::Undefined)
 }
 

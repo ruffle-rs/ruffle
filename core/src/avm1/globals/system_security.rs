@@ -3,48 +3,55 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::Object;
 use crate::avm1::{AvmString, ScriptObject, TObject, Value};
+use crate::avm_warn;
 use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::convert::Into;
 
 fn allow_domain<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("System.security.allowDomain() not implemented");
+    avm_warn!(activation, "System.security.allowDomain() not implemented");
     Ok(Value::Undefined)
 }
 
 fn allow_insecure_domain<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("System.security.allowInsecureDomain() not implemented");
+    avm_warn!(
+        activation,
+        "System.security.allowInsecureDomain() not implemented"
+    );
     Ok(Value::Undefined)
 }
 
 fn load_policy_file<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("System.security.allowInsecureDomain() not implemented");
+    avm_warn!(
+        activation,
+        "System.security.allowInsecureDomain() not implemented"
+    );
     Ok(Value::Undefined)
 }
 
 fn escape_domain<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("System.security.escapeDomain() not implemented");
+    avm_warn!(activation, "System.security.escapeDomain() not implemented");
     Ok(Value::Undefined)
 }
 
@@ -58,22 +65,28 @@ fn get_sandbox_type<'gc>(
 }
 
 fn get_choose_local_swf_path<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("System.security.chooseLocalSwfPath() not implemented");
+    avm_warn!(
+        activation,
+        "System.security.chooseLocalSwfPath() not implemented"
+    );
     Ok(Value::Undefined)
 }
 
 fn policy_file_resolver<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _context: &mut UpdateContext<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("System.security.chooseLocalSwfPath() not implemented");
+    avm_warn!(
+        activation,
+        "System.security.chooseLocalSwfPath() not implemented"
+    );
     Ok(Value::Undefined)
 }
 

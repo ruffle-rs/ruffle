@@ -11,6 +11,7 @@ use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::tag_utils::SwfSlice;
+use crate::{avm_error, avm_warn};
 use enumset::EnumSet;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use rand::Rng;
@@ -564,7 +565,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         _context: &mut UpdateContext,
         action: swf::avm1::types::Action,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        log::error!("Unknown AVM1 opcode: {:?}", action);
+        avm_error!(self, "Unknown AVM1 opcode: {:?}", action);
         Ok(FrameControl::Continue)
     }
 
@@ -658,7 +659,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 0,
             );
         } else {
-            log::warn!("CloneSprite: Source is not a movie clip");
+            avm_warn!(self, "CloneSprite: Source is not a movie clip");
         }
 
         Ok(FrameControl::Continue)
@@ -774,7 +775,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 }
             }
         } else {
-            log::warn!("Call: Invalid call");
+            avm_warn!(self, "Call: Invalid call");
         }
 
         Ok(FrameControl::Continue)
@@ -837,7 +838,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             }
             _ => {
                 self.avm.push(Value::Undefined);
-                log::warn!(
+                avm_warn!(
+                    self,
                     "Invalid method name, expected string but found {:?}",
                     method_name
                 );
@@ -1010,7 +1012,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             let success = object.delete(self, context.gc_context, &name);
             self.avm.push(success);
         } else {
-            log::warn!("Cannot delete property {} from {:?}", name, object);
+            avm_warn!(self, "Cannot delete property {} from {:?}", name, object);
             self.avm.push(false);
         }
 
@@ -1075,7 +1077,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     self.avm.push(AvmString::new(context.gc_context, k));
                 }
             }
-            _ => log::error!("Cannot enumerate properties of {}", name),
+            _ => avm_error!(self, "Cannot enumerate properties of {}", name),
         };
 
         Ok(FrameControl::Continue)
@@ -1094,7 +1096,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 self.avm.push(AvmString::new(context.gc_context, k));
             }
         } else {
-            log::warn!("Cannot enumerate {:?}", value);
+            avm_warn!(self, "Cannot enumerate {:?}", value);
         }
 
         Ok(FrameControl::Continue)
@@ -1192,15 +1194,15 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 if let Some(property) = props.get_by_index(prop_index) {
                     property.get(self, context, clip)?
                 } else {
-                    log::warn!("GetProperty: Invalid property index {}", prop_index);
+                    avm_warn!(self, "GetProperty: Invalid property index {}", prop_index);
                     Value::Undefined
                 }
             } else {
-                //log::warn!("GetProperty: Invalid target {}", path);
+                //avm_warn!(self, "GetProperty: Invalid target {}", path);
                 Value::Undefined
             }
         } else {
-            log::warn!("GetProperty: Invalid base clip");
+            avm_warn!(self, "GetProperty: Invalid base clip");
             Value::Undefined
         };
         self.avm.push(ret);
@@ -1251,7 +1253,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     );
                     context.navigator.spawn_future(process);
                 }
-                Err(e) => log::warn!(
+                Err(e) => avm_warn!(
+                    self,
                     "Couldn't parse level id {} for action_get_url: {}",
                     target,
                     e
@@ -1360,7 +1363,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     );
                     context.navigator.spawn_future(process);
                 }
-                Err(e) => log::warn!(
+                Err(e) => avm_warn!(
+                    self,
                     "Couldn't parse level id {} for action_get_url_2: {}",
                     url,
                     e
@@ -1393,10 +1397,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 // The frame on the stack is 0-based, not 1-based.
                 clip.goto_frame(self.avm, context, frame + 1, true);
             } else {
-                log::error!("GotoFrame failed: Target is not a MovieClip");
+                avm_error!(self, "GotoFrame failed: Target is not a MovieClip");
             }
         } else {
-            log::error!("GotoFrame failed: Invalid target");
+            avm_error!(self, "GotoFrame failed: Invalid target");
         }
         Ok(FrameControl::Continue)
     }
@@ -1421,10 +1425,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     scene_offset,
                 );
             } else {
-                log::warn!("GotoFrame2: Target is not a MovieClip");
+                avm_warn!(self, "GotoFrame2: Target is not a MovieClip");
             }
         } else {
-            log::warn!("GotoFrame2: Invalid target");
+            avm_warn!(self, "GotoFrame2: Invalid target");
         }
         Ok(FrameControl::Continue)
     }
@@ -1439,13 +1443,13 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 if let Some(frame) = clip.frame_label_to_number(label) {
                     clip.goto_frame(self.avm, context, frame, true);
                 } else {
-                    log::warn!("GoToLabel: Frame label '{}' not found", label);
+                    avm_warn!(self, "GoToLabel: Frame label '{}' not found", label);
                 }
             } else {
-                log::warn!("GoToLabel: Target is not a MovieClip");
+                avm_warn!(self, "GoToLabel: Target is not a MovieClip");
             }
         } else {
-            log::warn!("GoToLabel: Invalid target");
+            avm_warn!(self, "GoToLabel: Invalid target");
         }
         Ok(FrameControl::Continue)
     }
@@ -1611,7 +1615,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             Ok(val) => self
                 .avm
                 .push(AvmString::new(context.gc_context, val.to_string())),
-            Err(e) => log::warn!("Couldn't parse char for action_mb_ascii_to_char: {}", e),
+            Err(e) => avm_warn!(
+                self,
+                "Couldn't parse char for action_mb_ascii_to_char: {}",
+                e
+            ),
         }
         Ok(FrameControl::Continue)
     }
@@ -1692,10 +1700,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.next_frame(self.avm, context);
             } else {
-                log::warn!("NextFrame: Target is not a MovieClip");
+                avm_warn!(self, "NextFrame: Target is not a MovieClip");
             }
         } else {
-            log::warn!("NextFrame: Invalid target");
+            avm_warn!(self, "NextFrame: Invalid target");
         }
         Ok(FrameControl::Continue)
     }
@@ -1743,7 +1751,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
             self.avm.push(this);
         } else {
-            log::warn!(
+            avm_warn!(
+                self,
                 "Tried to construct with non-object constructor {:?}",
                 constructor
             );
@@ -1818,10 +1827,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.play(context)
             } else {
-                log::warn!("Play: Target is not a MovieClip");
+                avm_warn!(self, "Play: Target is not a MovieClip");
             }
         } else {
-            log::warn!("Play: Invalid target");
+            avm_warn!(self, "Play: Invalid target");
         }
         Ok(FrameControl::Continue)
     }
@@ -1834,10 +1843,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.prev_frame(self.avm, context);
             } else {
-                log::warn!("PrevFrame: Target is not a MovieClip");
+                avm_warn!(self, "PrevFrame: Target is not a MovieClip");
             }
         } else {
-            log::warn!("PrevFrame: Invalid target");
+            avm_warn!(self, "PrevFrame: Invalid target");
         }
         Ok(FrameControl::Continue)
     }
@@ -1870,7 +1879,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     if let Some(value) = self.constant_pool().read().get(*i as usize) {
                         AvmString::new(context.gc_context, value.to_string()).into()
                     } else {
-                        log::warn!(
+                        avm_warn!(
+                            self,
                             "ActionPush: Constant pool index {} out of range (len = {})",
                             i,
                             self.constant_pool().read().len()
@@ -1921,7 +1931,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::remove_movie_clip_with_bias(target_clip, context, 0);
         } else {
-            log::warn!("RemoveSprite: Source is not a movie clip");
+            avm_warn!(self, "RemoveSprite: Source is not a movie clip");
         }
         Ok(FrameControl::Continue)
     }
@@ -1961,10 +1971,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     property.set(self, context, clip, value)?;
                 }
             } else {
-                log::warn!("SetProperty: Invalid target");
+                avm_warn!(self, "SetProperty: Invalid target");
             }
         } else {
-            log::warn!("SetProperty: Invalid base clip");
+            avm_warn!(self, "SetProperty: Invalid base clip");
         }
         Ok(FrameControl::Continue)
     }
@@ -2011,7 +2021,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         {
             new_target_clip = Some(clip);
         } else {
-            log::warn!("SetTarget failed: {} not found", target);
+            avm_warn!(self, "SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
             log::info!(target: "avm_trace", "Target not found: Target=\"{}\" Base=\"{}\"", target, base_clip.path());
 
@@ -2110,7 +2120,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 start_drag(display_object, self, context, &[lock_center]);
             };
         } else {
-            log::warn!("StartDrag: Invalid target");
+            avm_warn!(self, "StartDrag: Invalid target");
         }
         Ok(FrameControl::Continue)
     }
@@ -2123,10 +2133,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             if let Some(clip) = clip.as_movie_clip() {
                 clip.stop(context);
             } else {
-                log::warn!("Stop: Target is not a MovieClip");
+                avm_warn!(self, "Stop: Target is not a MovieClip");
             }
         } else {
-            log::warn!("Stop: Invalid target");
+            avm_warn!(self, "Stop: Invalid target");
         }
         Ok(FrameControl::Continue)
     }
@@ -2264,7 +2274,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         // TODO(Herschel)
         let _clip = self.avm.pop().coerce_to_object(self, context);
         self.avm.push(Value::Undefined);
-        log::warn!("Unimplemented action: TargetPath");
+        avm_warn!(self, "Unimplemented action: TargetPath");
         Ok(FrameControl::Continue)
     }
 
