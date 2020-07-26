@@ -1,4 +1,3 @@
-#[cfg(any(unix, windows, target_os = "redox"))]
 use crate::backend::navigator::url_from_relative_path;
 use gc_arena::Collect;
 use std::path::Path;
