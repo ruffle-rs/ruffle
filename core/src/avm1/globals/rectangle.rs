@@ -17,7 +17,6 @@ fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    println!("Constructor called: {:?}", this);
     if args.is_empty() {
         this.set("x", 0.into(), activation, context)?;
         this.set("y", 0.into(), activation, context)?;
