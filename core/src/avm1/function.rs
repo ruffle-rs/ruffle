@@ -579,11 +579,11 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(exec) = &self.data.read().constructor {
             exec.exec(
-                name,
+                "[ctor]",
                 activation,
                 context,
                 this,
-                base_proto,
+                None,
                 args,
                 ExecutionReason::FunctionCall,
                 (*self).into(),
