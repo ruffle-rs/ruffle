@@ -579,7 +579,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        println!("Constructing a function {}: {:?}", name, &self.data.read());
         if let Some(exec) = &self.data.read().constructor {
             exec.exec(
                 name,
