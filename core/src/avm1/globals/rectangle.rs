@@ -17,6 +17,7 @@ fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    println!("Constructor called: {:?}", this);
     if args.is_empty() {
         this.set("x", 0.into(), activation, context)?;
         this.set("y", 0.into(), activation, context)?;
@@ -81,7 +82,7 @@ pub fn create_rectangle_object<'gc>(
     rectangle_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    FunctionObject::function(
+    FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
         fn_proto,

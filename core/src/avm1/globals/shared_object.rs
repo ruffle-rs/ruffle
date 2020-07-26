@@ -235,7 +235,7 @@ pub fn create_shared_object_object<'gc>(
     shared_object_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let shared_obj = FunctionObject::function(
+    let shared_obj = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
         fn_proto,
