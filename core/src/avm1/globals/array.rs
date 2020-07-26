@@ -533,7 +533,7 @@ fn sort<'gc>(
             sort_compare_custom(activation, this, a, b, &f)
         })
     } else if numeric {
-        Box::new(sort_compare_numeric(string_compare_fn))
+        Box::new(sort_compare_numeric(case_insensitive))
     } else {
         Box::new(string_compare_fn)
     };
@@ -609,7 +609,7 @@ fn sort_on<'gc>(
             };
 
             if numeric {
-                Box::new(sort_compare_numeric(string_compare_fn))
+                Box::new(sort_compare_numeric(case_insensitive))
             } else {
                 Box::new(string_compare_fn) as CompareFn<'_, 'gc>
             }
@@ -797,14 +797,16 @@ fn sort_compare_string_ignore_case<'gc>(
     }
 }
 
-fn sort_compare_numeric(
-    mut string_compare_fn: impl FnMut(&mut Activation, &Value, &Value) -> Ordering,
-) -> impl FnMut(&mut Activation, &Value, &Value) -> Ordering {
+fn sort_compare_numeric<'gc>(
+    case_insensitive: bool,
+) -> impl FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering {
     move |activation, a, b| {
         if let (Value::Number(a), Value::Number(b)) = (a, b) {
             a.partial_cmp(b).unwrap_or(DEFAULT_ORDERING)
+        } else if case_insensitive {
+            sort_compare_string_ignore_case(activation, a, b)
         } else {
-            string_compare_fn(activation, a, b)
+            sort_compare_string(activation, a, b)
         }
     }
 }
