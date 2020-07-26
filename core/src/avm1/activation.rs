@@ -1747,7 +1747,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             }
 
             //TODO: What happens if you `ActionNewMethod` without a method name?
-            constructor.construct("[ctor]", self, context, this, None, &args)?;
+            constructor.construct(self, context, this, &args)?;
 
             self.avm.push(this);
         } else {
@@ -1799,7 +1799,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             );
         }
 
-        constructor.construct("[ctor]", self, context, this, None, &args)?;
+        constructor.construct(self, context, this, &args)?;
 
         self.avm.push(this);
 
