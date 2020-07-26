@@ -105,7 +105,7 @@ pub fn get_nan<'gc>(
     }
 }
 
-pub fn set_interval<'a, 'gc>(
+pub fn set_interval<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
@@ -114,7 +114,7 @@ pub fn set_interval<'a, 'gc>(
     create_timer(activation, this, args, false)
 }
 
-pub fn set_timeout<'a, 'gc>(
+pub fn set_timeout<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
@@ -123,7 +123,7 @@ pub fn set_timeout<'a, 'gc>(
     create_timer(activation, this, args, true)
 }
 
-pub fn create_timer<'a, 'gc>(
+pub fn create_timer<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 
     _this: Object<'gc>,
@@ -166,7 +166,7 @@ pub fn create_timer<'a, 'gc>(
     Ok(id.into())
 }
 
-pub fn clear_interval<'a, 'gc>(
+pub fn clear_interval<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 
     _this: Object<'gc>,
@@ -183,7 +183,7 @@ pub fn clear_interval<'a, 'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn update_after_event<'a, 'gc>(
+pub fn update_after_event<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],

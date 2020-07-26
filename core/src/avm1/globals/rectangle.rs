@@ -101,7 +101,7 @@ fn set_empty<'gc>(
     this.set("y", 0.into(), activation)?;
     this.set("width", 0.into(), activation)?;
     this.set("height", 0.into(), activation)?;
-    Ok(Value::Undefined.into())
+    Ok(Value::Undefined)
 }
 
 fn clone<'gc>(
@@ -479,7 +479,7 @@ fn get_left<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.get("x", activation)?.into())
+    this.get("x", activation)
 }
 
 fn set_left<'gc>(
@@ -504,7 +504,7 @@ fn get_top<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.get("y", activation)?.into())
+    this.get("y", activation)
 }
 
 fn set_top<'gc>(

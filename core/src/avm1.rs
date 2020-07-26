@@ -159,23 +159,24 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This creates a new frame stack.
     pub fn run_stack_frame_for_action<S: Into<Cow<'static, str>>>(
-        &mut self,
         active_clip: DisplayObject<'gc>,
         name: S,
         swf_version: u8,
         code: SwfSlice,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        if self.halted {
+        if context.avm1.halted {
             // We've been told to ignore all future execution.
             return;
         }
+
+        let globals = context.avm1.global_object_cell();
 
         let mut parent_activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Actions Parent]"),
             swf_version,
-            self.global_object_cell(),
+            globals,
             active_clip,
         );
 
@@ -191,9 +192,10 @@ impl<'gc> Avm1<'gc> {
             ),
         );
         let constant_pool = parent_activation.context.avm1.constant_pool;
+        let child_name = parent_activation.id.child(name);
         let mut child_activation = Activation::from_action(
-            parent_activation.context,
-            parent_activation.id.child(name),
+            parent_activation.context.reborrow(),
+            child_name,
             swf_version,
             child_scope,
             constant_pool,
@@ -210,7 +212,6 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This creates a new frame stack.
     pub fn run_with_stack_frame_for_display_object<'a, F, R>(
-        &mut self,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         action_context: &mut UpdateContext<'_, 'gc, '_>,
@@ -225,18 +226,19 @@ impl<'gc> Avm1<'gc> {
         };
         let global_scope = GcCell::allocate(
             action_context.gc_context,
-            Scope::from_global_object(self.globals),
+            Scope::from_global_object(action_context.avm1.globals),
         );
         let child_scope = GcCell::allocate(
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
+        let constant_pool = action_context.avm1.constant_pool;
         let mut activation = Activation::from_action(
             action_context.reborrow(),
             ActivationIdentifier::root("[Display Object]"),
             swf_version,
             child_scope,
-            self.constant_pool,
+            constant_pool,
             active_clip,
             clip_obj,
             None,
@@ -248,22 +250,23 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This creates a new frame stack.
     pub fn run_stack_frame_for_init_action(
-        &mut self,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         code: SwfSlice,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        if self.halted {
+        if context.avm1.halted {
             // We've been told to ignore all future execution.
             return;
         }
+
+        let globals = context.avm1.global_object_cell();
 
         let mut parent_activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Init Parent]"),
             swf_version,
-            self.global_object_cell(),
+            globals,
             active_clip,
         );
 
@@ -280,9 +283,10 @@ impl<'gc> Avm1<'gc> {
         );
         parent_activation.context.avm1.push(Value::Undefined);
         let constant_pool = parent_activation.context.avm1.constant_pool;
+        let child_name = parent_activation.id.child("[Init]");
         let mut child_activation = Activation::from_action(
-            parent_activation.context,
-            parent_activation.id.child("[Init]"),
+            parent_activation.context.reborrow(),
+            child_name,
             swf_version,
             child_scope,
             constant_pool,
@@ -300,7 +304,6 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This creates a new frame stack.
     pub fn run_stack_frame_for_method<'a, 'b>(
-        &'a mut self,
         active_clip: DisplayObject<'gc>,
         obj: Object<'gc>,
         swf_version: u8,
@@ -308,16 +311,18 @@ impl<'gc> Avm1<'gc> {
         name: &str,
         args: &[Value<'gc>],
     ) {
-        if self.halted {
+        if context.avm1.halted {
             // We've been told to ignore all future execution.
             return;
         }
+
+        let globals = context.avm1.global_object_cell();
 
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root(name.to_owned()),
             swf_version,
-            self.global_object_cell(),
+            globals,
             active_clip,
         );
 
@@ -330,7 +335,6 @@ impl<'gc> Avm1<'gc> {
     }
 
     pub fn notify_system_listeners<'a>(
-        &'a mut self,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -338,18 +342,17 @@ impl<'gc> Avm1<'gc> {
         method: &str,
         args: &[Value<'gc>],
     ) {
-        let global = self.global_object();
+        let global = context.avm1.global_object_cell();
 
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[System Listeners]"),
             swf_version,
-            self.global_object_cell(),
+            global,
             active_clip,
         );
 
         let broadcaster = global
-            .coerce_to_object(&mut activation)
             .get(broadcaster, &mut activation)
             .unwrap()
             .coerce_to_object(&mut activation);

@@ -330,12 +330,9 @@ impl Player {
                 .set_device_font(device_font);
 
             // Set the version parameter on the root.
-            let mut activation = Activation::from_nothing(
+            let mut activation = Activation::from_stub(
                 context.reborrow(),
                 ActivationIdentifier::root("[Version Setter]"),
-                context.swf.version(),
-                context.avm1.global_object_cell(),
-                *context.levels.get(&0).unwrap(),
             );
             let object = root.object().coerce_to_object(&mut activation);
             let version_string = activation
@@ -452,13 +449,11 @@ impl Player {
                 {
                     self.mutate_with_update_context(|_avm2, context| {
                         let mut dumper = VariableDumper::new("  ");
+                        let levels = context.levels.clone();
 
-                        let mut activation = Activation::from_nothing(
+                        let mut activation = Activation::from_stub(
                             context.reborrow(),
                             ActivationIdentifier::root("[Variable Dumper]"),
-                            context.swf.version(),
-                            context.avm1.global_object_cell(),
-                            *context.levels.get(&0).unwrap(),
                         );
 
                         dumper.print_variables(
@@ -467,7 +462,7 @@ impl Player {
                             &activation.context.avm1.global_object_cell(),
                             &mut activation,
                         );
-                        let levels = context.levels.clone();
+
                         for (level, display_object) in levels {
                             let object = display_object.object().coerce_to_object(&mut activation);
                             dumper.print_variables(
@@ -829,7 +824,7 @@ impl Player {
             match actions.action_type {
                 // DoAction/clip event code
                 ActionType::Normal { bytecode } => {
-                    context.avm1.run_stack_frame_for_action(
+                    Avm1::run_stack_frame_for_action(
                         actions.clip,
                         "[Frame]",
                         context.swf.header().version,
@@ -842,11 +837,14 @@ impl Player {
                     constructor: Some(constructor),
                     events,
                 } => {
+                    let version = context.swf.version();
+                    let globals = context.avm1.global_object_cell();
+
                     let mut activation = Activation::from_nothing(
                         context.reborrow(),
                         ActivationIdentifier::root("[Construct]"),
-                        context.swf.version(),
-                        context.avm1.global_object_cell(),
+                        version,
+                        globals,
                         actions.clip,
                     );
                     if let Ok(prototype) = constructor
@@ -874,7 +872,7 @@ impl Player {
                     events,
                 } => {
                     for event in events {
-                        context.avm1.run_stack_frame_for_action(
+                        Avm1::run_stack_frame_for_action(
                             actions.clip,
                             "[Construct]",
                             context.swf.header().version,
@@ -885,7 +883,7 @@ impl Player {
                 }
                 // Event handler method call (e.g. onEnterFrame)
                 ActionType::Method { object, name, args } => {
-                    context.avm1.run_stack_frame_for_method(
+                    Avm1::run_stack_frame_for_method(
                         actions.clip,
                         object,
                         context.swf.header().version,
@@ -903,7 +901,7 @@ impl Player {
                 } => {
                     // A native function ends up resolving immediately,
                     // so this doesn't require any further execution.
-                    context.avm1.notify_system_listeners(
+                    Avm1::notify_system_listeners(
                         actions.clip,
                         context.swf.version(),
                         context,
@@ -1111,13 +1109,8 @@ impl Player {
 
     pub fn flush_shared_objects(&mut self) {
         self.update(|_avm2, context| {
-            let mut activation = Activation::from_nothing(
-                context.reborrow(),
-                ActivationIdentifier::root("[Flush]"),
-                context.swf.version(),
-                context.avm1.global_object_cell(),
-                *context.levels.get(&0).unwrap(),
-            );
+            let mut activation =
+                Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"));
             let shared_objects = activation.context.shared_objects.clone();
             for so in shared_objects.values() {
                 let _ = crate::avm1::globals::shared_object::flush(&mut activation, *so, &[]);

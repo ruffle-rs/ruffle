@@ -73,10 +73,8 @@ pub fn set_html<'gc>(
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
-                text_field.set_is_html(
-                    &mut activation.context,
-                    value.as_bool(activation.current_swf_version()),
-                );
+                let current_swf_version = activation.current_swf_version();
+                text_field.set_is_html(&mut activation.context, value.as_bool(current_swf_version));
             }
         }
     }

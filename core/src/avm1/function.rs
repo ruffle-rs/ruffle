@@ -307,13 +307,10 @@ impl<'gc> Executable<'gc> {
                     Cow::Borrowed("[Anonymous]")
                 };
 
+                let max_recursion_depth = activation.context.avm1.max_recursion_depth();
                 let mut frame = Activation::from_action(
                     activation.context.reborrow(),
-                    activation.id.function(
-                        name,
-                        reason,
-                        activation.context.avm1.max_recursion_depth(),
-                    )?,
+                    activation.id.function(name, reason, max_recursion_depth)?,
                     effective_ver,
                     child_scope,
                     af.constant_pool,

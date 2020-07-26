@@ -385,7 +385,7 @@ impl<'gc> MovieClip<'gc> {
                 )
             })?;
 
-        context.avm1.run_stack_frame_for_init_action(
+        Avm1::run_stack_frame_for_init_action(
             self.into(),
             context.swf.header().version,
             slice,
@@ -1070,12 +1070,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     return Some(self_node);
                 }
 
-                let mut activation = Activation::from_nothing(
+                let mut activation = Activation::from_stub(
                     context.reborrow(),
                     ActivationIdentifier::root("[Mouse Pick]"),
-                    context.swf.version(),
-                    context.avm1.global_object_cell(),
-                    *context.levels.get(&0).unwrap(),
                 );
                 let object = self.object().coerce_to_object(&mut activation);
 
@@ -1130,14 +1127,17 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.set_default_instance_name(context);
 
         if self.0.read().object.is_none() {
+            let version = context.swf.version();
+            let globals = context.avm1.global_object_cell();
+
             // If we are running within the AVM, this must be an immediate action.
             // If we are not, then this must be queued to be ran first-thing
             if instantiated_from_avm && self.0.read().avm1_constructor.is_some() {
                 let mut activation = Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Construct]"),
-                    context.swf.version(),
-                    context.avm1.global_object_cell(),
+                    version,
+                    globals,
                     (*self).into(),
                 );
 
@@ -1175,8 +1175,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 let mut activation = Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Init]"),
-                    context.swf.version(),
-                    context.avm1.global_object_cell(),
+                    version,
+                    globals,
                     (*self).into(),
                 );
 
@@ -1210,7 +1210,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // If this text field has a variable set, initialize text field binding.
-        context.avm1.run_with_stack_frame_for_display_object(
+        Avm1::run_with_stack_frame_for_display_object(
             (*self).into(),
             context.swf.version(),
             context,

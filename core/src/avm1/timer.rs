@@ -37,12 +37,16 @@ impl<'gc> Timers<'gc> {
             return None;
         }
 
+        let version = context.swf.header().version;
+        let globals = context.avm1.global_object_cell();
+        let level0 = context.levels.get(&0).copied().unwrap();
+
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Timer Callback]"),
-            context.swf.header().version,
-            context.avm1.global_object_cell(),
-            context.levels.get(&0).copied().unwrap(),
+            version,
+            globals,
+            level0,
         );
 
         // TODO: `this` is undefined for non-method timer callbacks, but our VM

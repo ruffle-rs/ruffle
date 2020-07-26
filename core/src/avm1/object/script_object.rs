@@ -872,6 +872,9 @@ mod tests {
             let mut levels = BTreeMap::new();
             levels.insert(0, root);
 
+            let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
+            let globals = avm.global_object_cell();
+
             let mut context = UpdateContext {
                 gc_context,
                 player_version: 32,
@@ -910,9 +913,6 @@ mod tests {
             root.post_instantiation(&mut context, root, None, false);
             root.set_name(context.gc_context, "");
 
-            let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
-
-            let globals = avm.global_object_cell();
             let base_clip = *context.levels.get(&0).unwrap();
             let swf_version = context.swf.version();
             let mut activation = Activation::from_nothing(

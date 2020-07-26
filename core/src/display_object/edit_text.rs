@@ -1,7 +1,7 @@
 //! `EditText` display object and support code.
 use crate::avm1::activation::Activation;
 use crate::avm1::globals::text_field::attach_virtual_properties;
-use crate::avm1::{AvmString, Object, StageObject, TObject, Value};
+use crate::avm1::{Avm1, AvmString, Object, StageObject, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
@@ -882,7 +882,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         drop(text);
 
         // If this text field has a variable set, initialize text field binding.
-        context.avm1.run_with_stack_frame_for_display_object(
+        Avm1::run_with_stack_frame_for_display_object(
             (*self).into(),
             context.swf.version(),
             context,

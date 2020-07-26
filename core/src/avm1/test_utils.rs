@@ -34,6 +34,8 @@ where
         let mut levels = BTreeMap::new();
         levels.insert(0, root);
 
+        let globals = avm1.global_object_cell();
+
         let mut context = UpdateContext {
             gc_context,
             player_version: 32,
@@ -85,7 +87,6 @@ where
             }
         }
 
-        let globals = avm1.global_object_cell();
         let base_clip = *context.levels.get(&0).unwrap();
         let swf_version = context.swf.version();
         let mut activation = Activation::from_nothing(

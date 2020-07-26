@@ -315,6 +315,19 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
     }
 
+    /// Construct an empty stack frame with no code running on the root move in
+    /// layer 0.
+    pub fn from_stub(
+        context: UpdateContext<'a, 'gc, 'gc_context>,
+        id: ActivationIdentifier<'a>,
+    ) -> Self {
+        let version = context.swf.version();
+        let globals = context.avm1.global_object_cell();
+        let level0 = *context.levels.get(&0).unwrap();
+
+        Self::from_nothing(context, id, version, globals, level0)
+    }
+
     /// Add a stack frame that executes code in timeline scope
     pub fn run_child_frame_for_action<S: Into<Cow<'static, str>>>(
         &mut self,
@@ -323,11 +336,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         swf_version: u8,
         code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
+        let globals = self.context.avm1.globals;
         let mut parent_activation = Activation::from_nothing(
             self.context.reborrow(),
             self.id.child("[Actions Parent]"),
             swf_version,
-            self.context.avm1.globals,
+            globals,
             active_clip,
         );
         let clip_obj = active_clip
@@ -342,9 +356,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             ),
         );
         let constant_pool = parent_activation.context.avm1.constant_pool;
+        let child_name = parent_activation.id.child(name);
         let mut child_activation = Activation::from_action(
-            parent_activation.context,
-            parent_activation.id.child(name),
+            parent_activation.context.reborrow(),
+            child_name,
             swf_version,
             child_scope,
             constant_pool,

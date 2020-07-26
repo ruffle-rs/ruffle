@@ -156,7 +156,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     /// update context without adding further lifetimes for it's borrowing.
     /// Please note that you will not be able to use the original update
     /// context until this reborrowed copy has fallen out of scope.
-    pub fn reborrow<'b>(&'b self) -> UpdateContext<'b, 'gc, 'gc_context>
+    pub fn reborrow<'b>(&'b mut self) -> UpdateContext<'b, 'gc, 'gc_context>
     where
         'a: 'b,
     {
@@ -175,12 +175,12 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             storage: self.storage,
             rng: self.rng,
             levels: self.levels,
-            system_prototypes: self.system_prototypes,
+            system_prototypes: self.system_prototypes.clone(),
             mouse_hovered_object: self.mouse_hovered_object,
             mouse_position: self.mouse_position,
             drag_object: self.drag_object,
             stage_size: self.stage_size,
-            player: self.player,
+            player: self.player.clone(),
             load_manager: self.load_manager,
             system: self.system,
             instance_counter: self.instance_counter,

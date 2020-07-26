@@ -970,7 +970,7 @@ fn get_rect<'gc>(
 }
 
 #[allow(unused_must_use)] //can't use errors yet
-pub fn get_url<'a, 'gc>(
+pub fn get_url<'gc>(
     _movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 

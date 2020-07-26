@@ -243,7 +243,7 @@ impl<'gc> Scope<'gc> {
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if self.locals().has_property(activation, name) {
-            return Ok(self.locals().get(name, activation)?.into());
+            return self.locals().get(name, activation);
         }
         if let Some(scope) = self.parent() {
             return scope.resolve(name, activation, this);

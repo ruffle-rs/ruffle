@@ -1,7 +1,7 @@
 //! Management of async loaders
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::{AvmString, Object, TObject, Value};
+use crate::avm1::{Avm1, AvmString, Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
@@ -435,7 +435,7 @@ impl<'gc> Loader<'gc> {
                         .replace_with_movie(uc.gc_context, None);
 
                     if let Some(broadcaster) = broadcaster {
-                        uc.avm1.run_stack_frame_for_method(
+                        Avm1::run_stack_frame_for_method(
                             clip,
                             broadcaster,
                             NEWEST_PLAYER_VERSION,
@@ -469,7 +469,7 @@ impl<'gc> Loader<'gc> {
                         };
 
                         if let Some(broadcaster) = broadcaster {
-                            uc.avm1.run_stack_frame_for_method(
+                            Avm1::run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -506,7 +506,7 @@ impl<'gc> Loader<'gc> {
                         }
 
                         if let Some(broadcaster) = broadcaster {
-                            uc.avm1.run_stack_frame_for_method(
+                            Avm1::run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -543,7 +543,7 @@ impl<'gc> Loader<'gc> {
                         };
 
                         if let Some(broadcaster) = broadcaster {
-                            uc.avm1.run_stack_frame_for_method(
+                            Avm1::run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -596,12 +596,9 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotFormLoader),
                 };
 
-                let mut activation = Activation::from_nothing(
+                let mut activation = Activation::from_stub(
                     uc.reborrow(),
                     ActivationIdentifier::root("[Form Loader]"),
-                    uc.swf.version(),
-                    uc.avm1.global_object_cell(),
-                    *uc.levels.get(&0).unwrap(),
                 );
 
                 for (k, v) in form_urlencoded::parse(&data) {
@@ -646,19 +643,18 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotLoadVarsLoader),
                 };
 
-                let mut activation = Activation::from_nothing(
+                let mut activation = Activation::from_stub(
                     uc.reborrow(),
                     ActivationIdentifier::root("[Form Loader]"),
-                    uc.swf.version(),
-                    uc.avm1.global_object_cell(),
-                    *uc.levels.get(&0).unwrap(),
                 );
 
                 match data {
                     Ok(data) => {
                         // Fire the onData method with the loaded string.
-                        let string_data =
-                            AvmString::new(uc.gc_context, String::from_utf8_lossy(&data));
+                        let string_data = AvmString::new(
+                            activation.context.gc_context,
+                            String::from_utf8_lossy(&data),
+                        );
                         let _ = that.call_method("onData", &[string_data.into()], &mut activation);
                     }
                     Err(_) => {
@@ -754,7 +750,7 @@ impl<'gc> Loader<'gc> {
 
                         let object =
                             node.script_object(uc.gc_context, Some(uc.avm1.prototypes().xml_node));
-                        uc.avm1.run_stack_frame_for_method(
+                        Avm1::run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -763,7 +759,7 @@ impl<'gc> Loader<'gc> {
                             &[200.into()],
                         );
 
-                        uc.avm1.run_stack_frame_for_method(
+                        Avm1::run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -791,7 +787,7 @@ impl<'gc> Loader<'gc> {
                         let object =
                             node.script_object(uc.gc_context, Some(uc.avm1.prototypes().xml_node));
 
-                        uc.avm1.run_stack_frame_for_method(
+                        Avm1::run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -800,7 +796,7 @@ impl<'gc> Loader<'gc> {
                             &[404.into()],
                         );
 
-                        uc.avm1.run_stack_frame_for_method(
+                        Avm1::run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
