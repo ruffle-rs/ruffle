@@ -423,7 +423,7 @@ pub fn create_matrix_object<'gc>(
     matrix_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    FunctionObject::function(
+    FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
         fn_proto,

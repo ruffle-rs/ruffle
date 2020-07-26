@@ -313,7 +313,7 @@ pub fn create_point_object<'gc>(
     point_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let point = FunctionObject::function(
+    let point = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
         fn_proto,
