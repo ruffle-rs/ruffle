@@ -38,7 +38,7 @@ pub fn create_array_object<'gc>(
     array_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let array = FunctionObject::function(
+    let array = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
         fn_proto,
@@ -87,7 +87,7 @@ pub fn create_array_object<'gc>(
     array
 }
 
-/// Implements `Array`
+/// Implements `Array` constructor
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,

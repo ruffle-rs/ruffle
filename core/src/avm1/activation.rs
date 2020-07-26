@@ -1799,7 +1799,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             );
         }
 
-        constructor.call("[ctor]", self, context, this, None, &args)?;
+        constructor.construct("[ctor]", self, context, this, None, &args)?;
 
         self.avm.push(this);
 
