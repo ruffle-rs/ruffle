@@ -30,6 +30,22 @@ pub fn string<'gc>(
         vbox.replace_value(ac.gc_context, value.clone().into());
     }
 
+    Ok(Value::Undefined)
+}
+
+/// `String` function
+pub fn string_function<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    ac: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let value = match args.get(0).cloned() {
+        Some(Value::String(s)) => s,
+        Some(v) => v.coerce_to_string(activation, ac)?,
+        _ => AvmString::new(ac.gc_context, String::new()),
+    };
+
     Ok(value.into())
 }
 
@@ -38,8 +54,9 @@ pub fn create_string_object<'gc>(
     string_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let string = FunctionObject::function(
+    let string = FunctionObject::function_and_constructor(
         gc_context,
+        Executable::Native(string_function),
         Executable::Native(string),
         fn_proto,
         string_proto,

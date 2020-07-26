@@ -282,74 +282,74 @@ pub fn create_globals<'gc>(
     let context_menu_item_proto =
         context_menu_item::create_proto(gc_context, object_proto, function_proto);
 
-    let button = FunctionObject::function(
+    let button = FunctionObject::constructor(
         gc_context,
         Executable::Native(button::constructor),
         Some(function_proto),
         Some(button_proto),
     );
-    let color = FunctionObject::function(
+    let color = FunctionObject::constructor(
         gc_context,
         Executable::Native(color::constructor),
         Some(function_proto),
         Some(color_proto),
     );
-    let error = FunctionObject::function(
+    let error = FunctionObject::constructor(
         gc_context,
         Executable::Native(error::constructor),
         Some(function_proto),
         Some(error_proto),
     );
-    let function = FunctionObject::function(
+    let function = FunctionObject::constructor(
         gc_context,
         Executable::Native(function::constructor),
         Some(function_proto),
         Some(function_proto),
     );
-    let load_vars = FunctionObject::function(
+    let load_vars = FunctionObject::constructor(
         gc_context,
         Executable::Native(load_vars::constructor),
         Some(function_proto),
         Some(load_vars_proto),
     );
-    let movie_clip = FunctionObject::function(
+    let movie_clip = FunctionObject::constructor(
         gc_context,
         Executable::Native(movie_clip::constructor),
         Some(function_proto),
         Some(movie_clip_proto),
     );
-    let movie_clip_loader = FunctionObject::function(
+    let movie_clip_loader = FunctionObject::constructor(
         gc_context,
         Executable::Native(movie_clip_loader::constructor),
         Some(function_proto),
         Some(movie_clip_loader_proto),
     );
-    let sound = FunctionObject::function(
+    let sound = FunctionObject::constructor(
         gc_context,
         Executable::Native(sound::constructor),
         Some(function_proto),
         Some(sound_proto),
     );
-    let text_field = FunctionObject::function(
+    let text_field = FunctionObject::constructor(
         gc_context,
         Executable::Native(text_field::constructor),
         Some(function_proto),
         Some(text_field_proto),
     );
-    let text_format = FunctionObject::function(
+    let text_format = FunctionObject::constructor(
         gc_context,
         Executable::Native(text_format::constructor),
         Some(function_proto),
         Some(text_format_proto),
     );
     let array = array::create_array_object(gc_context, Some(array_proto), Some(function_proto));
-    let xmlnode = FunctionObject::function(
+    let xmlnode = FunctionObject::constructor(
         gc_context,
         Executable::Native(xml::xmlnode_constructor),
         Some(function_proto),
         Some(xmlnode_proto),
     );
-    let xml = FunctionObject::function(
+    let xml = FunctionObject::constructor(
         gc_context,
         Executable::Native(xml::xml_constructor),
         Some(function_proto),
@@ -434,7 +434,7 @@ pub fn create_globals<'gc>(
     globals.define_value(
         gc_context,
         "ContextMenu",
-        FunctionObject::function(
+        FunctionObject::constructor(
             gc_context,
             Executable::Native(context_menu::constructor),
             Some(function_proto),
@@ -447,7 +447,7 @@ pub fn create_globals<'gc>(
     globals.define_value(
         gc_context,
         "ContextMenuItem",
-        FunctionObject::function(
+        FunctionObject::constructor(
             gc_context,
             Executable::Native(context_menu_item::constructor),
             Some(function_proto),

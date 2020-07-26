@@ -10,7 +10,7 @@ use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
-/// `Number` constructor/function
+/// `Number` constructor
 pub fn number<'gc>(
     activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
@@ -28,6 +28,22 @@ pub fn number<'gc>(
         vbox.replace_value(context.gc_context, value.into());
     }
 
+    Ok(Value::Undefined)
+}
+
+/// `Number` function
+pub fn number_function<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let value = if let Some(val) = args.get(0) {
+        val.coerce_to_f64(activation, context)?
+    } else {
+        0.0
+    };
+
     // If Number is called as a function, return the value.
     Ok(value.into())
 }
@@ -37,8 +53,9 @@ pub fn create_number_object<'gc>(
     number_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let number = FunctionObject::function(
+    let number = FunctionObject::function_and_constructor(
         gc_context,
+        Executable::Native(number_function),
         Executable::Native(number),
         fn_proto,
         number_proto,

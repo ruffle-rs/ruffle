@@ -62,7 +62,7 @@ impl<'gc> ValueObject<'gc> {
             // Constructor populates the boxed object with the value.
             match &value {
                 Value::Bool(_) => {
-                    let _ = crate::avm1::globals::boolean::boolean(
+                    let _ = crate::avm1::globals::boolean::constructor(
                         activation,
                         context,
                         obj.into(),

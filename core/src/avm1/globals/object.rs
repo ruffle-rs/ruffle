@@ -372,7 +372,7 @@ pub fn create_object_object<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object_function = FunctionObject::function(
+    let object_function = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
         Some(fn_proto),

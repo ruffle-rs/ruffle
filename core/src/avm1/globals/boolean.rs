@@ -9,24 +9,39 @@ use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
-/// `Boolean` constructor/function
-pub fn boolean<'gc>(
+/// `Boolean` constructor
+pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let (ret_value, cons_value) = if let Some(val) = args.get(0) {
-        let b = Value::Bool(val.as_bool(activation.current_swf_version()));
-        (b.clone(), b)
+    let cons_value = if let Some(val) = args.get(0) {
+        Value::Bool(val.as_bool(activation.current_swf_version()))
     } else {
-        (Value::Undefined, Value::Bool(false))
+        Value::Bool(false)
     };
 
-    // If called from a constructor, populate `this`.
+    // Called from a constructor, populate `this`.
     if let Some(mut vbox) = this.as_value_object() {
         vbox.replace_value(context.gc_context, cons_value);
     }
+
+    Ok(Value::Undefined)
+}
+
+/// `Boolean` function
+pub fn boolean_function<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let ret_value = if let Some(val) = args.get(0) {
+        Value::Bool(val.as_bool(activation.current_swf_version()))
+    } else {
+        Value::Undefined
+    };
 
     // If called as a function, return the value.
     // Boolean() with no argument returns undefined.
@@ -38,9 +53,10 @@ pub fn create_boolean_object<'gc>(
     boolean_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    FunctionObject::function(
+    FunctionObject::function_and_constructor(
         gc_context,
-        Executable::Native(boolean),
+        Executable::Native(boolean_function),
+        Executable::Native(constructor),
         fn_proto,
         boolean_proto,
     )

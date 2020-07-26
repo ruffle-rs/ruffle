@@ -419,6 +419,8 @@ pub struct FunctionObject<'gc> {
 struct FunctionObjectData<'gc> {
     /// The code that will be invoked when this object is called.
     function: Option<Executable<'gc>>,
+    /// The code that will be invoked when this object is constructed.
+    constructor: Option<Executable<'gc>>,
 
     /// The value to be returned by `toString` and `valueOf`.
     primitive: Value<'gc>,
@@ -428,24 +430,29 @@ impl<'gc> FunctionObject<'gc> {
     /// Construct a function sans prototype.
     pub fn bare_function(
         gc_context: MutationContext<'gc, '_>,
-        function: impl Into<Executable<'gc>>,
+        function: Option<impl Into<Executable<'gc>>>,
+        constructor: Option<impl Into<Executable<'gc>>>,
         fn_proto: Option<Object<'gc>>,
     ) -> Self {
         let base = ScriptObject::object(gc_context, fn_proto);
+
+        let func = function.map(|x| x.into());
+        let cons = constructor.map(|x| x.into());
 
         FunctionObject {
             base,
             data: GcCell::allocate(
                 gc_context,
                 FunctionObjectData {
-                    function: Some(function.into()),
+                    function: func,
                     primitive: "[type Function]".into(),
+                    constructor: cons,
                 },
             ),
         }
     }
 
-    /// Construct a function from an executable and associated protos.
+    /// Construct a function with any combination of regular and constructor parts.
     ///
     /// Since prototypes need to link back to themselves, this function builds
     /// both objects itself and returns the function to you, fully allocated.
@@ -453,13 +460,14 @@ impl<'gc> FunctionObject<'gc> {
     /// `fn_proto` refers to the implicit proto of the function object, and the
     /// `prototype` refers to the explicit prototype of the function. If
     /// provided, the function and it's prototype will be linked to each other.
-    pub fn function(
+    fn allocate_function(
         context: MutationContext<'gc, '_>,
-        function: impl Into<Executable<'gc>>,
+        function: Option<impl Into<Executable<'gc>>>,
+        constructor: Option<impl Into<Executable<'gc>>>,
         fn_proto: Option<Object<'gc>>,
         prototype: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        let function = Self::bare_function(context, function, fn_proto).into();
+        let function = Self::bare_function(context, function, constructor, fn_proto).into();
 
         if let Some(p) = prototype {
             p.define_value(
@@ -472,6 +480,47 @@ impl<'gc> FunctionObject<'gc> {
         }
 
         function
+    }
+
+    /// Construct a regular function from an executable and associated protos.
+    pub fn function(
+        context: MutationContext<'gc, '_>,
+        function: impl Into<Executable<'gc>>,
+        fn_proto: Option<Object<'gc>>,
+        prototype: Option<Object<'gc>>,
+    ) -> Object<'gc> {
+        // Avoid type inference issues
+        let none: Option<Executable> = None;
+        Self::allocate_function(context, Some(function), none, fn_proto, prototype)
+    }
+
+    /// Construct a constructor function from an executable and associated protos.
+    pub fn constructor(
+        context: MutationContext<'gc, '_>,
+        constructor: impl Into<Executable<'gc>>,
+        fn_proto: Option<Object<'gc>>,
+        prototype: Option<Object<'gc>>,
+    ) -> Object<'gc> {
+        // Avoid type inference issues
+        let none: Option<Executable> = None;
+        Self::allocate_function(context, none, Some(constructor), fn_proto, prototype)
+    }
+
+    /// Construct a regular and constructor function from an executable and associated protos.
+    pub fn function_and_constructor(
+        context: MutationContext<'gc, '_>,
+        function: impl Into<Executable<'gc>>,
+        constructor: impl Into<Executable<'gc>>,
+        fn_proto: Option<Object<'gc>>,
+        prototype: Option<Object<'gc>>,
+    ) -> Object<'gc> {
+        Self::allocate_function(
+            context,
+            Some(function),
+            Some(constructor),
+            fn_proto,
+            prototype,
+        )
     }
 }
 
@@ -521,6 +570,32 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         }
     }
 
+    fn construct(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
+        args: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        println!("Constructing a function {}: {:?}", name, &self.data.read());
+        if let Some(exec) = &self.data.read().constructor {
+            exec.exec(
+                name,
+                activation,
+                context,
+                this,
+                base_proto,
+                args,
+                ExecutionReason::FunctionCall,
+                (*self).into(),
+            )
+        } else {
+            self.call(name, activation, context, this, base_proto, args)
+        }
+    }
+
     fn call_setter(
         &self,
         name: &str,
@@ -547,6 +622,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 FunctionObjectData {
                     function: None,
                     primitive: "[type Function]".into(),
+                    constructor: None,
                 },
             ),
         };
