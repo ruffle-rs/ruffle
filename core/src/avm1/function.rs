@@ -497,13 +497,17 @@ impl<'gc> FunctionObject<'gc> {
     /// Construct a constructor function from an executable and associated protos.
     pub fn constructor(
         context: MutationContext<'gc, '_>,
-        constructor: impl Into<Executable<'gc>>,
+        constructor: impl Into<Executable<'gc>> + std::clone::Clone,
         fn_proto: Option<Object<'gc>>,
         prototype: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        // Avoid type inference issues
-        let none: Option<Executable> = None;
-        Self::allocate_function(context, none, Some(constructor), fn_proto, prototype)
+        Self::allocate_function(
+            context,
+            Some(constructor.clone()),
+            Some(constructor),
+            fn_proto,
+            prototype,
+        )
     }
 
     /// Construct a regular and constructor function from an executable and associated protos.
