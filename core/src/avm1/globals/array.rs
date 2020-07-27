@@ -38,8 +38,9 @@ pub fn create_array_object<'gc>(
     array_proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let array = FunctionObject::constructor(
+    let array = FunctionObject::function_and_constructor(
         gc_context,
+        Executable::Native(array_function),
         Executable::Native(constructor),
         fn_proto,
         array_proto,
@@ -95,15 +96,50 @@ pub fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut consumed = false;
-    let called_as_function = this.as_stage_object().is_some();
 
-    let mut array_obj = this;
-
-    // If called as a function, create a new array object
-    if called_as_function {
-        let p = activation.avm.prototypes.array;
-        array_obj = p.new(activation, context, p, &[])?;
+    if args.len() == 1 {
+        let arg = args.get(0).unwrap();
+        if let Ok(length) = arg.coerce_to_f64(activation, context) {
+            if length >= 0.0 {
+                this.set_length(context.gc_context, length as usize);
+                consumed = true;
+            } else if !length.is_nan() {
+                this.set_length(context.gc_context, 0);
+                consumed = true;
+            }
+        }
     }
+
+    if !consumed {
+        let mut length = 0;
+        for arg in args {
+            this.define_value(
+                context.gc_context,
+                &length.to_string(),
+                arg.to_owned(),
+                EnumSet::empty(),
+            );
+            length += 1;
+        }
+        this.set_length(context.gc_context, length);
+    }
+
+    Ok(Value::Undefined)
+}
+
+
+/// Implements `Array` function
+pub fn array_function<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let mut consumed = false;
+
+    let p = activation.avm.prototypes.array;
+    let array_obj = p.new(activation, context, p, &[])?;
+    let _ = constructor(activation, context, array_obj, args)?;
 
     if args.len() == 1 {
         let arg = args.get(0).unwrap();
@@ -111,7 +147,7 @@ pub fn constructor<'gc>(
             if length >= 0.0 {
                 array_obj.set_length(context.gc_context, length as usize);
                 consumed = true;
-            } else if called_as_function && !length.is_nan() {
+            } else if !length.is_nan() {
                 array_obj.set_length(context.gc_context, 0);
                 consumed = true;
             }
@@ -121,26 +157,13 @@ pub fn constructor<'gc>(
     if !consumed {
         let mut length = 0;
         for arg in args {
-            if called_as_function {
-                array_obj.set_array_element(length, arg.to_owned(), context.gc_context);
-            } else {
-                array_obj.define_value(
-                    context.gc_context,
-                    &length.to_string(),
-                    arg.to_owned(),
-                    EnumSet::empty(),
-                );
-            }
+            array_obj.set_array_element(length, arg.to_owned(), context.gc_context);
             length += 1;
         }
         array_obj.set_length(context.gc_context, length);
     }
 
-    if called_as_function {
-        Ok(array_obj.into())
-    } else {
-        Ok(Value::Undefined)
-    }
+    Ok(array_obj.into())
 }
 
 pub fn push<'gc>(
