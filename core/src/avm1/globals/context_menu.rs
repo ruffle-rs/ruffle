@@ -22,7 +22,9 @@ pub fn constructor<'gc>(
 
     let obj_proto = activation.avm.prototypes.object;
     let built_in_items = obj_proto.new(activation, context, obj_proto, &[])?;
-    let _ = crate::avm1::globals::object::constructor(activation, context, built_in_items, &[]);
+    let constructor = activation.avm.prototypes.object_constructor;
+    constructor.construct(activation, context, built_in_items, &[])?;
+
     built_in_items.set("print", true.into(), activation, context)?;
     built_in_items.set("forward_back", true.into(), activation, context)?;
     built_in_items.set("rewind", true.into(), activation, context)?;
@@ -36,7 +38,8 @@ pub fn constructor<'gc>(
 
     let array_proto = activation.avm.prototypes.array;
     let custom_items = array_proto.new(activation, context, array_proto, &[])?;
-    let _ = crate::avm1::globals::array::constructor(activation, context, custom_items, &[]);
+    let constructor = activation.avm.prototypes.array_constructor;
+    constructor.construct(activation, context, custom_items, &[])?;
 
     this.set("customItems", custom_items.into(), activation, context)?;
 
@@ -55,7 +58,8 @@ pub fn copy<'gc>(
 
     let context_menu_proto = activation.avm.prototypes.context_menu;
     let copy = context_menu_proto.new(activation, context, context_menu_proto, &[])?;
-    let _ = constructor(activation, context, copy, &[callback.into()]);
+    let constructor = activation.avm.prototypes.context_menu_constructor;
+    constructor.construct(activation, context, copy, &[callback.into()])?;
 
     let built_in = this
         .get("builtInItems", activation, context)?

@@ -207,24 +207,31 @@ pub fn update_after_event<'a, 'gc>(
 pub struct SystemPrototypes<'gc> {
     pub button: Object<'gc>,
     pub object: Object<'gc>,
+    pub object_constructor: Object<'gc>,
     pub function: Object<'gc>,
     pub movie_clip: Object<'gc>,
     pub sound: Object<'gc>,
     pub text_field: Object<'gc>,
     pub text_format: Object<'gc>,
     pub array: Object<'gc>,
+    pub array_constructor: Object<'gc>,
     pub xml_node: Object<'gc>,
     pub string: Object<'gc>,
     pub number: Object<'gc>,
     pub boolean: Object<'gc>,
     pub matrix: Object<'gc>,
+    pub matrix_constructor: Object<'gc>,
     pub point: Object<'gc>,
+    pub point_constructor: Object<'gc>,
     pub rectangle: Object<'gc>,
     pub rectangle_constructor: Object<'gc>,
     pub shared_object: Object<'gc>,
+    pub shared_object_constructor: Object<'gc>,
     pub color_transform: Object<'gc>,
     pub context_menu: Object<'gc>,
+    pub context_menu_constructor: Object<'gc>,
     pub context_menu_item: Object<'gc>,
+    pub context_menu_item_constructor: Object<'gc>,
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
@@ -442,29 +449,29 @@ pub fn create_globals<'gc>(
         DontEnum.into(),
     );
 
+    let context_menu = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(context_menu::constructor),
+        Some(function_proto),
+        Some(context_menu_proto),
+    );
     globals.define_value(
         gc_context,
         "ContextMenu",
-        FunctionObject::constructor(
-            gc_context,
-            Executable::Native(context_menu::constructor),
-            Some(function_proto),
-            Some(context_menu_proto),
-        )
-        .into(),
+        context_menu.into(),
         DontEnum.into(),
     );
 
+    let context_menu_item = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(context_menu_item::constructor),
+        Some(function_proto),
+        Some(context_menu_item_proto),
+    );
     globals.define_value(
         gc_context,
         "ContextMenuItem",
-        FunctionObject::constructor(
-            gc_context,
-            Executable::Native(context_menu_item::constructor),
-            Some(function_proto),
-            Some(context_menu_item_proto),
-        )
-        .into(),
+        context_menu_item.into(),
         DontEnum.into(),
     );
 
@@ -610,24 +617,31 @@ pub fn create_globals<'gc>(
         SystemPrototypes {
             button: button_proto,
             object: object_proto,
+            object_constructor: object,
             function: function_proto,
             movie_clip: movie_clip_proto,
             sound: sound_proto,
             text_field: text_field_proto,
             text_format: text_format_proto,
             array: array_proto,
+            array_constructor: array,
             xml_node: xmlnode_proto,
             string: string_proto,
             number: number_proto,
             boolean: boolean_proto,
             matrix: matrix_proto,
+            matrix_constructor: matrix,
             point: point_proto,
+            point_constructor: point,
             rectangle: rectangle_proto,
             rectangle_constructor: rectangle,
             shared_object: shared_object_proto,
+            shared_object_constructor: shared_obj,
             color_transform: color_transform_proto,
             context_menu: context_menu_proto,
+            context_menu_constructor: context_menu,
             context_menu_item: context_menu_item_proto,
+            context_menu_item_constructor: context_menu_item,
         },
         globals.into(),
         broadcaster_functions,

@@ -138,7 +138,8 @@ pub fn array_function<'gc>(
 
     let p = activation.avm.prototypes.array;
     let array_obj = p.new(activation, context, p, &[])?;
-    let _ = constructor(activation, context, array_obj, args)?;
+    let constructor = activation.avm.prototypes.array_constructor;
+    constructor.construct(activation, context, array_obj, args)?;
 
     if args.len() == 1 {
         let arg = args.get(0).unwrap();

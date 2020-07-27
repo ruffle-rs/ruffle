@@ -87,7 +87,8 @@ pub fn copy<'gc>(
 
     let context_menu_item_proto = activation.avm.prototypes.context_menu_item;
     let copy = context_menu_item_proto.new(activation, context, context_menu_item_proto, &[])?;
-    let _ = constructor(
+    let constructor = activation.avm.prototypes.context_menu_item_constructor;
+    constructor.construct(
         activation,
         context,
         copy,
@@ -98,7 +99,7 @@ pub fn copy<'gc>(
             enabled.into(),
             visible.into(),
         ],
-    );
+    )?;
 
     Ok(copy.into())
 }

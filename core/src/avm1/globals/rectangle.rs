@@ -131,7 +131,8 @@ fn clone<'gc>(
         this.get("height", activation, context)?,
     ];
     let cloned = proto.new(activation, context, proto, &args)?;
-    let _ = constructor(activation, context, cloned, &args)?;
+    let constructor = activation.avm.prototypes.rectangle_constructor;
+    constructor.construct(activation, context, cloned, &args)?;
     Ok(cloned.into())
 }
 
@@ -390,7 +391,8 @@ fn union<'gc>(
         Value::Number(height),
     ];
     let result = proto.new(activation, context, proto, &args)?;
-    let _ = constructor(activation, context, result, &args)?;
+    let constructor = activation.avm.prototypes.rectangle_constructor;
+    constructor.construct(activation, context, result, &args)?;
     Ok(result.into())
 }
 
@@ -613,7 +615,8 @@ fn intersection<'gc>(
         Value::Number(bottom - top),
     ];
     let result = proto.new(activation, context, proto, &args)?;
-    let _ = constructor(activation, context, result, &args)?;
+    let constructor = activation.avm.prototypes.rectangle_constructor;
+    constructor.construct(activation, context, result, &args)?;
     Ok(result.into())
 }
 

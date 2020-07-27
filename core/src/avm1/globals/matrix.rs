@@ -132,7 +132,8 @@ pub fn matrix_to_object<'gc>(
         matrix.ty.to_pixels().into(),
     ];
     let object = proto.new(activation, context, proto, &args)?;
-    let _ = constructor(activation, context, object, &args)?;
+    let constructor = activation.avm.prototypes.matrix_constructor;
+    constructor.construct(activation, context, object, &args)?;
     Ok(object)
 }
 
@@ -209,7 +210,8 @@ fn clone<'gc>(
         this.get("ty", activation, context)?,
     ];
     let cloned = proto.new(activation, context, proto, &args)?;
-    let _ = constructor(activation, context, cloned, &args)?;
+    let constructor = activation.avm.prototypes.matrix_constructor;
+    constructor.construct(activation, context, cloned, &args)?;
     Ok(cloned.into())
 }
 
