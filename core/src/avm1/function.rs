@@ -578,9 +578,25 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        this: Object<'gc>,
+        mut this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
+        this.set("__constructor__", (*self).into(), activation, context)?;
+        this.set_attributes(
+            context.gc_context,
+            Some("__constructor__"),
+            Attribute::DontEnum.into(),
+            EnumSet::empty(),
+        );
+        if activation.current_swf_version() < 7 {
+            this.set("constructor", (*self).into(), activation, context)?;
+            this.set_attributes(
+                context.gc_context,
+                Some("constructor"),
+                Attribute::DontEnum.into(),
+                EnumSet::empty(),
+            );
+        }
         if let Some(exec) = &self.data.read().constructor {
             exec.exec(
                 "[ctor]",

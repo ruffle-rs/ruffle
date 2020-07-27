@@ -1728,23 +1728,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 .get("prototype", self, context)?
                 .coerce_to_object(self, context);
 
-            let mut this = prototype.new(self, context, prototype, &args)?;
-            this.set("__constructor__", constructor.into(), self, context)?;
-            this.set_attributes(
-                context.gc_context,
-                Some("__constructor__"),
-                Attribute::DontEnum.into(),
-                EnumSet::empty(),
-            );
-            if self.current_swf_version() < 7 {
-                this.set("constructor", constructor.into(), self, context)?;
-                this.set_attributes(
-                    context.gc_context,
-                    Some("constructor"),
-                    Attribute::DontEnum.into(),
-                    EnumSet::empty(),
-                );
-            }
+            let this = prototype.new(self, context, prototype, &args)?;
 
             //TODO: What happens if you `ActionNewMethod` without a method name?
             constructor.construct(self, context, this, &args)?;
@@ -1781,23 +1765,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             .get("prototype", self, context)?
             .coerce_to_object(self, context);
 
-        let mut this = prototype.new(self, context, prototype, &args)?;
-        this.set("__constructor__", constructor.into(), self, context)?;
-        this.set_attributes(
-            context.gc_context,
-            Some("__constructor__"),
-            Attribute::DontEnum.into(),
-            EnumSet::empty(),
-        );
-        if self.current_swf_version() < 7 {
-            this.set("constructor", constructor.into(), self, context)?;
-            this.set_attributes(
-                context.gc_context,
-                Some("constructor"),
-                Attribute::DontEnum.into(),
-                EnumSet::empty(),
-            );
-        }
+        let this = prototype.new(self, context, prototype, &args)?;
 
         constructor.construct(self, context, this, &args)?;
 
