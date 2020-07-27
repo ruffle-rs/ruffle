@@ -4,3 +4,6 @@ Test
 [type Function]
 11234
 [type Object]
+[type Object]
+[type Object]
+undefined
