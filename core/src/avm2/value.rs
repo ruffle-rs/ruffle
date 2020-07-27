@@ -107,35 +107,15 @@ impl<'gc> From<Namespace<'gc>> for Value<'gc> {
 
 impl PartialEq for Value<'_> {
     fn eq(&self, other: &Self) -> bool {
-        match self {
-            Value::Undefined => match other {
-                Value::Undefined => true,
-                _ => false,
-            },
-            Value::Null => match other {
-                Value::Null => true,
-                _ => false,
-            },
-            Value::Bool(value) => match other {
-                Value::Bool(other_value) => value == other_value,
-                _ => false,
-            },
-            Value::Number(value) => match other {
-                Value::Number(other_value) => value == other_value,
-                _ => false,
-            },
-            Value::String(value) => match other {
-                Value::String(other_value) => value == other_value,
-                _ => false,
-            },
-            Value::Object(value) => match other {
-                Value::Object(other_value) => Object::ptr_eq(*value, *other_value),
-                _ => false,
-            },
-            Value::Namespace(ns) => match other {
-                Value::Namespace(other_ns) => ns == other_ns,
-                _ => false,
-            },
+        match (self, other) {
+            (Value::Undefined, Value::Undefined) => true,
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => Object::ptr_eq(*a, *b),
+            (Value::Namespace(a), Value::Namespace(b)) => a == b,
+            _ => false,
         }
     }
 }

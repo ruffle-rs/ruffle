@@ -2269,11 +2269,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                     id,
                     place_object.depth.into(),
                     &place_object,
-                    if let PlaceObjectAction::Replace(_) = place_object.action {
-                        true
-                    } else {
-                        false
-                    },
+                    matches!(place_object.action, PlaceObjectAction::Replace(_)),
                 ) {
                     child
                 } else {
@@ -2481,11 +2477,10 @@ impl GotoPlaceObject {
 
     #[inline]
     fn modifies_original_item(&self) -> bool {
-        if let swf::PlaceObjectAction::Replace(_) = &self.place_object.action {
-            true
-        } else {
-            false
-        }
+        matches!(
+            &self.place_object.action,
+            swf::PlaceObjectAction::Replace(_)
+        )
     }
 
     #[inline]

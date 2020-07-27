@@ -793,10 +793,7 @@ impl<'gc> XMLNode<'gc> {
     /// Document roots and elements can yield children, while all other
     /// elements are structurally prohibited from adopting child `XMLNode`s.
     pub fn has_children(self) -> bool {
-        match &*self.0.read() {
-            XMLNodeData::Element { .. } | XMLNodeData::DocumentRoot { .. } => true,
-            _ => false,
-        }
+        matches!(*self.0.read(), XMLNodeData::Element { .. } | XMLNodeData::DocumentRoot { .. })
     }
 
     /// Returns an iterator that yields child nodes.
@@ -937,43 +934,28 @@ impl<'gc> XMLNode<'gc> {
 
     /// Check if this XML node constitutes the root of a whole document.
     pub fn is_document_root(self) -> bool {
-        match &*self.0.read() {
-            XMLNodeData::DocumentRoot { .. } => true,
-            _ => false,
-        }
+        matches!(*self.0.read(), XMLNodeData::DocumentRoot { .. })
     }
 
     /// Check if this XML node constitutes an element.
     pub fn is_element(self) -> bool {
-        match &*self.0.read() {
-            XMLNodeData::Element { .. } => true,
-            _ => false,
-        }
+        matches!(*self.0.read(), XMLNodeData::Element { .. })
     }
 
     /// Check if this XML node constitutes text.
     pub fn is_text(self) -> bool {
-        match &*self.0.read() {
-            XMLNodeData::Text { .. } => true,
-            _ => false,
-        }
+        matches!(*self.0.read(), XMLNodeData::Text { .. })
     }
 
     /// Check if this XML node constitutes text.
     #[allow(dead_code)]
     pub fn is_comment(self) -> bool {
-        match &*self.0.read() {
-            XMLNodeData::Comment { .. } => true,
-            _ => false,
-        }
+        matches!(*self.0.read(), XMLNodeData::Comment { .. })
     }
 
     /// Check if this XML node constitutes a DOCTYPE declaration
     pub fn is_doctype(self) -> bool {
-        match &*self.0.read() {
-            XMLNodeData::DocType { .. } => true,
-            _ => false,
-        }
+        matches!(*self.0.read(), XMLNodeData::DocType { .. })
     }
 
     /// Create a duplicate copy of this node.

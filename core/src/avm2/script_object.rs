@@ -696,17 +696,17 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn has_own_virtual_getter(&self, name: &QName<'gc>) -> bool {
-        match self.values.get(name) {
-            Some(Property::Virtual { get: Some(_), .. }) => true,
-            _ => false,
-        }
+        matches!(
+            self.values.get(name),
+            Some(Property::Virtual { get: Some(_), .. })
+        )
     }
 
     pub fn has_own_virtual_setter(&self, name: &QName<'gc>) -> bool {
-        match self.values.get(name) {
-            Some(Property::Virtual { set: Some(_), .. }) => true,
-            _ => false,
-        }
+        matches!(
+            self.values.get(name),
+            Some(Property::Virtual { set: Some(_), .. })
+        )
     }
 
     pub fn proto(&self) -> Option<Object<'gc>> {
