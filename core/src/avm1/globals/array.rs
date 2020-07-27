@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object;
 use crate::avm1::property::Attribute;
-use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::cmp::Ordering;
@@ -23,15 +23,8 @@ const NUMERIC: i32 = 16;
 const DEFAULT_ORDERING: Ordering = Ordering::Equal;
 
 // Compare function used by sort and sortOn.
-type CompareFn<'a, 'gc> = Box<
-    dyn 'a
-        + FnMut(
-            &mut Activation<'_, 'gc>,
-            &mut UpdateContext<'_, 'gc, '_>,
-            &Value<'gc>,
-            &Value<'gc>,
-        ) -> Ordering,
->;
+type CompareFn<'a, 'gc> =
+    Box<dyn 'a + FnMut(&mut Activation<'_, '_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering>;
 
 pub fn create_array_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
@@ -90,8 +83,7 @@ pub fn create_array_object<'gc>(
 
 /// Implements `Array` constructor
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -99,12 +91,12 @@ pub fn constructor<'gc>(
 
     if args.len() == 1 {
         let arg = args.get(0).unwrap();
-        if let Ok(length) = arg.coerce_to_f64(activation, context) {
+        if let Ok(length) = arg.coerce_to_f64(activation) {
             if length >= 0.0 {
-                this.set_length(context.gc_context, length as usize);
+                this.set_length(activation.context.gc_context, length as usize);
                 consumed = true;
             } else if !length.is_nan() {
-                this.set_length(context.gc_context, 0);
+                this.set_length(activation.context.gc_context, 0);
                 consumed = true;
             }
         }
@@ -114,14 +106,14 @@ pub fn constructor<'gc>(
         let mut length = 0;
         for arg in args {
             this.define_value(
-                context.gc_context,
+                activation.context.gc_context,
                 &length.to_string(),
                 arg.to_owned(),
                 EnumSet::empty(),
             );
             length += 1;
         }
-        this.set_length(context.gc_context, length);
+        this.set_length(activation.context.gc_context, length);
     }
 
     Ok(Value::Undefined)
@@ -129,24 +121,23 @@ pub fn constructor<'gc>(
 
 /// Implements `Array` function
 pub fn array_function<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut consumed = false;
 
     let prototype = activation.avm.prototypes.array;
-    let array_obj = prototype.create_bare_object(activation, context, prototype)?;
+    let array_obj = prototype.create_bare_object(activation, prototype)?;
 
     if args.len() == 1 {
         let arg = args.get(0).unwrap();
-        if let Ok(length) = arg.coerce_to_f64(activation, context) {
+        if let Ok(length) = arg.coerce_to_f64(activation) {
             if length >= 0.0 {
-                array_obj.set_length(context.gc_context, length as usize);
+                array_obj.set_length(activation.context.gc_context, length as usize);
                 consumed = true;
             } else if !length.is_nan() {
-                array_obj.set_length(context.gc_context, 0);
+                array_obj.set_length(activation.context.gc_context, 0);
                 consumed = true;
             }
         }
@@ -155,30 +146,29 @@ pub fn array_function<'gc>(
     if !consumed {
         let mut length = 0;
         for arg in args {
-            array_obj.set_array_element(length, arg.to_owned(), context.gc_context);
+            array_obj.set_array_element(length, arg.to_owned(), activation.context.gc_context);
             length += 1;
         }
-        array_obj.set_length(context.gc_context, length);
+        array_obj.set_length(activation.context.gc_context, length);
     }
 
     Ok(array_obj.into())
 }
 
 pub fn push<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let old_length = this.length();
     let new_length = old_length + args.len();
-    this.set_length(context.gc_context, new_length);
+    this.set_length(activation.context.gc_context, new_length);
 
     for i in 0..args.len() {
         this.set_array_element(
             old_length + i,
             args.get(i).unwrap().to_owned(),
-            context.gc_context,
+            activation.context.gc_context,
         );
     }
 
@@ -186,8 +176,7 @@ pub fn push<'gc>(
 }
 
 pub fn unshift<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -197,22 +186,29 @@ pub fn unshift<'gc>(
 
     if old_length > 0 {
         for i in (old_length - 1..new_length).rev() {
-            this.set_array_element(i, this.array_element(i - offset), context.gc_context);
+            this.set_array_element(
+                i,
+                this.array_element(i - offset),
+                activation.context.gc_context,
+            );
         }
     }
 
     for i in 0..args.len() {
-        this.set_array_element(i, args.get(i).unwrap().to_owned(), context.gc_context);
+        this.set_array_element(
+            i,
+            args.get(i).unwrap().to_owned(),
+            activation.context.gc_context,
+        );
     }
 
-    this.set_length(context.gc_context, new_length);
+    this.set_length(activation.context.gc_context, new_length);
 
     Ok((new_length as f64).into())
 }
 
 pub fn shift<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -226,20 +222,19 @@ pub fn shift<'gc>(
     let removed = this.array_element(0);
 
     for i in 0..new_length {
-        this.set_array_element(i, this.array_element(i + 1), context.gc_context);
+        this.set_array_element(i, this.array_element(i + 1), activation.context.gc_context);
     }
 
-    this.delete_array_element(new_length, context.gc_context);
-    this.delete(activation, context.gc_context, &new_length.to_string());
+    this.delete_array_element(new_length, activation.context.gc_context);
+    this.delete(activation, &new_length.to_string());
 
-    this.set_length(context.gc_context, new_length);
+    this.set_length(activation.context.gc_context, new_length);
 
     Ok(removed)
 }
 
 pub fn pop<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -251,17 +246,16 @@ pub fn pop<'gc>(
     let new_length = old_length - 1;
 
     let removed = this.array_element(new_length);
-    this.delete_array_element(new_length, context.gc_context);
-    this.delete(activation, context.gc_context, &new_length.to_string());
+    this.delete_array_element(new_length, activation.context.gc_context);
+    this.delete(activation, &new_length.to_string());
 
-    this.set_length(context.gc_context, new_length);
+    this.set_length(activation.context.gc_context, new_length);
 
     Ok(removed)
 }
 
 pub fn reverse<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -269,30 +263,29 @@ pub fn reverse<'gc>(
     let mut values = this.array().to_vec();
 
     for i in 0..length {
-        this.set_array_element(i, values.pop().unwrap(), context.gc_context);
+        this.set_array_element(i, values.pop().unwrap(), activation.context.gc_context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn join<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let separator = args
         .get(0)
-        .and_then(|v| v.coerce_to_string(activation, context).ok())
+        .and_then(|v| v.coerce_to_string(activation).ok())
         .unwrap_or_else(|| ",".into());
     let values: Vec<Value<'gc>> = this.array();
 
     Ok(AvmString::new(
-        context.gc_context,
+        activation.context.gc_context,
         values
             .iter()
             .map(|v| {
-                v.coerce_to_string(activation, context)
+                v.coerce_to_string(activation)
                     .unwrap_or_else(|_| "undefined".into())
                     .to_string()
             })
@@ -314,30 +307,36 @@ fn make_index_absolute(mut index: i32, length: usize) -> usize {
 }
 
 pub fn slice<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let start = args
         .get(0)
-        .and_then(|v| v.coerce_to_f64(activation, context).ok())
+        .and_then(|v| v.coerce_to_f64(activation).ok())
         .map(|v| make_index_absolute(v as i32, this.length()))
         .unwrap_or(0);
     let end = args
         .get(1)
-        .and_then(|v| v.coerce_to_f64(activation, context).ok())
+        .and_then(|v| v.coerce_to_f64(activation).ok())
         .map(|v| make_index_absolute(v as i32, this.length()))
         .unwrap_or_else(|| this.length());
 
-    let array = ScriptObject::array(context.gc_context, Some(activation.avm.prototypes.array));
+    let array = ScriptObject::array(
+        activation.context.gc_context,
+        Some(activation.avm.prototypes.array),
+    );
 
     if start < end {
         let length = end - start;
-        array.set_length(context.gc_context, length);
+        array.set_length(activation.context.gc_context, length);
 
         for i in 0..length {
-            array.set_array_element(i, this.array_element(start + i), context.gc_context);
+            array.set_array_element(
+                i,
+                this.array_element(start + i),
+                activation.context.gc_context,
+            );
         }
     }
 
@@ -345,8 +344,7 @@ pub fn slice<'gc>(
 }
 
 pub fn splice<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -357,35 +355,42 @@ pub fn splice<'gc>(
     let old_length = this.length();
     let start = args
         .get(0)
-        .and_then(|v| v.coerce_to_f64(activation, context).ok())
+        .and_then(|v| v.coerce_to_f64(activation).ok())
         .map(|v| make_index_absolute(v as i32, old_length))
         .unwrap_or(0);
     let count = args
         .get(1)
-        .and_then(|v| v.coerce_to_f64(activation, context).ok())
+        .and_then(|v| v.coerce_to_f64(activation).ok())
         .map(|v| v as i32)
         .unwrap_or(old_length as i32);
     if count < 0 {
         return Ok(Value::Undefined);
     }
 
-    let removed = ScriptObject::array(context.gc_context, Some(activation.avm.prototypes.array));
+    let removed = ScriptObject::array(
+        activation.context.gc_context,
+        Some(activation.avm.prototypes.array),
+    );
     let to_remove = count.min(old_length as i32 - start as i32).max(0) as usize;
     let to_add = if args.len() > 2 { &args[2..] } else { &[] };
     let offset = to_remove as i32 - to_add.len() as i32;
     let new_length = old_length + to_add.len() - to_remove;
 
     for i in start..start + to_remove {
-        removed.set_array_element(i - start, this.array_element(i), context.gc_context);
+        removed.set_array_element(
+            i - start,
+            this.array_element(i),
+            activation.context.gc_context,
+        );
     }
-    removed.set_length(context.gc_context, to_remove);
+    removed.set_length(activation.context.gc_context, to_remove);
 
     if offset < 0 {
         for i in (start + to_add.len()..new_length).rev() {
             this.set_array_element(
                 i,
                 this.array_element((i as i32 + offset) as usize),
-                context.gc_context,
+                activation.context.gc_context,
             );
         }
     } else {
@@ -393,7 +398,7 @@ pub fn splice<'gc>(
             this.set_array_element(
                 i,
                 this.array_element((i as i32 + offset) as usize),
-                context.gc_context,
+                activation.context.gc_context,
             );
         }
     }
@@ -402,35 +407,37 @@ pub fn splice<'gc>(
         this.set_array_element(
             start + i,
             to_add.get(i).unwrap().to_owned(),
-            context.gc_context,
+            activation.context.gc_context,
         );
     }
 
     for i in new_length..old_length {
-        this.delete_array_element(i, context.gc_context);
-        this.delete(activation, context.gc_context, &i.to_string());
+        this.delete_array_element(i, activation.context.gc_context);
+        this.delete(activation, &i.to_string());
     }
 
-    this.set_length(context.gc_context, new_length);
+    this.set_length(activation.context.gc_context, new_length);
 
     Ok(removed.into())
 }
 
 pub fn concat<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let array = ScriptObject::array(context.gc_context, Some(activation.avm.prototypes.array));
+    let array = ScriptObject::array(
+        activation.context.gc_context,
+        Some(activation.avm.prototypes.array),
+    );
     let mut length = 0;
 
     for i in 0..this.length() {
         let old = this
-            .get(&i.to_string(), activation, context)
+            .get(&i.to_string(), activation)
             .unwrap_or(Value::Undefined);
         array.define_value(
-            context.gc_context,
+            activation.context.gc_context,
             &length.to_string(),
             old,
             EnumSet::empty(),
@@ -447,10 +454,10 @@ pub fn concat<'gc>(
                 added = true;
                 for i in 0..object.length() {
                     let old = object
-                        .get(&i.to_string(), activation, context)
+                        .get(&i.to_string(), activation)
                         .unwrap_or(Value::Undefined);
                     array.define_value(
-                        context.gc_context,
+                        activation.context.gc_context,
                         &length.to_string(),
                         old,
                         EnumSet::empty(),
@@ -462,7 +469,7 @@ pub fn concat<'gc>(
 
         if !added {
             array.define_value(
-                context.gc_context,
+                activation.context.gc_context,
                 &length.to_string(),
                 arg.clone(),
                 EnumSet::empty(),
@@ -471,23 +478,21 @@ pub fn concat<'gc>(
         }
     }
 
-    array.set_length(context.gc_context, length);
+    array.set_length(activation.context.gc_context, length);
 
     Ok(array.into())
 }
 
 pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    join(activation, context, this, &[])
+    join(activation, this, &[])
 }
 
 fn sort<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -516,10 +521,10 @@ fn sort<'gc>(
     };
 
     let compare_fn: CompareFn<'_, 'gc> = if let Some(f) = compare_fn {
-        let this = value_object::ValueObject::boxed(activation, context, Value::Undefined);
+        let this = value_object::ValueObject::boxed(activation, Value::Undefined);
         // this is undefined in the compare function
-        Box::new(move |activation, context, a: &Value<'gc>, b: &Value<'gc>| {
-            sort_compare_custom(activation, context, this, a, b, &f)
+        Box::new(move |activation, a: &Value<'gc>, b: &Value<'gc>| {
+            sort_compare_custom(activation, this, a, b, &f)
         })
     } else if numeric {
         Box::new(sort_compare_numeric(string_compare_fn))
@@ -527,12 +532,11 @@ fn sort<'gc>(
         Box::new(string_compare_fn)
     };
 
-    sort_with_function(activation, context, this, compare_fn, flags)
+    sort_with_function(activation, this, compare_fn, flags)
 }
 
 fn sort_on<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -544,15 +548,13 @@ fn sort_on<'gc>(
             // Array of field names.
             let mut field_names = vec![];
             for name in array.array() {
-                field_names.push(name.coerce_to_string(activation, context)?.to_string());
+                field_names.push(name.coerce_to_string(activation)?.to_string());
             }
             field_names
         }
         Some(field_name) => {
             // Single field.
-            vec![field_name
-                .coerce_to_string(activation, context)?
-                .to_string()]
+            vec![field_name.coerce_to_string(activation)?.to_string()]
         }
         None => return Ok(Value::Undefined),
     };
@@ -568,7 +570,7 @@ fn sort_on<'gc>(
             if array.length() == fields.len() {
                 let mut flags = vec![];
                 for flag in array.array() {
-                    flags.push(flag.coerce_to_i32(activation, context)?);
+                    flags.push(flag.coerce_to_i32(activation)?);
                 }
                 flags
             } else {
@@ -578,7 +580,7 @@ fn sort_on<'gc>(
         }
         Some(flags) => {
             // Single field.
-            let flags = flags.coerce_to_i32(activation, context)?;
+            let flags = flags.coerce_to_i32(activation)?;
             std::iter::repeat(flags).take(fields.len()).collect()
         }
         None => std::iter::repeat(0).take(fields.len()).collect(),
@@ -610,19 +612,13 @@ fn sort_on<'gc>(
 
     let compare_fn = sort_compare_fields(fields, field_compare_fns);
 
-    sort_with_function(activation, context, this, compare_fn, main_flags)
+    sort_with_function(activation, this, compare_fn, main_flags)
 }
 
 fn sort_with_function<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
-    mut compare_fn: impl FnMut(
-        &mut Activation<'_, 'gc>,
-        &mut UpdateContext<'_, 'gc, '_>,
-        &Value<'gc>,
-        &Value<'gc>,
-    ) -> Ordering,
+    mut compare_fn: impl FnMut(&mut Activation<'_, '_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering,
     flags: i32,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length();
@@ -635,7 +631,7 @@ fn sort_with_function<'gc>(
 
     let mut is_unique = true;
     values.sort_unstable_by(|a, b| {
-        let mut ret = compare_fn(activation, context, &a.1, &b.1);
+        let mut ret = compare_fn(activation, &a.1, &b.1);
         if descending {
             ret = ret.reverse();
         }
@@ -655,17 +651,21 @@ fn sort_with_function<'gc>(
     if return_indexed_array {
         // Array.RETURNINDEXEDARRAY returns an array containing the sorted indices, and does not modify
         // the original array.
-        let array = ScriptObject::array(context.gc_context, Some(array_proto));
-        array.set_length(context.gc_context, length);
+        let array = ScriptObject::array(activation.context.gc_context, Some(array_proto));
+        array.set_length(activation.context.gc_context, length);
         for (i, value) in values.into_iter().enumerate() {
-            array.set_array_element(i, Value::Number(value.0 as f64), context.gc_context);
+            array.set_array_element(
+                i,
+                Value::Number(value.0 as f64),
+                activation.context.gc_context,
+            );
         }
         Ok(array.into())
     } else {
         // Standard sort modifies the original array, and returns it.
         // AS2 reference incorrectly states this returns nothing, but it returns the original array, sorted.
         for (i, value) in values.into_iter().enumerate() {
-            this.set_array_element(i, value.1, context.gc_context);
+            this.set_array_element(i, value.1, activation.context.gc_context);
         }
         Ok(this.into())
     }
@@ -762,13 +762,12 @@ pub fn create_proto<'gc>(
 }
 
 fn sort_compare_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     a: &Value<'gc>,
     b: &Value<'gc>,
 ) -> Ordering {
-    let a_str = a.coerce_to_string(activation, context);
-    let b_str = b.coerce_to_string(activation, context);
+    let a_str = a.coerce_to_string(activation);
+    let b_str = b.coerce_to_string(activation);
     // TODO: Handle errors.
     if let (Ok(a_str), Ok(b_str)) = (a_str, b_str) {
         a_str.cmp(&b_str)
@@ -778,13 +777,12 @@ fn sort_compare_string<'gc>(
 }
 
 fn sort_compare_string_ignore_case<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     a: &Value<'gc>,
     b: &Value<'gc>,
 ) -> Ordering {
-    let a_str = a.coerce_to_string(activation, context);
-    let b_str = b.coerce_to_string(activation, context);
+    let a_str = a.coerce_to_string(activation);
+    let b_str = b.coerce_to_string(activation);
     // TODO: Handle errors.
     if let (Ok(a_str), Ok(b_str)) = (a_str, b_str) {
         crate::string_utils::swf_string_cmp_ignore_case(&a_str, &b_str)
@@ -793,24 +791,14 @@ fn sort_compare_string_ignore_case<'gc>(
     }
 }
 
-fn sort_compare_numeric<'gc>(
-    mut string_compare_fn: impl FnMut(
-        &mut Activation<'_, 'gc>,
-        &mut UpdateContext<'_, 'gc, '_>,
-        &Value<'gc>,
-        &Value<'gc>,
-    ) -> Ordering,
-) -> impl FnMut(
-    &mut Activation<'_, 'gc>,
-    &mut UpdateContext<'_, 'gc, '_>,
-    &Value<'gc>,
-    &Value<'gc>,
-) -> Ordering {
-    move |activation, context, a, b| {
+fn sort_compare_numeric(
+    mut string_compare_fn: impl FnMut(&mut Activation, &Value, &Value) -> Ordering,
+) -> impl FnMut(&mut Activation, &Value, &Value) -> Ordering {
+    move |activation, a, b| {
         if let (Value::Number(a), Value::Number(b)) = (a, b) {
             a.partial_cmp(b).unwrap_or(DEFAULT_ORDERING)
         } else {
-            string_compare_fn(activation, context, a, b)
+            string_compare_fn(activation, a, b)
         }
     }
 }
@@ -818,22 +806,16 @@ fn sort_compare_numeric<'gc>(
 fn sort_compare_fields<'a, 'gc: 'a>(
     field_names: Vec<String>,
     mut compare_fns: Vec<CompareFn<'a, 'gc>>,
-) -> impl 'a
-       + FnMut(
-    &mut Activation<'_, 'gc>,
-    &mut UpdateContext<'_, 'gc, '_>,
-    &Value<'gc>,
-    &Value<'gc>,
-) -> Ordering {
+) -> impl 'a + FnMut(&mut Activation<'_, '_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering {
     use crate::avm1::object::value_object::ValueObject;
-    move |activation, context, a, b| {
+    move |activation, a, b| {
         for (field_name, compare_fn) in field_names.iter().zip(compare_fns.iter_mut()) {
-            let a_object = ValueObject::boxed(activation, context, a.clone());
-            let b_object = ValueObject::boxed(activation, context, b.clone());
-            let a_prop = a_object.get(field_name, activation, context).unwrap();
-            let b_prop = b_object.get(field_name, activation, context).unwrap();
+            let a_object = ValueObject::boxed(activation, a.clone());
+            let b_object = ValueObject::boxed(activation, b.clone());
+            let a_prop = a_object.get(field_name, activation).unwrap();
+            let b_prop = b_object.get(field_name, activation).unwrap();
 
-            let result = compare_fn(activation, context, &a_prop, &b_prop);
+            let result = compare_fn(activation, &a_prop, &b_prop);
             if result != Ordering::Equal {
                 return result;
             }
@@ -845,8 +827,7 @@ fn sort_compare_fields<'a, 'gc: 'a>(
 
 // Returning an impl Trait here doesn't work yet because of https://github.com/rust-lang/rust/issues/65805 (?)
 fn sort_compare_custom<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     a: &Value<'gc>,
     b: &Value<'gc>,
@@ -855,7 +836,7 @@ fn sort_compare_custom<'gc>(
     // TODO: Handle errors.
     let args = [a.clone(), b.clone()];
     let ret = compare_fn
-        .call("[Compare]", activation, context, this, None, &args)
+        .call("[Compare]", activation, this, None, &args)
         .unwrap_or(Value::Undefined);
     match ret {
         Value::Number(n) if n > 0.0 => Ordering::Greater,

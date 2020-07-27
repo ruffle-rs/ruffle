@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
 use rand::Rng;
 use std::f64::{INFINITY, NAN, NEG_INFINITY};
@@ -12,9 +12,9 @@ macro_rules! wrap_std {
         $(
             $object.force_set_function(
                 $name,
-                |activation, context, _this, args| -> Result<Value<'gc>, Error<'gc>> {
+                |activation, _this, args| -> Result<Value<'gc>, Error<'gc>> {
                     if let Some(input) = args.get(0) {
-                        Ok($std(input.coerce_to_f64(activation, context)?).into())
+                        Ok($std(input.coerce_to_f64(activation)?).into())
                     } else {
                         Ok(NAN.into())
                     }
@@ -28,50 +28,47 @@ macro_rules! wrap_std {
 }
 
 fn atan2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
             return Ok(y
-                .coerce_to_f64(activation, context)?
-                .atan2(x.coerce_to_f64(activation, context)?)
+                .coerce_to_f64(activation)?
+                .atan2(x.coerce_to_f64(activation)?)
                 .into());
         } else {
-            return Ok(y.coerce_to_f64(activation, context)?.atan2(0.0).into());
+            return Ok(y.coerce_to_f64(activation)?.atan2(0.0).into());
         }
     }
     Ok(NAN.into())
 }
 
 fn pow<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(y) = args.get(0) {
         if let Some(x) = args.get(1) {
-            let x = x.coerce_to_f64(activation, context)?;
+            let x = x.coerce_to_f64(activation)?;
             if x.is_nan() {
                 return Ok(NAN.into());
             }
-            return Ok(y.coerce_to_f64(activation, context)?.powf(x).into());
+            return Ok(y.coerce_to_f64(activation)?.powf(x).into());
         }
     }
     Ok(NAN.into())
 }
 
 fn round<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(x) = args.get(0) {
-        let x = x.coerce_to_f64(activation, context)?;
+        let x = x.coerce_to_f64(activation)?;
         // Note that Flash Math.round always rounds toward infinity,
         // unlike Rust f32::round which rounds away from zero.
         let ret = (x + 0.5).floor();
@@ -81,19 +78,18 @@ fn round<'gc>(
 }
 
 fn max<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(a) = args.get(0) {
         return if let Some(b) = args.get(1) {
-            match a.abstract_lt(b.to_owned(), activation, context)? {
+            match a.abstract_lt(b.to_owned(), activation)? {
                 Value::Bool(value) => {
                     if value {
-                        Ok(b.coerce_to_f64(activation, context)?.into())
+                        Ok(b.coerce_to_f64(activation)?.into())
                     } else {
-                        Ok(a.coerce_to_f64(activation, context)?.into())
+                        Ok(a.coerce_to_f64(activation)?.into())
                     }
                 }
                 _ => Ok(NAN.into()),
@@ -106,19 +102,18 @@ fn max<'gc>(
 }
 
 fn min<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(a) = args.get(0) {
         return if let Some(b) = args.get(1) {
-            match a.abstract_lt(b.to_owned(), activation, context)? {
+            match a.abstract_lt(b.to_owned(), activation)? {
                 Value::Bool(value) => {
                     if value {
-                        Ok(a.coerce_to_f64(activation, context)?.into())
+                        Ok(a.coerce_to_f64(activation)?.into())
                     } else {
-                        Ok(b.coerce_to_f64(activation, context)?.into())
+                        Ok(b.coerce_to_f64(activation)?.into())
                     }
                 }
                 _ => Ok(NAN.into()),
@@ -131,12 +126,11 @@ fn min<'gc>(
 }
 
 pub fn random<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(action_context.rng.gen_range(0.0f64, 1.0f64).into())
+    Ok(activation.context.rng.gen_range(0.0f64, 1.0f64).into())
 }
 
 pub fn create<'gc>(
@@ -261,12 +255,9 @@ mod tests {
     use super::*;
     use crate::avm1::test_utils::with_avm;
 
-    fn setup<'gc>(
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Object<'gc> {
+    fn setup<'gc>(activation: &mut Activation<'_, '_, 'gc, '_>) -> Object<'gc> {
         create(
-            context.gc_context,
+            activation.context.gc_context,
             Some(activation.avm.prototypes().object),
             Some(activation.avm.prototypes().function),
         )
@@ -482,24 +473,24 @@ mod tests {
 
     #[test]
     fn test_atan2_nan() {
-        with_avm(19, |activation, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, _root| -> Result<(), Error> {
             let math = create(
-                context.gc_context,
+                activation.context.gc_context,
                 Some(activation.avm.prototypes().object),
                 Some(activation.avm.prototypes().function),
             );
 
-            assert_eq!(atan2(activation, context, math, &[]).unwrap(), NAN.into());
+            assert_eq!(atan2(activation, math, &[]).unwrap(), NAN.into());
             assert_eq!(
-                atan2(activation, context, math, &[1.0.into(), Value::Null]).unwrap(),
+                atan2(activation, math, &[1.0.into(), Value::Null]).unwrap(),
                 NAN.into()
             );
             assert_eq!(
-                atan2(activation, context, math, &[1.0.into(), Value::Undefined]).unwrap(),
+                atan2(activation, math, &[1.0.into(), Value::Undefined]).unwrap(),
                 NAN.into()
             );
             assert_eq!(
-                atan2(activation, context, math, &[Value::Undefined, 1.0.into()]).unwrap(),
+                atan2(activation, math, &[Value::Undefined, 1.0.into()]).unwrap(),
                 NAN.into()
             );
             Ok(())
@@ -508,19 +499,19 @@ mod tests {
 
     #[test]
     fn test_atan2_valid() {
-        with_avm(19, |activation, context, _root| -> Result<(), Error> {
+        with_avm(19, |activation, _root| -> Result<(), Error> {
             let math = create(
-                context.gc_context,
+                activation.context.gc_context,
                 Some(activation.avm.prototypes().object),
                 Some(activation.avm.prototypes().function),
             );
 
             assert_eq!(
-                atan2(activation, context, math, &[10.0.into()]).unwrap(),
+                atan2(activation, math, &[10.0.into()]).unwrap(),
                 std::f64::consts::FRAC_PI_2.into()
             );
             assert_eq!(
-                atan2(activation, context, math, &[1.0.into(), 2.0.into()]).unwrap(),
+                atan2(activation, math, &[1.0.into(), 2.0.into()]).unwrap(),
                 f64::atan2(1.0, 2.0).into()
             );
             Ok(())

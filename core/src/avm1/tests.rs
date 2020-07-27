@@ -4,15 +4,13 @@ use crate::avm1::TObject;
 
 #[test]
 fn locals_into_form_values() {
-    with_avm(19, |activation, context, _this| -> Result<(), Error> {
+    with_avm(19, |activation, _this| -> Result<(), Error> {
         let my_locals = activation.scope().locals().to_owned();
         my_locals
-            .set("value1", "string".into(), activation, context)
+            .set("value1", "string".into(), activation)
             .unwrap();
-        my_locals
-            .set("value2", 2.0.into(), activation, context)
-            .unwrap();
-        let my_local_values = activation.locals_into_form_values(context);
+        my_locals.set("value2", 2.0.into(), activation).unwrap();
+        let my_local_values = activation.locals_into_form_values();
 
         assert_eq!(my_local_values.len(), 2);
         assert_eq!(my_local_values.get("value1"), Some(&"string".to_string()));

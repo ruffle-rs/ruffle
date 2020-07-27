@@ -6,46 +6,40 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::point::{construct_new_point, point_to_object, value_to_point};
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::f64::NAN;
 
 fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        this.set("x", 0.into(), activation, context)?;
-        this.set("y", 0.into(), activation, context)?;
-        this.set("width", 0.into(), activation, context)?;
-        this.set("height", 0.into(), activation, context)?;
+        this.set("x", 0.into(), activation)?;
+        this.set("y", 0.into(), activation)?;
+        this.set("width", 0.into(), activation)?;
+        this.set("height", 0.into(), activation)?;
     } else {
         this.set(
             "x",
             args.get(0).unwrap_or(&Value::Undefined).to_owned(),
             activation,
-            context,
         )?;
         this.set(
             "y",
             args.get(1).unwrap_or(&Value::Undefined).to_owned(),
             activation,
-            context,
         )?;
         this.set(
             "width",
             args.get(2).unwrap_or(&Value::Undefined).to_owned(),
             activation,
-            context,
         )?;
         this.set(
             "height",
             args.get(3).unwrap_or(&Value::Undefined).to_owned(),
             activation,
-            context,
         )?;
     }
 
@@ -53,24 +47,23 @@ fn constructor<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation, context)?;
-    let y = this.get("y", activation, context)?;
-    let width = this.get("width", activation, context)?;
-    let height = this.get("height", activation, context)?;
+    let x = this.get("x", activation)?;
+    let y = this.get("y", activation)?;
+    let width = this.get("width", activation)?;
+    let height = this.get("height", activation)?;
 
     Ok(AvmString::new(
-        context.gc_context,
+        activation.context.gc_context,
         format!(
             "(x={}, y={}, w={}, h={})",
-            x.coerce_to_string(activation, context)?,
-            y.coerce_to_string(activation, context)?,
-            width.coerce_to_string(activation, context)?,
-            height.coerce_to_string(activation, context)?
+            x.coerce_to_string(activation)?,
+            y.coerce_to_string(activation)?,
+            width.coerce_to_string(activation)?,
+            height.coerce_to_string(activation)?
         ),
     )
     .into())
@@ -90,53 +83,45 @@ pub fn create_rectangle_object<'gc>(
 }
 
 fn is_empty<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let width = this
-        .get("width", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let height = this
-        .get("height", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
+    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
     Ok((width <= 0.0 || height <= 0.0 || width.is_nan() || height.is_nan()).into())
 }
 
 fn set_empty<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.set("x", 0.into(), activation, context)?;
-    this.set("y", 0.into(), activation, context)?;
-    this.set("width", 0.into(), activation, context)?;
-    this.set("height", 0.into(), activation, context)?;
-    Ok(Value::Undefined)
+    this.set("x", 0.into(), activation)?;
+    this.set("y", 0.into(), activation)?;
+    this.set("width", 0.into(), activation)?;
+    this.set("height", 0.into(), activation)?;
+    Ok(Value::Undefined.into())
 }
 
 fn clone<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
-        this.get("x", activation, context)?,
-        this.get("y", activation, context)?,
-        this.get("width", activation, context)?,
-        this.get("height", activation, context)?,
+        this.get("x", activation)?,
+        this.get("y", activation)?,
+        this.get("width", activation)?,
+        this.get("height", activation)?,
     ];
     let constructor = activation.avm.prototypes.rectangle_constructor;
-    let cloned = constructor.construct(activation, context, &args)?;
+    let cloned = constructor.construct(activation, &args)?;
     Ok(cloned.into())
 }
 
 fn contains<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -146,70 +131,47 @@ fn contains<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     let y = args
         .get(1)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     if x.is_nan() || y.is_nan() {
         return Ok(Value::Undefined);
     }
 
-    let left = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let right = left
-        + this
-            .get("width", activation, context)?
-            .coerce_to_f64(activation, context)?;
-    let top = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let bottom = top
-        + this
-            .get("height", activation, context)?
-            .coerce_to_f64(activation, context)?;
+    let left = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let right = left + this.get("width", activation)?.coerce_to_f64(activation)?;
+    let top = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let bottom = top + this.get("height", activation)?.coerce_to_f64(activation)?;
 
     Ok((x >= left && x < right && y >= top && y < bottom).into())
 }
 
 fn contains_point<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (x, y) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
-        context,
     )?;
     if x.is_nan() || y.is_nan() {
         return Ok(Value::Undefined);
     }
 
-    let left = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let right = left
-        + this
-            .get("width", activation, context)?
-            .coerce_to_f64(activation, context)?;
-    let top = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let bottom = top
-        + this
-            .get("height", activation, context)?
-            .coerce_to_f64(activation, context)?;
+    let left = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let right = left + this.get("width", activation)?.coerce_to_f64(activation)?;
+    let top = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let bottom = top + this.get("height", activation)?.coerce_to_f64(activation)?;
 
     Ok((x >= left && x < right && y >= top && y < bottom).into())
 }
 
 fn contains_rectangle<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -219,35 +181,15 @@ fn contains_rectangle<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let this_left = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let this_top = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let this_right = this_left
-        + this
-            .get("width", activation, context)?
-            .coerce_to_f64(activation, context)?;
-    let this_bottom = this_top
-        + this
-            .get("height", activation, context)?
-            .coerce_to_f64(activation, context)?;
+    let this_left = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let this_top = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let this_right = this_left + this.get("width", activation)?.coerce_to_f64(activation)?;
+    let this_bottom = this_top + this.get("height", activation)?.coerce_to_f64(activation)?;
 
-    let other_left = other
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let other_top = other
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let other_right = other_left
-        + other
-            .get("width", activation, context)?
-            .coerce_to_f64(activation, context)?;
-    let other_bottom = other_top
-        + other
-            .get("height", activation, context)?
-            .coerce_to_f64(activation, context)?;
+    let other_left = other.get("x", activation)?.coerce_to_f64(activation)?;
+    let other_top = other.get("y", activation)?.coerce_to_f64(activation)?;
+    let other_right = other_left + other.get("width", activation)?.coerce_to_f64(activation)?;
+    let other_bottom = other_top + other.get("height", activation)?.coerce_to_f64(activation)?;
 
     if other_left.is_nan() || other_top.is_nan() || other_right.is_nan() || other_bottom.is_nan() {
         return Ok(Value::Undefined);
@@ -261,8 +203,7 @@ fn contains_rectangle<'gc>(
 }
 
 fn intersects<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -272,35 +213,15 @@ fn intersects<'gc>(
         return Ok(false.into());
     };
 
-    let this_left = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let this_top = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let this_right = this_left
-        + this
-            .get("width", activation, context)?
-            .coerce_to_f64(activation, context)?;
-    let this_bottom = this_top
-        + this
-            .get("height", activation, context)?
-            .coerce_to_f64(activation, context)?;
+    let this_left = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let this_top = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let this_right = this_left + this.get("width", activation)?.coerce_to_f64(activation)?;
+    let this_bottom = this_top + this.get("height", activation)?.coerce_to_f64(activation)?;
 
-    let other_left = other
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let other_top = other
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let other_right = other_left
-        + other
-            .get("width", activation, context)?
-            .coerce_to_f64(activation, context)?;
-    let other_bottom = other_top
-        + other
-            .get("height", activation, context)?
-            .coerce_to_f64(activation, context)?;
+    let other_left = other.get("x", activation)?.coerce_to_f64(activation)?;
+    let other_top = other.get("y", activation)?.coerce_to_f64(activation)?;
+    let other_right = other_left + other.get("width", activation)?.coerce_to_f64(activation)?;
+    let other_bottom = other_top + other.get("height", activation)?.coerce_to_f64(activation)?;
 
     Ok((this_left < other_right
         && this_right > other_left
@@ -310,41 +231,22 @@ fn intersects<'gc>(
 }
 
 fn union<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this_left = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let this_top = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let this_right = this_left
-        + this
-            .get("width", activation, context)?
-            .coerce_to_f64(activation, context)?;
-    let this_bottom = this_top
-        + this
-            .get("height", activation, context)?
-            .coerce_to_f64(activation, context)?;
+    let this_left = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let this_top = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let this_right = this_left + this.get("width", activation)?.coerce_to_f64(activation)?;
+    let this_bottom = this_top + this.get("height", activation)?.coerce_to_f64(activation)?;
 
     let (other_left, other_top, other_width, other_height) =
         if let Some(Value::Object(other)) = args.get(0) {
             (
-                other
-                    .get("x", activation, context)?
-                    .coerce_to_f64(activation, context)?,
-                other
-                    .get("y", activation, context)?
-                    .coerce_to_f64(activation, context)?,
-                other
-                    .get("width", activation, context)?
-                    .coerce_to_f64(activation, context)?,
-                other
-                    .get("height", activation, context)?
-                    .coerce_to_f64(activation, context)?,
+                other.get("x", activation)?.coerce_to_f64(activation)?,
+                other.get("y", activation)?.coerce_to_f64(activation)?,
+                other.get("width", activation)?.coerce_to_f64(activation)?,
+                other.get("height", activation)?.coerce_to_f64(activation)?,
             )
         } else {
             (NAN, NAN, NAN, NAN)
@@ -388,188 +290,119 @@ fn union<'gc>(
         Value::Number(height),
     ];
     let constructor = activation.avm.prototypes.rectangle_constructor;
-    let result = constructor.construct(activation, context, &args)?;
+    let result = constructor.construct(activation, &args)?;
     Ok(result.into())
 }
 
 fn inflate<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let y = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let width = this
-        .get("width", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let height = this
-        .get("height", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
+    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
     let horizontal = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     let vertical = args
         .get(1)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
 
-    this.set("x", Value::Number(x - horizontal), activation, context)?;
-    this.set("y", Value::Number(y - vertical), activation, context)?;
-    this.set(
-        "width",
-        Value::Number(width + horizontal * 2.0),
-        activation,
-        context,
-    )?;
-    this.set(
-        "height",
-        Value::Number(height + vertical * 2.0),
-        activation,
-        context,
-    )?;
+    this.set("x", Value::Number(x - horizontal), activation)?;
+    this.set("y", Value::Number(y - vertical), activation)?;
+    this.set("width", Value::Number(width + horizontal * 2.0), activation)?;
+    this.set("height", Value::Number(height + vertical * 2.0), activation)?;
 
     Ok(Value::Undefined)
 }
 
 fn inflate_point<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let y = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let width = this
-        .get("width", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let height = this
-        .get("height", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
+    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
     let (horizontal, vertical) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
-        context,
     )?;
 
-    this.set("x", Value::Number(x - horizontal), activation, context)?;
-    this.set("y", Value::Number(y - vertical), activation, context)?;
-    this.set(
-        "width",
-        Value::Number(width + horizontal * 2.0),
-        activation,
-        context,
-    )?;
-    this.set(
-        "height",
-        Value::Number(height + vertical * 2.0),
-        activation,
-        context,
-    )?;
+    this.set("x", Value::Number(x - horizontal), activation)?;
+    this.set("y", Value::Number(y - vertical), activation)?;
+    this.set("width", Value::Number(width + horizontal * 2.0), activation)?;
+    this.set("height", Value::Number(height + vertical * 2.0), activation)?;
 
     Ok(Value::Undefined)
 }
 
 fn offset<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let y = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
     let horizontal = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     let vertical = args
         .get(1)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
 
-    this.set("x", Value::Number(x + horizontal), activation, context)?;
-    this.set("y", Value::Number(y + vertical), activation, context)?;
+    this.set("x", Value::Number(x + horizontal), activation)?;
+    this.set("y", Value::Number(y + vertical), activation)?;
 
     Ok(Value::Undefined)
 }
 
 fn offset_point<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let y = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
     let (horizontal, vertical) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
-        context,
     )?;
 
-    this.set("x", Value::Number(x + horizontal), activation, context)?;
-    this.set("y", Value::Number(y + vertical), activation, context)?;
+    this.set("x", Value::Number(x + horizontal), activation)?;
+    this.set("y", Value::Number(y + vertical), activation)?;
 
     Ok(Value::Undefined)
 }
 
 fn intersection<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this_left = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let this_top = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let this_right = this_left
-        + this
-            .get("width", activation, context)?
-            .coerce_to_f64(activation, context)?;
-    let this_bottom = this_top
-        + this
-            .get("height", activation, context)?
-            .coerce_to_f64(activation, context)?;
+    let this_left = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let this_top = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let this_right = this_left + this.get("width", activation)?.coerce_to_f64(activation)?;
+    let this_bottom = this_top + this.get("height", activation)?.coerce_to_f64(activation)?;
 
     let (other_left, other_top, other_width, other_height) =
         if let Some(Value::Object(other)) = args.get(0) {
             (
-                other
-                    .get("x", activation, context)?
-                    .coerce_to_f64(activation, context)?,
-                other
-                    .get("y", activation, context)?
-                    .coerce_to_f64(activation, context)?,
-                other
-                    .get("width", activation, context)?
-                    .coerce_to_f64(activation, context)?,
-                other
-                    .get("height", activation, context)?
-                    .coerce_to_f64(activation, context)?,
+                other.get("x", activation)?.coerce_to_f64(activation)?,
+                other.get("y", activation)?.coerce_to_f64(activation)?,
+                other.get("width", activation)?.coerce_to_f64(activation)?,
+                other.get("height", activation)?.coerce_to_f64(activation)?,
             )
         } else {
             (NAN, NAN, NAN, NAN)
@@ -610,32 +443,31 @@ fn intersection<'gc>(
         Value::Number(bottom - top),
     ];
     let constructor = activation.avm.prototypes.rectangle_constructor;
-    let result = constructor.construct(activation, context, &args)?;
+    let result = constructor.construct(activation, &args)?;
     Ok(result.into())
 }
 
 fn equals<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(Value::Object(other)) = args.get(0) {
-        let this_x = this.get("x", activation, context)?;
-        let this_y = this.get("y", activation, context)?;
-        let this_width = this.get("width", activation, context)?;
-        let this_height = this.get("height", activation, context)?;
-        let other_x = other.get("x", activation, context)?;
-        let other_y = other.get("y", activation, context)?;
-        let other_width = other.get("width", activation, context)?;
-        let other_height = other.get("height", activation, context)?;
-        let proto = context.system_prototypes.rectangle;
-        let constructor = context.system_prototypes.rectangle_constructor;
+        let this_x = this.get("x", activation)?;
+        let this_y = this.get("y", activation)?;
+        let this_width = this.get("width", activation)?;
+        let this_height = this.get("height", activation)?;
+        let other_x = other.get("x", activation)?;
+        let other_y = other.get("y", activation)?;
+        let other_width = other.get("width", activation)?;
+        let other_height = other.get("height", activation)?;
+        let proto = activation.context.system_prototypes.rectangle;
+        let constructor = activation.context.system_prototypes.rectangle_constructor;
         return Ok((this_x == other_x
             && this_y == other_y
             && this_width == other_width
             && this_height == other_height
-            && other.is_instance_of(activation, context, constructor, proto)?)
+            && other.is_instance_of(activation, constructor, proto)?)
         .into());
     }
 
@@ -643,271 +475,206 @@ fn equals<'gc>(
 }
 
 fn get_left<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.get("x", activation, context)?)
+    Ok(this.get("x", activation)?.into())
 }
 
 fn set_left<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let new_left = args.get(0).unwrap_or(&Value::Undefined).to_owned();
-    let old_left = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let width = this
-        .get("width", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    this.set("x", new_left.clone(), activation, context)?;
+    let old_left = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
+    this.set("x", new_left.clone(), activation)?;
     this.set(
         "width",
-        Value::Number(width + (old_left - new_left.coerce_to_f64(activation, context)?)),
+        Value::Number(width + (old_left - new_left.coerce_to_f64(activation)?)),
         activation,
-        context,
     )?;
     Ok(Value::Undefined)
 }
 
 fn get_top<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.get("y", activation, context)?)
+    Ok(this.get("y", activation)?.into())
 }
 
 fn set_top<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let new_top = args.get(0).unwrap_or(&Value::Undefined).to_owned();
-    let old_top = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let height = this
-        .get("height", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    this.set("y", new_top.clone(), activation, context)?;
+    let old_top = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
+    this.set("y", new_top.clone(), activation)?;
     this.set(
         "height",
-        Value::Number(height + (old_top - new_top.coerce_to_f64(activation, context)?)),
+        Value::Number(height + (old_top - new_top.coerce_to_f64(activation)?)),
         activation,
-        context,
     )?;
     Ok(Value::Undefined)
 }
 
 fn get_right<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let width = this
-        .get("width", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
     Ok((x + width).into())
 }
 
 fn set_right<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let right = if let Some(arg) = args.get(0) {
-        arg.coerce_to_f64(activation, context)?
+        arg.coerce_to_f64(activation)?
     } else {
         NAN
     };
-    let x = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
 
-    this.set("width", Value::Number(right - x), activation, context)?;
+    this.set("width", Value::Number(right - x), activation)?;
 
     Ok(Value::Undefined)
 }
 
 fn get_bottom<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let y = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let height = this
-        .get("height", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
     Ok((y + height).into())
 }
 
 fn set_bottom<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let bottom = if let Some(arg) = args.get(0) {
-        arg.coerce_to_f64(activation, context)?
+        arg.coerce_to_f64(activation)?
     } else {
         NAN
     };
-    let y = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
 
-    this.set("height", Value::Number(bottom - y), activation, context)?;
+    this.set("height", Value::Number(bottom - y), activation)?;
 
     Ok(Value::Undefined)
 }
 
 fn get_size<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let width = this.get("width", activation, context)?;
-    let height = this.get("height", activation, context)?;
-    let point = construct_new_point(&[width, height], activation, context)?;
+    let width = this.get("width", activation)?;
+    let height = this.get("height", activation)?;
+    let point = construct_new_point(&[width, height], activation)?;
     Ok(point.into())
 }
 
 fn set_size<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (width, height) = if let Some(Value::Object(object)) = args.get(0) {
-        (
-            object.get("x", activation, context)?,
-            object.get("y", activation, context)?,
-        )
+        (object.get("x", activation)?, object.get("y", activation)?)
     } else {
         (Value::Undefined, Value::Undefined)
     };
 
-    this.set("width", width, activation, context)?;
-    this.set("height", height, activation, context)?;
+    this.set("width", width, activation)?;
+    this.set("height", height, activation)?;
 
     Ok(Value::Undefined)
 }
 
 fn get_top_left<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation, context)?;
-    let y = this.get("y", activation, context)?;
-    let point = construct_new_point(&[x, y], activation, context)?;
+    let x = this.get("x", activation)?;
+    let y = this.get("y", activation)?;
+    let point = construct_new_point(&[x, y], activation)?;
     Ok(point.into())
 }
 
 fn set_top_left<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (new_left, new_top) = if let Some(Value::Object(object)) = args.get(0) {
-        (
-            object.get("x", activation, context)?,
-            object.get("y", activation, context)?,
-        )
+        (object.get("x", activation)?, object.get("y", activation)?)
     } else {
         (Value::Undefined, Value::Undefined)
     };
-    let old_left = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let width = this
-        .get("width", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let old_top = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let height = this
-        .get("height", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let old_left = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
+    let old_top = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
 
-    this.set("x", new_left.clone(), activation, context)?;
-    this.set("y", new_top.clone(), activation, context)?;
+    this.set("x", new_left.clone(), activation)?;
+    this.set("y", new_top.clone(), activation)?;
     this.set(
         "width",
-        Value::Number(width + (old_left - new_left.coerce_to_f64(activation, context)?)),
+        Value::Number(width + (old_left - new_left.coerce_to_f64(activation)?)),
         activation,
-        context,
     )?;
     this.set(
         "height",
-        Value::Number(height + (old_top - new_top.coerce_to_f64(activation, context)?)),
+        Value::Number(height + (old_top - new_top.coerce_to_f64(activation)?)),
         activation,
-        context,
     )?;
 
     Ok(Value::Undefined)
 }
 
 fn get_bottom_right<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let y = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let width = this
-        .get("width", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let height = this
-        .get("height", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let point = point_to_object((x + width, y + height), activation, context)?;
+    let x = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let y = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let width = this.get("width", activation)?.coerce_to_f64(activation)?;
+    let height = this.get("height", activation)?.coerce_to_f64(activation)?;
+    let point = point_to_object((x + width, y + height), activation)?;
     Ok(point.into())
 }
 
 fn set_bottom_right<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (bottom, right) = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
-        context,
     )?;
-    let top = this
-        .get("x", activation, context)?
-        .coerce_to_f64(activation, context)?;
-    let left = this
-        .get("y", activation, context)?
-        .coerce_to_f64(activation, context)?;
+    let top = this.get("x", activation)?.coerce_to_f64(activation)?;
+    let left = this.get("y", activation)?.coerce_to_f64(activation)?;
 
-    this.set("width", Value::Number(bottom - top), activation, context)?;
-    this.set("height", Value::Number(right - left), activation, context)?;
+    this.set("width", Value::Number(bottom - top), activation)?;
+    this.set("height", Value::Number(right - left), activation)?;
 
     Ok(Value::Undefined)
 }

@@ -1081,17 +1081,17 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
                 let mut activation = Activation::from_nothing(
                     avm,
+                    context,
                     ActivationIdentifier::root("[Mouse Pick]"),
                     context.swf.version(),
                     avm.global_object_cell(),
-                    context.gc_context,
                     *context.levels.get(&0).unwrap(),
                 );
-                let object = self.object().coerce_to_object(&mut activation, context);
+                let object = self.object().coerce_to_object(&mut activation);
 
                 if ClipEvent::BUTTON_EVENT_METHODS
                     .iter()
-                    .any(|handler| object.has_property(&mut activation, context, handler))
+                    .any(|handler| object.has_property(&mut activation, handler))
                 {
                     return Some(self_node);
                 }
@@ -1147,34 +1147,33 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if instantiated_from_avm && self.0.read().avm1_constructor.is_some() {
                 let mut activation = Activation::from_nothing(
                     avm,
+                    context,
                     ActivationIdentifier::root("[Construct]"),
                     context.swf.version(),
                     avm.global_object_cell(),
-                    context.gc_context,
                     (*self).into(),
                 );
 
                 let constructor = self.0.read().avm1_constructor.unwrap();
                 if let Ok(prototype) = constructor
-                    .get("prototype", &mut activation, context)
-                    .map(|v| v.coerce_to_object(&mut activation, context))
+                    .get("prototype", &mut activation)
+                    .map(|v| v.coerce_to_object(&mut activation))
                 {
                     let object: Object<'gc> = StageObject::for_display_object(
-                        context.gc_context,
+                        activation.context.gc_context,
                         (*self).into(),
                         Some(prototype),
                     )
                     .into();
                     if let Some(init_object) = init_object {
                         for key in init_object.get_keys(&mut activation) {
-                            if let Ok(value) = init_object.get(&key, &mut activation, context) {
-                                let _ = object.set(&key, value, &mut activation, context);
+                            if let Ok(value) = init_object.get(&key, &mut activation) {
+                                let _ = object.set(&key, value, &mut activation);
                             }
                         }
                     }
                     self.0.write(context.gc_context).object = Some(object);
-                    let _ =
-                        constructor.construct_on_existing(&mut activation, context, object, &[]);
+                    let _ = constructor.construct_on_existing(&mut activation, object, &[]);
                 }
 
                 return;
@@ -1188,16 +1187,16 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if let Some(init_object) = init_object {
                 let mut activation = Activation::from_nothing(
                     avm,
+                    context,
                     ActivationIdentifier::root("[Init]"),
                     context.swf.version(),
                     avm.global_object_cell(),
-                    context.gc_context,
                     (*self).into(),
                 );
 
                 for key in init_object.get_keys(&mut activation) {
-                    if let Ok(value) = init_object.get(&key, &mut activation, context) {
-                        let _ = object.set(&key, value, &mut activation, context);
+                    if let Ok(value) = init_object.get(&key, &mut activation) {
+                        let _ = object.set(&key, value, &mut activation);
                     }
                 }
             }
@@ -1229,8 +1228,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             (*self).into(),
             context.swf.version(),
             context,
-            |activation, context| {
-                self.bind_text_field_variables(activation, context);
+            |activation| {
+                self.bind_text_field_variables(activation);
             },
         );
     }

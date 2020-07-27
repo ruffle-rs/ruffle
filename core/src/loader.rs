@@ -3,7 +3,7 @@
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
-use crate::context::{ActionQueue, ActionType, UpdateContext};
+use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
@@ -55,15 +55,11 @@ pub enum Error {
     Avm1Error(String),
 }
 
-pub type FormLoadHandler<'gc> = fn(
-    &mut Activation<'_, 'gc>,
-    &mut UpdateContext<'_, 'gc, '_>,
-    Object<'gc>,
-    data: &[u8],
-) -> Result<(), Error>;
+pub type FormLoadHandler<'gc> =
+    fn(&mut Activation<'_, '_, 'gc, '_>, Object<'gc>, data: &[u8]) -> Result<(), Error>;
 
 pub type FormErrorHandler<'gc> =
-    fn(&mut Activation<'_, 'gc>, &mut UpdateContext<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error>;
+    fn(&mut Activation<'_, '_, 'gc, '_>, Object<'gc>) -> Result<(), Error>;
 
 impl From<crate::avm1::error::Error<'_>> for Error {
     fn from(error: crate::avm1::error::Error<'_>) -> Self {
@@ -603,19 +599,18 @@ impl<'gc> Loader<'gc> {
 
                 let mut activation = Activation::from_nothing(
                     avm1,
+                    uc,
                     ActivationIdentifier::root("[Form Loader]"),
                     uc.swf.version(),
                     avm1.global_object_cell(),
-                    uc.gc_context,
                     *uc.levels.get(&0).unwrap(),
                 );
 
                 for (k, v) in form_urlencoded::parse(&data) {
                     that.set(
                         &k,
-                        AvmString::new(uc.gc_context, v.into_owned()).into(),
+                        AvmString::new(activation.context.gc_context, v.into_owned()).into(),
                         &mut activation,
-                        uc,
                     )?;
                 }
 
@@ -655,10 +650,10 @@ impl<'gc> Loader<'gc> {
 
                 let mut activation = Activation::from_nothing(
                     avm1,
+                    uc,
                     ActivationIdentifier::root("[Form Loader]"),
                     uc.swf.version(),
                     avm1.global_object_cell(),
-                    uc.gc_context,
                     *uc.levels.get(&0).unwrap(),
                 );
 
@@ -667,19 +662,16 @@ impl<'gc> Loader<'gc> {
                         // Fire the onData method with the loaded string.
                         let string_data =
                             AvmString::new(uc.gc_context, String::from_utf8_lossy(&data));
-                        let _ =
-                            that.call_method("onData", &[string_data.into()], &mut activation, uc);
+                        let _ = that.call_method("onData", &[string_data.into()], &mut activation);
                     }
                     Err(_) => {
                         // TODO: Log "Error opening URL" trace similar to the Flash Player?
                         // Simulate 404 HTTP status. This should probably be fired elsewhere
                         // because a failed local load doesn't fire a 404.
-                        let _ =
-                            that.call_method("onHTTPStatus", &[404.into()], &mut activation, uc);
+                        let _ = that.call_method("onHTTPStatus", &[404.into()], &mut activation);
 
                         // Fire the onData method with no data to indicate an unsuccessful load.
-                        let _ =
-                            that.call_method("onData", &[Value::Undefined], &mut activation, uc);
+                        let _ = that.call_method("onData", &[Value::Undefined], &mut activation);
                     }
                 }
 

@@ -173,18 +173,18 @@ impl<'gc> Avm1<'gc> {
 
         let mut parent_activation = Activation::from_nothing(
             self,
+            context,
             ActivationIdentifier::root("[Actions Parent]"),
             swf_version,
             self.global_object_cell(),
-            context.gc_context,
             active_clip,
         );
 
         let clip_obj = active_clip
             .object()
-            .coerce_to_object(&mut parent_activation, context);
+            .coerce_to_object(&mut parent_activation);
         let child_scope = GcCell::allocate(
-            context.gc_context,
+            parent_activation.context.gc_context,
             Scope::new(
                 parent_activation.scope_cell(),
                 scope::ScopeClass::Target,
@@ -194,6 +194,7 @@ impl<'gc> Avm1<'gc> {
         let constant_pool = parent_activation.avm.constant_pool;
         let mut child_activation = Activation::from_action(
             parent_activation.avm,
+            parent_activation.context,
             parent_activation.id.child(name),
             swf_version,
             child_scope,
@@ -202,8 +203,8 @@ impl<'gc> Avm1<'gc> {
             clip_obj,
             None,
         );
-        if let Err(e) = child_activation.run_actions(context, code) {
-            root_error_handler(&mut child_activation, context, e);
+        if let Err(e) = child_activation.run_actions(code) {
+            root_error_handler(&mut child_activation, e);
         }
     }
 
@@ -214,11 +215,11 @@ impl<'gc> Avm1<'gc> {
         &mut self,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
-        action_context: &mut UpdateContext<'a, 'gc, '_>,
+        action_context: &mut UpdateContext<'_, 'gc, '_>,
         function: F,
     ) -> R
     where
-        for<'b> F: FnOnce(&mut Activation<'b, 'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
+        for<'c> F: FnOnce(&mut Activation<'c, '_, 'gc, '_>) -> R,
     {
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
@@ -234,6 +235,7 @@ impl<'gc> Avm1<'gc> {
         );
         let mut activation = Activation::from_action(
             self,
+            action_context,
             ActivationIdentifier::root("[Display Object]"),
             swf_version,
             child_scope,
@@ -242,7 +244,7 @@ impl<'gc> Avm1<'gc> {
             clip_obj,
             None,
         );
-        function(&mut activation, action_context)
+        function(&mut activation)
     }
 
     /// Add a stack frame that executes code in initializer scope.
@@ -262,18 +264,18 @@ impl<'gc> Avm1<'gc> {
 
         let mut parent_activation = Activation::from_nothing(
             self,
+            context,
             ActivationIdentifier::root("[Init Parent]"),
             swf_version,
             self.global_object_cell(),
-            context.gc_context,
             active_clip,
         );
 
         let clip_obj = active_clip
             .object()
-            .coerce_to_object(&mut parent_activation, context);
+            .coerce_to_object(&mut parent_activation);
         let child_scope = GcCell::allocate(
-            context.gc_context,
+            parent_activation.context.gc_context,
             Scope::new(
                 parent_activation.scope_cell(),
                 scope::ScopeClass::Target,
@@ -284,6 +286,7 @@ impl<'gc> Avm1<'gc> {
         let constant_pool = parent_activation.avm.constant_pool;
         let mut child_activation = Activation::from_action(
             parent_activation.avm,
+            parent_activation.context,
             parent_activation.id.child("[Init]"),
             swf_version,
             child_scope,
@@ -292,8 +295,8 @@ impl<'gc> Avm1<'gc> {
             clip_obj,
             None,
         );
-        if let Err(e) = child_activation.run_actions(context, code) {
-            root_error_handler(&mut child_activation, context, e);
+        if let Err(e) = child_activation.run_actions(code) {
+            root_error_handler(&mut child_activation, e);
         }
     }
 
@@ -301,12 +304,12 @@ impl<'gc> Avm1<'gc> {
     /// method, such as an event handler.
     ///
     /// This creates a new frame stack.
-    pub fn run_stack_frame_for_method(
-        &mut self,
+    pub fn run_stack_frame_for_method<'a, 'b>(
+        &'a mut self,
         active_clip: DisplayObject<'gc>,
         obj: Object<'gc>,
         swf_version: u8,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &'a mut UpdateContext<'b, 'gc, '_>,
         name: &str,
         args: &[Value<'gc>],
     ) {
@@ -317,23 +320,23 @@ impl<'gc> Avm1<'gc> {
 
         let mut activation = Activation::from_nothing(
             self,
+            context,
             ActivationIdentifier::root(name.to_owned()),
             swf_version,
             self.global_object_cell(),
-            context.gc_context,
             active_clip,
         );
 
         let search_result =
-            search_prototype(Some(obj), name, &mut activation, context, obj).map(|r| (r.0, r.1));
+            search_prototype(Some(obj), name, &mut activation, obj).map(|r| (r.0, r.1));
 
         if let Ok((callback, base_proto)) = search_result {
-            let _ = callback.call(name, &mut activation, context, obj, base_proto, args);
+            let _ = callback.call(name, &mut activation, obj, base_proto, args);
         }
     }
 
-    pub fn notify_system_listeners(
-        &mut self,
+    pub fn notify_system_listeners<'a>(
+        &'a mut self,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -341,25 +344,24 @@ impl<'gc> Avm1<'gc> {
         method: &str,
         args: &[Value<'gc>],
     ) {
-        let global = self.global_object(context);
+        let global = self.global_object();
 
         let mut activation = Activation::from_nothing(
             self,
+            context,
             ActivationIdentifier::root("[System Listeners]"),
             swf_version,
             self.global_object_cell(),
-            context.gc_context,
             active_clip,
         );
 
         let broadcaster = global
-            .coerce_to_object(&mut activation, context)
-            .get(broadcaster, &mut activation, context)
+            .coerce_to_object(&mut activation)
+            .get(broadcaster, &mut activation)
             .unwrap()
-            .coerce_to_object(&mut activation, context);
+            .coerce_to_object(&mut activation);
 
-        let _ =
-            as_broadcaster::broadcast_internal(&mut activation, context, broadcaster, args, method);
+        let _ = as_broadcaster::broadcast_internal(&mut activation, broadcaster, args, method);
     }
 
     /// Halts the AVM, preventing execution of any further actions.
@@ -394,7 +396,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Obtain the value of `_global`.
-    pub fn global_object(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Value<'gc> {
+    pub fn global_object(&self) -> Value<'gc> {
         Value::Object(self.globals)
     }
 
@@ -436,14 +438,10 @@ impl<'gc> Avm1<'gc> {
     pub const fn set_show_debug_output(&self, _visible: bool) {}
 }
 
-pub fn root_error_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
-    error: Error<'gc>,
-) {
+pub fn root_error_handler<'gc>(activation: &mut Activation<'_, '_, 'gc, '_>, error: Error<'gc>) {
     if let Error::ThrownValue(error) = &error {
         let string = error
-            .coerce_to_string(activation, context)
+            .coerce_to_string(activation)
             .unwrap_or_else(|_| "undefined".into());
         log::info!(target: "avm_trace", "{}", string);
     } else {
@@ -468,13 +466,12 @@ fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
 /// Runs via the `startDrag` method or `StartDrag` AVM1 action.
 pub fn start_drag<'gc>(
     display_object: DisplayObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     args: &[Value<'gc>],
 ) {
     let lock_center = args
         .get(0)
-        .map(|o| o.as_bool(context.swf.version()))
+        .map(|o| o.as_bool(activation.context.swf.version()))
         .unwrap_or(false);
 
     let offset = if lock_center {
@@ -485,8 +482,8 @@ pub fn start_drag<'gc>(
         // Calculate the offset from the mouse to the object in world space.
         let obj_pos = display_object.local_to_global(Default::default());
         (
-            obj_pos.0 - context.mouse_position.0,
-            obj_pos.1 - context.mouse_position.1,
+            obj_pos.0 - activation.context.mouse_position.0,
+            obj_pos.1 - activation.context.mouse_position.1,
         )
     };
 
@@ -495,28 +492,28 @@ pub fn start_drag<'gc>(
         let mut x_min = args
             .get(1)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(activation, context)
+            .coerce_to_f64(activation)
             .map(|n| if n.is_finite() { n } else { 0.0 })
             .map(Twips::from_pixels)
             .unwrap_or_default();
         let mut y_min = args
             .get(2)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(activation, context)
+            .coerce_to_f64(activation)
             .map(|n| if n.is_finite() { n } else { 0.0 })
             .map(Twips::from_pixels)
             .unwrap_or_default();
         let mut x_max = args
             .get(3)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(activation, context)
+            .coerce_to_f64(activation)
             .map(|n| if n.is_finite() { n } else { 0.0 })
             .map(Twips::from_pixels)
             .unwrap_or_default();
         let mut y_max = args
             .get(4)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(activation, context)
+            .coerce_to_f64(activation)
             .map(|n| if n.is_finite() { n } else { 0.0 })
             .map(Twips::from_pixels)
             .unwrap_or_default();
@@ -545,5 +542,5 @@ pub fn start_drag<'gc>(
         offset,
         constraint,
     };
-    *context.drag_object = Some(drag_object);
+    *activation.context.drag_object = Some(drag_object);
 }

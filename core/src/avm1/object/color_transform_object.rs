@@ -1,6 +1,5 @@
 use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::UpdateContext;
 use crate::impl_custom_object_without_set;
 use gc_arena::{Collect, GcCell, MutationContext};
 
@@ -99,15 +98,13 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, '_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         let base = self.0.read().base;
         base.internal_set(
             name,
             value,
             activation,
-            context,
             (*self).into(),
             Some(activation.avm.prototypes.color_transform),
         )
@@ -120,12 +117,12 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, '_, 'gc, '_>,
+
         _this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(ColorTransformObject::empty_color_transform_object(
-            context.gc_context,
+            activation.context.gc_context,
             Some(activation.avm.prototypes.color_transform),
         )
         .into())

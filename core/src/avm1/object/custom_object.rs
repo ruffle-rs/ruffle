@@ -4,21 +4,16 @@ macro_rules! impl_custom_object_without_set {
         fn get_local(
             &self,
             name: &str,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
-            context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
             this: crate::avm1::Object<'gc>,
         ) -> Result<crate::avm1::Value<'gc>, crate::avm1::Error<'gc>> {
-            self.0
-                .read()
-                .$field
-                .get_local(name, activation, context, this)
+            self.0.read().$field.get_local(name, activation, this)
         }
 
         fn call(
             &self,
             name: &str,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
-            context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
             this: crate::avm1::Object<'gc>,
             base_proto: Option<crate::avm1::Object<'gc>>,
             args: &[crate::avm1::Value<'gc>],
@@ -26,29 +21,24 @@ macro_rules! impl_custom_object_without_set {
             self.0
                 .read()
                 .$field
-                .call(name, activation, context, this, base_proto, args)
+                .call(name, activation, this, base_proto, args)
         }
 
         fn call_setter(
             &self,
             name: &str,
             value: crate::avm1::Value<'gc>,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
-            context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
         ) -> Option<crate::avm1::object::Object<'gc>> {
-            self.0
-                .read()
-                .$field
-                .call_setter(name, value, activation, context)
+            self.0.read().$field.call_setter(name, value, activation)
         }
 
         fn delete(
             &self,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
-            gc_context: gc_arena::MutationContext<'gc, '_>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
             name: &str,
         ) -> bool {
-            self.0.read().$field.delete(activation, gc_context, name)
+            self.0.read().$field.delete(activation, name)
         }
 
         fn proto(&self) -> Option<crate::avm1::Object<'gc>> {
@@ -107,7 +97,7 @@ macro_rules! impl_custom_object_without_set {
 
         fn add_property_with_case(
             &self,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: &str,
             get: crate::avm1::object::Object<'gc>,
@@ -122,40 +112,31 @@ macro_rules! impl_custom_object_without_set {
 
         fn has_property(
             &self,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
-            context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
             name: &str,
         ) -> bool {
-            self.0.read().$field.has_property(activation, context, name)
+            self.0.read().$field.has_property(activation, name)
         }
 
         fn has_own_property(
             &self,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
-            context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
             name: &str,
         ) -> bool {
-            self.0
-                .read()
-                .$field
-                .has_own_property(activation, context, name)
+            self.0.read().$field.has_own_property(activation, name)
         }
 
         fn has_own_virtual(
             &self,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
-            context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
             name: &str,
         ) -> bool {
-            self.0
-                .read()
-                .$field
-                .has_own_virtual(activation, context, name)
+            self.0.read().$field.has_own_virtual(activation, name)
         }
 
         fn is_property_enumerable(
             &self,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
             name: &str,
         ) -> bool {
             self.0
@@ -164,7 +145,10 @@ macro_rules! impl_custom_object_without_set {
                 .is_property_enumerable(activation, name)
         }
 
-        fn get_keys(&self, activation: &mut crate::avm1::Activation<'_, 'gc>) -> Vec<String> {
+        fn get_keys(
+            &self,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
+        ) -> Vec<String> {
             self.0.read().$field.get_keys(activation)
         }
 
@@ -237,7 +221,7 @@ macro_rules! impl_custom_object_without_set {
 
         fn set_watcher(
             &self,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: std::borrow::Cow<str>,
             callback: crate::avm1::object::Object<'gc>,
@@ -251,7 +235,7 @@ macro_rules! impl_custom_object_without_set {
 
         fn remove_watcher(
             &self,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: std::borrow::Cow<str>,
         ) -> bool {
@@ -272,10 +256,9 @@ macro_rules! impl_custom_object {
             &self,
             name: &str,
             value: crate::avm1::Value<'gc>,
-            activation: &mut crate::avm1::Activation<'_, 'gc>,
-            context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+            activation: &mut crate::avm1::Activation<'_, '_, 'gc, '_>,
         ) -> Result<(), crate::avm1::Error<'gc>> {
-            self.0.read().$field.set(name, value, activation, context)
+            self.0.read().$field.set(name, value, activation)
         }
     };
 }

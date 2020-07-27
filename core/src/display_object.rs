@@ -912,20 +912,16 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         }
     }
 
-    fn bind_text_field_variables(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) {
+    fn bind_text_field_variables(&self, activation: &mut Activation<'_, '_, 'gc, '_>) {
         // Check all unbound text fields to see if they apply to this object.
         // TODO: Replace with `Vec::drain_filter` when stable.
         let mut i = 0;
-        let mut len = context.unbound_text_fields.len();
+        let mut len = activation.context.unbound_text_fields.len();
         while i < len {
-            if context.unbound_text_fields[i]
-                .try_bind_text_field_variable(activation, context, false)
+            if activation.context.unbound_text_fields[i]
+                .try_bind_text_field_variable(activation, false)
             {
-                context.unbound_text_fields.swap_remove(i);
+                activation.context.unbound_text_fields.swap_remove(i);
                 len -= 1;
             } else {
                 i += 1;

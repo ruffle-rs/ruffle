@@ -3,7 +3,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
-use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
@@ -13,8 +13,7 @@ use std::borrow::Cow;
 
 /// Implements `Object` constructor
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -23,28 +22,26 @@ pub fn constructor<'gc>(
 
 /// Implements `Object` function
 pub fn object_function<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(val) = args.get(0) {
-        Ok(val.coerce_to_object(activation, action_context).into())
+        Ok(val.coerce_to_object(activation).into())
     } else {
-        Ok(ScriptObject::object(action_context.gc_context, None).into())
+        Ok(ScriptObject::object(activation.context.gc_context, None).into())
     }
 }
 
 /// Implements `Object.prototype.addProperty`
 pub fn add_property<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args
         .get(0)
-        .and_then(|v| v.coerce_to_string(activation, context).ok())
+        .and_then(|v| v.coerce_to_string(activation).ok())
         .unwrap_or_else(|| "undefined".into());
     let getter = args.get(1).unwrap_or(&Value::Undefined);
     let setter = args.get(2).unwrap_or(&Value::Undefined);
@@ -54,7 +51,7 @@ pub fn add_property<'gc>(
             if let Value::Object(set) = setter {
                 this.add_property_with_case(
                     activation,
-                    context.gc_context,
+                    activation.context.gc_context,
                     &name,
                     get.to_owned(),
                     Some(set.to_owned()),
@@ -63,7 +60,7 @@ pub fn add_property<'gc>(
             } else if let Value::Null = setter {
                 this.add_property_with_case(
                     activation,
-                    context.gc_context,
+                    activation.context.gc_context,
                     &name,
                     get.to_owned(),
                     None,
@@ -81,16 +78,13 @@ pub fn add_property<'gc>(
 
 /// Implements `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(value) = args.get(0) {
-        let name = value.coerce_to_string(activation, context)?;
-        Ok(Value::Bool(
-            this.has_own_property(activation, context, &name),
-        ))
+        let name = value.coerce_to_string(activation)?;
+        Ok(Value::Bool(this.has_own_property(activation, &name)))
     } else {
         Ok(false.into())
     }
@@ -98,8 +92,7 @@ pub fn has_own_property<'gc>(
 
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
-    _: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, '_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -108,8 +101,7 @@ fn to_string<'gc>(
 
 /// Implements `Object.prototype.isPropertyEnumerable`
 fn is_property_enumerable<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -121,14 +113,13 @@ fn is_property_enumerable<'gc>(
 
 /// Implements `Object.prototype.isPrototypeOf`
 fn is_prototype_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args.get(0) {
         Some(val) => {
-            let ob = val.coerce_to_object(activation, context);
+            let ob = val.coerce_to_object(activation);
             Ok(Value::Bool(this.is_prototype_of(ob)))
         }
         _ => Ok(Value::Bool(false)),
@@ -137,8 +128,7 @@ fn is_prototype_of<'gc>(
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
-    _: &mut Activation<'_, 'gc>,
-    _: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -147,26 +137,26 @@ fn value_of<'gc>(
 
 /// Implements `Object.registerClass`
 pub fn register_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(class_name) = args.get(0).cloned() {
-        let class_name = class_name.coerce_to_string(activation, context)?;
+        let class_name = class_name.coerce_to_string(activation)?;
         if let Some(movie) = activation.base_clip().movie() {
-            if let Some(Character::MovieClip(movie_clip)) = context
+            if let Some(Character::MovieClip(movie_clip)) = activation
+                .context
                 .library
                 .library_for_movie_mut(movie)
                 .get_character_by_export_name(&class_name)
             {
                 if let Some(constructor) = args.get(1) {
                     movie_clip.set_avm1_constructor(
-                        context.gc_context,
-                        Some(constructor.coerce_to_object(activation, context)),
+                        activation.context.gc_context,
+                        Some(constructor.coerce_to_object(activation)),
                     );
                 } else {
-                    movie_clip.set_avm1_constructor(context.gc_context, None);
+                    movie_clip.set_avm1_constructor(activation.context.gc_context, None);
                 }
             } else {
                 log::warn!(
@@ -185,20 +175,19 @@ pub fn register_class<'gc>(
 
 /// Implements `Object.prototype.watch`
 fn watch<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = if let Some(name) = args.get(0) {
-        name.coerce_to_string(activation, context)?
+        name.coerce_to_string(activation)?
     } else {
         return Ok(false.into());
     };
     let callback = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation, context);
+        .coerce_to_object(activation);
     if callback.as_executable().is_none() {
         return Ok(false.into());
     }
@@ -206,7 +195,7 @@ fn watch<'gc>(
 
     this.set_watcher(
         activation,
-        context.gc_context,
+        activation.context.gc_context,
         Cow::Borrowed(&name),
         callback,
         user_data,
@@ -217,18 +206,22 @@ fn watch<'gc>(
 
 /// Implements `Object.prototype.unmwatch`
 fn unwatch<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
+
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = if let Some(name) = args.get(0) {
-        name.coerce_to_string(activation, context)?
+        name.coerce_to_string(activation)?
     } else {
         return Ok(false.into());
     };
 
-    let result = this.remove_watcher(activation, context.gc_context, Cow::Borrowed(&name));
+    let result = this.remove_watcher(
+        activation,
+        activation.context.gc_context,
+        Cow::Borrowed(&name),
+    );
 
     Ok(result.into())
 }
@@ -311,12 +304,11 @@ pub fn fill_proto<'gc>(
 /// declare the property flags of a given property. It's not part of
 /// `Object.prototype`, and I suspect that's a deliberate omission.
 pub fn as_set_prop_flags<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut object = if let Some(object) = args.get(0).map(|v| v.coerce_to_object(activation, ac)) {
+    let mut object = if let Some(object) = args.get(0).map(|v| v.coerce_to_object(activation)) {
         object
     } else {
         avm_warn!(
@@ -331,13 +323,11 @@ pub fn as_set_prop_flags<'gc>(
             //Convert to native array.
             //TODO: Can we make this an iterator?
             let mut array = vec![];
-            let length = ob
-                .get("length", activation, ac)?
-                .coerce_to_f64(activation, ac)? as usize;
+            let length = ob.get("length", activation)?.coerce_to_f64(activation)? as usize;
             for i in 0..length {
                 array.push(
-                    ob.get(&format!("{}", i), activation, ac)?
-                        .coerce_to_string(activation, ac)?
+                    ob.get(&format!("{}", i), activation)?
+                        .coerce_to_string(activation)?
                         .to_string(),
                 )
             }
@@ -355,27 +345,32 @@ pub fn as_set_prop_flags<'gc>(
     let set_attributes = EnumSet::<Attribute>::from_u128(
         args.get(2)
             .unwrap_or(&Value::Number(0.0))
-            .coerce_to_f64(activation, ac)? as u128,
+            .coerce_to_f64(activation)? as u128,
     );
 
     let clear_attributes = EnumSet::<Attribute>::from_u128(
         args.get(3)
             .unwrap_or(&Value::Number(0.0))
-            .coerce_to_f64(activation, ac)? as u128,
+            .coerce_to_f64(activation)? as u128,
     );
 
     match properties {
         Some(properties) => {
             for prop_name in properties {
                 object.set_attributes(
-                    ac.gc_context,
+                    activation.context.gc_context,
                     Some(&prop_name),
                     set_attributes,
                     clear_attributes,
                 )
             }
         }
-        None => object.set_attributes(ac.gc_context, None, set_attributes, clear_attributes),
+        None => object.set_attributes(
+            activation.context.gc_context,
+            None,
+            set_attributes,
+            clear_attributes,
+        ),
     }
 
     Ok(Value::Undefined)

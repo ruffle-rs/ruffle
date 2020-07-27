@@ -4,7 +4,6 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
-use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -129,14 +128,15 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, '_, 'gc, '_>,
+
         _this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(
-            SoundObject::empty_sound(context.gc_context, Some(activation.avm.prototypes.sound))
-                .into(),
+        Ok(SoundObject::empty_sound(
+            activation.context.gc_context,
+            Some(activation.avm.prototypes.sound),
         )
+        .into())
     }
 
     fn as_sound_object(&self) -> Option<SoundObject<'gc>> {

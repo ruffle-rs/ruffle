@@ -43,35 +43,36 @@ impl<'gc> Timers<'gc> {
 
         let mut activation = Activation::from_nothing(
             avm,
+            context,
             ActivationIdentifier::root("[Timer Callback]"),
             context.swf.header().version,
             avm.global_object_cell(),
-            context.gc_context,
             context.levels.get(&0).copied().unwrap(),
         );
 
         // TODO: `this` is undefined for non-method timer callbacks, but our VM
         // currently doesn't allow `this` to be a Value.
-        let undefined = Value::Undefined.coerce_to_object(&mut activation, context);
+        let undefined = Value::Undefined.coerce_to_object(&mut activation);
 
         let mut tick_count = 0;
-        let cur_time = context.timers.cur_time;
+        let cur_time = activation.context.timers.cur_time;
 
         // We have to be careful because the timer list can be mutated while updating;
         // a timer callback could add more timers, clear timers, etc.
-        while context
+        while activation
+            .context
             .timers
             .peek()
             .map(|timer| timer.tick_time)
             .unwrap_or(cur_time)
             < cur_time
         {
-            let timer = context.timers.peek().unwrap();
+            let timer = activation.context.timers.peek().unwrap();
 
             // TODO: This is only really necessary because BinaryHeap lacks `remove` or `retain` on stable.
             // We can remove the timers straightaway in `clearInterval` once this is stable.
             if !timer.is_alive.get() {
-                context.timers.pop();
+                activation.context.timers.pop();
                 continue;
             }
 
@@ -79,8 +80,8 @@ impl<'gc> Timers<'gc> {
             // SANITY: Only allow so many ticks per timer per update.
             if tick_count > Self::MAX_TICKS {
                 // Reset our time to a little bit before the nearest timer.
-                let next_time = context.timers.peek_mut().unwrap().tick_time;
-                context.timers.cur_time = next_time.wrapping_sub(100);
+                let next_time = activation.context.timers.peek_mut().unwrap().tick_time;
+                activation.context.timers.cur_time = next_time.wrapping_sub(100);
                 break;
             }
 
@@ -93,9 +94,9 @@ impl<'gc> Timers<'gc> {
                 TimerCallback::Method { this, method_name } => {
                     // Fetch the callback method from the object.
                     if let Ok((f, base_proto)) =
-                        search_prototype(Some(this), &method_name, &mut activation, context, this)
+                        search_prototype(Some(this), &method_name, &mut activation, this)
                     {
-                        let f = f.coerce_to_object(&mut activation, context);
+                        let f = f.coerce_to_object(&mut activation);
                         Some((this, base_proto, f))
                     } else {
                         None
@@ -107,18 +108,17 @@ impl<'gc> Timers<'gc> {
                 let _ = function.call(
                     "[Timer Callback]",
                     &mut activation,
-                    context,
                     this,
                     base_proto,
                     &params,
                 );
             }
 
-            let mut timer = context.timers.peek_mut().unwrap();
+            let mut timer = activation.context.timers.peek_mut().unwrap();
             if timer.is_timeout {
                 // Timeouts only fire once.
                 drop(timer);
-                context.timers.pop();
+                activation.context.timers.pop();
             } else {
                 // Reset setInterval timers. `peek_mut` re-sorts the timer in the priority queue.
                 timer.tick_time = timer.tick_time.wrapping_add(timer.interval);
@@ -126,7 +126,8 @@ impl<'gc> Timers<'gc> {
         }
 
         // Return estimated time until next timer tick.
-        context
+        activation
+            .context
             .timers
             .peek()
             .map(|timer| (timer.tick_time.wrapping_sub(cur_time)) as f64 / Self::TIMER_SCALE)

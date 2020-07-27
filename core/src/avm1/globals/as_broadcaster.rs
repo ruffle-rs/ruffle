@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, Value};
 use gc_arena::{Collect, MutationContext};
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -28,13 +28,12 @@ impl<'gc> BroadcasterFunctions<'gc> {
 }
 
 pub fn add_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let new_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this.get("_listeners", activation, context)?;
+    let listeners = this.get("_listeners", activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length();
@@ -49,8 +48,8 @@ pub fn add_listener<'gc>(
         }
 
         if position == None {
-            listeners.set_length(context.gc_context, length + 1);
-            listeners.set_array_element(length, new_listener, context.gc_context);
+            listeners.set_length(activation.context.gc_context, length + 1);
+            listeners.set_array_element(length, new_listener, activation.context.gc_context);
         }
     }
 
@@ -58,13 +57,12 @@ pub fn add_listener<'gc>(
 }
 
 pub fn remove_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let old_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this.get("_listeners", activation, context)?;
+    let listeners = this.get("_listeners", activation)?;
 
     let mut removed = false;
     if let Value::Object(listeners) = listeners {
@@ -86,14 +84,14 @@ pub fn remove_listener<'gc>(
                     listeners.set_array_element(
                         i,
                         listeners.array_element(i + 1),
-                        context.gc_context,
+                        activation.context.gc_context,
                     );
                 }
 
-                listeners.delete_array_element(new_length, context.gc_context);
-                listeners.delete(activation, context.gc_context, &new_length.to_string());
+                listeners.delete_array_element(new_length, activation.context.gc_context);
+                listeners.delete(activation, &new_length.to_string());
 
-                listeners.set_length(context.gc_context, new_length);
+                listeners.set_length(activation.context.gc_context, new_length);
 
                 removed = true;
             }
@@ -104,36 +102,34 @@ pub fn remove_listener<'gc>(
 }
 
 pub fn broadcast_message<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(event_name_value) = args.get(0) {
-        let event_name = event_name_value.coerce_to_string(activation, context)?;
+        let event_name = event_name_value.coerce_to_string(activation)?;
         let call_args = &args[1..];
 
-        broadcast_internal(activation, context, this, call_args, &event_name)
+        broadcast_internal(activation, this, call_args, &event_name)
     } else {
         Ok(Value::Undefined)
     }
 }
 
 pub fn broadcast_internal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     this: Object<'gc>,
     call_args: &[Value<'gc>],
     method_name: &str,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let listeners = this.get("_listeners", activation, context)?;
+    let listeners = this.get("_listeners", activation)?;
 
     if let Value::Object(listeners) = listeners {
         for i in 0..listeners.length() {
             let listener = listeners.array_element(i);
 
             if let Value::Object(listener) = listener {
-                listener.call_method(method_name, call_args, activation, context)?;
+                listener.call_method(method_name, call_args, activation)?;
             }
         }
     }
@@ -142,15 +138,14 @@ pub fn broadcast_internal<'gc>(
 }
 
 pub fn initialize<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(val) = args.get(0) {
-        let broadcaster = val.coerce_to_object(activation, context);
+        let broadcaster = val.coerce_to_object(activation);
         initialize_internal(
-            context.gc_context,
+            activation.context.gc_context,
             broadcaster,
             activation.avm.broadcaster_functions,
             activation.avm.prototypes().array,

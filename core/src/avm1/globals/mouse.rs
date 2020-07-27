@@ -2,17 +2,16 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, Value};
 use gc_arena::MutationContext;
 
 pub fn show_mouse<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let was_visible = context.input.mouse_visible();
-    context.input.show_mouse();
+    let was_visible = activation.context.input.mouse_visible();
+    activation.context.input.show_mouse();
     if was_visible {
         Ok(0.into())
     } else {
@@ -21,13 +20,12 @@ pub fn show_mouse<'gc>(
 }
 
 pub fn hide_mouse<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, '_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let was_visible = context.input.mouse_visible();
-    context.input.hide_mouse();
+    let was_visible = activation.context.input.mouse_visible();
+    activation.context.input.hide_mouse();
     if was_visible {
         Ok(0.into())
     } else {
