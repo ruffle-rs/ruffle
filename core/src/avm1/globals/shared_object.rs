@@ -116,8 +116,8 @@ fn recursive_deserialize<'gc>(
             JsonValue::Object(o) => {
                 let so = activation.avm.prototypes.object;
                 let obj = so.new(activation, context, so, &[]).unwrap();
-                let _ = crate::avm1::globals::object::constructor(activation, context, obj, &[])
-                    .unwrap();
+                let constructor = activation.avm.prototypes.object_constructor;
+                let _ = constructor.construct(activation, context, obj, &[]);
                 recursive_deserialize(JsonValue::Object(o.clone()), activation, obj, context);
 
                 object.define_value(
@@ -160,7 +160,8 @@ pub fn get_local<'gc>(
     // Data property only should exist when created with getLocal/Remote
     let so = activation.avm.prototypes.shared_object;
     let this = so.new(activation, action_context, so, &[])?;
-    let _ = constructor(activation, action_context, this, &[])?;
+    let constructor = activation.avm.prototypes.shared_object_constructor;
+    constructor.construct(activation, action_context, this, &[])?;
 
     // Set the internal name
     let obj_so = this.as_shared_object().unwrap();
@@ -169,7 +170,8 @@ pub fn get_local<'gc>(
     // Create the data object
     let data_proto = activation.avm.prototypes.object;
     let data = data_proto.new(activation, action_context, so, &[])?;
-    let _ = crate::avm1::globals::object::constructor(activation, action_context, data, &[])?;
+    let constructor = activation.avm.prototypes.object_constructor;
+    constructor.construct(activation, action_context, data, &[])?;
 
     // Load the data object from storage if it existed prior
     if let Some(saved) = action_context.storage.get_string(&name) {

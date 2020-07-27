@@ -26,7 +26,8 @@ pub fn construct_new_point<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let proto = context.system_prototypes.point;
     let object = proto.new(activation, context, proto, &args)?;
-    let _ = constructor(activation, context, object, &args)?;
+    let constructor = activation.avm.prototypes.point_constructor;
+    constructor.construct(activation, context, object, &args)?;
     Ok(object)
 }
 
@@ -99,7 +100,8 @@ fn clone<'gc>(
         this.get("y", activation, context)?,
     ];
     let cloned = proto.new(activation, context, proto, &args)?;
-    let _ = constructor(activation, context, cloned, &args)?;
+    let constructor = activation.avm.prototypes.point_constructor;
+    constructor.construct(activation, context, proto, &args)?;
 
     Ok(cloned.into())
 }
