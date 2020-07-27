@@ -31,10 +31,7 @@ pub fn object_function<'gc>(
     if let Some(val) = args.get(0) {
         Ok(val.coerce_to_object(activation, action_context).into())
     } else {
-        //TODO: more testing
-        Ok(Value::Undefined
-            .coerce_to_object(activation, action_context)
-            .into())
+        Ok(ScriptObject::object(action_context.gc_context, None).into())
     }
 }
 
