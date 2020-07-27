@@ -3,7 +3,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
-use crate::avm1::{Object, TObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::avm_warn;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
@@ -11,7 +11,7 @@ use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::borrow::Cow;
 
-/// Implements `Object`
+/// Implements `Object` constructor
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _action_context: &mut UpdateContext<'_, 'gc, '_>,
@@ -19,6 +19,23 @@ pub fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
+}
+
+/// Implements `Object` function
+pub fn object_function<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(val) = args.get(0) {
+        Ok(val.coerce_to_object(activation, action_context).into())
+    } else {
+        //TODO: more testing
+        Ok(Value::Undefined
+            .coerce_to_object(activation, action_context)
+            .into())
+    }
 }
 
 /// Implements `Object.prototype.addProperty`
@@ -372,8 +389,9 @@ pub fn create_object_object<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object_function = FunctionObject::constructor(
+    let object_function = FunctionObject::function_and_constructor(
         gc_context,
+        Executable::Native(object_function),
         Executable::Native(constructor),
         Some(fn_proto),
         Some(proto),

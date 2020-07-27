@@ -1,0 +1,6 @@
+[type Object]
+Test
+[object Object]
+[type Function]
+11234
+[type Object]
