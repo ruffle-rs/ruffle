@@ -74,17 +74,11 @@ impl<'gc> Namespace<'gc> {
     }
 
     pub fn is_any(&self) -> bool {
-        match self {
-            Self::Any => true,
-            _ => false,
-        }
+        matches!(self, Self::Any)
     }
 
     pub fn is_private(&self) -> bool {
-        match self {
-            Self::Private(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Private(_))
     }
 }
 
