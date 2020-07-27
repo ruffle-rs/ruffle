@@ -25,7 +25,7 @@ pub fn constructor<'gc>(
         Value::Object(listeners.into()),
         Attribute::DontEnum.into(),
     );
-    listeners.set("0", Value::Object(this), activation, context)?;
+    listeners.set_array_element(0, Value::Object(this), context.gc_context);
 
     Ok(Value::Undefined)
 }
@@ -62,7 +62,7 @@ pub fn remove_listener<'gc>(
         let mut position = None;
 
         for i in 0..length {
-            let other_listener = listeners.get(&format!("{}", i), activation, context)?;
+            let other_listener = listeners.array_element(i);
             if old_listener == other_listener {
                 position = Some(i);
                 break;
@@ -104,7 +104,7 @@ pub fn broadcast_message<'gc>(
     let listeners = this.get("_listeners", activation, context)?;
     if let Value::Object(listeners) = listeners {
         for i in 0..listeners.length() {
-            let listener = listeners.get(&format!("{}", i), activation, context)?;
+            let listener = listeners.array_element(i);
 
             if let Value::Object(listener) = listener {
                 listener.call_method(&event_name, call_args, activation, context)?;
