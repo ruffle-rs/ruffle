@@ -42,6 +42,12 @@ aaclass constructor
 // trace(this._name)
 box
 
+// trace(this.__constructor__)
+[type Function]
+
+// trace(this.__constructor__ === aaclass)
+true
+
 aaclass test()
 
 // trace(this._name)
@@ -104,6 +110,12 @@ aaclass constructor
 
 // trace(this._name)
 d
+
+// trace(this.__constructor__)
+[type Function]
+
+// trace(this.__constructor__ === aaclass)
+true
 
 aaclass test()
 
