@@ -13,6 +13,7 @@ use std::error::Error;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use structopt::StructOpt;
 use walkdir::{DirEntry, WalkDir};
 
@@ -84,7 +85,6 @@ fn take_screenshot(
         Box::new(NullAudioBackend::new()),
         Box::new(NullNavigatorBackend::new()),
         Box::new(NullInputBackend::new()),
-        movie,
         Box::new(MemoryStorageBackend::default()),
     )?;
 
@@ -92,6 +92,7 @@ fn take_screenshot(
         .lock()
         .unwrap()
         .set_viewport_dimensions(width, height);
+    player.lock().unwrap().set_root_movie(Arc::new(movie));
 
     let mut result = Vec::new();
     let totalframes = frames + skipframes;

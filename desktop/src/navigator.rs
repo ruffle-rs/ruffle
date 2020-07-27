@@ -2,9 +2,10 @@
 
 use crate::custom_event::RuffleEvent;
 use ruffle_core::backend::navigator::{
-    NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
+    url_from_relative_path, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
 use ruffle_core::loader::Error;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -127,6 +128,15 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             log::warn!(
                 "A task was queued on an event loop that has already ended. It will not be polled."
             );
+        }
+    }
+
+    fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
+        let relative = url_from_relative_path(&self.relative_base_path, url);
+        if let Ok(relative) = relative {
+            relative.into_string().into()
+        } else {
+            url.into()
         }
     }
 }

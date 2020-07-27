@@ -1096,6 +1096,7 @@ fn load_movie<'gc>(
         context.player.clone().unwrap(),
         DisplayObject::MovieClip(target),
         fetch,
+        url.to_string(),
         None,
     );
 

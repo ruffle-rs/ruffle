@@ -22,6 +22,9 @@ pub enum Error {
     #[error("Load cancelled")]
     Cancelled,
 
+    #[error("Non-root-movie loader spawned as root movie loader")]
+    NotRootMovieLoader,
+
     #[error("Non-movie loader spawned as movie loader")]
     NotMovieLoader,
 
@@ -33,6 +36,9 @@ pub enum Error {
 
     #[error("Non-XML loader spawned as XML loader")]
     NotXmlLoader,
+
+    #[error("Could not fetch movie {0}")]
+    FetchError(String),
 
     #[error("Invalid SWF")]
     InvalidSwf(#[from] crate::tag_utils::Error),
@@ -108,6 +114,27 @@ impl<'gc> LoadManager<'gc> {
         self.0.get_mut(handle)
     }
 
+    /// Kick off the root movie load.
+    ///
+    /// The root movie is special because it determines a few bits of player
+    /// state, such as the size of the stage and the current frame rate. Ergo,
+    /// this method should only be called once, by the player that is trying to
+    /// kick off it's root movie load.
+    pub fn load_root_movie(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        fetch: OwnedFuture<Vec<u8>, Error>,
+        url: String,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::RootMovie { self_handle: None };
+        let handle = self.add_loader(loader);
+
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.introduce_loader_handle(handle);
+
+        loader.root_movie_loader(player, fetch, url)
+    }
+
     /// Kick off a movie clip load.
     ///
     /// Returns the loader's async process, which you will need to spawn.
@@ -116,6 +143,7 @@ impl<'gc> LoadManager<'gc> {
         player: Weak<Mutex<Player>>,
         target_clip: DisplayObject<'gc>,
         fetch: OwnedFuture<Vec<u8>, Error>,
+        url: String,
         target_broadcaster: Option<Object<'gc>>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
@@ -129,7 +157,7 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.introduce_loader_handle(handle);
 
-        loader.movie_loader(player, fetch)
+        loader.movie_loader(player, fetch, url)
     }
 
     /// Indicates that a movie clip has initialized (ran it's first frame).
@@ -229,6 +257,12 @@ impl<'gc> Default for LoadManager<'gc> {
 
 /// A struct that holds garbage-collected pointers for asynchronous code.
 pub enum Loader<'gc> {
+    /// Loader that is loading the root movie of a player.
+    RootMovie {
+        /// The handle to refer to this loader instance.
+        self_handle: Option<Handle>,
+    },
+
     /// Loader that is loading a new movie into a movieclip.
     Movie {
         /// The handle to refer to this loader instance.
@@ -291,6 +325,7 @@ pub enum Loader<'gc> {
 unsafe impl<'gc> Collect for Loader<'gc> {
     fn trace(&self, cc: CollectionContext) {
         match self {
+            Loader::RootMovie { .. } => {}
             Loader::Movie {
                 target_clip,
                 target_broadcaster,
@@ -313,11 +348,52 @@ impl<'gc> Loader<'gc> {
     /// run.
     pub fn introduce_loader_handle(&mut self, handle: Handle) {
         match self {
+            Loader::RootMovie { self_handle, .. } => *self_handle = Some(handle),
             Loader::Movie { self_handle, .. } => *self_handle = Some(handle),
             Loader::Form { self_handle, .. } => *self_handle = Some(handle),
             Loader::LoadVars { self_handle, .. } => *self_handle = Some(handle),
             Loader::XML { self_handle, .. } => *self_handle = Some(handle),
         }
+    }
+
+    /// Construct a future for the root movie loader.
+    pub fn root_movie_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        fetch: OwnedFuture<Vec<u8>, Error>,
+        mut url: String,
+    ) -> OwnedFuture<(), Error> {
+        let _handle = match self {
+            Loader::RootMovie { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotMovieLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            player.lock().expect("Could not lock player!!").update(
+                |_avm1, _avm2, uc| -> Result<(), Error> {
+                    url = uc.navigator.resolve_relative_url(&url).into_owned();
+
+                    Ok(())
+                },
+            )?;
+
+            let data = (fetch.await)
+                .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
+
+            if let Ok((_length, movie)) = data {
+                player.lock().unwrap().set_root_movie(Arc::new(movie));
+
+                Ok(())
+            } else {
+                Err(Error::FetchError(url))
+            }
+        })
     }
 
     /// Construct a future for the given movie loader.
@@ -331,6 +407,7 @@ impl<'gc> Loader<'gc> {
         &mut self,
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
+        mut url: String,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
@@ -344,6 +421,8 @@ impl<'gc> Loader<'gc> {
         Box::pin(async move {
             player.lock().expect("Could not lock player!!").update(
                 |avm1, _avm2, uc| -> Result<(), Error> {
+                    url = uc.navigator.resolve_relative_url(&url).into_owned();
+
                     let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                         Some(Loader::Movie {
                             target_clip,
@@ -375,7 +454,8 @@ impl<'gc> Loader<'gc> {
                 },
             )?;
 
-            let data = (fetch.await).and_then(|data| Ok((data.len(), SwfMovie::from_data(&data)?)));
+            let data = (fetch.await)
+                .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
             if let Ok((length, movie)) = data {
                 let movie = Arc::new(movie);
 

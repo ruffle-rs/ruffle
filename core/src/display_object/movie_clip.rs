@@ -2567,7 +2567,7 @@ impl ClipAction {
 
         let len = other.action_data.len();
         let key_code = other.key_code;
-        let movie = Arc::new(movie.from_movie_and_subdata(other.action_data));
+        let movie = Arc::new(movie.from_movie_and_subdata(other.action_data, &movie));
         other.events.into_iter().map(move |event| Self {
             event: match event {
                 ClipEventFlag::Construct => ClipEvent::Construct,
