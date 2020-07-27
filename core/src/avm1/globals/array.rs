@@ -127,7 +127,6 @@ pub fn constructor<'gc>(
     Ok(Value::Undefined)
 }
 
-
 /// Implements `Array` function
 pub fn array_function<'gc>(
     activation: &mut Activation<'_, 'gc>,
