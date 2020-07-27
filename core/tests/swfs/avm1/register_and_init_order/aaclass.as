@@ -7,6 +7,12 @@
 		trace("// trace(this._name)");
 		trace(this._name);
 		trace("");
+		trace("// trace(this.__constructor__)");
+		trace(this["__constructor__"]);
+		trace("");
+		trace("// trace(this.__constructor__ === aaclass)");
+		trace(this["__constructor__"] === aaclass);
+		trace("");
 		
 		this.test();
 		trace("aaclass constructor end");

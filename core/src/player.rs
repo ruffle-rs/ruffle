@@ -873,14 +873,7 @@ impl Player {
                                 );
                             }
 
-                            let _ = constructor.call(
-                                "[ctor]",
-                                &mut activation,
-                                context,
-                                object,
-                                None,
-                                &[],
-                            );
+                            let _ = constructor.construct(&mut activation, context, object, &[]);
                         }
                     }
                 }
