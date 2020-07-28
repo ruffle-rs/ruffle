@@ -5,9 +5,17 @@ true
 // broadcaster.addListener(listener2)
 true
 Listener1 got the event!
+// this === listener1
+true
 Listener2 got the event!
+// this === listener2
+true
 Listener1 got: hello! and 123.123
+// this === listener1
+true
 Listener2 got: hello! and 123.123
+// this === listener2
+true
 // broadcaster._listeners
 [object Object],[object Object]
 // broadcaster.removeListener(listener2)
@@ -15,6 +23,8 @@ true
 // broadcaster.removeListener(listener2) (Try to double-remove)
 false
 Listener1 got: Only one and 521
+// this === listener1
+true
 // broadcaster._listeners
 [object Object]
 // broadcaster instanceof AsBroadcaster
