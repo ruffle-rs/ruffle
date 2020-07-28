@@ -113,6 +113,16 @@ pub fn broadcast_message<'gc>(
     let event_name = event_name_value.coerce_to_string(activation, context)?;
     let call_args = &args[1..];
 
+    broadcast_internal(activation, context, this, call_args, &event_name)
+}
+
+pub fn broadcast_internal<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    this: Object<'gc>,
+    call_args: &[Value<'gc>],
+    method_name: &str
+) -> Result<Value<'gc>, Error<'gc>> {
     let listeners = this.get("_listeners", activation, context)?;
 
     if let Value::Object(listeners) = listeners {
@@ -120,7 +130,7 @@ pub fn broadcast_message<'gc>(
             let listener = listeners.array_element(i);
 
             if let Value::Object(listener) = listener {
-                listener.call_method(&event_name, call_args, activation, context)?;
+                listener.call_method(method_name, call_args, activation, context)?;
             }
         }
     }
