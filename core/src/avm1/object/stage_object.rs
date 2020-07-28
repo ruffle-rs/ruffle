@@ -253,13 +253,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-        args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: Create a StageObject of some kind
         self.0
             .read()
             .base
-            .create_bare_object(activation, context, this, args)
+            .create_bare_object(activation, context, this)
     }
 
     fn delete(

@@ -164,17 +164,16 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-        args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         if let Some(proto) = self.proto() {
-            proto.create_bare_object(activation, context, this, args)
+            proto.create_bare_object(activation, context, this)
         } else {
             // TODO: What happens when you `new super` but there's no
             // super? Is this code even reachable?!
             self.0
                 .read()
                 .child
-                .create_bare_object(activation, context, this, args)
+                .create_bare_object(activation, context, this)
         }
     }
 

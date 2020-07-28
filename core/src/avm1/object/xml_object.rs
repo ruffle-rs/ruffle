@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
-use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, UpdateContext};
 use crate::impl_custom_object;
 use crate::xml::{XMLDocument, XMLNode};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -80,7 +80,6 @@ impl<'gc> TObject<'gc> for XMLObject<'gc> {
         _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-        _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(XMLObject::empty_node(context.gc_context, Some(this)))
     }

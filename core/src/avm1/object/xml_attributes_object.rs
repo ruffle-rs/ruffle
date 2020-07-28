@@ -114,7 +114,6 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
-        _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: `new xmlnode.attributes()` returns undefined, not an object
         avm_warn!(activation, "Cannot create new XML Attributes object");
