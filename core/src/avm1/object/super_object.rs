@@ -159,7 +159,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
 
     #[allow(clippy::new_ret_no_self)]
-    fn new(
+    fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -167,11 +167,14 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         if let Some(proto) = self.proto() {
-            proto.new(activation, context, this, args)
+            proto.create_bare_object(activation, context, this, args)
         } else {
             // TODO: What happens when you `new super` but there's no
             // super? Is this code even reachable?!
-            self.0.read().child.new(activation, context, this, args)
+            self.0
+                .read()
+                .child
+                .create_bare_object(activation, context, this, args)
         }
     }
 

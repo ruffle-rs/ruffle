@@ -621,7 +621,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         let prototype = self
             .get("prototype", activation, context)?
             .coerce_to_object(activation, context);
-        let this = prototype.new(activation, context, prototype, args)?;
+        let this = prototype.create_bare_object(activation, context, prototype, args)?;
         self.construct_on_existing(activation, context, this, args)?;
         Ok(this)
     }
@@ -637,7 +637,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     }
 
     #[allow(clippy::new_ret_no_self)]
-    fn new(
+    fn create_bare_object(
         &self,
         _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,

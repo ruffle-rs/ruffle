@@ -189,7 +189,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The arguments passed to the constructor are provided here; however, all
     /// object construction should happen in `call`, not `new`. `new` exists
     /// purely so that host objects can be constructed by the VM.
-    fn new(
+    fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
