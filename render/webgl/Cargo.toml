@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 fnv = "1.0.7"
-js-sys = "0.3.42"
+js-sys = "0.3.44"
 log = "0.4" 
 percent-encoding = "2.1.0"
 png = "0.16.7"
