@@ -13,9 +13,6 @@ use crate::tag_utils::SwfSlice;
 #[macro_use]
 mod test_utils;
 
-#[macro_use]
-pub mod listeners;
-
 pub mod activation;
 pub mod debug;
 pub mod error;
