@@ -344,6 +344,8 @@ impl<'gc> Avm1<'gc> {
         method: &str,
         args: &[Value<'gc>],
     ) {
+        let global = self.global_object(context);
+
         let mut activation = Activation::from_nothing(
             self,
             ActivationIdentifier::root("[System Listeners]"),
@@ -353,7 +355,9 @@ impl<'gc> Avm1<'gc> {
             active_clip,
         );
 
-        avm_warn!(activation, "{} - {}", broadcaster, method);
+        let broadcaster = global.coerce_to_object(&mut activation, context).get(broadcaster, &mut activation, context).unwrap().coerce_to_object(&mut activation, context);
+
+        let _ = as_broadcaster::broadcast_internal(&mut activation, context, broadcaster, args, method);
     }
 
     /// Halts the AVM, preventing execution of any further actions.
