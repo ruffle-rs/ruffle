@@ -78,7 +78,7 @@ fn to_string<'gc>(
 
 pub fn create_rectangle_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    rectangle_proto: Option<Object<'gc>>,
+    rectangle_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     FunctionObject::constructor(

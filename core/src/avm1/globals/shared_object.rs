@@ -234,7 +234,7 @@ pub fn remove_listener<'gc>(
 
 pub fn create_shared_object_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    shared_object_proto: Option<Object<'gc>>,
+    shared_object_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     let shared_obj = FunctionObject::constructor(

@@ -499,14 +499,14 @@ impl<'gc> FunctionObject<'gc> {
         context: MutationContext<'gc, '_>,
         constructor: impl Into<Executable<'gc>> + std::clone::Clone,
         fn_proto: Option<Object<'gc>>,
-        prototype: Option<Object<'gc>>,
+        prototype: Object<'gc>,
     ) -> Object<'gc> {
         Self::allocate_function(
             context,
             Some(constructor.clone()),
             Some(constructor),
             fn_proto,
-            prototype,
+            Some(prototype),
         )
     }
 

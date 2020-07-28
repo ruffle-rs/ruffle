@@ -391,7 +391,7 @@ pub fn create_object_object<'gc>(
         Executable::Native(object_function),
         Executable::Native(constructor),
         Some(fn_proto),
-        Some(proto),
+        proto,
     );
     let mut object = object_function.as_script_object().unwrap();
 
