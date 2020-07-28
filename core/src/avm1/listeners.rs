@@ -1,4 +1,4 @@
-use crate::avm1::activation::Activation;
+/*use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use gc_arena::{Collect, MutationContext};
@@ -168,3 +168,4 @@ impl<'gc> SystemListeners<'gc> {
         }
     }
 }
+*/

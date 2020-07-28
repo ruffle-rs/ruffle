@@ -60,6 +60,7 @@ swf_tests! {
     (add_property, "avm1/add_property", 1),
     (as_transformed_flag, "avm1/as_transformed_flag", 3),
     (as_broadcaster, "avm1/as_broadcaster", 1),
+    (as_broadcaster_initialize, "avm1/as_broadcaster_initialize", 1),
     (attach_movie, "avm1/attach_movie", 1),
     (function_base_clip, "avm1/function_base_clip", 2),
     (call, "avm1/call", 2),

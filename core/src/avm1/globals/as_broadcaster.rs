@@ -4,8 +4,28 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute::*;
+use crate::avm1::function::{FunctionObject, Executable};
 use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
-use gc_arena::MutationContext;
+use gc_arena::{Collect, MutationContext};
+
+#[derive(Clone, Collect, Debug, Copy)]
+#[collect(no_drop)]
+pub struct BroadcasterFunctions<'gc> {
+    pub add_listener: Object<'gc>,
+    pub remove_listener: Object<'gc>,
+    pub broadcast_message: Object<'gc>,
+}
+
+impl<'gc> BroadcasterFunctions<'gc> {
+    pub fn initialize(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        broadcaster: Object<'gc>,
+        array_proto: Object<'gc>,
+    ) {
+        initialize_internal(gc_context, broadcaster, self, array_proto);
+    }
+}
 
 pub fn add_listener<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -111,60 +131,59 @@ pub fn broadcast_message<'gc>(
 pub fn initialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-    this: Object<'gc>,
+    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(val) = args.get(0) {
         let broadcaster = val.coerce_to_object(activation, context);
-
-        let listeners =
-            ScriptObject::array(context.gc_context, Some(activation.avm.prototypes().array));
-
-        broadcaster.define_value(
-            context.gc_context,
-            "_listeners",
-            Value::Object(listeners.into()),
-            DontEnum.into(),
-        );
-
-        let add_listener = this
-            .get("addListener", activation, context)
-            .unwrap_or(Value::Undefined);
-        broadcaster.define_value(
-            context.gc_context,
-            "addListener",
-            add_listener,
-            DontEnum.into(),
-        );
-
-        let remove_listener = this
-            .get("removeListener", activation, context)
-            .unwrap_or(Value::Undefined);
-        broadcaster.define_value(
-            context.gc_context,
-            "removeListener",
-            remove_listener,
-            DontEnum.into(),
-        );
-
-        let broadcast_message = this
-            .get("broadcastMessage", activation, context)
-            .unwrap_or(Value::Undefined);
-        broadcaster.define_value(
-            context.gc_context,
-            "broadcastMessage",
-            broadcast_message,
-            DontEnum.into(),
-        );
+        initialize_internal(context.gc_context, broadcaster, activation.avm.broadcaster_functions, activation.avm.prototypes().array);
     }
     Ok(Value::Undefined)
+}
+
+pub fn initialize_internal<'gc>(
+    gc_context: MutationContext<'gc, '_>,
+    broadcaster: Object<'gc>,
+    functions: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
+) {
+    let listeners =
+            ScriptObject::array(gc_context, Some(array_proto));
+
+        broadcaster.define_value(
+            gc_context,
+            "_listeners",
+            listeners.into(),
+            DontEnum.into(),
+        );
+
+        broadcaster.define_value(
+            gc_context,
+            "addListener",
+            functions.add_listener.into(),
+            DontEnum.into(),
+        );
+
+        broadcaster.define_value(
+            gc_context,
+            "removeListener",
+            functions.remove_listener.into(),
+            DontEnum.into(),
+        );
+
+        broadcaster.define_value(
+            gc_context,
+            "broadcastMessage",
+            functions.broadcast_message.into(),
+            DontEnum.into(),
+        );
 }
 
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
-) -> Object<'gc> {
+) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
     let mut as_broadcaster = ScriptObject::object(gc_context, proto);
 
     as_broadcaster.force_set_function(
@@ -175,29 +194,36 @@ pub fn create<'gc>(
         fn_proto,
     );
 
-    as_broadcaster.force_set_function(
+    let add_listener = FunctionObject::function(gc_context, Executable::Native(add_listener), fn_proto, None,);
+    as_broadcaster.define_value(
+        gc_context,
         "addListener",
-        add_listener,
-        gc_context,
+        add_listener.into(),
         DontDelete | ReadOnly | DontEnum,
-        fn_proto,
     );
 
-    as_broadcaster.force_set_function(
+    let remove_listener = FunctionObject::function(gc_context, Executable::Native(remove_listener), fn_proto, None,);
+    as_broadcaster.define_value(
+        gc_context,
         "removeListener",
-        remove_listener,
-        gc_context,
+        remove_listener.into(),
         DontDelete | ReadOnly | DontEnum,
-        fn_proto,
     );
 
-    as_broadcaster.force_set_function(
+    let broadcast_message = FunctionObject::function(gc_context, Executable::Native(broadcast_message), fn_proto, None,);
+    as_broadcaster.define_value(
+        gc_context,
         "broadcastMessage",
-        broadcast_message,
-        gc_context,
+        broadcast_message.into(),
         DontDelete | ReadOnly | DontEnum,
-        fn_proto,
     );
 
-    as_broadcaster.into()
+    (
+        BroadcasterFunctions {
+            add_listener: add_listener,
+            remove_listener: remove_listener,
+            broadcast_message: broadcast_message,
+        },
+        as_broadcaster.into(),
+    )
 }

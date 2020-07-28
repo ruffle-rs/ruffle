@@ -1,8 +1,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::listeners::Listeners;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use gc_arena::MutationContext;
 
 pub fn show_mouse<'gc>(
@@ -39,11 +39,12 @@ pub fn create_mouse_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
-    listener: &Listeners<'gc>,
+    broadcaster_functions: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
 ) -> Object<'gc> {
     let mut mouse = ScriptObject::object(gc_context, proto);
 
-    register_listener!(gc_context, mouse, listener, fn_proto, mouse);
+    broadcaster_functions.initialize(gc_context, mouse.into(), array_proto);
 
     mouse.force_set_function(
         "show",
