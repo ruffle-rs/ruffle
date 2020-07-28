@@ -32,10 +32,10 @@ mod value;
 #[cfg(test)]
 mod tests;
 
-use crate::avm1::globals::as_broadcaster;
-use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::error::Error;
+use crate::avm1::globals::as_broadcaster;
+use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 pub use globals::SystemPrototypes;
 pub use object::script_object::ScriptObject;
 pub use object::sound_object::SoundObject;
@@ -355,9 +355,14 @@ impl<'gc> Avm1<'gc> {
             active_clip,
         );
 
-        let broadcaster = global.coerce_to_object(&mut activation, context).get(broadcaster, &mut activation, context).unwrap().coerce_to_object(&mut activation, context);
+        let broadcaster = global
+            .coerce_to_object(&mut activation, context)
+            .get(broadcaster, &mut activation, context)
+            .unwrap()
+            .coerce_to_object(&mut activation, context);
 
-        let _ = as_broadcaster::broadcast_internal(&mut activation, context, broadcaster, args, method);
+        let _ =
+            as_broadcaster::broadcast_internal(&mut activation, context, broadcaster, args, method);
     }
 
     /// Halts the AVM, preventing execution of any further actions.

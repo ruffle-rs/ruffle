@@ -1,6 +1,6 @@
-use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};

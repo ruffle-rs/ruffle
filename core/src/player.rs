@@ -559,26 +559,15 @@ impl Player {
 
         // Propagte clip events.
         let (clip_event, listener) = match event {
-            PlayerEvent::KeyDown { .. } => (
-                Some(ClipEvent::KeyDown),
-                Some(("Key", "onKeyDown")),
-            ),
-            PlayerEvent::KeyUp { .. } => (
-                Some(ClipEvent::KeyUp),
-                Some(("Key", "onKeyUp")),
-            ),
-            PlayerEvent::MouseMove { .. } => (
-                Some(ClipEvent::MouseMove),
-                Some(("Mouse", "onMouseMove")),
-            ),
-            PlayerEvent::MouseUp { .. } => (
-                Some(ClipEvent::MouseUp),
-                Some(("Mouse", "onMouseUp")),
-            ),
-            PlayerEvent::MouseDown { .. } => (
-                Some(ClipEvent::MouseDown),
-                Some(("Mouse", "onMouseDown")),
-            ),
+            PlayerEvent::KeyDown { .. } => (Some(ClipEvent::KeyDown), Some(("Key", "onKeyDown"))),
+            PlayerEvent::KeyUp { .. } => (Some(ClipEvent::KeyUp), Some(("Key", "onKeyUp"))),
+            PlayerEvent::MouseMove { .. } => {
+                (Some(ClipEvent::MouseMove), Some(("Mouse", "onMouseMove")))
+            }
+            PlayerEvent::MouseUp { .. } => (Some(ClipEvent::MouseUp), Some(("Mouse", "onMouseUp"))),
+            PlayerEvent::MouseDown { .. } => {
+                (Some(ClipEvent::MouseDown), Some(("Mouse", "onMouseDown")))
+            }
             _ => (None, None),
         };
 
