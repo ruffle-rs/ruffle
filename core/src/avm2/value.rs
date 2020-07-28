@@ -427,7 +427,12 @@ impl<'gc> Value<'gc> {
             {
                 0
             } else {
-                ((number.abs().floor() * number.signum()) as u64 & (u32::MAX as u64)) as u32
+                let abs32 = (number.abs().floor() % (u32::MAX as f64 + 1.0)) as u32;
+                if number.is_sign_negative() {
+                    (!abs32).wrapping_add(1)
+                } else {
+                    abs32
+                }
             },
         )
     }
