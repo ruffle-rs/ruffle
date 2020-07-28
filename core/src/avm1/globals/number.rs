@@ -50,7 +50,7 @@ pub fn number_function<'gc>(
 
 pub fn create_number_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    number_proto: Option<Object<'gc>>,
+    number_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     let number = FunctionObject::function_and_constructor(

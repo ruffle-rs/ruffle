@@ -516,14 +516,14 @@ impl<'gc> FunctionObject<'gc> {
         function: impl Into<Executable<'gc>>,
         constructor: impl Into<Executable<'gc>>,
         fn_proto: Option<Object<'gc>>,
-        prototype: Option<Object<'gc>>,
+        prototype: Object<'gc>,
     ) -> Object<'gc> {
         Self::allocate_function(
             context,
             Some(function),
             Some(constructor),
             fn_proto,
-            prototype,
+            Some(prototype),
         )
     }
 }

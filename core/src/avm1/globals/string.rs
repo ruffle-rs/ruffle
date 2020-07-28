@@ -51,7 +51,7 @@ pub fn string_function<'gc>(
 
 pub fn create_string_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    string_proto: Option<Object<'gc>>,
+    string_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     let string = FunctionObject::function_and_constructor(
