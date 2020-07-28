@@ -353,7 +353,7 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         Some(text_format_proto),
     );
-    let array = array::create_array_object(gc_context, Some(array_proto), Some(function_proto));
+    let array = array::create_array_object(gc_context, array_proto, Some(function_proto));
     let xmlnode = FunctionObject::constructor(
         gc_context,
         Executable::Native(xml::xmlnode_constructor),
@@ -366,10 +366,9 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         Some(xml_proto),
     );
-    let string = string::create_string_object(gc_context, Some(string_proto), Some(function_proto));
-    let number = number::create_number_object(gc_context, Some(number_proto), Some(function_proto));
-    let boolean =
-        boolean::create_boolean_object(gc_context, Some(boolean_proto), Some(function_proto));
+    let string = string::create_string_object(gc_context, string_proto, Some(function_proto));
+    let number = number::create_number_object(gc_context, number_proto, Some(function_proto));
+    let boolean = boolean::create_boolean_object(gc_context, boolean_proto, Some(function_proto));
 
     let flash = ScriptObject::object(gc_context, Some(object_proto));
     let geom = ScriptObject::object(gc_context, Some(object_proto));

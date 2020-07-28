@@ -50,7 +50,7 @@ pub fn boolean_function<'gc>(
 
 pub fn create_boolean_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    boolean_proto: Option<Object<'gc>>,
+    boolean_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     FunctionObject::function_and_constructor(

@@ -35,7 +35,7 @@ type CompareFn<'a, 'gc> = Box<
 
 pub fn create_array_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    array_proto: Option<Object<'gc>>,
+    array_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     let array = FunctionObject::function_and_constructor(
