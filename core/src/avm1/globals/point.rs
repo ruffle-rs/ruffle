@@ -24,10 +24,8 @@ pub fn construct_new_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let proto = context.system_prototypes.point;
-    let object = proto.new(activation, context, proto, &args)?;
     let constructor = activation.avm.prototypes.point_constructor;
-    constructor.construct(activation, context, object, &args)?;
+    let object = constructor.construct(activation, context, &args)?;
     Ok(object)
 }
 
@@ -94,14 +92,12 @@ fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let proto = context.system_prototypes.point;
     let args = [
         this.get("x", activation, context)?,
         this.get("y", activation, context)?,
     ];
-    let cloned = proto.new(activation, context, proto, &args)?;
     let constructor = activation.avm.prototypes.point_constructor;
-    constructor.construct(activation, context, proto, &args)?;
+    let cloned = constructor.construct(activation, context, &args)?;
 
     Ok(cloned.into())
 }

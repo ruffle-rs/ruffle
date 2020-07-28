@@ -123,16 +123,14 @@ fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let proto = context.system_prototypes.rectangle;
     let args = [
         this.get("x", activation, context)?,
         this.get("y", activation, context)?,
         this.get("width", activation, context)?,
         this.get("height", activation, context)?,
     ];
-    let cloned = proto.new(activation, context, proto, &args)?;
     let constructor = activation.avm.prototypes.rectangle_constructor;
-    constructor.construct(activation, context, cloned, &args)?;
+    let cloned = constructor.construct(activation, context, &args)?;
     Ok(cloned.into())
 }
 
@@ -383,16 +381,14 @@ fn union<'gc>(
         this_bottom.max(other_bottom)
     } - top;
 
-    let proto = context.system_prototypes.rectangle;
     let args = [
         Value::Number(left),
         Value::Number(top),
         Value::Number(width),
         Value::Number(height),
     ];
-    let result = proto.new(activation, context, proto, &args)?;
     let constructor = activation.avm.prototypes.rectangle_constructor;
-    constructor.construct(activation, context, result, &args)?;
+    let result = constructor.construct(activation, context, &args)?;
     Ok(result.into())
 }
 
@@ -607,16 +603,14 @@ fn intersection<'gc>(
         top = 0.0;
     }
 
-    let proto = context.system_prototypes.rectangle;
     let args = [
         Value::Number(left),
         Value::Number(top),
         Value::Number(right - left),
         Value::Number(bottom - top),
     ];
-    let result = proto.new(activation, context, proto, &args)?;
     let constructor = activation.avm.prototypes.rectangle_constructor;
-    constructor.construct(activation, context, result, &args)?;
+    let result = constructor.construct(activation, context, &args)?;
     Ok(result.into())
 }
 

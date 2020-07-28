@@ -85,13 +85,10 @@ pub fn copy<'gc>(
         .get("visible", activation, context)?
         .as_bool(activation.swf_version());
 
-    let context_menu_item_proto = activation.avm.prototypes.context_menu_item;
-    let copy = context_menu_item_proto.new(activation, context, context_menu_item_proto, &[])?;
     let constructor = activation.avm.prototypes.context_menu_item_constructor;
-    constructor.construct(
+    let copy = constructor.construct(
         activation,
         context,
-        copy,
         &[
             AvmString::new(context.gc_context, caption).into(),
             callback.into(),

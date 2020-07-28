@@ -572,13 +572,13 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         }
     }
 
-    fn construct(
+    fn construct_on_existing(
         &self,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         mut this: Object<'gc>,
         args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    ) -> Result<(), Error<'gc>> {
         this.set("__constructor__", (*self).into(), activation, context)?;
         this.set_attributes(
             context.gc_context,
@@ -596,7 +596,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             );
         }
         if let Some(exec) = &self.data.read().constructor {
-            exec.exec(
+            let _ = exec.exec(
                 "[ctor]",
                 activation,
                 context,
@@ -605,10 +605,25 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 args,
                 ExecutionReason::FunctionCall,
                 (*self).into(),
-            )
+            )?;
         } else {
-            self.call("[ctor]", activation, context, this, None, args)
+            let _ = self.call("[ctor]", activation, context, this, None, args)?;
         }
+        Ok(())
+    }
+
+    fn construct(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        args: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        let prototype = self
+            .get("prototype", activation, context)?
+            .coerce_to_object(activation, context);
+        let this = prototype.new(activation, context, prototype, args)?;
+        self.construct_on_existing(activation, context, this, args)?;
+        Ok(this)
     }
 
     fn call_setter(

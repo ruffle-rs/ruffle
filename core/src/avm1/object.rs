@@ -108,15 +108,26 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>>;
 
-    /// Construct the underlying object.
+    /// Construct the underlying object, if this is a valid constructor, and returns the result.
+    /// Calling this on something other than a constructor will return a new Undefined object.
     fn construct(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        _args: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        Ok(Value::Undefined.coerce_to_object(activation, context))
+    }
+
+    /// Takes an already existing object and performs this constructor (if valid) on it.
+    fn construct_on_existing(
         &self,
         _activation: &mut Activation<'_, 'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        mut _this: Object<'gc>,
         _args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Undefined)
+    ) -> Result<(), Error<'gc>> {
+        Ok(())
     }
 
     /// Call a method on the object.

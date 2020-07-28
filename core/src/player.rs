@@ -873,7 +873,12 @@ impl Player {
                                 );
                             }
 
-                            let _ = constructor.construct(&mut activation, context, object, &[]);
+                            let _ = constructor.construct_on_existing(
+                                &mut activation,
+                                context,
+                                object,
+                                &[],
+                            );
                         }
                     }
                 }
