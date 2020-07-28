@@ -11,7 +11,7 @@ use gc_arena::MutationContext;
 
 /// Implements `TextField`
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -19,7 +19,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn get_text<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -32,7 +32,7 @@ pub fn get_text<'gc>(
 }
 
 pub fn set_text<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -41,7 +41,7 @@ pub fn set_text<'gc>(
             if let Some(value) = args.get(0) {
                 if let Err(err) = text_field.set_text(
                     value.coerce_to_string(activation)?.to_string(),
-                    activation.context,
+                    &mut activation.context,
                 ) {
                     avm_error!(activation, "Error when setting TextField.text: {}", err);
                 }
@@ -53,7 +53,7 @@ pub fn set_text<'gc>(
 }
 
 pub fn get_html<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -66,7 +66,7 @@ pub fn get_html<'gc>(
 }
 
 pub fn set_html<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -74,7 +74,7 @@ pub fn set_html<'gc>(
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
                 text_field.set_is_html(
-                    activation.context,
+                    &mut activation.context,
                     value.as_bool(activation.current_swf_version()),
                 );
             }
@@ -84,13 +84,13 @@ pub fn set_html<'gc>(
 }
 
 pub fn get_html_text<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
         if let Some(text_field) = display_object.as_edit_text() {
-            if let Ok(text) = text_field.html_text(activation.context) {
+            if let Ok(text) = text_field.html_text(&mut activation.context) {
                 return Ok(AvmString::new(activation.context.gc_context, text).into());
             }
         }
@@ -99,7 +99,7 @@ pub fn get_html_text<'gc>(
 }
 
 pub fn set_html_text<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -109,7 +109,7 @@ pub fn set_html_text<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_string(activation)?;
-            let _ = text_field.set_html_text(text.to_string(), activation.context);
+            let _ = text_field.set_html_text(text.to_string(), &mut activation.context);
             // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
         }
     }
@@ -117,7 +117,7 @@ pub fn set_html_text<'gc>(
 }
 
 pub fn get_border<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -131,7 +131,7 @@ pub fn get_border<'gc>(
 }
 
 pub fn set_border<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -147,7 +147,7 @@ pub fn set_border<'gc>(
 }
 
 pub fn get_embed_fonts<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -161,7 +161,7 @@ pub fn get_embed_fonts<'gc>(
 }
 
 pub fn set_embed_fonts<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -169,7 +169,7 @@ pub fn set_embed_fonts<'gc>(
         if let Some(text_field) = display_object.as_edit_text() {
             if let Some(value) = args.get(0) {
                 let embed_fonts = value.as_bool(activation.current_swf_version());
-                text_field.set_is_device_font(activation.context, !embed_fonts);
+                text_field.set_is_device_font(&mut activation.context, !embed_fonts);
             }
         }
     }
@@ -177,7 +177,7 @@ pub fn set_embed_fonts<'gc>(
 }
 
 pub fn get_length<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -194,7 +194,7 @@ macro_rules! with_text_field {
         $(
             $object.force_set_function(
                 $name,
-                |activation: &mut Activation<'_, '_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
+                |activation: &mut Activation<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
                     if let Some(display_object) = this.as_display_object() {
                         if let Some(text_field) = display_object.as_edit_text() {
                             return $fn(text_field, activation, args);
@@ -211,7 +211,7 @@ macro_rules! with_text_field {
 }
 
 pub fn text_width<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -219,7 +219,7 @@ pub fn text_width<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
     {
-        let metrics = etext.measure_text(activation.context);
+        let metrics = etext.measure_text(&mut activation.context);
 
         return Ok(metrics.0.to_pixels().into());
     }
@@ -228,7 +228,7 @@ pub fn text_width<'gc>(
 }
 
 pub fn text_height<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -236,7 +236,7 @@ pub fn text_height<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
     {
-        let metrics = etext.measure_text(activation.context);
+        let metrics = etext.measure_text(&mut activation.context);
 
         return Ok(metrics.1.to_pixels().into());
     }
@@ -245,7 +245,7 @@ pub fn text_height<'gc>(
 }
 
 pub fn multiline<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -260,7 +260,7 @@ pub fn multiline<'gc>(
 }
 
 pub fn set_multiline<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -274,14 +274,14 @@ pub fn set_multiline<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
     {
-        etext.set_multiline(is_multiline, activation.context);
+        etext.set_multiline(is_multiline, &mut activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 fn variable<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -299,7 +299,7 @@ fn variable<'gc>(
 }
 
 fn set_variable<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -319,7 +319,7 @@ fn set_variable<'gc>(
 }
 
 pub fn word_wrap<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -334,7 +334,7 @@ pub fn word_wrap<'gc>(
 }
 
 pub fn set_word_wrap<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -348,14 +348,14 @@ pub fn set_word_wrap<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_edit_text())
     {
-        etext.set_word_wrap(is_word_wrap, activation.context);
+        etext.set_word_wrap(is_word_wrap, &mut activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn auto_size<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -375,7 +375,7 @@ pub fn auto_size<'gc>(
 }
 
 pub fn set_auto_size<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -391,7 +391,7 @@ pub fn set_auto_size<'gc>(
                 Value::Bool(true) => AutoSizeMode::Left,
                 _ => AutoSizeMode::None,
             },
-            activation.context,
+            &mut activation.context,
         );
     }
 
@@ -619,7 +619,7 @@ pub fn attach_virtual_properties<'gc>(
 
 fn get_new_text_format<'gc>(
     text_field: EditText<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let tf = text_field.new_text_format();
@@ -629,14 +629,14 @@ fn get_new_text_format<'gc>(
 
 fn set_new_text_format<'gc>(
     text_field: EditText<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let tf = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(tf) = tf {
         let tf_parsed = TextFormat::from_avm1_object(tf, activation)?;
-        text_field.set_new_text_format(tf_parsed, activation.context);
+        text_field.set_new_text_format(tf_parsed, &mut activation.context);
     }
 
     Ok(Value::Undefined)
@@ -644,7 +644,7 @@ fn set_new_text_format<'gc>(
 
 fn get_text_format<'gc>(
     text_field: EditText<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (from, to) = match (args.get(0), args.get(1)) {
@@ -667,7 +667,7 @@ fn get_text_format<'gc>(
 
 fn set_text_format<'gc>(
     text_field: EditText<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let tf = args.last().cloned().unwrap_or(Value::Undefined);
@@ -687,7 +687,7 @@ fn set_text_format<'gc>(
             _ => (0, text_field.text_length()),
         };
 
-        text_field.set_text_format(from, to, tf_parsed, activation.context);
+        text_field.set_text_format(from, to, tf_parsed, &mut activation.context);
     }
 
     Ok(Value::Undefined)
@@ -695,7 +695,7 @@ fn set_text_format<'gc>(
 
 fn replace_text<'gc>(
     text_field: EditText<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let from = args
@@ -715,7 +715,7 @@ fn replace_text<'gc>(
         .coerce_to_string(activation)?
         .to_string();
 
-    text_field.replace_text(from as usize, to as usize, &text, activation.context);
+    text_field.replace_text(from as usize, to as usize, &text, &mut activation.context);
 
     Ok(Value::Undefined)
 }

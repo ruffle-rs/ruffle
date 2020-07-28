@@ -7,7 +7,7 @@ use crate::avm1::{ScriptObject, Value};
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -55,7 +55,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn copy<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
     _args: &[Value<'gc>],

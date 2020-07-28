@@ -45,7 +45,7 @@ impl<'gc> SuperObject<'gc> {
     pub fn from_this_and_base_proto(
         this: Object<'gc>,
         base_proto: Object<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Self, Error<'gc>> {
         Ok(Self(GcCell::allocate(
             activation.context.gc_context,
@@ -64,7 +64,7 @@ impl<'gc> SuperObject<'gc> {
     /// Retrieve the constructor associated with the super proto.
     fn super_constr(
         self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         if let Some(super_proto) = self.super_proto() {
             Ok(Some(
@@ -82,7 +82,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn get_local(
         &self,
         _name: &str,
-        _activation: &mut Activation<'_, '_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Undefined)
@@ -92,7 +92,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         _name: &str,
         _value: Value<'gc>,
-        _activation: &mut Activation<'_, '_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         //TODO: What happens if you set `super.__proto__`?
         Ok(())
@@ -100,7 +100,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn call(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
@@ -122,7 +122,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         name: &str,
         args: &[Value<'gc>],
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let child = self.0.read().child;
         let super_proto = self.super_proto();
@@ -141,7 +141,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>> {
         self.0.read().child.call_setter(name, value, activation)
     }
@@ -149,7 +149,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         if let Some(proto) = self.proto() {
@@ -161,7 +161,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         }
     }
 
-    fn delete(&self, _activation: &mut Activation<'_, '_, 'gc, '_>, _name: &str) -> bool {
+    fn delete(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: &str) -> bool {
         //`super` cannot have properties deleted from it
         false
     }
@@ -209,7 +209,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        _activation: &mut Activation<'_, '_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
         _gc_context: MutationContext<'gc, '_>,
         _name: &str,
         _get: Object<'gc>,
@@ -221,7 +221,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn set_watcher(
         &self,
-        _activation: &mut Activation<'_, '_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
         _gc_context: MutationContext<'gc, '_>,
         _name: Cow<str>,
         _callback: Object<'gc>,
@@ -232,7 +232,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn remove_watcher(
         &self,
-        _activation: &mut Activation<'_, '_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
         _gc_context: MutationContext<'gc, '_>,
         _name: Cow<str>,
     ) -> bool {
@@ -240,27 +240,23 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         false
     }
 
-    fn has_property(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.0.read().child.has_property(activation, name)
     }
 
-    fn has_own_property(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.0.read().child.has_own_property(activation, name)
     }
 
-    fn has_own_virtual(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.0.read().child.has_own_virtual(activation, name)
     }
 
-    fn is_property_enumerable(
-        &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
-        name: &str,
-    ) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.0.read().child.is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, _activation: &mut Activation<'_, '_, 'gc, '_>) -> Vec<String> {
+    fn get_keys(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
         vec![]
     }
 

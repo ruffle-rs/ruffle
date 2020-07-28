@@ -12,7 +12,7 @@ use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -32,7 +32,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn add_listener<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -49,7 +49,7 @@ pub fn add_listener<'gc>(
 }
 
 pub fn remove_listener<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -91,7 +91,7 @@ pub fn remove_listener<'gc>(
 }
 
 pub fn broadcast_message<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -114,7 +114,7 @@ pub fn broadcast_message<'gc>(
 }
 
 pub fn load_clip<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -149,7 +149,7 @@ pub fn load_clip<'gc>(
 }
 
 pub fn unload_clip<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -160,7 +160,7 @@ pub fn unload_clip<'gc>(
             .as_display_object()
             .and_then(|dobj| dobj.as_movie_clip())
         {
-            movieclip.unload(activation.context);
+            movieclip.unload(&mut activation.context);
             movieclip.replace_with_movie(activation.context.gc_context, None);
 
             return Ok(true.into());
@@ -171,7 +171,7 @@ pub fn unload_clip<'gc>(
 }
 
 pub fn get_progress<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

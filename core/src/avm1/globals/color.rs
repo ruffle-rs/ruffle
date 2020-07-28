@@ -12,7 +12,7 @@ use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     mut this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -74,7 +74,7 @@ pub fn create_proto<'gc>(
 
 /// Gets the target display object of this color transform.
 fn target<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
 ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
     // The target path resolves based on the active tellTarget clip of the stack frame.
@@ -91,7 +91,7 @@ fn target<'gc>(
 }
 
 fn get_rgb<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -107,7 +107,7 @@ fn get_rgb<'gc>(
 }
 
 fn get_transform<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -132,7 +132,7 @@ fn get_transform<'gc>(
 }
 
 fn set_rgb<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -157,7 +157,7 @@ fn set_rgb<'gc>(
 }
 
 fn set_transform<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -165,7 +165,7 @@ fn set_transform<'gc>(
     // to the 16-bit range used by the internal representations of the Flash Player.
     // This will get slightly simpler when we change ColorTransform to the proper representation (see #193).
     fn set_color_mult<'gc>(
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         transform: Object<'gc>,
         property: &str,
         out: &mut f32,
@@ -181,7 +181,7 @@ fn set_transform<'gc>(
     }
 
     fn set_color_add<'gc>(
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         transform: Object<'gc>,
         property: &str,
         out: &mut f32,

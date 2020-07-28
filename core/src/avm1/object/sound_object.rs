@@ -128,7 +128,7 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
 
         _this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {

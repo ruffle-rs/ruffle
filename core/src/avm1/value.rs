@@ -133,7 +133,7 @@ impl<'gc> Value<'gc> {
     /// * In SWF6 and lower, `undefined` is coerced to `0.0` (like `false`)
     /// rather than `NaN` as required by spec.
     /// * In SWF5 and lower, hexadecimal is unsupported.
-    fn primitive_as_number(&self, activation: &mut Activation<'_, '_, 'gc, '_>) -> f64 {
+    fn primitive_as_number(&self, activation: &mut Activation<'_, 'gc, '_>) -> f64 {
         match self {
             Value::Undefined if activation.current_swf_version() < 7 => 0.0,
             Value::Null if activation.current_swf_version() < 7 => 0.0,
@@ -197,7 +197,7 @@ impl<'gc> Value<'gc> {
     /// ECMA-262 2nd edition s. 9.3 ToNumber
     pub fn coerce_to_f64(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<f64, Error<'gc>> {
         Ok(match self {
             Value::Object(_) => self
@@ -220,7 +220,7 @@ impl<'gc> Value<'gc> {
     ///   return `undefined` rather than yielding a runtime error.
     pub fn to_primitive_num(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Object(object) => object.call_method("valueOf", &[], activation)?,
@@ -233,7 +233,7 @@ impl<'gc> Value<'gc> {
     pub fn abstract_lt(
         &self,
         other: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let prim_self = self.to_primitive_num(activation)?;
         let prim_other = other.to_primitive_num(activation)?;
@@ -272,7 +272,7 @@ impl<'gc> Value<'gc> {
     pub fn abstract_eq(
         &self,
         other: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         coerced: bool,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match (self, &other) {
@@ -376,7 +376,7 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_u16(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<u16, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_u16)
     }
@@ -387,7 +387,7 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_i16(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<i16, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_i16)
     }
@@ -399,7 +399,7 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_i32(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<i32, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_i32)
     }
@@ -410,7 +410,7 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_u32(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<u32, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_u32)
     }
@@ -418,7 +418,7 @@ impl<'gc> Value<'gc> {
     /// Coerce a value to a string.
     pub fn coerce_to_string(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Object(object) => match object.call_method("toString", &[], activation)? {
@@ -471,14 +471,14 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn coerce_to_object(&self, activation: &mut Activation<'_, '_, 'gc, '_>) -> Object<'gc> {
+    pub fn coerce_to_object(&self, activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
         ValueObject::boxed(activation, self.to_owned())
     }
 
     pub fn call(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
@@ -585,7 +585,7 @@ mod test {
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);
 
             fn value_of_impl<'gc>(
-                _activation: &mut Activation<'_, '_, 'gc, '_>,
+                _activation: &mut Activation<'_, 'gc, '_>,
                 _: Object<'gc>,
                 _: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {

@@ -12,7 +12,7 @@ use gc_arena::MutationContext;
 
 /// `String` constructor
 pub fn string<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -33,7 +33,7 @@ pub fn string<'gc>(
 
 /// `String` function
 pub fn string_function<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -185,7 +185,7 @@ pub fn create_proto<'gc>(
 }
 
 fn char_at<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -210,7 +210,7 @@ fn char_at<'gc>(
 }
 
 fn char_code_at<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -232,7 +232,7 @@ fn char_code_at<'gc>(
 }
 
 fn concat<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -245,7 +245,7 @@ fn concat<'gc>(
 }
 
 fn from_char_code<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -263,7 +263,7 @@ fn from_char_code<'gc>(
 }
 
 fn index_of<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -310,7 +310,7 @@ fn index_of<'gc>(
 }
 
 fn last_index_of<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -361,7 +361,7 @@ fn last_index_of<'gc>(
 }
 
 fn slice<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -396,7 +396,7 @@ fn slice<'gc>(
 }
 
 fn split<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -436,7 +436,7 @@ fn split<'gc>(
 }
 
 fn substr<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -460,7 +460,7 @@ fn substr<'gc>(
 }
 
 fn substring<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -491,7 +491,7 @@ fn substring<'gc>(
 }
 
 fn to_lower_case<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -508,7 +508,7 @@ fn to_lower_case<'gc>(
 
 /// `String.toString` / `String.valueOf` impl
 pub fn to_string_value_of<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -525,7 +525,7 @@ pub fn to_string_value_of<'gc>(
 }
 
 fn to_upper_case<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

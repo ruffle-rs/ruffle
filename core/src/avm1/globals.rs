@@ -44,7 +44,7 @@ mod text_format;
 mod xml;
 
 pub fn random<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -57,7 +57,7 @@ pub fn random<'gc>(
 }
 
 pub fn is_finite<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -70,7 +70,7 @@ pub fn is_finite<'gc>(
 }
 
 pub fn is_nan<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -82,7 +82,7 @@ pub fn is_nan<'gc>(
 }
 
 pub fn get_infinity<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -94,7 +94,7 @@ pub fn get_infinity<'gc>(
 }
 
 pub fn get_nan<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -106,7 +106,7 @@ pub fn get_nan<'gc>(
 }
 
 pub fn set_interval<'a, 'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -115,7 +115,7 @@ pub fn set_interval<'a, 'gc>(
 }
 
 pub fn set_timeout<'a, 'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -124,7 +124,7 @@ pub fn set_timeout<'a, 'gc>(
 }
 
 pub fn create_timer<'a, 'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -167,7 +167,7 @@ pub fn create_timer<'a, 'gc>(
 }
 
 pub fn clear_interval<'a, 'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -184,7 +184,7 @@ pub fn clear_interval<'a, 'gc>(
 }
 
 pub fn update_after_event<'a, 'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -645,7 +645,7 @@ pub fn create_globals<'gc>(
 mod tests {
     use super::*;
 
-    fn setup<'gc>(activation: &mut Activation<'_, '_, 'gc, '_>) -> Object<'gc> {
+    fn setup<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
         create_globals(activation.context.gc_context).1
     }
 

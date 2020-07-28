@@ -24,7 +24,7 @@ macro_rules! with_display_object {
         $(
             $object.force_set_function(
                 $name,
-                |activation: &mut Activation<'_, '_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
+                |activation: &mut Activation<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
                     if let Some(display_object) = this.as_display_object() {
                         return $fn(display_object, activation, args);
                     }
@@ -109,7 +109,7 @@ pub fn define_display_object_proto<'gc>(
 }
 
 pub fn get_parent<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -123,7 +123,7 @@ pub fn get_parent<'gc>(
 
 pub fn get_depth<'gc>(
     display_object: DisplayObject<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.current_swf_version() >= 6 {
@@ -135,7 +135,7 @@ pub fn get_depth<'gc>(
 }
 
 pub fn overwrite_root<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -154,7 +154,7 @@ pub fn overwrite_root<'gc>(
 }
 
 pub fn overwrite_global<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -173,7 +173,7 @@ pub fn overwrite_global<'gc>(
 }
 
 pub fn overwrite_parent<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

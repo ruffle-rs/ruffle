@@ -60,7 +60,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(mut node) = self.document().get_node_by_id(name) {
@@ -79,14 +79,14 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.base().set(name, value, activation)
     }
     fn call(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
@@ -98,7 +98,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>> {
         self.base().call_setter(name, value, activation)
     }
@@ -106,7 +106,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: `new xmlnode.attributes()` returns undefined, not an object
@@ -114,7 +114,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         Ok(Value::Undefined.coerce_to_object(activation))
     }
 
-    fn delete(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base().delete(activation, name)
     }
 
@@ -132,7 +132,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Object<'gc>,
@@ -145,7 +145,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn set_watcher(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Object<'gc>,
@@ -157,7 +157,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
 
     fn remove_watcher(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
     ) -> bool {
@@ -194,28 +194,24 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         self.base().set_proto(gc_context, prototype);
     }
 
-    fn has_property(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base().has_property(activation, name)
     }
 
-    fn has_own_property(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.document().get_node_by_id(name).is_some()
             || self.base().has_own_property(activation, name)
     }
 
-    fn has_own_virtual(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base().has_own_virtual(activation, name)
     }
 
-    fn is_property_enumerable(
-        &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
-        name: &str,
-    ) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base().is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut Activation<'_, '_, 'gc, '_>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
         let mut keys = self.base().get_keys(activation);
         keys.extend(self.document().get_node_ids().into_iter());
         keys

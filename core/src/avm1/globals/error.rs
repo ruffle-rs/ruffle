@@ -8,7 +8,7 @@ use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -44,7 +44,7 @@ pub fn create_proto<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
     _args: &[Value<'gc>],

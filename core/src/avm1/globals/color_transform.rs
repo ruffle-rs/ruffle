@@ -26,7 +26,7 @@ macro_rules! with_color_transform {
 }
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -81,7 +81,7 @@ pub fn constructor<'gc>(
 #[allow(dead_code)]
 pub fn object_to_color_transform<'gc>(
     object: Object<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<ColorTransform, Error<'gc>> {
     let red_multiplier = object
         .get("redMultiplier", activation)?
@@ -121,7 +121,7 @@ pub fn object_to_color_transform<'gc>(
 }
 
 pub fn get_rgb<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -134,7 +134,7 @@ pub fn get_rgb<'gc>(
 }
 
 pub fn set_rgb<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -165,7 +165,7 @@ macro_rules! color_transform_value_accessor {
     ($([$get_ident: ident, $set_ident: ident],)*) => {
         $(
             pub fn $set_ident<'gc>(
-                activation: &mut Activation<'_, '_, 'gc, '_>,
+                activation: &mut Activation<'_, 'gc, '_>,
 
                 this: Object<'gc>,
                 args: &[Value<'gc>],
@@ -181,7 +181,7 @@ macro_rules! color_transform_value_accessor {
             }
 
             pub fn $get_ident<'gc>(
-                _activation: &mut Activation<'_, '_, 'gc, '_>,
+                _activation: &mut Activation<'_, 'gc, '_>,
                 this: Object<'gc>,
                 _args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
@@ -244,7 +244,7 @@ pub fn create_proto<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -267,7 +267,7 @@ fn to_string<'gc>(
 }
 
 fn concat<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 
     this: Object<'gc>,
     _args: &[Value<'gc>],

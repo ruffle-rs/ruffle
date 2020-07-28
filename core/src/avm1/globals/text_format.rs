@@ -8,7 +8,7 @@ use gc_arena::MutationContext;
 fn map_defined_to_string<'gc>(
     name: &str,
     this: Object<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
 ) -> Result<(), Error<'gc>> {
     let val = match val {
@@ -30,7 +30,7 @@ fn map_defined_to_string<'gc>(
 fn map_defined_to_number<'gc>(
     name: &str,
     this: Object<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
 ) -> Result<(), Error<'gc>> {
     let val = match val {
@@ -48,7 +48,7 @@ fn map_defined_to_number<'gc>(
 fn map_defined_to_bool<'gc>(
     name: &str,
     this: Object<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
 ) -> Result<(), Error<'gc>> {
     let val = match val {
@@ -65,7 +65,7 @@ fn map_defined_to_bool<'gc>(
 
 /// `TextFormat` constructor
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

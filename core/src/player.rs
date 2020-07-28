@@ -331,7 +331,7 @@ impl Player {
 
             // Set the version parameter on the root.
             let mut activation = Activation::from_nothing(
-                context,
+                context.reborrow(),
                 ActivationIdentifier::root("[Version Setter]"),
                 context.swf.version(),
                 context.avm1.global_object_cell(),
@@ -454,7 +454,7 @@ impl Player {
                         let mut dumper = VariableDumper::new("  ");
 
                         let mut activation = Activation::from_nothing(
-                            context,
+                            context.reborrow(),
                             ActivationIdentifier::root("[Variable Dumper]"),
                             context.swf.version(),
                             context.avm1.global_object_cell(),
@@ -843,7 +843,7 @@ impl Player {
                     events,
                 } => {
                     let mut activation = Activation::from_nothing(
-                        context,
+                        context.reborrow(),
                         ActivationIdentifier::root("[Construct]"),
                         context.swf.version(),
                         context.avm1.global_object_cell(),
@@ -1112,7 +1112,7 @@ impl Player {
     pub fn flush_shared_objects(&mut self) {
         self.update(|_avm2, context| {
             let mut activation = Activation::from_nothing(
-                context,
+                context.reborrow(),
                 ActivationIdentifier::root("[Flush]"),
                 context.swf.version(),
                 context.avm1.global_object_cell(),

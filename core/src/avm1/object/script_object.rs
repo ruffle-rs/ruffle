@@ -36,7 +36,7 @@ impl<'gc> Watcher<'gc> {
     #[allow(clippy::too_many_arguments)]
     pub fn call(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
 
         name: &str,
         old_value: Value<'gc>,
@@ -254,7 +254,7 @@ impl<'gc> ScriptObject<'gc> {
         &self,
         name: &str,
         mut value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
@@ -395,7 +395,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name == "__proto__" {
@@ -448,7 +448,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.internal_set(
             name,
@@ -467,7 +467,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn call(
         &self,
         _name: &str,
-        _activation: &mut Activation<'_, '_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
         _args: &[Value<'gc>],
@@ -479,7 +479,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>> {
         match self
             .0
@@ -495,7 +495,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         match self.0.read().array {
@@ -511,7 +511,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         let mut object = self.0.write(activation.context.gc_context);
         if let Some(prop) = object.values.get(name, activation.is_case_sensitive()) {
             if prop.can_delete() {
@@ -544,7 +544,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Object<'gc>,
@@ -564,7 +564,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn set_watcher(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Object<'gc>,
@@ -579,7 +579,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn remove_watcher(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
     ) -> bool {
@@ -637,7 +637,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Checks if the object has a given named property.
-    fn has_property(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.has_own_property(activation, name)
             || self
                 .proto()
@@ -647,7 +647,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
-    fn has_own_property(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         if name == "__proto__" {
             return true;
         }
@@ -657,7 +657,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .contains_key(name, activation.is_case_sensitive())
     }
 
-    fn has_own_virtual(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         if let Some(slot) = self
             .0
             .read()
@@ -671,11 +671,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Checks if a named property appears when enumerating the object.
-    fn is_property_enumerable(
-        &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
-        name: &str,
-    ) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         if let Some(prop) = self
             .0
             .read()
@@ -689,7 +685,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Enumerate the object.
-    fn get_keys(&self, activation: &mut Activation<'_, '_, 'gc, '_>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
         let proto_keys = self
             .proto()
             .map_or_else(Vec::new, |p| p.get_keys(activation));
@@ -865,7 +861,7 @@ mod tests {
 
     fn with_object<F, R>(swf_version: u8, test: F) -> R
     where
-        F: for<'a, 'gc> FnOnce(&mut Activation<'_, '_, 'gc, '_>, Object<'gc>) -> R,
+        F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> R,
     {
         rootless_arena(|gc_context| {
             let mut avm = Avm1::new(gc_context, swf_version);
@@ -920,7 +916,7 @@ mod tests {
             let base_clip = *context.levels.get(&0).unwrap();
             let swf_version = context.swf.version();
             let mut activation = Activation::from_nothing(
-                &mut context,
+                context,
                 ActivationIdentifier::root("[Test]"),
                 swf_version,
                 globals,

@@ -6,7 +6,7 @@ use crate::avm1::{Object, ScriptObject, Value};
 use gc_arena::MutationContext;
 
 pub fn show_mouse<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -20,7 +20,7 @@ pub fn show_mouse<'gc>(
 }
 
 pub fn hide_mouse<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

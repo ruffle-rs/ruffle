@@ -909,7 +909,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         }
     }
 
-    fn bind_text_field_variables(&self, activation: &mut Activation<'_, '_, 'gc, '_>) {
+    fn bind_text_field_variables(&self, activation: &mut Activation<'_, 'gc, '_>) {
         // Check all unbound text fields to see if they apply to this object.
         // TODO: Replace with `Vec::drain_filter` when stable.
         let mut i = 0;

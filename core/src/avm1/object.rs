@@ -65,7 +65,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_local(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>>;
 
@@ -73,7 +73,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if self.has_own_property(activation, name) {
             self.get_local(name, activation, (*self).into())
@@ -87,7 +87,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>>;
 
     /// Call the underlying object.
@@ -98,7 +98,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn call(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
@@ -108,7 +108,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Calling this on something other than a constructor will return a new Undefined object.
     fn construct(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(Value::Undefined.coerce_to_object(activation))
@@ -117,7 +117,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Takes an already existing object and performs this constructor (if valid) on it.
     fn construct_on_existing(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         mut _this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
@@ -135,7 +135,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         name: &str,
         args: &[Value<'gc>],
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let (method, base_proto) =
             search_prototype(Some((*self).into()), name, activation, (*self).into())?;
@@ -162,7 +162,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>>;
 
     /// Construct a host object of some kind and return it's cell.
@@ -174,14 +174,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// initialize the object.
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>>;
 
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool;
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
 
     /// Retrieve the `__proto__` of a given object.
     ///
@@ -262,7 +262,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// as `__proto__`.
     fn add_property_with_case(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Object<'gc>,
@@ -275,7 +275,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The property does not need to exist at the time of this being called.
     fn set_watcher(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Object<'gc>,
@@ -288,31 +288,27 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// called.
     fn remove_watcher(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
     ) -> bool;
 
     /// Checks if the object has a given named property.
-    fn has_property(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool;
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
 
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
-    fn has_own_property(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool;
+    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
 
     /// Checks if the object has a given named property on itself that is
     /// virtual.
-    fn has_own_virtual(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool;
+    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
 
     /// Checks if a named property appears when enumerating the object.
-    fn is_property_enumerable(
-        &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
-        name: &str,
-    ) -> bool;
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
 
     /// Enumerate the object.
-    fn get_keys(&self, activation: &mut Activation<'_, '_, 'gc, '_>) -> Vec<String>;
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String>;
 
     /// Coerce the object into a string.
     fn as_string(&self) -> Cow<str>;
@@ -343,7 +339,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// somehow could this would support that, too.
     fn is_instance_of(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         constructor: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Result<bool, Error<'gc>> {
@@ -497,7 +493,7 @@ impl<'gc> Object<'gc> {
 pub fn search_prototype<'gc>(
     mut proto: Option<Object<'gc>>,
     name: &str,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
 ) -> Result<(Value<'gc>, Option<Object<'gc>>), Error<'gc>> {
     let mut depth = 0;

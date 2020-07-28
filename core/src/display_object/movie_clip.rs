@@ -1071,7 +1071,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 }
 
                 let mut activation = Activation::from_nothing(
-                    context,
+                    context.reborrow(),
                     ActivationIdentifier::root("[Mouse Pick]"),
                     context.swf.version(),
                     context.avm1.global_object_cell(),
@@ -1134,7 +1134,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // If we are not, then this must be queued to be ran first-thing
             if instantiated_from_avm && self.0.read().avm1_constructor.is_some() {
                 let mut activation = Activation::from_nothing(
-                    context,
+                    context.reborrow(),
                     ActivationIdentifier::root("[Construct]"),
                     context.swf.version(),
                     context.avm1.global_object_cell(),
@@ -1173,7 +1173,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             );
             if let Some(init_object) = init_object {
                 let mut activation = Activation::from_nothing(
-                    context,
+                    context.reborrow(),
                     ActivationIdentifier::root("[Init]"),
                     context.swf.version(),
                     context.avm1.global_object_cell(),

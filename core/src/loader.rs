@@ -56,10 +56,9 @@ pub enum Error {
 }
 
 pub type FormLoadHandler<'gc> =
-    fn(&mut Activation<'_, '_, 'gc, '_>, Object<'gc>, data: &[u8]) -> Result<(), Error>;
+    fn(&mut Activation<'_, 'gc, '_>, Object<'gc>, data: &[u8]) -> Result<(), Error>;
 
-pub type FormErrorHandler<'gc> =
-    fn(&mut Activation<'_, '_, 'gc, '_>, Object<'gc>) -> Result<(), Error>;
+pub type FormErrorHandler<'gc> = fn(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error>;
 
 impl From<crate::avm1::error::Error<'_>> for Error {
     fn from(error: crate::avm1::error::Error<'_>) -> Self {
@@ -598,7 +597,7 @@ impl<'gc> Loader<'gc> {
                 };
 
                 let mut activation = Activation::from_nothing(
-                    uc,
+                    uc.reborrow(),
                     ActivationIdentifier::root("[Form Loader]"),
                     uc.swf.version(),
                     uc.avm1.global_object_cell(),
@@ -648,7 +647,7 @@ impl<'gc> Loader<'gc> {
                 };
 
                 let mut activation = Activation::from_nothing(
-                    uc,
+                    uc.reborrow(),
                     ActivationIdentifier::root("[Form Loader]"),
                     uc.swf.version(),
                     uc.avm1.global_object_cell(),

@@ -42,7 +42,7 @@ fn is_as2_compatible(node: XMLNode<'_>) -> bool {
 
 /// XMLNode constructor
 pub fn xmlnode_constructor<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -74,7 +74,7 @@ pub fn xmlnode_constructor<'gc>(
 }
 
 pub fn xmlnode_append_child<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -101,7 +101,7 @@ pub fn xmlnode_append_child<'gc>(
 }
 
 pub fn xmlnode_insert_before<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -131,7 +131,7 @@ pub fn xmlnode_insert_before<'gc>(
 }
 
 pub fn xmlnode_clone_node<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -153,7 +153,7 @@ pub fn xmlnode_clone_node<'gc>(
 }
 
 pub fn xmlnode_get_namespace_for_prefix<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -172,7 +172,7 @@ pub fn xmlnode_get_namespace_for_prefix<'gc>(
 }
 
 pub fn xmlnode_get_prefix_for_namespace<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -191,7 +191,7 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
 }
 
 pub fn xmlnode_has_child_nodes<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -203,7 +203,7 @@ pub fn xmlnode_has_child_nodes<'gc>(
 }
 
 pub fn xmlnode_remove_node<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -219,7 +219,7 @@ pub fn xmlnode_remove_node<'gc>(
 }
 
 pub fn xmlnode_to_string<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -240,7 +240,7 @@ pub fn xmlnode_to_string<'gc>(
 }
 
 pub fn xmlnode_local_name<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -252,7 +252,7 @@ pub fn xmlnode_local_name<'gc>(
 }
 
 pub fn xmlnode_node_name<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -264,7 +264,7 @@ pub fn xmlnode_node_name<'gc>(
 }
 
 pub fn xmlnode_node_type<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -283,7 +283,7 @@ pub fn xmlnode_node_type<'gc>(
 }
 
 pub fn xmlnode_node_value<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -295,7 +295,7 @@ pub fn xmlnode_node_value<'gc>(
 }
 
 pub fn xmlnode_prefix<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -315,7 +315,7 @@ pub fn xmlnode_prefix<'gc>(
 }
 
 pub fn xmlnode_child_nodes<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -353,7 +353,7 @@ pub fn xmlnode_child_nodes<'gc>(
 }
 
 pub fn xmlnode_first_child<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -377,7 +377,7 @@ pub fn xmlnode_first_child<'gc>(
 }
 
 pub fn xmlnode_last_child<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -401,7 +401,7 @@ pub fn xmlnode_last_child<'gc>(
 }
 
 pub fn xmlnode_parent_node<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -424,7 +424,7 @@ pub fn xmlnode_parent_node<'gc>(
 }
 
 pub fn xmlnode_previous_sibling<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -453,7 +453,7 @@ pub fn xmlnode_previous_sibling<'gc>(
 }
 
 pub fn xmlnode_next_sibling<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -482,7 +482,7 @@ pub fn xmlnode_next_sibling<'gc>(
 }
 
 pub fn xmlnode_attributes<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -497,7 +497,7 @@ pub fn xmlnode_attributes<'gc>(
 }
 
 pub fn xmlnode_namespace_uri<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -767,7 +767,7 @@ pub fn create_xmlnode_proto<'gc>(
 
 /// XML (document) constructor
 pub fn xml_constructor<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -804,7 +804,7 @@ pub fn xml_constructor<'gc>(
 }
 
 pub fn xml_create_element<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -831,7 +831,7 @@ pub fn xml_create_element<'gc>(
 }
 
 pub fn xml_create_text_node<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -858,7 +858,7 @@ pub fn xml_create_text_node<'gc>(
 }
 
 pub fn xml_parse_xml<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -894,7 +894,7 @@ pub fn xml_parse_xml<'gc>(
 }
 
 pub fn xml_load<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -930,7 +930,7 @@ pub fn xml_load<'gc>(
 }
 
 pub fn xml_on_data<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -955,7 +955,7 @@ pub fn xml_on_data<'gc>(
 }
 
 pub fn xml_doc_type_decl<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -978,7 +978,7 @@ pub fn xml_doc_type_decl<'gc>(
 }
 
 pub fn xml_xml_decl<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1000,7 +1000,7 @@ pub fn xml_xml_decl<'gc>(
 }
 
 pub fn xml_id_map<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1015,7 +1015,7 @@ pub fn xml_id_map<'gc>(
 }
 
 pub fn xml_status<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

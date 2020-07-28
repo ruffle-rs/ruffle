@@ -29,11 +29,8 @@ use swf::avm1::types::FunctionParam;
 /// resolve on the AVM stack, as if you had called a non-native function. If
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
-pub type NativeFunction<'gc> = fn(
-    &mut Activation<'_, '_, 'gc, '_>,
-    Object<'gc>,
-    &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>>;
+pub type NativeFunction<'gc> =
+    fn(&mut Activation<'_, 'gc, '_>, Object<'gc>, &[Value<'gc>]) -> Result<Value<'gc>, Error<'gc>>;
 
 /// Indicates the reason for an execution
 #[derive(Debug, Clone)]
@@ -233,7 +230,7 @@ impl<'gc> Executable<'gc> {
     pub fn exec(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
@@ -311,7 +308,7 @@ impl<'gc> Executable<'gc> {
                 };
 
                 let mut frame = Activation::from_action(
-                    activation.context,
+                    activation.context.reborrow(),
                     activation.id.function(
                         name,
                         reason,
@@ -534,7 +531,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.base.get_local(name, activation, this)
@@ -544,7 +541,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.base.set(name, value, activation)
     }
@@ -552,7 +549,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn call(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
@@ -574,7 +571,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn construct_on_existing(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         mut this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
@@ -612,7 +609,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn construct(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         let prototype = self
@@ -627,7 +624,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>> {
         self.base.call_setter(name, value, activation)
     }
@@ -635,7 +632,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         prototype: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let base = ScriptObject::object(activation.context.gc_context, Some(prototype));
@@ -654,7 +651,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         Ok(fn_object.into())
     }
 
-    fn delete(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base.delete(activation, name)
     }
 
@@ -701,7 +698,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Object<'gc>,
@@ -714,7 +711,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn set_watcher(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Object<'gc>,
@@ -726,34 +723,30 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn remove_watcher(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
     ) -> bool {
         self.base.remove_watcher(activation, gc_context, name)
     }
 
-    fn has_property(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base.has_property(activation, name)
     }
 
-    fn has_own_property(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base.has_own_property(activation, name)
     }
 
-    fn has_own_virtual(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base.has_own_virtual(activation, name)
     }
 
-    fn is_property_enumerable(
-        &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
-        name: &str,
-    ) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base.is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut Activation<'_, '_, 'gc, '_>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
         self.base.get_keys(activation)
     }
 

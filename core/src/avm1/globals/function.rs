@@ -9,7 +9,7 @@ use gc_arena::MutationContext;
 
 /// Implements `Function`
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -18,7 +18,7 @@ pub fn constructor<'gc>(
 
 /// Implements `Function.prototype.call`
 pub fn call<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     func: Object<'gc>,
     myargs: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -49,7 +49,7 @@ pub fn call<'gc>(
 
 /// Implements `Function.prototype.apply`
 pub fn apply<'gc>(
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     func: Object<'gc>,
     myargs: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -87,7 +87,7 @@ pub fn apply<'gc>(
 
 /// Implements `Function.prototype.toString`
 fn to_string<'gc>(
-    _: &mut Activation<'_, '_, 'gc, '_>,
+    _: &mut Activation<'_, 'gc, '_>,
     _: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

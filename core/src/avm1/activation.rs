@@ -178,7 +178,7 @@ unsafe impl<'gc> gc_arena::Collect for ActivationIdentifier<'gc> {
 
 #[derive(Collect)]
 #[collect(unsafe_drop)]
-pub struct Activation<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> {
+pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// Represents the SWF version of a given function.
     ///
     /// Certain AVM1 operations change behavior based on the version of the SWF
@@ -219,7 +219,7 @@ pub struct Activation<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> {
     /// This can be changed with `tellTarget` (via `ActionSetTarget` and `ActionSetTarget2`).
     target_clip: Option<DisplayObject<'gc>>,
 
-    pub context: &'a mut UpdateContext<'b, 'gc, 'gc_context>,
+    pub context: UpdateContext<'a, 'gc, 'gc_context>,
 
     /// An identifier to refer to this activation by, when debugging.
     /// This is often the name of a function (if known), or some static name to indicate where
@@ -227,16 +227,16 @@ pub struct Activation<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> {
     pub id: ActivationIdentifier<'a>,
 }
 
-impl Drop for Activation<'_, '_, '_, '_> {
+impl Drop for Activation<'_, '_, '_> {
     fn drop(&mut self) {
         avm_debug!(self.context.avm1, "END {}", self.id);
     }
 }
 
-impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> {
+impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     #[allow(clippy::too_many_arguments)]
     pub fn from_action(
-        context: &'a mut UpdateContext<'b, 'gc, 'gc_context>,
+        context: UpdateContext<'a, 'gc, 'gc_context>,
         id: ActivationIdentifier<'a>,
         swf_version: u8,
         scope: GcCell<'gc, Scope<'gc>>,
@@ -261,16 +261,16 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
     }
 
     /// Create a new activation to run a block of code with a given scope.
-    pub fn with_new_scope<'c, S: Into<Cow<'static, str>>>(
-        &'c mut self,
+    pub fn with_new_scope<'b, S: Into<Cow<'static, str>>>(
+        &'b mut self,
         name: S,
         scope: GcCell<'gc, Scope<'gc>>,
-    ) -> Activation<'c, 'b, 'gc, 'gc_context> {
+    ) -> Activation<'b, 'gc, 'gc_context> {
         let id = self.id.child(name);
         avm_debug!(self.context.avm1, "START {}", id);
         Activation {
             id,
-            context: self.context,
+            context: self.context.reborrow(),
             swf_version: self.swf_version,
             scope,
             constant_pool: self.constant_pool,
@@ -287,7 +287,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
     /// This is used by tests and by callback methods (`onEnterFrame`) to create a base
     /// activation frame with access to the global context.
     pub fn from_nothing(
-        context: &'a mut UpdateContext<'b, 'gc, 'gc_context>,
+        context: UpdateContext<'a, 'gc, 'gc_context>,
         id: ActivationIdentifier<'a>,
         swf_version: u8,
         globals: Object<'gc>,
@@ -324,7 +324,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
         code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
         let mut parent_activation = Activation::from_nothing(
-            self.context,
+            self.context.reborrow(),
             self.id.child("[Actions Parent]"),
             swf_version,
             self.context.avm1.globals,
@@ -364,7 +364,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
         function: F,
     ) -> R
     where
-        for<'c> F: FnOnce(&mut Activation<'c, '_, 'gc, '_>) -> R,
+        for<'c> F: FnOnce(&mut Activation<'c, 'gc, '_>) -> R,
     {
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
@@ -380,7 +380,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
         );
         let constant_pool = self.context.avm1.constant_pool;
         let mut activation = Activation::from_action(
-            self.context,
+            self.context.reborrow(),
             self.id.child(name),
             swf_version,
             child_scope,
@@ -723,7 +723,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
 
         if let Some((clip, frame)) = call_frame {
             if frame <= u32::from(std::u16::MAX) {
-                for action in clip.actions_on_frame(self.context, frame as u16) {
+                for action in clip.actions_on_frame(&mut self.context, frame as u16) {
                     let _ = self.run_child_frame_for_action(
                         "[Frame Call]",
                         clip.into(),
@@ -1280,7 +1280,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 // The frame on the stack is 0-based, not 1-based.
-                clip.goto_frame(self.context, frame + 1, true);
+                clip.goto_frame(&mut self.context, frame + 1, true);
             } else {
                 avm_error!(self, "GotoFrame failed: Target is not a MovieClip");
             }
@@ -1320,7 +1320,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 if let Some(frame) = clip.frame_label_to_number(label) {
-                    clip.goto_frame(self.context, frame, true);
+                    clip.goto_frame(&mut self.context, frame, true);
                 } else {
                     avm_warn!(self, "GoToLabel: Frame label '{}' not found", label);
                 }
@@ -1533,7 +1533,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
     fn action_next_frame(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.next_frame(self.context);
+                clip.next_frame(&mut self.context);
             } else {
                 avm_warn!(self, "NextFrame: Target is not a MovieClip");
             }
@@ -1602,7 +1602,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
     fn action_play(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.play(self.context)
+                clip.play(&mut self.context)
             } else {
                 avm_warn!(self, "Play: Target is not a MovieClip");
             }
@@ -1615,7 +1615,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
     fn action_prev_frame(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.prev_frame(self.context);
+                clip.prev_frame(&mut self.context);
             } else {
                 avm_warn!(self, "PrevFrame: Target is not a MovieClip");
             }
@@ -1692,7 +1692,8 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
         let target_clip = self.resolve_target_display_object(start_clip, target)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
-            let _ = globals::movie_clip::remove_movie_clip_with_bias(target_clip, self.context, 0);
+            let _ =
+                globals::movie_clip::remove_movie_clip_with_bias(target_clip, &mut self.context, 0);
         } else {
             avm_warn!(self, "RemoveSprite: Source is not a movie clip");
         }
@@ -1869,7 +1870,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
     fn action_stop(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.stop(self.context);
+                clip.stop(&mut self.context);
             } else {
                 avm_warn!(self, "Stop: Target is not a MovieClip");
             }
@@ -2119,7 +2120,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
         if let Some((catch_vars, actions)) = &try_block.catch {
             if let Err(Error::ThrownValue(value)) = &result {
                 let mut activation = Activation::from_action(
-                    self.context,
+                    self.context.reborrow(),
                     self.id.child("[Catch]"),
                     self.swf_version,
                     self.scope,
@@ -2624,7 +2625,7 @@ impl<'a, 'b: 'a, 'gc: 'b, 'gc_context: 'a> Activation<'a, 'b, 'gc, 'gc_context> 
 
             level.set_depth(self.context.gc_context, level_id as i32);
             self.context.levels.insert(level_id, level);
-            level.post_instantiation(self.context, level, None, false);
+            level.post_instantiation(&mut self.context, level, None, false);
 
             level
         }

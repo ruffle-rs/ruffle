@@ -20,7 +20,7 @@ pub fn create_proto<'gc>(
 
 /// Implements `Button` constructor.
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, '_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

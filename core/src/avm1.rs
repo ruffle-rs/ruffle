@@ -172,7 +172,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut parent_activation = Activation::from_nothing(
-            context,
+            context.reborrow(),
             ActivationIdentifier::root("[Actions Parent]"),
             swf_version,
             self.global_object_cell(),
@@ -217,7 +217,7 @@ impl<'gc> Avm1<'gc> {
         function: F,
     ) -> R
     where
-        for<'c> F: FnOnce(&mut Activation<'c, '_, 'gc, '_>) -> R,
+        for<'b> F: FnOnce(&mut Activation<'b, 'gc, '_>) -> R,
     {
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
@@ -232,7 +232,7 @@ impl<'gc> Avm1<'gc> {
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
         let mut activation = Activation::from_action(
-            action_context,
+            action_context.reborrow(),
             ActivationIdentifier::root("[Display Object]"),
             swf_version,
             child_scope,
@@ -260,7 +260,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut parent_activation = Activation::from_nothing(
-            context,
+            context.reborrow(),
             ActivationIdentifier::root("[Init Parent]"),
             swf_version,
             self.global_object_cell(),
@@ -314,7 +314,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut activation = Activation::from_nothing(
-            context,
+            context.reborrow(),
             ActivationIdentifier::root(name.to_owned()),
             swf_version,
             self.global_object_cell(),
@@ -341,7 +341,7 @@ impl<'gc> Avm1<'gc> {
         let global = self.global_object();
 
         let mut activation = Activation::from_nothing(
-            context,
+            context.reborrow(),
             ActivationIdentifier::root("[System Listeners]"),
             swf_version,
             self.global_object_cell(),
@@ -431,7 +431,7 @@ impl<'gc> Avm1<'gc> {
     pub const fn set_show_debug_output(&self, _visible: bool) {}
 }
 
-pub fn root_error_handler<'gc>(activation: &mut Activation<'_, '_, 'gc, '_>, error: Error<'gc>) {
+pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: Error<'gc>) {
     if let Error::ThrownValue(error) = &error {
         let string = error
             .coerce_to_string(activation)
@@ -459,7 +459,7 @@ fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
 /// Runs via the `startDrag` method or `StartDrag` AVM1 action.
 pub fn start_drag<'gc>(
     display_object: DisplayObject<'gc>,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) {
     let lock_center = args

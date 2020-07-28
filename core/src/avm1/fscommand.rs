@@ -17,7 +17,7 @@ pub fn parse(url: &str) -> Option<&str> {
 /// TODO: FSCommand URL handling
 pub fn handle<'gc>(
     fscommand: &str,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<(), Error<'gc>> {
     avm_warn!(activation, "Unhandled FSCommand: {}", fscommand);
 

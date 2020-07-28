@@ -38,7 +38,7 @@ impl<'gc> Timers<'gc> {
         }
 
         let mut activation = Activation::from_nothing(
-            context,
+            context.reborrow(),
             ActivationIdentifier::root("[Timer Callback]"),
             context.swf.header().version,
             context.avm1.global_object_cell(),

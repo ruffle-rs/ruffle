@@ -87,7 +87,7 @@ pub struct TextFormat {
 fn getstr_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Option<String>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation)? {
         Value::Undefined => None,
@@ -99,7 +99,7 @@ fn getstr_from_avm1_object<'gc>(
 fn getfloat_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Option<f64>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation)? {
         Value::Undefined => None,
@@ -111,7 +111,7 @@ fn getfloat_from_avm1_object<'gc>(
 fn getbool_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Option<bool>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation)? {
         Value::Undefined => None,
@@ -123,7 +123,7 @@ fn getbool_from_avm1_object<'gc>(
 fn getfloatarray_from_avm1_object<'gc>(
     object: Object<'gc>,
     name: &str,
-    activation: &mut Activation<'_, '_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Option<Vec<f64>>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation)? {
         Value::Undefined => None,
@@ -195,7 +195,7 @@ impl TextFormat {
     /// Construct a `TextFormat` from an object that is
     pub fn from_avm1_object<'gc>(
         object1: Object<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Self, crate::avm1::error::Error<'gc>> {
         Ok(Self {
             font: getstr_from_avm1_object(object1, "font", activation)?,
@@ -347,7 +347,7 @@ impl TextFormat {
     /// Construct a `TextFormat` AVM1 object from this text format object.
     pub fn as_avm1_object<'gc>(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, crate::avm1::error::Error<'gc>> {
         let object = ScriptObject::object(
             activation.context.gc_context,

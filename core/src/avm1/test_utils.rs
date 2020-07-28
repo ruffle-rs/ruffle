@@ -20,11 +20,11 @@ use std::sync::Arc;
 
 pub fn with_avm<F>(swf_version: u8, test: F)
 where
-    F: for<'a, 'gc> FnOnce(&mut Activation<'_, '_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
+    F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
 {
     fn in_the_arena<'a, 'gc: 'a, F>(swf_version: u8, test: F, gc_context: MutationContext<'gc, '_>)
     where
-        F: FnOnce(&mut Activation<'_, '_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
+        F: FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
     {
         let mut avm1 = Avm1::new(gc_context, swf_version);
         let swf = Arc::new(SwfMovie::empty(swf_version));
@@ -72,11 +72,11 @@ where
         root.set_name(context.gc_context, "");
 
         fn run_test<'a, 'gc: 'a, F>(
-            activation: &mut Activation<'_, '_, 'gc, '_>,
+            activation: &mut Activation<'_, 'gc, '_>,
             root: DisplayObject<'gc>,
             test: F,
         ) where
-            F: FnOnce(&mut Activation<'_, '_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
+            F: FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
         {
             let this = root.object().coerce_to_object(activation);
             let result = test(activation, this);
@@ -89,7 +89,7 @@ where
         let base_clip = *context.levels.get(&0).unwrap();
         let swf_version = context.swf.version();
         let mut activation = Activation::from_nothing(
-            &mut context,
+            context,
             ActivationIdentifier::root("[Test]"),
             swf_version,
             globals,

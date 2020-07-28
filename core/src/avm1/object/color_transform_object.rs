@@ -98,7 +98,7 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         let base = self.0.read().base;
         base.internal_set(
@@ -117,7 +117,7 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(ColorTransformObject::empty_color_transform_object(

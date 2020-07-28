@@ -500,11 +500,7 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub fn set_variable(
-        self,
-        variable: Option<String>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
-    ) {
+    pub fn set_variable(self, variable: Option<String>, activation: &mut Activation<'_, 'gc, '_>) {
         // Clear previous binding.
         if let Some(stage_object) = self
             .0
@@ -529,7 +525,7 @@ impl<'gc> EditText<'gc> {
             .initial_text
             .clone()
             .unwrap_or_default();
-        let _ = self.set_text(text, activation.context);
+        let _ = self.set_text(text, &mut activation.context);
 
         self.0.write(activation.context.gc_context).variable = variable;
         self.try_bind_text_field_variable(activation, true);
@@ -704,7 +700,7 @@ impl<'gc> EditText<'gc> {
     /// This is called when the text field is created, and, if the text field is in the unbound list, anytime a display object is created.
     pub fn try_bind_text_field_variable(
         self,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         set_initial_value: bool,
     ) -> bool {
         let mut bound = false;
@@ -737,7 +733,7 @@ impl<'gc> EditText<'gc> {
                                         .coerce_to_string(activation)
                                         .unwrap_or_default()
                                         .to_string(),
-                                    activation.context,
+                                    &mut activation.context,
                                 );
                             } else {
                                 // Otherwise, we initialize the proprty with the text field's text, if it's non-empty.
@@ -782,7 +778,7 @@ impl<'gc> EditText<'gc> {
 
     /// Propagates a text change to the bound display object.
     ///
-    pub fn propagate_text_binding(self, activation: &mut Activation<'_, '_, 'gc, '_>) {
+    pub fn propagate_text_binding(self, activation: &mut Activation<'_, 'gc, '_>) {
         if !self.0.read().firing_variable_binding {
             self.0
                 .write(activation.context.gc_context)
@@ -797,7 +793,7 @@ impl<'gc> EditText<'gc> {
                     activation.resolve_variable_path(self.parent().unwrap(), &variable_path)
                 {
                     let text = if self.0.read().is_html {
-                        let html_tree = self.html_tree(activation.context).as_node();
+                        let html_tree = self.html_tree(&mut activation.context).as_node();
                         let html_string_result = html_tree.into_string(&mut |_node| true);
                         html_string_result.unwrap_or_default()
                     } else {

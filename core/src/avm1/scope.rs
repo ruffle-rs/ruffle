@@ -239,7 +239,7 @@ impl<'gc> Scope<'gc> {
     pub fn resolve(
         &self,
         name: &str,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if self.locals().has_property(activation, name) {
@@ -254,7 +254,7 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    pub fn is_defined(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         if self.locals().has_property(activation, name) {
             return true;
         }
@@ -276,7 +276,7 @@ impl<'gc> Scope<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, '_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         if self.class == ScopeClass::Target || self.locals().has_property(activation, name) {
@@ -307,7 +307,7 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Delete a value from scope
-    pub fn delete(&self, activation: &mut Activation<'_, '_, 'gc, '_>, name: &str) -> bool {
+    pub fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         if self.locals().has_property(activation, name) {
             return self.locals().delete(activation, name);
         }
