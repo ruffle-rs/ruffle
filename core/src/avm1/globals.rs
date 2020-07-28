@@ -230,7 +230,11 @@ pub struct SystemPrototypes<'gc> {
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
     gc_context: MutationContext<'gc, '_>,
-) -> (SystemPrototypes<'gc>, Object<'gc>, as_broadcaster::BroadcasterFunctions<'gc>) {
+) -> (
+    SystemPrototypes<'gc>,
+    Object<'gc>,
+    as_broadcaster::BroadcasterFunctions<'gc>,
+) {
     let object_proto = ScriptObject::object_cell(gc_context, None);
     let function_proto = function::create_proto(gc_context, object_proto);
 
@@ -385,10 +389,16 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
     );
 
-    let (broadcaster_functions, as_broadcaster) = as_broadcaster::create(gc_context, Some(object_proto), Some(function_proto),);
+    let (broadcaster_functions, as_broadcaster) =
+        as_broadcaster::create(gc_context, Some(object_proto), Some(function_proto));
 
     let mut globals = ScriptObject::bare_object(gc_context);
-    globals.define_value(gc_context, "AsBroadcaster", as_broadcaster.into(), DontEnum.into());
+    globals.define_value(
+        gc_context,
+        "AsBroadcaster",
+        as_broadcaster.into(),
+        DontEnum.into(),
+    );
     globals.define_value(gc_context, "flash", flash.into(), DontEnum.into());
     globals.define_value(gc_context, "Array", array.into(), DontEnum.into());
     globals.define_value(gc_context, "Button", button.into(), DontEnum.into());
@@ -522,7 +532,7 @@ pub fn create_globals<'gc>(
             Some(object_proto),
             Some(array_proto),
             Some(function_proto),
-            broadcaster_functions
+            broadcaster_functions,
         )),
         DontEnum.into(),
     );

@@ -1,10 +1,10 @@
 //! Stage object
 //!
 //! TODO: This is a very rough stub with not much implementation.
-use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::avm_warn;
