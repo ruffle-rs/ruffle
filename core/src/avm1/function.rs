@@ -458,26 +458,24 @@ impl<'gc> FunctionObject<'gc> {
     /// both objects itself and returns the function to you, fully allocated.
     ///
     /// `fn_proto` refers to the implicit proto of the function object, and the
-    /// `prototype` refers to the explicit prototype of the function. If
-    /// provided, the function and it's prototype will be linked to each other.
+    /// `prototype` refers to the explicit prototype of the function.
+    /// The function and it's prototype will be linked to each other.
     fn allocate_function(
         context: MutationContext<'gc, '_>,
         function: Option<impl Into<Executable<'gc>>>,
         constructor: Option<impl Into<Executable<'gc>>>,
         fn_proto: Option<Object<'gc>>,
-        prototype: Option<Object<'gc>>,
+        prototype: Object<'gc>,
     ) -> Object<'gc> {
         let function = Self::bare_function(context, function, constructor, fn_proto).into();
 
-        if let Some(p) = prototype {
-            p.define_value(
-                context,
-                "constructor",
-                Value::Object(function),
-                DontEnum.into(),
-            );
-            function.define_value(context, "prototype", p.into(), EnumSet::empty());
-        }
+        prototype.define_value(
+            context,
+            "constructor",
+            Value::Object(function),
+            DontEnum.into(),
+        );
+        function.define_value(context, "prototype", prototype.into(), EnumSet::empty());
 
         function
     }
@@ -491,7 +489,7 @@ impl<'gc> FunctionObject<'gc> {
     ) -> Object<'gc> {
         // Avoid type inference issues
         let none: Option<Executable> = None;
-        Self::allocate_function(context, Some(function), none, fn_proto, Some(prototype))
+        Self::allocate_function(context, Some(function), none, fn_proto, prototype)
     }
 
     /// Construct a constructor function from an executable and associated protos.
@@ -506,7 +504,7 @@ impl<'gc> FunctionObject<'gc> {
             Some(constructor.clone()),
             Some(constructor),
             fn_proto,
-            Some(prototype),
+            prototype,
         )
     }
 
@@ -523,7 +521,7 @@ impl<'gc> FunctionObject<'gc> {
             Some(function),
             Some(constructor),
             fn_proto,
-            Some(prototype),
+            prototype,
         )
     }
 }
