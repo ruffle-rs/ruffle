@@ -1,6 +1,5 @@
 //! Bitmap display object
 
-use crate::avm1::Avm1;
 use crate::backend::render::BitmapHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
@@ -80,7 +79,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
     }
 
-    fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext) {
+    fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
     }
 

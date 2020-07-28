@@ -456,14 +456,8 @@ fn attach_movie<'gc>(
         } else {
             None
         };
-        new_clip.post_instantiation(
-            activation.avm,
-            activation.context,
-            new_clip,
-            init_object,
-            true,
-        );
-        new_clip.run_frame(activation.avm, activation.context);
+        new_clip.post_instantiation(activation.context, new_clip, init_object, true);
+        new_clip.run_frame(activation.context);
 
         Ok(new_clip.object().coerce_to_object(activation).into())
     } else {
@@ -500,14 +494,8 @@ fn create_empty_movie_clip<'gc>(
     // Set name and attach to parent.
     new_clip.set_name(activation.context.gc_context, &new_instance_name);
     movie_clip.add_child_from_avm(activation.context, new_clip.into(), depth);
-    new_clip.post_instantiation(
-        activation.avm,
-        activation.context,
-        new_clip.into(),
-        None,
-        true,
-    );
-    new_clip.run_frame(activation.avm, activation.context);
+    new_clip.post_instantiation(activation.context, new_clip.into(), None, true);
+    new_clip.run_frame(activation.context);
 
     Ok(new_clip.object())
 }
@@ -556,7 +544,7 @@ fn create_text_field<'gc>(
         text_field,
         (depth as Depth).wrapping_add(AVM_DEPTH_BIAS),
     );
-    text_field.post_instantiation(activation.avm, activation.context, text_field, None, true);
+    text_field.post_instantiation(activation.context, text_field, None, true);
 
     if activation.current_swf_version() >= 8 {
         //SWF8+ returns the `TextField` instance here
@@ -631,14 +619,8 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         // Definitely not ScriptObject properties.
 
         let init_object = init_object.map(|v| v.coerce_to_object(activation));
-        new_clip.post_instantiation(
-            activation.avm,
-            activation.context,
-            new_clip,
-            init_object,
-            true,
-        );
-        new_clip.run_frame(activation.avm, activation.context);
+        new_clip.post_instantiation(activation.context, new_clip, init_object, true);
+        new_clip.run_frame(activation.context);
 
         Ok(new_clip.object().coerce_to_object(activation).into())
     } else {
@@ -750,7 +732,7 @@ pub fn goto_frame<'gc>(
         frame = frame.wrapping_add(i32::from(scene_offset));
         frame = frame.saturating_add(1);
         if frame > 0 {
-            clip.goto_frame(activation.avm, activation.context, frame as u16, stop);
+            clip.goto_frame(activation.context, frame as u16, stop);
         }
     }
     Ok(Value::Undefined)
@@ -761,7 +743,7 @@ fn next_frame<'gc>(
     activation: &mut Activation<'_, '_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.next_frame(activation.avm, activation.context);
+    movie_clip.next_frame(activation.context);
     Ok(Value::Undefined)
 }
 
@@ -779,7 +761,7 @@ fn prev_frame<'gc>(
     activation: &mut Activation<'_, '_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.prev_frame(activation.avm, activation.context);
+    movie_clip.prev_frame(activation.context);
     Ok(Value::Undefined)
 }
 
@@ -965,7 +947,7 @@ fn get_bounds<'gc>(
 
         let out = ScriptObject::object(
             activation.context.gc_context,
-            Some(activation.avm.prototypes.object),
+            Some(activation.context.avm1.prototypes.object),
         );
         out.set("xMin", out_bounds.x_min.to_pixels().into(), activation)?;
         out.set("yMin", out_bounds.y_min.to_pixels().into(), activation)?;

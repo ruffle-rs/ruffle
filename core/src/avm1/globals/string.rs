@@ -410,7 +410,7 @@ fn split<'gc>(
     };
     let array = ScriptObject::array(
         activation.context.gc_context,
-        Some(activation.avm.prototypes.array),
+        Some(activation.context.avm1.prototypes.array),
     );
     if !delimiter.is_empty() {
         for (i, token) in this.split(delimiter.as_ref()).take(limit).enumerate() {

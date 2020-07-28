@@ -7,7 +7,7 @@
 //! TODO: Could we use this for AVM2 timers as well?
 
 use crate::avm1::object::search_prototype;
-use crate::avm1::{Activation, ActivationIdentifier, Avm1, Object, TObject, Value};
+use crate::avm1::{Activation, ActivationIdentifier, Object, TObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
@@ -26,11 +26,7 @@ pub struct Timers<'gc> {
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
-    pub fn update_timers(
-        avm: &mut Avm1<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        dt: f64,
-    ) -> Option<f64> {
+    pub fn update_timers(context: &mut UpdateContext<'_, 'gc, '_>, dt: f64) -> Option<f64> {
         context.timers.cur_time = context
             .timers
             .cur_time
@@ -42,11 +38,10 @@ impl<'gc> Timers<'gc> {
         }
 
         let mut activation = Activation::from_nothing(
-            avm,
             context,
             ActivationIdentifier::root("[Timer Callback]"),
             context.swf.header().version,
-            avm.global_object_cell(),
+            context.avm1.global_object_cell(),
             context.levels.get(&0).copied().unwrap(),
         );
 

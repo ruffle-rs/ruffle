@@ -147,8 +147,8 @@ pub fn initialize<'gc>(
         initialize_internal(
             activation.context.gc_context,
             broadcaster,
-            activation.avm.broadcaster_functions,
-            activation.avm.prototypes().array,
+            activation.context.avm1.broadcaster_functions,
+            activation.context.avm1.prototypes().array,
         );
     }
     Ok(Value::Undefined)

@@ -172,7 +172,6 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut parent_activation = Activation::from_nothing(
-            self,
             context,
             ActivationIdentifier::root("[Actions Parent]"),
             swf_version,
@@ -191,9 +190,8 @@ impl<'gc> Avm1<'gc> {
                 clip_obj,
             ),
         );
-        let constant_pool = parent_activation.avm.constant_pool;
+        let constant_pool = parent_activation.context.avm1.constant_pool;
         let mut child_activation = Activation::from_action(
-            parent_activation.avm,
             parent_activation.context,
             parent_activation.id.child(name),
             swf_version,
@@ -234,7 +232,6 @@ impl<'gc> Avm1<'gc> {
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
         let mut activation = Activation::from_action(
-            self,
             action_context,
             ActivationIdentifier::root("[Display Object]"),
             swf_version,
@@ -263,7 +260,6 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut parent_activation = Activation::from_nothing(
-            self,
             context,
             ActivationIdentifier::root("[Init Parent]"),
             swf_version,
@@ -282,10 +278,9 @@ impl<'gc> Avm1<'gc> {
                 clip_obj,
             ),
         );
-        parent_activation.avm.push(Value::Undefined);
-        let constant_pool = parent_activation.avm.constant_pool;
+        parent_activation.context.avm1.push(Value::Undefined);
+        let constant_pool = parent_activation.context.avm1.constant_pool;
         let mut child_activation = Activation::from_action(
-            parent_activation.avm,
             parent_activation.context,
             parent_activation.id.child("[Init]"),
             swf_version,
@@ -319,7 +314,6 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut activation = Activation::from_nothing(
-            self,
             context,
             ActivationIdentifier::root(name.to_owned()),
             swf_version,
@@ -347,7 +341,6 @@ impl<'gc> Avm1<'gc> {
         let global = self.global_object();
 
         let mut activation = Activation::from_nothing(
-            self,
             context,
             ActivationIdentifier::root("[System Listeners]"),
             swf_version,
@@ -448,7 +441,7 @@ pub fn root_error_handler<'gc>(activation: &mut Activation<'_, '_, 'gc, '_>, err
         log::error!("{}", error);
     }
     if error.is_halting() {
-        activation.avm.halt();
+        activation.context.avm1.halt();
     }
 }
 

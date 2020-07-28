@@ -46,7 +46,7 @@ fn recursive_serialize<'gc>(
                 Value::String(s) => json_obj[k] = s.to_string().into(),
                 Value::Object(o) => {
                     // Don't attempt to serialize functions
-                    let function = activation.avm.prototypes.function;
+                    let function = activation.context.avm1.prototypes.function;
                     if !o
                         .is_instance_of(activation, o, function)
                         .unwrap_or_default()
@@ -114,7 +114,7 @@ fn recursive_deserialize<'gc>(
                 );
             }
             JsonValue::Object(o) => {
-                let prototype = activation.avm.prototypes.object;
+                let prototype = activation.context.avm1.prototypes.object;
                 if let Ok(obj) = prototype.create_bare_object(activation, prototype) {
                     recursive_deserialize(JsonValue::Object(o.clone()), activation, obj);
 
@@ -156,7 +156,7 @@ pub fn get_local<'gc>(
     }
 
     // Data property only should exist when created with getLocal/Remote
-    let constructor = activation.avm.prototypes.shared_object_constructor;
+    let constructor = activation.context.avm1.prototypes.shared_object_constructor;
     let this = constructor.construct(activation, &[])?;
 
     // Set the internal name
@@ -164,7 +164,7 @@ pub fn get_local<'gc>(
     obj_so.set_name(activation.context.gc_context, name.to_string());
 
     // Create the data object
-    let prototype = activation.avm.prototypes.object;
+    let prototype = activation.context.avm1.prototypes.object;
     let data = prototype.create_bare_object(activation, prototype)?;
 
     // Load the data object from storage if it existed prior

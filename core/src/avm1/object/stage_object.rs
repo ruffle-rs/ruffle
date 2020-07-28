@@ -131,7 +131,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         activation: &mut Activation<'_, '_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let obj = self.0.read();
-        let props = activation.avm.display_properties;
+        let props = activation.context.avm1.display_properties;
         let case_sensitive = activation.is_case_sensitive();
         // Property search order for DisplayObjects:
         if self.has_own_property(activation, name) {
@@ -173,7 +173,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         activation: &mut Activation<'_, '_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         let obj = self.0.read();
-        let props = activation.avm.display_properties;
+        let props = activation.context.avm1.display_properties;
 
         // Check if a text field is bound to this property and update the text if so.
         for binding in obj
@@ -346,7 +346,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         }
 
         if activation
-            .avm
+            .context
+            .avm1
             .display_properties
             .read()
             .get_by_name(&name)

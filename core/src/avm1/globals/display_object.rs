@@ -56,7 +56,9 @@ pub fn define_display_object_proto<'gc>(
         "_global",
         FunctionObject::function(
             gc_context,
-            Executable::Native(|activation, _this, _args| Ok(activation.avm.global_object())),
+            Executable::Native(|activation, _this, _args| {
+                Ok(activation.context.avm1.global_object())
+            }),
             Some(fn_proto),
             fn_proto,
         ),

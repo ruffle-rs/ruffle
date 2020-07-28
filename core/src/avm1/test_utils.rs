@@ -26,7 +26,7 @@ where
     where
         F: FnOnce(&mut Activation<'_, '_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
     {
-        let mut avm = Avm1::new(gc_context, swf_version);
+        let mut avm1 = Avm1::new(gc_context, swf_version);
         let swf = Arc::new(SwfMovie::empty(swf_version));
         let mut root: DisplayObject<'gc> =
             MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
@@ -52,7 +52,7 @@ where
             library: &mut Library::default(),
             navigator: &mut NullNavigatorBackend::new(),
             renderer: &mut NullRenderer::new(),
-            system_prototypes: avm.prototypes().clone(),
+            system_prototypes: avm1.prototypes().clone(),
             mouse_hovered_object: None,
             mouse_position: &(Twips::new(0), Twips::new(0)),
             drag_object: &mut None,
@@ -66,8 +66,9 @@ where
             unbound_text_fields: &mut Vec::new(),
             timers: &mut Timers::new(),
             needs_render: &mut false,
+            avm1: &mut avm1,
         };
-        root.post_instantiation(&mut avm, &mut context, root, None, false);
+        root.post_instantiation(&mut context, root, None, false);
         root.set_name(context.gc_context, "");
 
         fn run_test<'a, 'gc: 'a, F>(
@@ -84,11 +85,10 @@ where
             }
         }
 
-        let globals = avm.global_object_cell();
+        let globals = avm1.global_object_cell();
         let base_clip = *context.levels.get(&0).unwrap();
         let swf_version = context.swf.version();
         let mut activation = Activation::from_nothing(
-            &mut avm,
             &mut context,
             ActivationIdentifier::root("[Test]"),
             swf_version,

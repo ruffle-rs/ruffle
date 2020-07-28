@@ -297,10 +297,10 @@ impl<'gc> Value<'gc> {
             (Value::Bool(a), Value::Bool(b)) => Ok((a == b).into()),
             (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b).into()),
             (Value::Object(a), Value::Null) | (Value::Object(a), Value::Undefined) => {
-                Ok(Object::ptr_eq(*a, activation.avm.global_object_cell()).into())
+                Ok(Object::ptr_eq(*a, activation.context.avm1.global_object_cell()).into())
             }
             (Value::Null, Value::Object(b)) | (Value::Undefined, Value::Object(b)) => {
-                Ok(Object::ptr_eq(*b, activation.avm.global_object_cell()).into())
+                Ok(Object::ptr_eq(*b, activation.context.avm1.global_object_cell()).into())
             }
             (Value::Undefined, Value::Null) => Ok(true.into()),
             (Value::Null, Value::Undefined) => Ok(true.into()),
@@ -416,8 +416,8 @@ impl<'gc> Value<'gc> {
     }
 
     /// Coerce a value to a string.
-    pub fn coerce_to_string<'a>(
-        &'a self,
+    pub fn coerce_to_string(
+        &self,
         activation: &mut Activation<'_, '_, 'gc, '_>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
@@ -436,8 +436,8 @@ impl<'gc> Value<'gc> {
             Value::Bool(true) => "true".into(),
             Value::Bool(false) => "false".into(),
             Value::Number(v) => match f64_to_string(*v) {
-                Cow::Borrowed(str) => str.into(),
-                Cow::Owned(str) => AvmString::new(activation.context.gc_context, str),
+                Cow::Borrowed(s) => s.into(),
+                Cow::Owned(s) => AvmString::new(activation.context.gc_context, s),
             },
             Value::String(v) => v.to_owned(),
         })

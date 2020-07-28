@@ -106,7 +106,7 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
             value,
             activation,
             (*self).into(),
-            Some(activation.avm.prototypes.color_transform),
+            Some(activation.context.avm1.prototypes.color_transform),
         )
     }
 
@@ -118,12 +118,11 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, '_, 'gc, '_>,
-
         _this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(ColorTransformObject::empty_color_transform_object(
             activation.context.gc_context,
-            Some(activation.avm.prototypes.color_transform),
+            Some(activation.context.avm1.prototypes.color_transform),
         )
         .into())
     }

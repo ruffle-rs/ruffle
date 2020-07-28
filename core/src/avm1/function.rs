@@ -249,7 +249,7 @@ impl<'gc> Executable<'gc> {
                 );
                 let arguments = ScriptObject::array(
                     activation.context.gc_context,
-                    Some(activation.avm.prototypes().array),
+                    Some(activation.context.avm1.prototypes().array),
                 );
                 arguments.define_value(
                     activation.context.gc_context,
@@ -311,11 +311,12 @@ impl<'gc> Executable<'gc> {
                 };
 
                 let mut frame = Activation::from_action(
-                    activation.avm,
                     activation.context,
-                    activation
-                        .id
-                        .function(name, reason, activation.avm.max_recursion_depth())?,
+                    activation.id.function(
+                        name,
+                        reason,
+                        activation.context.avm1.max_recursion_depth(),
+                    )?,
                     effective_ver,
                     child_scope,
                     af.constant_pool,
@@ -369,7 +370,7 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_global {
-                    let global = frame.avm.global_object();
+                    let global = frame.context.avm1.global_object();
                     frame.set_local_register(preload_r, global);
                 }
 

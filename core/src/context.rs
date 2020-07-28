@@ -2,7 +2,7 @@
 use crate::avm1;
 
 use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::{Object, Timers, Value};
+use crate::avm1::{Avm1, Object, Timers, Value};
 use crate::backend::input::InputBackend;
 use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
@@ -114,6 +114,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// Timed callbacks created with `setInterval`/`setTimeout`.
     pub timers: &'a mut Timers<'gc>,
+
+    /// The AVM1 global state.
+    pub avm1: &'a mut Avm1<'gc>,
 }
 
 /// A queued ActionScript call.

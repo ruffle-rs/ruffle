@@ -351,7 +351,7 @@ impl TextFormat {
     ) -> Result<Object<'gc>, crate::avm1::error::Error<'gc>> {
         let object = ScriptObject::object(
             activation.context.gc_context,
-            Some(activation.avm.prototypes().text_format),
+            Some(activation.context.avm1.prototypes().text_format),
         );
 
         object.set(
@@ -469,7 +469,7 @@ impl TextFormat {
         if let Some(ts) = &self.tab_stops {
             let tab_stops = ScriptObject::array(
                 activation.context.gc_context,
-                Some(activation.avm.prototypes().array),
+                Some(activation.context.avm1.prototypes().array),
             );
 
             tab_stops.set_length(activation.context.gc_context, ts.len());

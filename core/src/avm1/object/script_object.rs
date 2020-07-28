@@ -908,9 +908,10 @@ mod tests {
                 unbound_text_fields: &mut Vec::new(),
                 timers: &mut Timers::new(),
                 needs_render: &mut false,
+                avm1: &mut avm,
             };
 
-            root.post_instantiation(&mut avm, &mut context, root, None, false);
+            root.post_instantiation(&mut context, root, None, false);
             root.set_name(context.gc_context, "");
 
             let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
@@ -919,7 +920,6 @@ mod tests {
             let base_clip = *context.levels.get(&0).unwrap();
             let swf_version = context.swf.version();
             let mut activation = Activation::from_nothing(
-                &mut avm,
                 &mut context,
                 ActivationIdentifier::root("[Test]"),
                 swf_version,
@@ -1017,7 +1017,7 @@ mod tests {
                 activation.context.gc_context,
                 Executable::Native(|_avm, _this, _args| Ok("Virtual!".into())),
                 None,
-                activation.avm.prototypes.function,
+                activation.context.avm1.prototypes.function,
             );
 
             object.as_script_object().unwrap().add_property(
@@ -1043,7 +1043,7 @@ mod tests {
                 activation.context.gc_context,
                 Executable::Native(|_avm, _this, _args| Ok("Virtual!".into())),
                 None,
-                activation.avm.prototypes.function,
+                activation.context.avm1.prototypes.function,
             );
 
             object.as_script_object().unwrap().add_property(
@@ -1099,7 +1099,7 @@ mod tests {
                 activation.context.gc_context,
                 Executable::Native(|_avm, _this, _args| Ok(Value::Null)),
                 None,
-                activation.avm.prototypes.function,
+                activation.context.avm1.prototypes.function,
             );
 
             object.as_script_object().unwrap().define_value(

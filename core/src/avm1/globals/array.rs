@@ -127,7 +127,7 @@ pub fn array_function<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut consumed = false;
 
-    let prototype = activation.avm.prototypes.array;
+    let prototype = activation.context.avm1.prototypes.array;
     let array_obj = prototype.create_bare_object(activation, prototype)?;
 
     if args.len() == 1 {
@@ -324,7 +324,7 @@ pub fn slice<'gc>(
 
     let array = ScriptObject::array(
         activation.context.gc_context,
-        Some(activation.avm.prototypes.array),
+        Some(activation.context.avm1.prototypes.array),
     );
 
     if start < end {
@@ -369,7 +369,7 @@ pub fn splice<'gc>(
 
     let removed = ScriptObject::array(
         activation.context.gc_context,
-        Some(activation.avm.prototypes.array),
+        Some(activation.context.avm1.prototypes.array),
     );
     let to_remove = count.min(old_length as i32 - start as i32).max(0) as usize;
     let to_add = if args.len() > 2 { &args[2..] } else { &[] };
@@ -428,7 +428,7 @@ pub fn concat<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let array = ScriptObject::array(
         activation.context.gc_context,
-        Some(activation.avm.prototypes.array),
+        Some(activation.context.avm1.prototypes.array),
     );
     let mut length = 0;
 
@@ -450,7 +450,13 @@ pub fn concat<'gc>(
 
         if let Value::Object(object) = arg {
             let object = *object;
-            if activation.avm.prototypes.array.is_prototype_of(object) {
+            if activation
+                .context
+                .avm1
+                .prototypes
+                .array
+                .is_prototype_of(object)
+            {
                 added = true;
                 for i in 0..object.length() {
                     let old = object
@@ -623,7 +629,7 @@ fn sort_with_function<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length();
     let mut values: Vec<(usize, Value<'gc>)> = this.array().into_iter().enumerate().collect();
-    let array_proto = activation.avm.prototypes.array;
+    let array_proto = activation.context.avm1.prototypes.array;
 
     let descending = (flags & DESCENDING) != 0;
     let unique_sort = (flags & UNIQUE_SORT) != 0;

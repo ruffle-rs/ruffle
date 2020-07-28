@@ -78,7 +78,11 @@ pub fn copy<'gc>(
         .get("visible", activation)?
         .as_bool(activation.swf_version());
 
-    let constructor = activation.avm.prototypes.context_menu_item_constructor;
+    let constructor = activation
+        .context
+        .avm1
+        .prototypes
+        .context_menu_item_constructor;
     let copy = constructor.construct(
         activation,
         &[

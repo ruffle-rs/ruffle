@@ -108,7 +108,7 @@ pub fn get_language<'gc>(
             .context
             .system
             .language
-            .get_language_code(activation.avm.player_version)
+            .get_language_code(activation.context.avm1.player_version)
             .to_string(),
     )
     .into())
@@ -157,7 +157,7 @@ pub fn get_manufacturer<'gc>(
             .context
             .system
             .manufacturer
-            .get_manufacturer_string(activation.avm.player_version),
+            .get_manufacturer_string(activation.context.avm1.player_version),
     )
     .into())
 }
@@ -181,7 +181,10 @@ pub fn get_version<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new(
         activation.context.gc_context,
-        activation.context.system.get_version_string(activation.avm),
+        activation
+            .context
+            .system
+            .get_version_string(activation.context.avm1),
     )
     .into())
 }
@@ -191,7 +194,10 @@ pub fn get_server_string<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let server_string = activation.context.system.get_server_string(activation.avm);
+    let server_string = activation
+        .context
+        .system
+        .get_server_string(activation.context.avm1);
     Ok(AvmString::new(activation.context.gc_context, server_string).into())
 }
 

@@ -18,7 +18,7 @@ pub fn constructor<'gc>(
 
     this.set("onSelect", callback.into(), activation)?;
 
-    let prototype = activation.avm.prototypes.object;
+    let prototype = activation.context.avm1.prototypes.object;
     let built_in_items = prototype.create_bare_object(activation, prototype)?;
 
     built_in_items.set("print", true.into(), activation)?;
@@ -32,7 +32,7 @@ pub fn constructor<'gc>(
 
     this.set("builtInItems", built_in_items.into(), activation)?;
 
-    let constructor = activation.avm.prototypes.array_constructor;
+    let constructor = activation.context.avm1.prototypes.array_constructor;
     let custom_items = constructor.construct(activation, &[])?;
 
     this.set("customItems", custom_items.into(), activation)?;
@@ -49,7 +49,7 @@ pub fn copy<'gc>(
         .get("onSelect", activation)?
         .coerce_to_object(activation);
 
-    let constructor = activation.avm.prototypes.context_menu_constructor;
+    let constructor = activation.context.avm1.prototypes.context_menu_constructor;
     let copy = constructor.construct(activation, &[callback.into()])?;
 
     let built_in = this

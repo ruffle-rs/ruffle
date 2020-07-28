@@ -99,7 +99,7 @@ pub fn matrix_to_object<'gc>(
         matrix.tx.to_pixels().into(),
         matrix.ty.to_pixels().into(),
     ];
-    let constructor = activation.avm.prototypes.matrix_constructor;
+    let constructor = activation.context.avm1.prototypes.matrix_constructor;
     let object = constructor.construct(activation, &args)?;
     Ok(object)
 }
@@ -171,7 +171,7 @@ fn clone<'gc>(
         this.get("tx", activation)?,
         this.get("ty", activation)?,
     ];
-    let constructor = activation.avm.prototypes.matrix_constructor;
+    let constructor = activation.context.avm1.prototypes.matrix_constructor;
     let cloned = constructor.construct(activation, &args)?;
     Ok(cloned.into())
 }

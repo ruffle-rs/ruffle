@@ -1,7 +1,7 @@
 //! `EditText` display object and support code.
 use crate::avm1::activation::Activation;
 use crate::avm1::globals::text_field::attach_virtual_properties;
-use crate::avm1::{Avm1, AvmString, Object, StageObject, TObject, Value};
+use crate::avm1::{AvmString, Object, StageObject, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
@@ -838,7 +838,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         Some(self.0.read().static_data.swf.clone())
     }
 
-    fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext) {
+    fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
     }
 
@@ -848,7 +848,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn post_instantiation(
         &mut self,
-        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -887,7 +886,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         drop(text);
 
         // If this text field has a variable set, initialize text field binding.
-        avm.run_with_stack_frame_for_display_object(
+        context.avm1.run_with_stack_frame_for_display_object(
             (*self).into(),
             context.swf.version(),
             context,
