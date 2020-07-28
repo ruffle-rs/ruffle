@@ -422,7 +422,7 @@ fn to_string<'gc>(
 
 pub fn create_matrix_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    matrix_proto: Option<Object<'gc>>,
+    matrix_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     FunctionObject::constructor(

@@ -297,74 +297,74 @@ pub fn create_globals<'gc>(
         gc_context,
         Executable::Native(button::constructor),
         Some(function_proto),
-        Some(button_proto),
+        button_proto,
     );
     let color = FunctionObject::constructor(
         gc_context,
         Executable::Native(color::constructor),
         Some(function_proto),
-        Some(color_proto),
+        color_proto,
     );
     let error = FunctionObject::constructor(
         gc_context,
         Executable::Native(error::constructor),
         Some(function_proto),
-        Some(error_proto),
+        error_proto,
     );
     let function = FunctionObject::constructor(
         gc_context,
         Executable::Native(function::constructor),
         Some(function_proto),
-        Some(function_proto),
+        function_proto,
     );
     let load_vars = FunctionObject::constructor(
         gc_context,
         Executable::Native(load_vars::constructor),
         Some(function_proto),
-        Some(load_vars_proto),
+        load_vars_proto,
     );
     let movie_clip = FunctionObject::constructor(
         gc_context,
         Executable::Native(movie_clip::constructor),
         Some(function_proto),
-        Some(movie_clip_proto),
+        movie_clip_proto,
     );
     let movie_clip_loader = FunctionObject::constructor(
         gc_context,
         Executable::Native(movie_clip_loader::constructor),
         Some(function_proto),
-        Some(movie_clip_loader_proto),
+        movie_clip_loader_proto,
     );
     let sound = FunctionObject::constructor(
         gc_context,
         Executable::Native(sound::constructor),
         Some(function_proto),
-        Some(sound_proto),
+        sound_proto,
     );
     let text_field = FunctionObject::constructor(
         gc_context,
         Executable::Native(text_field::constructor),
         Some(function_proto),
-        Some(text_field_proto),
+        text_field_proto,
     );
     let text_format = FunctionObject::constructor(
         gc_context,
         Executable::Native(text_format::constructor),
         Some(function_proto),
-        Some(text_format_proto),
+        text_format_proto,
     );
     let array = array::create_array_object(gc_context, array_proto, Some(function_proto));
     let xmlnode = FunctionObject::constructor(
         gc_context,
         Executable::Native(xml::xmlnode_constructor),
         Some(function_proto),
-        Some(xmlnode_proto),
+        xmlnode_proto,
     );
     let xml = FunctionObject::constructor(
         gc_context,
         Executable::Native(xml::xml_constructor),
         Some(function_proto),
-        Some(xml_proto),
+        xml_proto,
     );
     let string = string::create_string_object(gc_context, string_proto, Some(function_proto));
     let number = number::create_number_object(gc_context, number_proto, Some(function_proto));
@@ -372,11 +372,11 @@ pub fn create_globals<'gc>(
 
     let flash = ScriptObject::object(gc_context, Some(object_proto));
     let geom = ScriptObject::object(gc_context, Some(object_proto));
-    let matrix = matrix::create_matrix_object(gc_context, Some(matrix_proto), Some(function_proto));
+    let matrix = matrix::create_matrix_object(gc_context, matrix_proto, Some(function_proto));
 
-    let point = point::create_point_object(gc_context, Some(point_proto), Some(function_proto));
+    let point = point::create_point_object(gc_context, point_proto, Some(function_proto));
     let rectangle =
-        rectangle::create_rectangle_object(gc_context, Some(rectangle_proto), Some(function_proto));
+        rectangle::create_rectangle_object(gc_context, rectangle_proto, Some(function_proto));
 
     flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
     geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
@@ -438,7 +438,7 @@ pub fn create_globals<'gc>(
 
     let shared_obj = shared_object::create_shared_object_object(
         gc_context,
-        Some(shared_object_proto),
+        shared_object_proto,
         Some(function_proto),
     );
     globals.define_value(
@@ -452,7 +452,7 @@ pub fn create_globals<'gc>(
         gc_context,
         Executable::Native(context_menu::constructor),
         Some(function_proto),
-        Some(context_menu_proto),
+        context_menu_proto,
     );
     globals.define_value(
         gc_context,
@@ -465,7 +465,7 @@ pub fn create_globals<'gc>(
         gc_context,
         Executable::Native(context_menu_item::constructor),
         Some(function_proto),
-        Some(context_menu_item_proto),
+        context_menu_item_proto,
     );
     globals.define_value(
         gc_context,

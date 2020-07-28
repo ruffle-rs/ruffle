@@ -312,7 +312,7 @@ fn offset<'gc>(
 
 pub fn create_point_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    point_proto: Option<Object<'gc>>,
+    point_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
     let point = FunctionObject::constructor(
