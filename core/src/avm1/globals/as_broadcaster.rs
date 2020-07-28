@@ -2,8 +2,8 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property::Attribute::*;
 use crate::avm1::object::TObject;
+use crate::avm1::property::Attribute::*;
 use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
 use gc_arena::MutationContext;
 
@@ -92,7 +92,6 @@ pub fn broadcast_message<'gc>(
 
     Ok(Value::Undefined)
 }
- 
 
 pub fn initialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -100,17 +99,17 @@ pub fn initialize<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-	if let Some(val) = args.get(0) {
+    if let Some(val) = args.get(0) {
         let broadcaster = val.coerce_to_object(activation, context);
 
-        let listeners = 
+        let listeners =
             ScriptObject::array(context.gc_context, Some(activation.avm.prototypes().array));
 
         broadcaster.define_value(
             context.gc_context,
             "_listeners",
             Value::Object(listeners.into()),
-            DontEnum.into()
+            DontEnum.into(),
         );
 
         if let Some(mut broadcaster_script_obj) = broadcaster.as_script_object() {
@@ -147,15 +146,15 @@ pub fn create<'gc>(
     proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-	let mut as_broadcaster = ScriptObject::object(gc_context, proto);
+    let mut as_broadcaster = ScriptObject::object(gc_context, proto);
 
-	as_broadcaster.force_set_function(
-		"initialize",
-		initialize,
-		gc_context,
-		DontDelete | ReadOnly | DontEnum,
-		fn_proto,
-	);
+    as_broadcaster.force_set_function(
+        "initialize",
+        initialize,
+        gc_context,
+        DontDelete | ReadOnly | DontEnum,
+        fn_proto,
+    );
 
-	as_broadcaster.into()
+    as_broadcaster.into()
 }
