@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{ExecutionReason, FunctionObject, NativeFunction};
+use crate::avm1::function::{Executable, ExecutionReason, FunctionObject, NativeFunction};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::{AvmString, Object, ObjectPtr, TObject, UpdateContext, Value};
 use crate::property_map::{Entry, PropertyMap};
@@ -196,9 +196,13 @@ impl<'gc> ScriptObject<'gc> {
         self.define_value(
             gc_context,
             name,
-            Value::Object(FunctionObject::function(
-                gc_context, function, fn_proto, None,
-            )),
+            FunctionObject::bare_function(
+                gc_context,
+                Some(function),
+                Option::<Executable>::None,
+                fn_proto,
+            )
+            .into(),
             attributes.into(),
         )
     }
@@ -1061,7 +1065,7 @@ mod tests {
                 context.gc_context,
                 Executable::Native(|_avm, _context, _this, _args| Ok("Virtual!".into())),
                 None,
-                None,
+                activation.avm.prototypes.function,
             );
 
             object.as_script_object().unwrap().add_property(
@@ -1095,7 +1099,7 @@ mod tests {
                 context.gc_context,
                 Executable::Native(|_avm, _context, _this, _args| Ok("Virtual!".into())),
                 None,
-                None,
+                activation.avm.prototypes.function,
             );
 
             object.as_script_object().unwrap().add_property(
@@ -1172,7 +1176,7 @@ mod tests {
                 context.gc_context,
                 Executable::Native(|_avm, _context, _this, _args| Ok(Value::Null)),
                 None,
-                None,
+                activation.avm.prototypes.function,
             );
 
             object.as_script_object().unwrap().define_value(

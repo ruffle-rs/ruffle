@@ -394,7 +394,7 @@ pub fn create_proto<'gc>(
             gc_context,
             Executable::Native(length),
             Some(fn_proto),
-            Some(fn_proto),
+            fn_proto,
         ),
         None,
         Attribute::ReadOnly.into(),

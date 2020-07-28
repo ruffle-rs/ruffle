@@ -18,8 +18,8 @@ macro_rules! with_color_transform {
             $obj.add_property(
                 $gc,
                 $name,
-                FunctionObject::function($gc, Executable::Native($get), Some($fn_proto), Some($fn_proto)),
-                Some(FunctionObject::function($gc, Executable::Native($set), Some($fn_proto), Some($fn_proto))),
+                FunctionObject::function($gc, Executable::Native($get), Some($fn_proto), $fn_proto),
+                Some(FunctionObject::function($gc, Executable::Native($set), Some($fn_proto), $fn_proto)),
                 EnumSet::empty(),
             );
         )*

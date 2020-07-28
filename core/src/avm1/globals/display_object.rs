@@ -60,13 +60,13 @@ pub fn define_display_object_proto<'gc>(
                 Ok(activation.avm.global_object(context))
             }),
             Some(fn_proto),
-            Some(fn_proto),
+            fn_proto,
         ),
         Some(FunctionObject::function(
             gc_context,
             Executable::Native(overwrite_global),
             Some(fn_proto),
-            Some(fn_proto),
+            fn_proto,
         )),
         DontDelete | ReadOnly | DontEnum,
     );
@@ -80,13 +80,13 @@ pub fn define_display_object_proto<'gc>(
                 Ok(activation.root_object(context))
             }),
             Some(fn_proto),
-            Some(fn_proto),
+            fn_proto,
         ),
         Some(FunctionObject::function(
             gc_context,
             Executable::Native(overwrite_root),
             Some(fn_proto),
-            Some(fn_proto),
+            fn_proto,
         )),
         DontDelete | ReadOnly | DontEnum,
     );
@@ -98,13 +98,13 @@ pub fn define_display_object_proto<'gc>(
             gc_context,
             Executable::Native(get_parent),
             Some(fn_proto),
-            Some(fn_proto),
+            fn_proto,
         ),
         Some(FunctionObject::function(
             gc_context,
             Executable::Native(overwrite_parent),
             Some(fn_proto),
-            Some(fn_proto),
+            fn_proto,
         )),
         DontDelete | ReadOnly | DontEnum,
     );

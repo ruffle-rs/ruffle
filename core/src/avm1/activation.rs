@@ -919,7 +919,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             context.gc_context,
             Gc::allocate(context.gc_context, func),
             Some(self.avm.prototypes.function),
-            Some(prototype),
+            prototype,
         );
         if name == "" {
             self.avm.push(func_obj);
@@ -954,7 +954,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             context.gc_context,
             Gc::allocate(context.gc_context, func),
             Some(self.avm.prototypes.function),
-            Some(prototype),
+            prototype,
         );
         if action_func.name == "" {
             self.avm.push(func_obj);

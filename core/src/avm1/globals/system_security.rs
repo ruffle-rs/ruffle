@@ -93,7 +93,7 @@ fn policy_file_resolver<'gc>(
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let mut security = ScriptObject::object(gc_context, proto);
 
@@ -102,7 +102,7 @@ pub fn create<'gc>(
         policy_file_resolver,
         gc_context,
         EnumSet::empty(),
-        fn_proto,
+        Some(fn_proto),
     );
 
     security.force_set_function(
@@ -110,7 +110,7 @@ pub fn create<'gc>(
         allow_domain,
         gc_context,
         EnumSet::empty(),
-        fn_proto,
+        Some(fn_proto),
     );
 
     security.force_set_function(
@@ -118,7 +118,7 @@ pub fn create<'gc>(
         allow_insecure_domain,
         gc_context,
         EnumSet::empty(),
-        fn_proto,
+        Some(fn_proto),
     );
 
     security.force_set_function(
@@ -126,7 +126,7 @@ pub fn create<'gc>(
         load_policy_file,
         gc_context,
         EnumSet::empty(),
-        fn_proto,
+        Some(fn_proto),
     );
 
     security.force_set_function(
@@ -134,7 +134,7 @@ pub fn create<'gc>(
         escape_domain,
         gc_context,
         EnumSet::empty(),
-        fn_proto,
+        Some(fn_proto),
     );
 
     security.add_property(
@@ -143,7 +143,7 @@ pub fn create<'gc>(
         FunctionObject::function(
             gc_context,
             Executable::Native(get_sandbox_type),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         ),
         None,
@@ -156,7 +156,7 @@ pub fn create<'gc>(
         FunctionObject::function(
             gc_context,
             Executable::Native(get_choose_local_swf_path),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         ),
         None,
