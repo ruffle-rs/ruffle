@@ -1,6 +1,6 @@
+use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::listeners::Listeners;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::events::KeyCode;
@@ -38,11 +38,12 @@ pub fn create_key_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
-    listener: &Listeners<'gc>,
+    broadcaster_functions: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
 ) -> Object<'gc> {
     let mut key = ScriptObject::object(gc_context, proto);
 
-    register_listener!(gc_context, key, listener, fn_proto, key);
+    broadcaster_functions.initialize(gc_context, key.into(), array_proto);
 
     key.define_value(
         gc_context,

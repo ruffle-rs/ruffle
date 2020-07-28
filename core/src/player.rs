@@ -1,7 +1,6 @@
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::listeners::SystemListener;
 use crate::avm1::object::Object;
 use crate::avm1::{Avm1, AvmString, TObject, Timers, Value};
 use crate::avm2::Avm2;
@@ -562,23 +561,23 @@ impl Player {
         let (clip_event, listener) = match event {
             PlayerEvent::KeyDown { .. } => (
                 Some(ClipEvent::KeyDown),
-                Some((SystemListener::Key, "onKeyDown")),
+                Some(("Key", "onKeyDown")),
             ),
             PlayerEvent::KeyUp { .. } => (
                 Some(ClipEvent::KeyUp),
-                Some((SystemListener::Key, "onKeyUp")),
+                Some(("Key", "onKeyUp")),
             ),
             PlayerEvent::MouseMove { .. } => (
                 Some(ClipEvent::MouseMove),
-                Some((SystemListener::Mouse, "onMouseMove")),
+                Some(("Mouse", "onMouseMove")),
             ),
             PlayerEvent::MouseUp { .. } => (
                 Some(ClipEvent::MouseUp),
-                Some((SystemListener::Mouse, "onMouseUp")),
+                Some(("Mouse", "onMouseUp")),
             ),
             PlayerEvent::MouseDown { .. } => (
                 Some(ClipEvent::MouseDown),
-                Some((SystemListener::Mouse, "onMouseDown")),
+                Some(("Mouse", "onMouseDown")),
             ),
             _ => (None, None),
         };

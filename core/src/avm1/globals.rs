@@ -1,7 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::listeners::SystemListeners;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
 use enumset::EnumSet;
@@ -11,7 +10,7 @@ use rand::Rng;
 use std::f64;
 
 mod array;
-mod as_broadcaster;
+pub(crate) mod as_broadcaster;
 pub(crate) mod boolean;
 pub(crate) mod button;
 mod color;
@@ -231,7 +230,7 @@ pub struct SystemPrototypes<'gc> {
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
     gc_context: MutationContext<'gc, '_>,
-) -> (SystemPrototypes<'gc>, Object<'gc>, SystemListeners<'gc>) {
+) -> (SystemPrototypes<'gc>, Object<'gc>, as_broadcaster::BroadcasterFunctions<'gc>) {
     let object_proto = ScriptObject::object_cell(gc_context, None);
     let function_proto = function::create_proto(gc_context, object_proto);
 
@@ -386,9 +385,10 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
     );
 
-    let listeners = SystemListeners::new(gc_context, Some(array_proto));
+    let (broadcaster_functions, as_broadcaster) = as_broadcaster::create(gc_context, Some(object_proto), Some(function_proto),);
 
     let mut globals = ScriptObject::bare_object(gc_context);
+    globals.define_value(gc_context, "AsBroadcaster", as_broadcaster.into(), DontEnum.into());
     globals.define_value(gc_context, "flash", flash.into(), DontEnum.into());
     globals.define_value(gc_context, "Array", array.into(), DontEnum.into());
     globals.define_value(gc_context, "Button", button.into(), DontEnum.into());
@@ -466,7 +466,8 @@ pub fn create_globals<'gc>(
         gc_context,
         Some(object_proto),
         Some(function_proto),
-        &listeners.ime,
+        broadcaster_functions,
+        array_proto,
     );
 
     let system = system::create(
@@ -478,17 +479,6 @@ pub fn create_globals<'gc>(
         system_ime,
     );
     globals.define_value(gc_context, "System", system.into(), DontEnum.into());
-
-    globals.define_value(
-        gc_context,
-        "AsBroadcaster",
-        Value::Object(as_broadcaster::create(
-            gc_context,
-            Some(object_proto),
-            Some(function_proto),
-        )),
-        DontEnum.into(),
-    );
 
     globals.define_value(
         gc_context,
@@ -507,7 +497,8 @@ pub fn create_globals<'gc>(
             gc_context,
             Some(object_proto),
             Some(function_proto),
-            &listeners.mouse,
+            broadcaster_functions,
+            array_proto,
         )),
         DontEnum.into(),
     );
@@ -518,7 +509,8 @@ pub fn create_globals<'gc>(
             gc_context,
             Some(object_proto),
             Some(function_proto),
-            &listeners.key,
+            broadcaster_functions,
+            array_proto,
         )),
         DontEnum.into(),
     );
@@ -530,6 +522,7 @@ pub fn create_globals<'gc>(
             Some(object_proto),
             Some(array_proto),
             Some(function_proto),
+            broadcaster_functions
         )),
         DontEnum.into(),
     );
@@ -627,7 +620,7 @@ pub fn create_globals<'gc>(
             context_menu_item: context_menu_item_proto,
         },
         globals.into(),
-        listeners,
+        broadcaster_functions,
     )
 }
 

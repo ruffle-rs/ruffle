@@ -1,0 +1,10 @@
+//MovieClipLoader.addListener == asbroadcaster.addListener
+true
+//Stage.addListener == asbroadcaster.addListener
+true
+//System.IME.addListener == asbroadcaster.addListener
+true
+//Key.addListener == asbroadcaster.addListener
+true
+//Mouse.addListener == asbroadcaster.addListener
+true

@@ -2,7 +2,6 @@
 use crate::avm1;
 
 use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::listeners::SystemListener;
 use crate::avm1::{Object, Timers, Value};
 use crate::backend::input::InputBackend;
 use crate::backend::storage::StorageBackend;
@@ -242,7 +241,7 @@ pub enum ActionType<'gc> {
 
     /// A system listener method,
     NotifyListeners {
-        listener: SystemListener,
+        listener: &'static str,
         method: &'static str,
         args: Vec<Value<'gc>>,
     },

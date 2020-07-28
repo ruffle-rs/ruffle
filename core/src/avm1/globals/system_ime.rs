@@ -1,6 +1,6 @@
+use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::listeners::Listeners;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
@@ -76,11 +76,12 @@ pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
     fn_proto: Option<Object<'gc>>,
-    listener: &Listeners<'gc>,
+    broadcaster_functions: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
 ) -> Object<'gc> {
     let mut ime = ScriptObject::object(gc_context, proto);
 
-    register_listener!(gc_context, ime, listener, fn_proto, ime);
+    broadcaster_functions.initialize(gc_context, ime.into(), array_proto);
 
     ime.define_value(
         gc_context,

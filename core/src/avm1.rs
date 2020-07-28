@@ -32,9 +32,10 @@ mod value;
 #[cfg(test)]
 mod tests;
 
+use crate::avm1::globals::as_broadcaster;
+use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::error::Error;
-use crate::avm1::listeners::SystemListener;
 pub use globals::SystemPrototypes;
 pub use object::script_object::ScriptObject;
 pub use object::sound_object::SoundObject;
@@ -90,8 +91,8 @@ pub struct Avm1<'gc> {
     /// System builtins that we use internally to construct new objects.
     prototypes: globals::SystemPrototypes<'gc>,
 
-    /// System event listeners that will respond to native events (Mouse, Key, etc)
-    system_listeners: listeners::SystemListeners<'gc>,
+    /// Cached functions for the AsBroadcaster
+    broadcaster_functions: BroadcasterFunctions<'gc>,
 
     /// DisplayObject property map.
     display_properties: GcCell<'gc, stage_object::DisplayPropertyMap<'gc>>,
@@ -120,7 +121,7 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.globals.trace(cc);
         self.constant_pool.trace(cc);
-        self.system_listeners.trace(cc);
+        //self.system_listeners.trace(cc);
         self.prototypes.trace(cc);
         self.display_properties.trace(cc);
         self.stack.trace(cc);
@@ -133,14 +134,14 @@ unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
 
 impl<'gc> Avm1<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>, player_version: u8) -> Self {
-        let (prototypes, globals, system_listeners) = create_globals(gc_context);
+        let (prototypes, globals, broadcaster_functions) = create_globals(gc_context);
 
         Self {
             player_version,
             constant_pool: GcCell::allocate(gc_context, vec![]),
             globals,
             prototypes,
-            system_listeners,
+            broadcaster_functions,
             display_properties: stage_object::DisplayPropertyMap::new(gc_context),
             stack: vec![],
             registers: [
@@ -339,7 +340,7 @@ impl<'gc> Avm1<'gc> {
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        listener: SystemListener,
+        broadcaster: &str,
         method: &str,
         args: &[Value<'gc>],
     ) {
@@ -352,12 +353,7 @@ impl<'gc> Avm1<'gc> {
             active_clip,
         );
 
-        let listeners = activation.avm.system_listeners.get(listener);
-        let mut handlers = listeners.prepare_handlers(&mut activation, context, method);
-
-        for (listener, handler) in handlers.drain(..) {
-            let _ = handler.call(method, &mut activation, context, listener, None, &args);
-        }
+        avm_warn!(activation, "{} - {}", broadcaster, method);
     }
 
     /// Halts the AVM, preventing execution of any further actions.
