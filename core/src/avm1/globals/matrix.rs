@@ -122,7 +122,6 @@ pub fn matrix_to_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let proto = context.system_prototypes.matrix;
     let args = [
         matrix.a.into(),
         matrix.b.into(),
@@ -131,9 +130,8 @@ pub fn matrix_to_object<'gc>(
         matrix.tx.to_pixels().into(),
         matrix.ty.to_pixels().into(),
     ];
-    let object = proto.new(activation, context, proto, &args)?;
     let constructor = activation.avm.prototypes.matrix_constructor;
-    constructor.construct(activation, context, object, &args)?;
+    let object = constructor.construct(activation, context, &args)?;
     Ok(object)
 }
 
@@ -200,7 +198,6 @@ fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let proto = context.system_prototypes.matrix;
     let args = [
         this.get("a", activation, context)?,
         this.get("b", activation, context)?,
@@ -209,9 +206,8 @@ fn clone<'gc>(
         this.get("tx", activation, context)?,
         this.get("ty", activation, context)?,
     ];
-    let cloned = proto.new(activation, context, proto, &args)?;
     let constructor = activation.avm.prototypes.matrix_constructor;
-    constructor.construct(activation, context, cloned, &args)?;
+    let cloned = constructor.construct(activation, context, &args)?;
     Ok(cloned.into())
 }
 

@@ -1173,7 +1173,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         }
                     }
                     self.0.write(context.gc_context).object = Some(object);
-                    let _ = constructor.construct(&mut activation, context, object, &[]);
+                    let _ =
+                        constructor.construct_on_existing(&mut activation, context, object, &[]);
                 }
 
                 return;

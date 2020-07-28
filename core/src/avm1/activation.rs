@@ -1724,14 +1724,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let constructor =
             object.get(&method_name.coerce_to_string(self, context)?, self, context)?;
         if let Value::Object(constructor) = constructor {
-            let prototype = constructor
-                .get("prototype", self, context)?
-                .coerce_to_object(self, context);
-
-            let this = prototype.new(self, context, prototype, &args)?;
-
             //TODO: What happens if you `ActionNewMethod` without a method name?
-            constructor.construct(self, context, this, &args)?;
+            let this = constructor.construct(self, context, &args)?;
 
             self.avm.push(this);
         } else {
@@ -1761,13 +1755,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let constructor = self
             .resolve(&fn_name, context)?
             .coerce_to_object(self, context);
-        let prototype = constructor
-            .get("prototype", self, context)?
-            .coerce_to_object(self, context);
 
-        let this = prototype.new(self, context, prototype, &args)?;
-
-        constructor.construct(self, context, this, &args)?;
+        let this = constructor.construct(self, context, &args)?;
 
         self.avm.push(this);
 

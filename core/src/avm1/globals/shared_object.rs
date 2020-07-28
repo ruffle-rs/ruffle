@@ -114,18 +114,17 @@ fn recursive_deserialize<'gc>(
                 );
             }
             JsonValue::Object(o) => {
-                let so = activation.avm.prototypes.object;
-                let obj = so.new(activation, context, so, &[]).unwrap();
                 let constructor = activation.avm.prototypes.object_constructor;
-                let _ = constructor.construct(activation, context, obj, &[]);
-                recursive_deserialize(JsonValue::Object(o.clone()), activation, obj, context);
+                if let Ok(obj) = constructor.construct(activation, context, &[]) {
+                    recursive_deserialize(JsonValue::Object(o.clone()), activation, obj, context);
 
-                object.define_value(
-                    context.gc_context,
-                    entry.0,
-                    Value::Object(obj),
-                    EnumSet::empty(),
-                );
+                    object.define_value(
+                        context.gc_context,
+                        entry.0,
+                        Value::Object(obj),
+                        EnumSet::empty(),
+                    );
+                }
             }
             JsonValue::Array(_) => {}
         }
@@ -158,20 +157,16 @@ pub fn get_local<'gc>(
     }
 
     // Data property only should exist when created with getLocal/Remote
-    let so = activation.avm.prototypes.shared_object;
-    let this = so.new(activation, action_context, so, &[])?;
     let constructor = activation.avm.prototypes.shared_object_constructor;
-    constructor.construct(activation, action_context, this, &[])?;
+    let this = constructor.construct(activation, action_context, &[])?;
 
     // Set the internal name
     let obj_so = this.as_shared_object().unwrap();
     obj_so.set_name(action_context.gc_context, name.to_string());
 
     // Create the data object
-    let data_proto = activation.avm.prototypes.object;
-    let data = data_proto.new(activation, action_context, so, &[])?;
     let constructor = activation.avm.prototypes.object_constructor;
-    constructor.construct(activation, action_context, data, &[])?;
+    let data = constructor.construct(activation, action_context, &[])?;
 
     // Load the data object from storage if it existed prior
     if let Some(saved) = action_context.storage.get_string(&name) {

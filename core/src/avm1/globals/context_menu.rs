@@ -20,10 +20,8 @@ pub fn constructor<'gc>(
 
     this.set("onSelect", callback.into(), activation, context)?;
 
-    let obj_proto = activation.avm.prototypes.object;
-    let built_in_items = obj_proto.new(activation, context, obj_proto, &[])?;
     let constructor = activation.avm.prototypes.object_constructor;
-    constructor.construct(activation, context, built_in_items, &[])?;
+    let built_in_items = constructor.construct(activation, context, &[])?;
 
     built_in_items.set("print", true.into(), activation, context)?;
     built_in_items.set("forward_back", true.into(), activation, context)?;
@@ -36,10 +34,8 @@ pub fn constructor<'gc>(
 
     this.set("builtInItems", built_in_items.into(), activation, context)?;
 
-    let array_proto = activation.avm.prototypes.array;
-    let custom_items = array_proto.new(activation, context, array_proto, &[])?;
     let constructor = activation.avm.prototypes.array_constructor;
-    constructor.construct(activation, context, custom_items, &[])?;
+    let custom_items = constructor.construct(activation, context, &[])?;
 
     this.set("customItems", custom_items.into(), activation, context)?;
 
@@ -56,10 +52,8 @@ pub fn copy<'gc>(
         .get("onSelect", activation, context)?
         .coerce_to_object(activation, context);
 
-    let context_menu_proto = activation.avm.prototypes.context_menu;
-    let copy = context_menu_proto.new(activation, context, context_menu_proto, &[])?;
     let constructor = activation.avm.prototypes.context_menu_constructor;
-    constructor.construct(activation, context, copy, &[callback.into()])?;
+    let copy = constructor.construct(activation, context, &[callback.into()])?;
 
     let built_in = this
         .get("builtInItems", activation, context)?
