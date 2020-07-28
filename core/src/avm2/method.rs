@@ -5,7 +5,6 @@ use crate::avm2::object::Object;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
 use std::fmt;
 use std::rc::Rc;
@@ -30,8 +29,7 @@ pub struct CollectWrapper<T>(T);
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
 pub type NativeMethod<'gc> = fn(
-    &mut Activation<'_, 'gc>,
-    &mut UpdateContext<'_, 'gc, '_>,
+    &mut Activation<'_, 'gc, '_>,
     Option<Object<'gc>>,
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error>;

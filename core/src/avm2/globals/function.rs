@@ -7,13 +7,11 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use gc_arena::MutationContext;
 
 /// Implements `Function`
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -22,8 +20,7 @@ pub fn constructor<'gc>(
 
 /// Implements `Function.prototype.call`
 fn call<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     func: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -32,9 +29,9 @@ fn call<'gc>(
 
     if let Some(func) = func {
         if args.len() > 1 {
-            Ok(func.call(this, &args[1..], activation, context, base_proto)?)
+            Ok(func.call(this, &args[1..], activation, base_proto)?)
         } else {
-            Ok(func.call(this, &[], activation, context, base_proto)?)
+            Ok(func.call(this, &[], activation, base_proto)?)
         }
     } else {
         Err("Not a callable function".into())

@@ -11,7 +11,6 @@ use crate::avm2::script_object::{ScriptObject, ScriptObjectClass, ScriptObjectDa
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
 use std::fmt;
 
@@ -87,22 +86,17 @@ impl<'gc> Executable<'gc> {
         &self,
         unbound_reciever: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         match self {
-            Executable::Native(nf, reciever) => nf(
-                activation,
-                context,
-                reciever.or(unbound_reciever),
-                arguments,
-            ),
+            Executable::Native(nf, reciever) => {
+                nf(activation, reciever.or(unbound_reciever), arguments)
+            }
             Executable::Action(bm) => {
                 let reciever = bm.reciever.or(unbound_reciever);
                 let mut activation = Activation::from_method(
-                    activation.avm2(),
-                    context,
+                    activation.context.reborrow(),
                     bm.method,
                     bm.scope,
                     reciever,
@@ -110,7 +104,7 @@ impl<'gc> Executable<'gc> {
                     base_proto,
                 )?;
 
-                activation.run_actions(bm.method, context)
+                activation.run_actions(bm.method)
             }
         }
     }
@@ -161,8 +155,7 @@ impl<'gc> FunctionObject<'gc> {
     /// to be limited to interfaces (at least by the AS3 compiler in Animate
     /// CC 2020.)
     pub fn from_class(
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         base_class: Option<Object<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
@@ -174,7 +167,6 @@ impl<'gc> FunctionObject<'gc> {
                     base_class,
                     &QName::new(Namespace::public_namespace(), "prototype"),
                     activation,
-                    context,
                 )?
                 .as_object()
                 .map_err(|_| {
@@ -189,9 +181,9 @@ impl<'gc> FunctionObject<'gc> {
                     .into()
                 });
 
-            super_proto?.derive(activation, context, class, scope)?
+            super_proto?.derive(activation, class, scope)?
         } else {
-            ScriptObject::bare_object(context.gc_context)
+            ScriptObject::bare_object(activation.context.gc_context)
         };
 
         let mut interfaces = Vec::new();
@@ -199,8 +191,8 @@ impl<'gc> FunctionObject<'gc> {
         for interface_name in interface_names {
             let interface = if let Some(scope) = scope {
                 scope
-                    .write(context.gc_context)
-                    .resolve(&interface_name, activation, context)?
+                    .write(activation.context.gc_context)
+                    .resolve(&interface_name, activation)?
             } else {
                 None
             };
@@ -215,7 +207,6 @@ impl<'gc> FunctionObject<'gc> {
                     interface,
                     &QName::new(Namespace::public_namespace(), "prototype"),
                     activation,
-                    context,
                 )?
                 .as_object()?;
 
@@ -223,7 +214,7 @@ impl<'gc> FunctionObject<'gc> {
         }
 
         if !interfaces.is_empty() {
-            class_proto.set_interfaces(context.gc_context, interfaces);
+            class_proto.set_interfaces(activation.context.gc_context, interfaces);
         }
 
         let fn_proto = activation.avm2().prototypes().function;
@@ -232,7 +223,7 @@ impl<'gc> FunctionObject<'gc> {
         let initializer = class_read.instance_init();
 
         let mut constr: Object<'gc> = FunctionObject(GcCell::allocate(
-            context.gc_context,
+            activation.context.gc_context,
             FunctionObjectData {
                 base: ScriptObjectData::base_new(
                     Some(fn_proto),
@@ -242,26 +233,26 @@ impl<'gc> FunctionObject<'gc> {
                     initializer,
                     scope,
                     None,
-                    context.gc_context,
+                    activation.context.gc_context,
                 )),
             },
         ))
         .into();
 
         constr.install_dynamic_property(
-            context.gc_context,
+            activation.context.gc_context,
             QName::new(Namespace::public_namespace(), "prototype"),
             class_proto.into(),
         )?;
         class_proto.install_dynamic_property(
-            context.gc_context,
+            activation.context.gc_context,
             QName::new(Namespace::public_namespace(), "constructor"),
             constr.into(),
         )?;
 
         let class_initializer = class_read.class_init();
         let class_constr = FunctionObject::from_method(
-            context.gc_context,
+            activation.context.gc_context,
             class_initializer,
             scope,
             class_constr_proto,
@@ -346,15 +337,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self,
         reciever: Object<'gc>,
         name: &QName<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
         let rv = read.base.get_property_local(reciever, name, activation)?;
 
         drop(read);
 
-        rv.resolve(activation, context)
+        rv.resolve(activation)
     }
 
     fn set_property_local(
@@ -362,17 +352,16 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut write = self.0.write(context.gc_context);
+        let mut write = self.0.write(activation.context.gc_context);
         let rv = write
             .base
-            .set_property_local(reciever, name, value, activation, context)?;
+            .set_property_local(reciever, name, value, activation)?;
 
         drop(write);
 
-        rv.resolve(activation, context)?;
+        rv.resolve(activation)?;
 
         Ok(())
     }
@@ -382,17 +371,16 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut write = self.0.write(context.gc_context);
+        let mut write = self.0.write(activation.context.gc_context);
         let rv = write
             .base
-            .init_property_local(reciever, name, value, activation, context)?;
+            .init_property_local(reciever, name, value, activation)?;
 
         drop(write);
 
-        rv.resolve(activation, context)?;
+        rv.resolve(activation)?;
 
         Ok(())
     }
@@ -526,12 +514,11 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self,
         reciever: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
-            exec.exec(reciever, arguments, activation, context, base_proto)
+            exec.exec(reciever, arguments, activation, base_proto)
         } else {
             Err("Not a callable function!".into())
         }
@@ -539,15 +526,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn construct(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::FunctionObject(*self);
         let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
 
         Ok(FunctionObject(GcCell::allocate(
-            context.gc_context,
+            activation.context.gc_context,
             FunctionObjectData { base, exec: None },
         ))
         .into())
@@ -555,8 +541,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn derive(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
@@ -567,7 +552,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         );
 
         Ok(FunctionObject(GcCell::allocate(
-            context.gc_context,
+            activation.context.gc_context,
             FunctionObjectData { base, exec: None },
         ))
         .into())

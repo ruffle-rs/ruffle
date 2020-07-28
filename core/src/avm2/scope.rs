@@ -5,7 +5,6 @@ use crate::avm2::names::Multiname;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 
@@ -100,8 +99,7 @@ impl<'gc> Scope<'gc> {
     pub fn find(
         &self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<Object<'gc>>, Error> {
         if let Some(qname) = self.locals().resolve_multiname(name)? {
             if self.locals().has_property(&qname)? {
@@ -110,7 +108,7 @@ impl<'gc> Scope<'gc> {
         }
 
         if let Some(scope) = self.parent() {
-            return scope.find(name, activation, context);
+            return scope.find(name, activation);
         }
 
         Ok(None)
@@ -123,8 +121,7 @@ impl<'gc> Scope<'gc> {
     pub fn resolve(
         &mut self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<Value<'gc>>, Error> {
         if let Some(qname) = self.locals().resolve_multiname(name)? {
             if self.locals().has_property(&qname)? {
@@ -132,15 +129,14 @@ impl<'gc> Scope<'gc> {
                     self.values,
                     &qname,
                     activation,
-                    context,
                 )?));
             }
         }
 
         if let Some(parent) = self.parent {
             return parent
-                .write(context.gc_context)
-                .resolve(name, activation, context);
+                .write(activation.context.gc_context)
+                .resolve(name, activation);
         }
 
         //TODO: Should undefined variables halt execution?

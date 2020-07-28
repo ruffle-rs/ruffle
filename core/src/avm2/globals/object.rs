@@ -6,13 +6,11 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use gc_arena::MutationContext;
 
 /// Implements `Object`
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -21,44 +19,40 @@ pub fn constructor<'gc>(
 
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
-    _: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     Ok(this
-        .map(|t| t.to_string(context.gc_context))
+        .map(|t| t.to_string(activation.context.gc_context))
         .unwrap_or(Ok(Value::Undefined))?)
 }
 
 /// Implements `Object.prototype.toLocaleString`
 fn to_locale_string<'gc>(
-    _: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     Ok(this
-        .map(|t| t.to_string(context.gc_context))
+        .map(|t| t.to_string(activation.context.gc_context))
         .unwrap_or(Ok(Value::Undefined))?)
 }
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
-    _: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     Ok(this
-        .map(|t| t.value_of(context.gc_context))
+        .map(|t| t.value_of(activation.context.gc_context))
         .unwrap_or(Ok(Value::Undefined))?)
 }
 
 /// `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -79,8 +73,7 @@ pub fn has_own_property<'gc>(
 
 /// `Object.prototype.isPrototypeOf`
 pub fn is_prototype_of<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -102,8 +95,7 @@ pub fn is_prototype_of<'gc>(
 
 /// `Object.prototype.propertyIsEnumerable`
 pub fn property_is_enumerable<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -124,8 +116,7 @@ pub fn property_is_enumerable<'gc>(
 
 /// `Object.prototype.setPropertyIsEnumerable`
 pub fn set_property_is_enumerable<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -142,7 +133,7 @@ pub fn set_property_is_enumerable<'gc>(
     if let Some(ns) = this.resolve_any(name)? {
         if !ns.is_private() {
             let qname = QName::new(ns, name);
-            this.set_local_property_is_enumerable(context.gc_context, &qname, is_enum)?;
+            this.set_local_property_is_enumerable(activation.context.gc_context, &qname, is_enum)?;
         }
     }
 

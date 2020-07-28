@@ -3,6 +3,7 @@ use crate::avm1;
 
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object, Timers, Value};
+use crate::avm2::Avm2;
 use crate::backend::input::InputBackend;
 use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
@@ -117,6 +118,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The AVM1 global state.
     pub avm1: &'a mut Avm1<'gc>,
+
+    /// The AVM2 global state.
+    pub avm2: &'a mut Avm2<'gc>,
 }
 
 unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context> {
@@ -145,6 +149,7 @@ unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context
         self.unbound_text_fields.trace(cc);
         self.timers.trace(cc);
         self.avm1.trace(cc);
+        self.avm2.trace(cc);
     }
 }
 
@@ -188,6 +193,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             unbound_text_fields: self.unbound_text_fields,
             timers: self.timers,
             avm1: self.avm1,
+            avm2: self.avm2,
         }
     }
 }

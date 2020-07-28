@@ -10,7 +10,6 @@ use crate::avm2::script_object::ScriptObject;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
@@ -32,8 +31,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         reciever: Object<'gc>,
         name: &QName<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error>;
 
     /// Retrieve a property by it's QName.
@@ -41,23 +39,22 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         reciever: Object<'gc>,
         name: &QName<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, context, abc_trait, reciever)?;
+                self.install_trait(activation, abc_trait, reciever)?;
             }
         }
 
         let has_no_getter = self.has_own_virtual_setter(name) && !self.has_own_virtual_getter(name);
 
         if self.has_own_property(name)? && !has_no_getter {
-            return self.get_property_local(reciever, name, activation, context);
+            return self.get_property_local(reciever, name, activation);
         }
 
         if let Some(mut proto) = self.proto() {
-            return proto.get_property(reciever, name, activation, context);
+            return proto.get_property(reciever, name, activation);
         }
 
         Ok(Value::Undefined)
@@ -85,8 +82,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error>;
 
     /// Set a property by it's QName.
@@ -95,17 +91,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, context, abc_trait, reciever)?;
+                self.install_trait(activation, abc_trait, reciever)?;
             }
         }
 
         if self.has_own_virtual_setter(name) {
-            return self.set_property_local(reciever, name, value, activation, context);
+            return self.set_property_local(reciever, name, value, activation);
         }
 
         let mut proto = self.proto();
@@ -114,13 +109,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             //we're calling a virtual setter. If you call `set_property` on
             //a non-virtual you will actually alter the prototype.
             if my_proto.has_own_virtual_setter(name) {
-                return my_proto.set_property(reciever, name, value, activation, context);
+                return my_proto.set_property(reciever, name, value, activation);
             }
 
             proto = my_proto.proto();
         }
 
-        reciever.set_property_local(reciever, name, value, activation, context)
+        reciever.set_property_local(reciever, name, value, activation)
     }
 
     /// Init a property on this specific object.
@@ -129,8 +124,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error>;
 
     /// Init a property by it's QName.
@@ -139,17 +133,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, context, abc_trait, reciever)?;
+                self.install_trait(activation, abc_trait, reciever)?;
             }
         }
 
         if self.has_own_virtual_setter(name) {
-            return self.init_property_local(reciever, name, value, activation, context);
+            return self.init_property_local(reciever, name, value, activation);
         }
 
         let mut proto = self.proto();
@@ -158,13 +151,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             //we're calling a virtual setter. If you call `set_property` on
             //a non-virtual you will actually alter the prototype.
             if my_proto.has_own_virtual_setter(name) {
-                return my_proto.init_property(reciever, name, value, activation, context);
+                return my_proto.init_property(reciever, name, value, activation);
             }
 
             proto = my_proto.proto();
         }
 
-        reciever.init_property_local(reciever, name, value, activation, context)
+        reciever.init_property_local(reciever, name, value, activation)
     }
 
     /// Retrieve a slot by it's index.
@@ -411,19 +404,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// object.
     fn install_trait(
         &mut self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         trait_entry: Trait<'gc>,
         reciever: Object<'gc>,
     ) -> Result<(), Error> {
-        self.install_foreign_trait(activation, context, trait_entry, self.get_scope(), reciever)
+        self.install_foreign_trait(activation, trait_entry, self.get_scope(), reciever)
     }
 
     /// Install a trait from anywyere.
     fn install_foreign_trait(
         &mut self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         trait_entry: Trait<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         reciever: Object<'gc>,
@@ -444,7 +435,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 ..
             } => {
                 self.install_slot(
-                    context.gc_context,
+                    activation.context.gc_context,
                     trait_name,
                     *slot_id,
                     default_value.clone().unwrap_or(Value::Undefined),
@@ -454,37 +445,52 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 disp_id, method, ..
             } => {
                 let function = FunctionObject::from_method(
-                    context.gc_context,
+                    activation.context.gc_context,
                     method.clone(),
                     scope,
                     fn_proto,
                     Some(reciever),
                 );
-                self.install_method(context.gc_context, trait_name, *disp_id, function);
+                self.install_method(
+                    activation.context.gc_context,
+                    trait_name,
+                    *disp_id,
+                    function,
+                );
             }
             TraitKind::Getter {
                 disp_id, method, ..
             } => {
                 let function = FunctionObject::from_method(
-                    context.gc_context,
+                    activation.context.gc_context,
                     method.clone(),
                     scope,
                     fn_proto,
                     Some(reciever),
                 );
-                self.install_getter(context.gc_context, trait_name, *disp_id, function)?;
+                self.install_getter(
+                    activation.context.gc_context,
+                    trait_name,
+                    *disp_id,
+                    function,
+                )?;
             }
             TraitKind::Setter {
                 disp_id, method, ..
             } => {
                 let function = FunctionObject::from_method(
-                    context.gc_context,
+                    activation.context.gc_context,
                     method.clone(),
                     scope,
                     fn_proto,
                     Some(reciever),
                 );
-                self.install_setter(context.gc_context, trait_name, *disp_id, function)?;
+                self.install_setter(
+                    activation.context.gc_context,
+                    trait_name,
+                    *disp_id,
+                    function,
+                )?;
             }
             TraitKind::Class { slot_id, class } => {
                 let class_read = class.read();
@@ -494,7 +500,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         .unwrap_or_else(|| QName::dynamic_name("Object"));
 
                     let super_class: Result<Object<'gc>, Error> = self
-                        .get_property(reciever, &super_name, activation, context)?
+                        .get_property(reciever, &super_name, activation)?
                         .as_object()
                         .map_err(|_e| {
                             format!("Could not resolve superclass {:?}", super_name.local_name())
@@ -507,9 +513,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 };
 
                 let (class_object, _cinit) =
-                    FunctionObject::from_class(activation, context, *class, super_class, scope)?;
+                    FunctionObject::from_class(activation, *class, super_class, scope)?;
                 self.install_const(
-                    context.gc_context,
+                    activation.context.gc_context,
                     class_read.name().clone(),
                     *slot_id,
                     class_object.into(),
@@ -519,22 +525,29 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 slot_id, function, ..
             } => {
                 let mut fobject = FunctionObject::from_method(
-                    context.gc_context,
+                    activation.context.gc_context,
                     function.clone(),
                     scope,
                     fn_proto,
                     None,
                 );
-                let es3_proto =
-                    ScriptObject::object(context.gc_context, activation.avm2().prototypes().object);
+                let es3_proto = ScriptObject::object(
+                    activation.context.gc_context,
+                    activation.avm2().prototypes().object,
+                );
 
                 fobject.install_slot(
-                    context.gc_context,
+                    activation.context.gc_context,
                     QName::new(Namespace::public_namespace(), "prototype"),
                     0,
                     es3_proto.into(),
                 );
-                self.install_const(context.gc_context, trait_name, *slot_id, fobject.into());
+                self.install_const(
+                    activation.context.gc_context,
+                    trait_name,
+                    *slot_id,
+                    fobject.into(),
+                );
             }
             TraitKind::Const {
                 slot_id,
@@ -542,7 +555,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 ..
             } => {
                 self.install_const(
-                    context.gc_context,
+                    activation.context.gc_context,
                     trait_name,
                     *slot_id,
                     default_value.clone().unwrap_or(Value::Undefined),
@@ -558,8 +571,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         _reciever: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
-        _activation: &mut Activation<'_, 'gc>,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
         _base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         Err("Object is not callable".into())
@@ -584,8 +596,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// purely so that host objects can be constructed by the VM.
     fn construct(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error>;
 
@@ -600,8 +611,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// traits.
     fn derive(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error>;
@@ -638,18 +648,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     #[allow(unused_mut)] //it's not unused
     fn is_instance_of(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         mut constructor: Object<'gc>,
         check_interfaces: bool,
     ) -> Result<bool, Error> {
         let type_proto = constructor
-            .get_property(
-                constructor,
-                &QName::dynamic_name("prototype"),
-                activation,
-                context,
-            )?
+            .get_property(constructor, &QName::dynamic_name("prototype"), activation)?
             .as_object()?;
         let mut my_proto = self.proto();
 

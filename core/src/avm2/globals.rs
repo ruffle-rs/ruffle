@@ -9,7 +9,6 @@ use crate::avm2::script_object::ScriptObject;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use gc_arena::{Collect, MutationContext};
 use std::f64::NAN;
 
@@ -19,8 +18,7 @@ mod function;
 mod object;
 
 fn trace<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {

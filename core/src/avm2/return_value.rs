@@ -4,7 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::function::Executable;
 use crate::avm2::object::Object;
 use crate::avm2::{Error, Value};
-use crate::context::UpdateContext;
 use std::fmt;
 
 /// Represents the return value of a function call that has not yet executed.
@@ -83,11 +82,7 @@ impl<'gc> ReturnValue<'gc> {
     ///
     /// All return values must eventually resolved - it is a compile error to
     /// fail to do so.
-    pub fn resolve(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    pub fn resolve(self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
         match self {
             Self::Immediate(v) => Ok(v),
             Self::ResultOf {
@@ -95,13 +90,7 @@ impl<'gc> ReturnValue<'gc> {
                 unbound_reciever,
                 arguments,
                 base_proto,
-            } => executable.exec(
-                unbound_reciever,
-                &arguments,
-                activation,
-                context,
-                base_proto,
-            ),
+            } => executable.exec(unbound_reciever, &arguments, activation, base_proto),
         }
     }
 }

@@ -2,6 +2,7 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::error::Error;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object, Timers, UpdateContext};
+use crate::avm2::Avm2;
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::input::NullInputBackend;
 use crate::backend::navigator::NullNavigatorBackend;
@@ -27,6 +28,7 @@ where
         F: FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
     {
         let mut avm1 = Avm1::new(gc_context, swf_version);
+        let mut avm2 = Avm2::new(gc_context);
         let swf = Arc::new(SwfMovie::empty(swf_version));
         let mut root: DisplayObject<'gc> =
             MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
@@ -69,6 +71,7 @@ where
             timers: &mut Timers::new(),
             needs_render: &mut false,
             avm1: &mut avm1,
+            avm2: &mut avm2,
         };
         root.post_instantiation(&mut context, root, None, false);
         root.set_name(context.gc_context, "");

@@ -843,6 +843,7 @@ mod tests {
     use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute::*;
     use crate::avm1::{Avm1, Timers};
+    use crate::avm2::Avm2;
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::input::NullInputBackend;
     use crate::backend::navigator::NullNavigatorBackend;
@@ -864,7 +865,8 @@ mod tests {
         F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> R,
     {
         rootless_arena(|gc_context| {
-            let mut avm = Avm1::new(gc_context, swf_version);
+            let mut avm1 = Avm1::new(gc_context, swf_version);
+            let mut avm2 = Avm2::new(gc_context);
             let swf = Arc::new(SwfMovie::empty(swf_version));
             let mut root: DisplayObject<'_> =
                 MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
@@ -872,8 +874,8 @@ mod tests {
             let mut levels = BTreeMap::new();
             levels.insert(0, root);
 
-            let object = ScriptObject::object(gc_context, Some(avm.prototypes().object)).into();
-            let globals = avm.global_object_cell();
+            let object = ScriptObject::object(gc_context, Some(avm1.prototypes().object)).into();
+            let globals = avm1.global_object_cell();
 
             let mut context = UpdateContext {
                 gc_context,
@@ -893,7 +895,7 @@ mod tests {
                 library: &mut Library::default(),
                 navigator: &mut NullNavigatorBackend::new(),
                 renderer: &mut NullRenderer::new(),
-                system_prototypes: avm.prototypes().clone(),
+                system_prototypes: avm1.prototypes().clone(),
                 mouse_hovered_object: None,
                 mouse_position: &(Twips::new(0), Twips::new(0)),
                 drag_object: &mut None,
@@ -907,7 +909,8 @@ mod tests {
                 unbound_text_fields: &mut Vec::new(),
                 timers: &mut Timers::new(),
                 needs_render: &mut false,
-                avm1: &mut avm,
+                avm1: &mut avm1,
+                avm2: &mut avm2,
             };
 
             root.post_instantiation(&mut context, root, None, false);

@@ -370,13 +370,14 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
-            player.lock().expect("Could not lock player!!").update(
-                |_avm2, uc| -> Result<(), Error> {
+            player
+                .lock()
+                .expect("Could not lock player!!")
+                .update(|uc| -> Result<(), Error> {
                     url = uc.navigator.resolve_relative_url(&url).into_owned();
 
                     Ok(())
-                },
-            )?;
+                })?;
 
             let data = (fetch.await)
                 .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
@@ -414,8 +415,10 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
-            player.lock().expect("Could not lock player!!").update(
-                |_avm2, uc| -> Result<(), Error> {
+            player
+                .lock()
+                .expect("Could not lock player!!")
+                .update(|uc| -> Result<(), Error> {
                     url = uc.navigator.resolve_relative_url(&url).into_owned();
 
                     let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
@@ -446,8 +449,7 @@ impl<'gc> Loader<'gc> {
                     }
 
                     Ok(())
-                },
-            )?;
+                })?;
 
             let data = (fetch.await)
                 .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
@@ -457,7 +459,7 @@ impl<'gc> Loader<'gc> {
                 player
                     .lock()
                     .expect("Could not lock player!!")
-                    .update(|_avm2, uc| {
+                    .update(|uc| {
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::Movie {
                                 target_clip,
@@ -530,8 +532,10 @@ impl<'gc> Loader<'gc> {
                 //error types we can actually inspect.
                 //This also can get errors from decoding an invalid SWF file,
                 //too. We should distinguish those to player code.
-                player.lock().expect("Could not lock player!!").update(
-                    |_avm2, uc| -> Result<(), Error> {
+                player
+                    .lock()
+                    .expect("Could not lock player!!")
+                    .update(|uc| -> Result<(), Error> {
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::Movie {
                                 target_clip,
@@ -564,8 +568,7 @@ impl<'gc> Loader<'gc> {
                         };
 
                         Ok(())
-                    },
-                )
+                    })
             }
         })
     }
@@ -588,7 +591,7 @@ impl<'gc> Loader<'gc> {
             let data = fetch.await?;
 
             // Fire the load handler.
-            player.lock().unwrap().update(|_avm2, uc| {
+            player.lock().unwrap().update(|uc| {
                 let loader = uc.load_manager.get_loader(handle);
                 let that = match loader {
                     Some(&Loader::Form { target_object, .. }) => target_object,
@@ -635,7 +638,7 @@ impl<'gc> Loader<'gc> {
             let data = fetch.await;
 
             // Fire the load handler.
-            player.lock().unwrap().update(|_avm2, uc| {
+            player.lock().unwrap().update(|uc| {
                 let loader = uc.load_manager.get_loader(handle);
                 let that = match loader {
                     Some(&Loader::LoadVars { target_object, .. }) => target_object,
@@ -737,7 +740,7 @@ impl<'gc> Loader<'gc> {
                 let xmlstring = String::from_utf8(data)?;
 
                 player.lock().expect("Could not lock player!!").update(
-                    |_avm2, uc| -> Result<(), Error> {
+                    |uc| -> Result<(), Error> {
                         let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::XML {
                                 target_node,
@@ -773,7 +776,7 @@ impl<'gc> Loader<'gc> {
                 )?;
             } else {
                 player.lock().expect("Could not lock player!!").update(
-                    |_avm2, uc| -> Result<(), Error> {
+                    |uc| -> Result<(), Error> {
                         let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::XML {
                                 target_node,

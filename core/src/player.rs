@@ -275,7 +275,7 @@ impl Player {
     /// This should not be called if a root movie fetch has already been kicked
     /// off.
     pub fn fetch_root_movie(&mut self, movie_url: &str) {
-        self.mutate_with_update_context(|_avm2, context| {
+        self.mutate_with_update_context(|context| {
             let fetch = context.navigator.fetch(movie_url, RequestOptions::get());
             let process = context.load_manager.load_root_movie(
                 context.player.clone().unwrap(),
@@ -305,7 +305,7 @@ impl Player {
         self.frame_rate = movie.header().frame_rate.into();
         self.swf = movie;
 
-        self.mutate_with_update_context(|_avm2, context| {
+        self.mutate_with_update_context(|context| {
             let mut root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
             root.set_depth(context.gc_context, 0);
@@ -447,7 +447,7 @@ impl Player {
             {
                 if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt)
                 {
-                    self.mutate_with_update_context(|_avm2, context| {
+                    self.mutate_with_update_context(|context| {
                         let mut dumper = VariableDumper::new("  ");
                         let levels = context.levels.clone();
 
@@ -483,19 +483,19 @@ impl Player {
             {
                 if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt)
                 {
-                    self.mutate_with_update_context(|avm2, context| {
+                    self.mutate_with_update_context(|context| {
                         if context.avm1.show_debug_output() {
                             log::info!(
                                 "AVM Debugging turned off! Press CTRL+ALT+D to turn off again."
                             );
                             context.avm1.set_show_debug_output(false);
-                            avm2.set_show_debug_output(false);
+                            context.avm2.set_show_debug_output(false);
                         } else {
                             log::info!(
                                 "AVM Debugging turned on! Press CTRL+ALT+D to turn on again."
                             );
                             context.avm1.set_show_debug_output(true);
-                            avm2.set_show_debug_output(true);
+                            context.avm2.set_show_debug_output(true);
                         }
                     });
                 }
@@ -537,7 +537,7 @@ impl Player {
         };
 
         if button_event.is_some() {
-            self.mutate_with_update_context(|_avm2, context| {
+            self.mutate_with_update_context(|context| {
                 let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
                 for level in levels {
                     if let Some(button_event) = button_event {
@@ -565,7 +565,7 @@ impl Player {
         };
 
         if clip_event.is_some() || listener.is_some() {
-            self.mutate_with_update_context(|_avm2, context| {
+            self.mutate_with_update_context(|context| {
                 let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
 
                 for level in levels {
@@ -589,7 +589,7 @@ impl Player {
         }
 
         let mut is_mouse_down = self.is_mouse_down;
-        self.mutate_with_update_context(|avm2, context| {
+        self.mutate_with_update_context(|context| {
             if let Some(node) = context.mouse_hovered_object {
                 if node.removed() {
                     context.mouse_hovered_object = None;
@@ -616,7 +616,7 @@ impl Player {
                 _ => (),
             }
 
-            Self::run_actions(avm2, context);
+            Self::run_actions(context);
         });
         self.is_mouse_down = is_mouse_down;
         if needs_render {
@@ -627,7 +627,7 @@ impl Player {
     /// Update dragged object, if any.
     fn update_drag(&mut self) {
         let mouse_pos = self.mouse_pos;
-        self.mutate_with_update_context(|_avm2, context| {
+        self.mutate_with_update_context(|context| {
             if let Some(drag_object) = &mut context.drag_object {
                 if drag_object.display_object.removed() {
                     // Be sure to clear the drag if the object was removed.
@@ -662,7 +662,7 @@ impl Player {
         let mouse_pos = self.mouse_pos;
 
         let mut new_cursor = self.mouse_cursor;
-        let hover_changed = self.mutate_with_update_context(|avm2, context| {
+        let hover_changed = self.mutate_with_update_context(|context| {
             // Check hovered object.
             let mut new_hovered = None;
             for (_depth, level) in context.levels.clone().iter().rev() {
@@ -692,7 +692,7 @@ impl Player {
 
                 context.mouse_hovered_object = new_hovered;
 
-                Self::run_actions(avm2, context);
+                Self::run_actions(context);
                 true
             } else {
                 false
@@ -713,7 +713,7 @@ impl Player {
     /// This should only be called once. Further movie loads should preload the
     /// specific `MovieClip` referenced.
     fn preload(&mut self) {
-        self.mutate_with_update_context(|_avm2, context| {
+        self.mutate_with_update_context(|context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
             let root = *context.levels.get(&0).expect("root level");
             root.as_movie_clip()
@@ -732,7 +732,7 @@ impl Player {
     }
 
     pub fn run_frame(&mut self) {
-        self.update(|_avm2, update_context| {
+        self.update(|update_context| {
             // TODO: In what order are levels run?
             // NOTE: We have to copy all the layer pointers into a separate list
             // because level updates can create more levels, which we don't
@@ -813,7 +813,7 @@ impl Player {
         self.input.deref_mut()
     }
 
-    fn run_actions<'gc>(avm2: &mut Avm2<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_actions<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(actions) = context.action_queue.pop_action() {
             // We don't run frame actions if the clip was removed after it queued the action.
@@ -917,7 +917,7 @@ impl Player {
                     is_lazy_initialize,
                     abc,
                 } => {
-                    if let Err(e) = avm2.load_abc(abc, &name, is_lazy_initialize, context) {
+                    if let Err(e) = Avm2::load_abc(abc, &name, is_lazy_initialize, context) {
                         log::warn!("Error loading ABC file: {}", e);
                     }
                 }
@@ -966,7 +966,7 @@ impl Player {
     /// This takes cares of populating the `UpdateContext` struct, avoiding borrow issues.
     fn mutate_with_update_context<F, R>(&mut self, f: F) -> R
     where
-        F: for<'a, 'gc> FnOnce(&mut Avm2<'gc>, &mut UpdateContext<'a, 'gc, '_>) -> R,
+        F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc, '_>) -> R,
     {
         // We have to do this piecewise borrowing of fields before the closure to avoid
         // completely borrowing `self`.
@@ -1050,9 +1050,10 @@ impl Player {
                 timers,
                 needs_render,
                 avm1,
+                avm2,
             };
 
-            let ret = f(avm2, &mut update_context);
+            let ret = f(&mut update_context);
 
             // Hovered object may have been updated; copy it back to the GC root.
             root_data.mouse_hovered_object = update_context.mouse_hovered_object;
@@ -1084,15 +1085,12 @@ impl Player {
     /// hover state up to date, and running garbage collection.
     pub fn update<F, R>(&mut self, func: F) -> R
     where
-        F: for<'a, 'gc, 'gc_context> FnOnce(
-            &mut Avm2<'gc>,
-            &mut UpdateContext<'a, 'gc, 'gc_context>,
-        ) -> R,
+        F: for<'a, 'gc, 'gc_context> FnOnce(&mut UpdateContext<'a, 'gc, 'gc_context>) -> R,
     {
-        let rval = self.mutate_with_update_context(|avm2, context| {
-            let rval = func(avm2, context);
+        let rval = self.mutate_with_update_context(|context| {
+            let rval = func(context);
 
-            Self::run_actions(avm2, context);
+            Self::run_actions(context);
 
             rval
         });
@@ -1108,7 +1106,7 @@ impl Player {
     }
 
     pub fn flush_shared_objects(&mut self) {
-        self.update(|_avm2, context| {
+        self.update(|context| {
             let mut activation =
                 Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"));
             let shared_objects = activation.context.shared_objects.clone();
@@ -1122,7 +1120,7 @@ impl Player {
     /// Returns the approximate amount of time until the next timer tick.
     pub fn update_timers(&mut self, dt: f64) {
         self.time_til_next_timer =
-            self.mutate_with_update_context(|_avm2, context| Timers::update_timers(context, dt));
+            self.mutate_with_update_context(|context| Timers::update_timers(context, dt));
     }
 }
 
