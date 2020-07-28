@@ -508,7 +508,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-        _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         match self.0.read().array {
             ArrayStorage::Vector(_) => {

@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, TObject};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
@@ -132,7 +132,6 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
-        _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(
             SoundObject::empty_sound(context.gc_context, Some(activation.avm.prototypes.sound))

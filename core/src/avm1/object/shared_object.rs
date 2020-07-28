@@ -3,7 +3,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, TObject};
 use crate::context::UpdateContext;
 use std::fmt;
 
@@ -69,7 +69,6 @@ impl<'gc> TObject<'gc> for SharedObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
-        _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(SharedObject::empty_shared_obj(
             context.gc_context,

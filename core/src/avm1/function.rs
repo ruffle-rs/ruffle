@@ -621,7 +621,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         let prototype = self
             .get("prototype", activation, context)?
             .coerce_to_object(activation, context);
-        let this = prototype.create_bare_object(activation, context, prototype, args)?;
+        let this = prototype.create_bare_object(activation, context, prototype)?;
         self.construct_on_existing(activation, context, this, args)?;
         Ok(this)
     }
@@ -642,7 +642,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         prototype: Object<'gc>,
-        _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         let base = ScriptObject::object(context.gc_context, Some(prototype));
         let fn_object = FunctionObject {

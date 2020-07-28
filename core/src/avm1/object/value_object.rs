@@ -137,7 +137,6 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
         _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         this: Object<'gc>,
-        _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(ValueObject::empty_box(context.gc_context, Some(this)))
     }

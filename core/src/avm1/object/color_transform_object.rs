@@ -123,7 +123,6 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _this: Object<'gc>,
-        _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(ColorTransformObject::empty_color_transform_object(
             context.gc_context,
