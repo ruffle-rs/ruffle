@@ -194,7 +194,7 @@ pub fn initialize_internal<'gc>(
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
     let mut as_broadcaster = ScriptObject::object(gc_context, proto);
 
@@ -203,11 +203,15 @@ pub fn create<'gc>(
         initialize,
         gc_context,
         DontDelete | DontEnum,
-        fn_proto,
+        Some(fn_proto),
     );
 
-    let add_listener =
-        FunctionObject::function(gc_context, Executable::Native(add_listener), fn_proto, None);
+    let add_listener = FunctionObject::function(
+        gc_context,
+        Executable::Native(add_listener),
+        Some(fn_proto),
+        fn_proto,
+    );
     as_broadcaster.define_value(
         gc_context,
         "addListener",
@@ -218,8 +222,8 @@ pub fn create<'gc>(
     let remove_listener = FunctionObject::function(
         gc_context,
         Executable::Native(remove_listener),
+        Some(fn_proto),
         fn_proto,
-        None,
     );
     as_broadcaster.define_value(
         gc_context,
@@ -231,8 +235,8 @@ pub fn create<'gc>(
     let broadcast_message = FunctionObject::function(
         gc_context,
         Executable::Native(broadcast_message),
+        Some(fn_proto),
         fn_proto,
-        None,
     );
     as_broadcaster.define_value(
         gc_context,

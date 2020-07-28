@@ -633,7 +633,7 @@ mod test {
                 context.gc_context,
                 Executable::Native(value_of_impl),
                 Some(protos.function),
-                None,
+                protos.function,
             );
 
             let o = ScriptObject::object_cell(context.gc_context, Some(protos.object));

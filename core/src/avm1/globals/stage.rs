@@ -14,7 +14,7 @@ pub fn create_stage_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
     array_proto: Option<Object<'gc>>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
     let stage = ScriptObject::object(gc_context, proto);
@@ -24,11 +24,16 @@ pub fn create_stage_object<'gc>(
     stage.add_property(
         gc_context,
         "align",
-        FunctionObject::function(gc_context, Executable::Native(align), fn_proto, fn_proto),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(align),
+            Some(fn_proto),
+            fn_proto,
+        ),
         Some(FunctionObject::function(
             gc_context,
             Executable::Native(set_align),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         )),
         Attribute::DontEnum | Attribute::DontDelete,
@@ -37,7 +42,12 @@ pub fn create_stage_object<'gc>(
     stage.add_property(
         gc_context,
         "height",
-        FunctionObject::function(gc_context, Executable::Native(height), fn_proto, fn_proto),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(height),
+            Some(fn_proto),
+            fn_proto,
+        ),
         None,
         Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
     );
@@ -48,13 +58,13 @@ pub fn create_stage_object<'gc>(
         FunctionObject::function(
             gc_context,
             Executable::Native(scale_mode),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         ),
         Some(FunctionObject::function(
             gc_context,
             Executable::Native(set_scale_mode),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         )),
         Attribute::DontEnum | Attribute::DontDelete,
@@ -66,13 +76,13 @@ pub fn create_stage_object<'gc>(
         FunctionObject::function(
             gc_context,
             Executable::Native(show_menu),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         ),
         Some(FunctionObject::function(
             gc_context,
             Executable::Native(set_show_menu),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         )),
         Attribute::DontEnum | Attribute::DontDelete,
@@ -81,7 +91,12 @@ pub fn create_stage_object<'gc>(
     stage.add_property(
         gc_context,
         "width",
-        FunctionObject::function(gc_context, Executable::Native(width), fn_proto, fn_proto),
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(width),
+            Some(fn_proto),
+            fn_proto,
+        ),
         None,
         Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
     );

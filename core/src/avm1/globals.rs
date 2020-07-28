@@ -389,14 +389,14 @@ pub fn create_globals<'gc>(
             gc_context,
             Executable::Native(color_transform::constructor),
             Some(function_proto),
-            Some(color_transform_proto),
+            color_transform_proto,
         )
         .into(),
         EnumSet::empty(),
     );
 
     let (broadcaster_functions, as_broadcaster) =
-        as_broadcaster::create(gc_context, Some(object_proto), Some(function_proto));
+        as_broadcaster::create(gc_context, Some(object_proto), function_proto);
 
     let mut globals = ScriptObject::bare_object(gc_context);
     globals.define_value(
@@ -474,8 +474,7 @@ pub fn create_globals<'gc>(
         DontEnum.into(),
     );
 
-    let system_security =
-        system_security::create(gc_context, Some(object_proto), Some(function_proto));
+    let system_security = system_security::create(gc_context, Some(object_proto), function_proto);
     let system_capabilities =
         system_capabilities::create(gc_context, Some(object_proto), function_proto);
     let system_ime = system_ime::create(
@@ -489,7 +488,7 @@ pub fn create_globals<'gc>(
     let system = system::create(
         gc_context,
         Some(object_proto),
-        Some(function_proto),
+        function_proto,
         system_security,
         system_capabilities,
         system_ime,
@@ -537,7 +536,7 @@ pub fn create_globals<'gc>(
             gc_context,
             Some(object_proto),
             Some(array_proto),
-            Some(function_proto),
+            function_proto,
             broadcaster_functions,
         )),
         DontEnum.into(),
@@ -594,7 +593,7 @@ pub fn create_globals<'gc>(
             gc_context,
             Executable::Native(get_nan),
             Some(function_proto),
-            Some(function_proto),
+            function_proto,
         ),
         None,
         DontEnum.into(),
@@ -606,7 +605,7 @@ pub fn create_globals<'gc>(
             gc_context,
             Executable::Native(get_infinity),
             Some(function_proto),
-            Some(function_proto),
+            function_proto,
         ),
         None,
         DontEnum.into(),

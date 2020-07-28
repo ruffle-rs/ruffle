@@ -509,7 +509,7 @@ pub fn on_status<'gc>(
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
     security: Object<'gc>,
     capabilities: Object<'gc>,
     ime: Object<'gc>,
@@ -522,13 +522,13 @@ pub fn create<'gc>(
         FunctionObject::function(
             gc_context,
             Executable::Native(get_exact_settings),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         ),
         Some(FunctionObject::function(
             gc_context,
             Executable::Native(set_exact_settings),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         )),
         EnumSet::empty(),
@@ -540,13 +540,13 @@ pub fn create<'gc>(
         FunctionObject::function(
             gc_context,
             Executable::Native(get_use_code_page),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         ),
         Some(FunctionObject::function(
             gc_context,
             Executable::Native(set_use_code_page),
-            fn_proto,
+            Some(fn_proto),
             fn_proto,
         )),
         EnumSet::empty(),
@@ -568,7 +568,7 @@ pub fn create<'gc>(
         set_clipboard,
         gc_context,
         EnumSet::empty(),
-        fn_proto,
+        Some(fn_proto),
     );
 
     system.force_set_function(
@@ -576,7 +576,7 @@ pub fn create<'gc>(
         show_settings,
         gc_context,
         EnumSet::empty(),
-        fn_proto,
+        Some(fn_proto),
     );
 
     // Pretty sure this is a variable
@@ -585,7 +585,7 @@ pub fn create<'gc>(
         on_status,
         gc_context,
         EnumSet::empty(),
-        fn_proto,
+        Some(fn_proto),
     );
 
     system.into()

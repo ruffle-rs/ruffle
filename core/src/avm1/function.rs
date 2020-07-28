@@ -487,11 +487,11 @@ impl<'gc> FunctionObject<'gc> {
         context: MutationContext<'gc, '_>,
         function: impl Into<Executable<'gc>>,
         fn_proto: Option<Object<'gc>>,
-        prototype: Option<Object<'gc>>,
+        prototype: Object<'gc>,
     ) -> Object<'gc> {
         // Avoid type inference issues
         let none: Option<Executable> = None;
-        Self::allocate_function(context, Some(function), none, fn_proto, prototype)
+        Self::allocate_function(context, Some(function), none, fn_proto, Some(prototype))
     }
 
     /// Construct a constructor function from an executable and associated protos.

@@ -40,7 +40,7 @@ macro_rules! capabilities_prop {
             $capabilities.add_property(
                 $gc_ctx,
                 $name,
-                FunctionObject::function($gc_ctx, Executable::Native($func), Some($fn_proto), Some($fn_proto)),
+                FunctionObject::function($gc_ctx, Executable::Native($func), Some($fn_proto), $fn_proto),
                 None,
                 EnumSet::empty()
             );
