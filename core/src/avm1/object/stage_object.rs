@@ -248,7 +248,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     }
 
     #[allow(clippy::new_ret_no_self)]
-    fn new(
+    fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -256,7 +256,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: Create a StageObject of some kind
-        self.0.read().base.new(activation, context, this, args)
+        self.0
+            .read()
+            .base
+            .create_bare_object(activation, context, this, args)
     }
 
     fn delete(

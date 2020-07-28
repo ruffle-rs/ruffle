@@ -503,7 +503,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     #[allow(clippy::new_ret_no_self)]
-    fn new(
+    fn create_bare_object(
         &self,
         _activation: &mut Activation<'_, 'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
