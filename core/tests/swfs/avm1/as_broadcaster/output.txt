@@ -1,0 +1,10 @@
+true
+true
+Listener1 got the event!
+Listener2 got the event!
+Listener2 got: hello! and 123.123
+Listener2 got: hello! and 123.123
+[object Object],[object Object]
+true
+Listener2 got: Only one and 521
+[object Object]

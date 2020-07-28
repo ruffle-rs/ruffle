@@ -11,6 +11,7 @@ use rand::Rng;
 use std::f64;
 
 mod array;
+mod as_broadcaster;
 pub(crate) mod boolean;
 pub(crate) mod button;
 mod color;
@@ -477,6 +478,17 @@ pub fn create_globals<'gc>(
         system_ime,
     );
     globals.define_value(gc_context, "System", system.into(), DontEnum.into());
+
+    globals.define_value(
+        gc_context,
+        "AsBroadcaster",
+        Value::Object(as_broadcaster::create(
+            gc_context,
+            Some(object_proto),
+            Some(function_proto),
+        )),
+        DontEnum.into(),
+    );
 
     globals.define_value(
         gc_context,
