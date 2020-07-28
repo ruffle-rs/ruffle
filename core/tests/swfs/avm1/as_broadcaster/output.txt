@@ -8,3 +8,6 @@ Listener2 got: hello! and 123.123
 true
 Listener2 got: Only one and 521
 [object Object]
+false
+true
+Test received!

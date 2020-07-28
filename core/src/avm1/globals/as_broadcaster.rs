@@ -96,7 +96,7 @@ pub fn broadcast_message<'gc>(
 pub fn initialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(val) = args.get(0) {
@@ -112,31 +112,35 @@ pub fn initialize<'gc>(
             DontEnum.into(),
         );
 
-        if let Some(mut broadcaster_script_obj) = broadcaster.as_script_object() {
-            broadcaster_script_obj.force_set_function(
-                "addListener",
-                add_listener,
-                context.gc_context,
-                DontDelete | ReadOnly | DontEnum,
-                Some(activation.avm.prototypes().function),
-            );
+        let add_listener = this
+            .get("addListener", activation, context)
+            .unwrap_or(Value::Undefined);
+        broadcaster.define_value(
+            context.gc_context,
+            "addListener",
+            add_listener,
+            DontEnum.into(),
+        );
 
-            broadcaster_script_obj.force_set_function(
-                "removeListener",
-                remove_listener,
-                context.gc_context,
-                DontDelete | ReadOnly | DontEnum,
-                Some(activation.avm.prototypes().function),
-            );
+        let remove_listener = this
+            .get("removeListener", activation, context)
+            .unwrap_or(Value::Undefined);
+        broadcaster.define_value(
+            context.gc_context,
+            "removeListener",
+            remove_listener,
+            DontEnum.into(),
+        );
 
-            broadcaster_script_obj.force_set_function(
-                "broadcastMessage",
-                broadcast_message,
-                context.gc_context,
-                DontDelete | ReadOnly | DontEnum,
-                Some(activation.avm.prototypes().function),
-            );
-        }
+        let broadcast_message = this
+            .get("broadcastMessage", activation, context)
+            .unwrap_or(Value::Undefined);
+        broadcaster.define_value(
+            context.gc_context,
+            "broadcastMessage",
+            broadcast_message,
+            DontEnum.into(),
+        );
     }
     Ok(Value::Undefined)
 }
@@ -151,6 +155,30 @@ pub fn create<'gc>(
     as_broadcaster.force_set_function(
         "initialize",
         initialize,
+        gc_context,
+        DontDelete | ReadOnly | DontEnum,
+        fn_proto,
+    );
+
+    as_broadcaster.force_set_function(
+        "addListener",
+        add_listener,
+        gc_context,
+        DontDelete | ReadOnly | DontEnum,
+        fn_proto,
+    );
+
+    as_broadcaster.force_set_function(
+        "removeListener",
+        remove_listener,
+        gc_context,
+        DontDelete | ReadOnly | DontEnum,
+        fn_proto,
+    );
+
+    as_broadcaster.force_set_function(
+        "broadcastMessage",
+        broadcast_message,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
         fn_proto,
