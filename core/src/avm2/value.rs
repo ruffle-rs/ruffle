@@ -427,7 +427,7 @@ impl<'gc> Value<'gc> {
             {
                 0
             } else {
-                (number.abs().floor() * number.signum()) as u32
+                ((number.abs().floor() * number.signum()) as u64 & (u32::MAX as u64)) as u32
             },
         )
     }
