@@ -267,16 +267,12 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
         .into())
     }
 
-    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        if let ScriptObjectClass::ClassConstructor(class, ..) = self.0.read().base.class() {
-            Ok(AvmString::new(mc, format!("[class {}]", class.read().name().local_name())).into())
-        } else {
-            Ok("function Function() {}".into())
-        }
+    fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        Ok(self.0.read().primitive.clone())
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok(Value::Object(Object::from(*self)))
+        Ok(self.0.read().primitive.clone())
     }
 
     fn install_method(
