@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::{Executable, FunctionObject};
 use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::namespace_object::NamespaceObject;
 use crate::avm2::primitive_object::PrimitiveObject;
 use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::scope::Scope;
@@ -24,6 +25,7 @@ use std::fmt::Debug;
         ScriptObject(ScriptObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
         PrimitiveObject(PrimitiveObject<'gc>),
+        NamespaceObject(NamespaceObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
