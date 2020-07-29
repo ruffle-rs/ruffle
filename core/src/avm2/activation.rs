@@ -1692,14 +1692,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_has_next(&mut self) -> Result<FrameControl<'gc>, Error> {
-        //TODO: After adding ints, change this to ints.
-        let cur_index = self.context.avm2.pop().as_number()?;
+        let cur_index = self.context.avm2.pop().coerce_to_u32(self)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let next_index = cur_index as u32 + 1;
+        let next_index = cur_index + 1;
 
         if object.get_enumerant_name(next_index).is_some() {
-            self.context.avm2.push(next_index as f32);
+            self.context.avm2.push(next_index);
         } else {
             self.context.avm2.push(0.0);
         }
@@ -1712,14 +1711,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         object_register: u32,
         index_register: u32,
     ) -> Result<FrameControl<'gc>, Error> {
-        //TODO: After adding ints, change this to ints.
-        let cur_index = self.local_register(index_register)?.as_number()?;
+        let cur_index = self.local_register(index_register)?.coerce_to_u32(self)?;
         let mut object = Some(
             self.local_register(object_register)?
                 .coerce_to_object(self)?,
         );
 
-        let mut next_index = cur_index as u32 + 1;
+        let mut next_index = cur_index + 1;
 
         while let Some(cur_object) = object {
             if cur_object.get_enumerant_name(next_index).is_none() {
@@ -1746,8 +1744,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_next_name(&mut self) -> Result<FrameControl<'gc>, Error> {
-        //TODO: After adding ints, change this to ints.
-        let cur_index = self.context.avm2.pop().as_number()?;
+        let cur_index = self.context.avm2.pop().coerce_to_number(self)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
         let name = object
@@ -1760,8 +1757,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_next_value(&mut self) -> Result<FrameControl<'gc>, Error> {
-        //TODO: After adding ints, change this to ints.
-        let cur_index = self.context.avm2.pop().as_number()?;
+        let cur_index = self.context.avm2.pop().coerce_to_number(self)?;
         let mut object = self.context.avm2.pop().coerce_to_object(self)?;
 
         let name = object.get_enumerant_name(cur_index as u32);
