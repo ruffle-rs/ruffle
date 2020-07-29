@@ -26,7 +26,7 @@
         "lerna": "^3.22.1",
         "mocha": "^8.0.1",
         "prettier": "^2.0.5",
-        "sign-addon": "^2.0.5",
+        "sign-addon": "^3.0.0",
         "temp-dir": "^2.0.0",
         "wdio-chromedriver-service": "^6.0.3",
         "webpack": "^4.43.0"
