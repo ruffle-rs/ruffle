@@ -14,6 +14,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
+use std::cell::Ref;
 use std::fmt::Debug;
 
 /// Represents an object that can be directly interacted with by the AVM2
@@ -686,6 +687,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get this object's `Executable`, if it has one.
     fn as_executable(&self) -> Option<Executable<'gc>> {
+        None
+    }
+
+    /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
+    fn as_namespace(&self) -> Option<Ref<Namespace<'gc>>> {
         None
     }
 }

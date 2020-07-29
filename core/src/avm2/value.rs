@@ -3,12 +3,14 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::names::Namespace;
 use crate::avm2::names::QName;
+use crate::avm2::namespace_object::NamespaceObject;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::primitive_object::PrimitiveObject;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
-use crate::avm2::Error;
+use crate::avm2::{Avm2, Error};
 use gc_arena::{Collect, MutationContext};
+use std::cell::Ref;
 use std::f64::NAN;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
@@ -36,7 +38,6 @@ pub enum Value<'gc> {
     Bool(bool),
     Number(f64),
     String(AvmString<'gc>),
-    Namespace(Namespace<'gc>),
     Object(Object<'gc>),
 }
 
@@ -115,12 +116,6 @@ impl<'gc> From<usize> for Value<'gc> {
     }
 }
 
-impl<'gc> From<Namespace<'gc>> for Value<'gc> {
-    fn from(value: Namespace<'gc>) -> Self {
-        Value::Namespace(value)
-    }
-}
-
 impl PartialEq for Value<'_> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -130,7 +125,6 @@ impl PartialEq for Value<'_> {
             (Value::Number(a), Value::Number(b)) => a == b,
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Object(a), Value::Object(b)) => Object::ptr_eq(*a, *b),
-            (Value::Namespace(a), Value::Namespace(b)) => a == b,
             _ => false,
         }
     }
@@ -182,6 +176,7 @@ pub fn abc_double(translation_unit: TranslationUnit<'_>, index: Index<f64>) -> R
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
     default: &AbcDefaultValue,
+    avm2: &mut Avm2<'gc>,
     mc: MutationContext<'gc, '_>,
 ) -> Result<Value<'gc>, Error> {
     match default {
@@ -199,16 +194,21 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Protected(ns)
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
-        | AbcDefaultValue::Private(ns) => {
-            Namespace::from_abc_namespace(translation_unit, ns.clone(), mc).map(|v| v.into())
-        }
+        | AbcDefaultValue::Private(ns) => Ok(NamespaceObject::from_namespace(
+            Namespace::from_abc_namespace(translation_unit, ns.clone(), mc)?,
+            avm2.prototypes().namespace,
+            mc,
+        )?
+        .into()),
     }
 }
 
 impl<'gc> Value<'gc> {
-    pub fn as_namespace(&self) -> Result<&Namespace<'gc>, Error> {
+    pub fn as_namespace(&self) -> Result<Ref<Namespace<'gc>>, Error> {
         match self {
-            Value::Namespace(ns) => Ok(ns),
+            Value::Object(ns) => ns
+                .as_namespace()
+                .ok_or_else(|| "Expected Namespace, found Object".into()),
             _ => Err(format!("Expected Namespace, found {:?}", self).into()),
         }
     }
@@ -220,7 +220,7 @@ impl<'gc> Value<'gc> {
     /// chance to unbox the primitive contained within.
     pub fn is_primitive(&self) -> bool {
         match self {
-            Value::Object(_) | Value::Namespace(_) => false,
+            Value::Object(_) => false,
             _ => true,
         }
     }
@@ -235,7 +235,6 @@ impl<'gc> Value<'gc> {
             Value::Bool(b) => *b,
             Value::Number(f) => !f.is_nan() && f.abs() != 0.0,
             Value::String(s) => !s.is_empty(),
-            Value::Namespace(_) => true,
             Value::Object(_) => true,
         }
     }
@@ -381,11 +380,6 @@ impl<'gc> Value<'gc> {
                     sign * digits.parse().unwrap_or(f64::NAN)
                 }
             }
-            Value::Namespace(ns) => Value::String(AvmString::new(
-                activation.context.gc_context,
-                ns.as_uri().to_string(),
-            ))
-            .coerce_to_number(activation)?,
             Value::Object(_) => self
                 .coerce_to_primitive(Some(Hint::Number), activation)?
                 .coerce_to_number(activation)?,
@@ -499,7 +493,6 @@ impl<'gc> Value<'gc> {
                 }
             }
             Value::String(s) => *s,
-            Value::Namespace(ns) => ns.as_uri(),
             Value::Object(_) => self
                 .coerce_to_primitive(Some(Hint::String), activation)?
                 .coerce_to_string(activation)?,
@@ -529,7 +522,6 @@ impl<'gc> Value<'gc> {
             Value::Bool(_) => activation.avm2().prototypes().boolean,
             Value::Number(_) => activation.avm2().prototypes().number,
             Value::String(_) => activation.avm2().prototypes().string,
-            Value::Namespace(_) => activation.avm2().prototypes().namespace,
             _ => unreachable!(),
         };
 
@@ -604,18 +596,6 @@ impl<'gc> Value<'gc> {
                 let primitive_self = self.coerce_to_primitive(Some(Hint::Number), activation)?;
 
                 primitive_self.abstract_eq(other, activation)
-            }
-            //TODO: This is entirely a shot in the dark.
-            (Value::Namespace(_), _) => {
-                let string_self = self.coerce_to_primitive(Some(Hint::String), activation)?;
-
-                string_self.abstract_eq(other, activation)
-            }
-            //TODO: So is this.
-            (_, Value::Namespace(_)) => {
-                let string_other = other.coerce_to_primitive(Some(Hint::String), activation)?;
-
-                self.abstract_eq(&string_other, activation)
             }
             _ => Ok(false),
         }

@@ -4,7 +4,7 @@ use crate::avm2::class::Class;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::r#trait::Trait;
 use crate::avm2::string::AvmString;
-use crate::avm2::Error;
+use crate::avm2::{Avm2, Error};
 use fnv::FnvHashMap;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::mem::drop;
@@ -99,6 +99,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_class(
         self,
         class_index: u32,
+        avm2: &mut Avm2<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
         let read = self.0.read();
@@ -111,7 +112,7 @@ impl<'gc> TranslationUnit<'gc> {
         let class = Class::from_abc_index(self, class_index, mc)?;
         self.0.write(mc).classes.insert(class_index, class);
 
-        class.write(mc).load_traits(self, class_index, mc)?;
+        class.write(mc).load_traits(self, class_index, avm2, mc)?;
 
         Ok(class)
     }
@@ -120,6 +121,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_script(
         self,
         script_index: u32,
+        avm2: &mut Avm2<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Script<'gc>>, Error> {
         let read = self.0.read();
@@ -132,7 +134,7 @@ impl<'gc> TranslationUnit<'gc> {
         let script = Script::from_abc_index(self, script_index, mc)?;
         self.0.write(mc).scripts.insert(script_index, script);
 
-        script.write(mc).load_traits(self, script_index, mc)?;
+        script.write(mc).load_traits(self, script_index, avm2, mc)?;
 
         Ok(script)
     }
@@ -244,6 +246,7 @@ impl<'gc> Script<'gc> {
         &mut self,
         unit: TranslationUnit<'gc>,
         script_index: u32,
+        avm2: &mut Avm2<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         if self.traits_loaded {
@@ -261,7 +264,7 @@ impl<'gc> Script<'gc> {
 
         for abc_trait in script.traits.iter() {
             self.traits
-                .push(Trait::from_abc_trait(unit, &abc_trait, mc)?);
+                .push(Trait::from_abc_trait(unit, &abc_trait, avm2, mc)?);
         }
 
         Ok(())

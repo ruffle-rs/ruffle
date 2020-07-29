@@ -11,8 +11,8 @@ use crate::avm2::scope::Scope;
 use crate::avm2::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::Ref;
 
 /// An Object which represents a boxed namespace name.
 #[derive(Collect, Debug, Clone, Copy)]
@@ -51,15 +51,14 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
         self,
         reciever: Object<'gc>,
         name: &QName<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
         let rv = read.base.get_property_local(reciever, name, activation)?;
 
         drop(read);
 
-        rv.resolve(activation, context)
+        rv.resolve(activation)
     }
 
     fn set_property_local(
@@ -67,17 +66,16 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut write = self.0.write(context.gc_context);
+        let mut write = self.0.write(activation.context.gc_context);
         let rv = write
             .base
-            .set_property_local(reciever, name, value, activation, context)?;
+            .set_property_local(reciever, name, value, activation)?;
 
         drop(write);
 
-        rv.resolve(activation, context)?;
+        rv.resolve(activation)?;
 
         Ok(())
     }
@@ -87,17 +85,16 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut write = self.0.write(context.gc_context);
+        let mut write = self.0.write(activation.context.gc_context);
         let rv = write
             .base
-            .init_property_local(reciever, name, value, activation, context)?;
+            .init_property_local(reciever, name, value, activation)?;
 
         drop(write);
 
-        rv.resolve(activation, context)?;
+        rv.resolve(activation)?;
 
         Ok(())
     }
@@ -229,15 +226,14 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
 
     fn construct(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::NamespaceObject(*self);
         let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
 
         Ok(NamespaceObject(GcCell::allocate(
-            context.gc_context,
+            activation.context.gc_context,
             NamespaceObjectData {
                 base,
                 namespace: Namespace::public_namespace(),
@@ -248,8 +244,7 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
 
     fn derive(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
@@ -260,7 +255,7 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
         );
 
         Ok(NamespaceObject(GcCell::allocate(
-            context.gc_context,
+            activation.context.gc_context,
             NamespaceObjectData {
                 base,
                 namespace: Namespace::public_namespace(),
@@ -351,5 +346,9 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
 
     fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
         self.0.write(context).base.set_interfaces(iface_list)
+    }
+
+    fn as_namespace(&self) -> Option<Ref<Namespace<'gc>>> {
+        Some(Ref::map(self.0.read(), |s| &s.namespace))
     }
 }

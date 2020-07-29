@@ -4,6 +4,7 @@ use crate::avm2::class::Class;
 use crate::avm2::function::FunctionObject;
 use crate::avm2::method::BytecodeMethod;
 use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::namespace_object::NamespaceObject;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
@@ -377,7 +378,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
         method
             .translation_unit()
-            .load_class(index.0, self.context.gc_context)
+            .load_class(index.0, self.context.avm2, self.context.gc_context)
     }
 
     pub fn run_actions(
@@ -579,9 +580,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<AbcNamespace>,
     ) -> Result<FrameControl<'gc>, Error> {
-        self.context
-            .avm2
-            .push(self.pool_namespace(method, value, self.context.gc_context)?);
+        let ns = self.pool_namespace(method, value, self.context.gc_context)?;
+
+        self.context.avm2.push(NamespaceObject::from_namespace(
+            ns,
+            self.context.avm2.prototypes().namespace,
+            self.context.gc_context,
+        )?);
         Ok(FrameControl::Continue)
     }
 
