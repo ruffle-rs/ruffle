@@ -24,13 +24,13 @@ use url::{ParseError, Url};
 /// the above instructions. On non-Unix, non-Windows, non-Redox environments,
 /// this function always yields an error.
 #[cfg(any(unix, windows, target_os = "redox"))]
-pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result<Url, ParseError> {
-    let parsed = Url::from_file_path(relative);
+pub fn url_from_relative_path<P: AsRef<Path>>(_base: P, _relative: &str) -> Result<Url, ParseError> {
+    let parsed = Url::from_file_path(_relative);
     if let Err(()) = parsed {
         let base =
-            Url::from_directory_path(base).map_err(|_| ParseError::RelativeUrlWithoutBase)?;
+            Url::from_directory_path(_base).map_err(|_| ParseError::RelativeUrlWithoutBase)?;
 
-        return base.join(relative);
+        return base.join(_relative);
     }
 
     Ok(parsed.unwrap())
@@ -46,7 +46,7 @@ pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result
 /// Unix, Windows, or Redox, this function actually carries out the above
 /// instructions.
 #[cfg(not(any(unix, windows, target_os = "redox")))]
-pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result<Url, ParseError> {
+pub fn url_from_relative_path<P: AsRef<Path>>(_base: P, _relative: &str) -> Result<Url, ParseError> {
     Err(ParseError::RelativeUrlWithoutBase)
 }
 
@@ -54,11 +54,11 @@ pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result
 /// if necessary.
 ///
 /// If the relative URL is actually absolute, then the base will not be used.
-pub fn url_from_relative_url(base: &str, relative: &str) -> Result<Url, ParseError> {
-    let parsed = Url::parse(relative);
+pub fn url_from_relative_url(_base: &str, _relative: &str) -> Result<Url, ParseError> {
+    let parsed = Url::parse(_relative);
     if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
-        let base = Url::parse(base)?;
-        return base.join(relative);
+        let base = Url::parse(_base)?;
+        return base.join(_relative);
     }
 
     parsed
