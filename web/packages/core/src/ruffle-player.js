@@ -134,7 +134,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             throw e;
         });
 
-        this.instance = Ruffle.new(this.container);
+        this.instance = Ruffle && Ruffle.new(this.container);
         console.log("New Ruffle instance created.");
     }
 
@@ -195,6 +195,9 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             console.log("Got SWF data");
 
             await this.ensure_fresh_instance();
+
+            if (!this.instance) return;
+
             this.instance.load_data(new Uint8Array(data));
             console.log("New Ruffle instance created.");
 

@@ -28,6 +28,14 @@ module.exports = (env, argv) => {
                         to: "index.html",
                     },
                     {
+                        from: path.resolve(__dirname, "www/swfs.json"),
+                        to: "swfs.json",
+                    },
+                    {
+                        from: path.resolve(__dirname, "www/swfs"),
+                        to: "swfs/[name].swf",
+                    },
+                    {
                         from: "LICENSE**",
                     },
                     {

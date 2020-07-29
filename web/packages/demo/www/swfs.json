@@ -1,0 +1,39 @@
+{
+  "swfs": [
+    {
+      "location": "swfs/alien_hominid.swf",
+      "title": "Alien Hominid",
+      "author": "Tom Fulp and Dan Paladin",
+      "authorLink": "https://www.newgrounds.com",
+      "type": "Game"
+    },
+    {
+      "location": "swfs/saturday_morning_watchmen.swf",
+      "title": "Saturday Morning Watchmen",
+      "author": "Harry Partridge",
+      "authorLink": "https://twitter.com/HappyHarryToons",
+      "type": "Animation"
+    },
+    {
+      "location": "swfs/synj1.swf",
+      "title": "Synj vs. Horrid Part 1",
+      "author": "Dan Paladin",
+      "authorLink": "https://www.thebehemoth.com",
+      "type": "Animation"
+    },
+    {
+      "location": "swfs/synj2.swf",
+      "title": "Synj vs. Horrid Part 2",
+      "author": "Dan Paladin",
+      "authorLink": "https://www.thebehemoth.com",
+      "type": "Animation"
+    },
+    {
+      "location": "swfs/wasted_sky.swf",
+      "title": "Wasted Sky",
+      "author": "Tom Fulp",
+      "authorLink": "https://www.newgrounds.com",
+      "type": "Game"
+    }
+  ]
+}
