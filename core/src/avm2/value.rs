@@ -256,8 +256,10 @@ impl<'gc> Value<'gc> {
         hint: Option<Hint>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        // TODO: `Date` is default-hinted as a `String` for some reason
-        let hint = hint.unwrap_or(Hint::Number);
+        let hint = hint.unwrap_or_else(|| match self {
+            Value::Object(o) => o.default_hint(),
+            _ => Hint::Number,
+        });
 
         match self {
             Value::Object(o) if hint == Hint::String => {

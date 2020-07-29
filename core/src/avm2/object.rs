@@ -10,7 +10,7 @@ use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::scope::Scope;
 use crate::avm2::script_object::ScriptObject;
 use crate::avm2::string::AvmString;
-use crate::avm2::value::Value;
+use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -620,6 +620,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error>;
+
+    /// Determine the type of primitive coercion this object would prefer, in
+    /// the case that there is no obvious reason to prefer one type over the
+    /// other.
+    ///
+    /// All native ECMAScript objects prefer numerical coercions, except `Date`,
+    /// which wants string coercions.
+    fn default_hint(&self) -> Hint {
+        Hint::Number
+    }
 
     /// Implement the result of calling `Object.prototype.toString` on this
     /// object class.
