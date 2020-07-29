@@ -1,9 +1,33 @@
+// Object()
 [type Object]
-Test
-[object Object]
-[type Function]
-11234
-[type Object]
-[type Object]
-[type Object]
+object
 undefined
+
+// Object('Test')
+Test
+object
+
+// Object({})
+[object Object]
+object
+
+// Object(function () {})
+[type Function]
+function
+
+// Object(11234)
+11234
+object
+
+// Object(undefined)
+[type Object]
+object
+
+// Object(null)
+[type Object]
+object
+
+// Object(true)
+true
+object
+
