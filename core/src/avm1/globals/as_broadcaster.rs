@@ -109,11 +109,14 @@ pub fn broadcast_message<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let event_name_value = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let event_name = event_name_value.coerce_to_string(activation, context)?;
-    let call_args = &args[1..];
+    if let Some(event_name_value) = args.get(0) {
+        let event_name = event_name_value.coerce_to_string(activation, context)?;
+        let call_args = &args[1..];
 
-    broadcast_internal(activation, context, this, call_args, &event_name)
+        broadcast_internal(activation, context, this, call_args, &event_name)
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 pub fn broadcast_internal<'gc>(
@@ -170,21 +173,21 @@ pub fn initialize_internal<'gc>(
         gc_context,
         "addListener",
         functions.add_listener.into(),
-        DontEnum.into(),
+        DontDelete | DontEnum,
     );
 
     broadcaster.define_value(
         gc_context,
         "removeListener",
         functions.remove_listener.into(),
-        DontEnum.into(),
+        DontDelete | DontEnum,
     );
 
     broadcaster.define_value(
         gc_context,
         "broadcastMessage",
         functions.broadcast_message.into(),
-        DontEnum.into(),
+        DontDelete | DontEnum,
     );
 }
 
@@ -199,7 +202,7 @@ pub fn create<'gc>(
         "initialize",
         initialize,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        DontDelete | DontEnum,
         fn_proto,
     );
 
@@ -209,7 +212,7 @@ pub fn create<'gc>(
         gc_context,
         "addListener",
         add_listener.into(),
-        DontDelete | ReadOnly | DontEnum,
+        DontDelete | DontEnum,
     );
 
     let remove_listener = FunctionObject::function(
@@ -222,7 +225,7 @@ pub fn create<'gc>(
         gc_context,
         "removeListener",
         remove_listener.into(),
-        DontDelete | ReadOnly | DontEnum,
+        DontDelete | DontEnum,
     );
 
     let broadcast_message = FunctionObject::function(
@@ -235,7 +238,7 @@ pub fn create<'gc>(
         gc_context,
         "broadcastMessage",
         broadcast_message.into(),
-        DontDelete | ReadOnly | DontEnum,
+        DontDelete | DontEnum,
     );
 
     (
