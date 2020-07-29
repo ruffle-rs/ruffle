@@ -5,7 +5,7 @@ use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, QName};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
-use crate::avm2::Error;
+use crate::avm2::{Avm2, Error};
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::types::{Trait as AbcTrait, TraitKind as AbcTraitKind};
 
@@ -85,6 +85,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_abc_trait(
         unit: TranslationUnit<'gc>,
         abc_trait: &AbcTrait,
+        avm2: &mut Avm2<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Self, Error> {
         let name = QName::from_abc_multiname(unit, abc_trait.name.clone(), mc)?;
@@ -106,7 +107,7 @@ impl<'gc> Trait<'gc> {
                         Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(unit, &dv, mc)?)
+                        Some(abc_default_value(unit, &dv, avm2, mc)?)
                     } else {
                         None
                     },
@@ -145,7 +146,7 @@ impl<'gc> Trait<'gc> {
                 is_override: abc_trait.is_override,
                 kind: TraitKind::Class {
                     slot_id: *slot_id,
-                    class: unit.load_class(class.0, mc)?,
+                    class: unit.load_class(class.0, avm2, mc)?,
                 },
             },
             AbcTraitKind::Function { slot_id, function } => Trait {
@@ -173,7 +174,7 @@ impl<'gc> Trait<'gc> {
                         Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(unit, &dv, mc)?)
+                        Some(abc_default_value(unit, &dv, avm2, mc)?)
                     } else {
                         None
                     },

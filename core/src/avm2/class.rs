@@ -5,7 +5,7 @@ use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
-use crate::avm2::Error;
+use crate::avm2::{Avm2, Error};
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::types::{Class as AbcClass, Instance as AbcInstance};
 
@@ -178,6 +178,7 @@ impl<'gc> Class<'gc> {
         &mut self,
         unit: TranslationUnit<'gc>,
         class_index: u32,
+        avm2: &mut Avm2<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         if self.traits_loaded {
@@ -201,12 +202,12 @@ impl<'gc> Class<'gc> {
 
         for abc_trait in abc_instance.traits.iter() {
             self.instance_traits
-                .push(Trait::from_abc_trait(unit, &abc_trait, mc)?);
+                .push(Trait::from_abc_trait(unit, &abc_trait, avm2, mc)?);
         }
 
         for abc_trait in abc_class.traits.iter() {
             self.class_traits
-                .push(Trait::from_abc_trait(unit, &abc_trait, mc)?);
+                .push(Trait::from_abc_trait(unit, &abc_trait, avm2, mc)?);
         }
 
         Ok(())
