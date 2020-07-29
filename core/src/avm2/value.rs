@@ -206,16 +206,6 @@ pub fn abc_default_value<'gc>(
 }
 
 impl<'gc> Value<'gc> {
-    /// Demand a string value, erroring out if one is not found.
-    ///
-    /// TODO: This should be replaced with `coerce_string` where possible.
-    pub fn as_string(&self) -> Result<AvmString<'gc>, Error> {
-        match self {
-            Value::String(s) => Ok(*s),
-            _ => Err(format!("Expected String, found {:?}", self).into()),
-        }
-    }
-
     pub fn as_number(&self) -> Result<f64, Error> {
         match self {
             Value::Number(f) => Ok(*f),

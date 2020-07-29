@@ -52,14 +52,14 @@ fn value_of<'gc>(
 
 /// `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
-    let name = name?.as_string()?;
+    let name = name?.coerce_to_string(activation)?;
 
     if let Some(ns) = this.resolve_any(name)? {
         if !ns.is_private() {
@@ -95,14 +95,14 @@ pub fn is_prototype_of<'gc>(
 
 /// `Object.prototype.propertyIsEnumerable`
 pub fn property_is_enumerable<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
-    let name = name?.as_string()?;
+    let name = name?.coerce_to_string(activation)?;
 
     if let Some(ns) = this.resolve_any(name)? {
         if !ns.is_private() {
@@ -123,7 +123,7 @@ pub fn set_property_is_enumerable<'gc>(
     let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
-    let name = name?.as_string()?;
+    let name = name?.coerce_to_string(activation)?;
 
     if let Some(Value::Bool(is_enum)) = args.get(1) {
         if let Some(ns) = this.resolve_any(name)? {

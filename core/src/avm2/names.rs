@@ -1,8 +1,9 @@
 //! AVM2 names & namespacing
 
+use crate::avm2::activation::Activation;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use gc_arena::{Collect, MutationContext};
 use swf::avm2::types::{
     Index, Multiname as AbcMultiname, Namespace as AbcNamespace, NamespaceSet as AbcNamespaceSet,
@@ -222,8 +223,7 @@ impl<'gc> Multiname<'gc> {
     pub fn from_abc_multiname(
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
-        avm: &mut Avm2<'gc>,
-        mc: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Self, Error> {
         let actual_index: Result<usize, Error> = (multiname_index.0 as usize)
             .checked_sub(1)
@@ -242,21 +242,23 @@ impl<'gc> Multiname<'gc> {
                     ns: vec![Namespace::from_abc_namespace(
                         translation_unit,
                         namespace.clone(),
-                        mc,
+                        activation.context.gc_context,
                     )?],
-                    name: translation_unit.pool_string_option(name.0, mc)?,
+                    name: translation_unit
+                        .pool_string_option(name.0, activation.context.gc_context)?,
                 }
             }
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => {
-                let ns = avm.pop().as_namespace()?.clone();
+                let ns = activation.avm2().pop().as_namespace()?.clone();
                 Self {
                     ns: vec![ns],
-                    name: translation_unit.pool_string_option(name.0, mc)?,
+                    name: translation_unit
+                        .pool_string_option(name.0, activation.context.gc_context)?,
                 }
             }
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => {
-                let ns = avm.pop().as_namespace()?.clone();
-                let name = avm.pop().as_string()?;
+                let ns = activation.avm2().pop().as_namespace()?.clone();
+                let name = activation.avm2().pop().coerce_to_string(activation)?;
                 Self {
                     ns: vec![ns],
                     name: Some(name),
@@ -270,14 +272,22 @@ impl<'gc> Multiname<'gc> {
                 namespace_set,
                 name,
             } => Self {
-                ns: Self::abc_namespace_set(translation_unit, namespace_set.clone(), mc)?,
-                name: translation_unit.pool_string_option(name.0, mc)?,
+                ns: Self::abc_namespace_set(
+                    translation_unit,
+                    namespace_set.clone(),
+                    activation.context.gc_context,
+                )?,
+                name: translation_unit.pool_string_option(name.0, activation.context.gc_context)?,
             },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => {
-                let name = avm.pop().as_string()?;
+                let name = activation.avm2().pop().coerce_to_string(activation)?;
                 Self {
-                    ns: Self::abc_namespace_set(translation_unit, namespace_set.clone(), mc)?,
+                    ns: Self::abc_namespace_set(
+                        translation_unit,
+                        namespace_set.clone(),
+                        activation.context.gc_context,
+                    )?,
                     name: Some(name),
                 }
             }
