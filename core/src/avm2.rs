@@ -28,6 +28,7 @@ mod function;
 mod globals;
 mod method;
 mod names;
+mod namespace_object;
 mod object;
 mod primitive_object;
 mod property;
