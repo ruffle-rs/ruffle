@@ -219,10 +219,7 @@ impl<'gc> Value<'gc> {
     /// expected that their `toString`/`valueOf` handlers have already had a
     /// chance to unbox the primitive contained within.
     pub fn is_primitive(&self) -> bool {
-        match self {
-            Value::Object(_) => false,
-            _ => true,
-        }
+        !matches!(self, Value::Object(_))
     }
 
     /// Coerce the value to a boolean.
