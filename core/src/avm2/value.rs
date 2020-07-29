@@ -37,6 +37,8 @@ pub enum Value<'gc> {
     Null,
     Bool(bool),
     Number(f64),
+    Unsigned(u32),
+    Integer(i32),
     String(AvmString<'gc>),
     Object(Object<'gc>),
 }
@@ -82,31 +84,31 @@ impl<'gc> From<f32> for Value<'gc> {
 
 impl<'gc> From<u8> for Value<'gc> {
     fn from(value: u8) -> Self {
-        Value::Number(f64::from(value))
+        Value::Unsigned(u32::from(value))
     }
 }
 
 impl<'gc> From<i16> for Value<'gc> {
     fn from(value: i16) -> Self {
-        Value::Number(f64::from(value))
+        Value::Integer(i32::from(value))
     }
 }
 
 impl<'gc> From<u16> for Value<'gc> {
     fn from(value: u16) -> Self {
-        Value::Number(f64::from(value))
+        Value::Unsigned(u32::from(value))
     }
 }
 
 impl<'gc> From<i32> for Value<'gc> {
     fn from(value: i32) -> Self {
-        Value::Number(f64::from(value))
+        Value::Integer(value)
     }
 }
 
 impl<'gc> From<u32> for Value<'gc> {
     fn from(value: u32) -> Self {
-        Value::Number(f64::from(value))
+        Value::Unsigned(value)
     }
 }
 
@@ -231,6 +233,8 @@ impl<'gc> Value<'gc> {
             Value::Undefined | Value::Null => false,
             Value::Bool(b) => *b,
             Value::Number(f) => !f.is_nan() && f.abs() != 0.0,
+            Value::Unsigned(u) => *u != 0,
+            Value::Integer(i) => *i != 0,
             Value::String(s) => !s.is_empty(),
             Value::Object(_) => true,
         }
@@ -330,6 +334,8 @@ impl<'gc> Value<'gc> {
             Value::Bool(true) => 1.0,
             Value::Bool(false) => 0.0,
             Value::Number(n) => *n,
+            Value::Unsigned(u) => *u as f64,
+            Value::Integer(i) => *i as f64,
             Value::String(s) => {
                 let strim = s.trim();
                 if strim.is_empty() {
@@ -491,6 +497,8 @@ impl<'gc> Value<'gc> {
                     AvmString::new(activation.context.gc_context, format!("{}", n))
                 }
             }
+            Value::Unsigned(u) => AvmString::new(context.gc_context, format!("{}", u)),
+            Value::Integer(i) => AvmString::new(context.gc_context, format!("{}", i)),
             Value::String(s) => *s,
             Value::Object(_) => self
                 .coerce_to_primitive(Some(Hint::String), activation)?
@@ -520,6 +528,8 @@ impl<'gc> Value<'gc> {
         let proto = match self {
             Value::Bool(_) => activation.avm2().prototypes().boolean,
             Value::Number(_) => activation.avm2().prototypes().number,
+            Value::Unsigned(_) => activation.avm2().prototypes().uint,
+            Value::Integer(_) => activation.avm2().prototypes().int,
             Value::String(_) => activation.avm2().prototypes().string,
             _ => unreachable!(),
         };
