@@ -206,13 +206,6 @@ pub fn abc_default_value<'gc>(
 }
 
 impl<'gc> Value<'gc> {
-    pub fn as_number(&self) -> Result<f64, Error> {
-        match self {
-            Value::Number(f) => Ok(*f),
-            _ => Err(format!("Expected Number, found {:?}", self).into()),
-        }
-    }
-
     pub fn as_namespace(&self) -> Result<&Namespace<'gc>, Error> {
         match self {
             Value::Namespace(ns) => Ok(ns),
