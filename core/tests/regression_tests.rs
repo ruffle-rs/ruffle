@@ -83,6 +83,7 @@ swf_tests! {
     (goto_both_ways2, "avm1/goto_both_ways2", 3),
     (goto_frame, "avm1/goto_frame", 3),
     (goto_frame2, "avm1/goto_frame2", 5),
+    (goto_frame_number, "avm1/goto_frame_number", 4),
     (goto_label, "avm1/goto_label", 4),
     (goto_methods, "avm1/goto_methods", 1),
     (goto_rewind1, "avm1/goto_rewind1", 4),

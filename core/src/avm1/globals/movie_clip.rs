@@ -5,6 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
+use crate::avm1::value::f64_to_wrapping_i32;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::avm_error;
 use crate::avm_warn;
@@ -738,8 +739,10 @@ pub fn goto_frame<'gc>(
     stop: bool,
     scene_offset: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let mut call_frame = None;
+
     match args.get(0).cloned().unwrap_or(Value::Undefined) {
-        // Goto only runs if n is an integer
+        // A direct goto only runs if n is an integer
         Value::Number(n) if n.fract() == 0.0 => {
             // Frame #
             // Gotoing <= 0 has no effect.
@@ -748,25 +751,34 @@ pub fn goto_frame<'gc>(
             // TODO: -1 +1 here to match Flash's behavior.
             // We probably want to change our frame representation to 0-based.
             // Scene offset is only used by GotoFrame2 global opcode.
-            let mut frame = crate::avm1::value::f64_to_wrapping_i32(n);
-            frame = frame.wrapping_sub(1);
-            frame = frame.wrapping_add(i32::from(scene_offset));
-            if frame >= 0 {
-                movie_clip.goto_frame(
-                    activation.avm,
-                    context,
-                    frame.saturating_add(1) as u16,
-                    stop,
-                );
-            }
+            call_frame = Some((movie_clip, f64_to_wrapping_i32(n)));
         }
         val => {
             // Coerce to string and search for a frame label.
-            let frame_label = val.coerce_to_string(activation, context)?;
-            if let Some(mut frame) = movie_clip.frame_label_to_number(&frame_label) {
-                frame = frame.wrapping_add(scene_offset);
-                movie_clip.goto_frame(activation.avm, context, frame, stop);
+            // This can direct other clips than the one this method was called on!
+            let frame_path = val.coerce_to_string(activation, context)?;
+            if let Some((clip, frame)) =
+                activation.resolve_variable_path(context, movie_clip.into(), &frame_path)?
+            {
+                if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
+                    if let Ok(frame) = frame.parse().map(f64_to_wrapping_i32) {
+                        // First try to parse as a frame number.
+                        call_frame = Some((clip, frame));
+                    } else if let Some(frame) = clip.frame_label_to_number(&frame) {
+                        // Otherwise, it's a frame label.
+                        call_frame = Some((clip, frame as i32));
+                    }
+                }
             }
+        }
+    }
+
+    if let Some((clip, mut frame)) = call_frame {
+        frame = frame.wrapping_sub(1);
+        frame = frame.wrapping_add(i32::from(scene_offset));
+        frame = frame.saturating_add(1);
+        if frame > 0 {
+            clip.goto_frame(activation.avm, context, frame as u16, stop);
         }
     }
     Ok(Value::Undefined)
