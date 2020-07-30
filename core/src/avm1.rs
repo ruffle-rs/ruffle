@@ -334,7 +334,7 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
-    pub fn notify_system_listeners<'a>(
+    pub fn notify_system_listeners(
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         context: &mut UpdateContext<'_, 'gc, '_>,
