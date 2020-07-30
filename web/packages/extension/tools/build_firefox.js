@@ -47,7 +47,16 @@ async function run() {
     }
 
     const version = require("../package.json").version;
-    const manifest = createManifest({ version });
+    let id;
+    if (process.env.FIREFOX_EXTENSION_ID) {
+        id = process.env.FIREFOX_EXTENSION_ID;
+    } else {
+        id = "ruffle-player-extension@ruffle.rs";
+    }
+    const manifest = createManifest({
+        version,
+        browser_specific_settings: { gecko: { id } },
+    });
 
     await build();
     await zip(`${dist}/firefox_unsigned.xpi`, manifest);

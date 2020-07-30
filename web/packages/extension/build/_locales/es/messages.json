@@ -1,0 +1,53 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Reproducer contenido Flash en Ruffle"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Reproducer contenido Flash en sitios que deshabilitan Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Ignorar avisos de compatibilidad de sitos web"
+    },
+    "status_init": {
+        "message": "Leyendo pestaña actual..."
+    },
+    "status_no_tabs": {
+        "message": "No hay pestaña activada."
+    },
+    "status_tabs_error": {
+        "message": "Occuró un error buscando la pestaña actual."
+    },
+    "status_message_init": {
+        "message": "Verificando estado de Ruffle en la pestaña actual..."
+    },
+    "status_result_running": {
+        "message": "Ruffle está cargado y reproduciendo contenido Flash en la pestaña actual."
+    },
+    "status_result_optout": {
+        "message": "Ruffle no está cargado porque la página actual se marcó incompatible."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle no está cargado porque fue desactivdo por el usario."
+    },
+    "status_result_error": {
+        "message": "Ocurró un error consultando la instancia de Ruffle de la pestaña actual."
+    },
+    "status_result_protected": {
+        "message": "Ruffle no puede cargar en páginas protegidas por el navegador."
+    },
+    "action_reload": {
+        "message": "Recargar pestaña para aplicar cambios"
+    },
+    "open_settings_page": {
+        "message": "Abrir Página de Configuración"
+    },
+    "settings_page": {
+        "message": "Página de Configuración"
+    },
+    "description": {
+        "message": "Pone Flash en el web, donde debe ser, otra vez."
+    },
+    "save_settings": {
+        "message": "Guardar Configuración"
+    }
+}

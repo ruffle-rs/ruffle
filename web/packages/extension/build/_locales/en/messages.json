@@ -1,0 +1,53 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Play Flash content in Ruffle"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Play Flash content even on sites that disable Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Ignore website compatibility warnings"
+    },
+    "status_init": {
+        "message": "Reading current tab..."
+    },
+    "status_no_tabs": {
+        "message": "There is no active tab."
+    },
+    "status_tabs_error": {
+        "message": "An error occured when looking up the current tab."
+    },
+    "status_message_init": {
+        "message": "Checking Ruffle status on current tab..."
+    },
+    "status_result_running": {
+        "message": "Ruffle is loaded and running Flash content on the current tab."
+    },
+    "status_result_optout": {
+        "message": "Ruffle is not loaded because the current page has marked itself as incompatible."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle is not loaded because it was disabled by the user."
+    },
+    "status_result_error": {
+        "message": "An error occured when querying the current tab's instance of Ruffle."
+    },
+    "status_result_protected": {
+        "message": "Ruffle cannot load on protected browser pages."
+    },
+    "action_reload": {
+        "message": "Reload tab to apply changes"
+    },
+    "open_settings_page": {
+        "message": "Open Settings Page"
+    },
+    "settings_page": {
+        "message": "Settings Page"
+    },
+    "description": {
+        "message": "Puts Flash back on the web where it belongs."
+    },
+    "save_settings": {
+        "message": "Save Settings"
+    }
+}

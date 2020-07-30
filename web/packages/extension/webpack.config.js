@@ -13,10 +13,15 @@ module.exports = (env, argv) => {
     console.log(`Building ${mode}...`);
 
     return {
-        entry: path.resolve(__dirname, "js/index.js"),
+        entry: {
+            ruffle: path.resolve(__dirname, "js/index.js"),
+            popup: path.resolve(__dirname, "js/popup.js"),
+            settings: path.resolve(__dirname, "js/settings.js"),
+            lv0: path.resolve(__dirname, "js/lv0.js"),
+        },
         output: {
             path: path.resolve(__dirname, "build/dist"),
-            filename: "ruffle.js",
+            filename: "[name].js",
             chunkFilename: "core.ruffle.js",
             jsonpFunction: "RufflePlayerExtensionLoader",
         },

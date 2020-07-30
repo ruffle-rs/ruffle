@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<title>Ruffle Settings</title>
+<script type="text/javascript" src="dist/popup.js"></script>
+<style>
+    *, *:before, *:after {
+        box-sizing: border-box;
+    }
+
+    body {
+        text-align: center;
+        margin: 0;
+        padding: 0;
+    }
+
+    .RufflePopup {
+        width: 240px;
+        background: #F7F7F7;
+    }
+
+    .RufflePopup-logo {
+        text-align: center;
+        padding: 15px 14px 8px;
+
+        background: #184778;
+        width: 100%;
+    }
+
+    .RufflePopup-logo img {
+        max-width: 100%;
+    }
+
+    .RufflePopup-status_band {
+        text-align: center;
+        background: white;
+        padding: 15px;
+        margin: 0;
+    }
+
+    .RufflePopup-user_settings {
+        text-align: left;
+    }
+
+    .RufflePopup-user_setting {
+        display: flex;
+        width: 100%;
+        padding: 12px;
+    }
+
+    .RufflePopup-checkbox_with_slider {
+        display: none;
+    }
+
+    .RufflePopup-user_setting_text {
+        flex-grow: 1;
+        vertical-align: middle;
+    }
+
+    .RufflePopup-checkbox_slider {
+        display: inline-block;
+        position: relative;
+        flex-grow: 0;
+        flex-shrink: 0;
+
+        width: 30px;
+        height: 7px;
+        border-radius: 5px;
+        margin: 4px 0px auto 15px;
+
+        background-color: #966214;
+    }
+
+    .RufflePopup-checkbox_slider:after {
+        content: "";
+        display: block;
+        position: absolute;
+        left: 15%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+
+        background-color: #FFAD33;
+        width: 15px;
+        height: 15px;
+        border-radius: 100%;
+
+        transition: left 0.1s;
+    }
+
+    .RufflePopup-checkbox_with_slider:checked ~ .RufflePopup-checkbox_slider:after {
+        left: 85%;
+    }
+    
+    .RufflePopup-reload_button {
+        display: block;
+        overflow: hidden;
+
+        background-color: #FFAD33;
+        color: black;
+
+        width: 100%;
+        border-width: 0px;
+
+        text-align: center;
+        font-weight: bold;
+        line-height: 14px;
+
+        transition: 0.1s;
+    }
+
+    .RufflePopup-reload_button:disabled {
+        max-height: 0px;
+        padding: 0px 10px;
+        line-height: 0px;
+    }
+
+    .RufflePopup-reload_button:enabled {
+        height: 70px;
+        padding: 10px 10px;
+        line-height: 15px;
+    }
+    #settingsbutton {
+        background-color: #FFAD33;
+        width: 100%;
+        height: 70px;
+        color: #000;
+        text-align:center;
+        border-width: 0px;
+    }
+    @media (prefers-color-scheme: dark) {
+        .RufflePopup-status_band {
+            text-align: center;
+            background: black;
+            color: #FFF;
+            padding: 15px;
+            margin: 0;
+        }
+        .RufflePopup {
+            width: 240px;
+            background: #111;
+            color: #FFF;
+        }
+        .RufflePopup-reload_button {
+            color: #FFF;
+        }
+        #settingsbutton {
+            color: #FFF;
+        }
+    }
+</style>
+
+<div class="RufflePopup">
+    <div class="RufflePopup-logo"><img src="logo/328.png" alt="Ruffle" width="200"></div>
+
+    <p class="RufflePopup-status_band"><span id="ruffle_status">Loading...</span></p>
+
+    <form class="RufflePopup-user_settings">
+        <label class="RufflePopup-user_setting" for="ruffle_enable">
+            <input class="RufflePopup-checkbox_with_slider" type="checkbox" name="ruffle_enable" id="ruffle_enable">
+            <span class="RufflePopup-user_setting_text"></span>
+            <div class="RufflePopup-checkbox_slider"></div>
+        </label>
+        <label class="RufflePopup-user_setting" for="ignore_optout">
+            <input class="RufflePopup-checkbox_with_slider" type="checkbox" name="ignore_optout" id="ignore_optout">
+            <span class="RufflePopup-user_setting_text"></span>
+            <div class="RufflePopup-checkbox_slider"></div>
+        </label>
+    </form>
+    <button id="settingsbutton"></button>
+    <button type="button" id="reload" class="RufflePopup-reload_button"></button>
+</div>

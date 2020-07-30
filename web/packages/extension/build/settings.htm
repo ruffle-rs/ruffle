@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Ruffle Settings</title>
+<style type="text/css">
+@media (prefers-color-scheme: dark) {
+    body, form, input, label {
+        background-color: #000;
+        color: #FFF;
+    }
+}
+</style>
+</head>
+<body>
+<table style="margin:0 auto;"><tbody><tr><td>
+<h1 style="text-align:center;" id="title"></h1>
+<form>
+<input type="checkbox" id="enable" name="enable" /><label for="enable" id="enablelabel"></label>
+<input type="checkbox" id="ignoreoptout" name="ignoreoptout" /><label for="ignoreoptout" id="ignorelabel"></label>
+<label><br /></label>
+<input type="button" id="save" name="save" value="Save Settings" />
+</form>
+</td></tr></tbody></table>
+<script src="dist/settings.js"></script>
+</body>
+</html>
