@@ -136,8 +136,8 @@ pub fn array_function<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut consumed = false;
 
-    let constructor = activation.avm.prototypes.array_constructor;
-    let array_obj = constructor.construct(activation, context, args)?;
+    let prototype = activation.avm.prototypes.array;
+    let array_obj = prototype.create_bare_object(activation, context, prototype)?;
 
     if args.len() == 1 {
         let arg = args.get(0).unwrap();
