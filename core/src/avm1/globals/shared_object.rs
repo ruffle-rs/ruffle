@@ -114,8 +114,8 @@ fn recursive_deserialize<'gc>(
                 );
             }
             JsonValue::Object(o) => {
-                let constructor = activation.avm.prototypes.object_constructor;
-                if let Ok(obj) = constructor.construct(activation, context, &[]) {
+                let prototype = activation.avm.prototypes.object;
+                if let Ok(obj) = prototype.create_bare_object(activation, context, prototype) {
                     recursive_deserialize(JsonValue::Object(o.clone()), activation, obj, context);
 
                     object.define_value(
@@ -165,8 +165,8 @@ pub fn get_local<'gc>(
     obj_so.set_name(action_context.gc_context, name.to_string());
 
     // Create the data object
-    let constructor = activation.avm.prototypes.object_constructor;
-    let data = constructor.construct(activation, action_context, &[])?;
+    let prototype = activation.avm.prototypes.object;
+    let data = prototype.create_bare_object(activation, action_context, prototype)?;
 
     // Load the data object from storage if it existed prior
     if let Some(saved) = action_context.storage.get_string(&name) {

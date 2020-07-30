@@ -20,8 +20,8 @@ pub fn constructor<'gc>(
 
     this.set("onSelect", callback.into(), activation, context)?;
 
-    let constructor = activation.avm.prototypes.object_constructor;
-    let built_in_items = constructor.construct(activation, context, &[])?;
+    let prototype = activation.avm.prototypes.object;
+    let built_in_items = prototype.create_bare_object(activation, context, prototype)?;
 
     built_in_items.set("print", true.into(), activation, context)?;
     built_in_items.set("forward_back", true.into(), activation, context)?;
