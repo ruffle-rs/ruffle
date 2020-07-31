@@ -51,4 +51,4 @@ features = [
     "Blob", "BlobPropertyBag", "Storage"]
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.15"
+wasm-bindgen-test = "0.3.17"
