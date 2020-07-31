@@ -195,7 +195,7 @@ impl Player {
         let mut player = Player {
             player_version: NEWEST_PLAYER_VERSION,
 
-            swf: fake_movie,
+            swf: fake_movie.clone(),
 
             is_playing: false,
             needs_render: true,
@@ -213,11 +213,15 @@ impl Player {
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
+                let fake_root = MovieClip::from_movie(gc_context, fake_movie);
+                let mut levels = BTreeMap::new();
+                levels.insert(0 as u32, fake_root.into());
+
                 GcRoot(GcCell::allocate(
                     gc_context,
                     GcRootData {
                         library: Library::default(),
-                        levels: BTreeMap::new(),
+                        levels,
                         mouse_hovered_object: None,
                         drag_object: None,
                         avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
