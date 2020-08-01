@@ -117,7 +117,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Takes an already existing object and performs this constructor (if valid) on it.
     fn construct_on_existing(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
         mut _this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
