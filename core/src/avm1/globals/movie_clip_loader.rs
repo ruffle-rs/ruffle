@@ -2,6 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
@@ -27,88 +28,6 @@ pub fn constructor<'gc>(
         Attribute::DontEnum.into(),
     );
     listeners.set_array_element(0, Value::Object(this), activation.context.gc_context);
-
-    Ok(Value::Undefined)
-}
-
-pub fn add_listener<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let new_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this.get("_listeners", activation)?;
-
-    if let Value::Object(listeners) = listeners {
-        let length = listeners.length();
-        listeners.set_length(activation.context.gc_context, length + 1);
-        listeners.set_array_element(length, new_listener, activation.context.gc_context);
-    }
-
-    Ok(true.into())
-}
-
-pub fn remove_listener<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let old_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this.get("_listeners", activation)?;
-
-    if let Value::Object(listeners) = listeners {
-        let length = listeners.length();
-        let mut position = None;
-
-        for i in 0..length {
-            let other_listener = listeners.array_element(i);
-            if old_listener == other_listener {
-                position = Some(i);
-                break;
-            }
-        }
-
-        if let Some(position) = position {
-            if length > 0 {
-                let new_length = length - 1;
-                for i in position..new_length {
-                    listeners.set_array_element(
-                        i,
-                        listeners.array_element(i + 1),
-                        activation.context.gc_context,
-                    );
-                }
-
-                listeners.delete_array_element(new_length, activation.context.gc_context);
-                listeners.delete(activation, &new_length.to_string());
-
-                listeners.set_length(activation.context.gc_context, new_length);
-            }
-        }
-    }
-
-    Ok(true.into())
-}
-
-pub fn broadcast_message<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let event_name_val = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let event_name = event_name_val.coerce_to_string(activation)?;
-    let call_args = &args[0..];
-
-    let listeners = this.get("_listeners", activation)?;
-    if let Value::Object(listeners) = listeners {
-        for i in 0..listeners.length() {
-            let listener = listeners.array_element(i);
-
-            if let Value::Object(listener) = listener {
-                listener.call_method(&event_name, call_args, activation)?;
-            }
-        }
-    }
 
     Ok(Value::Undefined)
 }
@@ -213,30 +132,13 @@ pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
+    array_proto: Object<'gc>,
+    broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
     let mcl_proto = ScriptObject::object(gc_context, Some(proto));
 
-    mcl_proto.as_script_object().unwrap().force_set_function(
-        "addListener",
-        add_listener,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto),
-    );
-    mcl_proto.as_script_object().unwrap().force_set_function(
-        "removeListener",
-        remove_listener,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto),
-    );
-    mcl_proto.as_script_object().unwrap().force_set_function(
-        "broadcastMessage",
-        broadcast_message,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto),
-    );
+    broadcaster_functions.initialize(gc_context, mcl_proto.into(), array_proto);
+
     mcl_proto.as_script_object().unwrap().force_set_function(
         "loadClip",
         load_clip,

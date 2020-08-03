@@ -246,9 +246,6 @@ pub fn create_globals<'gc>(
     let movie_clip_proto: Object<'gc> =
         movie_clip::create_proto(gc_context, object_proto, function_proto);
 
-    let movie_clip_loader_proto: Object<'gc> =
-        movie_clip_loader::create_proto(gc_context, object_proto, function_proto);
-
     let sound_proto: Object<'gc> = sound::create_proto(gc_context, object_proto, function_proto);
 
     let text_field_proto: Object<'gc> =
@@ -279,6 +276,24 @@ pub fn create_globals<'gc>(
         rectangle::create_proto(gc_context, object_proto, function_proto);
     let color_transform_proto: Object<'gc> =
         color_transform::create_proto(gc_context, object_proto, function_proto);
+
+    let (broadcaster_functions, as_broadcaster) =
+        as_broadcaster::create(gc_context, Some(object_proto), function_proto);
+
+    let movie_clip_loader_proto: Object<'gc> = movie_clip_loader::create_proto(
+        gc_context,
+        object_proto,
+        function_proto,
+        array_proto,
+        broadcaster_functions,
+    );
+
+    let movie_clip_loader = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(movie_clip_loader::constructor),
+        Some(function_proto),
+        movie_clip_loader_proto,
+    );
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(gc_context, object_proto, function_proto);
@@ -323,12 +338,7 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         movie_clip_proto,
     );
-    let movie_clip_loader = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(movie_clip_loader::constructor),
-        Some(function_proto),
-        movie_clip_loader_proto,
-    );
+
     let sound = FunctionObject::constructor(
         gc_context,
         Executable::Native(sound::constructor),
@@ -388,9 +398,6 @@ pub fn create_globals<'gc>(
         .into(),
         EnumSet::empty(),
     );
-
-    let (broadcaster_functions, as_broadcaster) =
-        as_broadcaster::create(gc_context, Some(object_proto), function_proto);
 
     let mut globals = ScriptObject::bare_object(gc_context);
     globals.define_value(
