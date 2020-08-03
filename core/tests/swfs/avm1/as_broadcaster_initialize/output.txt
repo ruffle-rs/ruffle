@@ -1,3 +1,5 @@
+//MovieClipLoader.addListener == asbroadcaster.addListener
+true
 //Stage.addListener == asbroadcaster.addListener
 true
 //System.IME.addListener == asbroadcaster.addListener
