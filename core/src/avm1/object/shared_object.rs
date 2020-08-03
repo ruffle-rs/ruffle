@@ -4,7 +4,6 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject};
-use crate::context::UpdateContext;
 use std::fmt;
 
 /// A SharedObject
@@ -66,13 +65,12 @@ impl<'gc> TObject<'gc> for SharedObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(SharedObject::empty_shared_obj(
-            context.gc_context,
-            Some(activation.avm.prototypes.shared_object),
+            activation.context.gc_context,
+            Some(activation.context.avm1.prototypes.shared_object),
         )
         .into())
     }

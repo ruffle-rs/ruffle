@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::Collect;
 use gc_arena::MutationContext;
@@ -44,50 +44,45 @@ mod text_format;
 mod xml;
 
 pub fn random<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args.get(0) {
-        Some(Value::Number(max)) => Ok(action_context.rng.gen_range(0.0f64, max).floor().into()),
+        Some(Value::Number(max)) => {
+            Ok(activation.context.rng.gen_range(0.0f64, max).floor().into())
+        }
         _ => Ok(Value::Undefined), //TODO: Shouldn't this be an error condition?
     }
 }
 
 pub fn is_finite<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let ret = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(activation, action_context)?
+        .coerce_to_f64(activation)?
         .is_finite();
     Ok(ret.into())
 }
 
 pub fn is_nan<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(val) = args.get(0) {
-        Ok(val
-            .coerce_to_f64(activation, action_context)?
-            .is_nan()
-            .into())
+        Ok(val.coerce_to_f64(activation)?.is_nan().into())
     } else {
         Ok(true.into())
     }
 }
 
 pub fn get_infinity<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -99,8 +94,7 @@ pub fn get_infinity<'gc>(
 }
 
 pub fn get_nan<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -111,27 +105,27 @@ pub fn get_nan<'gc>(
     }
 }
 
-pub fn set_interval<'a, 'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'a, 'gc, '_>,
+pub fn set_interval<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    create_timer(activation, context, this, args, false)
+    create_timer(activation, this, args, false)
 }
 
-pub fn set_timeout<'a, 'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'a, 'gc, '_>,
+pub fn set_timeout<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    create_timer(activation, context, this, args, true)
+    create_timer(activation, this, args, true)
 }
 
-pub fn create_timer<'a, 'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'a, 'gc, '_>,
+pub fn create_timer<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+
     _this: Object<'gc>,
     args: &[Value<'gc>],
     is_timeout: bool,
@@ -146,7 +140,7 @@ pub fn create_timer<'a, 'gc>(
                 method_name: args
                     .get(1)
                     .unwrap_or(&Value::Undefined)
-                    .coerce_to_string(activation, context)?
+                    .coerce_to_string(activation)?
                     .to_string(),
             },
             2,
@@ -156,7 +150,7 @@ pub fn create_timer<'a, 'gc>(
 
     let interval = match args.get(i) {
         Some(Value::Undefined) | None => return Ok(Value::Undefined),
-        Some(value) => value.coerce_to_i32(activation, context)?,
+        Some(value) => value.coerce_to_i32(activation)?,
     };
     let params = if let Some(params) = args.get(i + 1..) {
         params.to_vec()
@@ -164,37 +158,37 @@ pub fn create_timer<'a, 'gc>(
         vec![]
     };
 
-    let id = context
+    let id = activation
+        .context
         .timers
         .add_timer(callback, interval, params, is_timeout);
 
     Ok(id.into())
 }
 
-pub fn clear_interval<'a, 'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'a, 'gc, '_>,
+pub fn clear_interval<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let id = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation, context)?;
-    if !context.timers.remove(id) {
+        .coerce_to_i32(activation)?;
+    if !activation.context.timers.remove(id) {
         log::info!("clearInterval: Timer {} does not exist", id);
     }
 
     Ok(Value::Undefined)
 }
 
-pub fn update_after_event<'a, 'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'a, 'gc, '_>,
+pub fn update_after_event<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    *context.needs_render = true;
+    *activation.context.needs_render = true;
 
     Ok(Value::Undefined)
 }
@@ -651,11 +645,8 @@ pub fn create_globals<'gc>(
 mod tests {
     use super::*;
 
-    fn setup<'gc>(
-        _activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Object<'gc> {
-        create_globals(context.gc_context).1
+    fn setup<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+        create_globals(activation.context.gc_context).1
     }
 
     test_method!(boolean_function, "Boolean", setup,

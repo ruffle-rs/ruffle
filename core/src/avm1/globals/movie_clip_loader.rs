@@ -5,57 +5,56 @@ use crate::avm1::error::Error;
 use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, UpdateContext, Value};
+use crate::avm1::{Object, Value};
 use crate::backend::navigator::RequestOptions;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let listeners =
-        ScriptObject::array(context.gc_context, Some(activation.avm.prototypes().array));
+    let listeners = ScriptObject::array(
+        activation.context.gc_context,
+        Some(activation.context.avm1.prototypes().array),
+    );
     this.define_value(
-        context.gc_context,
+        activation.context.gc_context,
         "_listeners",
         Value::Object(listeners.into()),
         Attribute::DontEnum.into(),
     );
-    listeners.set_array_element(0, Value::Object(this), context.gc_context);
+    listeners.set_array_element(0, Value::Object(this), activation.context.gc_context);
 
     Ok(Value::Undefined)
 }
 
 pub fn add_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let new_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this.get("_listeners", activation, context)?;
+    let listeners = this.get("_listeners", activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length();
-        listeners.set_length(context.gc_context, length + 1);
-        listeners.set_array_element(length, new_listener, context.gc_context);
+        listeners.set_length(activation.context.gc_context, length + 1);
+        listeners.set_array_element(length, new_listener, activation.context.gc_context);
     }
 
     Ok(true.into())
 }
 
 pub fn remove_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let old_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this.get("_listeners", activation, context)?;
+    let listeners = this.get("_listeners", activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length();
@@ -76,14 +75,14 @@ pub fn remove_listener<'gc>(
                     listeners.set_array_element(
                         i,
                         listeners.array_element(i + 1),
-                        context.gc_context,
+                        activation.context.gc_context,
                     );
                 }
 
-                listeners.delete_array_element(new_length, context.gc_context);
-                listeners.delete(activation, context.gc_context, &new_length.to_string());
+                listeners.delete_array_element(new_length, activation.context.gc_context);
+                listeners.delete(activation, &new_length.to_string());
 
-                listeners.set_length(context.gc_context, new_length);
+                listeners.set_length(activation.context.gc_context, new_length);
             }
         }
     }
@@ -92,22 +91,21 @@ pub fn remove_listener<'gc>(
 }
 
 pub fn broadcast_message<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let event_name_val = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let event_name = event_name_val.coerce_to_string(activation, context)?;
+    let event_name = event_name_val.coerce_to_string(activation)?;
     let call_args = &args[0..];
 
-    let listeners = this.get("_listeners", activation, context)?;
+    let listeners = this.get("_listeners", activation)?;
     if let Value::Object(listeners) = listeners {
         for i in 0..listeners.length() {
             let listener = listeners.array_element(i);
 
             if let Value::Object(listener) = listener {
-                listener.call_method(&event_name, call_args, activation, context)?;
+                listener.call_method(&event_name, call_args, activation)?;
             }
         }
     }
@@ -116,13 +114,12 @@ pub fn broadcast_message<'gc>(
 }
 
 pub fn load_clip<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let url = url_val.coerce_to_string(activation, context)?;
+    let url = url_val.coerce_to_string(activation)?;
     let target = args.get(1).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(target) = target {
@@ -130,16 +127,19 @@ pub fn load_clip<'gc>(
             .as_display_object()
             .and_then(|dobj| dobj.as_movie_clip())
         {
-            let fetch = context.navigator.fetch(&url, RequestOptions::get());
-            let process = context.load_manager.load_movie_into_clip(
-                context.player.clone().unwrap(),
+            let fetch = activation
+                .context
+                .navigator
+                .fetch(&url, RequestOptions::get());
+            let process = activation.context.load_manager.load_movie_into_clip(
+                activation.context.player.clone().unwrap(),
                 DisplayObject::MovieClip(movieclip),
                 fetch,
                 url.to_string(),
                 Some(this),
             );
 
-            context.navigator.spawn_future(process);
+            activation.context.navigator.spawn_future(process);
         }
 
         Ok(true.into())
@@ -149,8 +149,7 @@ pub fn load_clip<'gc>(
 }
 
 pub fn unload_clip<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -161,8 +160,8 @@ pub fn unload_clip<'gc>(
             .as_display_object()
             .and_then(|dobj| dobj.as_movie_clip())
         {
-            movieclip.unload(context);
-            movieclip.replace_with_movie(context.gc_context, None);
+            movieclip.unload(&mut activation.context);
+            movieclip.replace_with_movie(activation.context.gc_context, None);
 
             return Ok(true.into());
         }
@@ -172,8 +171,7 @@ pub fn unload_clip<'gc>(
 }
 
 pub fn get_progress<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -184,9 +182,9 @@ pub fn get_progress<'gc>(
             .as_display_object()
             .and_then(|dobj| dobj.as_movie_clip())
         {
-            let ret_obj = ScriptObject::object(context.gc_context, None);
+            let ret_obj = ScriptObject::object(activation.context.gc_context, None);
             ret_obj.define_value(
-                context.gc_context,
+                activation.context.gc_context,
                 "bytesLoaded",
                 movieclip
                     .movie()
@@ -195,7 +193,7 @@ pub fn get_progress<'gc>(
                 EnumSet::empty(),
             );
             ret_obj.define_value(
-                context.gc_context,
+                activation.context.gc_context,
                 "bytesTotal",
                 movieclip
                     .movie()

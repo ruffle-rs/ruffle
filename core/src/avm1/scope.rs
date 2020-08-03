@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use std::cell::Ref;
@@ -239,15 +239,14 @@ impl<'gc> Scope<'gc> {
     pub fn resolve(
         &self,
         name: &str,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if self.locals().has_property(activation, context, name) {
-            return Ok(self.locals().get(name, activation, context)?);
+        if self.locals().has_property(activation, name) {
+            return self.locals().get(name, activation);
         }
         if let Some(scope) = self.parent() {
-            return scope.resolve(name, activation, context, this);
+            return scope.resolve(name, activation, this);
         }
 
         //TODO: Should undefined variables halt execution?
@@ -255,18 +254,13 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        name: &str,
-    ) -> bool {
-        if self.locals().has_property(activation, context, name) {
+    pub fn is_defined(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+        if self.locals().has_property(activation, name) {
             return true;
         }
 
         if let Some(scope) = self.parent() {
-            return scope.is_defined(activation, context, name);
+            return scope.is_defined(activation, name);
         }
 
         false
@@ -282,24 +276,22 @@ impl<'gc> Scope<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        if self.class == ScopeClass::Target || self.locals().has_property(activation, context, name)
-        {
+        if self.class == ScopeClass::Target || self.locals().has_property(activation, name) {
             // Value found on this object, so overwrite it.
             // Or we've hit the executing movie clip, so create it here.
-            self.locals().set(name, value, activation, context)
+            self.locals().set(name, value, activation)
         } else if let Some(scope) = self.parent() {
             // Traverse the scope chain in search of the value.
-            scope.set(name, value, activation, context, this)
+            scope.set(name, value, activation, this)
         } else {
             // This probably shouldn't happen -- all AVM1 code runs in reference to some movieclip,
             // so we should always have a movieclip scope.
             // Define on the top-level scope.
             debug_assert!(false, "Scope::set: No top-level movie clip scope");
-            self.locals().set(name, value, activation, context)
+            self.locals().set(name, value, activation)
         }
     }
 
@@ -315,19 +307,13 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Delete a value from scope
-    pub fn delete(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        name: &str,
-        mc: MutationContext<'gc, '_>,
-    ) -> bool {
-        if self.locals().has_property(activation, context, name) {
-            return self.locals().delete(activation, mc, name);
+    pub fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+        if self.locals().has_property(activation, name) {
+            return self.locals().delete(activation, name);
         }
 
         if let Some(scope) = self.parent() {
-            return scope.delete(activation, context, name, mc);
+            return scope.delete(activation, name);
         }
 
         false

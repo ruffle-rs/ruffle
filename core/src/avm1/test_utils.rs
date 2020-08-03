@@ -2,6 +2,7 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::error::Error;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object, Timers, UpdateContext};
+use crate::avm2::Avm2;
 use crate::backend::audio::NullAudioBackend;
 use crate::backend::input::NullInputBackend;
 use crate::backend::navigator::NullNavigatorBackend;
@@ -20,27 +21,22 @@ use std::sync::Arc;
 
 pub fn with_avm<F>(swf_version: u8, test: F)
 where
-    F: for<'a, 'gc> FnOnce(
-        &mut Activation<'_, 'gc>,
-        &mut UpdateContext<'a, 'gc, '_>,
-        Object<'gc>,
-    ) -> Result<(), Error<'gc>>,
+    F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
 {
     fn in_the_arena<'a, 'gc: 'a, F>(swf_version: u8, test: F, gc_context: MutationContext<'gc, '_>)
     where
-        F: FnOnce(
-            &mut Activation<'_, 'gc>,
-            &mut UpdateContext<'_, 'gc, '_>,
-            Object<'gc>,
-        ) -> Result<(), Error<'gc>>,
+        F: FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
     {
-        let mut avm = Avm1::new(gc_context, swf_version);
+        let mut avm1 = Avm1::new(gc_context, swf_version);
+        let mut avm2 = Avm2::new(gc_context);
         let swf = Arc::new(SwfMovie::empty(swf_version));
         let mut root: DisplayObject<'gc> =
             MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
         root.set_depth(gc_context, 0);
         let mut levels = BTreeMap::new();
         levels.insert(0, root);
+
+        let globals = avm1.global_object_cell();
 
         let mut context = UpdateContext {
             gc_context,
@@ -60,7 +56,7 @@ where
             library: &mut Library::default(),
             navigator: &mut NullNavigatorBackend::new(),
             renderer: &mut NullRenderer::new(),
-            system_prototypes: avm.prototypes().clone(),
+            system_prototypes: avm1.prototypes().clone(),
             mouse_hovered_object: None,
             mouse_position: &(Twips::new(0), Twips::new(0)),
             drag_object: &mut None,
@@ -74,40 +70,37 @@ where
             unbound_text_fields: &mut Vec::new(),
             timers: &mut Timers::new(),
             needs_render: &mut false,
+            avm1: &mut avm1,
+            avm2: &mut avm2,
         };
-        root.post_instantiation(&mut avm, &mut context, root, None, false);
+        root.post_instantiation(&mut context, root, None, false);
         root.set_name(context.gc_context, "");
 
         fn run_test<'a, 'gc: 'a, F>(
-            activation: &mut Activation<'_, 'gc>,
-            context: &mut UpdateContext<'_, 'gc, '_>,
+            activation: &mut Activation<'_, 'gc, '_>,
             root: DisplayObject<'gc>,
             test: F,
         ) where
-            F: FnOnce(
-                &mut Activation<'_, 'gc>,
-                &mut UpdateContext<'_, 'gc, '_>,
-                Object<'gc>,
-            ) -> Result<(), Error<'gc>>,
+            F: FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
         {
-            let this = root.object().coerce_to_object(activation, context);
-            let result = test(activation, context, this);
+            let this = root.object().coerce_to_object(activation);
+            let result = test(activation, this);
             if let Err(e) = result {
                 panic!("Encountered exception during test: {}", e);
             }
         }
 
-        let globals = avm.global_object_cell();
+        let base_clip = *context.levels.get(&0).unwrap();
+        let swf_version = context.swf.version();
         let mut activation = Activation::from_nothing(
-            &mut avm,
+            context,
             ActivationIdentifier::root("[Test]"),
-            context.swf.version(),
+            swf_version,
             globals,
-            context.gc_context,
-            *context.levels.get(&0).unwrap(),
+            base_clip,
         );
 
-        run_test(&mut activation, &mut context, root, test)
+        run_test(&mut activation, root, test)
     }
 
     rootless_arena(|gc_context| in_the_arena(swf_version, test, gc_context))
@@ -120,9 +113,9 @@ macro_rules! test_method {
             use $crate::avm1::test_utils::*;
             $(
                 for version in &$versions {
-                    with_avm(*version, |activation, context, _root| -> Result<(), Error> {
-                        let object = $object(activation, context);
-                        let function = object.get($name, activation, context)?;
+                    with_avm(*version, |activation, _root| -> Result<(), Error> {
+                        let object = $object(activation);
+                        let function = object.get($name, activation)?;
 
                         $(
                             #[allow(unused_mut)]
@@ -130,7 +123,7 @@ macro_rules! test_method {
                             $(
                                 args.push($arg.into());
                             )*
-                            assert_eq!(function.call($name, activation, context, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
+                            assert_eq!(function.call($name, activation, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
                         )*
 
                         Ok(())

@@ -3,7 +3,6 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::avm_warn;
-use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
@@ -12,8 +11,7 @@ use crate::avm1::object::shared_object::SharedObject;
 use json::JsonValue;
 
 pub fn delete_all<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -22,8 +20,7 @@ pub fn delete_all<'gc>(
 }
 
 pub fn get_disk_usage<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -35,13 +32,12 @@ pub fn get_disk_usage<'gc>(
 /// It would be best if this was implemented via serde but due to avm and context it can't
 /// Undefined fields aren't serialized
 fn recursive_serialize<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     obj: Object<'gc>,
     json_obj: &mut JsonValue,
 ) {
     for k in &obj.get_keys(activation) {
-        if let Ok(elem) = obj.get(k, activation, action_context) {
+        if let Ok(elem) = obj.get(k, activation) {
             match elem {
                 Value::Undefined => {}
                 Value::Null => json_obj[k] = JsonValue::Null,
@@ -50,13 +46,13 @@ fn recursive_serialize<'gc>(
                 Value::String(s) => json_obj[k] = s.to_string().into(),
                 Value::Object(o) => {
                     // Don't attempt to serialize functions
-                    let function = activation.avm.prototypes.function;
+                    let function = activation.context.avm1.prototypes.function;
                     if !o
-                        .is_instance_of(activation, action_context, o, function)
+                        .is_instance_of(activation, o, function)
                         .unwrap_or_default()
                     {
                         let mut sub_data_json = JsonValue::new_object();
-                        recursive_serialize(activation, action_context, o, &mut sub_data_json);
+                        recursive_serialize(activation, o, &mut sub_data_json);
                         json_obj[k] = sub_data_json;
                     }
                 }
@@ -70,36 +66,40 @@ fn recursive_serialize<'gc>(
 /// Undefined fields aren't deserialized
 fn recursive_deserialize<'gc>(
     json_obj: JsonValue,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
     object: Object<'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
     for entry in json_obj.entries() {
         match entry.1 {
             JsonValue::Null => {
-                object.define_value(context.gc_context, entry.0, Value::Null, EnumSet::empty());
+                object.define_value(
+                    activation.context.gc_context,
+                    entry.0,
+                    Value::Null,
+                    EnumSet::empty(),
+                );
             }
             JsonValue::Short(s) => {
                 let val: String = s.as_str().to_string();
                 object.define_value(
-                    context.gc_context,
+                    activation.context.gc_context,
                     entry.0,
-                    Value::String(AvmString::new(context.gc_context, val)),
+                    Value::String(AvmString::new(activation.context.gc_context, val)),
                     EnumSet::empty(),
                 );
             }
             JsonValue::String(s) => {
                 object.define_value(
-                    context.gc_context,
+                    activation.context.gc_context,
                     entry.0,
-                    Value::String(AvmString::new(context.gc_context, s.clone())),
+                    Value::String(AvmString::new(activation.context.gc_context, s.clone())),
                     EnumSet::empty(),
                 );
             }
             JsonValue::Number(f) => {
                 let val: f64 = f.clone().into();
                 object.define_value(
-                    context.gc_context,
+                    activation.context.gc_context,
                     entry.0,
                     Value::Number(val),
                     EnumSet::empty(),
@@ -107,19 +107,19 @@ fn recursive_deserialize<'gc>(
             }
             JsonValue::Boolean(b) => {
                 object.define_value(
-                    context.gc_context,
+                    activation.context.gc_context,
                     entry.0,
                     Value::Bool(*b),
                     EnumSet::empty(),
                 );
             }
             JsonValue::Object(o) => {
-                let prototype = activation.avm.prototypes.object;
-                if let Ok(obj) = prototype.create_bare_object(activation, context, prototype) {
-                    recursive_deserialize(JsonValue::Object(o.clone()), activation, obj, context);
+                let prototype = activation.context.avm1.prototypes.object;
+                if let Ok(obj) = prototype.create_bare_object(activation, prototype) {
+                    recursive_deserialize(JsonValue::Object(o.clone()), activation, obj);
 
                     object.define_value(
-                        context.gc_context,
+                        activation.context.gc_context,
                         entry.0,
                         Value::Object(obj),
                         EnumSet::empty(),
@@ -132,8 +132,7 @@ fn recursive_deserialize<'gc>(
 }
 
 pub fn get_local<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -141,11 +140,11 @@ pub fn get_local<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .coerce_to_string(activation, action_context)?
+        .coerce_to_string(activation)?
         .to_string();
 
     //Check if this is referencing an existing shared object
-    if let Some(so) = action_context.shared_objects.get(&name) {
+    if let Some(so) = activation.context.shared_objects.get(&name) {
         return Ok(Value::Object(*so));
     }
 
@@ -157,39 +156,38 @@ pub fn get_local<'gc>(
     }
 
     // Data property only should exist when created with getLocal/Remote
-    let constructor = activation.avm.prototypes.shared_object_constructor;
-    let this = constructor.construct(activation, action_context, &[])?;
+    let constructor = activation.context.avm1.prototypes.shared_object_constructor;
+    let this = constructor.construct(activation, &[])?;
 
     // Set the internal name
     let obj_so = this.as_shared_object().unwrap();
-    obj_so.set_name(action_context.gc_context, name.to_string());
+    obj_so.set_name(activation.context.gc_context, name.to_string());
 
     // Create the data object
-    let prototype = activation.avm.prototypes.object;
-    let data = prototype.create_bare_object(activation, action_context, prototype)?;
+    let prototype = activation.context.avm1.prototypes.object;
+    let data = prototype.create_bare_object(activation, prototype)?;
 
     // Load the data object from storage if it existed prior
-    if let Some(saved) = action_context.storage.get_string(&name) {
+    if let Some(saved) = activation.context.storage.get_string(&name) {
         if let Ok(json_data) = json::parse(&saved) {
-            recursive_deserialize(json_data, activation, data, action_context);
+            recursive_deserialize(json_data, activation, data);
         }
     }
 
     this.define_value(
-        action_context.gc_context,
+        activation.context.gc_context,
         "data",
         data.into(),
         EnumSet::empty(),
     );
 
-    action_context.shared_objects.insert(name, this);
+    activation.context.shared_objects.insert(name, this);
 
     Ok(this.into())
 }
 
 pub fn get_remote<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -198,8 +196,7 @@ pub fn get_remote<'gc>(
 }
 
 pub fn get_max_size<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -208,8 +205,7 @@ pub fn get_max_size<'gc>(
 }
 
 pub fn add_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -218,8 +214,7 @@ pub fn add_listener<'gc>(
 }
 
 pub fn remove_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -300,30 +295,26 @@ pub fn create_shared_object_object<'gc>(
 }
 
 pub fn clear<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let data = this
-        .get("data", activation, action_context)?
-        .coerce_to_object(activation, action_context);
+    let data = this.get("data", activation)?.coerce_to_object(activation);
 
     for k in &data.get_keys(activation) {
-        data.delete(activation, action_context.gc_context, k);
+        data.delete(activation, k);
     }
 
     let so = this.as_shared_object().unwrap();
     let name = so.get_name();
 
-    action_context.storage.remove_key(&name);
+    activation.context.storage.remove_key(&name);
 
     Ok(Value::Undefined)
 }
 
 pub fn close<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -332,8 +323,7 @@ pub fn close<'gc>(
 }
 
 pub fn connect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -342,30 +332,27 @@ pub fn connect<'gc>(
 }
 
 pub fn flush<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let data = this
-        .get("data", activation, action_context)?
-        .coerce_to_object(activation, action_context);
+    let data = this.get("data", activation)?.coerce_to_object(activation);
 
     let mut data_json = JsonValue::new_object();
-    recursive_serialize(activation, action_context, data, &mut data_json);
+    recursive_serialize(activation, data, &mut data_json);
 
     let this_obj = this.as_shared_object().unwrap();
     let name = this_obj.get_name();
 
-    Ok(action_context
+    Ok(activation
+        .context
         .storage
         .put_string(&name, data_json.dump())
         .into())
 }
 
 pub fn get_size<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -374,8 +361,7 @@ pub fn get_size<'gc>(
 }
 
 pub fn send<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -384,8 +370,7 @@ pub fn send<'gc>(
 }
 
 pub fn set_fps<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -394,8 +379,7 @@ pub fn set_fps<'gc>(
 }
 
 pub fn on_status<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -404,8 +388,7 @@ pub fn on_status<'gc>(
 }
 
 pub fn on_sync<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -473,8 +456,7 @@ pub fn create_proto<'gc>(
 }
 
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

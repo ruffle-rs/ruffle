@@ -14,7 +14,6 @@ use crate::avm2::slot::Slot;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -80,15 +79,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self,
         reciever: Object<'gc>,
         name: &QName<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let rv = self
             .0
             .read()
             .get_property_local(reciever, name, activation)?;
 
-        rv.resolve(activation, context)
+        rv.resolve(activation)
     }
 
     fn set_property_local(
@@ -96,15 +94,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let rv = self
             .0
-            .write(context.gc_context)
-            .set_property_local(reciever, name, value, activation, context)?;
+            .write(activation.context.gc_context)
+            .set_property_local(reciever, name, value, activation)?;
 
-        rv.resolve(activation, context)?;
+        rv.resolve(activation)?;
 
         Ok(())
     }
@@ -114,15 +111,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let rv = self
             .0
-            .write(context.gc_context)
-            .init_property_local(reciever, name, value, activation, context)?;
+            .write(activation.context.gc_context)
+            .init_property_local(reciever, name, value, activation)?;
 
-        rv.resolve(activation, context)?;
+        rv.resolve(activation)?;
 
         Ok(())
     }
@@ -245,24 +241,22 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn construct(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ScriptObject(*self);
-        Ok(ScriptObject::object(context.gc_context, this))
+        Ok(ScriptObject::object(activation.context.gc_context, this))
     }
 
     fn derive(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ScriptObject(*self);
         Ok(ScriptObject::prototype(
-            context.gc_context,
+            activation.context.gc_context,
             this,
             class,
             scope,
@@ -419,7 +413,7 @@ impl<'gc> ScriptObjectData<'gc> {
         &self,
         reciever: Object<'gc>,
         name: &QName<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         let prop = self.values.get(name);
 
@@ -435,8 +429,7 @@ impl<'gc> ScriptObjectData<'gc> {
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         let slot_id = if let Some(prop) = self.values.get(name) {
             if let Some(slot_id) = prop.slot_id() {
@@ -449,7 +442,7 @@ impl<'gc> ScriptObjectData<'gc> {
         };
 
         if let Some(slot_id) = slot_id {
-            self.set_slot(slot_id, value, context.gc_context)?;
+            self.set_slot(slot_id, value, activation.context.gc_context)?;
             Ok(Value::Undefined.into())
         } else if self.values.contains_key(name) {
             let prop = self.values.get_mut(name).unwrap();
@@ -470,12 +463,11 @@ impl<'gc> ScriptObjectData<'gc> {
         reciever: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
-                self.init_slot(slot_id, value, context.gc_context)?;
+                self.init_slot(slot_id, value, activation.context.gc_context)?;
                 Ok(Value::Undefined.into())
             } else {
                 let proto = self.proto;

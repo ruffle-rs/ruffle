@@ -4,12 +4,11 @@ use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object};
 use crate::avm1::{ScriptObject, Value};
-use crate::context::UpdateContext;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
+
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -17,11 +16,11 @@ pub fn constructor<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .coerce_to_string(activation, context)?
+        .coerce_to_string(activation)?
         .to_string();
     let callback = args
         .get(1)
-        .map(|v| v.to_owned().coerce_to_object(activation, context));
+        .map(|v| v.to_owned().coerce_to_object(activation));
     let separator_before = args
         .get(2)
         .unwrap_or(&Value::Bool(false))
@@ -40,57 +39,54 @@ pub fn constructor<'gc>(
 
     this.set(
         "caption",
-        AvmString::new(context.gc_context, caption).into(),
+        AvmString::new(activation.context.gc_context, caption).into(),
         activation,
-        context,
     )?;
 
     if let Some(callback) = callback {
-        this.set("onSelect", callback.into(), activation, context)?;
+        this.set("onSelect", callback.into(), activation)?;
     }
 
-    this.set(
-        "separatorBefore",
-        separator_before.into(),
-        activation,
-        context,
-    )?;
-    this.set("enabled", enabled.into(), activation, context)?;
-    this.set("visible", visible.into(), activation, context)?;
+    this.set("separatorBefore", separator_before.into(), activation)?;
+    this.set("enabled", enabled.into(), activation)?;
+    this.set("visible", visible.into(), activation)?;
 
     Ok(Value::Undefined)
 }
 
 pub fn copy<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
+
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let caption = this
-        .get("caption", activation, context)?
-        .coerce_to_string(activation, context)?
+        .get("caption", activation)?
+        .coerce_to_string(activation)?
         .to_string();
     let callback = this
-        .get("onSelect", activation, context)?
-        .coerce_to_object(activation, context);
+        .get("onSelect", activation)?
+        .coerce_to_object(activation);
 
     let enabled = this
-        .get("enabled", activation, context)?
+        .get("enabled", activation)?
         .as_bool(activation.swf_version());
     let separator_before = this
-        .get("separator_before", activation, context)?
+        .get("separator_before", activation)?
         .as_bool(activation.swf_version());
     let visible = this
-        .get("visible", activation, context)?
+        .get("visible", activation)?
         .as_bool(activation.swf_version());
 
-    let constructor = activation.avm.prototypes.context_menu_item_constructor;
+    let constructor = activation
+        .context
+        .avm1
+        .prototypes
+        .context_menu_item_constructor;
     let copy = constructor.construct(
         activation,
-        context,
         &[
-            AvmString::new(context.gc_context, caption).into(),
+            AvmString::new(activation.context.gc_context, caption).into(),
             callback.into(),
             separator_before.into(),
             enabled.into(),

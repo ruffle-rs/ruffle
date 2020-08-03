@@ -6,26 +6,24 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, TObject, Value};
-use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// `Number` constructor
 pub fn number<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = if let Some(val) = args.get(0) {
-        val.coerce_to_f64(activation, context)?
+        val.coerce_to_f64(activation)?
     } else {
         0.0
     };
 
     // If called from a constructor, populate `this`.
     if let Some(mut vbox) = this.as_value_object() {
-        vbox.replace_value(context.gc_context, value.into());
+        vbox.replace_value(activation.context.gc_context, value.into());
     }
 
     Ok(Value::Undefined)
@@ -33,13 +31,12 @@ pub fn number<'gc>(
 
 /// `Number` function
 pub fn number_function<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = if let Some(val) = args.get(0) {
-        val.coerce_to_f64(activation, context)?
+        val.coerce_to_f64(activation)?
     } else {
         0.0
     };
@@ -130,8 +127,7 @@ pub fn create_proto<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -150,7 +146,7 @@ fn to_string<'gc>(
         let radix = args
             .get(0)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(activation, context)?;
+            .coerce_to_f64(activation)?;
         if radix >= 2.0 && radix <= 36.0 {
             radix as u32
         } else {
@@ -161,10 +157,8 @@ fn to_string<'gc>(
     if radix == 10 {
         // Output number as floating-point decimal.
         Ok(AvmString::new(
-            context.gc_context,
-            Value::from(this)
-                .coerce_to_string(activation, context)?
-                .to_string(),
+            activation.context.gc_context,
+            Value::from(this).coerce_to_string(activation)?.to_string(),
         )
         .into())
     } else if this > -2_147_483_648.0 && this < 2_147_483_648.0 {
@@ -194,7 +188,7 @@ fn to_string<'gc>(
             i += 1;
         }
         let out: String = digits[..i].iter().rev().collect();
-        Ok(AvmString::new(context.gc_context, out).into())
+        Ok(AvmString::new(activation.context.gc_context, out).into())
     } else {
         // NaN or large numbers.
         // Player version specific behavior:
@@ -207,8 +201,7 @@ fn to_string<'gc>(
 }
 
 fn value_of<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -230,7 +223,7 @@ fn value_of<'gc>(
 //     "-/0000000000000000000000000000000",
 //     "-/.//./..././/0.0./0.",
 //     "-.000000000000000",
-//     "-/--,,..-,-,0,-",
+//     "-/--,..-,-,0,-",
 //     "-++-0-.00++-.",
 //     "-/0,/-,.///*.",
 //     "-.0000000000",

@@ -1,4 +1,4 @@
-use crate::avm1::{Avm1, Object, TObject, Value};
+use crate::avm1::{Object, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
@@ -723,14 +723,13 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     /// so forth.
     fn handle_clip_event(
         &self,
-        _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _event: ClipEvent,
     ) -> ClipEventResult {
         ClipEventResult::NotHandled
     }
 
-    fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext<'_, 'gc, '_>) {}
+    fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
     fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -834,7 +833,6 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
     fn mouse_pick(
         &self,
-        _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _self_node: DisplayObject<'gc>,
         _pos: (Twips, Twips),
@@ -844,7 +842,6 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
     fn post_instantiation(
         &mut self,
-        _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -912,20 +909,16 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         }
     }
 
-    fn bind_text_field_variables(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) {
+    fn bind_text_field_variables(&self, activation: &mut Activation<'_, 'gc, '_>) {
         // Check all unbound text fields to see if they apply to this object.
         // TODO: Replace with `Vec::drain_filter` when stable.
         let mut i = 0;
-        let mut len = context.unbound_text_fields.len();
+        let mut len = activation.context.unbound_text_fields.len();
         while i < len {
-            if context.unbound_text_fields[i]
-                .try_bind_text_field_variable(activation, context, false)
+            if activation.context.unbound_text_fields[i]
+                .try_bind_text_field_variable(activation, false)
             {
-                context.unbound_text_fields.swap_remove(i);
+                activation.context.unbound_text_fields.swap_remove(i);
                 len -= 1;
             } else {
                 i += 1;

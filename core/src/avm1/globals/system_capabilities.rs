@@ -4,19 +4,17 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
 use crate::avm1::{AvmString, ScriptObject, TObject, Value};
-use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 macro_rules! capabilities_func {
     ($func_name: ident, $capability: expr) => {
         pub fn $func_name<'gc>(
-            _activation: &mut Activation<'_, 'gc>,
-            context: &mut UpdateContext<'_, 'gc, '_>,
+            activation: &mut Activation<'_, 'gc, '_>,
             _this: Object<'gc>,
             _args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
-            Ok(context.system.has_capability($capability).into())
+            Ok(activation.context.system.has_capability($capability).into())
         }
     };
 }
@@ -24,12 +22,11 @@ macro_rules! capabilities_func {
 macro_rules! inverse_capabilities_func {
     ($func_name: ident, $capability: expr) => {
         pub fn $func_name<'gc>(
-            _activation: &mut Activation<'_, 'gc>,
-            context: &mut UpdateContext<'_, 'gc, '_>,
+            activation: &mut Activation<'_, 'gc, '_>,
             _this: Object<'gc>,
             _args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
-            Ok((!context.system.has_capability($capability)).into())
+            Ok((!activation.context.system.has_capability($capability)).into())
         }
     };
 }
@@ -77,147 +74,155 @@ inverse_capabilities_func!(get_is_av_hardware_disabled, SystemCapabilities::AvHa
 inverse_capabilities_func!(get_is_windowless_disabled, SystemCapabilities::WindowLess);
 
 pub fn get_player_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(context.gc_context, context.system.player_type.to_string()).into())
-}
-
-pub fn get_screen_color<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(context.gc_context, context.system.screen_color.to_string()).into())
-}
-
-pub fn get_language<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new(
-        context.gc_context,
-        context
+        activation.context.gc_context,
+        activation.context.system.player_type.to_string(),
+    )
+    .into())
+}
+
+pub fn get_screen_color<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(AvmString::new(
+        activation.context.gc_context,
+        activation.context.system.screen_color.to_string(),
+    )
+    .into())
+}
+
+pub fn get_language<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(AvmString::new(
+        activation.context.gc_context,
+        activation
+            .context
             .system
             .language
-            .get_language_code(activation.avm.player_version)
+            .get_language_code(activation.context.avm1.player_version)
             .to_string(),
     )
     .into())
 }
 
 pub fn get_screen_resolution_x<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.screen_resolution.0.into())
+    Ok(activation.context.system.screen_resolution.0.into())
 }
 
 pub fn get_screen_resolution_y<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.screen_resolution.1.into())
+    Ok(activation.context.system.screen_resolution.1.into())
 }
 
 pub fn get_pixel_aspect_ratio<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.aspect_ratio.into())
+    Ok(activation.context.system.aspect_ratio.into())
 }
 
 pub fn get_screen_dpi<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(context.system.dpi.into())
+    Ok(activation.context.system.dpi.into())
 }
 
 pub fn get_manufacturer<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new(
-        context.gc_context,
-        context
+        activation.context.gc_context,
+        activation
+            .context
             .system
             .manufacturer
-            .get_manufacturer_string(activation.avm.player_version),
+            .get_manufacturer_string(activation.context.avm1.player_version),
     )
     .into())
 }
 
 pub fn get_os_name<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(context.gc_context, context.system.os.to_string()).into())
-}
-
-pub fn get_version<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new(
-        context.gc_context,
-        context.system.get_version_string(activation),
+        activation.context.gc_context,
+        activation.context.system.os.to_string(),
+    )
+    .into())
+}
+
+pub fn get_version<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(AvmString::new(
+        activation.context.gc_context,
+        activation
+            .context
+            .system
+            .get_version_string(activation.context.avm1),
     )
     .into())
 }
 
 pub fn get_server_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(
-        context.gc_context,
-        context.system.get_server_string(activation),
-    )
-    .into())
+    let server_string = activation
+        .context
+        .system
+        .get_server_string(activation.context.avm1);
+    Ok(AvmString::new(activation.context.gc_context, server_string).into())
 }
 
 pub fn get_cpu_architecture<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new(
-        context.gc_context,
-        context.system.cpu_architecture.to_string(),
+        activation.context.gc_context,
+        activation.context.system.cpu_architecture.to_string(),
     )
     .into())
 }
 
 pub fn get_max_idc_level<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(context.gc_context, context.system.idc_level.clone()).into())
+    Ok(AvmString::new(
+        activation.context.gc_context,
+        activation.context.system.idc_level.clone(),
+    )
+    .into())
 }
 
 pub fn create<'gc>(

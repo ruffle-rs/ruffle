@@ -1,9 +1,9 @@
 //! Management of async loaders
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::{AvmString, Object, TObject, Value};
+use crate::avm1::{Avm1, AvmString, Object, TObject, Value};
 use crate::backend::navigator::OwnedFuture;
-use crate::context::{ActionQueue, ActionType, UpdateContext};
+use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
@@ -55,15 +55,10 @@ pub enum Error {
     Avm1Error(String),
 }
 
-pub type FormLoadHandler<'gc> = fn(
-    &mut Activation<'_, 'gc>,
-    &mut UpdateContext<'_, 'gc, '_>,
-    Object<'gc>,
-    data: &[u8],
-) -> Result<(), Error>;
+pub type FormLoadHandler<'gc> =
+    fn(&mut Activation<'_, 'gc, '_>, Object<'gc>, data: &[u8]) -> Result<(), Error>;
 
-pub type FormErrorHandler<'gc> =
-    fn(&mut Activation<'_, 'gc>, &mut UpdateContext<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error>;
+pub type FormErrorHandler<'gc> = fn(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error>;
 
 impl From<crate::avm1::error::Error<'_>> for Error {
     fn from(error: crate::avm1::error::Error<'_>) -> Self {
@@ -375,13 +370,14 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
-            player.lock().expect("Could not lock player!!").update(
-                |_avm1, _avm2, uc| -> Result<(), Error> {
+            player
+                .lock()
+                .expect("Could not lock player!!")
+                .update(|uc| -> Result<(), Error> {
                     url = uc.navigator.resolve_relative_url(&url).into_owned();
 
                     Ok(())
-                },
-            )?;
+                })?;
 
             let data = (fetch.await)
                 .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
@@ -419,8 +415,10 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
-            player.lock().expect("Could not lock player!!").update(
-                |avm1, _avm2, uc| -> Result<(), Error> {
+            player
+                .lock()
+                .expect("Could not lock player!!")
+                .update(|uc| -> Result<(), Error> {
                     url = uc.navigator.resolve_relative_url(&url).into_owned();
 
                     let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
@@ -440,7 +438,7 @@ impl<'gc> Loader<'gc> {
                         .replace_with_movie(uc.gc_context, None);
 
                     if let Some(broadcaster) = broadcaster {
-                        avm1.run_stack_frame_for_method(
+                        Avm1::run_stack_frame_for_method(
                             clip,
                             broadcaster,
                             NEWEST_PLAYER_VERSION,
@@ -451,8 +449,7 @@ impl<'gc> Loader<'gc> {
                     }
 
                     Ok(())
-                },
-            )?;
+                })?;
 
             let data = (fetch.await)
                 .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
@@ -462,7 +459,7 @@ impl<'gc> Loader<'gc> {
                 player
                     .lock()
                     .expect("Could not lock player!!")
-                    .update(|avm1, _avm2, uc| {
+                    .update(|uc| {
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::Movie {
                                 target_clip,
@@ -474,7 +471,7 @@ impl<'gc> Loader<'gc> {
                         };
 
                         if let Some(broadcaster) = broadcaster {
-                            avm1.run_stack_frame_for_method(
+                            Avm1::run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -494,10 +491,10 @@ impl<'gc> Loader<'gc> {
                             .expect("Attempted to load movie into not movie clip");
 
                         mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
-                        mc.post_instantiation(avm1, uc, clip, None, false);
+                        mc.post_instantiation(uc, clip, None, false);
 
                         let mut morph_shapes = fnv::FnvHashMap::default();
-                        mc.preload(avm1, uc, &mut morph_shapes);
+                        mc.preload(uc, &mut morph_shapes);
 
                         // Finalize morph shapes.
                         for (id, static_data) in morph_shapes {
@@ -511,7 +508,7 @@ impl<'gc> Loader<'gc> {
                         }
 
                         if let Some(broadcaster) = broadcaster {
-                            avm1.run_stack_frame_for_method(
+                            Avm1::run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -535,8 +532,10 @@ impl<'gc> Loader<'gc> {
                 //error types we can actually inspect.
                 //This also can get errors from decoding an invalid SWF file,
                 //too. We should distinguish those to player code.
-                player.lock().expect("Could not lock player!!").update(
-                    |avm1, _avm2, uc| -> Result<(), Error> {
+                player
+                    .lock()
+                    .expect("Could not lock player!!")
+                    .update(|uc| -> Result<(), Error> {
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::Movie {
                                 target_clip,
@@ -548,7 +547,7 @@ impl<'gc> Loader<'gc> {
                         };
 
                         if let Some(broadcaster) = broadcaster {
-                            avm1.run_stack_frame_for_method(
+                            Avm1::run_stack_frame_for_method(
                                 clip,
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
@@ -569,8 +568,7 @@ impl<'gc> Loader<'gc> {
                         };
 
                         Ok(())
-                    },
-                )
+                    })
             }
         })
     }
@@ -593,7 +591,7 @@ impl<'gc> Loader<'gc> {
             let data = fetch.await?;
 
             // Fire the load handler.
-            player.lock().unwrap().update(|avm1, _avm2, uc| {
+            player.lock().unwrap().update(|uc| {
                 let loader = uc.load_manager.get_loader(handle);
                 let that = match loader {
                     Some(&Loader::Form { target_object, .. }) => target_object,
@@ -601,21 +599,16 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotFormLoader),
                 };
 
-                let mut activation = Activation::from_nothing(
-                    avm1,
+                let mut activation = Activation::from_stub(
+                    uc.reborrow(),
                     ActivationIdentifier::root("[Form Loader]"),
-                    uc.swf.version(),
-                    avm1.global_object_cell(),
-                    uc.gc_context,
-                    *uc.levels.get(&0).unwrap(),
                 );
 
                 for (k, v) in form_urlencoded::parse(&data) {
                     that.set(
                         &k,
-                        AvmString::new(uc.gc_context, v.into_owned()).into(),
+                        AvmString::new(activation.context.gc_context, v.into_owned()).into(),
                         &mut activation,
-                        uc,
                     )?;
                 }
 
@@ -645,7 +638,7 @@ impl<'gc> Loader<'gc> {
             let data = fetch.await;
 
             // Fire the load handler.
-            player.lock().unwrap().update(|avm1, _avm2, uc| {
+            player.lock().unwrap().update(|uc| {
                 let loader = uc.load_manager.get_loader(handle);
                 let that = match loader {
                     Some(&Loader::LoadVars { target_object, .. }) => target_object,
@@ -653,33 +646,28 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotLoadVarsLoader),
                 };
 
-                let mut activation = Activation::from_nothing(
-                    avm1,
+                let mut activation = Activation::from_stub(
+                    uc.reborrow(),
                     ActivationIdentifier::root("[Form Loader]"),
-                    uc.swf.version(),
-                    avm1.global_object_cell(),
-                    uc.gc_context,
-                    *uc.levels.get(&0).unwrap(),
                 );
 
                 match data {
                     Ok(data) => {
                         // Fire the onData method with the loaded string.
-                        let string_data =
-                            AvmString::new(uc.gc_context, String::from_utf8_lossy(&data));
-                        let _ =
-                            that.call_method("onData", &[string_data.into()], &mut activation, uc);
+                        let string_data = AvmString::new(
+                            activation.context.gc_context,
+                            String::from_utf8_lossy(&data),
+                        );
+                        let _ = that.call_method("onData", &[string_data.into()], &mut activation);
                     }
                     Err(_) => {
                         // TODO: Log "Error opening URL" trace similar to the Flash Player?
                         // Simulate 404 HTTP status. This should probably be fired elsewhere
                         // because a failed local load doesn't fire a 404.
-                        let _ =
-                            that.call_method("onHTTPStatus", &[404.into()], &mut activation, uc);
+                        let _ = that.call_method("onHTTPStatus", &[404.into()], &mut activation);
 
                         // Fire the onData method with no data to indicate an unsuccessful load.
-                        let _ =
-                            that.call_method("onData", &[Value::Undefined], &mut activation, uc);
+                        let _ = that.call_method("onData", &[Value::Undefined], &mut activation);
                     }
                 }
 
@@ -752,7 +740,7 @@ impl<'gc> Loader<'gc> {
                 let xmlstring = String::from_utf8(data)?;
 
                 player.lock().expect("Could not lock player!!").update(
-                    |avm1, _avm2, uc| -> Result<(), Error> {
+                    |uc| -> Result<(), Error> {
                         let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::XML {
                                 target_node,
@@ -764,8 +752,8 @@ impl<'gc> Loader<'gc> {
                         };
 
                         let object =
-                            node.script_object(uc.gc_context, Some(avm1.prototypes().xml_node));
-                        avm1.run_stack_frame_for_method(
+                            node.script_object(uc.gc_context, Some(uc.avm1.prototypes().xml_node));
+                        Avm1::run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -774,7 +762,7 @@ impl<'gc> Loader<'gc> {
                             &[200.into()],
                         );
 
-                        avm1.run_stack_frame_for_method(
+                        Avm1::run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -788,7 +776,7 @@ impl<'gc> Loader<'gc> {
                 )?;
             } else {
                 player.lock().expect("Could not lock player!!").update(
-                    |avm1, _avm2, uc| -> Result<(), Error> {
+                    |uc| -> Result<(), Error> {
                         let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::XML {
                                 target_node,
@@ -800,9 +788,9 @@ impl<'gc> Loader<'gc> {
                         };
 
                         let object =
-                            node.script_object(uc.gc_context, Some(avm1.prototypes().xml_node));
+                            node.script_object(uc.gc_context, Some(uc.avm1.prototypes().xml_node));
 
-                        avm1.run_stack_frame_for_method(
+                        Avm1::run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,
@@ -811,7 +799,7 @@ impl<'gc> Loader<'gc> {
                             &[404.into()],
                         );
 
-                        avm1.run_stack_frame_for_method(
+                        Avm1::run_stack_frame_for_method(
                             active_clip,
                             object,
                             NEWEST_PLAYER_VERSION,

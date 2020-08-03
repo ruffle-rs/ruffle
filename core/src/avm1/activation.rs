@@ -5,7 +5,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::f64_to_wrapping_u32;
 use crate::avm1::{
-    fscommand, globals, scope, skip_actions, start_drag, Avm1, AvmString, ScriptObject, Value,
+    fscommand, globals, scope, skip_actions, start_drag, AvmString, ScriptObject, Value,
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
@@ -178,9 +178,7 @@ unsafe impl<'gc> gc_arena::Collect for ActivationIdentifier<'gc> {
 
 #[derive(Collect)]
 #[collect(unsafe_drop)]
-pub struct Activation<'a, 'gc: 'a> {
-    pub avm: &'a mut Avm1<'gc>,
-
+pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// Represents the SWF version of a given function.
     ///
     /// Certain AVM1 operations change behavior based on the version of the SWF
@@ -221,22 +219,24 @@ pub struct Activation<'a, 'gc: 'a> {
     /// This can be changed with `tellTarget` (via `ActionSetTarget` and `ActionSetTarget2`).
     target_clip: Option<DisplayObject<'gc>>,
 
+    pub context: UpdateContext<'a, 'gc, 'gc_context>,
+
     /// An identifier to refer to this activation by, when debugging.
     /// This is often the name of a function (if known), or some static name to indicate where
     /// in the code it is (for example, a with{} block).
     pub id: ActivationIdentifier<'a>,
 }
 
-impl Drop for Activation<'_, '_> {
+impl Drop for Activation<'_, '_, '_> {
     fn drop(&mut self) {
-        avm_debug!(self.avm, "END {}", self.id);
+        avm_debug!(self.context.avm1, "END {}", self.id);
     }
 }
 
-impl<'a, 'gc: 'a> Activation<'a, 'gc> {
+impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     #[allow(clippy::too_many_arguments)]
     pub fn from_action(
-        avm: &'a mut Avm1<'gc>,
+        context: UpdateContext<'a, 'gc, 'gc_context>,
         id: ActivationIdentifier<'a>,
         swf_version: u8,
         scope: GcCell<'gc, Scope<'gc>>,
@@ -245,9 +245,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         this: Object<'gc>,
         arguments: Option<Object<'gc>>,
     ) -> Self {
-        avm_debug!(avm, "START {}", id);
+        avm_debug!(context.avm1, "START {}", id);
         Self {
-            avm,
+            context,
             id,
             swf_version,
             scope,
@@ -265,12 +265,12 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         &'b mut self,
         name: S,
         scope: GcCell<'gc, Scope<'gc>>,
-    ) -> Activation<'b, 'gc> {
+    ) -> Activation<'b, 'gc, 'gc_context> {
         let id = self.id.child(name);
-        avm_debug!(self.avm, "START {}", id);
+        avm_debug!(self.context.avm1, "START {}", id);
         Activation {
-            avm: self.avm,
             id,
+            context: self.context.reborrow(),
             swf_version: self.swf_version,
             scope,
             constant_pool: self.constant_pool,
@@ -287,20 +287,22 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// This is used by tests and by callback methods (`onEnterFrame`) to create a base
     /// activation frame with access to the global context.
     pub fn from_nothing(
-        avm: &'a mut Avm1<'gc>,
+        context: UpdateContext<'a, 'gc, 'gc_context>,
         id: ActivationIdentifier<'a>,
         swf_version: u8,
         globals: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
-        let global_scope = GcCell::allocate(mc, Scope::from_global_object(globals));
-        let child_scope = GcCell::allocate(mc, Scope::new_local_scope(global_scope, mc));
-        let empty_constant_pool = GcCell::allocate(mc, Vec::new());
-        avm_debug!(avm, "START {}", id);
+        let global_scope = GcCell::allocate(context.gc_context, Scope::from_global_object(globals));
+        let child_scope = GcCell::allocate(
+            context.gc_context,
+            Scope::new_local_scope(global_scope, context.gc_context),
+        );
+        let empty_constant_pool = GcCell::allocate(context.gc_context, Vec::new());
+        avm_debug!(context.avm1, "START {}", id);
 
         Self {
-            avm,
+            context,
             id,
             swf_version,
             scope: child_scope,
@@ -313,6 +315,19 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         }
     }
 
+    /// Construct an empty stack frame with no code running on the root move in
+    /// layer 0.
+    pub fn from_stub(
+        context: UpdateContext<'a, 'gc, 'gc_context>,
+        id: ActivationIdentifier<'a>,
+    ) -> Self {
+        let version = context.swf.version();
+        let globals = context.avm1.global_object_cell();
+        let level0 = *context.levels.get(&0).unwrap();
+
+        Self::from_nothing(context, id, version, globals, level0)
+    }
+
     /// Add a stack frame that executes code in timeline scope
     pub fn run_child_frame_for_action<S: Into<Cow<'static, str>>>(
         &mut self,
@@ -320,31 +335,31 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         code: SwfSlice,
-        context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
+        let globals = self.context.avm1.globals;
         let mut parent_activation = Activation::from_nothing(
-            self.avm,
+            self.context.reborrow(),
             self.id.child("[Actions Parent]"),
             swf_version,
-            self.avm.globals,
-            context.gc_context,
+            globals,
             active_clip,
         );
         let clip_obj = active_clip
             .object()
-            .coerce_to_object(&mut parent_activation, context);
+            .coerce_to_object(&mut parent_activation);
         let child_scope = GcCell::allocate(
-            context.gc_context,
+            parent_activation.context.gc_context,
             Scope::new(
                 parent_activation.scope_cell(),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
         );
-        let constant_pool = parent_activation.avm.constant_pool;
+        let constant_pool = parent_activation.context.avm1.constant_pool;
+        let child_name = parent_activation.id.child(name);
         let mut child_activation = Activation::from_action(
-            parent_activation.avm,
-            parent_activation.id.child(name),
+            parent_activation.context.reborrow(),
+            child_name,
             swf_version,
             child_scope,
             constant_pool,
@@ -352,36 +367,35 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             clip_obj,
             None,
         );
-        child_activation.run_actions(context, code)
+        child_activation.run_actions(code)
     }
 
     /// Add a stack frame that executes code in initializer scope.
-    pub fn run_with_child_frame_for_display_object<'c, F, R, S: Into<Cow<'static, str>>>(
+    pub fn run_with_child_frame_for_display_object<F, R, S: Into<Cow<'static, str>>>(
         &mut self,
         name: S,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
-        action_context: &mut UpdateContext<'c, 'gc, '_>,
         function: F,
     ) -> R
     where
-        for<'b> F: FnOnce(&mut Activation<'b, 'gc>, &mut UpdateContext<'c, 'gc, '_>) -> R,
+        for<'c> F: FnOnce(&mut Activation<'c, 'gc, '_>) -> R,
     {
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
             _ => panic!("No script object for display object"),
         };
         let global_scope = GcCell::allocate(
-            action_context.gc_context,
-            Scope::from_global_object(self.avm.globals),
+            self.context.gc_context,
+            Scope::from_global_object(self.context.avm1.globals),
         );
         let child_scope = GcCell::allocate(
-            action_context.gc_context,
+            self.context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
-        let constant_pool = self.avm.constant_pool;
+        let constant_pool = self.context.avm1.constant_pool;
         let mut activation = Activation::from_action(
-            self.avm,
+            self.context.reborrow(),
             self.id.child(name),
             swf_version,
             child_scope,
@@ -390,18 +404,14 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             clip_obj,
             None,
         );
-        function(&mut activation, action_context)
+        function(&mut activation)
     }
 
-    pub fn run_actions(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        code: SwfSlice,
-    ) -> Result<ReturnType<'gc>, Error<'gc>> {
+    pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
         let mut read = Reader::new(code.as_ref(), self.swf_version());
 
         loop {
-            let result = self.do_action(&code, context, &mut read);
+            let result = self.do_action(&code, &mut read);
             match result {
                 Ok(FrameControl::Return(return_type)) => break Ok(return_type),
                 Ok(FrameControl::Continue) => {}
@@ -414,145 +424,142 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     fn do_action(
         &mut self,
         data: &SwfSlice,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
         } else if let Some(action) = reader.read_action()? {
-            avm_debug!(self.avm, "({}) Action: {:?}", self.id.depth(), action);
+            avm_debug!(
+                self.context.avm1,
+                "({}) Action: {:?}",
+                self.id.depth(),
+                action
+            );
 
             match action {
-                Action::Add => self.action_add(context),
-                Action::Add2 => self.action_add_2(context),
-                Action::And => self.action_and(context),
-                Action::AsciiToChar => self.action_ascii_to_char(context),
-                Action::BitAnd => self.action_bit_and(context),
-                Action::BitLShift => self.action_bit_lshift(context),
-                Action::BitOr => self.action_bit_or(context),
-                Action::BitRShift => self.action_bit_rshift(context),
-                Action::BitURShift => self.action_bit_urshift(context),
-                Action::BitXor => self.action_bit_xor(context),
-                Action::Call => self.action_call(context),
-                Action::CallFunction => self.action_call_function(context),
-                Action::CallMethod => self.action_call_method(context),
-                Action::CastOp => self.action_cast_op(context),
-                Action::CharToAscii => self.action_char_to_ascii(context),
-                Action::CloneSprite => self.action_clone_sprite(context),
+                Action::Add => self.action_add(),
+                Action::Add2 => self.action_add_2(),
+                Action::And => self.action_and(),
+                Action::AsciiToChar => self.action_ascii_to_char(),
+                Action::BitAnd => self.action_bit_and(),
+                Action::BitLShift => self.action_bit_lshift(),
+                Action::BitOr => self.action_bit_or(),
+                Action::BitRShift => self.action_bit_rshift(),
+                Action::BitURShift => self.action_bit_urshift(),
+                Action::BitXor => self.action_bit_xor(),
+                Action::Call => self.action_call(),
+                Action::CallFunction => self.action_call_function(),
+                Action::CallMethod => self.action_call_method(),
+                Action::CastOp => self.action_cast_op(),
+                Action::CharToAscii => self.action_char_to_ascii(),
+                Action::CloneSprite => self.action_clone_sprite(),
                 Action::ConstantPool(constant_pool) => {
-                    self.action_constant_pool(context, &constant_pool[..])
+                    self.action_constant_pool(&constant_pool[..])
                 }
-                Action::Decrement => self.action_decrement(context),
+                Action::Decrement => self.action_decrement(),
                 Action::DefineFunction {
                     name,
                     params,
                     actions,
                 } => self.action_define_function(
-                    context,
                     &name,
                     &params[..],
                     data.to_subslice(actions).unwrap(),
                 ),
-                Action::DefineFunction2(func) => {
-                    self.action_define_function_2(context, &func, &data)
-                }
-                Action::DefineLocal => self.action_define_local(context),
-                Action::DefineLocal2 => self.action_define_local_2(context),
-                Action::Delete => self.action_delete(context),
-                Action::Delete2 => self.action_delete_2(context),
-                Action::Divide => self.action_divide(context),
-                Action::EndDrag => self.action_end_drag(context),
-                Action::Enumerate => self.action_enumerate(context),
-                Action::Enumerate2 => self.action_enumerate_2(context),
-                Action::Equals => self.action_equals(context),
-                Action::Equals2 => self.action_equals_2(context),
-                Action::Extends => self.action_extends(context),
-                Action::GetMember => self.action_get_member(context),
-                Action::GetProperty => self.action_get_property(context),
-                Action::GetTime => self.action_get_time(context),
-                Action::GetVariable => self.action_get_variable(context),
-                Action::GetUrl { url, target } => self.action_get_url(context, &url, &target),
+                Action::DefineFunction2(func) => self.action_define_function_2(&func, &data),
+                Action::DefineLocal => self.action_define_local(),
+                Action::DefineLocal2 => self.action_define_local_2(),
+                Action::Delete => self.action_delete(),
+                Action::Delete2 => self.action_delete_2(),
+                Action::Divide => self.action_divide(),
+                Action::EndDrag => self.action_end_drag(),
+                Action::Enumerate => self.action_enumerate(),
+                Action::Enumerate2 => self.action_enumerate_2(),
+                Action::Equals => self.action_equals(),
+                Action::Equals2 => self.action_equals_2(),
+                Action::Extends => self.action_extends(),
+                Action::GetMember => self.action_get_member(),
+                Action::GetProperty => self.action_get_property(),
+                Action::GetTime => self.action_get_time(),
+                Action::GetVariable => self.action_get_variable(),
+                Action::GetUrl { url, target } => self.action_get_url(&url, &target),
                 Action::GetUrl2 {
                     send_vars_method,
                     is_target_sprite,
                     is_load_vars,
-                } => {
-                    self.action_get_url_2(context, send_vars_method, is_target_sprite, is_load_vars)
-                }
-                Action::GotoFrame(frame) => self.action_goto_frame(context, frame),
+                } => self.action_get_url_2(send_vars_method, is_target_sprite, is_load_vars),
+                Action::GotoFrame(frame) => self.action_goto_frame(frame),
                 Action::GotoFrame2 {
                     set_playing,
                     scene_offset,
-                } => self.action_goto_frame_2(context, set_playing, scene_offset),
-                Action::Greater => self.action_greater(context),
-                Action::GotoLabel(label) => self.action_goto_label(context, &label),
-                Action::If { offset } => self.action_if(context, offset, reader),
-                Action::Increment => self.action_increment(context),
-                Action::InitArray => self.action_init_array(context),
-                Action::InitObject => self.action_init_object(context),
-                Action::ImplementsOp => self.action_implements_op(context),
-                Action::InstanceOf => self.action_instance_of(context),
-                Action::Jump { offset } => self.action_jump(context, offset, reader),
-                Action::Less => self.action_less(context),
-                Action::Less2 => self.action_less_2(context),
-                Action::MBAsciiToChar => self.action_mb_ascii_to_char(context),
-                Action::MBCharToAscii => self.action_mb_char_to_ascii(context),
-                Action::MBStringLength => self.action_mb_string_length(context),
-                Action::MBStringExtract => self.action_mb_string_extract(context),
-                Action::Modulo => self.action_modulo(context),
-                Action::Multiply => self.action_multiply(context),
-                Action::NextFrame => self.action_next_frame(context),
-                Action::NewMethod => self.action_new_method(context),
-                Action::NewObject => self.action_new_object(context),
-                Action::Not => self.action_not(context),
-                Action::Or => self.action_or(context),
-                Action::Play => self.action_play(context),
-                Action::Pop => self.action_pop(context),
-                Action::PreviousFrame => self.action_prev_frame(context),
-                Action::Push(values) => self.action_push(context, &values[..]),
-                Action::PushDuplicate => self.action_push_duplicate(context),
-                Action::RandomNumber => self.action_random_number(context),
-                Action::RemoveSprite => self.action_remove_sprite(context),
+                } => self.action_goto_frame_2(set_playing, scene_offset),
+                Action::Greater => self.action_greater(),
+                Action::GotoLabel(label) => self.action_goto_label(&label),
+                Action::If { offset } => self.action_if(offset, reader),
+                Action::Increment => self.action_increment(),
+                Action::InitArray => self.action_init_array(),
+                Action::InitObject => self.action_init_object(),
+                Action::ImplementsOp => self.action_implements_op(),
+                Action::InstanceOf => self.action_instance_of(),
+                Action::Jump { offset } => self.action_jump(offset, reader),
+                Action::Less => self.action_less(),
+                Action::Less2 => self.action_less_2(),
+                Action::MBAsciiToChar => self.action_mb_ascii_to_char(),
+                Action::MBCharToAscii => self.action_mb_char_to_ascii(),
+                Action::MBStringLength => self.action_mb_string_length(),
+                Action::MBStringExtract => self.action_mb_string_extract(),
+                Action::Modulo => self.action_modulo(),
+                Action::Multiply => self.action_multiply(),
+                Action::NextFrame => self.action_next_frame(),
+                Action::NewMethod => self.action_new_method(),
+                Action::NewObject => self.action_new_object(),
+                Action::Not => self.action_not(),
+                Action::Or => self.action_or(),
+                Action::Play => self.action_play(),
+                Action::Pop => self.action_pop(),
+                Action::PreviousFrame => self.action_prev_frame(),
+                Action::Push(values) => self.action_push(&values[..]),
+                Action::PushDuplicate => self.action_push_duplicate(),
+                Action::RandomNumber => self.action_random_number(),
+                Action::RemoveSprite => self.action_remove_sprite(),
                 Action::Return => self.action_return(),
-                Action::SetMember => self.action_set_member(context),
-                Action::SetProperty => self.action_set_property(context),
-                Action::SetTarget(target) => self.action_set_target(context, &target),
-                Action::SetTarget2 => self.action_set_target2(context),
-                Action::SetVariable => self.action_set_variable(context),
-                Action::StackSwap => self.action_stack_swap(context),
-                Action::StartDrag => self.action_start_drag(context),
-                Action::Stop => self.action_stop(context),
-                Action::StopSounds => self.action_stop_sounds(context),
-                Action::StoreRegister(register) => self.action_store_register(context, register),
-                Action::StrictEquals => self.action_strict_equals(context),
-                Action::StringAdd => self.action_string_add(context),
-                Action::StringEquals => self.action_string_equals(context),
-                Action::StringExtract => self.action_string_extract(context),
-                Action::StringGreater => self.action_string_greater(context),
-                Action::StringLength => self.action_string_length(context),
-                Action::StringLess => self.action_string_less(context),
-                Action::Subtract => self.action_subtract(context),
-                Action::TargetPath => self.action_target_path(context),
-                Action::ToggleQuality => self.toggle_quality(context),
-                Action::ToInteger => self.action_to_integer(context),
-                Action::ToNumber => self.action_to_number(context),
-                Action::ToString => self.action_to_string(context),
-                Action::Trace => self.action_trace(context),
-                Action::TypeOf => self.action_type_of(context),
+                Action::SetMember => self.action_set_member(),
+                Action::SetProperty => self.action_set_property(),
+                Action::SetTarget(target) => self.action_set_target(&target),
+                Action::SetTarget2 => self.action_set_target2(),
+                Action::SetVariable => self.action_set_variable(),
+                Action::StackSwap => self.action_stack_swap(),
+                Action::StartDrag => self.action_start_drag(),
+                Action::Stop => self.action_stop(),
+                Action::StopSounds => self.action_stop_sounds(),
+                Action::StoreRegister(register) => self.action_store_register(register),
+                Action::StrictEquals => self.action_strict_equals(),
+                Action::StringAdd => self.action_string_add(),
+                Action::StringEquals => self.action_string_equals(),
+                Action::StringExtract => self.action_string_extract(),
+                Action::StringGreater => self.action_string_greater(),
+                Action::StringLength => self.action_string_length(),
+                Action::StringLess => self.action_string_less(),
+                Action::Subtract => self.action_subtract(),
+                Action::TargetPath => self.action_target_path(),
+                Action::ToggleQuality => self.toggle_quality(),
+                Action::ToInteger => self.action_to_integer(),
+                Action::ToNumber => self.action_to_number(),
+                Action::ToString => self.action_to_string(),
+                Action::Trace => self.action_trace(),
+                Action::TypeOf => self.action_type_of(),
                 Action::WaitForFrame {
                     frame,
                     num_actions_to_skip,
-                } => self.action_wait_for_frame(context, frame, num_actions_to_skip, reader),
+                } => self.action_wait_for_frame(frame, num_actions_to_skip, reader),
                 Action::WaitForFrame2 {
                     num_actions_to_skip,
-                } => self.action_wait_for_frame_2(context, num_actions_to_skip, reader),
-                Action::With { actions } => {
-                    self.action_with(context, data.to_subslice(actions).unwrap())
-                }
-                Action::Throw => self.action_throw(context),
-                Action::Try(try_block) => self.action_try(context, &try_block, &data),
-                _ => self.unknown_op(context, action),
+                } => self.action_wait_for_frame_2(num_actions_to_skip, reader),
+                Action::With { actions } => self.action_with(data.to_subslice(actions).unwrap()),
+                Action::Throw => self.action_throw(),
+                Action::Try(try_block) => self.action_try(&try_block, &data),
+                _ => self.unknown_op(action),
             }
         } else {
             //The explicit end opcode was encountered so return here
@@ -562,99 +569,87 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn unknown_op(
         &mut self,
-        _context: &mut UpdateContext,
         action: swf::avm1::types::Action,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         avm_error!(self, "Unknown AVM1 opcode: {:?}", action);
         Ok(FrameControl::Continue)
     }
 
-    fn action_add(
-        &mut self,
-        _context: &mut UpdateContext,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop();
-        let b = self.avm.pop();
-        self.avm.push(b.into_number_v1() + a.into_number_v1());
+    fn action_add(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
+        self.context
+            .avm1
+            .push(b.into_number_v1() + a.into_number_v1());
         Ok(FrameControl::Continue)
     }
 
-    fn action_add_2(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_add_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // ECMA-262 s. 11.6.1
-        let a = self.avm.pop();
-        let b = self.avm.pop();
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
 
         // TODO(Herschel):
         if let Value::String(a) = a {
-            let mut s = b.coerce_to_string(self, context)?.to_string();
+            let mut s = b.coerce_to_string(self)?.to_string();
             s.push_str(&a);
-            self.avm.push(AvmString::new(context.gc_context, s));
+            self.context
+                .avm1
+                .push(AvmString::new(self.context.gc_context, s));
         } else if let Value::String(b) = b {
             let mut b = b.to_string();
-            b.push_str(&a.coerce_to_string(self, context)?);
-            self.avm.push(AvmString::new(context.gc_context, b));
+            b.push_str(&a.coerce_to_string(self)?);
+            self.context
+                .avm1
+                .push(AvmString::new(self.context.gc_context, b));
         } else {
-            let result = b.coerce_to_f64(self, context)? + a.coerce_to_f64(self, context)?;
-            self.avm.push(result);
+            let result = b.coerce_to_f64(self)? + a.coerce_to_f64(self)?;
+            self.context.avm1.push(result);
         }
         Ok(FrameControl::Continue)
     }
 
-    fn action_and(
-        &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_and(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 logical and
-        let a = self.avm.pop();
-        let b = self.avm.pop();
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
         let version = self.current_swf_version();
         let result = b.as_bool(version) && a.as_bool(version);
-        self.avm
+        self.context
+            .avm1
             .push(Value::from_bool(result, self.current_swf_version()));
         Ok(FrameControl::Continue)
     }
 
-    fn action_ascii_to_char(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_ascii_to_char(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
-        let val = (self.avm.pop().coerce_to_f64(self, context)? as u8) as char;
-        self.avm
-            .push(AvmString::new(context.gc_context, val.to_string()));
+        let val = (self.context.avm1.pop().coerce_to_f64(self)? as u8) as char;
+        self.context
+            .avm1
+            .push(AvmString::new(self.context.gc_context, val.to_string()));
         Ok(FrameControl::Continue)
     }
 
-    fn action_char_to_ascii(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_char_to_ascii(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
-        let val = self.avm.pop();
-        let string = val.coerce_to_string(self, context)?;
+        let val = self.context.avm1.pop();
+        let string = val.coerce_to_string(self)?;
         let result = string.bytes().next().unwrap_or(0);
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_clone_sprite(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let depth = self.avm.pop();
-        let target = self.avm.pop();
-        let source = self.avm.pop();
+    fn action_clone_sprite(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let depth = self.context.avm1.pop();
+        let target = self.context.avm1.pop();
+        let source = self.context.avm1.pop();
         let start_clip = self.target_clip_or_root();
-        let source_clip = self.resolve_target_display_object(context, start_clip, source)?;
+        let source_clip = self.resolve_target_display_object(start_clip, source)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::duplicate_movie_clip_with_bias(
                 movie_clip,
                 self,
-                context,
                 &[target, depth],
                 0,
             );
@@ -665,78 +660,57 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_bit_and(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_u32(self, context)?;
-        let b = self.avm.pop().coerce_to_u32(self, context)?;
+    fn action_bit_and(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop().coerce_to_u32(self)?;
+        let b = self.context.avm1.pop().coerce_to_u32(self)?;
         let result = a & b;
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_bit_lshift(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_i32(self, context)? & 0b11111; // Only 5 bits used for shift count
-        let b = self.avm.pop().coerce_to_i32(self, context)?;
+    fn action_bit_lshift(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop().coerce_to_i32(self)? & 0b11111; // Only 5 bits used for shift count
+        let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b << a;
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_bit_or(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_u32(self, context)?;
-        let b = self.avm.pop().coerce_to_u32(self, context)?;
+    fn action_bit_or(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop().coerce_to_u32(self)?;
+        let b = self.context.avm1.pop().coerce_to_u32(self)?;
         let result = a | b;
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_bit_rshift(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_i32(self, context)? & 0b11111; // Only 5 bits used for shift count
-        let b = self.avm.pop().coerce_to_i32(self, context)?;
+    fn action_bit_rshift(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop().coerce_to_i32(self)? & 0b11111; // Only 5 bits used for shift count
+        let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b >> a;
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_bit_urshift(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_u32(self, context)? & 0b11111; // Only 5 bits used for shift count
-        let b = self.avm.pop().coerce_to_u32(self, context)?;
+    fn action_bit_urshift(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop().coerce_to_u32(self)? & 0b11111; // Only 5 bits used for shift count
+        let b = self.context.avm1.pop().coerce_to_u32(self)?;
         let result = b >> a;
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_bit_xor(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_u32(self, context)?;
-        let b = self.avm.pop().coerce_to_u32(self, context)?;
+    fn action_bit_xor(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop().coerce_to_u32(self)?;
+        let b = self.context.avm1.pop().coerce_to_u32(self)?;
         let result = b ^ a;
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_call(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_call(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Runs any actions on the given frame.
-        let arg = self.avm.pop();
+        let arg = self.context.avm1.pop();
         let target = self.target_clip_or_root();
 
         // The parameter can be a frame # or a path to a movie clip with a frame number.
@@ -748,8 +722,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             }
         } else {
             // An optional path to a movieclip and a frame #/label, such as "/clip:framelabel".
-            let frame_path = arg.coerce_to_string(self, context)?;
-            if let Some((clip, frame)) = self.resolve_variable_path(context, target, &frame_path)? {
+            let frame_path = arg.coerce_to_string(self)?;
+            if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)? {
                 if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
                         // First try to parse as a frame number.
@@ -764,13 +738,12 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
         if let Some((clip, frame)) = call_frame {
             if frame <= u32::from(std::u16::MAX) {
-                for action in clip.actions_on_frame(context, frame as u16) {
+                for action in clip.actions_on_frame(&mut self.context, frame as u16) {
                     let _ = self.run_child_frame_for_action(
                         "[Frame Call]",
                         clip.into(),
                         self.current_swf_version(),
                         action,
-                        context,
                     )?;
                 }
             }
@@ -781,63 +754,51 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_call_function(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let fn_name_value = self.avm.pop();
-        let fn_name = fn_name_value.coerce_to_string(self, context)?;
+    fn action_call_function(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let fn_name_value = self.context.avm1.pop();
+        let fn_name = fn_name_value.coerce_to_string(self)?;
         let mut args = Vec::new();
-        let num_args = self.avm.pop().coerce_to_f64(self, context)? as i64; // TODO(Herschel): max arg count?
+        let num_args = self.context.avm1.pop().coerce_to_f64(self)? as i64; // TODO(Herschel): max arg count?
         for _ in 0..num_args {
-            args.push(self.avm.pop());
+            args.push(self.context.avm1.pop());
         }
 
-        let target_fn = self.get_variable(context, &fn_name)?;
+        let target_fn = self.get_variable(&fn_name)?;
 
-        let this = self
-            .target_clip_or_root()
-            .object()
-            .coerce_to_object(self, context);
-        let result = target_fn.call(&fn_name, self, context, this, None, &args)?;
-        self.avm.push(result);
+        let this = self.target_clip_or_root().object().coerce_to_object(self);
+        let result = target_fn.call(&fn_name, self, this, None, &args)?;
+        self.context.avm1.push(result);
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_call_method(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let method_name = self.avm.pop();
-        let object_val = self.avm.pop();
-        let object = value_object::ValueObject::boxed(self, context, object_val);
-        let num_args = self.avm.pop().coerce_to_f64(self, context)? as i64; // TODO(Herschel): max arg count?
+    fn action_call_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let method_name = self.context.avm1.pop();
+        let object_val = self.context.avm1.pop();
+        let object = value_object::ValueObject::boxed(self, object_val);
+        let num_args = self.context.avm1.pop().coerce_to_f64(self)? as i64; // TODO(Herschel): max arg count?
         let mut args = Vec::new();
         for _ in 0..num_args {
-            args.push(self.avm.pop());
+            args.push(self.context.avm1.pop());
         }
 
         match method_name {
             Value::Undefined | Value::Null => {
-                let this = self
-                    .target_clip_or_root()
-                    .object()
-                    .coerce_to_object(self, context);
-                let result = object.call("[Anonymous]", self, context, this, None, &args)?;
-                self.avm.push(result);
+                let this = self.target_clip_or_root().object().coerce_to_object(self);
+                let result = object.call("[Anonymous]", self, this, None, &args)?;
+                self.context.avm1.push(result);
             }
             Value::String(name) => {
                 if name.is_empty() {
-                    let result = object.call("[Anonymous]", self, context, object, None, &args)?;
-                    self.avm.push(result);
+                    let result = object.call("[Anonymous]", self, object, None, &args)?;
+                    self.context.avm1.push(result);
                 } else {
-                    let result = object.call_method(&name, &args, self, context)?;
-                    self.avm.push(result);
+                    let result = object.call_method(&name, &args, self)?;
+                    self.context.avm1.push(result);
                 }
             }
             _ => {
-                self.avm.push(Value::Undefined);
+                self.context.avm1.push(Value::Undefined);
                 avm_warn!(
                     self,
                     "Invalid method name, expected string but found {:?}",
@@ -849,60 +810,50 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_cast_op(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let obj = self.avm.pop();
-        let constr = self.avm.pop().coerce_to_object(self, context);
+    fn action_cast_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let obj = self.context.avm1.pop();
+        let constr = self.context.avm1.pop().coerce_to_object(self);
 
         let is_instance_of = if let Value::Object(obj) = obj {
-            let prototype = constr
-                .get("prototype", self, context)?
-                .coerce_to_object(self, context);
-            obj.is_instance_of(self, context, constr, prototype)?
+            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            obj.is_instance_of(self, constr, prototype)?
         } else {
             false
         };
 
         let ret = if is_instance_of { obj } else { Value::Null };
-        self.avm.push(ret);
+        self.context.avm1.push(ret);
 
         Ok(FrameControl::Continue)
     }
 
     fn action_constant_pool(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         constant_pool: &[&str],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.avm.constant_pool = GcCell::allocate(
-            context.gc_context,
+        self.context.avm1.constant_pool = GcCell::allocate(
+            self.context.gc_context,
             constant_pool.iter().map(|s| (*s).to_string()).collect(),
         );
-        self.set_constant_pool(self.avm.constant_pool);
+        self.set_constant_pool(self.context.avm1.constant_pool);
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_decrement(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_f64(self, context)?;
-        self.avm.push(a - 1.0);
+    fn action_decrement(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop().coerce_to_f64(self)?;
+        self.context.avm1.push(a - 1.0);
         Ok(FrameControl::Continue)
     }
 
     fn action_define_function(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         name: &str,
         params: &[&str],
         actions: SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let swf_version = self.swf_version();
-        let scope = Scope::new_closure_scope(self.scope_cell(), context.gc_context);
+        let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
         let constant_pool = self.constant_pool();
         let func = Avm1Function::from_df1(
             swf_version,
@@ -913,18 +864,21 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             constant_pool,
             self.target_clip_or_root(),
         );
-        let prototype =
-            ScriptObject::object(context.gc_context, Some(self.avm.prototypes.object)).into();
+        let prototype = ScriptObject::object(
+            self.context.gc_context,
+            Some(self.context.avm1.prototypes.object),
+        )
+        .into();
         let func_obj = FunctionObject::function(
-            context.gc_context,
-            Gc::allocate(context.gc_context, func),
-            Some(self.avm.prototypes.function),
+            self.context.gc_context,
+            Gc::allocate(self.context.gc_context, func),
+            Some(self.context.avm1.prototypes.function),
             prototype,
         );
         if name == "" {
-            self.avm.push(func_obj);
+            self.context.avm1.push(func_obj);
         } else {
-            self.define(name, func_obj, context.gc_context);
+            self.define(name, func_obj);
         }
 
         Ok(FrameControl::Continue)
@@ -932,13 +886,12 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn action_define_function_2(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         action_func: &Function,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let swf_version = self.swf_version();
         let func_data = parent_data.to_subslice(action_func.actions).unwrap();
-        let scope = Scope::new_closure_scope(self.scope_cell(), context.gc_context);
+        let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
         let constant_pool = self.constant_pool();
         let func = Avm1Function::from_df2(
             swf_version,
@@ -948,133 +901,115 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             constant_pool,
             self.base_clip(),
         );
-        let prototype =
-            ScriptObject::object(context.gc_context, Some(self.avm.prototypes.object)).into();
+        let prototype = ScriptObject::object(
+            self.context.gc_context,
+            Some(self.context.avm1.prototypes.object),
+        )
+        .into();
         let func_obj = FunctionObject::function(
-            context.gc_context,
-            Gc::allocate(context.gc_context, func),
-            Some(self.avm.prototypes.function),
+            self.context.gc_context,
+            Gc::allocate(self.context.gc_context, func),
+            Some(self.context.avm1.prototypes.function),
             prototype,
         );
         if action_func.name == "" {
-            self.avm.push(func_obj);
+            self.context.avm1.push(func_obj);
         } else {
-            self.define(action_func.name, func_obj, context.gc_context);
+            self.define(action_func.name, func_obj);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_define_local(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_define_local(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // If the property does not exist on the local object's prototype chain, it is created on the local object.
         // Otherwise, the property is set (including calling virtual setters).
-        let value = self.avm.pop();
-        let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self, context)?;
+        let value = self.context.avm1.pop();
+        let name_val = self.context.avm1.pop();
+        let name = name_val.coerce_to_string(self)?;
         let scope = self.scope_cell();
         scope
-            .write(context.gc_context)
+            .write(self.context.gc_context)
             .locals()
-            .set(&name, value, self, context)?;
+            .set(&name, value, self)?;
         Ok(FrameControl::Continue)
     }
 
-    fn action_define_local_2(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_define_local_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // If the property does not exist on the local object's prototype chain, it is created on the local object.
         // Otherwise, the property is unchanged.
-        let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self, context)?;
+        let name_val = self.context.avm1.pop();
+        let name = name_val.coerce_to_string(self)?;
         let scope = self.scope_cell();
-        if !scope.read().locals().has_property(self, context, &name) {
+        if !scope.read().locals().has_property(self, &name) {
             scope
-                .write(context.gc_context)
+                .write(self.context.gc_context)
                 .locals()
-                .set(&name, Value::Undefined, self, context)?;
+                .set(&name, Value::Undefined, self)?;
         }
         Ok(FrameControl::Continue)
     }
 
-    fn action_delete(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self, context)?;
-        let object = self.avm.pop();
+    fn action_delete(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let name_val = self.context.avm1.pop();
+        let name = name_val.coerce_to_string(self)?;
+        let object = self.context.avm1.pop();
 
         if let Value::Object(object) = object {
-            let success = object.delete(self, context.gc_context, &name);
-            self.avm.push(success);
+            let success = object.delete(self, &name);
+            self.context.avm1.push(success);
         } else {
             avm_warn!(self, "Cannot delete property {} from {:?}", name, object);
-            self.avm.push(false);
+            self.context.avm1.push(false);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_delete_2(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self, context)?;
+    fn action_delete_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let name_val = self.context.avm1.pop();
+        let name = name_val.coerce_to_string(self)?;
 
         //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         //a boolean based on if the delete actually deleted something.
-        let did_exist = self.is_defined(context, &name);
+        let did_exist = self.is_defined(&name);
 
-        self.scope_cell()
-            .read()
-            .delete(self, context, &name, context.gc_context);
-        self.avm.push(did_exist);
+        self.scope_cell().read().delete(self, &name);
+        self.context.avm1.push(did_exist);
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_divide(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_divide(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 divide
-        let a = self.avm.pop().coerce_to_f64(self, context)?;
-        let b = self.avm.pop().coerce_to_f64(self, context)?;
+        let a = self.context.avm1.pop().coerce_to_f64(self)?;
+        let b = self.context.avm1.pop().coerce_to_f64(self)?;
 
         // TODO(Herschel): SWF19: "If A is zero, the result NaN, Infinity, or -Infinity is pushed to the in SWF 5 and later.
         // In SWF 4, the result is the string #ERROR#.""
         // Seems to be untrue for SWF v4, I get 1.#INF.
 
-        self.avm.push(b / a);
+        self.context.avm1.push(b / a);
         Ok(FrameControl::Continue)
     }
 
-    fn action_end_drag(
-        &mut self,
-        context: &mut UpdateContext,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        *context.drag_object = None;
+    fn action_end_drag(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        *self.context.drag_object = None;
         Ok(FrameControl::Continue)
     }
 
-    fn action_enumerate(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let name_value = self.avm.pop();
-        let name = name_value.coerce_to_string(self, context)?;
-        self.avm.push(Value::Null); // Sentinel that indicates end of enumeration
-        let object = self.resolve(&name, context)?;
+    fn action_enumerate(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let name_value = self.context.avm1.pop();
+        let name = name_value.coerce_to_string(self)?;
+        self.context.avm1.push(Value::Null); // Sentinel that indicates end of enumeration
+        let object = self.resolve(&name)?;
 
         match object {
             Value::Object(ob) => {
                 for k in ob.get_keys(self).into_iter().rev() {
-                    self.avm.push(AvmString::new(context.gc_context, k));
+                    self.context
+                        .avm1
+                        .push(AvmString::new(self.context.gc_context, k));
                 }
             }
             _ => avm_error!(self, "Cannot enumerate properties of {}", name),
@@ -1083,17 +1018,16 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_enumerate_2(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value = self.avm.pop();
+    fn action_enumerate_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let value = self.context.avm1.pop();
 
-        self.avm.push(Value::Null); // Sentinel that indicates end of enumeration
+        self.context.avm1.push(Value::Null); // Sentinel that indicates end of enumeration
 
         if let Value::Object(object) = value {
             for k in object.get_keys(self).into_iter().rev() {
-                self.avm.push(AvmString::new(context.gc_context, k));
+                self.context
+                    .avm1
+                    .push(AvmString::new(self.context.gc_context, k));
             }
         } else {
             avm_warn!(self, "Cannot enumerate {:?}", value);
@@ -1103,96 +1037,80 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_equals(
-        &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_equals(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 equality
-        let a = self.avm.pop();
-        let b = self.avm.pop();
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
         let result = b.into_number_v1() == a.into_number_v1();
-        self.avm
+        self.context
+            .avm1
             .push(Value::from_bool(result, self.current_swf_version()));
         Ok(FrameControl::Continue)
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_equals_2(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_equals_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Version >=5 equality
-        let a = self.avm.pop();
-        let b = self.avm.pop();
-        let result = b.abstract_eq(a, self, context, false)?;
-        self.avm.push(result);
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
+        let result = b.abstract_eq(a, self, false)?;
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_extends(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let superclass = self.avm.pop().coerce_to_object(self, context);
-        let subclass = self.avm.pop().coerce_to_object(self, context);
+    fn action_extends(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let superclass = self.context.avm1.pop().coerce_to_object(self);
+        let subclass = self.context.avm1.pop().coerce_to_object(self);
 
         //TODO: What happens if we try to extend an object which has no `prototype`?
         //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
-        let super_proto = superclass
-            .get("prototype", self, context)?
-            .coerce_to_object(self, context);
+        let super_proto = superclass.get("prototype", self)?.coerce_to_object(self);
 
         let mut sub_prototype: Object<'gc> =
-            ScriptObject::object(context.gc_context, Some(super_proto)).into();
+            ScriptObject::object(self.context.gc_context, Some(super_proto)).into();
 
-        sub_prototype.set("constructor", superclass.into(), self, context)?;
+        sub_prototype.set("constructor", superclass.into(), self)?;
         sub_prototype.set_attributes(
-            context.gc_context,
+            self.context.gc_context,
             Some("constructor"),
             Attribute::DontEnum.into(),
             EnumSet::empty(),
         );
 
-        sub_prototype.set("__constructor__", superclass.into(), self, context)?;
+        sub_prototype.set("__constructor__", superclass.into(), self)?;
         sub_prototype.set_attributes(
-            context.gc_context,
+            self.context.gc_context,
             Some("__constructor__"),
             Attribute::DontEnum.into(),
             EnumSet::empty(),
         );
 
-        subclass.set("prototype", sub_prototype.into(), self, context)?;
+        subclass.set("prototype", sub_prototype.into(), self)?;
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_get_member(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self, context)?;
-        let object_val = self.avm.pop();
-        let object = value_object::ValueObject::boxed(self, context, object_val);
+    fn action_get_member(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let name_val = self.context.avm1.pop();
+        let name = name_val.coerce_to_string(self)?;
+        let object_val = self.context.avm1.pop();
+        let object = value_object::ValueObject::boxed(self, object_val);
 
-        let result = object.get(&name, self, context)?;
-        self.avm.push(result);
+        let result = object.get(&name, self)?;
+        self.context.avm1.push(result);
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_get_property(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let prop_index = self.avm.pop().into_number_v1() as usize;
-        let path = self.avm.pop();
+    fn action_get_property(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let prop_index = self.context.avm1.pop().into_number_v1() as usize;
+        let path = self.context.avm1.pop();
         let ret = if let Some(target) = self.target_clip() {
-            if let Some(clip) = self.resolve_target_display_object(context, target, path)? {
-                let display_properties = self.avm.display_properties;
-                let props = display_properties.write(context.gc_context);
+            if let Some(clip) = self.resolve_target_display_object(target, path)? {
+                let display_properties = self.context.avm1.display_properties;
+                let props = display_properties.write(self.context.gc_context);
                 if let Some(property) = props.get_by_index(prop_index) {
-                    property.get(self, context, clip)?
+                    property.get(self, clip)?
                 } else {
                     avm_warn!(self, "GetProperty: Invalid property index {}", prop_index);
                     Value::Undefined
@@ -1205,53 +1123,42 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             avm_warn!(self, "GetProperty: Invalid base clip");
             Value::Undefined
         };
-        self.avm.push(ret);
+        self.context.avm1.push(ret);
         Ok(FrameControl::Continue)
     }
 
-    fn action_get_time(
-        &mut self,
-        context: &mut UpdateContext,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let time = context.navigator.time_since_launch().as_millis() as u32;
-        self.avm.push(time);
+    fn action_get_time(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let time = self.context.navigator.time_since_launch().as_millis() as u32;
+        self.context.avm1.push(time);
         Ok(FrameControl::Continue)
     }
 
-    fn action_get_variable(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let var_path = self.avm.pop();
-        let path = var_path.coerce_to_string(self, context)?;
+    fn action_get_variable(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let var_path = self.context.avm1.pop();
+        let path = var_path.coerce_to_string(self)?;
 
-        let value = self.get_variable(context, &path)?;
-        self.avm.push(value);
+        let value = self.get_variable(&path)?;
+        self.context.avm1.push(value);
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_get_url(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        url: &str,
-        target: &str,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_get_url(&mut self, url: &str, target: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
         if target.starts_with("_level") && target.len() > 6 {
             let url = url.to_string();
             match target[6..].parse::<u32>() {
                 Ok(level_id) => {
-                    let fetch = context.navigator.fetch(&url, RequestOptions::get());
-                    let level = self.resolve_level(level_id, context);
+                    let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
+                    let level = self.resolve_level(level_id);
 
-                    let process = context.load_manager.load_movie_into_clip(
-                        context.player.clone().unwrap(),
+                    let process = self.context.load_manager.load_movie_into_clip(
+                        self.context.player.clone().unwrap(),
                         level,
                         fetch,
                         url,
                         None,
                     );
-                    context.navigator.spawn_future(process);
+                    self.context.navigator.spawn_future(process);
                 }
                 Err(e) => avm_warn!(
                     self,
@@ -1265,9 +1172,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         }
 
         if let Some(fscommand) = fscommand::parse(url) {
-            fscommand::handle(fscommand, self, context)?;
+            fscommand::handle(fscommand, self)?;
         } else {
-            context
+            self.context
                 .navigator
                 .navigate_to_url(url.to_owned(), Some(target.to_owned()), None);
         }
@@ -1277,29 +1184,28 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn action_get_url_2(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         swf_method: swf::avm1::types::SendVarsMethod,
         is_target_sprite: bool,
         is_load_vars: bool,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO: Support `LoadVariablesFlag`, `LoadTargetFlag`
         // TODO: What happens if there's only one string?
-        let target = self.avm.pop();
-        let url_val = self.avm.pop();
-        let url = url_val.coerce_to_string(self, context)?;
+        let target = self.context.avm1.pop();
+        let url_val = self.context.avm1.pop();
+        let url = url_val.coerce_to_string(self)?;
 
         if let Some(fscommand) = fscommand::parse(&url) {
-            fscommand::handle(fscommand, self, context)?;
+            fscommand::handle(fscommand, self)?;
             return Ok(FrameControl::Continue);
         }
 
-        let window_target = target.coerce_to_string(self, context)?;
+        let window_target = target.coerce_to_string(self)?;
         let clip_target: Option<DisplayObject<'gc>> = if is_target_sprite {
             if let Value::Object(target) = target {
                 target.as_display_object()
             } else {
                 let start = self.target_clip_or_root();
-                self.resolve_target_display_object(context, start, target.clone())?
+                self.resolve_target_display_object(start, target.clone())?
             }
         } else {
             Some(self.target_clip_or_root())
@@ -1311,39 +1217,37 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     .as_movie_clip()
                     .unwrap()
                     .object()
-                    .coerce_to_object(self, context);
+                    .coerce_to_object(self);
                 let (url, opts) = self.locals_into_request_options(
-                    context,
                     Cow::Borrowed(&url),
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
-                let fetch = context.navigator.fetch(&url, opts);
-                let process = context.load_manager.load_form_into_object(
-                    context.player.clone().unwrap(),
+                let fetch = self.context.navigator.fetch(&url, opts);
+                let process = self.context.load_manager.load_form_into_object(
+                    self.context.player.clone().unwrap(),
                     target_obj,
                     fetch,
                 );
 
-                context.navigator.spawn_future(process);
+                self.context.navigator.spawn_future(process);
             }
 
             return Ok(FrameControl::Continue);
         } else if is_target_sprite {
             if let Some(clip_target) = clip_target {
                 let (url, opts) = self.locals_into_request_options(
-                    context,
                     Cow::Borrowed(&url),
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
-                let fetch = context.navigator.fetch(&url, opts);
-                let process = context.load_manager.load_movie_into_clip(
-                    context.player.clone().unwrap(),
+                let fetch = self.context.navigator.fetch(&url, opts);
+                let process = self.context.load_manager.load_movie_into_clip(
+                    self.context.player.clone().unwrap(),
                     clip_target,
                     fetch,
                     url.to_string(),
                     None,
                 );
-                context.navigator.spawn_future(process);
+                self.context.navigator.spawn_future(process);
             }
 
             return Ok(FrameControl::Continue);
@@ -1351,17 +1255,17 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             // target of `_level#` indicates a `loadMovieNum` call.
             match window_target[6..].parse::<u32>() {
                 Ok(level_id) => {
-                    let fetch = context.navigator.fetch(&url, RequestOptions::get());
-                    let level = self.resolve_level(level_id, context);
+                    let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
+                    let level = self.resolve_level(level_id);
 
-                    let process = context.load_manager.load_movie_into_clip(
-                        context.player.clone().unwrap(),
+                    let process = self.context.load_manager.load_movie_into_clip(
+                        self.context.player.clone().unwrap(),
                         level,
                         fetch,
                         url.to_string(),
                         None,
                     );
-                    context.navigator.spawn_future(process);
+                    self.context.navigator.spawn_future(process);
                 }
                 Err(e) => avm_warn!(
                     self,
@@ -1374,11 +1278,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             return Ok(FrameControl::Continue);
         } else {
             let vars = match NavigationMethod::from_send_vars_method(swf_method) {
-                Some(method) => Some((method, self.locals_into_form_values(context))),
+                Some(method) => Some((method, self.locals_into_form_values())),
                 None => None,
             };
 
-            context.navigator.navigate_to_url(
+            self.context.navigator.navigate_to_url(
                 url.to_string(),
                 Some(window_target.to_string()),
                 vars,
@@ -1387,15 +1291,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_goto_frame(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        frame: u16,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_goto_frame(&mut self, frame: u16) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 // The frame on the stack is 0-based, not 1-based.
-                clip.goto_frame(self.avm, context, frame + 1, true);
+                clip.goto_frame(&mut self.context, frame + 1, true);
             } else {
                 avm_error!(self, "GotoFrame failed: Target is not a MovieClip");
             }
@@ -1407,7 +1307,6 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn action_goto_frame_2(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         set_playing: bool,
         scene_offset: u16,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1415,11 +1314,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         // Param can either be a frame number or a frame label.
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                let frame = self.avm.pop();
+                let frame = self.context.avm1.pop();
                 let _ = globals::movie_clip::goto_frame(
                     clip,
                     self,
-                    context,
                     &[frame],
                     !set_playing,
                     scene_offset,
@@ -1433,15 +1331,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_goto_label(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        label: &str,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_goto_label(&mut self, label: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 if let Some(frame) = clip.frame_label_to_number(label) {
-                    clip.goto_frame(self.avm, context, frame, true);
+                    clip.goto_frame(&mut self.context, frame, true);
                 } else {
                     avm_warn!(self, "GoToLabel: Frame label '{}' not found", label);
                 }
@@ -1456,105 +1350,90 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn action_if(
         &mut self,
-        _context: &mut UpdateContext,
         jump_offset: i16,
         reader: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.avm.pop();
+        let val = self.context.avm1.pop();
         if val.as_bool(self.current_swf_version()) {
             reader.seek(jump_offset.into());
         }
         Ok(FrameControl::Continue)
     }
 
-    fn action_increment(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_f64(self, context)?;
-        self.avm.push(a + 1.0);
+    fn action_increment(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop().coerce_to_f64(self)?;
+        self.context.avm1.push(a + 1.0);
         Ok(FrameControl::Continue)
     }
 
-    fn action_init_array(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let num_elements = self.avm.pop().coerce_to_f64(self, context)? as i64;
-        let array = ScriptObject::array(context.gc_context, Some(self.avm.prototypes.array));
+    fn action_init_array(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let num_elements = self.context.avm1.pop().coerce_to_f64(self)? as i64;
+        let array = ScriptObject::array(
+            self.context.gc_context,
+            Some(self.context.avm1.prototypes.array),
+        );
 
         for i in 0..num_elements {
-            array.set_array_element(i as usize, self.avm.pop(), context.gc_context);
+            array.set_array_element(i as usize, self.context.avm1.pop(), self.context.gc_context);
         }
 
-        self.avm.push(Value::Object(array.into()));
+        self.context.avm1.push(Value::Object(array.into()));
         Ok(FrameControl::Continue)
     }
 
-    fn action_init_object(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let num_props = self.avm.pop().coerce_to_f64(self, context)? as i64;
-        let object = ScriptObject::object(context.gc_context, Some(self.avm.prototypes.object));
+    fn action_init_object(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let num_props = self.context.avm1.pop().coerce_to_f64(self)? as i64;
+        let object = ScriptObject::object(
+            self.context.gc_context,
+            Some(self.context.avm1.prototypes.object),
+        );
         for _ in 0..num_props {
-            let value = self.avm.pop();
-            let name_val = self.avm.pop();
-            let name = name_val.coerce_to_string(self, context)?;
-            object.set(&name, value, self, context)?;
+            let value = self.context.avm1.pop();
+            let name_val = self.context.avm1.pop();
+            let name = name_val.coerce_to_string(self)?;
+            object.set(&name, value, self)?;
         }
 
-        self.avm.push(Value::Object(object.into()));
+        self.context.avm1.push(Value::Object(object.into()));
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_implements_op(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let constr = self.avm.pop().coerce_to_object(self, context);
-        let count = self.avm.pop().coerce_to_f64(self, context)? as i64; //TODO: Is this coercion actually performed by Flash?
+    fn action_implements_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let constr = self.context.avm1.pop().coerce_to_object(self);
+        let count = self.context.avm1.pop().coerce_to_f64(self)? as i64; //TODO: Is this coercion actually performed by Flash?
         let mut interfaces = vec![];
 
         //TODO: If one of the interfaces is not an object, do we leave the
         //whole stack dirty, or...?
         for _ in 0..count {
-            interfaces.push(self.avm.pop().coerce_to_object(self, context));
+            interfaces.push(self.context.avm1.pop().coerce_to_object(self));
         }
 
-        let mut prototype = constr
-            .get("prototype", self, context)?
-            .coerce_to_object(self, context);
+        let mut prototype = constr.get("prototype", self)?.coerce_to_object(self);
 
-        prototype.set_interfaces(context.gc_context, interfaces);
+        prototype.set_interfaces(self.context.gc_context, interfaces);
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_instance_of(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let constr = self.avm.pop().coerce_to_object(self, context);
-        let obj = self.avm.pop();
+    fn action_instance_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let constr = self.context.avm1.pop().coerce_to_object(self);
+        let obj = self.context.avm1.pop();
 
         let is_instance_of = if let Value::Object(obj) = obj {
-            let prototype = constr
-                .get("prototype", self, context)?
-                .coerce_to_object(self, context);
-            obj.is_instance_of(self, context, constr, prototype)?
+            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            obj.is_instance_of(self, constr, prototype)?
         } else {
             false
         };
 
-        self.avm.push(is_instance_of);
+        self.context.avm1.push(is_instance_of);
         Ok(FrameControl::Continue)
     }
 
     fn action_jump(
         &mut self,
-        _context: &mut UpdateContext,
         jump_offset: i16,
         reader: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1563,58 +1442,48 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_less(
-        &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_less(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 less than
-        let a = self.avm.pop();
-        let b = self.avm.pop();
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
         let result = b.into_number_v1() < a.into_number_v1();
-        self.avm
+        self.context
+            .avm1
             .push(Value::from_bool(result, self.current_swf_version()));
         Ok(FrameControl::Continue)
     }
 
-    fn action_less_2(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_less_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // ECMA-262 s. 11.8.1
-        let a = self.avm.pop();
-        let b = self.avm.pop();
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
 
-        let result = b.abstract_lt(a, self, context)?;
+        let result = b.abstract_lt(a, self)?;
 
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_greater(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_greater(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // ECMA-262 s. 11.8.2
-        let a = self.avm.pop();
-        let b = self.avm.pop();
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
 
-        let result = a.abstract_lt(b, self, context)?;
+        let result = a.abstract_lt(b, self)?;
 
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_mb_ascii_to_char(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_mb_ascii_to_char(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
         use std::convert::TryFrom;
-        let result = char::try_from(self.avm.pop().coerce_to_f64(self, context)? as u32);
+        let result = char::try_from(self.context.avm1.pop().coerce_to_f64(self)? as u32);
         match result {
             Ok(val) => self
-                .avm
-                .push(AvmString::new(context.gc_context, val.to_string())),
+                .context
+                .avm1
+                .push(AvmString::new(self.context.gc_context, val.to_string())),
             Err(e) => avm_warn!(
                 self,
                 "Couldn't parse char for action_mb_ascii_to_char: {}",
@@ -1624,81 +1493,62 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_mb_char_to_ascii(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_mb_char_to_ascii(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Results on incorrect operands?
-        let val = self.avm.pop();
-        let s = val.coerce_to_string(self, context)?;
+        let val = self.context.avm1.pop();
+        let s = val.coerce_to_string(self)?;
         let result = s.chars().next().unwrap_or('\0') as u32;
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_mb_string_extract(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_mb_string_extract(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Result with incorrect operands?
-        let len = self.avm.pop().coerce_to_f64(self, context)? as usize;
-        let start = self.avm.pop().coerce_to_f64(self, context)? as usize;
-        let val = self.avm.pop();
-        let s = val.coerce_to_string(self, context)?;
+        let len = self.context.avm1.pop().coerce_to_f64(self)? as usize;
+        let start = self.context.avm1.pop().coerce_to_f64(self)? as usize;
+        let val = self.context.avm1.pop();
+        let s = val.coerce_to_string(self)?;
         let result = s[len..len + start].to_string(); // TODO(Herschel): Flash uses UTF-16 internally.
-        self.avm.push(AvmString::new(context.gc_context, result));
+        self.context
+            .avm1
+            .push(AvmString::new(self.context.gc_context, result));
         Ok(FrameControl::Continue)
     }
 
-    fn action_mb_string_length(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_mb_string_length(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Result with non-string operands?
-        let val = self.avm.pop();
-        let len = val.coerce_to_string(self, context)?.len();
-        self.avm.push(len as f64);
+        let val = self.context.avm1.pop();
+        let len = val.coerce_to_string(self)?.len();
+        self.context.avm1.push(len as f64);
         Ok(FrameControl::Continue)
     }
 
-    fn action_multiply(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_f64(self, context)?;
-        let b = self.avm.pop().coerce_to_f64(self, context)?;
-        self.avm.push(a * b);
+    fn action_multiply(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop().coerce_to_f64(self)?;
+        let b = self.context.avm1.pop().coerce_to_f64(self)?;
+        self.context.avm1.push(a * b);
         Ok(FrameControl::Continue)
     }
 
-    fn action_modulo(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_modulo(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO: Wrong operands?
-        let a = self.avm.pop().coerce_to_f64(self, context)?;
-        let b = self.avm.pop().coerce_to_f64(self, context)?;
-        self.avm.push(b % a);
+        let a = self.context.avm1.pop().coerce_to_f64(self)?;
+        let b = self.context.avm1.pop().coerce_to_f64(self)?;
+        self.context.avm1.push(b % a);
         Ok(FrameControl::Continue)
     }
 
-    fn action_not(
-        &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_not(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let version = self.current_swf_version();
-        let val = !self.avm.pop().as_bool(version);
-        self.avm.push(Value::from_bool(val, version));
+        let val = !self.context.avm1.pop().as_bool(version);
+        self.context.avm1.push(Value::from_bool(val, version));
         Ok(FrameControl::Continue)
     }
 
-    fn action_next_frame(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_next_frame(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.next_frame(self.avm, context);
+                clip.next_frame(&mut self.context);
             } else {
                 avm_warn!(self, "NextFrame: Target is not a MovieClip");
             }
@@ -1708,81 +1558,66 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_new_method(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let method_name = self.avm.pop();
-        let object_val = self.avm.pop();
-        let num_args = self.avm.pop().coerce_to_f64(self, context)? as i64;
+    fn action_new_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let method_name = self.context.avm1.pop();
+        let object_val = self.context.avm1.pop();
+        let num_args = self.context.avm1.pop().coerce_to_f64(self)? as i64;
         let mut args = Vec::new();
         for _ in 0..num_args {
-            args.push(self.avm.pop());
+            args.push(self.context.avm1.pop());
         }
 
-        let object = value_object::ValueObject::boxed(self, context, object_val);
-        let constructor =
-            object.get(&method_name.coerce_to_string(self, context)?, self, context)?;
+        let object = value_object::ValueObject::boxed(self, object_val);
+        let constructor = object.get(&method_name.coerce_to_string(self)?, self)?;
         if let Value::Object(constructor) = constructor {
             //TODO: What happens if you `ActionNewMethod` without a method name?
-            let this = constructor.construct(self, context, &args)?;
+            let this = constructor.construct(self, &args)?;
 
-            self.avm.push(this);
+            self.context.avm1.push(this);
         } else {
             avm_warn!(
                 self,
                 "Tried to construct with non-object constructor {:?}",
                 constructor
             );
-            self.avm.push(Value::Undefined);
+            self.context.avm1.push(Value::Undefined);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_new_object(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let fn_name_val = self.avm.pop();
-        let fn_name = fn_name_val.coerce_to_string(self, context)?;
-        let num_args = self.avm.pop().coerce_to_f64(self, context)? as i64;
+    fn action_new_object(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let fn_name_val = self.context.avm1.pop();
+        let fn_name = fn_name_val.coerce_to_string(self)?;
+        let num_args = self.context.avm1.pop().coerce_to_f64(self)? as i64;
         let mut args = Vec::new();
         for _ in 0..num_args {
-            args.push(self.avm.pop());
+            args.push(self.context.avm1.pop());
         }
 
-        let constructor = self
-            .resolve(&fn_name, context)?
-            .coerce_to_object(self, context);
+        let constructor = self.resolve(&fn_name)?.coerce_to_object(self);
 
-        let this = constructor.construct(self, context, &args)?;
+        let this = constructor.construct(self, &args)?;
 
-        self.avm.push(this);
+        self.context.avm1.push(this);
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_or(
-        &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_or(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 logical or
-        let a = self.avm.pop();
-        let b = self.avm.pop();
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
         let version = self.current_swf_version();
         let result = b.as_bool(version) || a.as_bool(version);
-        self.avm.push(Value::from_bool(result, version));
+        self.context.avm1.push(Value::from_bool(result, version));
         Ok(FrameControl::Continue)
     }
 
-    fn action_play(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_play(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.play(context)
+                clip.play(&mut self.context)
             } else {
                 avm_warn!(self, "Play: Target is not a MovieClip");
             }
@@ -1792,13 +1627,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_prev_frame(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_prev_frame(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.prev_frame(self.avm, context);
+                clip.prev_frame(&mut self.context);
             } else {
                 avm_warn!(self, "PrevFrame: Target is not a MovieClip");
             }
@@ -1808,17 +1640,13 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_pop(
-        &mut self,
-        _context: &mut UpdateContext,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.avm.pop();
+    fn action_pop(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.context.avm1.pop();
         Ok(FrameControl::Continue)
     }
 
     fn action_push(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         values: &[swf::avm1::types::Value],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         for value in values {
@@ -1830,11 +1658,13 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 SwfValue::Int(v) => f64::from(*v).into(),
                 SwfValue::Float(v) => f64::from(*v).into(),
                 SwfValue::Double(v) => (*v).into(),
-                SwfValue::Str(v) => AvmString::new(context.gc_context, (*v).to_string()).into(),
+                SwfValue::Str(v) => {
+                    AvmString::new(self.context.gc_context, (*v).to_string()).into()
+                }
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool().read().get(*i as usize) {
-                        AvmString::new(context.gc_context, value.to_string()).into()
+                        AvmString::new(self.context.gc_context, value.to_string()).into()
                     } else {
                         avm_warn!(
                             self,
@@ -1846,47 +1676,39 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     }
                 }
             };
-            self.avm.push(value);
+            self.context.avm1.push(value);
         }
         Ok(FrameControl::Continue)
     }
 
-    fn action_push_duplicate(
-        &mut self,
-        _context: &mut UpdateContext,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.avm.pop();
-        self.avm.push(val.clone());
-        self.avm.push(val);
+    fn action_push_duplicate(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let val = self.context.avm1.pop();
+        self.context.avm1.push(val.clone());
+        self.context.avm1.push(val);
         Ok(FrameControl::Continue)
     }
 
-    fn action_random_number(
-        &mut self,
-        context: &mut UpdateContext,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_random_number(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // A max value < 0 will always return 0,
         // and the max value gets converted into an i32, so any number > 2^31 - 1 will return 0.
-        let max = self.avm.pop().into_number_v1() as i32;
+        let max = self.context.avm1.pop().into_number_v1() as i32;
         let val = if max > 0 {
-            context.rng.gen_range(0, max)
+            self.context.rng.gen_range(0, max)
         } else {
             0
         };
-        self.avm.push(val);
+        self.context.avm1.push(val);
         Ok(FrameControl::Continue)
     }
 
-    fn action_remove_sprite(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let target = self.avm.pop();
+    fn action_remove_sprite(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let target = self.context.avm1.pop();
         let start_clip = self.target_clip_or_root();
-        let target_clip = self.resolve_target_display_object(context, start_clip, target)?;
+        let target_clip = self.resolve_target_display_object(start_clip, target)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
-            let _ = globals::movie_clip::remove_movie_clip_with_bias(target_clip, context, 0);
+            let _ =
+                globals::movie_clip::remove_movie_clip_with_bias(target_clip, &mut self.context, 0);
         } else {
             avm_warn!(self, "RemoveSprite: Source is not a movie clip");
         }
@@ -1894,38 +1716,32 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     fn action_return(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let return_value = self.avm.pop();
+        let return_value = self.context.avm1.pop();
 
         Ok(FrameControl::Return(ReturnType::Explicit(return_value)))
     }
 
-    fn action_set_member(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value = self.avm.pop();
-        let name_val = self.avm.pop();
-        let name = name_val.coerce_to_string(self, context)?;
+    fn action_set_member(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let value = self.context.avm1.pop();
+        let name_val = self.context.avm1.pop();
+        let name = name_val.coerce_to_string(self)?;
 
-        let object = self.avm.pop().coerce_to_object(self, context);
-        object.set(&name, value, self, context)?;
+        let object = self.context.avm1.pop().coerce_to_object(self);
+        object.set(&name, value, self)?;
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_set_property(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value = self.avm.pop();
-        let prop_index = self.avm.pop().coerce_to_u32(self, context)? as usize;
-        let path = self.avm.pop();
+    fn action_set_property(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let value = self.context.avm1.pop();
+        let prop_index = self.context.avm1.pop().coerce_to_u32(self)? as usize;
+        let path = self.context.avm1.pop();
         if let Some(target) = self.target_clip() {
-            if let Some(clip) = self.resolve_target_display_object(context, target, path)? {
-                let display_properties = self.avm.display_properties;
+            if let Some(clip) = self.resolve_target_display_object(target, path)? {
+                let display_properties = self.context.avm1.display_properties;
                 let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
-                    property.set(self, context, clip, value)?;
+                    property.set(self, clip, value)?;
                 }
             } else {
                 avm_warn!(self, "SetProperty: Invalid target");
@@ -1936,44 +1752,34 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_set_variable(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_set_variable(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Flash 4-style variable
-        let value = self.avm.pop();
-        let var_path_val = self.avm.pop();
-        let var_path = var_path_val.coerce_to_string(self, context)?;
-        self.set_variable(context, &var_path, value)?;
+        let value = self.context.avm1.pop();
+        let var_path_val = self.context.avm1.pop();
+        let var_path = var_path_val.coerce_to_string(self)?;
+        self.set_variable(&var_path, value)?;
         Ok(FrameControl::Continue)
     }
 
     #[allow(clippy::float_cmp)]
-    fn action_strict_equals(
-        &mut self,
-        _context: &mut UpdateContext,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_strict_equals(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The same as normal equality but types must match
-        let a = self.avm.pop();
-        let b = self.avm.pop();
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
         let result = a == b;
-        self.avm.push(result);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
-    fn action_set_target(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        target: &str,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_set_target(&mut self, target: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
         let base_clip = self.base_clip();
         let new_target_clip;
         let root = base_clip.root();
-        let start = base_clip.object().coerce_to_object(self, context);
+        let start = base_clip.object().coerce_to_object(self);
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
-            .resolve_target_path(context, root, start, target)?
+            .resolve_target_path(root, start, target)?
             .and_then(|o| o.as_display_object())
         {
             new_target_clip = Some(clip);
@@ -1995,20 +1801,21 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             .target_clip()
             .unwrap_or_else(|| self.base_clip().root())
             .object()
-            .coerce_to_object(self, context);
+            .coerce_to_object(self);
 
-        self.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
+        self.set_scope(Scope::new_target_scope(
+            scope,
+            clip_obj,
+            self.context.gc_context,
+        ));
         Ok(FrameControl::Continue)
     }
 
-    fn action_set_target2(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let target = self.avm.pop();
+    fn action_set_target2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let target = self.context.avm1.pop();
         match target {
             Value::String(target) => {
-                return self.action_set_target(context, &target);
+                return self.action_set_target(&target);
             }
             Value::Undefined => {
                 // Reset
@@ -2021,13 +1828,13 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                     self.set_target_clip(Some(clip));
                 } else {
                     // Other objects get coerced to string
-                    let target = target.coerce_to_string(self, context)?;
-                    return self.action_set_target(context, &target);
+                    let target = target.coerce_to_string(self)?;
+                    return self.action_set_target(&target);
                 }
             }
             _ => {
-                let target = target.coerce_to_string(self, context)?;
-                return self.action_set_target(context, &target);
+                let target = target.coerce_to_string(self)?;
+                return self.action_set_target(&target);
             }
         };
 
@@ -2036,45 +1843,38 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             .target_clip()
             .unwrap_or_else(|| self.base_clip().root())
             .object()
-            .coerce_to_object(self, context);
-        self.set_scope(Scope::new_target_scope(scope, clip_obj, context.gc_context));
+            .coerce_to_object(self);
+        self.set_scope(Scope::new_target_scope(
+            scope,
+            clip_obj,
+            self.context.gc_context,
+        ));
         Ok(FrameControl::Continue)
     }
 
-    fn action_stack_swap(
-        &mut self,
-        _context: &mut UpdateContext,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop();
-        let b = self.avm.pop();
-        self.avm.push(a);
-        self.avm.push(b);
+    fn action_stack_swap(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
+        self.context.avm1.push(a);
+        self.context.avm1.push(b);
         Ok(FrameControl::Continue)
     }
 
-    fn action_start_drag(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let target = self.avm.pop();
+    fn action_start_drag(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let target = self.context.avm1.pop();
         let start_clip = self.target_clip_or_root();
-        let display_object = self.resolve_target_display_object(context, start_clip, target)?;
+        let display_object = self.resolve_target_display_object(start_clip, target)?;
         if let Some(display_object) = display_object {
-            let lock_center = self.avm.pop();
-            let constrain = self.avm.pop().as_bool(self.current_swf_version());
+            let lock_center = self.context.avm1.pop();
+            let constrain = self.context.avm1.pop().as_bool(self.current_swf_version());
             if constrain {
-                let y2 = self.avm.pop();
-                let x2 = self.avm.pop();
-                let y1 = self.avm.pop();
-                let x1 = self.avm.pop();
-                start_drag(
-                    display_object,
-                    self,
-                    context,
-                    &[lock_center, x1, y1, x2, y2],
-                );
+                let y2 = self.context.avm1.pop();
+                let x2 = self.context.avm1.pop();
+                let y1 = self.context.avm1.pop();
+                let x1 = self.context.avm1.pop();
+                start_drag(display_object, self, &[lock_center, x1, y1, x2, y2]);
             } else {
-                start_drag(display_object, self, context, &[lock_center]);
+                start_drag(display_object, self, &[lock_center]);
             };
         } else {
             avm_warn!(self, "StartDrag: Invalid target");
@@ -2082,13 +1882,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_stop(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_stop(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.stop(context);
+                clip.stop(&mut self.context);
             } else {
                 avm_warn!(self, "Stop: Target is not a MovieClip");
             }
@@ -2098,63 +1895,50 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_stop_sounds(
-        &mut self,
-        context: &mut UpdateContext,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        context.audio.stop_all_sounds();
+    fn action_stop_sounds(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.context.audio.stop_all_sounds();
         Ok(FrameControl::Continue)
     }
 
-    fn action_store_register(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        register: u8,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_store_register(&mut self, register: u8) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The value must remain on the stack.
-        let val = self.avm.pop();
-        self.avm.push(val.clone());
-        self.set_current_register(register, val, context);
+        let val = self.context.avm1.pop();
+        self.context.avm1.push(val.clone());
+        self.set_current_register(register, val);
 
         Ok(FrameControl::Continue)
     }
 
-    fn action_string_add(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_string_add(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // SWFv4 string concatenation
         // TODO(Herschel): Result with non-string operands?
-        let a = self.avm.pop();
-        let mut b = self.avm.pop().coerce_to_string(self, context)?.to_string();
-        b.push_str(&a.coerce_to_string(self, context)?);
-        self.avm.push(AvmString::new(context.gc_context, b));
+        let a = self.context.avm1.pop();
+        let mut b = self.context.avm1.pop().coerce_to_string(self)?.to_string();
+        b.push_str(&a.coerce_to_string(self)?);
+        self.context
+            .avm1
+            .push(AvmString::new(self.context.gc_context, b));
         Ok(FrameControl::Continue)
     }
 
-    fn action_string_equals(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_string_equals(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 strcmp
-        let a = self.avm.pop();
-        let b = self.avm.pop();
-        let result = b.coerce_to_string(self, context)? == a.coerce_to_string(self, context)?;
-        self.avm
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
+        let result = b.coerce_to_string(self)? == a.coerce_to_string(self)?;
+        self.context
+            .avm1
             .push(Value::from_bool(result, self.current_swf_version()));
         Ok(FrameControl::Continue)
     }
 
-    fn action_string_extract(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_string_extract(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // SWFv4 substring
         // TODO(Herschel): Result with incorrect operands?
-        let len = self.avm.pop().coerce_to_f64(self, context)? as usize;
-        let start = self.avm.pop().coerce_to_f64(self, context)? as usize;
-        let val = self.avm.pop();
-        let s = val.coerce_to_string(self, context)?;
+        let len = self.context.avm1.pop().coerce_to_f64(self)? as usize;
+        let start = self.context.avm1.pop().coerce_to_f64(self)? as usize;
+        let val = self.context.avm1.pop();
+        let s = val.coerce_to_string(self)?;
         // This is specifically a non-UTF8 aware substring.
         // SWFv4 only used ANSI strings.
         let result = s
@@ -2163,144 +1947,116 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             .take(len)
             .map(|c| c as char)
             .collect::<String>();
-        self.avm.push(AvmString::new(context.gc_context, result));
+        self.context
+            .avm1
+            .push(AvmString::new(self.context.gc_context, result));
         Ok(FrameControl::Continue)
     }
 
-    fn action_string_greater(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_string_greater(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 strcmp
-        let a = self.avm.pop();
-        let b = self.avm.pop();
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
         // This is specifically a non-UTF8 aware comparison.
         let result = b
-            .coerce_to_string(self, context)?
+            .coerce_to_string(self)?
             .bytes()
-            .gt(a.coerce_to_string(self, context)?.bytes());
-        self.avm
+            .gt(a.coerce_to_string(self)?.bytes());
+        self.context
+            .avm1
             .push(Value::from_bool(result, self.current_swf_version()));
         Ok(FrameControl::Continue)
     }
 
-    fn action_string_length(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_string_length(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 strlen
         // Only returns byte length.
         // TODO(Herschel): Result with non-string operands?
-        let val = self.avm.pop();
-        let len = val.coerce_to_string(self, context)?.bytes().len() as f64;
-        self.avm.push(len);
+        let val = self.context.avm1.pop();
+        let len = val.coerce_to_string(self)?.bytes().len() as f64;
+        self.context.avm1.push(len);
         Ok(FrameControl::Continue)
     }
 
-    fn action_string_less(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_string_less(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 strcmp
-        let a = self.avm.pop();
-        let b = self.avm.pop();
+        let a = self.context.avm1.pop();
+        let b = self.context.avm1.pop();
         // This is specifically a non-UTF8 aware comparison.
         let result = b
-            .coerce_to_string(self, context)?
+            .coerce_to_string(self)?
             .bytes()
-            .lt(a.coerce_to_string(self, context)?.bytes());
-        self.avm
+            .lt(a.coerce_to_string(self)?.bytes());
+        self.context
+            .avm1
             .push(Value::from_bool(result, self.current_swf_version()));
         Ok(FrameControl::Continue)
     }
 
-    fn action_subtract(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.avm.pop().coerce_to_f64(self, context)?;
-        let b = self.avm.pop().coerce_to_f64(self, context)?;
-        self.avm.push(b - a);
+    fn action_subtract(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let a = self.context.avm1.pop().coerce_to_f64(self)?;
+        let b = self.context.avm1.pop().coerce_to_f64(self)?;
+        self.context.avm1.push(b - a);
         Ok(FrameControl::Continue)
     }
 
-    fn action_target_path(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_target_path(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel)
-        let _clip = self.avm.pop().coerce_to_object(self, context);
-        self.avm.push(Value::Undefined);
+        let _clip = self.context.avm1.pop().coerce_to_object(self);
+        self.context.avm1.push(Value::Undefined);
         avm_warn!(self, "Unimplemented action: TargetPath");
         Ok(FrameControl::Continue)
     }
 
-    fn toggle_quality(
-        &mut self,
-        _context: &mut UpdateContext,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn toggle_quality(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Noop for now? Could chang anti-aliasing on render backend.
         Ok(FrameControl::Continue)
     }
 
-    fn action_to_integer(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.avm.pop().coerce_to_f64(self, context)?;
-        self.avm.push(val.trunc());
+    fn action_to_integer(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let val = self.context.avm1.pop().coerce_to_f64(self)?;
+        self.context.avm1.push(val.trunc());
         Ok(FrameControl::Continue)
     }
 
-    fn action_to_number(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.avm.pop().coerce_to_f64(self, context)?;
-        self.avm.push(val);
+    fn action_to_number(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let val = self.context.avm1.pop().coerce_to_f64(self)?;
+        self.context.avm1.push(val);
         Ok(FrameControl::Continue)
     }
 
-    fn action_to_string(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.avm.pop();
-        let string = val.coerce_to_string(self, context)?;
-        self.avm
-            .push(AvmString::new(context.gc_context, string.to_string()));
+    fn action_to_string(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let val = self.context.avm1.pop();
+        let string = val.coerce_to_string(self)?;
+        self.context
+            .avm1
+            .push(AvmString::new(self.context.gc_context, string.to_string()));
         Ok(FrameControl::Continue)
     }
 
-    fn action_trace(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.avm.pop();
+    fn action_trace(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let val = self.context.avm1.pop();
         // trace always prints "undefined" even though SWF6 and below normally
         // coerce undefined to "".
         let out = if val == Value::Undefined {
             "undefined".into()
         } else {
-            val.coerce_to_string(self, context)?
+            val.coerce_to_string(self)?
         };
         log::info!(target: "avm_trace", "{}", out);
         Ok(FrameControl::Continue)
     }
 
-    fn action_type_of(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let type_of = self.avm.pop().type_of();
-        self.avm
-            .push(AvmString::new(context.gc_context, type_of.to_string()));
+    fn action_type_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let type_of = self.context.avm1.pop().type_of();
+        self.context
+            .avm1
+            .push(AvmString::new(self.context.gc_context, type_of.to_string()));
         Ok(FrameControl::Continue)
     }
 
     fn action_wait_for_frame(
         &mut self,
-        _context: &mut UpdateContext,
         _frame: u16,
         num_actions_to_skip: u8,
         r: &mut Reader<'_>,
@@ -2317,12 +2073,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn action_wait_for_frame_2(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         num_actions_to_skip: u8,
         r: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO(Herschel): Always true for now.
-        let _frame_num = self.avm.pop().coerce_to_f64(self, context)? as u16;
+        let _frame_num = self.context.avm1.pop().coerce_to_f64(self)? as u16;
         let loaded = true;
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
@@ -2333,27 +2088,20 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     #[allow(unused_variables)]
-    fn action_throw(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value = self.avm.pop();
+    fn action_throw(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let value = self.context.avm1.pop();
         avm_debug!(
-            self.avm,
+            self.context.avm1,
             "Thrown exception: {}",
             value
-                .coerce_to_string(self, context)
+                .coerce_to_string(self)
                 .unwrap_or_else(|_| "undefined".into())
         );
         Err(Error::ThrownValue(value))
     }
 
-    fn action_with(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        code: SwfSlice,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value = self.avm.pop();
+    fn action_with(&mut self, code: SwfSlice) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let value = self.context.avm1.pop();
         match value {
             // Undefined/null with is ignored.
             Value::Undefined | Value::Null => {
@@ -2364,11 +2112,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
             value => {
                 // Note that primitives get boxed at this point.
-                let object = value.coerce_to_object(self, context);
+                let object = value.coerce_to_object(self);
                 let with_scope =
-                    Scope::new_with_scope(self.scope_cell(), object, context.gc_context);
+                    Scope::new_with_scope(self.scope_cell(), object, self.context.gc_context);
                 let mut new_activation = self.with_new_scope("[With]", with_scope);
-                if let ReturnType::Explicit(value) = new_activation.run_actions(context, code)? {
+                if let ReturnType::Explicit(value) = new_activation.run_actions(code)? {
                     Ok(FrameControl::Return(ReturnType::Explicit(value)))
                 } else {
                     Ok(FrameControl::Continue)
@@ -2379,19 +2127,15 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     fn action_try(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         try_block: &TryBlock,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let mut result = self.run_actions(
-            context,
-            parent_data.to_subslice(try_block.try_actions).unwrap(),
-        );
+        let mut result = self.run_actions(parent_data.to_subslice(try_block.try_actions).unwrap());
 
         if let Some((catch_vars, actions)) = &try_block.catch {
             if let Err(Error::ThrownValue(value)) = &result {
                 let mut activation = Activation::from_action(
-                    self.avm,
+                    self.context.reborrow(),
                     self.id.child("[Catch]"),
                     self.swf_version,
                     self.scope,
@@ -2402,21 +2146,19 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 );
 
                 match catch_vars {
-                    CatchVar::Var(name) => {
-                        activation.set_variable(context, name, value.to_owned())?
-                    }
+                    CatchVar::Var(name) => activation.set_variable(name, value.to_owned())?,
                     CatchVar::Register(id) => {
-                        activation.set_current_register(*id, value.to_owned(), context)
+                        activation.set_current_register(*id, value.to_owned())
                     }
                 }
 
-                result = activation.run_actions(context, parent_data.to_subslice(actions).unwrap());
+                result = activation.run_actions(parent_data.to_subslice(actions).unwrap());
             }
         }
 
         if let Some(actions) = try_block.finally {
             if let ReturnType::Explicit(value) =
-                self.run_actions(context, parent_data.to_subslice(actions).unwrap())?
+                self.run_actions(parent_data.to_subslice(actions).unwrap())?
             {
                 return Ok(FrameControl::Return(ReturnType::Explicit(value)));
             }
@@ -2436,7 +2178,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         if self.has_local_register(id) {
             self.local_register(id).unwrap_or(Value::Undefined)
         } else {
-            self.avm
+            self.context
+                .avm1
                 .registers
                 .get(id as usize)
                 .cloned()
@@ -2447,15 +2190,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// Set a register to a given value.
     ///
     /// If a given register does not exist, this function does nothing.
-    pub fn set_current_register(
-        &mut self,
-        id: u8,
-        value: Value<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) {
+    pub fn set_current_register(&mut self, id: u8, value: Value<'gc>) {
         if self.has_local_register(id) {
-            self.set_local_register(id, value, context.gc_context);
-        } else if let Some(v) = self.avm.registers.get_mut(id as usize) {
+            self.set_local_register(id, value);
+        } else if let Some(v) = self.context.avm1.registers.get_mut(id as usize) {
             *v = value;
         }
     }
@@ -2466,23 +2204,19 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
     ///
     /// WARNING: This does not support user defined virtual properties!
-    pub fn object_into_form_values(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        object: Object<'gc>,
-    ) -> HashMap<String, String> {
+    pub fn object_into_form_values(&mut self, object: Object<'gc>) -> HashMap<String, String> {
         let mut form_values = HashMap::new();
         let keys = object.get_keys(self);
 
         for k in keys {
-            let v = object.get(&k, self, context);
+            let v = object.get(&k, self);
 
             //TODO: What happens if an error occurs inside a virtual property?
             form_values.insert(
                 k,
                 v.ok()
                     .unwrap_or_else(|| Value::Undefined)
-                    .coerce_to_string(self, context)
+                    .coerce_to_string(self)
                     .unwrap_or_else(|_| "undefined".into())
                     .to_string(),
             );
@@ -2493,16 +2227,15 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
     /// Construct request options for a fetch operation that may sends object properties as
     /// form data in the request body or URL.
-    pub fn object_into_request_options<'b>(
+    pub fn object_into_request_options<'c>(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         object: Object<'gc>,
-        url: Cow<'b, str>,
+        url: Cow<'c, str>,
         method: Option<NavigationMethod>,
-    ) -> (Cow<'b, str>, RequestOptions) {
+    ) -> (Cow<'c, str>, RequestOptions) {
         match method {
             Some(method) => {
-                let vars = self.object_into_form_values(context, object);
+                let vars = self.object_into_form_values(object);
                 let qstring = form_urlencoded::Serializer::new(String::new())
                     .extend_pairs(vars.iter())
                     .finish();
@@ -2535,26 +2268,22 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
     ///
     /// WARNING: This does not support user defined virtual properties!
-    pub fn locals_into_form_values(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> HashMap<String, String> {
+    pub fn locals_into_form_values(&mut self) -> HashMap<String, String> {
         let scope = self.scope_cell();
         let locals = scope.read().locals_cell();
-        self.object_into_form_values(context, locals)
+        self.object_into_form_values(locals)
     }
 
     /// Construct request options for a fetch operation that may send locals as
     /// form data in the request body or URL.
-    pub fn locals_into_request_options<'b>(
+    pub fn locals_into_request_options<'c>(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        url: Cow<'b, str>,
+        url: Cow<'c, str>,
         method: Option<NavigationMethod>,
-    ) -> (Cow<'b, str>, RequestOptions) {
+    ) -> (Cow<'c, str>, RequestOptions) {
         let scope = self.scope_cell();
         let locals = scope.read().locals_cell();
-        self.object_into_request_options(context, locals, url, method)
+        self.object_into_request_options(locals, url, method)
     }
 
     /// Resolves a target value to a display object, relative to a starting display object.
@@ -2571,7 +2300,6 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// at the prototype chain, but not the scope chain.
     pub fn resolve_target_display_object(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         start: DisplayObject<'gc>,
         target: Value<'gc>,
     ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
@@ -2585,11 +2313,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         // Otherwise, we coerce it into a string and try to resolve it as a path.
         // This means that values like `undefined` will resolve to clips with an instance name of
         // `"undefined"`, for example.
-        let path = target.coerce_to_string(self, context)?;
+        let path = target.coerce_to_string(self)?;
         let root = start.root();
-        let start = start.object().coerce_to_object(self, context);
+        let start = start.object().coerce_to_object(self);
         Ok(self
-            .resolve_target_path(context, root, start, &path)?
+            .resolve_target_path(root, start, &path)?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -2604,7 +2332,6 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// at the prototype chain, but not the scope chain.
     pub fn resolve_target_path(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         root: DisplayObject<'gc>,
         start: Object<'gc>,
         path: &str,
@@ -2619,7 +2346,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         let mut path = path.as_bytes();
         let (mut object, mut is_slash_path) = if path[0] == b'/' {
             path = &path[1..];
-            (root.object().coerce_to_object(self, context), true)
+            (root.object().coerce_to_object(self), true)
         } else {
             (start, false)
         };
@@ -2683,7 +2410,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
                 {
                     child.object()
                 } else {
-                    object.get(&name, self, context).unwrap()
+                    object.get(&name, self).unwrap()
                 }
             };
 
@@ -2704,7 +2431,6 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     /// TODO: This can probably be merged with some of the above `resolve_target_path` methods.
     pub fn resolve_variable_path<'s>(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         start: DisplayObject<'gc>,
         path: &'s str,
     ) -> Result<Option<(Object<'gc>, &'s str)>, Error<'gc>> {
@@ -2732,7 +2458,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
                 {
                     return Ok(Some((object, var_name)));
                 }
@@ -2772,11 +2498,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ///
     /// Finally, if none of the above applies, it is a normal variable name resovled via the
     /// scope chain.
-    pub fn get_variable<'s>(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        path: &'s str,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    pub fn get_variable<'s>(&mut self, path: &'s str) -> Result<Value<'gc>, Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root();
 
@@ -2804,10 +2526,10 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
                 {
-                    if object.has_property(self, context, var_name) {
-                        return Ok(object.get(var_name, self, context)?);
+                    if object.has_property(self, var_name) {
+                        return Ok(object.get(var_name, self)?);
                     }
                 }
                 current_scope = scope.read().parent_cell();
@@ -2822,7 +2544,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
                 {
                     return Ok(object.into());
                 }
@@ -2832,7 +2554,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
         // Finally! It's a plain old variable name.
         // Resolve using scope chain, as normal.
-        self.resolve(&path, context)
+        self.resolve(&path)
     }
 
     /// Sets the value referenced by a target path string.
@@ -2857,12 +2579,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ///
     /// If the string does not resolve as a path, the path is considered a normal variable
     /// name and is set on the scope chain as usual.
-    pub fn set_variable<'s>(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        path: &'s str,
-        value: Value<'gc>,
-    ) -> Result<(), Error<'gc>> {
+    pub fn set_variable<'s>(&mut self, path: &'s str, value: Value<'gc>) -> Result<(), Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root();
 
@@ -2886,9 +2603,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(context, start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
                 {
-                    object.set(var_name, value, self, context)?;
+                    object.set(var_name, value, self)?;
                     return Ok(());
                 }
                 current_scope = scope.read().parent_cell();
@@ -2903,7 +2620,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
         // in the scope chain, otherwise it is created on the top-level object.
         let this = self.this_cell();
         let scope = self.scope_cell();
-        scope.read().set(path, value, self, context, this)?;
+        scope.read().set(path, value, self, this)?;
         Ok(())
     }
 
@@ -2911,23 +2628,19 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ///
     /// If the level does not exist, then it will be created and instantiated
     /// with a script object.
-    pub fn resolve_level(
-        &mut self,
-        level_id: u32,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> DisplayObject<'gc> {
-        if let Some(level) = context.levels.get(&level_id) {
+    pub fn resolve_level(&mut self, level_id: u32) -> DisplayObject<'gc> {
+        if let Some(level) = self.context.levels.get(&level_id) {
             *level
         } else {
             let mut level: DisplayObject<'_> = MovieClip::new(
                 SwfSlice::empty(self.base_clip().movie().unwrap()),
-                context.gc_context,
+                self.context.gc_context,
             )
             .into();
 
-            level.set_depth(context.gc_context, level_id as i32);
-            context.levels.insert(level_id, level);
-            level.post_instantiation(self.avm, context, level, None, false);
+            level.set_depth(self.context.gc_context, level_id as i32);
+            self.context.levels.insert(level_id, level);
+            level.post_instantiation(&mut self.context, level, None, false);
 
             level
         }
@@ -2943,7 +2656,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     /// Obtain the value of `_root`.
-    pub fn root_object(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Value<'gc> {
+    pub fn root_object(&self) -> Value<'gc> {
         self.base_clip().root().object()
     }
 
@@ -2961,11 +2674,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     ///
     /// Because scopes are object chains, the same rules for `Object::get`
     /// still apply here.
-    pub fn resolve(
-        &mut self,
-        name: &str,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    pub fn resolve(&mut self, name: &str) -> Result<Value<'gc>, Error<'gc>> {
         if name == "this" {
             return Ok(Value::Object(self.this_cell()));
         }
@@ -2976,11 +2685,11 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
 
         self.scope_cell()
             .read()
-            .resolve(name, self, context, self.this_cell())
+            .resolve(name, self, self.this_cell())
     }
 
     /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, name: &str) -> bool {
+    pub fn is_defined(&mut self, name: &str) -> bool {
         if name == "this" {
             return true;
         }
@@ -2989,7 +2698,7 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
             return true;
         }
 
-        self.scope_cell().read().is_defined(self, context, name)
+        self.scope_cell().read().is_defined(self, name)
     }
 
     /// Returns the SWF version of the action or function being executed.
@@ -3037,8 +2746,8 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     /// Define a named local variable within this activation.
-    pub fn define(&self, name: &str, value: impl Into<Value<'gc>>, mc: MutationContext<'gc, '_>) {
-        self.scope().define(name, value, mc)
+    pub fn define(&self, name: &str, value: impl Into<Value<'gc>>) {
+        self.scope().define(name, value, self.context.gc_context)
     }
 
     /// Returns value of `this` as a reference.
@@ -3070,14 +2779,9 @@ impl<'a, 'gc: 'a> Activation<'a, 'gc> {
     }
 
     /// Set a local register.
-    pub fn set_local_register(
-        &mut self,
-        id: u8,
-        value: impl Into<Value<'gc>>,
-        mc: MutationContext<'gc, '_>,
-    ) {
+    pub fn set_local_register(&mut self, id: u8, value: impl Into<Value<'gc>>) {
         if let Some(ref mut local_registers) = self.local_registers {
-            if let Some(r) = local_registers.write(mc).get_mut(id) {
+            if let Some(r) = local_registers.write(self.context.gc_context).get_mut(id) {
                 *r = value.into();
             }
         }

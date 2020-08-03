@@ -1,7 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::{AvmString, Object, TObject, UpdateContext};
+use crate::avm1::{AvmString, Object, TObject};
 use std::borrow::Cow;
 use std::f64::NAN;
 
@@ -133,11 +133,7 @@ impl<'gc> Value<'gc> {
     /// * In SWF6 and lower, `undefined` is coerced to `0.0` (like `false`)
     /// rather than `NaN` as required by spec.
     /// * In SWF5 and lower, hexadecimal is unsupported.
-    fn primitive_as_number(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> f64 {
+    fn primitive_as_number(&self, activation: &mut Activation<'_, 'gc, '_>) -> f64 {
         match self {
             Value::Undefined if activation.current_swf_version() < 7 => 0.0,
             Value::Null if activation.current_swf_version() < 7 => 0.0,
@@ -201,14 +197,13 @@ impl<'gc> Value<'gc> {
     /// ECMA-262 2nd edition s. 9.3 ToNumber
     pub fn coerce_to_f64(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<f64, Error<'gc>> {
         Ok(match self {
             Value::Object(_) => self
-                .to_primitive_num(activation, context)?
-                .primitive_as_number(activation, context),
-            val => val.primitive_as_number(activation, context),
+                .to_primitive_num(activation)?
+                .primitive_as_number(activation),
+            val => val.primitive_as_number(activation),
         })
     }
 
@@ -225,11 +220,10 @@ impl<'gc> Value<'gc> {
     ///   return `undefined` rather than yielding a runtime error.
     pub fn to_primitive_num(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::Object(object) => object.call_method("valueOf", &[], activation, context)?,
+            Value::Object(object) => object.call_method("valueOf", &[], activation)?,
             val => val.to_owned(),
         })
     }
@@ -239,18 +233,17 @@ impl<'gc> Value<'gc> {
     pub fn abstract_lt(
         &self,
         other: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let prim_self = self.to_primitive_num(activation, context)?;
-        let prim_other = other.to_primitive_num(activation, context)?;
+        let prim_self = self.to_primitive_num(activation)?;
+        let prim_other = other.to_primitive_num(activation)?;
 
         if let (Value::String(a), Value::String(b)) = (&prim_self, &prim_other) {
             return Ok(a.to_string().bytes().lt(b.to_string().bytes()).into());
         }
 
-        let num_self = prim_self.primitive_as_number(activation, context);
-        let num_other = prim_other.primitive_as_number(activation, context);
+        let num_self = prim_self.primitive_as_number(activation);
+        let num_other = prim_other.primitive_as_number(activation);
 
         if num_self.is_nan() || num_other.is_nan() {
             return Ok(Value::Undefined);
@@ -279,8 +272,7 @@ impl<'gc> Value<'gc> {
     pub fn abstract_eq(
         &self,
         other: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         coerced: bool,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match (self, &other) {
@@ -305,62 +297,60 @@ impl<'gc> Value<'gc> {
             (Value::Bool(a), Value::Bool(b)) => Ok((a == b).into()),
             (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b).into()),
             (Value::Object(a), Value::Null) | (Value::Object(a), Value::Undefined) => {
-                Ok(Object::ptr_eq(*a, activation.avm.global_object_cell()).into())
+                Ok(Object::ptr_eq(*a, activation.context.avm1.global_object_cell()).into())
             }
             (Value::Null, Value::Object(b)) | (Value::Undefined, Value::Object(b)) => {
-                Ok(Object::ptr_eq(*b, activation.avm.global_object_cell()).into())
+                Ok(Object::ptr_eq(*b, activation.context.avm1.global_object_cell()).into())
             }
             (Value::Undefined, Value::Null) => Ok(true.into()),
             (Value::Null, Value::Undefined) => Ok(true.into()),
             (Value::Number(_), Value::String(_)) => Ok(self.abstract_eq(
-                Value::Number(other.coerce_to_f64(activation, context)?),
+                Value::Number(other.coerce_to_f64(activation)?),
                 activation,
-                context,
                 true,
             )?),
             (Value::String(_), Value::Number(_)) => {
-                Ok(Value::Number(self.coerce_to_f64(activation, context)?)
-                    .abstract_eq(other, activation, context, true)?)
+                Ok(Value::Number(self.coerce_to_f64(activation)?)
+                    .abstract_eq(other, activation, true)?)
             }
-            (Value::Bool(_), _) => Ok(Value::Number(self.coerce_to_f64(activation, context)?)
-                .abstract_eq(other, activation, context, true)?),
+            (Value::Bool(_), _) => Ok(Value::Number(self.coerce_to_f64(activation)?)
+                .abstract_eq(other, activation, true)?),
             (_, Value::Bool(_)) => Ok(self.abstract_eq(
-                Value::Number(other.coerce_to_f64(activation, context)?),
+                Value::Number(other.coerce_to_f64(activation)?),
                 activation,
-                context,
                 true,
             )?),
             (Value::String(_), Value::Object(_)) => {
-                let non_obj_other = other.to_primitive_num(activation, context)?;
+                let non_obj_other = other.to_primitive_num(activation)?;
                 if let Value::Object(_) = non_obj_other {
                     return Ok(false.into());
                 }
 
-                Ok(self.abstract_eq(non_obj_other, activation, context, true)?)
+                Ok(self.abstract_eq(non_obj_other, activation, true)?)
             }
             (Value::Number(_), Value::Object(_)) => {
-                let non_obj_other = other.to_primitive_num(activation, context)?;
+                let non_obj_other = other.to_primitive_num(activation)?;
                 if let Value::Object(_) = non_obj_other {
                     return Ok(false.into());
                 }
 
-                Ok(self.abstract_eq(non_obj_other, activation, context, true)?)
+                Ok(self.abstract_eq(non_obj_other, activation, true)?)
             }
             (Value::Object(_), Value::String(_)) => {
-                let non_obj_self = self.to_primitive_num(activation, context)?;
+                let non_obj_self = self.to_primitive_num(activation)?;
                 if let Value::Object(_) = non_obj_self {
                     return Ok(false.into());
                 }
 
-                Ok(non_obj_self.abstract_eq(other, activation, context, true)?)
+                Ok(non_obj_self.abstract_eq(other, activation, true)?)
             }
             (Value::Object(_), Value::Number(_)) => {
-                let non_obj_self = self.to_primitive_num(activation, context)?;
+                let non_obj_self = self.to_primitive_num(activation)?;
                 if let Value::Object(_) = non_obj_self {
                     return Ok(false.into());
                 }
 
-                Ok(non_obj_self.abstract_eq(other, activation, context, true)?)
+                Ok(non_obj_self.abstract_eq(other, activation, true)?)
             }
             _ => Ok(false.into()),
         }
@@ -386,11 +376,9 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_u16(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<u16, Error<'gc>> {
-        self.coerce_to_f64(activation, context)
-            .map(f64_to_wrapping_u16)
+        self.coerce_to_f64(activation).map(f64_to_wrapping_u16)
     }
 
     /// Coerce a number to an `i16` following the wrapping behavior ECMAScript specifications.
@@ -399,11 +387,9 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_i16(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<i16, Error<'gc>> {
-        self.coerce_to_f64(activation, context)
-            .map(f64_to_wrapping_i16)
+        self.coerce_to_f64(activation).map(f64_to_wrapping_i16)
     }
 
     /// Coerce a number to an `i32` following the ECMAScript specifications for `ToInt32`.
@@ -413,11 +399,9 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_i32(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<i32, Error<'gc>> {
-        self.coerce_to_f64(activation, context)
-            .map(f64_to_wrapping_i32)
+        self.coerce_to_f64(activation).map(f64_to_wrapping_i32)
     }
 
     /// Coerce a number to an `u32` following the ECMAScript specifications for `ToUInt32`.
@@ -426,26 +410,21 @@ impl<'gc> Value<'gc> {
     #[allow(dead_code)]
     pub fn coerce_to_u32(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<u32, Error<'gc>> {
-        self.coerce_to_f64(activation, context)
-            .map(f64_to_wrapping_u32)
+        self.coerce_to_f64(activation).map(f64_to_wrapping_u32)
     }
 
     /// Coerce a value to a string.
-    pub fn coerce_to_string<'a>(
-        &'a self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+    pub fn coerce_to_string(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::Object(object) => {
-                match object.call_method("toString", &[], activation, context)? {
-                    Value::String(s) => s,
-                    _ => "[type Object]".into(),
-                }
-            }
+            Value::Object(object) => match object.call_method("toString", &[], activation)? {
+                Value::String(s) => s,
+                _ => "[type Object]".into(),
+            },
             Value::Undefined => {
                 if activation.current_swf_version() >= 7 {
                     "undefined".into()
@@ -457,8 +436,8 @@ impl<'gc> Value<'gc> {
             Value::Bool(true) => "true".into(),
             Value::Bool(false) => "false".into(),
             Value::Number(v) => match f64_to_string(*v) {
-                Cow::Borrowed(str) => str.into(),
-                Cow::Owned(str) => AvmString::new(context.gc_context, str),
+                Cow::Borrowed(s) => s.into(),
+                Cow::Owned(s) => AvmString::new(activation.context.gc_context, s),
             },
             Value::String(v) => v.to_owned(),
         })
@@ -492,25 +471,20 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn coerce_to_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Object<'gc> {
-        ValueObject::boxed(activation, context, self.to_owned())
+    pub fn coerce_to_object(&self, activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+        ValueObject::boxed(activation, self.to_owned())
     }
 
     pub fn call(
         &self,
         name: &str,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Value::Object(object) = self {
-            object.call(name, activation, context, this, base_proto, args)
+            object.call(name, activation, this, base_proto, args)
         } else {
             Ok(Value::Undefined)
         }
@@ -586,43 +560,32 @@ mod test {
     use crate::avm1::object::{Object, TObject};
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::{AvmString, Value};
-    use crate::context::UpdateContext;
     use enumset::EnumSet;
     use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
     #[test]
     fn to_primitive_num() {
-        with_avm(6, |activation, context, _this| -> Result<(), Error> {
+        with_avm(6, |activation, _this| -> Result<(), Error> {
             let true_value = Value::Bool(true);
             let undefined = Value::Undefined;
             let false_value = Value::Bool(false);
             let null = Value::Null;
 
+            assert_eq!(true_value.to_primitive_num(activation).unwrap(), true_value);
+            assert_eq!(undefined.to_primitive_num(activation).unwrap(), undefined);
             assert_eq!(
-                true_value.to_primitive_num(activation, context).unwrap(),
-                true_value
-            );
-            assert_eq!(
-                undefined.to_primitive_num(activation, context).unwrap(),
-                undefined
-            );
-            assert_eq!(
-                false_value.to_primitive_num(activation, context).unwrap(),
+                false_value.to_primitive_num(activation).unwrap(),
                 false_value
             );
-            assert_eq!(null.to_primitive_num(activation, context).unwrap(), null);
+            assert_eq!(null.to_primitive_num(activation).unwrap(), null);
 
-            let (protos, global, _) = create_globals(context.gc_context);
+            let (protos, global, _) = create_globals(activation.context.gc_context);
             let vglobal = Value::Object(global);
 
-            assert_eq!(
-                vglobal.to_primitive_num(activation, context).unwrap(),
-                undefined
-            );
+            assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);
 
             fn value_of_impl<'gc>(
-                _: &mut Activation<'_, 'gc>,
-                _: &mut UpdateContext<'_, 'gc, '_>,
+                _activation: &mut Activation<'_, 'gc, '_>,
                 _: Object<'gc>,
                 _: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
@@ -630,24 +593,22 @@ mod test {
             }
 
             let valueof = FunctionObject::function(
-                context.gc_context,
+                activation.context.gc_context,
                 Executable::Native(value_of_impl),
                 Some(protos.function),
                 protos.function,
             );
 
-            let o = ScriptObject::object_cell(context.gc_context, Some(protos.object));
+            let o = ScriptObject::object_cell(activation.context.gc_context, Some(protos.object));
             o.define_value(
-                context.gc_context,
+                activation.context.gc_context,
                 "valueOf",
                 valueof.into(),
                 EnumSet::empty(),
             );
 
             assert_eq!(
-                Value::Object(o)
-                    .to_primitive_num(activation, context)
-                    .unwrap(),
+                Value::Object(o).to_primitive_num(activation).unwrap(),
                 Value::Number(5.0)
             );
 
@@ -658,20 +619,20 @@ mod test {
     #[test]
     #[allow(clippy::float_cmp)]
     fn to_number_swf7() {
-        with_avm(7, |activation, context, _this| -> Result<(), Error> {
+        with_avm(7, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
             let u = Value::Undefined;
             let f = Value::Bool(false);
             let n = Value::Null;
 
-            assert_eq!(t.coerce_to_f64(activation, context).unwrap(), 1.0);
-            assert!(u.coerce_to_f64(activation, context).unwrap().is_nan());
-            assert_eq!(f.coerce_to_f64(activation, context).unwrap(), 0.0);
-            assert!(n.coerce_to_f64(activation, context).unwrap().is_nan());
+            assert_eq!(t.coerce_to_f64(activation).unwrap(), 1.0);
+            assert!(u.coerce_to_f64(activation).unwrap().is_nan());
+            assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
+            assert!(n.coerce_to_f64(activation).unwrap().is_nan());
 
-            let bo = Value::Object(ScriptObject::bare_object(context.gc_context).into());
+            let bo = Value::Object(ScriptObject::bare_object(activation.context.gc_context).into());
 
-            assert!(bo.coerce_to_f64(activation, context).unwrap().is_nan());
+            assert!(bo.coerce_to_f64(activation).unwrap().is_nan());
 
             Ok(())
         });
@@ -680,20 +641,20 @@ mod test {
     #[test]
     #[allow(clippy::float_cmp)]
     fn to_number_swf6() {
-        with_avm(6, |activation, context, _this| -> Result<(), Error> {
+        with_avm(6, |activation, _this| -> Result<(), Error> {
             let t = Value::Bool(true);
             let u = Value::Undefined;
             let f = Value::Bool(false);
             let n = Value::Null;
 
-            assert_eq!(t.coerce_to_f64(activation, context).unwrap(), 1.0);
-            assert_eq!(u.coerce_to_f64(activation, context).unwrap(), 0.0);
-            assert_eq!(f.coerce_to_f64(activation, context).unwrap(), 0.0);
-            assert_eq!(n.coerce_to_f64(activation, context).unwrap(), 0.0);
+            assert_eq!(t.coerce_to_f64(activation).unwrap(), 1.0);
+            assert_eq!(u.coerce_to_f64(activation).unwrap(), 0.0);
+            assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
+            assert_eq!(n.coerce_to_f64(activation).unwrap(), 0.0);
 
-            let bo = Value::Object(ScriptObject::bare_object(context.gc_context).into());
+            let bo = Value::Object(ScriptObject::bare_object(activation.context.gc_context).into());
 
-            assert_eq!(bo.coerce_to_f64(activation, context).unwrap(), 0.0);
+            assert_eq!(bo.coerce_to_f64(activation).unwrap(), 0.0);
 
             Ok(())
         });
@@ -701,38 +662,26 @@ mod test {
 
     #[test]
     fn abstract_lt_num() {
-        with_avm(8, |activation, context, _this| -> Result<(), Error> {
+        with_avm(8, |activation, _this| -> Result<(), Error> {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
-            assert_eq!(
-                a.abstract_lt(b, activation, context).unwrap(),
-                Value::Bool(true)
-            );
+            assert_eq!(a.abstract_lt(b, activation).unwrap(), Value::Bool(true));
 
             let nan = Value::Number(NAN);
-            assert_eq!(
-                a.abstract_lt(nan, activation, context).unwrap(),
-                Value::Undefined
-            );
+            assert_eq!(a.abstract_lt(nan, activation).unwrap(), Value::Undefined);
 
             let inf = Value::Number(INFINITY);
-            assert_eq!(
-                a.abstract_lt(inf, activation, context).unwrap(),
-                Value::Bool(true)
-            );
+            assert_eq!(a.abstract_lt(inf, activation).unwrap(), Value::Bool(true));
 
             let neg_inf = Value::Number(NEG_INFINITY);
             assert_eq!(
-                a.abstract_lt(neg_inf, activation, context).unwrap(),
+                a.abstract_lt(neg_inf, activation).unwrap(),
                 Value::Bool(false)
             );
 
             let zero = Value::Number(0.0);
-            assert_eq!(
-                a.abstract_lt(zero, activation, context).unwrap(),
-                Value::Bool(false)
-            );
+            assert_eq!(a.abstract_lt(zero, activation).unwrap(), Value::Bool(false));
 
             Ok(())
         });
@@ -740,38 +689,35 @@ mod test {
 
     #[test]
     fn abstract_gt_num() {
-        with_avm(8, |activation, context, _this| -> Result<(), Error> {
+        with_avm(8, |activation, _this| -> Result<(), Error> {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
             assert_eq!(
-                b.abstract_lt(a.clone(), activation, context).unwrap(),
+                b.abstract_lt(a.clone(), activation).unwrap(),
                 Value::Bool(false)
             );
 
             let nan = Value::Number(NAN);
             assert_eq!(
-                nan.abstract_lt(a.clone(), activation, context).unwrap(),
+                nan.abstract_lt(a.clone(), activation).unwrap(),
                 Value::Undefined
             );
 
             let inf = Value::Number(INFINITY);
             assert_eq!(
-                inf.abstract_lt(a.clone(), activation, context).unwrap(),
+                inf.abstract_lt(a.clone(), activation).unwrap(),
                 Value::Bool(false)
             );
 
             let neg_inf = Value::Number(NEG_INFINITY);
             assert_eq!(
-                neg_inf.abstract_lt(a.clone(), activation, context).unwrap(),
+                neg_inf.abstract_lt(a.clone(), activation).unwrap(),
                 Value::Bool(true)
             );
 
             let zero = Value::Number(0.0);
-            assert_eq!(
-                zero.abstract_lt(a, activation, context).unwrap(),
-                Value::Bool(true)
-            );
+            assert_eq!(zero.abstract_lt(a, activation).unwrap(), Value::Bool(true));
 
             Ok(())
         });
@@ -779,14 +725,17 @@ mod test {
 
     #[test]
     fn abstract_lt_str() {
-        with_avm(8, |activation, context, _this| -> Result<(), Error> {
-            let a = Value::String(AvmString::new(context.gc_context, "a".to_owned()));
-            let b = Value::String(AvmString::new(context.gc_context, "b".to_owned()));
+        with_avm(8, |activation, _this| -> Result<(), Error> {
+            let a = Value::String(AvmString::new(
+                activation.context.gc_context,
+                "a".to_owned(),
+            ));
+            let b = Value::String(AvmString::new(
+                activation.context.gc_context,
+                "b".to_owned(),
+            ));
 
-            assert_eq!(
-                a.abstract_lt(b, activation, context).unwrap(),
-                Value::Bool(true)
-            );
+            assert_eq!(a.abstract_lt(b, activation).unwrap(), Value::Bool(true));
 
             Ok(())
         })
@@ -794,14 +743,17 @@ mod test {
 
     #[test]
     fn abstract_gt_str() {
-        with_avm(8, |activation, context, _this| -> Result<(), Error> {
-            let a = Value::String(AvmString::new(context.gc_context, "a".to_owned()));
-            let b = Value::String(AvmString::new(context.gc_context, "b".to_owned()));
+        with_avm(8, |activation, _this| -> Result<(), Error> {
+            let a = Value::String(AvmString::new(
+                activation.context.gc_context,
+                "a".to_owned(),
+            ));
+            let b = Value::String(AvmString::new(
+                activation.context.gc_context,
+                "b".to_owned(),
+            ));
 
-            assert_eq!(
-                b.abstract_lt(a, activation, context).unwrap(),
-                Value::Bool(false)
-            );
+            assert_eq!(b.abstract_lt(a, activation).unwrap(), Value::Bool(false));
 
             Ok(())
         })

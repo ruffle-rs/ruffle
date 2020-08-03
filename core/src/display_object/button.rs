@@ -1,4 +1,4 @@
-use crate::avm1::{Avm1, Object, StageObject, Value};
+use crate::avm1::{Object, StageObject, Value};
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -119,7 +119,6 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
     fn post_instantiation(
         &mut self,
-        _avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -138,10 +137,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         }
     }
 
-    fn run_frame(&mut self, avm: &mut Avm1<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0
             .write(context.gc_context)
-            .run_frame((*self).into(), avm, context)
+            .run_frame((*self).into(), context)
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
@@ -169,7 +168,6 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
     fn mouse_pick(
         &self,
-        _avm: &mut Avm1<'gc>,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
@@ -203,13 +201,12 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     /// so forth.
     fn handle_clip_event(
         &self,
-        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
         if event.propagates() {
             for child in self.children() {
-                if child.handle_clip_event(avm, context, event) == ClipEventResult::Handled {
+                if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
                 }
             }
@@ -217,7 +214,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
         self.0
             .write(context.gc_context)
-            .handle_clip_event((*self).into(), avm, context, event)
+            .handle_clip_event((*self).into(), context, event)
     }
 }
 
@@ -225,7 +222,6 @@ impl<'gc> ButtonData<'gc> {
     fn set_state(
         &mut self,
         self_display_object: DisplayObject<'gc>,
-        avm: &mut Avm1<'gc>,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         state: ButtonState,
     ) {
@@ -250,8 +246,8 @@ impl<'gc> ButtonData<'gc> {
                         &record.color_transform.clone().into(),
                     );
                     child.set_depth(context.gc_context, record.depth.into());
-                    child.post_instantiation(avm, context, child, None, false);
-                    child.run_frame(avm, context);
+                    child.post_instantiation(context, child, None, false);
+                    child.run_frame(context);
                     self.children.insert(record.depth.into(), child);
                 }
             }
@@ -261,13 +257,12 @@ impl<'gc> ButtonData<'gc> {
     fn run_frame(
         &mut self,
         self_display_object: DisplayObject<'gc>,
-        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         // TODO: Move this to post_instantiation.
         if !self.initialized {
             self.initialized = true;
-            self.set_state(self_display_object, avm, context, ButtonState::Up);
+            self.set_state(self_display_object, context, ButtonState::Up);
 
             for record in &self.static_data.read().records {
                 if record.states.contains(&swf::ButtonState::HitTest) {
@@ -281,7 +276,7 @@ impl<'gc> ButtonData<'gc> {
                                 child.set_matrix(context.gc_context, &record.matrix);
                                 child.set_parent(context.gc_context, Some(self_display_object));
                                 child.set_depth(context.gc_context, record.depth.into());
-                                child.post_instantiation(avm, context, child, None, false);
+                                child.post_instantiation(context, child, None, false);
                             }
                             self.hit_area.insert(record.depth.into(), child);
                         }
@@ -299,14 +294,13 @@ impl<'gc> ButtonData<'gc> {
         }
 
         for child in self.children.values_mut() {
-            child.run_frame(avm, context);
+            child.run_frame(context);
         }
     }
 
     fn handle_clip_event(
         &mut self,
         self_display_object: DisplayObject<'gc>,
-        avm: &mut Avm1<'gc>,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
@@ -366,7 +360,7 @@ impl<'gc> ButtonData<'gc> {
             }
         }
 
-        self.set_state(self_display_object, avm, context, new_state);
+        self.set_state(self_display_object, context, new_state);
 
         handled
     }

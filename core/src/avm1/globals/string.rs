@@ -6,28 +6,26 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use crate::context::UpdateContext;
 use crate::string_utils;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// `String` constructor
 pub fn string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
-        Some(v) => v.coerce_to_string(activation, ac)?,
-        _ => AvmString::new(ac.gc_context, String::new()),
+        Some(v) => v.coerce_to_string(activation)?,
+        _ => AvmString::new(activation.context.gc_context, String::new()),
     };
 
     if let Some(mut vbox) = this.as_value_object() {
         let len = value.encode_utf16().count();
-        vbox.set_length(ac.gc_context, len);
-        vbox.replace_value(ac.gc_context, value.clone().into());
+        vbox.set_length(activation.context.gc_context, len);
+        vbox.replace_value(activation.context.gc_context, value.clone().into());
     }
 
     Ok(Value::Undefined)
@@ -35,15 +33,14 @@ pub fn string<'gc>(
 
 /// `String` function
 pub fn string_function<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
-        Some(v) => v.coerce_to_string(activation, ac)?,
-        _ => AvmString::new(ac.gc_context, String::new()),
+        Some(v) => v.coerce_to_string(activation)?,
+        _ => AvmString::new(activation.context.gc_context, String::new()),
     };
 
     Ok(value.into())
@@ -188,19 +185,18 @@ pub fn create_proto<'gc>(
 }
 
 fn char_at<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: Will return REPLACEMENT_CHAR if this indexes a character outside the BMP, losing info about the surrogate.
     // When we improve our string representation, the unpaired surrogate should be returned.
     let this_val = Value::from(this);
-    let string = this_val.coerce_to_string(activation, context)?;
+    let string = this_val.coerce_to_string(activation)?;
     let i = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation, context)?;
+        .coerce_to_i32(activation)?;
     let ret = if i >= 0 {
         string
             .encode_utf16()
@@ -210,21 +206,20 @@ fn char_at<'gc>(
     } else {
         "".into()
     };
-    Ok(AvmString::new(context.gc_context, ret).into())
+    Ok(AvmString::new(activation.context.gc_context, ret).into())
 }
 
 fn char_code_at<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation, context)?;
+    let this = this_val.coerce_to_string(activation)?;
     let i = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation, context)?;
+        .coerce_to_i32(activation)?;
     let ret = if i >= 0 {
         this.encode_utf16()
             .nth(i as usize)
@@ -237,55 +232,50 @@ fn char_code_at<'gc>(
 }
 
 fn concat<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut ret = Value::from(this)
-        .coerce_to_string(activation, context)?
-        .to_string();
+    let mut ret = Value::from(this).coerce_to_string(activation)?.to_string();
     for arg in args {
-        let s = arg.coerce_to_string(activation, context)?;
+        let s = arg.coerce_to_string(activation)?;
         ret.push_str(&s)
     }
-    Ok(AvmString::new(context.gc_context, ret).into())
+    Ok(AvmString::new(activation.context.gc_context, ret).into())
 }
 
 fn from_char_code<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: Unpaired surrogates will be replace with Unicode replacement char.
     let mut out = String::with_capacity(args.len());
     for arg in args {
-        let i = arg.coerce_to_u16(activation, context)?;
+        let i = arg.coerce_to_u16(activation)?;
         if i == 0 {
             // Stop at a null-terminator.
             break;
         }
         out.push(utf16_code_unit_to_char(i));
     }
-    Ok(AvmString::new(context.gc_context, out).into())
+    Ok(AvmString::new(activation.context.gc_context, out).into())
 }
 
 fn index_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = Value::from(this)
-        .coerce_to_string(activation, context)?
+        .coerce_to_string(activation)?
         .encode_utf16()
         .collect::<Vec<u16>>();
     let pattern = match args.get(0) {
         None | Some(Value::Undefined) => return Ok(Value::Undefined),
         Some(s) => s
             .clone()
-            .coerce_to_string(activation, context)?
+            .coerce_to_string(activation)?
             .encode_utf16()
             .collect::<Vec<_>>(),
     };
@@ -293,7 +283,7 @@ fn index_of<'gc>(
         let n = args
             .get(1)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation, context)?;
+            .coerce_to_i32(activation)?;
         if n >= 0 {
             n as usize
         } else {
@@ -320,27 +310,26 @@ fn index_of<'gc>(
 }
 
 fn last_index_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = Value::from(this)
-        .coerce_to_string(activation, context)?
+        .coerce_to_string(activation)?
         .encode_utf16()
         .collect::<Vec<u16>>();
     let pattern = match args.get(0) {
         None | Some(Value::Undefined) => return Ok(Value::Undefined),
         Some(s) => s
             .clone()
-            .coerce_to_string(activation, context)?
+            .coerce_to_string(activation)?
             .encode_utf16()
             .collect::<Vec<_>>(),
     };
     let start_index = match args.get(1) {
         None | Some(Value::Undefined) => this.len(),
         Some(n) => {
-            let n = n.coerce_to_i32(activation, context)?;
+            let n = n.coerce_to_i32(activation)?;
             if n >= 0 {
                 let n = n as usize;
                 if n <= this.len() {
@@ -372,8 +361,7 @@ fn last_index_of<'gc>(
 }
 
 fn slice<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -383,17 +371,17 @@ fn slice<'gc>(
     }
 
     let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation, context)?;
+    let this = this_val.coerce_to_string(activation)?;
     let this_len = this.encode_utf16().count();
     let start_index = string_wrapping_index(
         args.get(0)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation, context)?,
+            .coerce_to_i32(activation)?,
         this_len,
     );
     let end_index = match args.get(1) {
         None | Some(Value::Undefined) => this_len,
-        Some(n) => string_wrapping_index(n.coerce_to_i32(activation, context)?, this_len),
+        Some(n) => string_wrapping_index(n.coerce_to_i32(activation)?, this_len),
     };
     if start_index < end_index {
         let ret = utf16_iter_to_string(
@@ -401,33 +389,35 @@ fn slice<'gc>(
                 .skip(start_index)
                 .take(end_index - start_index),
         );
-        Ok(AvmString::new(context.gc_context, ret).into())
+        Ok(AvmString::new(activation.context.gc_context, ret).into())
     } else {
         Ok("".into())
     }
 }
 
 fn split<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation, context)?;
+    let this = this_val.coerce_to_string(activation)?;
     let delimiter_val = args.get(0).unwrap_or(&Value::Undefined);
-    let delimiter = delimiter_val.coerce_to_string(activation, context)?;
+    let delimiter = delimiter_val.coerce_to_string(activation)?;
     let limit = match args.get(1) {
         None | Some(Value::Undefined) => std::usize::MAX,
-        Some(n) => std::cmp::max(0, n.coerce_to_i32(activation, context)?) as usize,
+        Some(n) => std::cmp::max(0, n.coerce_to_i32(activation)?) as usize,
     };
-    let array = ScriptObject::array(context.gc_context, Some(activation.avm.prototypes.array));
+    let array = ScriptObject::array(
+        activation.context.gc_context,
+        Some(activation.context.avm1.prototypes.array),
+    );
     if !delimiter.is_empty() {
         for (i, token) in this.split(delimiter.as_ref()).take(limit).enumerate() {
             array.set_array_element(
                 i,
-                AvmString::new(context.gc_context, token.to_string()).into(),
-                context.gc_context,
+                AvmString::new(activation.context.gc_context, token.to_string()).into(),
+                activation.context.gc_context,
             );
         }
     } else {
@@ -437,8 +427,8 @@ fn split<'gc>(
         for (i, token) in this.chars().take(limit).enumerate() {
             array.set_array_element(
                 i,
-                AvmString::new(context.gc_context, token.to_string()).into(),
-                context.gc_context,
+                AvmString::new(activation.context.gc_context, token.to_string()).into(),
+                activation.context.gc_context,
             );
         }
     }
@@ -446,8 +436,7 @@ fn split<'gc>(
 }
 
 fn substr<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -456,25 +445,22 @@ fn substr<'gc>(
     }
 
     let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation, context)?;
+    let this = this_val.coerce_to_string(activation)?;
     let this_len = this.encode_utf16().count();
-    let start_index = string_wrapping_index(
-        args.get(0).unwrap().coerce_to_i32(activation, context)?,
-        this_len,
-    );
+    let start_index =
+        string_wrapping_index(args.get(0).unwrap().coerce_to_i32(activation)?, this_len);
 
     let len = match args.get(1) {
         None | Some(Value::Undefined) => this_len,
-        Some(n) => string_index(n.coerce_to_i32(activation, context)?, this_len),
+        Some(n) => string_index(n.coerce_to_i32(activation)?, this_len),
     };
 
     let ret = utf16_iter_to_string(this.encode_utf16().skip(start_index).take(len));
-    Ok(AvmString::new(context.gc_context, ret).into())
+    Ok(AvmString::new(activation.context.gc_context, ret).into())
 }
 
 fn substring<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -483,16 +469,13 @@ fn substring<'gc>(
     }
 
     let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation, context)?;
+    let this = this_val.coerce_to_string(activation)?;
     let this_len = this.encode_utf16().count();
-    let mut start_index = string_index(
-        args.get(0).unwrap().coerce_to_i32(activation, context)?,
-        this_len,
-    );
+    let mut start_index = string_index(args.get(0).unwrap().coerce_to_i32(activation)?, this_len);
 
     let mut end_index = match args.get(1) {
         None | Some(Value::Undefined) => this_len,
-        Some(n) => string_index(n.coerce_to_i32(activation, context)?, this_len),
+        Some(n) => string_index(n.coerce_to_i32(activation)?, this_len),
     };
 
     // substring automatically swaps the start/end if they are flipped.
@@ -504,19 +487,18 @@ fn substring<'gc>(
             .skip(start_index)
             .take(end_index - start_index),
     );
-    Ok(AvmString::new(context.gc_context, ret).into())
+    Ok(AvmString::new(activation.context.gc_context, ret).into())
 }
 
 fn to_lower_case<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation, context)?;
+    let this = this_val.coerce_to_string(activation)?;
     Ok(AvmString::new(
-        context.gc_context,
+        activation.context.gc_context,
         this.chars()
             .map(string_utils::swf_char_to_lowercase)
             .collect::<String>(),
@@ -526,8 +508,7 @@ fn to_lower_case<'gc>(
 
 /// `String.toString` / `String.valueOf` impl
 pub fn to_string_value_of<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -544,15 +525,14 @@ pub fn to_string_value_of<'gc>(
 }
 
 fn to_upper_case<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation, context)?;
+    let this = this_val.coerce_to_string(activation)?;
     Ok(AvmString::new(
-        context.gc_context,
+        activation.context.gc_context,
         this.chars()
             .map(string_utils::swf_char_to_uppercase)
             .collect::<String>(),

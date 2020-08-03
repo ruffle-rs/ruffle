@@ -4,7 +4,6 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::{AvmString, Object, TObject, Value};
-use crate::context::UpdateContext;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
@@ -27,53 +26,53 @@ macro_rules! with_color_transform {
 }
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
+
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let red_multiplier = args
         .get(0)
         .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     let green_multiplier = args
         .get(1)
         .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     let blue_multiplier = args
         .get(2)
         .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     let alpha_multiplier = args
         .get(3)
         .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     let red_offset = args
         .get(4)
         .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     let green_offset = args
         .get(5)
         .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     let blue_offset = args
         .get(6)
         .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
     let alpha_offset = args
         .get(7)
         .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(activation, context)?;
+        .coerce_to_f64(activation)?;
 
     let ct = this.as_color_transform_object().unwrap();
-    ct.set_red_multiplier(context.gc_context, red_multiplier);
-    ct.set_green_multiplier(context.gc_context, green_multiplier);
-    ct.set_blue_multiplier(context.gc_context, blue_multiplier);
-    ct.set_alpha_multiplier(context.gc_context, alpha_multiplier);
-    ct.set_red_offset(context.gc_context, red_offset);
-    ct.set_green_offset(context.gc_context, green_offset);
-    ct.set_blue_offset(context.gc_context, blue_offset);
-    ct.set_alpha_offset(context.gc_context, alpha_offset);
+    ct.set_red_multiplier(activation.context.gc_context, red_multiplier);
+    ct.set_green_multiplier(activation.context.gc_context, green_multiplier);
+    ct.set_blue_multiplier(activation.context.gc_context, blue_multiplier);
+    ct.set_alpha_multiplier(activation.context.gc_context, alpha_multiplier);
+    ct.set_red_offset(activation.context.gc_context, red_offset);
+    ct.set_green_offset(activation.context.gc_context, green_offset);
+    ct.set_blue_offset(activation.context.gc_context, blue_offset);
+    ct.set_alpha_offset(activation.context.gc_context, alpha_offset);
 
     Ok(Value::Undefined)
 }
@@ -82,33 +81,32 @@ pub fn constructor<'gc>(
 #[allow(dead_code)]
 pub fn object_to_color_transform<'gc>(
     object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<ColorTransform, Error<'gc>> {
     let red_multiplier = object
-        .get("redMultiplier", activation, context)?
-        .coerce_to_f64(activation, context)? as f32;
+        .get("redMultiplier", activation)?
+        .coerce_to_f64(activation)? as f32;
     let green_multiplier = object
-        .get("greenMultiplier", activation, context)?
-        .coerce_to_f64(activation, context)? as f32;
+        .get("greenMultiplier", activation)?
+        .coerce_to_f64(activation)? as f32;
     let blue_multiplier = object
-        .get("blueMultiplier", activation, context)?
-        .coerce_to_f64(activation, context)? as f32;
+        .get("blueMultiplier", activation)?
+        .coerce_to_f64(activation)? as f32;
     let alpha_multiplier = object
-        .get("alphaMultiplier", activation, context)?
-        .coerce_to_f64(activation, context)? as f32;
+        .get("alphaMultiplier", activation)?
+        .coerce_to_f64(activation)? as f32;
     let red_offset = object
-        .get("redOffset", activation, context)?
-        .coerce_to_f64(activation, context)? as f32;
+        .get("redOffset", activation)?
+        .coerce_to_f64(activation)? as f32;
     let green_offset = object
-        .get("greenOffset", activation, context)?
-        .coerce_to_f64(activation, context)? as f32;
+        .get("greenOffset", activation)?
+        .coerce_to_f64(activation)? as f32;
     let blue_offset = object
-        .get("blueOffset", activation, context)?
-        .coerce_to_f64(activation, context)? as f32;
+        .get("blueOffset", activation)?
+        .coerce_to_f64(activation)? as f32;
     let alpha_offset = object
-        .get("alphaOffset", activation, context)?
-        .coerce_to_f64(activation, context)? as f32;
+        .get("alphaOffset", activation)?
+        .coerce_to_f64(activation)? as f32;
 
     Ok(ColorTransform {
         r_mult: red_multiplier,
@@ -123,8 +121,7 @@ pub fn object_to_color_transform<'gc>(
 }
 
 pub fn get_rgb<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -137,15 +134,15 @@ pub fn get_rgb<'gc>(
 }
 
 pub fn set_rgb<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
+
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let new_rgb = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_u32(activation, context)?;
+        .coerce_to_u32(activation)?;
 
     let red = ((new_rgb >> 16) & 0xFF) as f64;
     let green = ((new_rgb >> 8) & 0xFF) as f64;
@@ -153,13 +150,13 @@ pub fn set_rgb<'gc>(
 
     let ct = this.as_color_transform_object().unwrap();
 
-    ct.set_red_offset(context.gc_context, red);
-    ct.set_green_offset(context.gc_context, green);
-    ct.set_blue_offset(context.gc_context, blue);
+    ct.set_red_offset(activation.context.gc_context, red);
+    ct.set_green_offset(activation.context.gc_context, green);
+    ct.set_blue_offset(activation.context.gc_context, blue);
 
-    ct.set_red_multiplier(context.gc_context, 0.0);
-    ct.set_green_multiplier(context.gc_context, 0.0);
-    ct.set_blue_multiplier(context.gc_context, 0.0);
+    ct.set_red_multiplier(activation.context.gc_context, 0.0);
+    ct.set_green_multiplier(activation.context.gc_context, 0.0);
+    ct.set_blue_multiplier(activation.context.gc_context, 0.0);
 
     Ok(Value::Undefined)
 }
@@ -168,24 +165,23 @@ macro_rules! color_transform_value_accessor {
     ($([$get_ident: ident, $set_ident: ident],)*) => {
         $(
             pub fn $set_ident<'gc>(
-                activation: &mut Activation<'_, 'gc>,
-                context: &mut UpdateContext<'_, 'gc, '_>,
+                activation: &mut Activation<'_, 'gc, '_>,
+
                 this: Object<'gc>,
                 args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
                 let new_val = args
                     .get(0)
                     .unwrap_or(&Value::Undefined)
-                    .coerce_to_f64(activation, context)?;
+                    .coerce_to_f64(activation)?;
 
                 let ct = this.as_color_transform_object().unwrap();
-                ct.$set_ident(context.gc_context, new_val);
+                ct.$set_ident(activation.context.gc_context, new_val);
                 Ok(Value::Undefined.into())
             }
 
             pub fn $get_ident<'gc>(
-                _activation: &mut Activation<'_, 'gc>,
-                _context: &mut UpdateContext<'_, 'gc, '_>,
+                _activation: &mut Activation<'_, 'gc, '_>,
                 this: Object<'gc>,
                 _args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
@@ -248,28 +244,31 @@ pub fn create_proto<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
+
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let formatted = format!("(redMultiplier={}, greenMultiplier={}, blueMultiplier={}, alphaMultiplier={}, redOffset={}, greenOffset={}, blueOffset={}, alphaOffset={})",
-            this.get("redMultiplier", activation, context)?.coerce_to_string(activation, context)?,
-            this.get("greenMultiplier", activation, context)?.coerce_to_string(activation, context)?,
-            this.get("blueMultiplier", activation, context)?.coerce_to_string(activation, context)?,
-            this.get("alphaMultiplier", activation, context)?.coerce_to_string(activation, context)?,
-            this.get("redOffset", activation, context)?.coerce_to_string(activation, context)?,
-            this.get("greenOffset", activation, context)?.coerce_to_string(activation, context)?,
-            this.get("blueOffset", activation, context)?.coerce_to_string(activation, context)?,
-            this.get("alphaOffset", activation, context)?.coerce_to_string(activation, context)?
+            this.get("redMultiplier", activation)?.coerce_to_string(activation)?,
+            this.get("greenMultiplier", activation)?.coerce_to_string(activation)?,
+            this.get("blueMultiplier", activation)?.coerce_to_string(activation)?,
+            this.get("alphaMultiplier", activation)?.coerce_to_string(activation)?,
+            this.get("redOffset", activation)?.coerce_to_string(activation)?,
+            this.get("greenOffset", activation)?.coerce_to_string(activation)?,
+            this.get("blueOffset", activation)?.coerce_to_string(activation)?,
+            this.get("alphaOffset", activation)?.coerce_to_string(activation)?
     );
 
-    Ok(Value::String(AvmString::new(context.gc_context, formatted)))
+    Ok(Value::String(AvmString::new(
+        activation.context.gc_context,
+        formatted,
+    )))
 }
 
 fn concat<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
+
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -279,7 +278,7 @@ fn concat<'gc>(
         if arg == &Value::Undefined {
             return Ok(Value::Undefined);
         }
-        let other = arg.coerce_to_object(activation, context);
+        let other = arg.coerce_to_object(activation);
 
         let other_ct = other.as_color_transform_object().unwrap();
         let this_ct = this.as_color_transform_object().unwrap();
@@ -297,14 +296,14 @@ fn concat<'gc>(
         let alpha_offset = (other_ct.get_alpha_offset() * this_ct.get_alpha_multiplier())
             + this_ct.get_alpha_offset();
 
-        this_ct.set_red_multiplier(context.gc_context, red_multiplier);
-        this_ct.set_green_multiplier(context.gc_context, green_multiplier);
-        this_ct.set_blue_multiplier(context.gc_context, blue_multiplier);
-        this_ct.set_alpha_multiplier(context.gc_context, alpha_multiplier);
-        this_ct.set_red_offset(context.gc_context, red_offset);
-        this_ct.set_green_offset(context.gc_context, green_offset);
-        this_ct.set_blue_offset(context.gc_context, blue_offset);
-        this_ct.set_alpha_offset(context.gc_context, alpha_offset);
+        this_ct.set_red_multiplier(activation.context.gc_context, red_multiplier);
+        this_ct.set_green_multiplier(activation.context.gc_context, green_multiplier);
+        this_ct.set_blue_multiplier(activation.context.gc_context, blue_multiplier);
+        this_ct.set_alpha_multiplier(activation.context.gc_context, alpha_multiplier);
+        this_ct.set_red_offset(activation.context.gc_context, red_offset);
+        this_ct.set_green_offset(activation.context.gc_context, green_offset);
+        this_ct.set_blue_offset(activation.context.gc_context, blue_offset);
+        this_ct.set_alpha_offset(activation.context.gc_context, alpha_offset);
     }
 
     Ok(Value::Undefined)

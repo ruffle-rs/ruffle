@@ -85,20 +85,19 @@ impl<'gc> Avm2<'gc> {
 
     /// Run a script's initializer method.
     pub fn run_script_initializer(
-        &mut self,
         script: GcCell<'gc, Script<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut init_activation = Activation::from_script(self, context, script, self.globals)?;
+        let globals = context.avm2.globals;
+        let mut init_activation = Activation::from_script(context.reborrow(), script, globals)?;
 
-        init_activation.run_stack_frame_for_script(context, script)
+        init_activation.run_stack_frame_for_script(script)
     }
 
     /// Load an ABC file embedded in a `SwfSlice`.
     ///
     /// The `SwfSlice` must resolve to the contents of an ABC file.
     pub fn load_abc(
-        &mut self,
         abc: SwfSlice,
         _abc_name: &str,
         _lazy_init: bool,
@@ -111,16 +110,15 @@ impl<'gc> Avm2<'gc> {
 
         for i in (0..abc_file.scripts.len()).rev() {
             let script = tunit.load_script(i as u32, context.gc_context)?;
-            let mut globals = self.globals();
+            let mut globals = context.avm2.globals();
             let scope = Scope::push_scope(None, globals, context.gc_context);
-            let mut null_activation = Activation::from_nothing(self, context);
+            let mut null_activation = Activation::from_nothing(context.reborrow());
 
             // TODO: Lazyinit means we shouldn't do this until traits are
             // actually mentioned...
             for trait_entry in script.read().traits()?.iter() {
                 globals.install_foreign_trait(
                     &mut null_activation,
-                    context,
                     trait_entry.clone(),
                     Some(scope),
                     globals,
@@ -129,7 +127,7 @@ impl<'gc> Avm2<'gc> {
 
             drop(null_activation);
 
-            self.run_script_initializer(script, context)?;
+            Self::run_script_initializer(script, context)?;
         }
 
         Ok(())

@@ -2,35 +2,33 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::events::KeyCode;
 use gc_arena::MutationContext;
 use std::convert::TryFrom;
 
 pub fn is_down<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(key) = args
         .get(0)
-        .and_then(|v| v.coerce_to_f64(activation, context).ok())
+        .and_then(|v| v.coerce_to_f64(activation).ok())
         .and_then(|k| KeyCode::try_from(k as u8).ok())
     {
-        Ok(context.input.is_key_down(key).into())
+        Ok(activation.context.input.is_key_down(key).into())
     } else {
         Ok(false.into())
     }
 }
 
 pub fn get_code<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let code: u8 = context.input.get_last_key_code().into();
+    let code: u8 = activation.context.input.get_last_key_code().into();
     Ok(code.into())
 }
 

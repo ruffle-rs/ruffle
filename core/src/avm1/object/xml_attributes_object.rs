@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::{AvmString, Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, Value};
 use crate::xml::{XMLName, XMLNode};
 use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
@@ -60,14 +60,13 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
     fn get_local(
         &self,
         name: &str,
-        _activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self
             .node()
             .attribute_value(&XMLName::from_str(name))
-            .map(|s| AvmString::new(context.gc_context, s).into())
+            .map(|s| AvmString::new(activation.context.gc_context, s).into())
             .unwrap_or_else(|| Value::Undefined))
     }
 
@@ -75,60 +74,50 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.node().set_attribute_value(
-            context.gc_context,
+            activation.context.gc_context,
             &XMLName::from_str(name),
-            &value.coerce_to_string(activation, context)?,
+            &value.coerce_to_string(activation)?,
         );
-        self.base().set(name, value, activation, context)
+        self.base().set(name, value, activation)
     }
     fn call(
         &self,
         name: &str,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base()
-            .call(name, activation, context, this, base_proto, args)
+        self.base().call(name, activation, this, base_proto, args)
     }
 
     fn call_setter(
         &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>> {
-        self.base().call_setter(name, value, activation, context)
+        self.base().call_setter(name, value, activation)
     }
 
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         //TODO: `new xmlnode.attributes()` returns undefined, not an object
         avm_warn!(activation, "Cannot create new XML Attributes object");
-        Ok(Value::Undefined.coerce_to_object(activation, context))
+        Ok(Value::Undefined.coerce_to_object(activation))
     }
 
-    fn delete(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        gc_context: MutationContext<'gc, '_>,
-        name: &str,
-    ) -> bool {
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.node()
-            .delete_attribute(gc_context, &XMLName::from_str(name));
-        self.base().delete(activation, gc_context, name)
+            .delete_attribute(activation.context.gc_context, &XMLName::from_str(name));
+        self.base().delete(activation, name)
     }
 
     fn add_property(
@@ -145,7 +134,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Object<'gc>,
@@ -158,7 +147,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
 
     fn set_watcher(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Object<'gc>,
@@ -170,7 +159,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
 
     fn remove_watcher(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
         gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
     ) -> bool {
@@ -207,40 +196,25 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         self.base().set_proto(gc_context, prototype);
     }
 
-    fn has_property(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        name: &str,
-    ) -> bool {
-        self.base().has_property(activation, context, name)
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+        self.base().has_property(activation, name)
     }
 
-    fn has_own_property(
-        &self,
-        _activation: &mut Activation<'_, 'gc>,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-        name: &str,
-    ) -> bool {
+    fn has_own_property(&self, _activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.node()
             .attribute_value(&XMLName::from_str(name))
             .is_some()
     }
 
-    fn has_own_virtual(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        name: &str,
-    ) -> bool {
-        self.base().has_own_virtual(activation, context, name)
+    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+        self.base().has_own_virtual(activation, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc>, name: &str) -> bool {
+    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base().is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
         self.base().get_keys(activation)
     }
 

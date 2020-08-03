@@ -6,7 +6,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::xml_object::XMLObject;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{AvmString, Object, TObject, UpdateContext, Value};
+use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
 use crate::xml;
@@ -42,28 +42,29 @@ fn is_as2_compatible(node: XMLNode<'_>) -> bool {
 
 /// XMLNode constructor
 pub fn xmlnode_constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let blank_document = XMLDocument::new(ac.gc_context);
+    let blank_document = XMLDocument::new(activation.context.gc_context);
 
     match (
         args.get(0)
-            .map(|v| v.coerce_to_f64(activation, ac).map(|v| v as u32)),
-        args.get(1).map(|v| v.coerce_to_string(activation, ac)),
+            .map(|v| v.coerce_to_f64(activation).map(|v| v as u32)),
+        args.get(1).map(|v| v.coerce_to_string(activation)),
         this.as_xml_node(),
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XMLNode::new_element(ac.gc_context, strval, blank_document);
-            xmlelement.introduce_script_object(ac.gc_context, this);
-            this_node.swap(ac.gc_context, xmlelement);
+            let mut xmlelement =
+                XMLNode::new_element(activation.context.gc_context, strval, blank_document);
+            xmlelement.introduce_script_object(activation.context.gc_context, this);
+            this_node.swap(activation.context.gc_context, xmlelement);
         }
         (Some(Ok(3)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XMLNode::new_text(ac.gc_context, strval, blank_document);
-            xmlelement.introduce_script_object(ac.gc_context, this);
-            this_node.swap(ac.gc_context, xmlelement);
+            let mut xmlelement =
+                XMLNode::new_text(activation.context.gc_context, strval, blank_document);
+            xmlelement.introduce_script_object(activation.context.gc_context, this);
+            this_node.swap(activation.context.gc_context, xmlelement);
         }
         //Invalid nodetype ID, string value missing, or not an XMLElement
         _ => {}
@@ -73,19 +74,20 @@ pub fn xmlnode_constructor<'gc>(
 }
 
 pub fn xmlnode_append_child<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let (Some(mut xmlnode), Some(child_xmlnode)) = (
         this.as_xml_node(),
         args.get(0)
-            .and_then(|n| n.coerce_to_object(activation, ac).as_xml_node()),
+            .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
     ) {
         if let Ok(None) = child_xmlnode.parent() {
             let position = xmlnode.children_len();
-            if let Err(e) = xmlnode.insert_child(ac.gc_context, position, child_xmlnode) {
+            if let Err(e) =
+                xmlnode.insert_child(activation.context.gc_context, position, child_xmlnode)
+            {
                 avm_warn!(
                     activation,
                     "Couldn't insert_child inside of XMLNode.appendChild: {}",
@@ -99,21 +101,22 @@ pub fn xmlnode_append_child<'gc>(
 }
 
 pub fn xmlnode_insert_before<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let (Some(mut xmlnode), Some(child_xmlnode), Some(insertpoint_xmlnode)) = (
         this.as_xml_node(),
         args.get(0)
-            .and_then(|n| n.coerce_to_object(activation, ac).as_xml_node()),
+            .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
         args.get(1)
-            .and_then(|n| n.coerce_to_object(activation, ac).as_xml_node()),
+            .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
     ) {
         if let Ok(None) = child_xmlnode.parent() {
             if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
-                if let Err(e) = xmlnode.insert_child(ac.gc_context, position, child_xmlnode) {
+                if let Err(e) =
+                    xmlnode.insert_child(activation.context.gc_context, position, child_xmlnode)
+                {
                     avm_warn!(
                         activation,
                         "Couldn't insert_child inside of XMLNode.insertBefore: {}",
@@ -128,8 +131,7 @@ pub fn xmlnode_insert_before<'gc>(
 }
 
 pub fn xmlnode_clone_node<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -139,11 +141,11 @@ pub fn xmlnode_clone_node<'gc>(
             .map(|v| v.as_bool(activation.current_swf_version()))
             .unwrap_or(false),
     ) {
-        let mut clone_node = xmlnode.duplicate(ac.gc_context, deep);
+        let mut clone_node = xmlnode.duplicate(activation.context.gc_context, deep);
 
         return Ok(Value::Object(clone_node.script_object(
-            ac.gc_context,
-            Some(activation.avm.prototypes.xml_node),
+            activation.context.gc_context,
+            Some(activation.context.avm1.prototypes.xml_node),
         )));
     }
 
@@ -151,17 +153,16 @@ pub fn xmlnode_clone_node<'gc>(
 }
 
 pub fn xmlnode_get_namespace_for_prefix<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let (Some(xmlnode), Some(prefix_string)) = (
         this.as_xml_node(),
-        args.get(0).map(|v| v.coerce_to_string(activation, ac)),
+        args.get(0).map(|v| v.coerce_to_string(activation)),
     ) {
         if let Some(uri) = xmlnode.lookup_uri_for_namespace(&prefix_string?) {
-            Ok(AvmString::new(ac.gc_context, uri).into())
+            Ok(AvmString::new(activation.context.gc_context, uri).into())
         } else {
             Ok(Value::Null)
         }
@@ -171,17 +172,16 @@ pub fn xmlnode_get_namespace_for_prefix<'gc>(
 }
 
 pub fn xmlnode_get_prefix_for_namespace<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let (Some(xmlnode), Some(uri_string)) = (
         this.as_xml_node(),
-        args.get(0).map(|v| v.coerce_to_string(activation, ac)),
+        args.get(0).map(|v| v.coerce_to_string(activation)),
     ) {
         if let Some(prefix) = xmlnode.lookup_namespace_for_uri(&uri_string?) {
-            Ok(AvmString::new(ac.gc_context, prefix).into())
+            Ok(AvmString::new(activation.context.gc_context, prefix).into())
         } else {
             Ok(Value::Null)
         }
@@ -191,8 +191,7 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
 }
 
 pub fn xmlnode_has_child_nodes<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -204,14 +203,13 @@ pub fn xmlnode_has_child_nodes<'gc>(
 }
 
 pub fn xmlnode_remove_node<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Ok(Some(mut parent)) = node.parent() {
-            if let Err(e) = parent.remove_child(ac.gc_context, node) {
+            if let Err(e) = parent.remove_child(activation.context.gc_context, node) {
                 avm_warn!(activation, "Error in XML.removeNode: {}", e);
             }
         }
@@ -221,8 +219,7 @@ pub fn xmlnode_remove_node<'gc>(
 }
 
 pub fn xmlnode_to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -230,7 +227,7 @@ pub fn xmlnode_to_string<'gc>(
         let result = node.into_string(&mut is_as2_compatible);
 
         return Ok(AvmString::new(
-            ac.gc_context,
+            activation.context.gc_context,
             result.unwrap_or_else(|e| {
                 avm_warn!(activation, "XMLNode toString failed: {}", e);
                 "".to_string()
@@ -243,34 +240,31 @@ pub fn xmlnode_to_string<'gc>(
 }
 
 pub fn xmlnode_local_name<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| AvmString::new(ac.gc_context, n.local_name().to_string()).into())
+        .map(|n| AvmString::new(activation.context.gc_context, n.local_name().to_string()).into())
         .unwrap_or_else(|| Value::Null))
 }
 
 pub fn xmlnode_node_name<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| AvmString::new(ac.gc_context, n.node_name().to_string()).into())
+        .map(|n| AvmString::new(activation.context.gc_context, n.node_name().to_string()).into())
         .unwrap_or_else(|| Value::Null))
 }
 
 pub fn xmlnode_node_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -289,21 +283,19 @@ pub fn xmlnode_node_type<'gc>(
 }
 
 pub fn xmlnode_node_value<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.node_value())
-        .map(|n| AvmString::new(ac.gc_context, n).into())
+        .map(|n| AvmString::new(activation.context.gc_context, n).into())
         .unwrap_or_else(|| Value::Null))
 }
 
 pub fn xmlnode_prefix<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -312,7 +304,7 @@ pub fn xmlnode_prefix<'gc>(
         .and_then(|n| n.tag_name())
         .map(|n| {
             AvmString::new(
-                ac.gc_context,
+                activation.context.gc_context,
                 n.prefix()
                     .map(|n| n.to_string())
                     .unwrap_or_else(|| "".to_string()),
@@ -323,13 +315,15 @@ pub fn xmlnode_prefix<'gc>(
 }
 
 pub fn xmlnode_child_nodes<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let array = ScriptObject::array(ac.gc_context, Some(activation.avm.prototypes.array));
+        let array = ScriptObject::array(
+            activation.context.gc_context,
+            Some(activation.context.avm1.prototypes.array),
+        );
         if let Some(children) = node.children() {
             let mut compatible_nodes = 0;
             for mut child in children {
@@ -340,9 +334,12 @@ pub fn xmlnode_child_nodes<'gc>(
                 array.set_array_element(
                     compatible_nodes as usize,
                     child
-                        .script_object(ac.gc_context, Some(activation.avm.prototypes.xml_node))
+                        .script_object(
+                            activation.context.gc_context,
+                            Some(activation.context.avm1.prototypes.xml_node),
+                        )
                         .into(),
-                    ac.gc_context,
+                    activation.context.gc_context,
                 );
 
                 compatible_nodes += 1;
@@ -356,8 +353,7 @@ pub fn xmlnode_child_nodes<'gc>(
 }
 
 pub fn xmlnode_first_child<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -367,7 +363,10 @@ pub fn xmlnode_first_child<'gc>(
                 .next()
                 .map(|mut child| {
                     child
-                        .script_object(ac.gc_context, Some(activation.avm.prototypes.xml_node))
+                        .script_object(
+                            activation.context.gc_context,
+                            Some(activation.context.avm1.prototypes.xml_node),
+                        )
                         .into()
                 })
                 .unwrap_or_else(|| Value::Null));
@@ -378,8 +377,7 @@ pub fn xmlnode_first_child<'gc>(
 }
 
 pub fn xmlnode_last_child<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -389,7 +387,10 @@ pub fn xmlnode_last_child<'gc>(
                 .next_back()
                 .map(|mut child| {
                     child
-                        .script_object(ac.gc_context, Some(activation.avm.prototypes.xml_node))
+                        .script_object(
+                            activation.context.gc_context,
+                            Some(activation.context.avm1.prototypes.xml_node),
+                        )
                         .into()
                 })
                 .unwrap_or_else(|| Value::Null));
@@ -400,8 +401,7 @@ pub fn xmlnode_last_child<'gc>(
 }
 
 pub fn xmlnode_parent_node<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -411,7 +411,10 @@ pub fn xmlnode_parent_node<'gc>(
             .unwrap_or(None)
             .map(|mut parent| {
                 parent
-                    .script_object(ac.gc_context, Some(activation.avm.prototypes.xml_node))
+                    .script_object(
+                        activation.context.gc_context,
+                        Some(activation.context.avm1.prototypes.xml_node),
+                    )
                     .into()
             })
             .unwrap_or_else(|| Value::Null));
@@ -421,8 +424,7 @@ pub fn xmlnode_parent_node<'gc>(
 }
 
 pub fn xmlnode_previous_sibling<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -438,8 +440,11 @@ pub fn xmlnode_previous_sibling<'gc>(
 
         return Ok(prev
             .map(|mut prev| {
-                prev.script_object(ac.gc_context, Some(activation.avm.prototypes.xml_node))
-                    .into()
+                prev.script_object(
+                    activation.context.gc_context,
+                    Some(activation.context.avm1.prototypes.xml_node),
+                )
+                .into()
             })
             .unwrap_or_else(|| Value::Null));
     }
@@ -448,8 +453,7 @@ pub fn xmlnode_previous_sibling<'gc>(
 }
 
 pub fn xmlnode_next_sibling<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -465,8 +469,11 @@ pub fn xmlnode_next_sibling<'gc>(
 
         return Ok(next
             .map(|mut next| {
-                next.script_object(ac.gc_context, Some(activation.avm.prototypes.xml_node))
-                    .into()
+                next.script_object(
+                    activation.context.gc_context,
+                    Some(activation.context.avm1.prototypes.xml_node),
+                )
+                .into()
             })
             .unwrap_or_else(|| Value::Null));
     }
@@ -475,14 +482,13 @@ pub fn xmlnode_next_sibling<'gc>(
 }
 
 pub fn xmlnode_attributes<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut node) = this.as_xml_node() {
         return Ok(node
-            .attribute_script_object(ac.gc_context)
+            .attribute_script_object(activation.context.gc_context)
             .map(|o| o.into())
             .unwrap_or_else(|| Value::Undefined));
     }
@@ -491,15 +497,14 @@ pub fn xmlnode_attributes<'gc>(
 }
 
 pub fn xmlnode_namespace_uri<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(name) = node.tag_name() {
             return Ok(AvmString::new(
-                ac.gc_context,
+                activation.context.gc_context,
                 node.lookup_uri_for_namespace(name.prefix().unwrap_or(""))
                     .unwrap_or_else(|| "".to_string()),
             )
@@ -762,22 +767,22 @@ pub fn create_xmlnode_proto<'gc>(
 
 /// XML (document) constructor
 pub fn xml_constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match (
-        args.get(0).map(|v| v.coerce_to_string(activation, ac)),
+        args.get(0).map(|v| v.coerce_to_string(activation)),
         this.as_xml_node(),
     ) {
         (Some(Ok(ref string)), Some(ref mut this_node)) => {
-            let xmldoc = XMLDocument::new(ac.gc_context);
+            let xmldoc = XMLDocument::new(activation.context.gc_context);
             let mut xmlnode = xmldoc.as_node();
-            xmlnode.introduce_script_object(ac.gc_context, this);
-            this_node.swap(ac.gc_context, xmlnode);
+            xmlnode.introduce_script_object(activation.context.gc_context, this);
+            this_node.swap(activation.context.gc_context, xmlnode);
 
-            if let Err(e) = this_node.replace_with_str(ac.gc_context, string, true) {
+            if let Err(e) = this_node.replace_with_str(activation.context.gc_context, string, true)
+            {
                 avm_warn!(
                     activation,
                     "Couldn't replace_with_str inside of XML constructor: {}",
@@ -786,10 +791,10 @@ pub fn xml_constructor<'gc>(
             }
         }
         (None, Some(ref mut this_node)) => {
-            let xmldoc = XMLDocument::new(ac.gc_context);
+            let xmldoc = XMLDocument::new(activation.context.gc_context);
             let mut xmlnode = xmldoc.as_node();
-            xmlnode.introduce_script_object(ac.gc_context, this);
-            this_node.swap(ac.gc_context, xmlnode);
+            xmlnode.introduce_script_object(activation.context.gc_context, this);
+            this_node.swap(activation.context.gc_context, xmlnode);
         }
         //Non-string argument or not an XML document
         _ => {}
@@ -799,70 +804,67 @@ pub fn xml_constructor<'gc>(
 }
 
 pub fn xml_create_element<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let document = if let Some(node) = this.as_xml_node() {
         node.document()
     } else {
-        XMLDocument::new(ac.gc_context)
+        XMLDocument::new(activation.context.gc_context)
     };
 
     let nodename = args
         .get(0)
-        .map(|v| v.coerce_to_string(activation, ac).unwrap_or_default())
+        .map(|v| v.coerce_to_string(activation).unwrap_or_default())
         .unwrap_or_default();
-    let mut xml_node = XMLNode::new_element(ac.gc_context, &nodename, document);
+    let mut xml_node = XMLNode::new_element(activation.context.gc_context, &nodename, document);
     let object = XMLObject::from_xml_node(
-        ac.gc_context,
+        activation.context.gc_context,
         xml_node,
-        Some(activation.avm.prototypes().xml_node),
+        Some(activation.context.avm1.prototypes().xml_node),
     );
 
-    xml_node.introduce_script_object(ac.gc_context, object);
+    xml_node.introduce_script_object(activation.context.gc_context, object);
 
     Ok(object.into())
 }
 
 pub fn xml_create_text_node<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let document = if let Some(node) = this.as_xml_node() {
         node.document()
     } else {
-        XMLDocument::new(ac.gc_context)
+        XMLDocument::new(activation.context.gc_context)
     };
 
     let text_node = args
         .get(0)
-        .map(|v| v.coerce_to_string(activation, ac).unwrap_or_default())
+        .map(|v| v.coerce_to_string(activation).unwrap_or_default())
         .unwrap_or_default();
-    let mut xml_node = XMLNode::new_text(ac.gc_context, &text_node, document);
+    let mut xml_node = XMLNode::new_text(activation.context.gc_context, &text_node, document);
     let object = XMLObject::from_xml_node(
-        ac.gc_context,
+        activation.context.gc_context,
         xml_node,
-        Some(activation.avm.prototypes().xml_node),
+        Some(activation.context.avm1.prototypes().xml_node),
     );
 
-    xml_node.introduce_script_object(ac.gc_context, object);
+    xml_node.introduce_script_object(activation.context.gc_context, object);
 
     Ok(object.into())
 }
 
 pub fn xml_parse_xml<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut node) = this.as_xml_node() {
         let xmlstring =
-            if let Some(Ok(xmlstring)) = args.get(0).map(|s| s.coerce_to_string(activation, ac)) {
+            if let Some(Ok(xmlstring)) = args.get(0).map(|s| s.coerce_to_string(activation)) {
                 xmlstring
             } else {
                 "".into()
@@ -870,7 +872,7 @@ pub fn xml_parse_xml<'gc>(
 
         if let Some(children) = node.children() {
             for child in children.rev() {
-                let result = node.remove_child(ac.gc_context, child);
+                let result = node.remove_child(activation.context.gc_context, child);
                 if let Err(e) = result {
                     avm_warn!(
                         activation,
@@ -882,7 +884,7 @@ pub fn xml_parse_xml<'gc>(
             }
         }
 
-        let result = node.replace_with_str(ac.gc_context, &xmlstring, true);
+        let result = node.replace_with_str(activation.context.gc_context, &xmlstring, true);
         if let Err(e) = result {
             avm_warn!(activation, "XML parsing error: {}", e);
         }
@@ -892,8 +894,7 @@ pub fn xml_parse_xml<'gc>(
 }
 
 pub fn xml_load<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -904,20 +905,23 @@ pub fn xml_load<'gc>(
     }
 
     if let Some(node) = this.as_xml_node() {
-        let url = url.coerce_to_string(activation, ac)?;
+        let url = url.coerce_to_string(activation)?;
 
-        this.set("loaded", false.into(), activation, ac)?;
+        this.set("loaded", false.into(), activation)?;
 
-        let fetch = ac.navigator.fetch(&url, RequestOptions::get());
+        let fetch = activation
+            .context
+            .navigator
+            .fetch(&url, RequestOptions::get());
         let target_clip = activation.target_clip_or_root();
-        let process = ac.load_manager.load_xml_into_node(
-            ac.player.clone().unwrap(),
+        let process = activation.context.load_manager.load_xml_into_node(
+            activation.context.player.clone().unwrap(),
             node,
             target_clip,
             fetch,
         );
 
-        ac.navigator.spawn_future(process);
+        activation.context.navigator.spawn_future(process);
 
         Ok(true.into())
     } else {
@@ -926,35 +930,32 @@ pub fn xml_load<'gc>(
 }
 
 pub fn xml_on_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let src = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Undefined = src {
-        this.call_method("onLoad", &[false.into()], activation, ac)?;
+        this.call_method("onLoad", &[false.into()], activation)?;
     } else {
-        let src = src.coerce_to_string(activation, ac)?;
+        let src = src.coerce_to_string(activation)?;
         this.call_method(
             "parseXML",
-            &[AvmString::new(ac.gc_context, src.to_string()).into()],
+            &[AvmString::new(activation.context.gc_context, src.to_string()).into()],
             activation,
-            ac,
         )?;
 
-        this.set("loaded", true.into(), activation, ac)?;
+        this.set("loaded", true.into(), activation)?;
 
-        this.call_method("onLoad", &[true.into()], activation, ac)?;
+        this.call_method("onLoad", &[true.into()], activation)?;
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn xml_doc_type_decl<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -963,7 +964,7 @@ pub fn xml_doc_type_decl<'gc>(
             let result = doctype.into_string(&mut |_| true);
 
             return Ok(AvmString::new(
-                ac.gc_context,
+                activation.context.gc_context,
                 result.unwrap_or_else(|e| {
                     avm_warn!(activation, "Error occured when serializing DOCTYPE: {}", e);
                     "".to_string()
@@ -977,8 +978,7 @@ pub fn xml_doc_type_decl<'gc>(
 }
 
 pub fn xml_xml_decl<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -992,7 +992,7 @@ pub fn xml_xml_decl<'gc>(
                 e
             );
         } else if let Ok(Some(result_str)) = result {
-            return Ok(AvmString::new(ac.gc_context, result_str).into());
+            return Ok(AvmString::new(activation.context.gc_context, result_str).into());
         }
     }
 
@@ -1000,21 +1000,22 @@ pub fn xml_xml_decl<'gc>(
 }
 
 pub fn xml_id_map<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    ac: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        return Ok(node.document().idmap_script_object(ac.gc_context).into());
+        return Ok(node
+            .document()
+            .idmap_script_object(activation.context.gc_context)
+            .into());
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn xml_status<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _ac: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

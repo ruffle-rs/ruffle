@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
-use crate::avm1::{Object, ScriptObject, UpdateContext};
+use crate::avm1::{Object, ScriptObject};
 use crate::impl_custom_object;
 use crate::xml::{XMLDocument, XMLNode};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -77,11 +77,13 @@ impl<'gc> TObject<'gc> for XMLObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(XMLObject::empty_node(context.gc_context, Some(this)))
+        Ok(XMLObject::empty_node(
+            activation.context.gc_context,
+            Some(this),
+        ))
     }
 
     fn as_xml_node(&self) -> Option<XMLNode<'gc>> {

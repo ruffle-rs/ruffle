@@ -3,20 +3,20 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
+
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let message: Value<'gc> = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if message != Value::Undefined {
-        this.set("message", message, activation, context)?;
+        this.set("message", message, activation)?;
     }
 
     Ok(Value::Undefined)
@@ -44,15 +44,15 @@ pub fn create_proto<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
+
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let message = this.get("message", activation, context)?;
+    let message = this.get("message", activation)?;
     Ok(AvmString::new(
-        context.gc_context,
-        message.coerce_to_string(activation, context)?.to_string(),
+        activation.context.gc_context,
+        message.coerce_to_string(activation)?.to_string(),
     )
     .into())
 }

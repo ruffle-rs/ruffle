@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::display_object;
-use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, Value};
 use gc_arena::MutationContext;
 
 pub fn create_proto<'gc>(
@@ -20,8 +20,7 @@ pub fn create_proto<'gc>(
 
 /// Implements `Button` constructor.
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _action_context: &mut UpdateContext<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

@@ -2,7 +2,8 @@
 use crate::avm1;
 
 use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::{Object, Timers, Value};
+use crate::avm1::{Avm1, Object, Timers, Value};
+use crate::avm2::Avm2;
 use crate::backend::input::InputBackend;
 use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
@@ -14,7 +15,7 @@ use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::transform::TransformStack;
 use core::fmt;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, CollectionContext, MutationContext};
 use rand::rngs::SmallRng;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
@@ -114,6 +115,87 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// Timed callbacks created with `setInterval`/`setTimeout`.
     pub timers: &'a mut Timers<'gc>,
+
+    /// The AVM1 global state.
+    pub avm1: &'a mut Avm1<'gc>,
+
+    /// The AVM2 global state.
+    pub avm2: &'a mut Avm2<'gc>,
+}
+
+unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context> {
+    fn trace(&self, cc: CollectionContext) {
+        self.action_queue.trace(cc);
+        self.background_color.trace(cc);
+        self.library.trace(cc);
+        self.player_version.trace(cc);
+        self.needs_render.trace(cc);
+        self.swf.trace(cc);
+        self.audio.trace(cc);
+        self.navigator.trace(cc);
+        self.renderer.trace(cc);
+        self.input.trace(cc);
+        self.storage.trace(cc);
+        self.rng.trace(cc);
+        self.levels.trace(cc);
+        self.system_prototypes.trace(cc);
+        self.mouse_hovered_object.trace(cc);
+        self.mouse_position.trace(cc);
+        self.drag_object.trace(cc);
+        self.load_manager.trace(cc);
+        self.system.trace(cc);
+        self.instance_counter.trace(cc);
+        self.shared_objects.trace(cc);
+        self.unbound_text_fields.trace(cc);
+        self.timers.trace(cc);
+        self.avm1.trace(cc);
+        self.avm2.trace(cc);
+    }
+}
+
+impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
+    /// Transform a borrowed update context into an owned update context with
+    /// a shorter internal lifetime.
+    ///
+    /// This is particularly useful for structures that may wish to hold an
+    /// update context without adding further lifetimes for it's borrowing.
+    /// Please note that you will not be able to use the original update
+    /// context until this reborrowed copy has fallen out of scope.
+    pub fn reborrow<'b>(&'b mut self) -> UpdateContext<'b, 'gc, 'gc_context>
+    where
+        'a: 'b,
+    {
+        UpdateContext {
+            action_queue: self.action_queue,
+            background_color: self.background_color,
+            gc_context: self.gc_context,
+            library: self.library,
+            player_version: self.player_version,
+            needs_render: self.needs_render,
+            swf: self.swf,
+            audio: self.audio,
+            navigator: self.navigator,
+            renderer: self.renderer,
+            input: self.input,
+            storage: self.storage,
+            rng: self.rng,
+            levels: self.levels,
+            system_prototypes: self.system_prototypes.clone(),
+            mouse_hovered_object: self.mouse_hovered_object,
+            mouse_position: self.mouse_position,
+            drag_object: self.drag_object,
+            stage_size: self.stage_size,
+            player: self.player.clone(),
+            load_manager: self.load_manager,
+            system: self.system,
+            instance_counter: self.instance_counter,
+            shared_objects: self.shared_objects,
+            unbound_text_fields: self.unbound_text_fields,
+            timers: self.timers,
+            avm1: self.avm1,
+            avm2: self.avm2,
+        }
+    }
 }
 
 /// A queued ActionScript call.

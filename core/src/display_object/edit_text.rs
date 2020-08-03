@@ -500,17 +500,18 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub fn set_variable(
-        self,
-        variable: Option<String>,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) {
+    pub fn set_variable(self, variable: Option<String>, activation: &mut Activation<'_, 'gc, '_>) {
         // Clear previous binding.
-        if let Some(stage_object) = self.0.write(context.gc_context).bound_stage_object.take() {
-            stage_object.clear_text_field_binding(context.gc_context, self);
+        if let Some(stage_object) = self
+            .0
+            .write(activation.context.gc_context)
+            .bound_stage_object
+            .take()
+        {
+            stage_object.clear_text_field_binding(activation.context.gc_context, self);
         } else {
-            context
+            activation
+                .context
                 .unbound_text_fields
                 .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), self.into()));
         }
@@ -524,10 +525,10 @@ impl<'gc> EditText<'gc> {
             .initial_text
             .clone()
             .unwrap_or_default();
-        let _ = self.set_text(text, context);
+        let _ = self.set_text(text, &mut activation.context);
 
-        self.0.write(context.gc_context).variable = variable;
-        self.try_bind_text_field_variable(activation, context, true);
+        self.0.write(activation.context.gc_context).variable = variable;
+        self.try_bind_text_field_variable(activation, true);
     }
 
     /// Construct a base text transform for this `EditText`, to be used for
@@ -699,8 +700,7 @@ impl<'gc> EditText<'gc> {
     /// This is called when the text field is created, and, if the text field is in the unbound list, anytime a display object is created.
     pub fn try_bind_text_field_variable(
         self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         set_initial_value: bool,
     ) -> bool {
         let mut bound = false;
@@ -718,23 +718,22 @@ impl<'gc> EditText<'gc> {
             activation.run_with_child_frame_for_display_object(
                 "[Text Field Binding]",
                 parent,
-                context.swf.header().version,
-                context,
-                |activation, context| {
+                activation.context.swf.header().version,
+                |activation| {
                     if let Ok(Some((object, property))) =
-                        activation.resolve_variable_path(context, parent, &variable)
+                        activation.resolve_variable_path(parent, &variable)
                     {
                         // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
                         if set_initial_value {
                             // If the property exists on the object, we overwrite the text with the property's value.
-                            if object.has_property(activation, context, property) {
-                                let value = object.get(property, activation, context).unwrap();
+                            if object.has_property(activation, property) {
+                                let value = object.get(property, activation).unwrap();
                                 let _ = self.set_text(
                                     value
-                                        .coerce_to_string(activation, context)
+                                        .coerce_to_string(activation)
                                         .unwrap_or_default()
                                         .to_string(),
-                                    context,
+                                    &mut activation.context,
                                 );
                             } else {
                                 // Otherwise, we initialize the proprty with the text field's text, if it's non-empty.
@@ -743,19 +742,20 @@ impl<'gc> EditText<'gc> {
                                 if !text.is_empty() {
                                     let _ = object.set(
                                         property,
-                                        AvmString::new(context.gc_context, self.text()).into(),
+                                        AvmString::new(activation.context.gc_context, self.text())
+                                            .into(),
                                         activation,
-                                        context,
                                     );
                                 }
                             }
                         }
 
                         if let Some(stage_object) = object.as_stage_object() {
-                            self.0.write(context.gc_context).bound_stage_object =
-                                Some(stage_object);
+                            self.0
+                                .write(activation.context.gc_context)
+                                .bound_stage_object = Some(stage_object);
                             stage_object.register_text_field_binding(
-                                context.gc_context,
+                                activation.context.gc_context,
                                 self,
                                 property,
                             );
@@ -778,26 +778,22 @@ impl<'gc> EditText<'gc> {
 
     /// Propagates a text change to the bound display object.
     ///
-    pub fn propagate_text_binding(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) {
+    pub fn propagate_text_binding(self, activation: &mut Activation<'_, 'gc, '_>) {
         if !self.0.read().firing_variable_binding {
-            self.0.write(context.gc_context).firing_variable_binding = true;
+            self.0
+                .write(activation.context.gc_context)
+                .firing_variable_binding = true;
             if let Some(variable) = self.variable() {
                 // Avoid double-borrows by copying the string.
                 // TODO: Can we avoid this somehow? Maybe when we have a better string type.
                 let variable_path = variable.to_string();
                 drop(variable);
 
-                if let Ok(Some((object, property))) = activation.resolve_variable_path(
-                    context,
-                    self.parent().unwrap(),
-                    &variable_path,
-                ) {
+                if let Ok(Some((object, property))) =
+                    activation.resolve_variable_path(self.parent().unwrap(), &variable_path)
+                {
                     let text = if self.0.read().is_html {
-                        let html_tree = self.html_tree(context).as_node();
+                        let html_tree = self.html_tree(&mut activation.context).as_node();
                         let html_string_result = html_tree.into_string(&mut |_node| true);
                         html_string_result.unwrap_or_default()
                     } else {
@@ -809,20 +805,20 @@ impl<'gc> EditText<'gc> {
                     activation.run_with_child_frame_for_display_object(
                         "[Propagate Text Binding]",
                         self.parent().unwrap(),
-                        context.swf.header().version,
-                        context,
-                        |activation, context| {
+                        activation.context.swf.header().version,
+                        |activation| {
                             let _ = object.set(
                                 property,
-                                AvmString::new(context.gc_context, text).into(),
+                                AvmString::new(activation.context.gc_context, text).into(),
                                 activation,
-                                context,
                             );
                         },
                     );
                 }
             }
-            self.0.write(context.gc_context).firing_variable_binding = false;
+            self.0
+                .write(activation.context.gc_context)
+                .firing_variable_binding = false;
         }
     }
 }
@@ -838,7 +834,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         Some(self.0.read().static_data.swf.clone())
     }
 
-    fn run_frame(&mut self, _avm: &mut Avm1<'gc>, _context: &mut UpdateContext) {
+    fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
     }
 
@@ -848,7 +844,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn post_instantiation(
         &mut self,
-        avm: &mut Avm1<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -887,16 +882,16 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         drop(text);
 
         // If this text field has a variable set, initialize text field binding.
-        avm.run_with_stack_frame_for_display_object(
+        Avm1::run_with_stack_frame_for_display_object(
             (*self).into(),
             context.swf.version(),
             context,
-            |activation, context| {
-                if !self.try_bind_text_field_variable(activation, context, true) {
-                    context.unbound_text_fields.push(*self);
+            |activation| {
+                if !self.try_bind_text_field_variable(activation, true) {
+                    activation.context.unbound_text_fields.push(*self);
                 }
                 // People can bind to properties of TextFields the same as other display objects.
-                self.bind_text_field_variables(activation, context);
+                self.bind_text_field_variables(activation);
             },
         );
     }

@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
-use crate::avm1::{Object, ScriptObject, UpdateContext, Value};
+use crate::avm1::{Object, ScriptObject, Value};
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
@@ -36,25 +36,21 @@ impl<'gc> ValueObject<'gc> {
     ///
     /// If a class exists for a given value type, this function automatically
     /// selects the correct prototype for it from the system prototypes list.
-    pub fn boxed(
-        activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        value: Value<'gc>,
-    ) -> Object<'gc> {
+    pub fn boxed(activation: &mut Activation<'_, 'gc, '_>, value: Value<'gc>) -> Object<'gc> {
         if let Value::Object(ob) = value {
             ob
         } else {
             let proto = match &value {
-                Value::Bool(_) => Some(activation.avm.prototypes.boolean),
-                Value::Number(_) => Some(activation.avm.prototypes.number),
-                Value::String(_) => Some(activation.avm.prototypes.string),
+                Value::Bool(_) => Some(activation.context.avm1.prototypes.boolean),
+                Value::Number(_) => Some(activation.context.avm1.prototypes.number),
+                Value::String(_) => Some(activation.context.avm1.prototypes.string),
                 _ => None,
             };
 
             let obj = ValueObject(GcCell::allocate(
-                context.gc_context,
+                activation.context.gc_context,
                 ValueObjectData {
-                    base: ScriptObject::object(context.gc_context, proto),
+                    base: ScriptObject::object(activation.context.gc_context, proto),
                     value: Value::Undefined,
                 },
             ));
@@ -64,26 +60,15 @@ impl<'gc> ValueObject<'gc> {
                 Value::Bool(_) => {
                     let _ = crate::avm1::globals::boolean::constructor(
                         activation,
-                        context,
                         obj.into(),
                         &[value],
                     );
                 }
                 Value::Number(_) => {
-                    let _ = crate::avm1::globals::number::number(
-                        activation,
-                        context,
-                        obj.into(),
-                        &[value],
-                    );
+                    let _ = crate::avm1::globals::number::number(activation, obj.into(), &[value]);
                 }
                 Value::String(_) => {
-                    let _ = crate::avm1::globals::string::string(
-                        activation,
-                        context,
-                        obj.into(),
-                        &[value],
-                    );
+                    let _ = crate::avm1::globals::string::string(activation, obj.into(), &[value]);
                 }
                 _ => (),
             }
@@ -134,11 +119,13 @@ impl<'gc> TObject<'gc> for ValueObject<'gc> {
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(ValueObject::empty_box(context.gc_context, Some(this)))
+        Ok(ValueObject::empty_box(
+            activation.context.gc_context,
+            Some(this),
+        ))
     }
 
     fn as_value_object(&self) -> Option<ValueObject<'gc>> {
