@@ -497,8 +497,8 @@ impl<'gc> Value<'gc> {
                     AvmString::new(activation.context.gc_context, format!("{}", n))
                 }
             }
-            Value::Unsigned(u) => AvmString::new(context.gc_context, format!("{}", u)),
-            Value::Integer(i) => AvmString::new(context.gc_context, format!("{}", i)),
+            Value::Unsigned(u) => AvmString::new(activation.context.gc_context, format!("{}", u)),
+            Value::Integer(i) => AvmString::new(activation.context.gc_context, format!("{}", i)),
             Value::String(s) => *s,
             Value::Object(_) => self
                 .coerce_to_primitive(Some(Hint::String), activation)?
