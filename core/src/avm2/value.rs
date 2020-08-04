@@ -125,6 +125,14 @@ impl PartialEq for Value<'_> {
             (Value::Null, Value::Null) => true,
             (Value::Bool(a), Value::Bool(b)) => a == b,
             (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::Number(a), Value::Unsigned(b)) => *a == *b as f64,
+            (Value::Number(a), Value::Integer(b)) => *a == *b as f64,
+            (Value::Unsigned(a), Value::Number(b)) => *a as f64 == *b,
+            (Value::Unsigned(a), Value::Unsigned(b)) => a == b,
+            (Value::Unsigned(a), Value::Integer(b)) => *a as f64 == *b as f64,
+            (Value::Integer(a), Value::Number(b)) => *a as f64 == *b,
+            (Value::Integer(a), Value::Unsigned(b)) => *a as f64 == *b as f64,
+            (Value::Integer(a), Value::Integer(b)) => a == b,
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Object(a), Value::Object(b)) => Object::ptr_eq(*a, *b),
             _ => false,
@@ -554,7 +562,18 @@ impl<'gc> Value<'gc> {
         match (self, other) {
             (Value::Undefined, Value::Undefined) => Ok(true),
             (Value::Null, Value::Null) => Ok(true),
-            (Value::Number(a), Value::Number(b)) => {
+            (Value::Number(_), Value::Number(_))
+            | (Value::Number(_), Value::Unsigned(_))
+            | (Value::Number(_), Value::Integer(_))
+            | (Value::Unsigned(_), Value::Number(_))
+            | (Value::Unsigned(_), Value::Unsigned(_))
+            | (Value::Unsigned(_), Value::Integer(_))
+            | (Value::Integer(_), Value::Number(_))
+            | (Value::Integer(_), Value::Unsigned(_))
+            | (Value::Integer(_), Value::Integer(_)) => {
+                let a = self.coerce_to_number(activation)?;
+                let b = other.coerce_to_number(activation)?;
+
                 if a.is_nan() || b.is_nan() {
                     return Ok(false);
                 }
@@ -574,12 +593,16 @@ impl<'gc> Value<'gc> {
             (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b)),
             (Value::Undefined, Value::Null) => Ok(true),
             (Value::Null, Value::Undefined) => Ok(true),
-            (Value::Number(_), Value::String(_)) => {
+            (Value::Number(_), Value::String(_))
+            | (Value::Unsigned(_), Value::String(_))
+            | (Value::Integer(_), Value::String(_)) => {
                 let number_other = Value::from(other.coerce_to_number(activation)?);
 
                 self.abstract_eq(&number_other, activation)
             }
-            (Value::String(_), Value::Number(_)) => {
+            (Value::String(_), Value::Number(_))
+            | (Value::String(_), Value::Unsigned(_))
+            | (Value::String(_), Value::Integer(_)) => {
                 let number_self = Value::from(self.coerce_to_number(activation)?);
 
                 number_self.abstract_eq(other, activation)
@@ -594,13 +617,19 @@ impl<'gc> Value<'gc> {
 
                 self.abstract_eq(&number_other, activation)
             }
-            (Value::String(_), Value::Object(_)) | (Value::Number(_), Value::Object(_)) => {
+            (Value::String(_), Value::Object(_))
+            | (Value::Number(_), Value::Object(_))
+            | (Value::Unsigned(_), Value::Object(_))
+            | (Value::Integer(_), Value::Object(_)) => {
                 //TODO: Should this be `Hint::Number`, `Hint::String`, or no-hint?
                 let primitive_other = other.coerce_to_primitive(Some(Hint::Number), activation)?;
 
                 self.abstract_eq(&primitive_other, activation)
             }
-            (Value::Object(_), Value::String(_)) | (Value::Object(_), Value::Number(_)) => {
+            (Value::Object(_), Value::String(_))
+            | (Value::Object(_), Value::Number(_))
+            | (Value::Object(_), Value::Unsigned(_))
+            | (Value::Object(_), Value::Integer(_)) => {
                 //TODO: Should this be `Hint::Number`, `Hint::String`, or no-hint?
                 let primitive_self = self.coerce_to_primitive(Some(Hint::Number), activation)?;
 
