@@ -1535,11 +1535,11 @@ dependencies = [
 
 [[package]]
 name = "num_enum"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "derivative 2.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "num_enum_derive 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num_enum_derive 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1555,7 +1555,7 @@ dependencies = [
 
 [[package]]
 name = "num_enum_derive"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "proc-macro-crate 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2001,7 +2001,7 @@ dependencies = [
  "libflate 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "minimp3 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "num_enum 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num_enum 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "percent-encoding 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "png 0.16.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3150,9 +3150,9 @@ dependencies = [
 "checksum num-traits 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)" = "ac267bcc07f48ee5f8935ab0d24f316fb722d7a1292e2913f0cc196b29ffd611"
 "checksum num_cpus 1.13.0 (registry+https://github.com/rust-lang/crates.io-index)" = "05499f3756671c15885fee9034446956fff3f243d6077b91e5767df161f766b3"
 "checksum num_enum 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ca565a7df06f3d4b485494f25ba05da1435950f4dc263440eda7a6fa9b8e36e4"
-"checksum num_enum 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5f1e2d7c9c4282839fc56f549bc006a54e6f28a851a7de7adcf3f50575751760"
+"checksum num_enum 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "226b45a5c2ac4dd696ed30fa6b94b057ad909c7b7fc2e0d0808192bced894066"
 "checksum num_enum_derive 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ffa5a33ddddfee04c0283a7653987d634e880347e96b5b2ed64de07efb59db9d"
-"checksum num_enum_derive 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4a9f19dafa80d8af21ede328f2c4ed836604a2eb1c309d688f89a7cc40568923"
+"checksum num_enum_derive 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1c0fd9eba1d5db0994a239e09c1be402d35622277e35468ba891aa5e3188ce7e"
 "checksum number_prefix 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "17b02fc0ff9a9e4b35b3342880f48e896ebf69f2967921fe8646bf5b7125956a"
 "checksum objc 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "915b1b472bc21c53464d6c8461c9d3af805ba1ef837e1cac254428f4a77177b1"
 "checksum objc-foundation 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1add1b659e36c9607c7aab864a76c7a4c2760cd0cd2e120f3fb8b952c7e22bf9"
