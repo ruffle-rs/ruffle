@@ -259,6 +259,7 @@ impl Player {
             storage,
         };
 
+        player.mutate_with_update_context(|context| Avm2::load_player_globals(context))?;
         player.build_matrices();
         player.audio.set_frame_rate(frame_rate);
 
@@ -345,10 +346,6 @@ impl Player {
                 AvmString::new(activation.context.gc_context, version_string).into(),
                 EnumSet::empty(),
             );
-
-            drop(activation);
-
-            Avm2::load_player_globals(context).unwrap();
         });
 
         self.build_matrices();
