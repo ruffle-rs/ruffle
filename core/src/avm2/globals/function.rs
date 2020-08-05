@@ -1,14 +1,25 @@
 //! Function builtin and prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
+use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::MutationContext;
 
-/// Implements `Function`
-pub fn constructor<'gc>(
+/// Implements `Function`'s instance initializer.
+pub fn instance_init<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
+}
+
+/// Implements `Function`'s class initializer.
+pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -38,22 +49,42 @@ fn call<'gc>(
     }
 }
 
-/// Partially construct `Function.prototype`.
-///
-/// `__proto__` and other cross-linked properties of this object will *not*
-/// be defined here. The caller of this function is responsible for linking
-/// them in order to obtain a valid ECMAScript `Function` prototype. The
-/// returned object is also a bare object, which will need to be linked into
-/// the prototype of `Object`.
-pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
-    let mut function_proto = ScriptObject::object(gc_context, proto);
-
-    function_proto.install_method(
-        gc_context,
-        QName::new(Namespace::as3_namespace(), "call"),
-        0,
-        FunctionObject::from_builtin(gc_context, call, function_proto),
+/// Construct `Function` and `Function.prototype`, respectively.
+pub fn create_class<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    proto: Object<'gc>,
+) -> (Object<'gc>, Object<'gc>) {
+    let function_class = Class::new(
+        QName::new(Namespace::public_namespace(), "Function"),
+        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        Method::from_builtin(instance_init),
+        Method::from_builtin(class_init),
+        activation.context.gc_context,
     );
 
-    function_proto
+    let globals = activation.avm2().globals();
+    let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
+    let mut function_proto = ScriptObject::prototype(
+        activation.context.gc_context,
+        proto,
+        function_class,
+        Some(scope),
+    );
+
+    function_proto.install_method(
+        activation.context.gc_context,
+        QName::new(Namespace::as3_namespace(), "call"),
+        0,
+        FunctionObject::from_builtin(activation.context.gc_context, call, function_proto),
+    );
+
+    let constr = FunctionObject::from_builtin_constr(
+        activation.context.gc_context,
+        instance_init,
+        proto,
+        function_proto,
+    )
+    .unwrap();
+
+    (constr, function_proto)
 }
