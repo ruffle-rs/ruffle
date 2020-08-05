@@ -1,3 +1,4 @@
+use clap::Clap;
 use indicatif::{ProgressBar, ProgressStyle};
 use path_slash::PathExt;
 use ruffle_core::swf::read_swf;
@@ -6,7 +7,6 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 
 use std::panic::catch_unwind;
-use structopt::StructOpt;
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Serialize, Debug)]
@@ -15,18 +15,19 @@ struct FileResults {
     error: Option<String>,
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Clap, Debug)]
+#[clap(version, about, author)]
 struct Opt {
     /// The directory (containing SWF files) to scan
-    #[structopt(name = "directory", parse(from_os_str))]
+    #[clap(name = "directory", parse(from_os_str))]
     input_path: PathBuf,
 
     /// The file to store results in CSV format
-    #[structopt(name = "results", parse(from_os_str))]
+    #[clap(name = "results", parse(from_os_str))]
     output_path: PathBuf,
 
     /// Filenames to ignore
-    #[structopt(short = "i", long = "ignore")]
+    #[clap(short = "i", long = "ignore")]
     ignore: Vec<String>,
 }
 
@@ -88,7 +89,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
 fn main() -> Result<(), std::io::Error> {
     env_logger::init();
 
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
     let to_scan = find_files(&opt.input_path, &opt.ignore);
     let total = to_scan.len() as u64;
     let mut good = 0;
