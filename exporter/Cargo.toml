@@ -6,13 +6,13 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+clap = "3.0.0-beta.1"
 ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu" }
 env_logger = "0.7.1"
 image = "0.23.8"
 log = "0.4"
 sample = "0.11.0"
-structopt = "0.3.15"
 futures = "0.3.4"
 wgpu = "0.5"
 wgpu-native = "0.5"
