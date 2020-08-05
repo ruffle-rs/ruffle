@@ -337,6 +337,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
         self.0.write(context).set_interfaces(iface_list)
     }
+
+    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+        self.0.read().as_class()
+    }
 }
 
 impl<'gc> ScriptObject<'gc> {
@@ -896,5 +900,14 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Set the interface list for this object.
     pub fn set_interfaces(&mut self, iface_list: Vec<Object<'gc>>) {
         self.interfaces = iface_list;
+    }
+
+    /// Get the class for this object, if it has one.
+    pub fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+        match self.class {
+            ScriptObjectClass::ClassConstructor(class, _) => Some(class),
+            ScriptObjectClass::InstancePrototype(class, _) => Some(class),
+            ScriptObjectClass::NoClass => None,
+        }
     }
 }

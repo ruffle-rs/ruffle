@@ -723,6 +723,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
 
+    /// Get this object's `Class`, if it has one.
+    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>>;
+
     /// Get this object's `Executable`, if it has one.
     fn as_executable(&self) -> Option<Executable<'gc>> {
         None

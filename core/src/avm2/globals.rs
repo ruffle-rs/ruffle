@@ -99,7 +99,9 @@ fn class<'gc>(
     let class_trait = Trait::from_class(class_def);
     let global_scope = Scope::push_scope(global.get_scope(), global, activation.context.gc_context);
 
-    global.install_foreign_trait(activation, class_trait, Some(global_scope), global)
+    global.install_foreign_trait(activation, class_trait, Some(global_scope), global)?;
+
+    Ok(())
 }
 
 /// Add a builtin constant to the global scope.
