@@ -1,3 +1,4 @@
+use clap::Clap;
 use futures::executor::block_on;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -14,28 +15,28 @@ use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
-use structopt::StructOpt;
 use walkdir::{DirEntry, WalkDir};
 
-#[derive(StructOpt, Debug, Copy, Clone)]
+#[derive(Clap, Debug, Copy, Clone)]
 struct SizeOpt {
     /// The amount to scale the page size with
-    #[structopt(long = "scale", default_value = "1.0")]
+    #[clap(long = "scale", default_value = "1.0")]
     scale: f32,
 
     /// Optionaly override the output width
-    #[structopt(long = "width")]
+    #[clap(long = "width")]
     width: Option<u32>,
 
     /// Optionaly override the output height
-    #[structopt(long = "height")]
+    #[clap(long = "height")]
     height: Option<u32>,
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Clap, Debug)]
+#[clap(name = "Ruffle Exporter", author, version)]
 struct Opt {
     /// The file or directory of files to export frames from
-    #[structopt(name = "swf", parse(from_os_str))]
+    #[clap(name = "swf", parse(from_os_str))]
     swf: PathBuf,
 
     /// The file or directory (if multiple frames/files) to store the capture in.
@@ -43,22 +44,22 @@ struct Opt {
     /// - If given one swf and one frame, the name of the swf + ".png"
     /// - If given one swf and multiple frames, the name of the swf as a directory
     /// - If given multiple swfs, this field is required.
-    #[structopt(name = "output", parse(from_os_str))]
+    #[clap(name = "output", parse(from_os_str))]
     output_path: Option<PathBuf>,
 
     /// Number of frames to capture per file
-    #[structopt(short = "f", long = "frames", default_value = "1")]
+    #[clap(short = "f", long = "frames", default_value = "1")]
     frames: u32,
 
     /// Number of frames to skip
-    #[structopt(long = "skipframes", default_value = "0")]
+    #[clap(long = "skipframes", default_value = "0")]
     skipframes: u32,
 
     /// Don't show a progress bar
-    #[structopt(short, long)]
+    #[clap(short, long)]
     silent: bool,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     size: SizeOpt,
 }
 
@@ -330,7 +331,7 @@ fn capture_multiple_swfs(
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let opt: Opt = Opt::from_args();
+    let opt: Opt = Opt::parse();
     let adapter = block_on(wgpu::Adapter::request(
         &wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::Default,
