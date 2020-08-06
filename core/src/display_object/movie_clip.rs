@@ -1,9 +1,14 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{Avm1, Object as Avm1Object, StageObject, TObject, Value as Avm1Value};
-use crate::avm2::Value as Avm2Value;
+use crate::avm1::{
+    Avm1, Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value,
+};
+use crate::avm2::Activation as Avm2Activation;
+use crate::avm2::{
+    Object as Avm2Object, QName as Avm2QName, TObject as Avm2TObject, Value as Avm2Value,
+};
 use crate::backend::audio::AudioStreamHandle;
 
-use crate::avm1::activation::{Activation, ActivationIdentifier};
+use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{
@@ -267,6 +272,7 @@ impl<'gc> MovieClip<'gc> {
                     .define_text(context, reader, 2),
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
                 TagCode::DoAbc => self.do_abc(context, reader, tag_len),
+                TagCode::SymbolClass => self.symbol_class(context, reader),
                 TagCode::ExportAssets => self
                     .0
                     .write(context.gc_context)
@@ -438,6 +444,63 @@ impl<'gc> MovieClip<'gc> {
         Ok(())
     }
 
+    #[inline]
+    fn symbol_class(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<&[u8]>,
+    ) -> DecodeResult {
+        let movie = self
+            .movie()
+            .ok_or("Attempted to set symbol classes on movie without any")?;
+        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
+        let num_symbols = reader.read_u16()?;
+
+        for _ in 0..num_symbols {
+            let id = reader.read_u16()?;
+            let class_name = reader.read_c_string()?;
+
+            if let Some(name) =
+                Avm2QName::from_symbol_class(&class_name, activation.context.gc_context)
+            {
+                let mut globals = activation.context.avm2.globals();
+                match globals
+                    .get_property(globals, &name, &mut activation)
+                    .and_then(|v| v.coerce_to_object(&mut activation))
+                    .and_then(|mut o| {
+                        o.get_property(o, &Avm2QName::dynamic_name("prototype"), &mut activation)
+                    })
+                    .and_then(|v| v.coerce_to_object(&mut activation))
+                {
+                    Ok(proto) => {
+                        let library = activation
+                            .context
+                            .library
+                            .library_for_movie_mut(movie.clone());
+
+                        if let Some(Character::MovieClip(mc)) = library.get_character_by_id(id) {
+                            mc.set_avm2_constructor(activation.context.gc_context, Some(proto))
+                        } else {
+                            log::warn!(
+                                "Symbol class {} cannot be assigned to invalid character id {}",
+                                class_name,
+                                id
+                            );
+                        }
+                    }
+                    Err(e) => log::warn!(
+                        "Got AVM2 error {} when attempting to assign symbol class {}",
+                        e,
+                        class_name
+                    ),
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     #[allow(dead_code)]
     pub fn playing(self) -> bool {
         self.0.read().playing()
@@ -504,9 +567,39 @@ impl<'gc> MovieClip<'gc> {
     pub fn set_avm1_constructor(
         self,
         gc_context: MutationContext<'gc, '_>,
-        prototype: Option<AvmObject<'gc>>,
+        prototype: Option<Avm1Object<'gc>>,
     ) {
-        self.0.write(gc_context).avm_constructor = prototype;
+        let mut write = self.0.write(gc_context);
+
+        if write
+            .avm_constructor
+            .map(|c| c.is_avm2_object())
+            .unwrap_or(false)
+        {
+            log::error!("Blocked attempt to set AVM1 constructor on AVM2 object");
+            return;
+        }
+
+        write.avm_constructor = prototype.map(|o| o.into());
+    }
+
+    pub fn set_avm2_constructor(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        prototype: Option<Avm2Object<'gc>>,
+    ) {
+        let mut write = self.0.write(gc_context);
+
+        if write
+            .avm_constructor
+            .map(|c| c.is_avm1_object())
+            .unwrap_or(false)
+        {
+            log::error!("Blocked attempt to set AVM2 constructor on AVM1 object");
+            return;
+        }
+
+        write.avm_constructor = prototype.map(|o| o.into());
     }
 
     pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
@@ -1100,7 +1193,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 if self.0.read().has_button_clip_event {
                     true
                 } else {
-                    let mut activation = Activation::from_stub(
+                    let mut activation = Avm1Activation::from_stub(
                         context.reborrow(),
                         ActivationIdentifier::root("[Mouse Pick]"),
                     );
@@ -1167,7 +1260,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // If we are running within the AVM, this must be an immediate action.
             // If we are not, then this must be queued to be ran first-thing
             if instantiated_by.is_avm() && self.0.read().avm_constructor.is_some() {
-                let mut activation = Activation::from_nothing(
+                let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Construct]"),
                     version,
@@ -1216,7 +1309,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             )
             .into();
             if let Some(init_object) = init_object {
-                let mut activation = Activation::from_nothing(
+                let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Init]"),
                     version,
