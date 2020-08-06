@@ -164,6 +164,24 @@ impl<'gc> QName<'gc> {
         })
     }
 
+    /// Given a symbol class name, parse it as a `QName`.
+    ///
+    /// Symbol class names consist of one or more package strings, followed by
+    /// the local name of the class, all separated by dots.
+    pub fn from_symbol_class(class_name: &str, mc: MutationContext<'gc, '_>) -> Option<Self> {
+        match &class_name.rsplitn(1, '.').collect::<Vec<&str>>()[..] {
+            [local_name, package_name] => Some(Self {
+                ns: Namespace::Package(AvmString::new(mc, package_name.to_string())),
+                name: AvmString::new(mc, local_name.to_string()),
+            }),
+            [local_name] => Some(Self {
+                ns: Namespace::public_namespace(),
+                name: AvmString::new(mc, local_name.to_string()),
+            }),
+            _ => None,
+        }
+    }
+
     pub fn local_name(&self) -> AvmString<'gc> {
         self.name
     }
