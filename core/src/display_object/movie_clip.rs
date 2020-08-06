@@ -1,5 +1,6 @@
 //! `MovieClip` display object and support code.
 use crate::avm1::{Avm1, Object as Avm1Object, StageObject, TObject, Value as Avm1Value};
+use crate::avm2::Value as Avm2Value;
 use crate::backend::audio::AudioStreamHandle;
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
@@ -1274,6 +1275,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .and_then(|o| o.as_avm1_object().ok())
             .map(Avm1Value::from)
             .unwrap_or(Avm1Value::Undefined)
+    }
+
+    fn object2(&self) -> Avm2Value<'gc> {
+        self.0
+            .read()
+            .object
+            .and_then(|o| o.as_avm2_object().ok())
+            .map(Avm2Value::from)
+            .unwrap_or(Avm2Value::Undefined)
     }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
