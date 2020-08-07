@@ -64,6 +64,14 @@ impl Instantiator {
 #[collect(require_static)]
 pub struct ClaimError();
 
+/// Denotes an AVM type.
+#[derive(Copy, Clone, Debug, Collect, PartialEq, Eq)]
+#[collect(no_drop)]
+pub enum AvmType {
+    Avm1,
+    Avm2,
+}
+
 /// A reference to either an AVM1 or AVM2 object.
 ///
 /// Used by non-AVM code to retain VM objects that may have been customized or
