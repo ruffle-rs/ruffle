@@ -21,7 +21,7 @@ use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use crate::types::{Degrees, Percent};
-use crate::vminterface::{AvmObject, Instantiator};
+use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -162,9 +162,19 @@ impl<'gc> MovieClip<'gc> {
             match tag_code {
                 TagCode::FileAttributes => {
                     let attributes = reader.read_file_attributes()?;
-                    if attributes.is_action_script_3 {
+                    let vm_tendency = if attributes.is_action_script_3 {
                         log::warn!("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
+                        AvmType::Avm2
+                    } else {
+                        AvmType::Avm1
+                    };
+
+                    let movie = self.movie().unwrap();
+                    let library = context.library.library_for_movie_mut(movie);
+                    if let Err(e) = library.check_vm_tendency(vm_tendency) {
+                        log::warn!("{}", e);
                     }
+
                     Ok(())
                 }
                 TagCode::DefineBits => self
@@ -374,6 +384,14 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<&[u8]>,
         tag_len: usize,
     ) -> DecodeResult {
+        let movie = self.movie().unwrap();
+        let library = context.library.library_for_movie_mut(movie);
+        if let Err(e) = library.check_vm_tendency(AvmType::Avm1) {
+            log::warn!("{}", e);
+
+            return Ok(());
+        }
+
         // Queue the init actions.
 
         // TODO: Init actions are supposed to be executed once, and it gives a
@@ -411,6 +429,14 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<&[u8]>,
         tag_len: usize,
     ) -> DecodeResult {
+        let movie = self.movie().unwrap();
+        let library = context.library.library_for_movie_mut(movie);
+        if let Err(e) = library.check_vm_tendency(AvmType::Avm2) {
+            log::warn!("{}", e);
+
+            return Ok(());
+        }
+
         // Queue the actions.
         // TODO: The tag reader parses the entire ABC file, instead of just
         // giving us a `SwfSlice` for later parsing, so we have to replcate the
@@ -2367,6 +2393,14 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<&'a [u8]>,
         tag_len: usize,
     ) -> DecodeResult {
+        let movie = self.movie().unwrap();
+        let library = context.library.library_for_movie_mut(movie);
+        if let Err(e) = library.check_vm_tendency(AvmType::Avm1) {
+            log::warn!("{}", e);
+
+            return Ok(());
+        }
+
         // Queue the actions.
         let slice = self
             .0

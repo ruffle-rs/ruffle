@@ -4,11 +4,15 @@ use crate::display_object::TDisplayObject;
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::vminterface::AvmType;
 use gc_arena::{Collect, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use swf::CharacterId;
 use weak_table::PtrWeakKeyHashMap;
+
+/// Boxed error alias.
+type Error = Box<dyn std::error::Error>;
 
 /// Symbol library for a single given SWF.
 #[derive(Collect)]
@@ -19,6 +23,7 @@ pub struct MovieLibrary<'gc> {
     jpeg_tables: Option<Vec<u8>>,
     device_font: Option<Font<'gc>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
+    vm_tendency: Option<AvmType>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
@@ -29,6 +34,7 @@ impl<'gc> MovieLibrary<'gc> {
             jpeg_tables: None,
             device_font: None,
             fonts: HashMap::new(),
+            vm_tendency: None,
         }
     }
 
@@ -192,6 +198,28 @@ impl<'gc> MovieLibrary<'gc> {
     /// Sets the device font.
     pub fn set_device_font(&mut self, font: Option<Font<'gc>>) {
         self.device_font = font;
+    }
+
+    /// Check if the current movie's VM tendency is compatible with running
+    /// code on a particular VM. If it is not, then this yields an error.
+    ///
+    /// Checking the VM tendency will also set the VM tendency for the entire
+    /// movie if it is not already set. This ensures that, say, a movie can't
+    /// claim it's AS3 in it's file attributes, but then start running AS2
+    /// code.
+    pub fn check_vm_tendency(&mut self, new_tendency: AvmType) -> Result<(), Error> {
+        if self.vm_tendency.map(|t| t != new_tendency).unwrap_or(false) {
+            return Err(format!(
+                "Blocked attempt to run {:?} code on an {:?} movie.",
+                new_tendency,
+                self.vm_tendency.unwrap()
+            )
+            .into());
+        }
+
+        self.vm_tendency = Some(new_tendency);
+
+        Ok(())
     }
 }
 
