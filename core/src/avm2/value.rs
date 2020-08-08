@@ -409,22 +409,16 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<u32, Error> {
         let number = self.coerce_to_number(activation)?;
 
-        Ok(
-            if number == f64::INFINITY
-                || number == f64::NEG_INFINITY
-                || number.is_nan()
-                || number.abs() == 0.0
-            {
-                0
+        Ok(if !number.is_finite() {
+            0
+        } else {
+            let abs32 = (number.abs().floor() % (u32::MAX as f64 + 1.0)) as u32;
+            if number.is_sign_negative() {
+                (!abs32).wrapping_add(1)
             } else {
-                let abs32 = (number.abs().floor() % (u32::MAX as f64 + 1.0)) as u32;
-                if number.is_sign_negative() {
-                    (!abs32).wrapping_add(1)
-                } else {
-                    abs32
-                }
-            },
-        )
+                abs32
+            }
+        })
     }
 
     /// Coerce the value to a 32-bit signed integer.
