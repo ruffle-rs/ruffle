@@ -226,6 +226,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.as_class()
     }
 
+    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
+        self.0.read().display_object
+    }
+
     fn call(
         self,
         _reciever: Option<Object<'gc>>,
