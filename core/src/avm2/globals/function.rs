@@ -1,10 +1,8 @@
 //! Function builtin and prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::function::FunctionObject;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{Object, TObject};
-use crate::avm2::script_object::ScriptObject;
+use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::MutationContext;

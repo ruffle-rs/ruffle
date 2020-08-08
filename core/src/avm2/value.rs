@@ -3,9 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::names::Namespace;
 use crate::avm2::names::QName;
-use crate::avm2::namespace_object::NamespaceObject;
-use crate::avm2::object::{Object, TObject};
-use crate::avm2::primitive_object::PrimitiveObject;
+use crate::avm2::object::{NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Avm2, Error};

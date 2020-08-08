@@ -2,13 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::function::{Executable, FunctionObject};
+use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
-use crate::avm2::namespace_object::NamespaceObject;
-use crate::avm2::primitive_object::PrimitiveObject;
 use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::scope::Scope;
-use crate::avm2::script_object::ScriptObject;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
@@ -16,6 +13,17 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::Ref;
 use std::fmt::Debug;
+
+mod custom_object;
+mod function_object;
+mod namespace_object;
+mod primitive_object;
+mod script_object;
+
+pub use crate::avm2::object::function_object::FunctionObject;
+pub use crate::avm2::object::namespace_object::NamespaceObject;
+pub use crate::avm2::object::primitive_object::PrimitiveObject;
+pub use crate::avm2::object::script_object::ScriptObject;
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.

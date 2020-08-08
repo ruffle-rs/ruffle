@@ -1,14 +1,14 @@
 //! Boxed primitives
 
-use crate::avm1::AvmString;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
+use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::r#trait::Trait;
 use crate::avm2::scope::Scope;
-use crate::avm2::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
