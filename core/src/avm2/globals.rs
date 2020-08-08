@@ -1,11 +1,10 @@
 //! Global scope built-ins
 
 use crate::avm2::activation::Activation;
-use crate::avm2::function::FunctionObject;
 use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
+use crate::avm2::object::{FunctionObject, ScriptObject};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::script_object::ScriptObject;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
