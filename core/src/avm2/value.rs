@@ -665,8 +665,6 @@ impl<'gc> Value<'gc> {
         }
 
         if num_self == num_other
-            || num_self == 0.0 && num_other == -0.0
-            || num_self == -0.0 && num_other == 0.0
             || num_self.is_infinite() && num_self.is_sign_positive()
             || num_other.is_infinite() && num_other.is_sign_negative()
         {
