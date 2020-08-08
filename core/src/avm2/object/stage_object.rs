@@ -28,6 +28,22 @@ pub struct StageObjectData<'gc> {
     display_object: Option<DisplayObject<'gc>>,
 }
 
+impl<'gc> StageObject<'gc> {
+    pub fn for_display_object(
+        mc: MutationContext<'gc, '_>,
+        display_object: DisplayObject<'gc>,
+        proto: Object<'gc>,
+    ) -> Self {
+        Self(GcCell::allocate(
+            mc,
+            StageObjectData {
+                base: ScriptObjectData::base_new(Some(proto), ScriptObjectClass::NoClass),
+                display_object: Some(display_object),
+            },
+        ))
+    }
+}
+
 impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn get_property_local(
         self,

@@ -58,6 +58,16 @@ impl Instantiator {
     }
 }
 
+impl Into<Option<AvmType>> for Instantiator {
+    fn into(self) -> Option<AvmType> {
+        match self {
+            Self::Avm1 => Some(AvmType::Avm1),
+            Self::Avm2 => Some(AvmType::Avm2),
+            _ => None,
+        }
+    }
+}
+
 /// Represents an error generated due to a failure to convert or claim an
 /// object for a given VM.
 #[derive(Copy, Clone, Debug, Collect)]
@@ -70,6 +80,15 @@ pub struct ClaimError();
 pub enum AvmType {
     Avm1,
     Avm2,
+}
+
+impl From<AvmObject<'_>> for AvmType {
+    fn from(vmo: AvmObject<'_>) -> Self {
+        match vmo {
+            AvmObject::Avm1(_) => AvmType::Avm1,
+            AvmObject::Avm2(_) => AvmType::Avm2,
+        }
+    }
 }
 
 /// A reference to either an AVM1 or AVM2 object.

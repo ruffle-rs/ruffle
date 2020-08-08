@@ -221,6 +221,13 @@ impl<'gc> MovieLibrary<'gc> {
 
         Ok(())
     }
+
+    /// Get the VM tendency.
+    ///
+    /// This may be `None` if no tendency checks have run yet.
+    pub fn vm_tendency(&self) -> Option<AvmType> {
+        self.vm_tendency
+    }
 }
 
 impl Default for MovieLibrary<'_> {
