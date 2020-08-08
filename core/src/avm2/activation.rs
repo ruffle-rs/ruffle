@@ -548,7 +548,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_push_byte(&mut self, value: u8) -> Result<FrameControl<'gc>, Error> {
         //TODO: Adobe Animate CC appears to generate signed byte values, and
         //JPEXS appears to take them.
-        self.context.avm2.push(value as i8 as f64);
+        self.context.avm2.push(value as i8 as i32);
         Ok(FrameControl::Continue)
     }
 
