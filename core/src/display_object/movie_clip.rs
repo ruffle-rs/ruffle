@@ -4,7 +4,8 @@ use crate::avm1::{
 };
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
-    Object as Avm2Object, QName as Avm2QName, TObject as Avm2TObject, Value as Avm2Value,
+    Error as Avm2Error, Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName,
+    StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::backend::audio::AudioStreamHandle;
 
@@ -1121,6 +1122,160 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
     }
+
+    fn construct_as_avm1_object(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        display_object: DisplayObject<'gc>,
+        init_object: Option<Avm1Object<'gc>>,
+        instantiated_by: Instantiator,
+        run_frame: bool,
+    ) {
+        //TODO: This will break horribly when AVM2 starts touching the display list
+        if self.0.read().object.is_none() {
+            let version = context.swf.version();
+            let globals = context.avm1.global_object_cell();
+
+            // If we are running within the AVM, this must be an immediate action.
+            // If we are not, then this must be queued to be ran first-thing
+            if instantiated_by.is_avm() && self.0.read().avm_constructor.is_some() {
+                let mut activation = Avm1Activation::from_nothing(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[Construct]"),
+                    version,
+                    globals,
+                    self.into(),
+                );
+
+                let constructor = self
+                    .0
+                    .read()
+                    .avm_constructor
+                    .unwrap()
+                    .as_avm1_object()
+                    .unwrap();
+                if let Ok(prototype) = constructor
+                    .get("prototype", &mut activation)
+                    .map(|v| v.coerce_to_object(&mut activation))
+                {
+                    let object: Avm1Object<'gc> = StageObject::for_display_object(
+                        activation.context.gc_context,
+                        self.into(),
+                        Some(prototype),
+                    )
+                    .into();
+                    if let Some(init_object) = init_object {
+                        for key in init_object.get_keys(&mut activation) {
+                            if let Ok(value) = init_object.get(&key, &mut activation) {
+                                let _ = object.set(&key, value, &mut activation);
+                            }
+                        }
+                    }
+                    self.0.write(activation.context.gc_context).object = Some(object.into());
+                    if run_frame {
+                        self.run_frame(&mut activation.context);
+                    }
+                    let _ = constructor.construct_on_existing(&mut activation, object, &[]);
+                }
+
+                return;
+            }
+
+            let object: Avm1Object<'gc> = StageObject::for_display_object(
+                context.gc_context,
+                display_object,
+                Some(context.system_prototypes.movie_clip),
+            )
+            .into();
+            if let Some(init_object) = init_object {
+                let mut activation = Avm1Activation::from_nothing(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[Init]"),
+                    version,
+                    globals,
+                    self.into(),
+                );
+
+                for key in init_object.get_keys(&mut activation) {
+                    if let Ok(value) = init_object.get(&key, &mut activation) {
+                        let _ = object.set(&key, value, &mut activation);
+                    }
+                }
+            }
+            let mut mc = self.0.write(context.gc_context);
+            mc.object = Some(object.into());
+
+            let mut events = Vec::new();
+
+            for clip_action in mc
+                .clip_actions()
+                .iter()
+                .filter(|action| action.event == ClipEvent::Construct)
+            {
+                events.push(clip_action.action_data.clone());
+            }
+
+            context.action_queue.queue_actions(
+                display_object,
+                ActionType::Construct {
+                    constructor: mc.avm_constructor.map(|a| a.as_avm1_object().unwrap()),
+                    events,
+                },
+                false,
+            );
+        }
+
+        if run_frame {
+            self.run_frame(context);
+        }
+
+        // If this text field has a variable set, initialize text field binding.
+        Avm1::run_with_stack_frame_for_display_object(
+            self.into(),
+            context.swf.version(),
+            context,
+            |activation| {
+                self.bind_text_field_variables(activation);
+            },
+        );
+    }
+
+    fn construct_as_avm2_object(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        display_object: DisplayObject<'gc>,
+    ) {
+        let constructor = self.0.read().avm_constructor;
+        if let Some(AvmObject::Avm2(mut constr)) = constructor {
+            let mut constr_thing = || {
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let proto = constr
+                    .get_property(
+                        constr,
+                        &Avm2QName::new(Avm2Namespace::public_namespace(), "prototype"),
+                        &mut activation,
+                    )?
+                    .coerce_to_object(&mut activation)?;
+                let object = Avm2StageObject::for_display_object(
+                    activation.context.gc_context,
+                    display_object,
+                    proto,
+                )
+                .into();
+
+                constr.call(Some(object), &[], &mut activation, Some(proto))?;
+
+                Ok(object)
+            };
+            let result: Result<Avm2Object<'gc>, Avm2Error> = constr_thing();
+
+            if let Ok(object) = result {
+                self.0.write(context.gc_context).object = Some(object.into());
+            } else if let Err(e) = result {
+                log::error!("Got {} when constructing AVM2 side of display object", e);
+            }
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -1278,113 +1433,53 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        //TODO: This will break horribly when AVM2 starts touching the display list
-        if self.0.read().object.is_none() {
-            let version = context.swf.version();
-            let globals = context.avm1.global_object_cell();
+        let movie = self.movie().unwrap();
+        let library = context.library.library_for_movie_mut(movie.clone());
 
-            // If we are running within the AVM, this must be an immediate action.
-            // If we are not, then this must be queued to be ran first-thing
-            if instantiated_by.is_avm() && self.0.read().avm_constructor.is_some() {
-                let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
-                    ActivationIdentifier::root("[Construct]"),
-                    version,
-                    globals,
-                    (*self).into(),
-                );
+        // Attempt to divine the VM we should initialize this instance as.
+        // If our movie doesn't already have that determined, then this is the
+        // root movie clip and we need to scan the SWF for file attributes.
+        let tendency = library.vm_tendency().unwrap_or_else(|| {
+            use swf::TagCode;
 
-                let constructor = self
-                    .0
-                    .read()
-                    .avm_constructor
-                    .unwrap()
-                    .as_avm1_object()
-                    .unwrap();
-                if let Ok(prototype) = constructor
-                    .get("prototype", &mut activation)
-                    .map(|v| v.coerce_to_object(&mut activation))
-                {
-                    let object: Avm1Object<'gc> = StageObject::for_display_object(
-                        activation.context.gc_context,
-                        (*self).into(),
-                        Some(prototype),
-                    )
-                    .into();
-                    if let Some(init_object) = init_object {
-                        for key in init_object.get_keys(&mut activation) {
-                            if let Ok(value) = init_object.get(&key, &mut activation) {
-                                let _ = object.set(&key, value, &mut activation);
-                            }
-                        }
+            let slice = SwfSlice::from(movie.clone());
+            let mut reader = slice.read_from(0);
+            let mut tendency = None;
+            let result = tag_utils::decode_tags(
+                &mut reader,
+                |reader: &mut SwfStream<&[u8]>, tag_code, _tag_len| {
+                    if matches!(tag_code, TagCode::FileAttributes) {
+                        let attributes = reader.read_file_attributes()?;
+                        if attributes.is_action_script_3 {
+                            tendency = Some(AvmType::Avm2);
+                        } else {
+                            tendency = Some(AvmType::Avm1);
+                        };
                     }
-                    self.0.write(activation.context.gc_context).object = Some(object.into());
-                    if run_frame {
-                        self.run_frame(&mut activation.context);
-                    }
-                    let _ = constructor.construct_on_existing(&mut activation, object, &[]);
-                }
 
-                return;
-            }
-
-            let object: Avm1Object<'gc> = StageObject::for_display_object(
-                context.gc_context,
-                display_object,
-                Some(context.system_prototypes.movie_clip),
-            )
-            .into();
-            if let Some(init_object) = init_object {
-                let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
-                    ActivationIdentifier::root("[Init]"),
-                    version,
-                    globals,
-                    (*self).into(),
-                );
-
-                for key in init_object.get_keys(&mut activation) {
-                    if let Ok(value) = init_object.get(&key, &mut activation) {
-                        let _ = object.set(&key, value, &mut activation);
-                    }
-                }
-            }
-            let mut mc = self.0.write(context.gc_context);
-            mc.object = Some(object.into());
-
-            let mut events = Vec::new();
-
-            for clip_action in mc
-                .clip_actions()
-                .iter()
-                .filter(|action| action.event == ClipEvent::Construct)
-            {
-                events.push(clip_action.action_data.clone());
-            }
-
-            context.action_queue.queue_actions(
-                display_object,
-                ActionType::Construct {
-                    constructor: mc.avm_constructor.map(|a| a.as_avm1_object().unwrap()),
-                    events,
+                    Ok(())
                 },
-                false,
+                TagCode::FileAttributes,
+            );
+
+            if let Err(e) = result {
+                log::error!("Got {} when looking for AS3 flag", e);
+            }
+
+            tendency.unwrap_or(AvmType::Avm1)
+        });
+
+        if matches!(tendency, AvmType::Avm2) {
+            self.construct_as_avm2_object(context, display_object);
+        } else if matches!(tendency, AvmType::Avm1) {
+            self.construct_as_avm1_object(
+                context,
+                display_object,
+                init_object,
+                instantiated_by,
+                run_frame,
             );
         }
-
-        if run_frame {
-            self.run_frame(context);
-        }
-
-        // If this text field has a variable set, initialize text field binding.
-        Avm1::run_with_stack_frame_for_display_object(
-            (*self).into(),
-            context.swf.version(),
-            context,
-            |activation| {
-                self.bind_text_field_variables(activation);
-            },
-        );
     }
 
     fn object(&self) -> Avm1Value<'gc> {
@@ -1643,40 +1738,41 @@ impl<'gc> MovieClipData<'gc> {
     ) -> ClipEventResult {
         let mut handled = ClipEventResult::NotHandled;
 
-        // TODO: What's the behavior for loaded SWF files?
-        if context.swf.version() >= 5 {
-            for clip_action in self
-                .clip_actions
-                .iter()
-                .filter(|action| action.event == event)
-            {
-                // KeyPress events are consumed by a single instance.
-                if matches!(clip_action.event, ClipEvent::KeyPress { .. }) {
-                    handled = ClipEventResult::Handled;
-                }
-                context.action_queue.queue_actions(
-                    self_display_object,
-                    ActionType::Normal {
-                        bytecode: clip_action.action_data.clone(),
-                    },
-                    event == ClipEvent::Unload,
-                );
-            }
-
-            // Queue ActionScript-defined event handlers after the SWF defined ones.
-            // (e.g., clip.onEnterFrame = foo).
-            if context.swf.version() >= 6 {
-                if let Some(name) = event.method_name() {
+        if let Some(AvmObject::Avm1(object)) = self.object {
+            // TODO: What's the behavior for loaded SWF files?
+            if context.swf.version() >= 5 {
+                for clip_action in self
+                    .clip_actions
+                    .iter()
+                    .filter(|action| action.event == event)
+                {
+                    // KeyPress events are consumed by a single instance.
+                    if matches!(clip_action.event, ClipEvent::KeyPress { .. }) {
+                        handled = ClipEventResult::Handled;
+                    }
                     context.action_queue.queue_actions(
                         self_display_object,
-                        ActionType::Method {
-                            //TODO: This should have an AVM2 load path.
-                            object: self.object.unwrap().as_avm1_object().unwrap(),
-                            name,
-                            args: vec![],
+                        ActionType::Normal {
+                            bytecode: clip_action.action_data.clone(),
                         },
                         event == ClipEvent::Unload,
                     );
+                }
+
+                // Queue ActionScript-defined event handlers after the SWF defined ones.
+                // (e.g., clip.onEnterFrame = foo).
+                if context.swf.version() >= 6 {
+                    if let Some(name) = event.method_name() {
+                        context.action_queue.queue_actions(
+                            self_display_object,
+                            ActionType::Method {
+                                object,
+                                name,
+                                args: vec![],
+                            },
+                            event == ClipEvent::Unload,
+                        );
+                    }
                 }
             }
         }
