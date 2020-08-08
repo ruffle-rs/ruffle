@@ -566,11 +566,7 @@ impl<'gc> Value<'gc> {
             | (Value::Number(_), Value::Unsigned(_))
             | (Value::Number(_), Value::Integer(_))
             | (Value::Unsigned(_), Value::Number(_))
-            | (Value::Unsigned(_), Value::Unsigned(_))
-            | (Value::Unsigned(_), Value::Integer(_))
-            | (Value::Integer(_), Value::Number(_))
-            | (Value::Integer(_), Value::Unsigned(_))
-            | (Value::Integer(_), Value::Integer(_)) => {
+            | (Value::Integer(_), Value::Number(_)) => {
                 let a = self.coerce_to_number(activation)?;
                 let b = other.coerce_to_number(activation)?;
 
@@ -588,6 +584,10 @@ impl<'gc> Value<'gc> {
 
                 Ok(false)
             }
+            (Value::Unsigned(a), Value::Unsigned(b)) => Ok(a == b),
+            (Value::Unsigned(a), Value::Integer(b)) => Ok(*a as i64 == *b as i64),
+            (Value::Integer(a), Value::Unsigned(b)) => Ok(*a as i64 == *b as i64),
+            (Value::Integer(a), Value::Integer(b)) => Ok(a == b),
             (Value::String(a), Value::String(b)) => Ok(a == b),
             (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
             (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b)),
