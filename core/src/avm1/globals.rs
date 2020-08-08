@@ -81,6 +81,109 @@ pub fn is_nan<'gc>(
     }
 }
 
+pub fn parse_int<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // ECMA-262 violation: parseInt() == undefined // not NaN
+    if args.is_empty() {
+        return Ok(Value::Undefined);
+    }
+
+    let radix: Option<i32> = args
+        .get(1)
+        .map(|x| x.coerce_to_i32(activation))
+        .transpose()?;
+    if let Some(radix) = radix {
+        if radix < 2 || radix > 36 {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    let string = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
+    let mut string_s = string.as_bytes();
+
+    let mut ignore_sign = false;
+    let radix = match string_s {
+        // Emulate bug: unless "0x" is a valid sequence of digits in a given radix, these prefixes
+        // should result in NaN instead of 0. Otherwise, the minus sign should be ignored.
+        [b'+', b'0', b'x', ..]
+        | [b'+', b'0', b'X', ..]
+        | [b'-', b'0', b'x', ..]
+        | [b'-', b'0', b'X', ..] => {
+            if radix.unwrap_or(0) <= 33 {
+                return Ok(f64::NAN.into());
+            } else {
+                ignore_sign = true;
+                radix.unwrap() // radix is present and is > 33
+            }
+        }
+
+        // Auto-detect hexadecimal prefix and strip it.
+        // Emulate bug: the prefix is stripped irregardless of the radix.
+        //   parseInt('0x100', 10) == 100  // not 0
+        //   parseInt('0x100', 36) == 1296 // not 1540944
+        // Emulate bug: the prefix is expected before the sign or spaces.
+        //   parseInt("0x  -10") == -16 // not NaN
+        //   parseInt("  -0x10") == NaN // not -16
+        [b'0', b'x', rest @ ..] | [b'0', b'X', rest @ ..] => {
+            string_s = rest;
+            radix.unwrap_or(16)
+        }
+
+        // ECMA-262 violation: auto-detect octal numbers.
+        // An auto-detected octal number cannot contain leading spaces or extra trailing characters.
+        [b'0', rest @ ..] | [b'+', b'0', rest @ ..] | [b'-', b'0', rest @ ..]
+            if radix.is_none() && rest.iter().all(|&x| b'0' <= x && x <= b'7') =>
+        {
+            8
+        }
+
+        _ => radix.unwrap_or(10),
+    };
+
+    // Strip spaces.
+    while let Some(chr) = string_s.first() {
+        if !b"\t\n\r ".contains(chr) {
+            break;
+        }
+        string_s = &string_s[1..];
+    }
+
+    let (sign, string_s) = match string_s {
+        [b'+', rest @ ..] => (1., rest),
+        [b'-', rest @ ..] => (-1., rest),
+        rest => (1., rest),
+    };
+    let sign = if ignore_sign { 1. } else { sign };
+
+    let mut empty = true;
+    let mut result = 0.0f64;
+    for &chr in string_s {
+        let digit = match chr {
+            b'0'..=b'9' => chr as u32 - b'0' as u32,
+            b'a'..=b'z' => chr as u32 - b'a' as u32 + 10,
+            b'A'..=b'Z' => chr as u32 - b'A' as u32 + 10,
+            _ => break,
+        };
+        if digit as i32 >= radix {
+            break;
+        }
+        result = result * radix as f64 + digit as f64;
+        empty = false;
+    }
+
+    if empty {
+        Ok(f64::NAN.into())
+    } else {
+        Ok(result.copysign(sign).into())
+    }
+}
+
 pub fn get_infinity<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
@@ -550,6 +653,13 @@ pub fn create_globals<'gc>(
         Some(function_proto),
     );
     globals.force_set_function("isNaN", is_nan, gc_context, DontEnum, Some(function_proto));
+    globals.force_set_function(
+        "parseInt",
+        parse_int,
+        gc_context,
+        DontEnum,
+        Some(function_proto),
+    );
     globals.force_set_function("random", random, gc_context, DontEnum, Some(function_proto));
     globals.force_set_function(
         "ASSetPropFlags",
