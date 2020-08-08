@@ -240,7 +240,7 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Undefined | Value::Null => false,
             Value::Bool(b) => *b,
-            Value::Number(f) => !f.is_nan() && f.abs() != 0.0,
+            Value::Number(f) => !f.is_nan() && *f != 0.0,
             Value::Unsigned(u) => *u != 0,
             Value::Integer(i) => *i != 0,
             Value::String(s) => !s.is_empty(),
