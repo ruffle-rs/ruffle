@@ -17,6 +17,7 @@ mod character;
 pub mod color_transform;
 mod context;
 mod drawing;
+mod ecma_conversions;
 pub mod events;
 mod font;
 mod html;

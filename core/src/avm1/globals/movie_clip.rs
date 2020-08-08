@@ -5,12 +5,12 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::value::f64_to_wrapping_i32;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
 use crate::avm_error;
 use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
+use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfSlice;
@@ -840,7 +840,7 @@ fn swap_depths<'gc>(
 
     let mut depth = None;
     if let Value::Number(n) = arg {
-        depth = Some(crate::avm1::value::f64_to_wrapping_i32(n).wrapping_add(AVM_DEPTH_BIAS));
+        depth = Some(crate::ecma_conversions::f64_to_wrapping_i32(n).wrapping_add(AVM_DEPTH_BIAS));
     } else if let Some(target) = activation.resolve_target_display_object(movie_clip.into(), arg)? {
         if let Some(target_parent) = target.parent() {
             if DisplayObject::ptr_eq(target_parent, parent.into()) {

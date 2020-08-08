@@ -505,7 +505,7 @@ fn sort<'gc>(
     // Overloads:
     // 1) a.sort(flags: Number = 0): Sorts with the given flags.
     // 2) a.sort(compare_fn: Object, flags: Number = 0): Sorts using the given compare function and flags.
-    use crate::avm1::value::f64_to_wrapping_i32;
+    use crate::ecma_conversions::f64_to_wrapping_i32;
     let (compare_fn, flags) = match args {
         [Value::Number(_), Value::Number(n), ..] => (None, f64_to_wrapping_i32(*n)),
         [Value::Number(n), ..] => (None, f64_to_wrapping_i32(*n)),

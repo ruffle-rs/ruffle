@@ -7,6 +7,7 @@ use crate::avm2::object::{NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Avm2, Error};
+use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use gc_arena::{Collect, MutationContext};
 use std::cell::Ref;
 use std::f64::NAN;
@@ -405,18 +406,7 @@ impl<'gc> Value<'gc> {
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToUint32 algorithm which appears to match AVM2.
     pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<u32, Error> {
-        let number = self.coerce_to_number(activation)?;
-
-        Ok(if !number.is_finite() {
-            0
-        } else {
-            let abs32 = (number.abs().floor() % (u32::MAX as f64 + 1.0)) as u32;
-            if number.is_sign_negative() {
-                (!abs32).wrapping_add(1)
-            } else {
-                abs32
-            }
-        })
+        Ok(f64_to_wrapping_u32(self.coerce_to_number(activation)?))
     }
 
     /// Coerce the value to a 32-bit signed integer.
@@ -427,7 +417,7 @@ impl<'gc> Value<'gc> {
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToInt32 algorithm which appears to match AVM2.
     pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error> {
-        Ok(self.coerce_to_u32(activation)? as i32)
+        Ok(f64_to_wrapping_i32(self.coerce_to_number(activation)?))
     }
 
     /// Mininum number of digits after which numbers are formatted as
