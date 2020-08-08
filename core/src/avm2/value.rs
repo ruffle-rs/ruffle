@@ -471,12 +471,12 @@ impl<'gc> Value<'gc> {
             Value::Bool(true) => "true".into(),
             Value::Bool(false) => "false".into(),
             Value::Number(n) if n.is_nan() => "NaN".into(),
-            Value::Number(n) if n.abs() == 0.0 => "0".into(),
+            Value::Number(n) if *n == 0.0 => "0".into(),
             Value::Number(n) if *n < 0.0 => AvmString::new(
                 activation.context.gc_context,
                 format!("-{}", Value::Number(-n).coerce_to_string(activation)?),
             ),
-            Value::Number(n) if !n.is_finite() => "Infinity".into(),
+            Value::Number(n) if n.is_infinite() => "Infinity".into(),
             Value::Number(n) => {
                 let digits = n.log10().floor();
 
