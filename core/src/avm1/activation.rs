@@ -3,13 +3,13 @@ use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::object::{value_object, Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
-use crate::avm1::value::f64_to_wrapping_u32;
 use crate::avm1::{
     fscommand, globals, scope, skip_actions, start_drag, AvmString, ScriptObject, Value,
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::tag_utils::SwfSlice;
 use crate::{avm_error, avm_warn};
 use enumset::EnumSet;

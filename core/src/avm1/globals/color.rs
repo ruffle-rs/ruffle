@@ -175,7 +175,7 @@ fn set_transform<'gc>(
             let n = transform
                 .get(property, activation)?
                 .coerce_to_f64(activation)?;
-            *out = f32::from(crate::avm1::value::f64_to_wrapping_i16(n * 2.56)) / 256.0
+            *out = f32::from(crate::ecma_conversions::f64_to_wrapping_i16(n * 2.56)) / 256.0
         }
         Ok(())
     }
@@ -191,7 +191,7 @@ fn set_transform<'gc>(
             let n = transform
                 .get(property, activation)?
                 .coerce_to_f64(activation)?;
-            *out = f32::from(crate::avm1::value::f64_to_wrapping_i16(n)) / 255.0
+            *out = f32::from(crate::ecma_conversions::f64_to_wrapping_i16(n)) / 255.0
         }
         Ok(())
     }
