@@ -646,19 +646,6 @@ impl<'gc> Value<'gc> {
             return Ok(None);
         }
 
-        if num_self == num_other
-            || num_self.is_infinite() && num_self.is_sign_positive()
-            || num_other.is_infinite() && num_other.is_sign_negative()
-        {
-            return Ok(Some(false));
-        }
-
-        if num_self.is_infinite() && num_self.is_sign_negative()
-            || num_other.is_infinite() && num_other.is_sign_positive()
-        {
-            return Ok(Some(true));
-        }
-
         Ok(Some(num_self < num_other))
     }
 }
