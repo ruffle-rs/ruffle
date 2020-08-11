@@ -104,6 +104,60 @@ impl<'gc> Button<'gc> {
             record.color_transform = color_transform.clone();
         }
     }
+
+    /// Set the state of a button, creating or destroying children as needed.
+    ///
+    /// This function instantiates children and thus must not be called whilst
+    /// the caller is holding a write lock on the button data.
+    fn set_state(
+        &self,
+        self_display_object: DisplayObject<'gc>,
+        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+        state: ButtonState,
+    ) {
+        let movie = self.movie().unwrap();
+        let mut write = self.0.write(context.gc_context);
+        write.state = state;
+        let swf_state = match state {
+            ButtonState::Up => swf::ButtonState::Up,
+            ButtonState::Over => swf::ButtonState::Over,
+            ButtonState::Down => swf::ButtonState::Down,
+        };
+        write.children.clear();
+
+        let mut new_children = Vec::new();
+
+        for record in &write.static_data.read().records {
+            if record.states.contains(&swf_state) {
+                if let Ok(mut child) = context
+                    .library
+                    .library_for_movie_mut(movie.clone())
+                    .instantiate_by_id(record.id, context.gc_context)
+                {
+                    child.set_parent(context.gc_context, Some(self_display_object));
+                    child.set_matrix(context.gc_context, &record.matrix);
+                    child.set_color_transform(
+                        context.gc_context,
+                        &record.color_transform.clone().into(),
+                    );
+                    child.set_depth(context.gc_context, record.depth.into());
+
+                    new_children.push((child, record.depth.into()));
+                }
+            }
+        }
+
+        drop(write);
+
+        for (mut child, depth) in new_children {
+            child.post_instantiation(context, child, None, false);
+            child.run_frame(context);
+            self.0
+                .write(context.gc_context)
+                .children
+                .insert(depth, child);
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Button<'gc> {
@@ -138,9 +192,58 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 
     fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0
-            .write(context.gc_context)
-            .run_frame((*self).into(), context)
+        let self_display_object = (*self).into();
+        let initialized = self.0.read().initialized;
+
+        // TODO: Move this to post_instantiation.
+        if !initialized {
+            let mut new_children = Vec::new();
+
+            self.0.write(context.gc_context).initialized = true;
+
+            self.set_state(self_display_object, context, ButtonState::Up);
+
+            let read = self.0.read();
+
+            for record in &read.static_data.read().records {
+                if record.states.contains(&swf::ButtonState::HitTest) {
+                    match context
+                        .library
+                        .library_for_movie_mut(read.static_data.read().swf.clone())
+                        .instantiate_by_id(record.id, context.gc_context)
+                    {
+                        Ok(mut child) => {
+                            child.set_matrix(context.gc_context, &record.matrix);
+                            child.set_parent(context.gc_context, Some(self_display_object));
+                            child.set_depth(context.gc_context, record.depth.into());
+                            new_children.push((child, record.depth.into()));
+                        }
+                        Err(error) => {
+                            log::error!(
+                                "Button ID {}: could not instantiate child ID {}: {}",
+                                read.static_data.read().id,
+                                record.id,
+                                error
+                            );
+                        }
+                    }
+                }
+            }
+
+            drop(read);
+
+            for (mut child, depth) in new_children {
+                child.post_instantiation(context, child, None, false);
+                self.0
+                    .write(context.gc_context)
+                    .hit_area
+                    .insert(depth, child);
+            }
+        }
+
+        for mut child in self.children() {
+            child.run_frame(context);
+        }
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
@@ -212,109 +315,19 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             }
         }
 
-        self.0
-            .write(context.gc_context)
-            .handle_clip_event((*self).into(), context, event)
-    }
-}
-
-impl<'gc> ButtonData<'gc> {
-    fn set_state(
-        &mut self,
-        self_display_object: DisplayObject<'gc>,
-        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
-        state: ButtonState,
-    ) {
-        self.state = state;
-        let swf_state = match state {
-            ButtonState::Up => swf::ButtonState::Up,
-            ButtonState::Over => swf::ButtonState::Over,
-            ButtonState::Down => swf::ButtonState::Down,
-        };
-        self.children.clear();
-        for record in &self.static_data.read().records {
-            if record.states.contains(&swf_state) {
-                if let Ok(mut child) = context
-                    .library
-                    .library_for_movie_mut(self.movie())
-                    .instantiate_by_id(record.id, context.gc_context)
-                {
-                    child.set_parent(context.gc_context, Some(self_display_object));
-                    child.set_matrix(context.gc_context, &record.matrix);
-                    child.set_color_transform(
-                        context.gc_context,
-                        &record.color_transform.clone().into(),
-                    );
-                    child.set_depth(context.gc_context, record.depth.into());
-                    child.post_instantiation(context, child, None, false);
-                    child.run_frame(context);
-                    self.children.insert(record.depth.into(), child);
-                }
-            }
-        }
-    }
-
-    fn run_frame(
-        &mut self,
-        self_display_object: DisplayObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) {
-        // TODO: Move this to post_instantiation.
-        if !self.initialized {
-            self.initialized = true;
-            self.set_state(self_display_object, context, ButtonState::Up);
-
-            for record in &self.static_data.read().records {
-                if record.states.contains(&swf::ButtonState::HitTest) {
-                    match context
-                        .library
-                        .library_for_movie_mut(self.static_data.read().swf.clone())
-                        .instantiate_by_id(record.id, context.gc_context)
-                    {
-                        Ok(mut child) => {
-                            {
-                                child.set_matrix(context.gc_context, &record.matrix);
-                                child.set_parent(context.gc_context, Some(self_display_object));
-                                child.set_depth(context.gc_context, record.depth.into());
-                                child.post_instantiation(context, child, None, false);
-                            }
-                            self.hit_area.insert(record.depth.into(), child);
-                        }
-                        Err(error) => {
-                            log::error!(
-                                "Button ID {}: could not instantiate child ID {}: {}",
-                                self.static_data.read().id,
-                                record.id,
-                                error
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        for child in self.children.values_mut() {
-            child.run_frame(context);
-        }
-    }
-
-    fn handle_clip_event(
-        &mut self,
-        self_display_object: DisplayObject<'gc>,
-        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
-    ) -> ClipEventResult {
         let mut handled = ClipEventResult::NotHandled;
+        let self_display_object = (*self).into();
+        let mut write = self.0.write(context.gc_context);
 
         // Translate the clip event to a button event, based on how the button state changes.
-        let cur_state = self.state;
+        let cur_state = write.state;
         let new_state = match event {
             ClipEvent::RollOut => ButtonState::Up,
             ClipEvent::RollOver => ButtonState::Over,
             ClipEvent::Press => ButtonState::Down,
             ClipEvent::Release => ButtonState::Over,
             ClipEvent::KeyPress { key_code } => {
-                handled = self.run_actions(
+                handled = write.run_actions(
                     context,
                     swf::ButtonActionCondition::KeyPress,
                     Some(key_code),
@@ -326,20 +339,26 @@ impl<'gc> ButtonData<'gc> {
 
         match (cur_state, new_state) {
             (ButtonState::Up, ButtonState::Over) => {
-                self.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
-                self.play_sound(context, self.static_data.read().up_to_over_sound.as_ref());
+                write.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
+                write.play_sound(context, write.static_data.read().up_to_over_sound.as_ref());
             }
             (ButtonState::Over, ButtonState::Up) => {
-                self.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
-                self.play_sound(context, self.static_data.read().over_to_up_sound.as_ref());
+                write.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
+                write.play_sound(context, write.static_data.read().over_to_up_sound.as_ref());
             }
             (ButtonState::Over, ButtonState::Down) => {
-                self.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
-                self.play_sound(context, self.static_data.read().over_to_down_sound.as_ref());
+                write.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
+                write.play_sound(
+                    context,
+                    write.static_data.read().over_to_down_sound.as_ref(),
+                );
             }
             (ButtonState::Down, ButtonState::Over) => {
-                self.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
-                self.play_sound(context, self.static_data.read().down_to_over_sound.as_ref());
+                write.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
+                write.play_sound(
+                    context,
+                    write.static_data.read().down_to_over_sound.as_ref(),
+                );
             }
             _ => (),
         };
@@ -351,7 +370,7 @@ impl<'gc> ButtonData<'gc> {
                 context.action_queue.queue_actions(
                     self_display_object,
                     ActionType::Method {
-                        object: self.object.unwrap(),
+                        object: write.object.unwrap(),
                         name,
                         args: vec![],
                     },
@@ -360,11 +379,15 @@ impl<'gc> ButtonData<'gc> {
             }
         }
 
+        drop(write);
+
         self.set_state(self_display_object, context, new_state);
 
         handled
     }
+}
 
+impl<'gc> ButtonData<'gc> {
     fn play_sound(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
