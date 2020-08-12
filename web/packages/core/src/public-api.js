@@ -127,20 +127,9 @@ exports.PublicAPI = class PublicAPI {
             }
 
             let polyfills = this.config.polyfills;
-            if (polyfills === undefined) {
-                /* Default to all polyfills except for frames. It might *
-                 * make sense to add frames to the default, but then    *
-                 * we would need to have all polyfills but frames added *
-                 * to the extension's javascript because it uses the    *
-                 * "all_frames" manifest property to handle frames.     */
-                polyfills = [
-                    "plugin-detect",
-                    "static-content",
-                    "dynamic-content",
-                ];
+            if (polyfills !== false) {
+                this.sources[this.newest_name].polyfill();
             }
-
-            this.sources[this.newest_name].polyfill(polyfills);
         }
     }
 
@@ -262,11 +251,8 @@ exports.PublicAPI = class PublicAPI {
             // Flash Player immediately when they load.
             // TODO: Maybe there's a better place for this.
             let polyfills = public_api.config.polyfills;
-            if (
-                polyfills === undefined ||
-                polyfills.includes("plugin-detect")
-            ) {
-                source_api.polyfill(["plugin-detect"]);
+            if (polyfills !== false) {
+                source_api.plugin_polyfill();
             }
         }
 

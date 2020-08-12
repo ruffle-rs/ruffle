@@ -74,10 +74,6 @@ function polyfill_dynamic_content() {
     observer.observe(document, { childList: true, subtree: true });
 }
 
-function falsify_plugin_detection() {
-    install_plugin(FLASH_PLUGIN);
-}
-
 function load_ruffle_player_into_frame(event) {
     loadFrame(event.currentTarget.contentWindow);
 }
@@ -163,42 +159,13 @@ function polyfill_dynamic_frames() {
     observer.observe(document, { childList: true, subtree: true });
 }
 
-function polyfill_frames() {
-    polyfill_static_frames();
-    if (running_polyfills.indexOf("dynamic-content") != -1) {
-        polyfill_dynamic_frames();
-    }
-}
-let running_polyfills = [];
-let polyfills = {
-    "static-content": polyfill_static_content,
-    "dynamic-content": polyfill_dynamic_content,
-    "plugin-detect": falsify_plugin_detection,
-    frames: polyfill_frames,
+exports.plugin_polyfill = function plugin_polyfill() {
+    install_plugin(FLASH_PLUGIN);
 };
 
-exports.polyfill = function polyfill(polyfill_list) {
-    for (let i = 0; i < polyfill_list.length; i += 1) {
-        if (running_polyfills.indexOf(polyfill_list[i]) !== -1) {
-            continue;
-        }
-
-        if (
-            !Object.prototype.hasOwnProperty.call(polyfills, polyfill_list[i])
-        ) {
-            throw new Error(
-                "Requested nonexistent polyfill: " + polyfill_list[i]
-            );
-        }
-
-        running_polyfills.push(polyfill_list[i]);
-
-        let this_polyfill = polyfills[polyfill_list[i]];
-
-        if (this_polyfill.dependencies !== undefined) {
-            polyfill(this_polyfill.dependencies);
-        }
-
-        this_polyfill();
-    }
+exports.polyfill = function polyfill() {
+    polyfill_static_content();
+    polyfill_dynamic_content();
+    polyfill_static_frames();
+    polyfill_dynamic_frames();
 };
