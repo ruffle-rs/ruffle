@@ -1,4 +1,4 @@
-const { polyfill } = require("./polyfills");
+const { polyfill, plugin_polyfill } = require("./polyfills");
 const { register_element } = require("./register-element");
 const { RufflePlayer } = require("./ruffle-player");
 
@@ -25,18 +25,22 @@ exports.SourceAPI = class SourceAPI {
     }
 
     /**
-     * Start up a particular set of polyfills.
-     *
-     * Polyfills, once enabled, may not be disabled. However, this function may
-     * be called again with a different list to enable further polyfills.
+     * Start up the polyfills.
      *
      * Do not run polyfills for more than one Ruffle source at a time.
      *
-     * @param {array} polyfills A list of polyfills. See the `polyfills` module
-     * for a list of allowable strings.
      */
-    polyfill(polyfills) {
-        polyfill(polyfills);
+    polyfill() {
+        polyfill();
+    }
+    /**
+     * Polyfill the plugin detection.
+     *
+     * This needs to run before any plugin detection script does.
+     *
+     */
+    plugin_polyfill() {
+        plugin_polyfill();
     }
 
     /**
