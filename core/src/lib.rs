@@ -1,4 +1,8 @@
-#![allow(clippy::unneeded_field_pattern, clippy::same_item_push)]
+#![allow(
+    clippy::unneeded_field_pattern,
+    clippy::same_item_push,
+    clippy::unknown_clippy_lints
+)]
 
 #[macro_use]
 mod display_object;

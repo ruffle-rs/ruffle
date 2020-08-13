@@ -1,4 +1,4 @@
-#![allow(clippy::same_item_push)]
+#![allow(clippy::same_item_push, clippy::unknown_clippy_lints)]
 
 //! Ruffle web frontend.
 mod audio;
