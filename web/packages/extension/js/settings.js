@@ -27,6 +27,6 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
             ruffle_enable: play_flash_checkbox.checked,
             ignore_optout: ignore_optout_checkbox.checked,
         });
-        alert("Settings Saved");
+        alert(get_i18n_string("settings_saved"));
     };
 });
