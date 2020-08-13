@@ -49,5 +49,8 @@
     },
     "save_settings": {
         "message": "Guardar Configuración"
+    },
+    "settings_saved": {
+        "message": "Configuración Guardado"
     }
 }
