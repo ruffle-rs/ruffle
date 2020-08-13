@@ -521,7 +521,7 @@ impl<'a> ShapeConverter<'a> {
     }
 
     /// When a new layer starts, all paths are flushed and turned into drawing commands.
-    fn flush_layer(self: &mut Self) {
+    fn flush_layer(&mut self) {
         self.flush_paths();
         self.fill_style0 = None;
         self.fill_style1 = None;

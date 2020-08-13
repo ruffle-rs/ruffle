@@ -1,3 +1,5 @@
+#![allow(clippy::same_item_push)]
+
 //! Ruffle web frontend.
 mod audio;
 mod input;

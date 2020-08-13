@@ -1,4 +1,4 @@
-#![allow(clippy::unneeded_field_pattern)]
+#![allow(clippy::unneeded_field_pattern, clippy::same_item_push)]
 
 #[macro_use]
 mod display_object;
