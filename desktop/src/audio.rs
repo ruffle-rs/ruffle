@@ -284,7 +284,7 @@ impl CpalAudioBackend {
             for (_, sound) in sound_instances.iter_mut() {
                 if sound.active && !sound.signal.is_exhausted() {
                     let sound_frame = sound.signal.next();
-                    let sound_frame: Stereo<T::Signed> = sound_frame.map(Sample::to_sample);
+                    let sound_frame: Stereo<T::Signed> = Frame::map(sound_frame, Sample::to_sample);
                     output_frame = output_frame.add_amp(sound_frame);
                 } else {
                     sound.active = false;
