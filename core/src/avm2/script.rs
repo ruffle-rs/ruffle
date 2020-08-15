@@ -2,8 +2,8 @@
 
 use crate::avm2::class::Class;
 use crate::avm2::method::{BytecodeMethod, Method};
-use crate::avm2::r#trait::Trait;
 use crate::avm2::string::AvmString;
+use crate::avm2::traits::Trait;
 use crate::avm2::{Avm2, Error};
 use crate::collect::CollectWrapper;
 use fnv::FnvHashMap;

@@ -36,7 +36,7 @@ mod scope;
 mod script;
 mod slot;
 mod string;
-mod r#trait;
+mod traits;
 mod value;
 
 /// Boxed error alias.

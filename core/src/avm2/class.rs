@@ -2,9 +2,9 @@
 
 use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, Namespace, QName};
-use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
+use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::{Avm2, Error};
 use crate::collect::CollectWrapper;
 use enumset::{EnumSet, EnumSetType};
