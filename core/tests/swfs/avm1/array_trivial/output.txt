@@ -191,3 +191,15 @@ undefined
 // array
 1,2
 
+// array.unshift(1,2)
+4
+
+// array
+1,2,1,2
+
+// array.unshift(3,4,5)
+7
+
+// array
+3,4,5,1,2,1,2
+

@@ -182,10 +182,11 @@ pub fn unshift<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let old_length = this.length();
     let new_length = old_length + args.len();
-    let offset = new_length - old_length;
+    let offset = args.len();
 
     if old_length > 0 {
-        for i in (old_length - 1..new_length).rev() {
+        // Move all elements up by [offset], in reverse order.
+        for i in (offset..new_length).rev() {
             this.set_array_element(
                 i,
                 this.array_element(i - offset),
@@ -195,6 +196,7 @@ pub fn unshift<'gc>(
     }
 
     for i in 0..args.len() {
+        // Put the new elements at the start of the array.
         this.set_array_element(
             i,
             args.get(i).unwrap().to_owned(),
