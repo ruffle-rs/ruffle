@@ -54,10 +54,25 @@ pub struct MovieClipData<'gc> {
     children: BTreeMap<Depth, DisplayObject<'gc>>,
     object: Option<AvmObject<'gc>>,
     clip_actions: Vec<ClipAction>,
+    frame_scripts: Vec<Avm2FrameScript<'gc>>,
     has_button_clip_event: bool,
     flags: EnumSet<MovieClipFlags>,
     avm_constructor: Option<AvmObject<'gc>>,
     drawing: Drawing,
+}
+
+unsafe impl<'gc> Collect for MovieClipData<'gc> {
+    #[inline]
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        for child in self.children.values() {
+            child.trace(cc);
+        }
+        self.base.trace(cc);
+        self.static_data.trace(cc);
+        self.object.trace(cc);
+        self.avm_constructor.trace(cc);
+        self.frame_scripts.trace(cc);
+    }
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -74,6 +89,7 @@ impl<'gc> MovieClip<'gc> {
                 children: BTreeMap::new(),
                 object: None,
                 clip_actions: Vec::new(),
+                frame_scripts: Vec::new(),
                 has_button_clip_event: false,
                 flags: EnumSet::empty(),
                 avm_constructor: None,
@@ -108,6 +124,7 @@ impl<'gc> MovieClip<'gc> {
                 children: BTreeMap::new(),
                 object: None,
                 clip_actions: Vec::new(),
+                frame_scripts: Vec::new(),
                 has_button_clip_event: false,
                 flags: MovieClipFlags::Playing.into(),
                 avm_constructor: None,
@@ -1276,6 +1293,47 @@ impl<'gc> MovieClip<'gc> {
             }
         }
     }
+
+    pub fn register_frame_script(
+        self,
+        frame_id: FrameNumber,
+        callable: Avm2Object<'gc>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        let mut write = self.0.write(context.gc_context);
+
+        write
+            .frame_scripts
+            .push(Avm2FrameScript { frame_id, callable });
+    }
+
+    fn run_frame_scripts(self, frame_id: FrameNumber, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut index = 0;
+        let mut read = self.0.read();
+
+        let avm2_object = read.object.and_then(|o| o.as_avm2_object().ok());
+
+        if let Some(avm2_object) = avm2_object {
+            while let Some(fs) = read.frame_scripts.get(index) {
+                if fs.frame_id == frame_id {
+                    let callable = fs.callable;
+
+                    drop(read);
+
+                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                    if let Err(e) = callable.call(Some(avm2_object), &[], &mut activation, None) {
+                        log::error!("Error in script on frame {}: {}", frame_id, e);
+                    }
+
+                    read = self.0.read();
+                }
+
+                index += 1;
+            }
+        } else {
+            log::error!("Attempted to run AVM2 frame scripts on an AVM1 MovieClip.");
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -1321,6 +1379,18 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 context,
                 ClipEvent::Load,
             );
+        }
+
+        if self
+            .0
+            .read()
+            .object
+            .map(|o| o.is_avm2_object())
+            .unwrap_or(false)
+        {
+            let frame_id = self.0.read().current_frame;
+
+            self.run_frame_scripts(frame_id, context);
         }
     }
 
@@ -1526,19 +1596,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
         crate::display_object::get_child_by_name(&self.0.read().children, name, case_sensitive)
-    }
-}
-
-unsafe impl<'gc> Collect for MovieClipData<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        for child in self.children.values() {
-            child.trace(cc);
-        }
-        self.base.trace(cc);
-        self.static_data.trace(cc);
-        self.object.trace(cc);
-        self.avm_constructor.trace(cc);
     }
 }
 
