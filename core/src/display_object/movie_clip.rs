@@ -2925,3 +2925,14 @@ impl ClipAction {
         })
     }
 }
+
+/// An AVM2 frame script attached to a (presumably AVM2) MovieClip.
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
+pub struct Avm2FrameScript<'gc> {
+    /// The frame to invoke this frame script on.
+    pub frame_id: FrameNumber,
+
+    /// The AVM2 callable object to invoke when the frame script runs.
+    pub callable: Avm2Object<'gc>,
+}
