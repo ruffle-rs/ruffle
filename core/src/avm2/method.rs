@@ -5,14 +5,11 @@ use crate::avm2::object::Object;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::collect::CollectWrapper;
 use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
 use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody};
-
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
-pub struct CollectWrapper<T>(T);
 
 /// Represents a function defined in Ruffle's code.
 ///

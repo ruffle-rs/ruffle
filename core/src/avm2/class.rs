@@ -6,13 +6,10 @@ use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Avm2, Error};
+use crate::collect::CollectWrapper;
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::types::{Class as AbcClass, Instance as AbcInstance};
-
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
-pub struct CollectWrapper<T>(T);
 
 /// All possible attributes for a given class.
 #[derive(EnumSetType, Debug)]

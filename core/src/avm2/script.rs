@@ -5,15 +5,12 @@ use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::r#trait::Trait;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Avm2, Error};
+use crate::collect::CollectWrapper;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::mem::drop;
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Index, Script as AbcScript};
-
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
-pub struct CollectWrapper<T>(T);
 
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]

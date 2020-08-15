@@ -1,5 +1,6 @@
 //! Layout box structure
 
+use crate::collect::CollectWrapper;
 use crate::context::UpdateContext;
 use crate::drawing::Drawing;
 use crate::font::{EvalParameters, Font};
@@ -551,10 +552,6 @@ pub struct LayoutBox<'gc> {
     /// What content is contained by the content box.
     content: LayoutContent<'gc>,
 }
-
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
-pub struct CollectWrapper<T>(T);
 
 /// Represents different content modes of a given `LayoutBox`.
 ///
