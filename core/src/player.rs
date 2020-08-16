@@ -960,17 +960,6 @@ impl Player {
                         &args,
                     );
                 }
-
-                // DoABC code
-                ActionType::DoABC {
-                    name,
-                    is_lazy_initialize,
-                    abc,
-                } => {
-                    if let Err(e) = Avm2::load_abc(abc, &name, is_lazy_initialize, context) {
-                        log::warn!("Error loading ABC file: {}", e);
-                    }
-                }
             }
         }
     }
