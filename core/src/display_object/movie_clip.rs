@@ -508,10 +508,6 @@ impl<'gc> MovieClip<'gc> {
                 match globals
                     .get_property(globals, &name, &mut activation)
                     .and_then(|v| v.coerce_to_object(&mut activation))
-                    .and_then(|mut o| {
-                        o.get_property(o, &Avm2QName::dynamic_name("prototype"), &mut activation)
-                    })
-                    .and_then(|v| v.coerce_to_object(&mut activation))
                 {
                     Ok(proto) => {
                         let library = activation
