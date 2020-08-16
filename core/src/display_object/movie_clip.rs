@@ -1289,6 +1289,8 @@ impl<'gc> MovieClip<'gc> {
             } else if let Err(e) = result {
                 log::error!("Got {} when constructing AVM2 side of display object", e);
             }
+        } else {
+            log::error!("Attempted to construct AVM2 movieclip without constructor!");
         }
     }
 
