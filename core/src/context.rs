@@ -342,13 +342,6 @@ pub enum ActionType<'gc> {
         method: &'static str,
         args: Vec<Value<'gc>>,
     },
-
-    /// AVM2 ABC files.
-    DoABC {
-        name: String,
-        is_lazy_initialize: bool,
-        abc: SwfSlice,
-    },
 }
 
 impl fmt::Debug for ActionType<'_> {
@@ -381,16 +374,6 @@ impl fmt::Debug for ActionType<'_> {
                 .field("listener", listener)
                 .field("method", method)
                 .field("args", args)
-                .finish(),
-            ActionType::DoABC {
-                name,
-                is_lazy_initialize,
-                abc,
-            } => f
-                .debug_struct("ActionType::DoABC")
-                .field("name", name)
-                .field("is_lazy_initialize", is_lazy_initialize)
-                .field("bytecode", abc)
                 .finish(),
         }
     }

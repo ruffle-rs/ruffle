@@ -4,7 +4,7 @@ use crate::avm1::{
 };
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
-    Error as Avm2Error, Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName,
+    Avm2, Error as Avm2Error, Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName,
     StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::backend::audio::AudioStreamHandle;
@@ -476,15 +476,11 @@ impl<'gc> MovieClip<'gc> {
                     "Invalid source or tag length when running init action",
                 )
             })?;
-        context.action_queue.queue_actions(
-            self.into(),
-            ActionType::DoABC {
-                name,
-                is_lazy_initialize,
-                abc: slice,
-            },
-            false,
-        );
+
+        if let Err(e) = Avm2::load_abc(slice, &name, is_lazy_initialize, context) {
+            log::warn!("Error loading ABC file: {}", e);
+        }
+
         Ok(())
     }
 
