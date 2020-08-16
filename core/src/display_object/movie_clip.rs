@@ -515,7 +515,13 @@ impl<'gc> MovieClip<'gc> {
                             .library
                             .library_for_movie_mut(movie.clone());
 
-                        if let Some(Character::MovieClip(mc)) = library.get_character_by_id(id) {
+                        if id == 0 {
+                            //TODO: This assumes only the root movie has `SymbolClass` tags.
+                            self.set_avm2_constructor(activation.context.gc_context, Some(proto));
+                            self.construct_as_avm2_object(&mut activation.context, self.into());
+                        } else if let Some(Character::MovieClip(mc)) =
+                            library.get_character_by_id(id)
+                        {
                             mc.set_avm2_constructor(activation.context.gc_context, Some(proto))
                         } else {
                             log::warn!(
