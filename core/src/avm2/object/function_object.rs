@@ -7,9 +7,9 @@ use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectClass, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
-use crate::avm2::r#trait::Trait;
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
+use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::impl_avm2_custom_object;
@@ -195,10 +195,15 @@ impl<'gc> FunctionObject<'gc> {
         mut prototype: Object<'gc>,
         fn_proto: Object<'gc>,
     ) -> Result<Object<'gc>, Error> {
+        let scope = prototype.get_scope();
+        let class = prototype
+            .as_class()
+            .map(|c| ScriptObjectClass::ClassConstructor(c, scope))
+            .unwrap_or(ScriptObjectClass::NoClass);
         let mut base: Object<'gc> = FunctionObject(GcCell::allocate(
             mc,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
+                base: ScriptObjectData::base_new(Some(fn_proto), class),
                 exec: Some(Executable::from_method(constr.into(), None, None, mc)),
             },
         ))

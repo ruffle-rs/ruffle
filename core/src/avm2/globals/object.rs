@@ -1,14 +1,26 @@
 //! Object builtin and prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
+use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{FunctionObject, Object, TObject};
+use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::MutationContext;
 
-/// Implements `Object`
-pub fn constructor<'gc>(
+/// Implements `Object`'s instance initializer.
+pub fn instance_init<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
+}
+
+/// Implements `Object`'s class initializer
+pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -140,7 +152,26 @@ pub fn set_property_is_enumerable<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Partially construct `Object.prototype`.
+/// Create object prototype.
+///
+/// This function creates a suitable class and object prototype attached to it,
+/// but does not actually fill it with methods. That requires a valid function
+/// prototype, and is thus done by `fill_proto` below.
+pub fn create_proto<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+    let object_class = Class::new(
+        QName::new(Namespace::public_namespace(), "Object"),
+        None,
+        Method::from_builtin(instance_init),
+        Method::from_builtin(class_init),
+        activation.context.gc_context,
+    );
+
+    let globals = activation.avm2().globals();
+    let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
+    ScriptObject::bare_prototype(activation.context.gc_context, object_class, Some(scope))
+}
+
+/// Finish constructing `Object.prototype`, and also construct `Object`.
 ///
 /// `__proto__` and other cross-linked properties of this object will *not*
 /// be defined here. The caller of this function is responsible for linking
@@ -153,7 +184,7 @@ pub fn fill_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     mut object_proto: Object<'gc>,
     fn_proto: Object<'gc>,
-) {
+) -> Object<'gc> {
     object_proto.install_method(
         gc_context,
         QName::new(Namespace::public_namespace(), "toString"),
@@ -196,4 +227,6 @@ pub fn fill_proto<'gc>(
         0,
         FunctionObject::from_builtin(gc_context, set_property_is_enumerable, fn_proto),
     );
+
+    FunctionObject::from_builtin_constr(gc_context, instance_init, object_proto, fn_proto).unwrap()
 }

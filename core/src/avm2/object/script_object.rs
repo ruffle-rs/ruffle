@@ -7,11 +7,11 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::property_map::PropertyMap;
-use crate::avm2::r#trait::Trait;
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::slot::Slot;
 use crate::avm2::string::AvmString;
+use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -336,6 +336,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
         self.0.write(context).set_interfaces(iface_list)
+    }
+
+    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+        self.0.read().as_class()
     }
 }
 
@@ -896,5 +900,14 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Set the interface list for this object.
     pub fn set_interfaces(&mut self, iface_list: Vec<Object<'gc>>) {
         self.interfaces = iface_list;
+    }
+
+    /// Get the class for this object, if it has one.
+    pub fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+        match self.class {
+            ScriptObjectClass::ClassConstructor(class, _) => Some(class),
+            ScriptObjectClass::InstancePrototype(class, _) => Some(class),
+            ScriptObjectClass::NoClass => None,
+        }
     }
 }

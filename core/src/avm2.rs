@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::SystemPrototypes;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
 use crate::avm2::script::TranslationUnit;
@@ -36,7 +36,7 @@ mod scope;
 mod script;
 mod slot;
 mod string;
-mod r#trait;
+mod traits;
 mod value;
 
 /// Boxed error alias.
@@ -56,7 +56,7 @@ pub struct Avm2<'gc> {
     globals: Object<'gc>,
 
     /// System prototypes.
-    system_prototypes: SystemPrototypes<'gc>,
+    system_prototypes: Option<SystemPrototypes<'gc>>,
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
@@ -65,21 +65,28 @@ pub struct Avm2<'gc> {
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
     pub fn new(mc: MutationContext<'gc, '_>) -> Self {
-        let (globals, system_prototypes) = globals::construct_global_scope(mc);
+        let globals = ScriptObject::bare_object(mc);
 
         Self {
             stack: Vec::new(),
             globals,
-            system_prototypes,
+            system_prototypes: None,
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
         }
     }
 
+    pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let mut activation = Activation::from_nothing(context.reborrow());
+        globals::load_player_globals(&mut activation)
+    }
+
     /// Return the current set of system prototypes.
+    ///
+    /// This function panics if the interpreter has not yet been initialized.
     pub fn prototypes(&self) -> &SystemPrototypes<'gc> {
-        &self.system_prototypes
+        self.system_prototypes.as_ref().unwrap()
     }
 
     /// Run a script's initializer method.

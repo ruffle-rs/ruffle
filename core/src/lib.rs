@@ -18,6 +18,7 @@ mod avm1;
 mod avm2;
 mod bounding_box;
 mod character;
+mod collect;
 pub mod color_transform;
 mod context;
 mod drawing;

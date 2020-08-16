@@ -2,12 +2,29 @@
 
 use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, Namespace, QName};
-use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
+use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::{Avm2, Error};
+use crate::collect::CollectWrapper;
+use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::types::{Class as AbcClass, Instance as AbcInstance};
+
+/// All possible attributes for a given class.
+#[derive(EnumSetType, Debug)]
+pub enum ClassAttributes {
+    /// Class is sealed, attempts to set or init dynamic properties on an
+    /// object will generate a runtime error.
+    Sealed,
+
+    /// Class is final, attempts to construct child classes from it will
+    /// generate a verification error.
+    Final,
+
+    /// Class is an interface.
+    Interface,
+}
 
 /// A loaded ABC Class which can be used to construct objects with.
 #[derive(Clone, Debug, Collect)]
@@ -19,14 +36,8 @@ pub struct Class<'gc> {
     /// The name of this class's superclass.
     super_class: Option<Multiname<'gc>>,
 
-    /// If this class is sealed (dynamic property writes should fail)
-    is_sealed: bool,
-
-    /// If this class is final (subclassing should fail)
-    is_final: bool,
-
-    /// If this class is an interface
-    is_interface: bool,
+    /// Attributes of the given class.
+    attributes: CollectWrapper<EnumSet<ClassAttributes>>,
 
     /// The namespace that protected traits of this class are stored into.
     protected_namespace: Option<Namespace<'gc>>,
@@ -97,6 +108,48 @@ fn do_trait_lookup<'gc>(
 }
 
 impl<'gc> Class<'gc> {
+    /// Create a new class.
+    ///
+    /// This function is primarily intended for use by native code to define
+    /// builtin classes. The absolute minimum necessary to define a class is
+    /// required here; further methods allow further changes to the class.
+    ///
+    /// Classes created in this way cannot have traits loaded from an ABC file
+    /// using `load_traits`.
+    pub fn new(
+        name: QName<'gc>,
+        super_class: Option<Multiname<'gc>>,
+        instance_init: Method<'gc>,
+        class_init: Method<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> GcCell<'gc, Self> {
+        GcCell::allocate(
+            mc,
+            Self {
+                name,
+                super_class,
+                attributes: CollectWrapper(EnumSet::empty()),
+                protected_namespace: None,
+                interfaces: Vec::new(),
+                instance_init,
+                instance_traits: Vec::new(),
+                class_init,
+                class_traits: Vec::new(),
+                traits_loaded: true,
+            },
+        )
+    }
+
+    /// Set the attributes of the class (sealed/final/interface status).
+    pub fn set_attributes(&mut self, attributes: EnumSet<ClassAttributes>) {
+        self.attributes = CollectWrapper(attributes);
+    }
+
+    /// Add a protected namespace to this class.
+    pub fn set_protected_namespace(&mut self, ns: Namespace<'gc>) {
+        self.protected_namespace = Some(ns)
+    }
+
     /// Construct a class from a `TranslationUnit` and it's class index.
     ///
     /// The returned class will be allocated, but no traits will be loaded. The
@@ -149,14 +202,25 @@ impl<'gc> Class<'gc> {
         let instance_init = unit.load_method(abc_instance.init_method.0, mc)?;
         let class_init = unit.load_method(abc_class.init_method.0, mc)?;
 
+        let mut attributes = EnumSet::new();
+        if abc_instance.is_sealed {
+            attributes |= ClassAttributes::Sealed;
+        }
+
+        if abc_instance.is_final {
+            attributes |= ClassAttributes::Final;
+        }
+
+        if abc_instance.is_interface {
+            attributes |= ClassAttributes::Interface;
+        }
+
         Ok(GcCell::allocate(
             mc,
             Self {
                 name,
                 super_class,
-                is_sealed: abc_instance.is_sealed,
-                is_final: abc_instance.is_final,
-                is_interface: abc_instance.is_interface,
+                attributes: CollectWrapper(attributes),
                 protected_namespace,
                 interfaces,
                 instance_init,
@@ -221,6 +285,14 @@ impl<'gc> Class<'gc> {
         &self.super_class
     }
 
+    /// Define a trait on the class.
+    ///
+    /// Class traits will be accessible as properties on the class constructor
+    /// function.
+    pub fn define_class_trait(&mut self, my_trait: Trait<'gc>) {
+        self.class_traits.push(my_trait);
+    }
+
     /// Given a name, append class traits matching the name to a list of known
     /// traits.
     ///
@@ -263,6 +335,15 @@ impl<'gc> Class<'gc> {
         }
 
         None
+    }
+
+    /// Define a trait on instances of the class.
+    ///
+    /// Instance traits will be accessible as properties on instances of the
+    /// class. They will not be accessible on the class prototype, and any
+    /// properties defined on the prototype will be shadowed by these traits.
+    pub fn define_instance_trait(&mut self, my_trait: Trait<'gc>) {
+        self.class_traits.push(my_trait);
     }
 
     /// Given a name, append instance traits matching the name to a list of
@@ -321,5 +402,9 @@ impl<'gc> Class<'gc> {
 
     pub fn interfaces(&self) -> &[Multiname<'gc>] {
         &self.interfaces
+    }
+
+    pub fn implements(&mut self, iface: Multiname<'gc>) {
+        self.interfaces.push(iface)
     }
 }

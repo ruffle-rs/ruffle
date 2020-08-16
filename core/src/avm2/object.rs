@@ -4,9 +4,9 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
-use crate::avm2::r#trait::{Trait, TraitKind};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
+use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -415,23 +415,29 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// bound to. It should always be `self` except when doing things with
     /// `super`, which needs to create bound methods pointing to a different
     /// object.
+    ///
+    /// The value of the trait at the time of installation will be returned
+    /// here.
     fn install_trait(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         trait_entry: Trait<'gc>,
         reciever: Object<'gc>,
-    ) -> Result<(), Error> {
+    ) -> Result<Value<'gc>, Error> {
         self.install_foreign_trait(activation, trait_entry, self.get_scope(), reciever)
     }
 
     /// Install a trait from anywyere.
+    ///
+    /// The value of the trait at the time of installation will be returned
+    /// here.
     fn install_foreign_trait(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         trait_entry: Trait<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         reciever: Object<'gc>,
-    ) -> Result<(), Error> {
+    ) -> Result<Value<'gc>, Error> {
         let fn_proto = activation.avm2().prototypes().function;
         let trait_name = trait_entry.name().clone();
         avm_debug!(
@@ -447,12 +453,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 default_value,
                 ..
             } => {
+                let value = default_value.clone().unwrap_or(Value::Undefined);
                 self.install_slot(
                     activation.context.gc_context,
                     trait_name,
                     *slot_id,
-                    default_value.clone().unwrap_or(Value::Undefined),
+                    value.clone(),
                 );
+
+                Ok(value)
             }
             TraitKind::Method {
                 disp_id, method, ..
@@ -470,6 +479,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     *disp_id,
                     function,
                 );
+
+                Ok(function.into())
             }
             TraitKind::Getter {
                 disp_id, method, ..
@@ -487,6 +498,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     *disp_id,
                     function,
                 )?;
+
+                Ok(function.into())
             }
             TraitKind::Setter {
                 disp_id, method, ..
@@ -504,6 +517,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     *disp_id,
                     function,
                 )?;
+
+                Ok(function.into())
             }
             TraitKind::Class { slot_id, class } => {
                 let class_read = class.read();
@@ -533,6 +548,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     *slot_id,
                     class_object.into(),
                 );
+
+                Ok(class_object.into())
             }
             TraitKind::Function {
                 slot_id, function, ..
@@ -561,22 +578,25 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     *slot_id,
                     fobject.into(),
                 );
+
+                Ok(fobject.into())
             }
             TraitKind::Const {
                 slot_id,
                 default_value,
                 ..
             } => {
+                let value = default_value.clone().unwrap_or(Value::Undefined);
                 self.install_const(
                     activation.context.gc_context,
                     trait_name,
                     *slot_id,
-                    default_value.clone().unwrap_or(Value::Undefined),
+                    value.clone(),
                 );
+
+                Ok(value)
             }
         }
-
-        Ok(())
     }
 
     /// Call the object.
@@ -702,6 +722,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
+
+    /// Get this object's `Class`, if it has one.
+    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>>;
 
     /// Get this object's `Executable`, if it has one.
     fn as_executable(&self) -> Option<Executable<'gc>> {

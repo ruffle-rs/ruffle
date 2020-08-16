@@ -1,14 +1,16 @@
 //! Global scope built-ins
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
 use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{FunctionObject, ScriptObject};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
+use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::f64::NAN;
 
 mod boolean;
@@ -49,6 +51,34 @@ pub struct SystemPrototypes<'gc> {
     pub namespace: Object<'gc>,
 }
 
+impl<'gc> SystemPrototypes<'gc> {
+    /// Construct a minimal set of system prototypes necessary for
+    /// bootstrapping player globals.
+    ///
+    /// All other system prototypes aside from the three given here will be set
+    /// to the empty object also handed to this function. It is the caller's
+    /// responsibility to instantiate each class and replace the empty object
+    /// with that.
+    fn new(
+        object: Object<'gc>,
+        function: Object<'gc>,
+        class: Object<'gc>,
+        empty: Object<'gc>,
+    ) -> Self {
+        SystemPrototypes {
+            object,
+            function,
+            class,
+            string: empty,
+            boolean: empty,
+            number: empty,
+            int: empty,
+            uint: empty,
+            namespace: empty,
+        }
+    }
+}
+
 /// Add a free-function builtin to the global scope.
 fn function<'gc>(
     mc: MutationContext<'gc, '_>,
@@ -67,25 +97,47 @@ fn function<'gc>(
         .unwrap()
 }
 
-/// Add a class builtin to the global scope.
-fn class<'gc>(
+/// Add a class builtin with prototype methods to the global scope.
+///
+/// Since the function has to return a normal prototype object in this case, we
+/// have to construct a constructor to go along with it, as if we had called
+/// `install_foreign_trait` with such a class.
+fn dynamic_class<'gc>(
     mc: MutationContext<'gc, '_>,
     mut global_scope: Object<'gc>,
-    package: impl Into<AvmString<'gc>>,
-    name: impl Into<AvmString<'gc>>,
-    constr: NativeMethod<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
+    constr: Object<'gc>,
 ) {
-    global_scope
-        .install_dynamic_property(
-            mc,
-            QName::new(Namespace::package(package), name),
-            FunctionObject::from_builtin_constr(mc, constr, proto, fn_proto)
-                .unwrap()
-                .into(),
-        )
-        .unwrap();
+    let name = constr
+        .as_class()
+        .expect("constrs have classes in them")
+        .read()
+        .name()
+        .clone();
+
+    global_scope.install_const(mc, name, 0, constr.into());
+}
+
+/// Add a class builtin to the global scope.
+///
+/// This function returns a prototype which may be stored in `SystemPrototypes`.
+fn class<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    mut global: Object<'gc>,
+    class_def: GcCell<'gc, Class<'gc>>,
+) -> Result<Object<'gc>, Error> {
+    let class_trait = Trait::from_class(class_def);
+    let global_scope = Scope::push_scope(global.get_scope(), global, activation.context.gc_context);
+    let mut constr = global
+        .install_foreign_trait(activation, class_trait, Some(global_scope), global)?
+        .coerce_to_object(activation)?;
+
+    constr
+        .get_property(
+            constr,
+            &QName::new(Namespace::public_namespace(), "prototype"),
+            activation,
+        )?
+        .coerce_to_object(activation)
 }
 
 /// Add a builtin constant to the global scope.
@@ -99,181 +151,132 @@ fn constant<'gc>(
     global_scope.install_const(mc, QName::new(Namespace::package(package), name), 0, value)
 }
 
-/// Construct a new global scope.
+/// Initialize all remaining builtin classes.
 ///
-/// This function returns both the global scope object, as well as all builtin
-/// prototypes that other parts of the VM will need to use.
-pub fn construct_global_scope<'gc>(
-    mc: MutationContext<'gc, '_>,
-) -> (Object<'gc>, SystemPrototypes<'gc>) {
-    let gs = ScriptObject::bare_object(mc);
+/// This should be called only once, to construct the global scope of the
+/// player. It will return a list of prototypes it has created, which should be
+/// stored on the AVM.
+pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Result<(), Error> {
+    let gs = activation.avm2().globals();
 
     // public / root package
-    let object_proto = ScriptObject::bare_object(mc);
-    let fn_proto = function::create_proto(mc, object_proto);
-    let class_proto = class::create_proto(mc, object_proto, fn_proto);
-    let string_proto = string::create_proto(mc, object_proto, fn_proto);
-    let boolean_proto = boolean::create_proto(mc, object_proto, fn_proto);
-    let number_proto = number::create_proto(mc, object_proto, fn_proto);
-    let int_proto = int::create_proto(mc, object_proto, fn_proto);
-    let uint_proto = uint::create_proto(mc, object_proto, fn_proto);
-    let namespace_proto = namespace::create_proto(mc, object_proto, fn_proto);
+    let object_proto = object::create_proto(activation);
+    let (function_constr, fn_proto) = function::create_class(activation, object_proto);
+    let (class_constr, class_proto) = class::create_class(activation, object_proto, fn_proto);
 
-    object::fill_proto(mc, object_proto, fn_proto);
+    let object_constr = object::fill_proto(activation.context.gc_context, object_proto, fn_proto);
 
-    class(
-        mc,
-        gs,
-        "",
-        "Object",
-        object::constructor,
+    dynamic_class(activation.context.gc_context, gs, object_constr);
+    dynamic_class(activation.context.gc_context, gs, function_constr);
+    dynamic_class(activation.context.gc_context, gs, class_constr);
+
+    // At this point, we need at least a partial set of system prototypes in
+    // order to continue initializing the player. The rest of the prototypes
+    // are set to a bare object until we have a chance to initialize them.
+    activation.context.avm2.system_prototypes = Some(SystemPrototypes::new(
         object_proto,
         fn_proto,
-    );
-    class(
-        mc,
-        gs,
-        "",
-        "Function",
-        function::constructor,
-        fn_proto,
-        fn_proto,
-    );
-    class(
-        mc,
-        gs,
-        "",
-        "Class",
-        class::constructor,
         class_proto,
-        fn_proto,
-    );
-    class(
-        mc,
+        ScriptObject::bare_object(activation.context.gc_context),
+    ));
+
+    // Even sillier: for the sake of clarity and the borrow checker we need to
+    // clone the prototypes list and modify it outside of the activation. This
+    // also has the side effect that none of these classes can get at each
+    // other from the activation they're handed.
+    let mut sp = activation.context.avm2.system_prototypes.clone().unwrap();
+
+    sp.string = class(
+        activation,
+        gs,
+        string::create_class(activation.context.gc_context),
+    )?;
+    sp.boolean = class(
+        activation,
+        gs,
+        boolean::create_class(activation.context.gc_context),
+    )?;
+    sp.number = class(
+        activation,
+        gs,
+        number::create_class(activation.context.gc_context),
+    )?;
+    sp.int = class(
+        activation,
+        gs,
+        int::create_class(activation.context.gc_context),
+    )?;
+    sp.uint = class(
+        activation,
+        gs,
+        uint::create_class(activation.context.gc_context),
+    )?;
+    sp.namespace = class(
+        activation,
+        gs,
+        namespace::create_class(activation.context.gc_context),
+    )?;
+
+    activation.context.avm2.system_prototypes = Some(sp);
+
+    function(
+        activation.context.gc_context,
         gs,
         "",
-        "String",
-        string::constructor,
-        string_proto,
+        "trace",
+        trace,
         fn_proto,
     );
-    class(
-        mc,
+    constant(
+        activation.context.gc_context,
         gs,
         "",
-        "Boolean",
-        boolean::constructor,
-        boolean_proto,
-        fn_proto,
+        "undefined",
+        Value::Undefined,
     );
-    class(
-        mc,
+    constant(activation.context.gc_context, gs, "", "null", Value::Null);
+    constant(activation.context.gc_context, gs, "", "NaN", NAN.into());
+    constant(
+        activation.context.gc_context,
         gs,
         "",
-        "Number",
-        number::constructor,
-        number_proto,
-        fn_proto,
+        "Infinity",
+        f64::INFINITY.into(),
     );
-    class(mc, gs, "", "int", int::constructor, int_proto, fn_proto);
-    class(mc, gs, "", "uint", uint::constructor, uint_proto, fn_proto);
-    class(
-        mc,
-        gs,
-        "",
-        "Namespace",
-        namespace::constructor,
-        namespace_proto,
-        fn_proto,
-    );
-    function(mc, gs, "", "trace", trace, fn_proto);
-    constant(mc, gs, "", "undefined", Value::Undefined);
-    constant(mc, gs, "", "null", Value::Null);
-    constant(mc, gs, "", "NaN", NAN.into());
-    constant(mc, gs, "", "Infinity", f64::INFINITY.into());
 
     // package `flash.events`
-    let eventdispatcher_proto =
-        flash::events::eventdispatcher::create_proto(mc, object_proto, fn_proto);
-
     class(
-        mc,
+        activation,
         gs,
-        "flash.events",
-        "EventDispatcher",
-        flash::events::eventdispatcher::constructor,
-        eventdispatcher_proto,
-        fn_proto,
-    );
+        flash::events::eventdispatcher::create_class(activation.context.gc_context),
+    )?;
 
     // package `flash.display`
-    let displayobject_proto =
-        flash::display::displayobject::create_proto(mc, eventdispatcher_proto, fn_proto);
-    let interactiveobject_proto =
-        flash::display::interactiveobject::create_proto(mc, displayobject_proto, fn_proto);
-    let displayobjectcontainer_proto =
-        flash::display::displayobjectcontainer::create_proto(mc, interactiveobject_proto, fn_proto);
-    let sprite_proto =
-        flash::display::sprite::create_proto(mc, displayobjectcontainer_proto, fn_proto);
-    let movieclip_proto = flash::display::movieclip::create_proto(mc, sprite_proto, fn_proto);
+    class(
+        activation,
+        gs,
+        flash::display::displayobject::create_class(activation.context.gc_context),
+    )?;
+    class(
+        activation,
+        gs,
+        flash::display::interactiveobject::create_class(activation.context.gc_context),
+    )?;
+    class(
+        activation,
+        gs,
+        flash::display::displayobjectcontainer::create_class(activation.context.gc_context),
+    )?;
+    class(
+        activation,
+        gs,
+        flash::display::sprite::create_class(activation.context.gc_context),
+    )?;
+    class(
+        activation,
+        gs,
+        flash::display::movieclip::create_class(activation.context.gc_context),
+    )?;
 
-    class(
-        mc,
-        gs,
-        "flash.display",
-        "DisplayObject",
-        flash::display::displayobject::constructor,
-        displayobject_proto,
-        fn_proto,
-    );
-    class(
-        mc,
-        gs,
-        "flash.display",
-        "InteractiveObject",
-        flash::display::interactiveobject::constructor,
-        interactiveobject_proto,
-        fn_proto,
-    );
-    class(
-        mc,
-        gs,
-        "flash.display",
-        "DisplayObjectContainer",
-        flash::display::displayobjectcontainer::constructor,
-        sprite_proto,
-        fn_proto,
-    );
-    class(
-        mc,
-        gs,
-        "flash.display",
-        "Sprite",
-        flash::display::sprite::constructor,
-        sprite_proto,
-        fn_proto,
-    );
-    class(
-        mc,
-        gs,
-        "flash.display",
-        "MovieClip",
-        flash::display::movieclip::constructor,
-        movieclip_proto,
-        fn_proto,
-    );
-
-    let system_prototypes = SystemPrototypes {
-        object: object_proto,
-        function: fn_proto,
-        class: class_proto,
-        string: string_proto,
-        boolean: boolean_proto,
-        number: number_proto,
-        int: int_proto,
-        uint: uint_proto,
-        namespace: namespace_proto,
-    };
-
-    (gs, system_prototypes)
+    Ok(())
 }

@@ -179,6 +179,10 @@ macro_rules! impl_avm2_custom_object {
             self.0.as_ptr() as *const ObjectPtr
         }
 
+        fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+            self.0.read().base.as_class()
+        }
+
         fn install_method(
             &mut self,
             mc: MutationContext<'gc, '_>,
