@@ -661,15 +661,9 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     }
 
     /// Get a child display object by instance name.
-    fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
-        // TODO: Make a HashMap from name -> child?
-        use crate::string_utils::swf_string_eq_ignore_case;
-        if case_sensitive {
-            self.children().find(|child| &*child.name() == name)
-        } else {
-            self.children()
-                .find(|child| swf_string_eq_ignore_case(&*child.name(), name))
-        }
+    fn get_child_by_name(&self, _name: &str, _case_sensitive: bool) -> Option<DisplayObject<'gc>> {
+        // Overridden by subtraits.
+        None
     }
 
     /// Get another level by level name.
@@ -1161,6 +1155,27 @@ pub fn render_children<'gc>(
     while !clip_depth_stack.is_empty() {
         context.renderer.pop_mask();
         clip_depth_stack.pop();
+    }
+}
+
+pub fn get_child_by_name<'gc>(
+    children: &std::collections::BTreeMap<Depth, DisplayObject<'gc>>,
+    name: &str,
+    case_sensitive: bool,
+) -> Option<DisplayObject<'gc>> {
+    // TODO: Make a HashMap from name -> child?
+    // But need to handle conflicting names (lowest in depth order takes priority).
+    use crate::string_utils::swf_string_eq_ignore_case;
+    if case_sensitive {
+        children
+            .values()
+            .copied()
+            .find(|child| &*child.name() == name)
+    } else {
+        children
+            .values()
+            .copied()
+            .find(|child| swf_string_eq_ignore_case(&*child.name(), name))
     }
 }
 

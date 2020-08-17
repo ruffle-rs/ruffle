@@ -1251,6 +1251,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn allow_as_mask(&self) -> bool {
         !self.0.read().children.is_empty()
     }
+
+    fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
+        crate::display_object::get_child_by_name(&self.0.read().children, name, case_sensitive)
+    }
 }
 
 unsafe impl<'gc> Collect for MovieClipData<'gc> {
@@ -1357,9 +1361,9 @@ impl<'gc> MovieClipData<'gc> {
     fn add_child_to_exec_list(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
-        mut child: DisplayObject<'gc>,
+        child: DisplayObject<'gc>,
     ) {
-        if let Some(mut head) = self.first_child() {
+        if let Some(head) = self.first_child() {
             head.set_prev_sibling(gc_context, Some(child));
             child.set_next_sibling(gc_context, Some(head));
         }
@@ -1375,10 +1379,10 @@ impl<'gc> MovieClipData<'gc> {
         // Remove from children linked list.
         let prev = child.prev_sibling();
         let next = child.next_sibling();
-        if let Some(mut prev) = prev {
+        if let Some(prev) = prev {
             prev.set_next_sibling(context.gc_context, next);
         }
-        if let Some(mut next) = next {
+        if let Some(next) = next {
             next.set_prev_sibling(context.gc_context, prev);
         }
         if let Some(head) = self.first_child() {
