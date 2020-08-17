@@ -46,7 +46,10 @@ pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result
 /// Unix, Windows, or Redox, this function actually carries out the above
 /// instructions.
 #[cfg(not(any(unix, windows, target_os = "redox")))]
-pub fn url_from_relative_path<P: AsRef<Path>>(base: P, relative: &str) -> Result<Url, ParseError> {
+pub fn url_from_relative_path<P: AsRef<Path>>(
+    _base: P,
+    _relative: &str,
+) -> Result<Url, ParseError> {
     Err(ParseError::RelativeUrlWithoutBase)
 }
 
