@@ -130,7 +130,6 @@ pub fn create_proto<'gc>(
         "stop" => stop,
         "stopDrag" => stop_drag,
         "swapDepths" => swap_depths,
-        "toString" => to_string,
         "unloadMovie" => unload_movie,
         "beginFill" => begin_fill,
         "beginGradientFill" => begin_gradient_fill,
@@ -868,14 +867,6 @@ fn swap_depths<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-fn to_string<'gc>(
-    movie_clip: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(activation.context.gc_context, movie_clip.path()).into())
 }
 
 fn local_to_global<'gc>(
