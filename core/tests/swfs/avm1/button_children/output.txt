@@ -1,0 +1,8 @@
+ // button._width:
+200
+// clip _name:
+instance1
+// clip -> parent:
+_level0.button
+// clip -> parent -> clip:
+instance1
