@@ -115,6 +115,13 @@ impl<'gc> Button<'gc> {
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         state: ButtonState,
     ) {
+        // Clear previous child execution list.
+        for child in self.children() {
+            child.set_next_sibling(context.gc_context, None);
+            child.set_prev_sibling(context.gc_context, None);
+        }
+        self.set_first_child(context.gc_context, None);
+
         let movie = self.movie().unwrap();
         let mut write = self.0.write(context.gc_context);
         write.state = state;
@@ -126,7 +133,6 @@ impl<'gc> Button<'gc> {
         write.children.clear();
 
         let mut new_children = Vec::new();
-
         for record in &write.static_data.read().records {
             if record.states.contains(&swf_state) {
                 if let Ok(mut child) = context
@@ -384,6 +390,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         self.set_state(self_display_object, context, new_state);
 
         handled
+    }
+
+    fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
+        crate::display_object::get_child_by_name(&self.0.read().children, name, case_sensitive)
     }
 }
 
