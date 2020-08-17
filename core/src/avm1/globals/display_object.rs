@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -48,7 +48,8 @@ pub fn define_display_object_proto<'gc>(
         gc_context,
         object,
         Some(fn_proto),
-        "getDepth" => get_depth
+        "getDepth" => get_depth,
+        "toString" => to_string
     );
 
     object.add_property(
@@ -132,6 +133,14 @@ pub fn get_depth<'gc>(
     } else {
         Ok(Value::Undefined)
     }
+}
+
+pub fn to_string<'gc>(
+    display_object: DisplayObject<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(AvmString::new(activation.context.gc_context, display_object.path()).into())
 }
 
 pub fn overwrite_root<'gc>(
