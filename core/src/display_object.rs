@@ -632,25 +632,13 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     fn clip_depth(&self) -> Depth;
     fn set_clip_depth(&mut self, context: MutationContext<'gc, '_>, depth: Depth);
     fn parent(&self) -> Option<DisplayObject<'gc>>;
-    fn set_parent(&mut self, context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
+    fn set_parent(&self, context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
     fn first_child(&self) -> Option<DisplayObject<'gc>>;
-    fn set_first_child(
-        &mut self,
-        context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    );
+    fn set_first_child(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
-    fn set_prev_sibling(
-        &mut self,
-        context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    );
+    fn set_prev_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
     fn next_sibling(&self) -> Option<DisplayObject<'gc>>;
-    fn set_next_sibling(
-        &mut self,
-        context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    );
+    fn set_next_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
 
     /// Iterates over the children of this display object in execution order.
     /// This is different than render order.
@@ -1014,7 +1002,7 @@ macro_rules! impl_display_object_sansbounds {
             self.0.read().$field.parent()
         }
         fn set_parent(
-            &mut self,
+            &self,
             context: gc_arena::MutationContext<'gc, '_>,
             parent: Option<crate::display_object::DisplayObject<'gc>>,
         ) {
@@ -1024,7 +1012,7 @@ macro_rules! impl_display_object_sansbounds {
             self.0.read().$field.first_child()
         }
         fn set_first_child(
-            &mut self,
+            &self,
             context: gc_arena::MutationContext<'gc, '_>,
             node: Option<DisplayObject<'gc>>,
         ) {
@@ -1034,7 +1022,7 @@ macro_rules! impl_display_object_sansbounds {
             self.0.read().$field.prev_sibling()
         }
         fn set_prev_sibling(
-            &mut self,
+            &self,
             context: gc_arena::MutationContext<'gc, '_>,
             node: Option<DisplayObject<'gc>>,
         ) {
@@ -1044,7 +1032,7 @@ macro_rules! impl_display_object_sansbounds {
             self.0.read().$field.next_sibling()
         }
         fn set_next_sibling(
-            &mut self,
+            &self,
             context: gc_arena::MutationContext<'gc, '_>,
             node: Option<DisplayObject<'gc>>,
         ) {
