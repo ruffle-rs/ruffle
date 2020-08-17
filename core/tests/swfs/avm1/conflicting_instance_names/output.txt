@@ -1,0 +1,24 @@
+// frame 1
+// clip._x:
+50
+
+// frame 2
+// clip._x:
+50
+
+// frame 3
+// clip._x:
+100
+
+// frame 4
+// clip._x:
+100
+
+// frame 5
+// clip._x:
+50
+
+// frame 6
+// clip._x:
+0
+

@@ -294,6 +294,7 @@ swf_tests! {
     (as3_lessequals, "avm2/lessequals", 1),
     (as3_lessthan, "avm2/lessthan", 1),
     (nested_textfields_in_buttons, "avm1/nested_textfields_in_buttons", 1),
+    (conflicting_instance_names, "avm1/conflicting_instance_names", 6),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
