@@ -155,13 +155,23 @@ impl<'gc> Button<'gc> {
 
         drop(write);
 
+        let mut prev_child = None;
         for (mut child, depth) in new_children {
+            // Wire up new execution list.
+            if let Some(prev_child) = prev_child {
+                child.set_prev_sibling(context.gc_context, Some(prev_child));
+                prev_child.set_next_sibling(context.gc_context, Some(child));
+            } else {
+                self.set_first_child(context.gc_context, Some(child));
+            }
+            // Initialize child.
             child.post_instantiation(context, child, None, false);
             child.run_frame(context);
             self.0
                 .write(context.gc_context)
                 .children
                 .insert(depth, child);
+            prev_child = Some(child);
         }
     }
 }
@@ -205,9 +215,8 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         if !initialized {
             let mut new_children = Vec::new();
 
-            self.0.write(context.gc_context).initialized = true;
-
             self.set_state(self_display_object, context, ButtonState::Up);
+            self.0.write(context.gc_context).initialized = true;
 
             let read = self.0.read();
 
@@ -385,9 +394,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             }
         }
 
-        drop(write);
-
-        self.set_state(self_display_object, context, new_state);
+        if write.state != new_state {
+            drop(write);
+            self.set_state(self_display_object, context, new_state);
+        }
 
         handled
     }
