@@ -31,7 +31,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::read::SwfRead;
-use swf::{FillStyle, LineStyle};
+use swf::{FillStyle, FrameLabelData, LineStyle};
 
 type FrameNumber = u16;
 
@@ -116,6 +116,7 @@ impl<'gc> MovieClip<'gc> {
                         total_frames: num_frames,
                         audio_stream_info: None,
                         frame_labels: HashMap::new(),
+                        scene_labels: HashMap::new(),
                     },
                 ),
                 tag_stream_pos: 0,
@@ -301,6 +302,9 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
                 TagCode::DoAbc => self.do_abc(context, reader, tag_len),
                 TagCode::SymbolClass => self.symbol_class(context, reader),
+                TagCode::DefineSceneAndFrameLabelData => {
+                    self.scene_and_frame_labels(reader, &mut static_data)
+                }
                 TagCode::ExportAssets => self
                     .0
                     .write(context.gc_context)
@@ -538,6 +542,25 @@ impl<'gc> MovieClip<'gc> {
                     ),
                 }
             }
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    fn scene_and_frame_labels(
+        self,
+        reader: &mut SwfStream<&[u8]>,
+        static_data: &mut MovieClipStatic,
+    ) -> DecodeResult {
+        let sfl_data = reader.read_define_scene_and_frame_label_data()?;
+
+        for FrameLabelData { frame_num, label } in sfl_data.scenes {
+            static_data.scene_labels.insert(label, frame_num as u16 + 1);
+        }
+
+        for FrameLabelData { frame_num, label } in sfl_data.frame_labels {
+            static_data.frame_labels.insert(label, frame_num as u16 + 1);
         }
 
         Ok(())
@@ -1625,6 +1648,7 @@ impl<'gc> MovieClipData<'gc> {
                 total_frames,
                 audio_stream_info: None,
                 frame_labels: HashMap::new(),
+                scene_labels: HashMap::new(),
             },
         );
         self.tag_stream_pos = 0;
@@ -2723,6 +2747,7 @@ struct MovieClipStatic {
     id: CharacterId,
     swf: SwfSlice,
     frame_labels: HashMap<String, FrameNumber>,
+    scene_labels: HashMap<String, FrameNumber>,
     audio_stream_info: Option<swf::SoundStreamHead>,
     total_frames: FrameNumber,
 }
@@ -2734,6 +2759,7 @@ impl MovieClipStatic {
             swf,
             total_frames: 1,
             frame_labels: HashMap::new(),
+            scene_labels: HashMap::new(),
             audio_stream_info: None,
         }
     }
