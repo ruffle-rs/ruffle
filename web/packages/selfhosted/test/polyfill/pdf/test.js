@@ -10,8 +10,7 @@ describe("PDF object", () => {
         open_test(browser, __dirname);
     });
 
-    // TODO: This is broken today.
-    it.skip("doesn't polyfill with ruffle", () => {
+    it("doesn't polyfill with ruffle", () => {
         inject_ruffle_and_wait(browser);
         const actual = browser.$("#test-container").getHTML(false);
         const expected = fs.readFileSync(`${__dirname}/expected.html`, "utf8");
