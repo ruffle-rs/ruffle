@@ -620,6 +620,24 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().current_frame
     }
 
+    pub fn current_scene(self) -> Option<(String, FrameNumber)> {
+        let read = self.0.read();
+
+        read.static_data
+            .scene_labels
+            .iter()
+            .fold(None, |s, (scene, frame)| {
+                s.map(|s| {
+                    if frame > &read.current_frame() {
+                        s
+                    } else {
+                        (scene.clone(), *frame)
+                    }
+                })
+                .or_else(|| Some((scene.to_string(), *frame)))
+            })
+    }
+
     pub fn total_frames(self) -> FrameNumber {
         self.0.read().static_data.total_frames
     }
