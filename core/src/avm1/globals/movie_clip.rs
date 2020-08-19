@@ -2,6 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
@@ -49,6 +50,64 @@ macro_rules! with_movie_clip {
             );
         )*
     }};
+}
+
+macro_rules! with_movie_clip_props {
+    ($obj:ident, $gc:ident, $fn_proto:ident, $($name:literal => [$get:ident $(, $set:ident)*],)*) => {
+        $(
+            $obj.add_property(
+                $gc,
+                $name,
+                with_movie_clip_props!(getter $gc, $fn_proto, $get),
+                with_movie_clip_props!(setter $gc, $fn_proto, $($set),*),
+                DontDelete | DontEnum,
+            );
+        )*
+    };
+
+    (getter $gc:ident, $fn_proto:ident, $get:ident) => {
+        FunctionObject::function(
+            $gc,
+            Executable::Native(
+                |activation: &mut Activation<'_, 'gc, '_>, this, _args| -> Result<Value<'gc>, Error<'gc>> {
+                    if let Some(display_object) = this.as_display_object() {
+                        if let Some(movie_clip) = display_object.as_movie_clip() {
+                            return $get(movie_clip, activation);
+                        }
+                    }
+                    Ok(Value::Undefined)
+                } as crate::avm1::function::NativeFunction<'gc>
+            ),
+            Some($fn_proto),
+            $fn_proto
+        )
+    };
+
+    (setter $gc:ident, $fn_proto:ident, $set:ident) => {
+        Some(FunctionObject::function(
+            $gc,
+            Executable::Native(
+                |activation: &mut Activation<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
+                    if let Some(display_object) = this.as_display_object() {
+                        if let Some(movie_clip) = display_object.as_movie_clip() {
+                            let value = args
+                                .get(0)
+                                .unwrap_or(&Value::Undefined)
+                                .clone();
+                            $set(movie_clip, activation, value)?;
+                        }
+                    }
+                    Ok(Value::Undefined)
+                } as crate::avm1::function::NativeFunction<'gc>
+            ),
+            Some($fn_proto),
+            $fn_proto)
+        )
+    };
+
+    (setter $gc:ident, $fn_proto:ident,) => {
+        None
+    };
 }
 
 #[allow(clippy::comparison_chain)]
@@ -139,6 +198,11 @@ pub fn create_proto<'gc>(
         "endFill" => end_fill,
         "lineStyle" => line_style,
         "clear" => clear
+    );
+
+    with_movie_clip_props!(
+        proto, gc_context, fn_proto,
+        "transform" => [transform, set_transform],
     );
 
     object.into()
@@ -1087,4 +1151,23 @@ fn unload_movie<'gc>(
     target.replace_with_movie(activation.context.gc_context, None);
 
     Ok(Value::Undefined)
+}
+
+fn transform<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let constructor = activation.context.avm1.prototypes.transform_constructor;
+    let cloned = constructor.construct(activation, &[this.object()])?;
+    Ok(cloned.into())
+}
+
+fn set_transform<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let transform = value.coerce_to_object(activation);
+    crate::avm1::globals::transform::apply_to_display_object(activation, transform, this.into())?;
+    Ok(())
 }

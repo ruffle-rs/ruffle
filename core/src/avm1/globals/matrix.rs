@@ -85,8 +85,6 @@ pub fn object_to_matrix<'gc>(
     Ok(Matrix { a, b, c, d, tx, ty })
 }
 
-// We'll need this soon!
-#[allow(dead_code)]
 pub fn matrix_to_object<'gc>(
     matrix: Matrix,
     activation: &mut Activation<'_, 'gc, '_>,
