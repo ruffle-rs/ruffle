@@ -9,6 +9,7 @@ use crate::avm1::property::Attribute;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
+use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::object::xml_object::XMLObject;
@@ -29,6 +30,7 @@ pub mod shared_object;
 pub mod sound_object;
 pub mod stage_object;
 pub mod super_object;
+pub mod transform_object;
 pub mod value_object;
 pub mod xml_attributes_object;
 pub mod xml_idmap_object;
@@ -51,6 +53,7 @@ pub mod xml_object;
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
         ColorTransformObject(ColorTransformObject<'gc>),
+        TransformObject(TransformObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -418,6 +421,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `ColorTransformObject`, if it exists
     fn as_color_transform_object(&self) -> Option<ColorTransformObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `TransformObject`, if it exists
+    fn as_transform_object(&self) -> Option<TransformObject<'gc>> {
         None
     }
 

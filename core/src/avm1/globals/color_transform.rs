@@ -77,8 +77,6 @@ pub fn constructor<'gc>(
     Ok(Value::Undefined)
 }
 
-// We'll need this soon!
-#[allow(dead_code)]
 pub fn object_to_color_transform<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
@@ -97,16 +95,20 @@ pub fn object_to_color_transform<'gc>(
         .coerce_to_f64(activation)? as f32;
     let red_offset = object
         .get("redOffset", activation)?
-        .coerce_to_f64(activation)? as f32;
+        .coerce_to_f64(activation)? as f32
+        / 255.0;
     let green_offset = object
         .get("greenOffset", activation)?
-        .coerce_to_f64(activation)? as f32;
+        .coerce_to_f64(activation)? as f32
+        / 255.0;
     let blue_offset = object
         .get("blueOffset", activation)?
-        .coerce_to_f64(activation)? as f32;
+        .coerce_to_f64(activation)? as f32
+        / 255.0;
     let alpha_offset = object
         .get("alphaOffset", activation)?
-        .coerce_to_f64(activation)? as f32;
+        .coerce_to_f64(activation)? as f32
+        / 255.0;
 
     Ok(ColorTransform {
         r_mult: red_multiplier,
@@ -118,6 +120,29 @@ pub fn object_to_color_transform<'gc>(
         b_add: blue_offset,
         a_add: alpha_offset,
     })
+}
+
+pub fn color_transform_to_object<'gc>(
+    color_transform: ColorTransform,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let args = [
+        color_transform.r_mult.into(),
+        color_transform.g_mult.into(),
+        color_transform.b_mult.into(),
+        color_transform.a_mult.into(),
+        (color_transform.r_add * 255.0).into(),
+        (color_transform.g_add * 255.0).into(),
+        (color_transform.b_add * 255.0).into(),
+        (color_transform.a_add * 255.0).into(),
+    ];
+    let constructor = activation
+        .context
+        .avm1
+        .prototypes
+        .color_transform_constructor;
+    let object = constructor.construct(activation, &args)?;
+    Ok(object)
 }
 
 pub fn get_rgb<'gc>(

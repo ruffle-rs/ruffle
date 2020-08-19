@@ -41,6 +41,7 @@ pub(crate) mod system_ime;
 pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
+mod transform;
 mod xml;
 
 pub fn random<'gc>(
@@ -322,9 +323,12 @@ pub struct SystemPrototypes<'gc> {
     pub point_constructor: Object<'gc>,
     pub rectangle: Object<'gc>,
     pub rectangle_constructor: Object<'gc>,
+    pub transform: Object<'gc>,
+    pub transform_constructor: Object<'gc>,
     pub shared_object: Object<'gc>,
     pub shared_object_constructor: Object<'gc>,
     pub color_transform: Object<'gc>,
+    pub color_transform_constructor: Object<'gc>,
     pub context_menu: Object<'gc>,
     pub context_menu_constructor: Object<'gc>,
     pub context_menu_item: Object<'gc>,
@@ -379,6 +383,8 @@ pub fn create_globals<'gc>(
         rectangle::create_proto(gc_context, object_proto, function_proto);
     let color_transform_proto: Object<'gc> =
         color_transform::create_proto(gc_context, object_proto, function_proto);
+    let transform_proto: Object<'gc> =
+        transform::create_proto(gc_context, object_proto, function_proto);
 
     let (broadcaster_functions, as_broadcaster) =
         as_broadcaster::create(gc_context, Some(object_proto), function_proto);
@@ -480,10 +486,21 @@ pub fn create_globals<'gc>(
     let flash = ScriptObject::object(gc_context, Some(object_proto));
     let geom = ScriptObject::object(gc_context, Some(object_proto));
     let matrix = matrix::create_matrix_object(gc_context, matrix_proto, Some(function_proto));
-
     let point = point::create_point_object(gc_context, point_proto, Some(function_proto));
     let rectangle =
         rectangle::create_rectangle_object(gc_context, rectangle_proto, Some(function_proto));
+    let color_transform = FunctionObject::function(
+        gc_context,
+        Executable::Native(color_transform::constructor),
+        Some(function_proto),
+        color_transform_proto,
+    );
+    let transform = FunctionObject::function(
+        gc_context,
+        Executable::Native(transform::constructor),
+        Some(function_proto),
+        transform_proto,
+    );
 
     flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
     geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
@@ -492,15 +509,10 @@ pub fn create_globals<'gc>(
     geom.define_value(
         gc_context,
         "ColorTransform",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(color_transform::constructor),
-            Some(function_proto),
-            color_transform_proto,
-        )
-        .into(),
+        color_transform.into(),
         EnumSet::empty(),
     );
+    geom.define_value(gc_context, "Transform", transform.into(), EnumSet::empty());
 
     let mut globals = ScriptObject::bare_object(gc_context);
     globals.define_value(
@@ -744,9 +756,12 @@ pub fn create_globals<'gc>(
             point_constructor: point,
             rectangle: rectangle_proto,
             rectangle_constructor: rectangle,
+            transform: transform_proto,
+            transform_constructor: transform,
             shared_object: shared_object_proto,
             shared_object_constructor: shared_obj,
             color_transform: color_transform_proto,
+            color_transform_constructor: color_transform,
             context_menu: context_menu_proto,
             context_menu_constructor: context_menu,
             context_menu_item: context_menu_item_proto,
