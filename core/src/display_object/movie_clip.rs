@@ -627,10 +627,11 @@ impl<'gc> MovieClip<'gc> {
         let mut max_label_string = None;
 
         for (scene, frame) in read.static_data.scene_labels.iter() {
-            if max_label_frame
-                .map(|v| *frame > v && *frame <= current_frame)
-                .unwrap_or(true)
-            {
+            if *frame > current_frame {
+                continue;
+            }
+
+            if max_label_frame.map(|v| *frame >= v).unwrap_or(true) {
                 max_label_frame = Some(*frame);
                 max_label_string = Some(scene);
             }
@@ -651,10 +652,11 @@ impl<'gc> MovieClip<'gc> {
         let mut max_label_string = None;
 
         for (label, frame) in read.static_data.frame_labels.iter() {
-            if max_label_frame
-                .map(|v| *frame > v && *frame <= current_frame)
-                .unwrap_or(true)
-            {
+            if *frame > current_frame {
+                continue;
+            }
+
+            if max_label_frame.map(|v| *frame >= v).unwrap_or(true) {
                 max_label_frame = Some(*frame);
                 max_label_string = Some(label);
             }
