@@ -622,20 +622,50 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn current_scene(self) -> Option<(String, FrameNumber)> {
         let read = self.0.read();
+        let current_frame = read.current_frame();
+        let mut max_label_frame = None;
+        let mut max_label_string = None;
 
-        read.static_data
-            .scene_labels
-            .iter()
-            .fold(None, |s, (scene, frame)| {
-                s.map(|s| {
-                    if frame > &read.current_frame() {
-                        s
-                    } else {
-                        (scene.clone(), *frame)
-                    }
-                })
-                .or_else(|| Some((scene.to_string(), *frame)))
-            })
+        for (scene, frame) in read.static_data.scene_labels.iter() {
+            if max_label_frame
+                .map(|v| *frame > v && *frame <= current_frame)
+                .unwrap_or(true)
+            {
+                max_label_frame = Some(*frame);
+                max_label_string = Some(scene);
+            }
+        }
+
+        if let (Some(max_label_frame), Some(max_label_string)) = (max_label_frame, max_label_string)
+        {
+            Some((max_label_string.to_string(), max_label_frame))
+        } else {
+            None
+        }
+    }
+
+    pub fn current_label(self) -> Option<(String, FrameNumber)> {
+        let read = self.0.read();
+        let current_frame = read.current_frame();
+        let mut max_label_frame = None;
+        let mut max_label_string = None;
+
+        for (label, frame) in read.static_data.frame_labels.iter() {
+            if max_label_frame
+                .map(|v| *frame > v && *frame <= current_frame)
+                .unwrap_or(true)
+            {
+                max_label_frame = Some(*frame);
+                max_label_string = Some(label);
+            }
+        }
+
+        if let (Some(max_label_frame), Some(max_label_string)) = (max_label_frame, max_label_string)
+        {
+            Some((max_label_string.to_string(), max_label_frame))
+        } else {
+            None
+        }
     }
 
     pub fn total_frames(self) -> FrameNumber {
