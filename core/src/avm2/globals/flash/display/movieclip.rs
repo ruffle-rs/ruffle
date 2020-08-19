@@ -120,6 +120,54 @@ pub fn current_label<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `framesLoaded`.
+pub fn frames_loaded<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        return Ok(mc.frames_loaded().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `isPlaying`.
+pub fn is_playing<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        return Ok(mc.playing().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `totalFrames`.
+pub fn total_frames<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        return Ok(mc.total_frames().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MovieClip`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -150,6 +198,21 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::package(""), "currentLabel"),
         Method::from_builtin(current_label),
+    ));
+
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "framesLoaded"),
+        Method::from_builtin(frames_loaded),
+    ));
+
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "isPlaying"),
+        Method::from_builtin(is_playing),
+    ));
+
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "totalFrames"),
+        Method::from_builtin(total_frames),
     ));
 
     class
