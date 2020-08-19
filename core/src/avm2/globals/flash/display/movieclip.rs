@@ -53,6 +53,26 @@ pub fn add_frame_script<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `currentFrame`.
+pub fn current_frame<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        if let Some((_scene, scene_basis)) = mc.current_scene() {
+            return Ok((mc.current_frame() - scene_basis + 1).into());
+        } else {
+            return Ok(mc.current_frame().into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MovieClip`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -63,9 +83,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         mc,
     );
 
-    class.write(mc).define_instance_trait(Trait::from_method(
+    let mut write = class.write(mc);
+
+    write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::package(""), "addFrameScript"),
         Method::from_builtin(add_frame_script),
+    ));
+
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "currentFrame"),
+        Method::from_builtin(current_frame),
     ));
 
     class
