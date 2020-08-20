@@ -1,0 +1,15 @@
+// targetPath(clip)
+_level0.clip
+
+// targetPath(button)
+_level0.button
+
+// targetPath(text)
+_level0.text
+
+// targetPath('clip')
+undefined
+
+// targetPath({})
+undefined
+
