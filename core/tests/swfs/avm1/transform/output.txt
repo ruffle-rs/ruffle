@@ -1,0 +1,62 @@
+// t = clip.clip.transform:
+[object Object]
+// t.matrix:
+(a=1, b=0, c=0, d=1, tx=71, ty=60)
+// t.colorTransform:
+(redMultiplier=0.5, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=64, blueOffset=32, alphaOffset=0)
+// t.concatenatedMatrix:
+(a=2, b=0, c=0, d=2, tx=352, ty=180)
+// t.concatenatedColorTransform:
+(redMultiplier=0.5, greenMultiplier=0.5, blueMultiplier=1, alphaMultiplier=1, redOffset=64, greenOffset=32, blueOffset=32, alphaOffset=0)
+// t.pixelBounds:
+(x=352, y=180, w=400, h=400)
+
+// t.matrix = new Matrix()
+// clip.clip._x:
+0
+// clip.clip._x = 50
+// t.matrix:
+(a=1, b=0, c=0, d=1, tx=50, ty=0)
+
+// t2 = new Transform(clip.clip)
+// t2.matrix:
+(a=1, b=0, c=0, d=1, tx=50, ty=0)
+50
+// clip.clip._x = 100
+// t2.matrix:
+(a=1, b=0, c=0, d=1, tx=100, ty=0)
+
+// clip.transform.matrix = new Matrix()
+// clip.transform.colorTransform = new ColorTransform(0.5, 1.0, 1.0, 1.0)
+// t.concatenatedMatrix:
+(a=1, b=0, c=0, d=1, tx=110, ty=10)
+// t.concatenatedColorTransform:
+(redMultiplier=0.5, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=64, blueOffset=-223, alphaOffset=0)
+
+// clip.clip.transform = clip2.transform
+// t.matrix:
+(a=1, b=0, c=0, d=1, tx=10, ty=10)
+// t.colorTransform:
+(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+
+// t.matrix = {}
+// t.matrix:
+(a=1, b=0, c=0, d=1, tx=10, ty=10)
+// t.colorTransform = {}
+// t.colorTransform:
+(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+
+// clip.clip.transform = {}
+// t.matrix:
+(a=1, b=0, c=0, d=1, tx=10, ty=10)
+// t.matrix.tx = 999
+// t.matrix.tx:
+10
+
+// clip.transform == clip.transform:
+false
+// t.matrix == t.matrix
+false
+// t.colorTransform == t.colorTransform
+false
+
