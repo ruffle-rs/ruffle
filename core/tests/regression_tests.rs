@@ -297,6 +297,7 @@ swf_tests! {
     (conflicting_instance_names, "avm1/conflicting_instance_names", 6),
     (button_children, "avm1/button_children", 1),
     (transform, "avm1/transform", 1),
+    (target_path, "avm1/target_path", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
