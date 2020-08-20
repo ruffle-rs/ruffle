@@ -2001,10 +2001,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_target_path(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel)
-        let _clip = self.context.avm1.pop().coerce_to_object(self);
-        self.context.avm1.push(Value::Undefined);
-        avm_warn!(self, "Unimplemented action: TargetPath");
+        // Prints out the dot-path for the parameter.
+        // Parameter must be a display object (not a string path).
+        let param = self.context.avm1.pop().coerce_to_object(self);
+        let ret: Value<'gc> = if let Some(display_object) = param.as_display_object() {
+            let path = display_object.path();
+            AvmString::new(self.context.gc_context, path).into()
+        } else {
+            Value::Undefined
+        };
+        self.context.avm1.push(ret);
         Ok(FrameControl::Continue)
     }
 
