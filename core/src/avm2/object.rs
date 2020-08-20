@@ -723,6 +723,21 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let type_proto = constructor
             .get_property(constructor, &QName::dynamic_name("prototype"), activation)?
             .coerce_to_object(activation)?;
+
+        self.has_prototype_in_chain(type_proto, check_interfaces)
+    }
+
+    /// Determine if this object has a given prototype in it's prototype chain.
+    ///
+    /// The given object should be the prototype we are checking against this
+    /// object. It's prototype will be searched in the
+    /// prototype chain of this object. If `check_interfaces` is enabled, then
+    /// the interfaces listed on each prototype will also be checked.
+    fn has_prototype_in_chain(
+        &self,
+        type_proto: Object<'gc>,
+        check_interfaces: bool,
+    ) -> Result<bool, Error> {
         let mut my_proto = self.proto();
 
         //TODO: Is it a verification error to do `obj instanceof bare_object`?
