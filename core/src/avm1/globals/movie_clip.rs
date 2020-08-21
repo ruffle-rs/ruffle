@@ -123,16 +123,18 @@ pub fn hit_test<'gc>(
             .get(2)
             .map(|v| v.as_bool(activation.current_swf_version()))
             .unwrap_or(false);
-        if shape {
-            avm_warn!(activation, "Ignoring shape hittest and using bounding box instead. Shape based hit detection is not yet implemented. See https://github.com/ruffle-rs/ruffle/issues/177");
-        }
         if x.is_finite() && y.is_finite() {
             // The docs say the point is in "Stage coordinates", but actually they are in root coordinates.
             // root can be moved via _root._x etc., so we actually have to transform from root to world space.
             let point = movie_clip
                 .root()
                 .local_to_global((Twips::from_pixels(x), Twips::from_pixels(y)));
-            return Ok(movie_clip.hit_test(point).into());
+            let ret = if shape {
+                movie_clip.hit_test_shape(point)
+            } else {
+                movie_clip.hit_test_bounds(point)
+            };
+            return Ok(ret.into());
         }
     } else if args.len() == 1 {
         let other = args

@@ -198,6 +198,33 @@ impl Drawing {
     pub fn self_bounds(&self) -> BoundingBox {
         self.shape_bounds.clone()
     }
+
+    pub fn hit_test(&self, point: (Twips, Twips), local_matrix: &swf::Matrix) -> bool {
+        use crate::shape_utils;
+        for path in &self.fills {
+            if shape_utils::draw_command_fill_hit_test(&path.1, point) {
+                return true;
+            }
+        }
+
+        for path in &self.lines {
+            if shape_utils::draw_command_stroke_hit_test(&path.1, path.0.width, point, local_matrix)
+            {
+                return true;
+            }
+        }
+
+        // TODO: Handle cases where fill is not closed.
+        // Probably should have an explicit `flush` method that handles this.
+        if let Some(path) = &self.current_line {
+            if shape_utils::draw_command_stroke_hit_test(&path.1, path.0.width, point, local_matrix)
+            {
+                return true;
+            }
+        }
+
+        false
+    }
 }
 
 fn stretch_bounding_box(

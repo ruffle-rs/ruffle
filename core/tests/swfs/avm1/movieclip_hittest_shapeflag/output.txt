@@ -130,26 +130,6 @@ false
 // clip.hitTest(60, 635, true)
 false
 
-// drawing API, root transformed
-// clip.hitTest(400, 400, true)
-false
-// clip.hitTest(470, 550, true)
-false
-// clip.hitTest(350, 50, true)
-false
-// clip.hitTest(100, 335, true)
-false
-// clip.hitTest(250, 385, true)
-false
-// clip.hitTest(350, 335, true)
-false
-// clip.hitTest(550, 535, true)
-false
-// clip.hitTest(50, 35, true)
-false
-// clip.hitTest(60, 635, true)
-false
-
 // bg art
 // clip.hitTest(500, 500, true)
 true

@@ -1058,8 +1058,26 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.read().drawing.self_bounds()
     }
 
-    fn hit_test(&self, point: (Twips, Twips)) -> bool {
+    fn hit_test_bounds(&self, point: (Twips, Twips)) -> bool {
         self.world_bounds().contains(point)
+    }
+
+    fn hit_test_shape(&self, point: (Twips, Twips)) -> bool {
+        if self.world_bounds().contains(point) {
+            for child in self.children() {
+                if child.hit_test_shape(point) {
+                    return true;
+                }
+            }
+
+            let local_matrix = self.global_to_local_matrix();
+            let point = local_matrix * point;
+            if self.0.read().drawing.hit_test(point, &local_matrix) {
+                return true;
+            }
+        }
+
+        false
     }
 
     fn mouse_pick(
