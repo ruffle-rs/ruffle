@@ -1473,7 +1473,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         {
             let frame_id = self.0.read().current_frame;
 
-            self.run_frame_scripts(frame_id, context);
+            if self.playing() {
+                self.run_frame_scripts(frame_id, context);
+            }
         }
     }
 
