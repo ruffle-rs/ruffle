@@ -576,7 +576,7 @@ pub struct SymbolClassLink {
     pub class_name: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Shape {
     pub version: u8,
     pub id: CharacterId,
