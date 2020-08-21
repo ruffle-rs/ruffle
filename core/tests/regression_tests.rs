@@ -386,6 +386,8 @@ swf_tests! {
     (as3_array_hasownproperty, "avm2/array_hasownproperty", 1),
     (stage_property_representation, "avm1/stage_property_representation", 1),
     (as3_timeline_scripts, "avm2/timeline_scripts", 3),
+    (as3_movieclip_properties, "avm2/movieclip_properties", 4),
+    (as3_movieclip_goto, "avm2/movieclip_goto", 5),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

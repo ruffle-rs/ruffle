@@ -9,7 +9,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{MovieClip, TDisplayObject};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.MovieClip`'s instance constructor.
@@ -168,6 +168,76 @@ pub fn total_frames<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `gotoAndPlay`.
+pub fn goto_and_play<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        goto_frame(activation, mc, args, false)?;
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `gotoAndStop`.
+pub fn goto_and_stop<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        goto_frame(activation, mc, args, true)?;
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn goto_frame<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    mc: MovieClip<'gc>,
+    args: &[Value<'gc>],
+    stop: bool,
+) -> Result<(), Error> {
+    let frame_or_label = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Null)
+        .coerce_to_object(activation)?;
+
+    if frame_or_label.has_prototype_in_chain(
+        activation.avm2().system_prototypes.as_ref().unwrap().string,
+        false,
+    )? {
+        let label = args.get(0).cloned().unwrap().coerce_to_string(activation)?;
+        let frame = mc
+            .frame_label_to_number(&label)
+            .ok_or_else(|| format!("ArgumentError: {} is not a valid frame label.", label))?;
+
+        mc.goto_frame(&mut activation.context, frame - 1, stop);
+    } else {
+        let frame = args.get(0).cloned().unwrap().coerce_to_u32(activation)? as u16;
+        let scene = match args.get(1).cloned().unwrap_or(Value::Null) {
+            Value::Null => None,
+            v => mc
+                .scene_label_to_number(&v.coerce_to_string(activation)?)
+                .map(|v| v.saturating_sub(1)),
+        }
+        .unwrap_or(0);
+
+        mc.goto_frame(&mut activation.context, frame + scene - 1, stop);
+    }
+
+    Ok(())
+}
+
 /// Construct `MovieClip`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -213,6 +283,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::package(""), "totalFrames"),
         Method::from_builtin(total_frames),
+    ));
+
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::package(""), "gotoAndPlay"),
+        Method::from_builtin(goto_and_play),
+    ));
+
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::package(""), "gotoAndStop"),
+        Method::from_builtin(goto_and_stop),
     ));
 
     class
