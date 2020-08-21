@@ -238,6 +238,38 @@ pub fn goto_frame<'gc>(
     Ok(())
 }
 
+/// Implements `stop`.
+pub fn stop<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        mc.stop(&mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `play`.
+pub fn play<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        mc.play(&mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MovieClip`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -293,6 +325,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::package(""), "gotoAndStop"),
         Method::from_builtin(goto_and_stop),
+    ));
+
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::package(""), "stop"),
+        Method::from_builtin(stop),
+    ));
+
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::package(""), "play"),
+        Method::from_builtin(play),
     ));
 
     class
