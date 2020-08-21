@@ -11,6 +11,8 @@ use std::f64;
 
 mod array;
 pub(crate) mod as_broadcaster;
+mod bitmap_filter;
+mod blur_filter;
 pub(crate) mod boolean;
 pub(crate) mod button;
 mod color;
@@ -333,6 +335,10 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_constructor: Object<'gc>,
     pub context_menu_item: Object<'gc>,
     pub context_menu_item_constructor: Object<'gc>,
+    pub bitmap_filter: Object<'gc>,
+    pub bitmap_filter_constructor: Object<'gc>,
+    pub blur_filter: Object<'gc>,
+    pub blur_filter_constructor: Object<'gc>,
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
@@ -485,6 +491,8 @@ pub fn create_globals<'gc>(
 
     let flash = ScriptObject::object(gc_context, Some(object_proto));
     let geom = ScriptObject::object(gc_context, Some(object_proto));
+    let filters = ScriptObject::object(gc_context, Some(object_proto));
+
     let matrix = matrix::create_matrix_object(gc_context, matrix_proto, Some(function_proto));
     let point = point::create_point_object(gc_context, point_proto, Some(function_proto));
     let rectangle =
@@ -503,6 +511,7 @@ pub fn create_globals<'gc>(
     );
 
     flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
+    flash.define_value(gc_context, "filters", filters.into(), EnumSet::empty());
     geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
     geom.define_value(gc_context, "Point", point.into(), EnumSet::empty());
     geom.define_value(gc_context, "Rectangle", rectangle.into(), EnumSet::empty());
@@ -513,6 +522,37 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
     );
     geom.define_value(gc_context, "Transform", transform.into(), EnumSet::empty());
+
+    let bitmap_filter_proto =
+        bitmap_filter::create_proto(gc_context, object_proto, Some(function_proto));
+    let bitmap_filter = FunctionObject::function(
+        gc_context,
+        Executable::Native(bitmap_filter::constructor),
+        Some(function_proto),
+        bitmap_filter_proto,
+    );
+
+    let blur_filter_proto =
+        blur_filter::create_proto(gc_context, bitmap_filter_proto, Some(function_proto));
+    let blur_filter = FunctionObject::function(
+        gc_context,
+        Executable::Native(blur_filter::constructor),
+        Some(function_proto),
+        blur_filter_proto,
+    );
+
+    filters.define_value(
+        gc_context,
+        "BitmapFilter",
+        bitmap_filter.into(),
+        EnumSet::empty(),
+    );
+    filters.define_value(
+        gc_context,
+        "BlurFilter",
+        blur_filter.into(),
+        EnumSet::empty(),
+    );
 
     let mut globals = ScriptObject::bare_object(gc_context);
     globals.define_value(
@@ -766,6 +806,10 @@ pub fn create_globals<'gc>(
             context_menu_constructor: context_menu,
             context_menu_item: context_menu_item_proto,
             context_menu_item_constructor: context_menu_item,
+            bitmap_filter: bitmap_filter_proto,
+            bitmap_filter_constructor: bitmap_filter,
+            blur_filter: blur_filter_proto,
+            blur_filter_constructor: blur_filter,
         },
         globals.into(),
         broadcaster_functions,
