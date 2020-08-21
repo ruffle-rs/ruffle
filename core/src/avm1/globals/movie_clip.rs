@@ -6,7 +6,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{AvmString, Object, ScriptObject, TObject, UpdateContext, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
@@ -828,21 +828,12 @@ fn prev_frame<'gc>(
     Ok(Value::Undefined)
 }
 
-fn remove_movie_clip<'gc>(
+pub fn remove_movie_clip<'gc>(
     movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // removeMovieClip method uses biased depth compared to RemoveSprite
-    remove_movie_clip_with_bias(movie_clip, &mut activation.context, AVM_DEPTH_BIAS)
-}
-
-pub fn remove_movie_clip_with_bias<'gc>(
-    movie_clip: MovieClip<'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
-    depth_bias: i32,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let depth = movie_clip.depth().wrapping_add(depth_bias);
+    let depth = movie_clip.depth().wrapping_sub(0);
     // Can only remove positive depths (when offset by the AVM depth bias).
     // Generally this prevents you from removing non-dynamically created clips,
     // although you can get around it with swapDepths.
@@ -855,7 +846,7 @@ pub fn remove_movie_clip_with_bias<'gc>(
             return Ok(Value::Undefined);
         };
 
-        parent.remove_child_from_avm(context, movie_clip.into());
+        parent.remove_child_from_avm(&mut activation.context, movie_clip.into());
     }
     Ok(Value::Undefined)
 }
