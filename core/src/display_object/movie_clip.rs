@@ -723,6 +723,16 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().static_data.frame_labels.get(&label).copied()
     }
 
+    pub fn scene_label_to_number(self, scene_label: &str) -> Option<FrameNumber> {
+        //TODO: Are scene labels also case insensitive?
+        self.0
+            .read()
+            .static_data
+            .scene_labels
+            .get(scene_label)
+            .copied()
+    }
+
     /// Returns the highest depth in use by this movie clip, or `None` if there are no children.
     pub fn highest_depth(self) -> Option<Depth> {
         self.0.read().children.keys().copied().rev().next()
