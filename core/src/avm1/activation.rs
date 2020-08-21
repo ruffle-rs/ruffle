@@ -1707,8 +1707,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let target_clip = self.resolve_target_display_object(start_clip, target)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
-            let _ =
-                globals::movie_clip::remove_movie_clip_with_bias(target_clip, &mut self.context, 0);
+            let _ = globals::movie_clip::remove_movie_clip(target_clip, self, &[]);
         } else {
             avm_warn!(self, "RemoveSprite: Source is not a movie clip");
         }
