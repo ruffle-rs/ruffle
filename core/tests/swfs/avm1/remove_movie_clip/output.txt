@@ -1,0 +1,17 @@
+// RemoveSprite
+_level0.clip1
+undefined
+// MovieClip.removeMovieClip
+2
+_level0.clip2
+undefined
+// Trying to remove static clip
+_level0.clip
+_level0.clip
+// Remove wacky depths
+_level0.clip3
+_level0.clip3
+_level0.clip4
+undefined
+_level0.clip5
+_level0.clip5
