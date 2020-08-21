@@ -92,13 +92,7 @@ impl CpalAudioBackend {
             .ok_or("No audio devices available")?;
 
         // Create audio stream for device.
-        let mut supported_configs = device
-            .supported_output_configs()
-            .map_err(|_| "No supported audio format")?;
-        let config = supported_configs
-            .next()
-            .ok_or("No supported audio formats")?
-            .with_max_sample_rate();
+        let config = device.default_output_config()?;
         let sample_format = config.sample_format();
         let config = cpal::StreamConfig::from(config);
 
