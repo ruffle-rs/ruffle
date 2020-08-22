@@ -301,6 +301,7 @@ swf_tests! {
     (remove_movie_clip, "avm1/remove_movie_clip", 1),
     (as3_add, "avm2/add", 1),
     (as3_bitand, "avm2/bitand", 1),
+    (as3_bitnot, "avm2/bitnot", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
