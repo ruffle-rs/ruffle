@@ -308,7 +308,7 @@ pub fn as_set_prop_flags<'gc>(
     _: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut object = if let Some(object) = args.get(0).map(|v| v.coerce_to_object(activation)) {
+    let object = if let Some(object) = args.get(0).map(|v| v.coerce_to_object(activation)) {
         object
     } else {
         avm_warn!(

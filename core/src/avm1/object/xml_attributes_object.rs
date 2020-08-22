@@ -178,7 +178,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
     }
 
     fn set_attributes(
-        &mut self,
+        &self,
         gc_context: MutationContext<'gc, '_>,
         name: Option<&str>,
         set_attributes: EnumSet<Attribute>,
@@ -230,7 +230,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         self.base().interfaces()
     }
 
-    fn set_interfaces(&mut self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
         self.base().set_interfaces(context, iface_list)
     }
 

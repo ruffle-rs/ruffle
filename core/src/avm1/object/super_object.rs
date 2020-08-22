@@ -187,7 +187,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
 
     fn set_attributes(
-        &mut self,
+        &self,
         _gc_context: MutationContext<'gc, '_>,
         _name: Option<&str>,
         _set_attributes: EnumSet<Attribute>,
@@ -298,11 +298,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         vec![]
     }
 
-    fn set_interfaces(
-        &mut self,
-        _gc_context: MutationContext<'gc, '_>,
-        _iface_list: Vec<Object<'gc>>,
-    ) {
+    fn set_interfaces(&self, _gc_context: MutationContext<'gc, '_>, _iface_list: Vec<Object<'gc>>) {
         //`super` probably cannot have interfaces set on it
     }
 
