@@ -906,6 +906,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             format!("Could not resolve property {:?}", multiname.local_name()).into()
         });
 
+        // Special case for dynamic properties as scripts may attempt to get
+        // dynamic properties not yet set
         if name.is_err()
             && !object
                 .as_proto_class()
