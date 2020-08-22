@@ -221,7 +221,7 @@ pub fn goto_frame<'gc>(
             .frame_label_to_number(&label)
             .ok_or_else(|| format!("ArgumentError: {} is not a valid frame label.", label))?;
 
-        mc.goto_frame(&mut activation.context, frame - 1, stop);
+        mc.goto_frame(&mut activation.context, frame, stop);
     } else {
         let frame = args.get(0).cloned().unwrap().coerce_to_u32(activation)? as u16;
         let scene = match args.get(1).cloned().unwrap_or(Value::Null) {
@@ -232,7 +232,7 @@ pub fn goto_frame<'gc>(
         }
         .unwrap_or(0);
 
-        mc.goto_frame(&mut activation.context, frame + scene - 1, stop);
+        mc.goto_frame(&mut activation.context, frame + scene, stop);
     }
 
     Ok(())

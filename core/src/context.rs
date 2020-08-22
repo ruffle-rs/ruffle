@@ -2,8 +2,8 @@
 use crate::avm1;
 
 use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::{Avm1, Object, Timers, Value};
-use crate::avm2::Avm2;
+use crate::avm1::{Avm1, Object as Avm1Object, Timers, Value as Avm1Value};
+use crate::avm2::{Avm2, Object as Avm2Object, Value as Avm2Value};
 use crate::backend::input::InputBackend;
 use crate::backend::locale::LocaleBackend;
 use crate::backend::log::LogBackend;
@@ -117,7 +117,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub instance_counter: &'a mut i32,
 
     /// Shared objects cache
-    pub shared_objects: &'a mut HashMap<String, Object<'gc>>,
+    pub shared_objects: &'a mut HashMap<String, Avm1Object<'gc>>,
 
     /// Text fields with unbound variable bindings.
     pub unbound_text_fields: &'a mut Vec<EditText<'gc>>,
@@ -325,22 +325,29 @@ pub enum ActionType<'gc> {
 
     /// Construct a movie with a custom class or on(construct) events
     Construct {
-        constructor: Option<Object<'gc>>,
+        constructor: Option<Avm1Object<'gc>>,
         events: Vec<SwfSlice>,
     },
 
     /// An event handler method, e.g. `onEnterFrame`.
     Method {
-        object: Object<'gc>,
+        object: Avm1Object<'gc>,
         name: &'static str,
-        args: Vec<Value<'gc>>,
+        args: Vec<Avm1Value<'gc>>,
     },
 
     /// A system listener method,
     NotifyListeners {
         listener: &'static str,
         method: &'static str,
-        args: Vec<Value<'gc>>,
+        args: Vec<Avm1Value<'gc>>,
+    },
+
+    /// An AVM2 callable, e.g. a frame script or event handler.
+    Callable2 {
+        callable: Avm2Object<'gc>,
+        reciever: Option<Avm2Object<'gc>>,
+        args: Vec<Avm2Value<'gc>>,
     },
 }
 
@@ -373,6 +380,16 @@ impl fmt::Debug for ActionType<'_> {
                 .debug_struct("ActionType::NotifyListeners")
                 .field("listener", listener)
                 .field("method", method)
+                .field("args", args)
+                .finish(),
+            ActionType::Callable2 {
+                callable,
+                reciever,
+                args,
+            } => f
+                .debug_struct("ActionType::Callable2")
+                .field("callable", callable)
+                .field("reciever", reciever)
                 .field("args", args)
                 .finish(),
         }

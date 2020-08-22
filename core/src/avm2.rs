@@ -104,6 +104,23 @@ impl<'gc> Avm2<'gc> {
         init_activation.run_stack_frame_for_script(script)
     }
 
+    pub fn run_stack_frame_for_callable(
+        callable: Object<'gc>,
+        reciever: Option<Object<'gc>>,
+        args: &[Value<'gc>],
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let mut evt_activation = Activation::from_nothing(context.reborrow());
+        callable.call(
+            reciever,
+            args,
+            &mut evt_activation,
+            reciever.and_then(|r| r.proto()),
+        )?;
+
+        Ok(())
+    }
+
     /// Load an ABC file embedded in a `SwfSlice`.
     ///
     /// The `SwfSlice` must resolve to the contents of an ABC file.
