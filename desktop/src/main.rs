@@ -24,7 +24,7 @@ use crate::storage::DiskStorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
-use winit::event::{ElementState, MouseButton, WindowEvent};
+use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Icon, WindowBuilder};
 
@@ -174,6 +174,19 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
                                 y: mouse_pos.y,
                             }
                         };
+                        player_lock.handle_event(event);
+                        if player_lock.needs_render() {
+                            window.request_redraw();
+                        }
+                    }
+                    WindowEvent::MouseWheel { delta, .. } => {
+                        use ruffle_core::events::MouseWheelDelta;
+                        let mut player_lock = player.lock().unwrap();
+                        let delta = match delta {
+                            MouseScrollDelta::LineDelta(_, dy) => MouseWheelDelta::Lines(dy.into()),
+                            MouseScrollDelta::PixelDelta(pos) => MouseWheelDelta::Pixels(pos.y),
+                        };
+                        let event = ruffle_core::PlayerEvent::MouseWheel { delta };
                         player_lock.handle_event(event);
                         if player_lock.needs_render() {
                             window.request_redraw();
