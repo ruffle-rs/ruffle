@@ -110,10 +110,10 @@ pub fn broadcast_message<'gc>(
         let event_name = event_name_value.coerce_to_string(activation)?;
         let call_args = &args[1..];
 
-        broadcast_internal(activation, this, call_args, &event_name)
-    } else {
-        Ok(Value::Undefined)
+        broadcast_internal(activation, this, call_args, &event_name)?;
     }
+
+    Ok(Value::Undefined)
 }
 
 pub fn broadcast_internal<'gc>(
@@ -121,20 +121,23 @@ pub fn broadcast_internal<'gc>(
     this: Object<'gc>,
     call_args: &[Value<'gc>],
     method_name: &str,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> Result<bool, Error<'gc>> {
     let listeners = this.get("_listeners", activation)?;
 
     if let Value::Object(listeners) = listeners {
-        for i in 0..listeners.length() {
+        let len = listeners.length();
+        for i in 0..len {
             let listener = listeners.array_element(i);
 
             if let Value::Object(listener) = listener {
                 listener.call_method(method_name, call_args, activation)?;
             }
         }
-    }
 
-    Ok(Value::Undefined)
+        Ok(len > 0)
+    } else {
+        Ok(false)
+    }
 }
 
 pub fn initialize<'gc>(

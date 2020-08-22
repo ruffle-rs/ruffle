@@ -550,44 +550,56 @@ impl Player {
                 }
             });
         }
-
         // Propagte clip events.
-        let (clip_event, listener) = match event {
-            PlayerEvent::KeyDown { .. } => (Some(ClipEvent::KeyDown), Some(("Key", "onKeyDown"))),
-            PlayerEvent::KeyUp { .. } => (Some(ClipEvent::KeyUp), Some(("Key", "onKeyUp"))),
-            PlayerEvent::MouseMove { .. } => {
-                (Some(ClipEvent::MouseMove), Some(("Mouse", "onMouseMove")))
-            }
-            PlayerEvent::MouseUp { .. } => (Some(ClipEvent::MouseUp), Some(("Mouse", "onMouseUp"))),
-            PlayerEvent::MouseDown { .. } => {
-                (Some(ClipEvent::MouseDown), Some(("Mouse", "onMouseDown")))
-            }
-            _ => (None, None),
-        };
 
-        if clip_event.is_some() || listener.is_some() {
-            self.mutate_with_update_context(|context| {
+        self.mutate_with_update_context(|context| {
+            let (clip_event, listener) = match event {
+                PlayerEvent::KeyDown { .. } => {
+                    (Some(ClipEvent::KeyDown), Some(("Key", "onKeyDown", vec![])))
+                }
+                PlayerEvent::KeyUp { .. } => {
+                    (Some(ClipEvent::KeyUp), Some(("Key", "onKeyUp", vec![])))
+                }
+                PlayerEvent::MouseMove { .. } => (
+                    Some(ClipEvent::MouseMove),
+                    Some(("Mouse", "onMouseMove", vec![])),
+                ),
+                PlayerEvent::MouseUp { .. } => (
+                    Some(ClipEvent::MouseUp),
+                    Some(("Mouse", "onMouseUp", vec![])),
+                ),
+                PlayerEvent::MouseDown { .. } => (
+                    Some(ClipEvent::MouseDown),
+                    Some(("Mouse", "onMouseDown", vec![])),
+                ),
+                PlayerEvent::MouseWheel { delta } => {
+                    let delta = Value::from(delta.lines());
+                    (None, Some(("Mouse", "onMouseWheel", vec![delta])))
+                }
+                _ => (None, None),
+            };
+
+            // Fire clip event on all clips.
+            if let Some(clip_event) = clip_event {
                 let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
-
                 for level in levels {
-                    if let Some(clip_event) = clip_event {
-                        level.handle_clip_event(context, clip_event);
-                    }
+                    level.handle_clip_event(context, clip_event);
                 }
+            }
 
-                if let Some((listener_type, event_name)) = listener {
-                    context.action_queue.queue_actions(
-                        *context.levels.get(&0).expect("root level"),
-                        ActionType::NotifyListeners {
-                            listener: listener_type,
-                            method: event_name,
-                            args: vec![],
-                        },
-                        false,
-                    );
-                }
-            });
-        }
+            // Fire event listener on appropraite object
+            if let Some((listener_type, event_name, args)) = listener {
+                context.action_queue.queue_actions(
+                    *context.levels.get(&0).expect("root level"),
+                    ActionType::NotifyListeners {
+                        listener: listener_type,
+                        method: event_name,
+                        args,
+                    },
+                    false,
+                );
+            }
+        });
 
         let mut is_mouse_down = self.is_mouse_down;
         self.mutate_with_update_context(|context| {
@@ -1122,6 +1134,12 @@ impl Player {
     pub fn update_timers(&mut self, dt: f64) {
         self.time_til_next_timer =
             self.mutate_with_update_context(|context| Timers::update_timers(context, dt));
+    }
+
+    /// Returns whether this player consumes mouse wheel events.
+    /// Used by web to prevent scrolling.
+    pub fn should_prevent_scrolling(&mut self) -> bool {
+        self.mutate_with_update_context(|context| context.avm1.has_mouse_listener())
     }
 }
 
