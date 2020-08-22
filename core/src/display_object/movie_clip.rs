@@ -624,53 +624,64 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn current_scene(self) -> Option<(String, FrameNumber)> {
+        let current_frame = self.0.read().current_frame();
+
+        self.filter_scenes(|best, (_scene, frame)| {
+            frame <= current_frame && best.map(|v| frame >= v.1).unwrap_or(true)
+        })
+    }
+
+    pub fn previous_scene(self) -> Option<(String, FrameNumber)> {
+        let current_frame = self
+            .current_scene()
+            .map(|v| v.1)
+            .unwrap_or_else(|| self.current_frame());
+
+        self.filter_scenes(|best, (_scene, frame)| {
+            frame < current_frame && best.map(|v| frame >= v.1).unwrap_or(true)
+        })
+    }
+
+    pub fn next_scene(self) -> Option<(String, FrameNumber)> {
+        let current_frame = self.0.read().current_frame();
+
+        self.filter_scenes(|best, (_scene, frame)| {
+            frame > current_frame && best.map(|v| frame <= v.1).unwrap_or(true)
+        })
+    }
+
+    pub fn filter_scenes<F>(self, mut cond: F) -> Option<(String, FrameNumber)>
+    where
+        F: FnMut(Option<(&str, FrameNumber)>, (&str, FrameNumber)) -> bool,
+    {
         let read = self.0.read();
-        let current_frame = read.current_frame();
-        let mut max_label_frame = None;
-        let mut max_label_string = None;
+        let mut best: Option<(&str, FrameNumber)> = None;
 
-        for (scene, frame) in read.static_data.scene_labels.iter() {
-            if *frame > current_frame {
-                continue;
-            }
-
-            if max_label_frame.map(|v| *frame >= v).unwrap_or(true) {
-                max_label_frame = Some(*frame);
-                max_label_string = Some(scene);
+        for (label, frame) in read.static_data.scene_labels.iter() {
+            if cond(best, (label, *frame)) {
+                best = Some((label, *frame));
             }
         }
 
-        if let (Some(max_label_frame), Some(max_label_string)) = (max_label_frame, max_label_string)
-        {
-            Some((max_label_string.to_string(), max_label_frame))
-        } else {
-            None
-        }
+        best.map(|(s, fnum)| (s.to_string(), fnum))
     }
 
     pub fn current_label(self) -> Option<(String, FrameNumber)> {
         let read = self.0.read();
         let current_frame = read.current_frame();
-        let mut max_label_frame = None;
-        let mut max_label_string = None;
+        let mut best: Option<(&str, FrameNumber)> = None;
 
         for (label, frame) in read.static_data.frame_labels.iter() {
             if *frame > current_frame {
                 continue;
             }
 
-            if max_label_frame.map(|v| *frame >= v).unwrap_or(true) {
-                max_label_frame = Some(*frame);
-                max_label_string = Some(label);
+            if best.map(|v| *frame >= v.1).unwrap_or(true) {
+                best = Some((label, *frame));
             }
         }
 
-        if let (Some(max_label_frame), Some(max_label_string)) = (max_label_frame, max_label_string)
-        {
-            Some((max_label_string.to_string(), max_label_frame))
-        } else {
-            None
-        }
+        best.map(|(s, fnum)| (s.to_string(), fnum))
     }
 
     pub fn total_frames(self) -> FrameNumber {

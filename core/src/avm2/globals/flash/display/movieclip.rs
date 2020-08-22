@@ -311,6 +311,42 @@ pub fn next_frame<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `prevScene`.
+pub fn prev_scene<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        if let Some((_scene, target_frame)) = mc.previous_scene() {
+            mc.goto_frame(&mut activation.context, target_frame, false);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `nextScene`.
+pub fn next_scene<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        if let Some((_scene, target_frame)) = mc.next_scene() {
+            mc.goto_frame(&mut activation.context, target_frame, false);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MovieClip`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -386,6 +422,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::package(""), "nextFrame"),
         Method::from_builtin(next_frame),
+    ));
+
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::package(""), "prevScene"),
+        Method::from_builtin(prev_scene),
+    ));
+
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::package(""), "nextScene"),
+        Method::from_builtin(next_scene),
     ));
 
     class
