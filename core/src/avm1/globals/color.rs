@@ -13,7 +13,7 @@ use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: Object<'gc>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // The target display object that this color will modify.

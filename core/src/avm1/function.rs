@@ -569,7 +569,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn construct_on_existing(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        mut this: Object<'gc>,
+        this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
         this.set("__constructor__", (*self).into(), activation)?;
@@ -671,7 +671,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     }
 
     fn set_attributes(
-        &mut self,
+        &self,
         gc_context: MutationContext<'gc, '_>,
         name: Option<&str>,
         set_attributes: EnumSet<Attribute>,
@@ -760,11 +760,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     }
 
     /// Set the interface list for this object. (Only useful for prototypes.)
-    fn set_interfaces(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        iface_list: Vec<Object<'gc>>,
-    ) {
+    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
         self.base.set_interfaces(gc_context, iface_list)
     }
 

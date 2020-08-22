@@ -227,7 +227,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Attributes can be set, cleared, or left as-is using the pairs of `set_`
     /// and `clear_attributes` parameters.
     fn set_attributes(
-        &mut self,
+        &self,
         gc_context: MutationContext<'gc, '_>,
         name: Option<&str>,
         set_attributes: EnumSet<Attribute>,
@@ -323,11 +323,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn interfaces(&self) -> Vec<Object<'gc>>;
 
     /// Set the interface list for this object. (Only useful for prototypes.)
-    fn set_interfaces(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        iface_list: Vec<Object<'gc>>,
-    );
+    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>);
 
     /// Determine if this object is an instance of a class.
     ///

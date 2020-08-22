@@ -1066,7 +1066,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
         let super_proto = superclass.get("prototype", self)?.coerce_to_object(self);
 
-        let mut sub_prototype: Object<'gc> =
+        let sub_prototype: Object<'gc> =
             ScriptObject::object(self.context.gc_context, Some(super_proto)).into();
 
         sub_prototype.set("constructor", superclass.into(), self)?;
@@ -1410,7 +1410,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             interfaces.push(self.context.avm1.pop().coerce_to_object(self));
         }
 
-        let mut prototype = constr.get("prototype", self)?.coerce_to_object(self);
+        let prototype = constr.get("prototype", self)?.coerce_to_object(self);
 
         prototype.set_interfaces(self.context.gc_context, interfaces);
 

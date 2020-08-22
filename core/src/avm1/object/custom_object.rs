@@ -67,7 +67,7 @@ macro_rules! impl_custom_object_without_set {
         }
 
         fn set_attributes(
-            &mut self,
+            &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: Option<&str>,
             set_attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
@@ -162,7 +162,7 @@ macro_rules! impl_custom_object_without_set {
         }
 
         fn set_interfaces(
-            &mut self,
+            &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             iface_list: Vec<crate::avm1::Object<'gc>>,
         ) {
