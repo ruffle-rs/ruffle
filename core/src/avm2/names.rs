@@ -86,6 +86,10 @@ impl<'gc> Namespace<'gc> {
         matches!(self, Self::Private(_))
     }
 
+    pub fn is_dynamic(&self) -> bool {
+        self.eq(&Self::Package("".into())) || self.is_any()
+    }
+
     /// Get the string value of this namespace, ignoring it's type.
     ///
     /// TODO: Is this *actually* the namespace URI?
@@ -377,6 +381,16 @@ impl<'gc> Multiname<'gc> {
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
         self.name
+    }
+
+    pub fn includes_dynamic_namespace(&self) -> bool {
+        for ns in self.ns.iter() {
+            if ns.is_dynamic() {
+                return true;
+            }
+        }
+
+        false
     }
 }
 
