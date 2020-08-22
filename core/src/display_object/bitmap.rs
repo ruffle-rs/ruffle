@@ -79,7 +79,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
     }
 
-    fn run_frame(&mut self, _context: &mut UpdateContext) {
+    fn run_frame(&self, _context: &mut UpdateContext) {
         // Noop
     }
 

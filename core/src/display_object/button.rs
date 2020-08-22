@@ -135,7 +135,7 @@ impl<'gc> Button<'gc> {
         let mut new_children = Vec::new();
         for record in &write.static_data.read().records {
             if record.states.contains(&swf_state) {
-                if let Ok(mut child) = context
+                if let Ok(child) = context
                     .library
                     .library_for_movie_mut(movie.clone())
                     .instantiate_by_id(record.id, context.gc_context)
@@ -156,7 +156,7 @@ impl<'gc> Button<'gc> {
         drop(write);
 
         let mut prev_child = None;
-        for (mut child, depth) in new_children {
+        for (child, depth) in new_children {
             // Wire up new execution list.
             if let Some(prev_child) = prev_child {
                 child.set_prev_sibling(context.gc_context, Some(prev_child));
@@ -188,7 +188,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 
     fn post_instantiation(
-        &mut self,
+        &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -207,7 +207,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         }
     }
 
-    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let self_display_object = (*self).into();
         let initialized = self.0.read().initialized;
 
@@ -227,7 +227,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
                         .library_for_movie_mut(read.static_data.read().swf.clone())
                         .instantiate_by_id(record.id, context.gc_context)
                     {
-                        Ok(mut child) => {
+                        Ok(child) => {
                             child.set_matrix(context.gc_context, &record.matrix);
                             child.set_parent(context.gc_context, Some(self_display_object));
                             child.set_depth(context.gc_context, record.depth.into());
@@ -247,7 +247,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
             drop(read);
 
-            for (mut child, depth) in new_children {
+            for (child, depth) in new_children {
                 child.post_instantiation(context, child, None, false);
                 self.0
                     .write(context.gc_context)
@@ -256,7 +256,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             }
         }
 
-        for mut child in self.children() {
+        for child in self.children() {
             child.run_frame(context);
         }
     }

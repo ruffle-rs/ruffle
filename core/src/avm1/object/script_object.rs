@@ -868,7 +868,7 @@ mod tests {
             let mut avm1 = Avm1::new(gc_context, swf_version);
             let mut avm2 = Avm2::new(gc_context);
             let swf = Arc::new(SwfMovie::empty(swf_version));
-            let mut root: DisplayObject<'_> =
+            let root: DisplayObject<'_> =
                 MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
             root.set_depth(gc_context, 0);
             let mut levels = BTreeMap::new();

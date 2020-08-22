@@ -592,7 +592,7 @@ fn x<'gc>(
 
 fn set_x<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
@@ -610,7 +610,7 @@ fn y<'gc>(
 
 fn set_y<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
@@ -621,7 +621,7 @@ fn set_y<'gc>(
 
 fn x_scale<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = this.scale_x(activation.context.gc_context) * 100.0;
     Ok(val.into())
@@ -629,7 +629,7 @@ fn x_scale<'gc>(
 
 fn set_x_scale<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
@@ -640,7 +640,7 @@ fn set_x_scale<'gc>(
 
 fn y_scale<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let scale_y = this.scale_y(activation.context.gc_context) * 100.0;
     Ok(scale_y.into())
@@ -648,7 +648,7 @@ fn y_scale<'gc>(
 
 fn set_y_scale<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
@@ -708,7 +708,7 @@ fn visible<'gc>(
 
 fn set_visible<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // Because this property dates to the era of Flash 4, this is actually coerced to an integer.
@@ -728,7 +728,7 @@ fn width<'gc>(
 
 fn set_width<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
@@ -746,7 +746,7 @@ fn height<'gc>(
 
 fn set_height<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
@@ -757,7 +757,7 @@ fn set_height<'gc>(
 
 fn rotation<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .rotation(activation.context.gc_context)
@@ -767,7 +767,7 @@ fn rotation<'gc>(
 
 fn set_rotation<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
     degrees: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(mut degrees) = property_coerce_to_number(activation, degrees)? {
@@ -810,7 +810,7 @@ fn name<'gc>(
 
 fn set_name<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let name = val.coerce_to_string(activation)?;

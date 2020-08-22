@@ -504,7 +504,7 @@ fn attach_movie<'gc>(
         return Ok(Value::Undefined);
     }
 
-    if let Ok(mut new_clip) = activation
+    if let Ok(new_clip) = activation
         .context
         .library
         .library_for_movie(movie_clip.movie().unwrap())
@@ -552,7 +552,7 @@ fn create_empty_movie_clip<'gc>(
         .movie()
         .or_else(|| activation.base_clip().movie())
         .unwrap();
-    let mut new_clip = MovieClip::new(SwfSlice::empty(swf_movie), activation.context.gc_context);
+    let new_clip = MovieClip::new(SwfSlice::empty(swf_movie), activation.context.gc_context);
 
     // Set name and attach to parent.
     new_clip.set_name(activation.context.gc_context, &new_instance_name);
@@ -596,7 +596,7 @@ fn create_text_field<'gc>(
         .unwrap_or(Value::Undefined)
         .coerce_to_f64(activation)?;
 
-    let mut text_field: DisplayObject<'gc> =
+    let text_field: DisplayObject<'gc> =
         EditText::new(&mut activation.context, movie, x, y, width, height).into();
     text_field.set_name(
         activation.context.gc_context,
@@ -657,7 +657,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         return Ok(Value::Undefined);
     }
 
-    if let Ok(mut new_clip) = activation
+    if let Ok(new_clip) = activation
         .context
         .library
         .library_for_movie(movie_clip.movie().unwrap())
