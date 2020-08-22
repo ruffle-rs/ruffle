@@ -13,13 +13,17 @@ use js_sys::Uint8Array;
 use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::storage::StorageBackend;
+use ruffle_core::events::MouseWheelDelta;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerEvent;
 use ruffle_web_common::JsResult;
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
-use web_sys::{Element, EventTarget, HtmlCanvasElement, HtmlElement, KeyboardEvent, PointerEvent};
+use web_sys::{
+    AddEventListenerOptions, Element, EventTarget, HtmlCanvasElement, HtmlElement, KeyboardEvent,
+    PointerEvent, WheelEvent,
+};
 
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
@@ -44,6 +48,7 @@ struct RuffleInstance {
     mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     mouse_up_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     window_mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
+    mouse_wheel_callback: Option<Closure<dyn FnMut(WheelEvent)>>,
     key_down_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
     key_up_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
     has_focus: bool,
@@ -178,6 +183,7 @@ impl Ruffle {
             mouse_down_callback: None,
             window_mouse_down_callback: None,
             mouse_up_callback: None,
+            mouse_wheel_callback: None,
             key_down_callback: None,
             key_up_callback: None,
             timestamp: None,
@@ -324,29 +330,43 @@ impl Ruffle {
                 instance.mouse_up_callback = Some(mouse_up_callback);
             }
 
-            // Create click event handler.
-            // {
-            //     let click_callback = Closure::wrap(Box::new(move |_| {
-            //         INSTANCES.with(move |instances| {
-            //             let mut instances = instances.borrow_mut();
-            //             if let Some(instance) = instances.get_mut(index) {
-            //                 instance.core.lock().unwrap().set_is_playing(true);
-            //             }
-            //         });
-            //     }) as Box<dyn FnMut(Event)>);
-            //     let canvas_events: &EventTarget = canvas.as_ref();
-            //     canvas_events
-            //         .add_event_listener_with_callback(
-            //             "click",
-            //             click_callback.as_ref().unchecked_ref(),
-            //         )
-            //         .unwrap();
-            //     canvas.style().set_property("cursor", "pointer").unwrap();
-            //     let instance = instances.get_mut(index).unwrap();
-            //     instance.click_callback = Some(click_callback);
-            //     // Do initial render to render "click-to-play".
-            //     instance.core.render();
-            // }
+            // Create mouse wheel handler.
+            {
+                let mouse_wheel_callback = Closure::wrap(Box::new(move |js_event: WheelEvent| {
+                    INSTANCES.with(move |instances| {
+                        let mut instances = instances.borrow_mut();
+                        if let Some(instance) = instances.get_mut(index) {
+                            let delta = match js_event.delta_mode() {
+                                WheelEvent::DOM_DELTA_LINE => {
+                                    MouseWheelDelta::Lines(-js_event.delta_y())
+                                }
+                                WheelEvent::DOM_DELTA_PIXEL => {
+                                    MouseWheelDelta::Pixels(-js_event.delta_y())
+                                }
+                                _ => return,
+                            };
+                            let mut core = instance.core.lock().unwrap();
+                            core.handle_event(PlayerEvent::MouseWheel { delta });
+                            if core.should_prevent_scrolling() {
+                                js_event.prevent_default();
+                            }
+                        }
+                    });
+                })
+                    as Box<dyn FnMut(WheelEvent)>);
+                let canvas_events: &EventTarget = canvas.as_ref();
+                let mut options = AddEventListenerOptions::new();
+                options.passive(false);
+                canvas_events
+                    .add_event_listener_with_callback_and_add_event_listener_options(
+                        "wheel",
+                        mouse_wheel_callback.as_ref().unchecked_ref(),
+                        &options,
+                    )
+                    .unwrap();
+                let instance = instances.get_mut(index).unwrap();
+                instance.mouse_wheel_callback = Some(mouse_wheel_callback);
+            }
 
             // Create keydown event handler.
             {
