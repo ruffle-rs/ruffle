@@ -960,6 +960,18 @@ impl Player {
                         &args,
                     );
                 }
+
+                ActionType::Callable2 {
+                    callable,
+                    reciever,
+                    args,
+                } => {
+                    if let Err(e) =
+                        Avm2::run_stack_frame_for_callable(callable, reciever, &args[..], context)
+                    {
+                        log::error!("Unhandled AVM2 exception in event handler: {}", e);
+                    }
+                }
             }
         }
     }
