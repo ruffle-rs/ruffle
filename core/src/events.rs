@@ -9,7 +9,28 @@ pub enum PlayerEvent {
     MouseUp { x: f64, y: f64 },
     MouseDown { x: f64, y: f64 },
     MouseLeft,
+    MouseWheel { delta: MouseWheelDelta },
     TextInput { codepoint: char },
+}
+
+/// The distance scrolled by the mouse wheel.
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum MouseWheelDelta {
+    Lines(f64),
+    Pixels(f64),
+}
+
+impl MouseWheelDelta {
+    const MOUSE_WHEEL_SCALE: f64 = 100.0;
+
+    /// Returns the number of lines that this delta represents.
+    pub fn lines(self) -> f64 {
+        // TODO: Should we always return an integer here?
+        match self {
+            Self::Lines(delta) => delta,
+            Self::Pixels(delta) => delta / Self::MOUSE_WHEEL_SCALE,
+        }
+    }
 }
 
 /// Whether this button event was handled by some child.
