@@ -55,6 +55,7 @@ pub struct MovieClipData<'gc> {
     object: Option<AvmObject<'gc>>,
     clip_actions: Vec<ClipAction>,
     frame_scripts: Vec<Avm2FrameScript<'gc>>,
+    last_frame_script_run: Option<FrameNumber>,
     has_button_clip_event: bool,
     flags: EnumSet<MovieClipFlags>,
     avm_constructor: Option<AvmObject<'gc>>,
@@ -90,6 +91,7 @@ impl<'gc> MovieClip<'gc> {
                 object: None,
                 clip_actions: Vec::new(),
                 frame_scripts: Vec::new(),
+                last_frame_script_run: None,
                 has_button_clip_event: false,
                 flags: EnumSet::empty(),
                 avm_constructor: None,
@@ -126,6 +128,7 @@ impl<'gc> MovieClip<'gc> {
                 object: None,
                 clip_actions: Vec::new(),
                 frame_scripts: Vec::new(),
+                last_frame_script_run: None,
                 has_button_clip_event: false,
                 flags: MovieClipFlags::Playing.into(),
                 avm_constructor: None,
@@ -1473,8 +1476,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         {
             let frame_id = self.0.read().current_frame;
 
-            if self.playing() {
+            if self
+                .0
+                .read()
+                .last_frame_script_run
+                .map(|lfsr| lfsr != frame_id)
+                .unwrap_or(true)
+            {
                 self.run_frame_scripts(frame_id, context);
+                self.0.write(context.gc_context).last_frame_script_run = Some(frame_id);
             }
         }
     }
