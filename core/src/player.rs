@@ -307,7 +307,7 @@ impl Player {
         self.swf = movie;
 
         self.mutate_with_update_context(|context| {
-            let mut root: DisplayObject =
+            let root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
             root.set_depth(context.gc_context, 0);
             root.post_instantiation(context, root, None, false);
@@ -740,7 +740,7 @@ impl Player {
             // want to run frames on
             let levels: Vec<_> = update_context.levels.values().copied().collect();
 
-            for mut level in levels {
+            for level in levels {
                 level.run_frame(update_context);
             }
         });

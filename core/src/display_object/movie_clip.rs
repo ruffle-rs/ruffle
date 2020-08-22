@@ -535,7 +535,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn add_child_from_avm(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        mut child: DisplayObject<'gc>,
+        child: DisplayObject<'gc>,
         depth: Depth,
     ) {
         let mut parent = self.0.write(context.gc_context);
@@ -753,7 +753,7 @@ impl<'gc> MovieClip<'gc> {
         place_object: &swf::PlaceObject,
         copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
-        if let Ok(mut child) = context
+        if let Ok(child) = context
             .library
             .library_for_movie_mut(self.movie().unwrap()) //TODO
             .instantiate_by_id(id, context.gc_context)
@@ -948,11 +948,11 @@ impl<'gc> MovieClip<'gc> {
                 // If the ID is 0, we are modifying a previous child. Otherwise, we're replacing it.
                 // If it's a rewind, we removed any dead children above, so we always
                 // modify the previous child.
-                Some(mut prev_child) if params.id() == 0 || is_rewind => {
+                Some(prev_child) if params.id() == 0 || is_rewind => {
                     prev_child.apply_place_object(context.gc_context, &params.place_object);
                 }
                 _ => {
-                    if let Some(mut child) = clip.instantiate_child(
+                    if let Some(child) = clip.instantiate_child(
                         self_display_object,
                         context,
                         params.id(),
@@ -1012,9 +1012,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Some(self.0.read().movie())
     }
 
-    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
-        for mut child in self.children() {
+        for child in self.children() {
             child.run_frame(context);
         }
 
@@ -1118,7 +1118,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn post_instantiation(
-        &mut self,
+        &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         init_object: Option<Object<'gc>>,
@@ -1228,8 +1228,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .unwrap_or(Value::Undefined)
     }
 
-    fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        for mut child in self.children() {
+    fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.children() {
             child.unload(context);
         }
 
@@ -1374,7 +1374,7 @@ impl<'gc> MovieClipData<'gc> {
     fn remove_child_from_exec_list(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        mut child: DisplayObject<'gc>,
+        child: DisplayObject<'gc>,
     ) {
         // Remove from children linked list.
         let prev = child.prev_sibling();
@@ -2264,7 +2264,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 }
             }
             PlaceObjectAction::Modify => {
-                if let Some(mut child) = self
+                if let Some(child) = self
                     .0
                     .read()
                     .children

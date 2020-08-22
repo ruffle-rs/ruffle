@@ -249,7 +249,7 @@ impl<'gc> EditText<'gc> {
             is_device_font: false,
         };
 
-        let mut text_field = Self::from_swf_tag(context, swf_movie, swf_tag);
+        let text_field = Self::from_swf_tag(context, swf_movie, swf_tag);
 
         // Set position.
         let mut matrix = text_field.matrix_mut(context.gc_context);
@@ -834,7 +834,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         Some(self.0.read().static_data.swf.clone())
     }
 
-    fn run_frame(&mut self, _context: &mut UpdateContext) {
+    fn run_frame(&self, _context: &mut UpdateContext) {
         // Noop
     }
 
@@ -843,7 +843,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn post_instantiation(
-        &mut self,
+        &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -915,7 +915,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         (edit_text.base.transform.matrix.tx + offset).to_pixels()
     }
 
-    fn set_x(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_x(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let mut edit_text = self.0.write(gc_context);
         let offset = edit_text.bounds.x_min;
         edit_text.base.transform.matrix.tx = Twips::from_pixels(value) - offset;
@@ -930,7 +930,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         (edit_text.base.transform.matrix.ty + offset).to_pixels()
     }
 
-    fn set_y(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_y(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let mut edit_text = self.0.write(gc_context);
         let offset = edit_text.bounds.y_min;
         edit_text.base.transform.matrix.ty = Twips::from_pixels(value) - offset;
@@ -943,7 +943,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.read().bounds.width().to_pixels()
     }
 
-    fn set_width(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let mut write = self.0.write(gc_context);
 
         write.bounds.set_width(Twips::from_pixels(value));
@@ -957,7 +957,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.read().bounds.height().to_pixels()
     }
 
-    fn set_height(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let mut write = self.0.write(gc_context);
 
         write.bounds.set_height(Twips::from_pixels(value));
@@ -967,7 +967,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.redraw_border(gc_context);
     }
 
-    fn set_matrix(&mut self, context: MutationContext<'gc, '_>, matrix: &Matrix) {
+    fn set_matrix(&self, context: MutationContext<'gc, '_>, matrix: &Matrix) {
         self.0.write(context).base.set_matrix(context, matrix);
         self.redraw_border(context);
     }
@@ -1016,7 +1016,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         false
     }
 
-    fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Unbind any display objects bound to this text.
         if let Some(stage_object) = self.0.write(context.gc_context).bound_stage_object.take() {
             stage_object.clear_text_field_binding(context.gc_context, *self);

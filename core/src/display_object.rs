@@ -417,16 +417,16 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     }
 
     fn place_frame(&self) -> u16;
-    fn set_place_frame(&mut self, context: MutationContext<'gc, '_>, frame: u16);
+    fn set_place_frame(&self, context: MutationContext<'gc, '_>, frame: u16);
 
     fn transform(&self) -> Ref<Transform>;
     fn matrix(&self) -> Ref<Matrix>;
-    fn matrix_mut(&mut self, context: MutationContext<'gc, '_>) -> RefMut<Matrix>;
-    fn set_matrix(&mut self, context: MutationContext<'gc, '_>, matrix: &Matrix);
+    fn matrix_mut(&self, context: MutationContext<'gc, '_>) -> RefMut<Matrix>;
+    fn set_matrix(&self, context: MutationContext<'gc, '_>, matrix: &Matrix);
     fn color_transform(&self) -> Ref<ColorTransform>;
     fn color_transform_mut(&self, context: MutationContext<'gc, '_>) -> RefMut<ColorTransform>;
     fn set_color_transform(
-        &mut self,
+        &self,
         context: MutationContext<'gc, '_>,
         color_transform: &ColorTransform,
     );
@@ -472,7 +472,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
     /// Sets the `x` position in pixels of this display object in local space.
     /// Set by the `_x`/`x` ActionScript properties.
-    fn set_x(&mut self, gc_context: MutationContext<'gc, '_>, value: f64);
+    fn set_x(&self, gc_context: MutationContext<'gc, '_>, value: f64);
 
     /// The `y` position in pixels of this display object in local space.
     /// Returned by the `_y`/`y` ActionScript properties.
@@ -480,39 +480,39 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
     /// Sets the `y` position in pixels of this display object in local space.
     /// Set by the `_y`/`y` ActionScript properties.
-    fn set_y(&mut self, gc_context: MutationContext<'gc, '_>, value: f64);
+    fn set_y(&self, gc_context: MutationContext<'gc, '_>, value: f64);
 
     /// The rotation in radians this display object in local space.
     /// Returned by the `_rotation`/`rotation` ActionScript properties.
     /// Note that the ActionScript properties return the angle in degrees;
     /// the conversion to degrees is done in the AVM.
-    fn rotation(&mut self, gc_context: MutationContext<'gc, '_>) -> f64;
+    fn rotation(&self, gc_context: MutationContext<'gc, '_>) -> f64;
 
     /// Sets the rotation in radians this display object in local space.
     /// Set by the `_rotation`/`rotation` ActionScript properties.
     /// Note that the ActionScript properties set the angle in degrees;
     /// the conversion to radians is done in the AVM.
-    fn set_rotation(&mut self, gc_context: MutationContext<'gc, '_>, radians: f64);
+    fn set_rotation(&self, gc_context: MutationContext<'gc, '_>, radians: f64);
 
     /// The X axis scale for this display object in local space.
     /// The normal scale is 1.
     /// Returned by the `_xscale`/`scaleX` ActionScript properties.
-    fn scale_x(&mut self, gc_context: MutationContext<'gc, '_>) -> f64;
+    fn scale_x(&self, gc_context: MutationContext<'gc, '_>) -> f64;
 
     /// Sets the scale of the X axis for this display object in local space.
     /// The normal scale is 1.
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
-    fn set_scale_x(&mut self, gc_context: MutationContext<'gc, '_>, value: f64);
+    fn set_scale_x(&self, gc_context: MutationContext<'gc, '_>, value: f64);
 
     /// The Y axis scale for this display object in local space.
     /// The normal scale is 1.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
-    fn scale_y(&mut self, gc_context: MutationContext<'gc, '_>) -> f64;
+    fn scale_y(&self, gc_context: MutationContext<'gc, '_>) -> f64;
 
     /// Sets the Y axis scale for this display object in local space.
     /// The normal scale is 1.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
-    fn set_scale_y(&mut self, gc_context: MutationContext<'gc, '_>, value: f64);
+    fn set_scale_y(&self, gc_context: MutationContext<'gc, '_>, value: f64);
 
     /// Sets the pixel width of this display object in local space.
     /// The width is based on the AABB of the object.
@@ -526,7 +526,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     /// The width is based on the AABB of the object.
     /// Set by the ActionScript `_width`/`width` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
-    fn set_width(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let object_bounds = self.bounds();
         let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
         let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
@@ -563,7 +563,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     /// Sets the pixel height of this display object in local space.
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
-    fn set_height(&mut self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let object_bounds = self.bounds();
         let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
         let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
@@ -601,7 +601,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     /// Set by the `_alpha`/`alpha` ActionScript properties.
     fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64);
     fn name(&self) -> Ref<str>;
-    fn set_name(&mut self, context: MutationContext<'gc, '_>, name: &str);
+    fn set_name(&self, context: MutationContext<'gc, '_>, name: &str);
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
     fn path(&self) -> String {
@@ -630,7 +630,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     }
 
     fn clip_depth(&self) -> Depth;
-    fn set_clip_depth(&mut self, context: MutationContext<'gc, '_>, depth: Depth);
+    fn set_clip_depth(&self, context: MutationContext<'gc, '_>, depth: Depth);
     fn parent(&self) -> Option<DisplayObject<'gc>>;
     fn set_parent(&self, context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
     fn first_child(&self) -> Option<DisplayObject<'gc>>;
@@ -680,7 +680,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         None
     }
     fn removed(&self) -> bool;
-    fn set_removed(&mut self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_removed(&self, context: MutationContext<'gc, '_>, value: bool);
 
     /// Whether this display object is visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
@@ -690,7 +690,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     /// Sets whether this display object will be visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
-    fn set_visible(&mut self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_visible(&self, context: MutationContext<'gc, '_>, value: bool);
 
     /// Whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
@@ -711,12 +711,12 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         ClipEventResult::NotHandled
     }
 
-    fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
+    fn run_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
-    fn unload(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Unload children.
-        for mut child in self.children() {
+        for child in self.children() {
             child.unload(context);
         }
 
@@ -743,7 +743,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
         None
     }
     fn apply_place_object(
-        &mut self,
+        &self,
         gc_context: MutationContext<'gc, '_>,
         place_object: &swf::PlaceObject,
     ) {
@@ -786,7 +786,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     }
 
     fn copy_display_properties_from(
-        &mut self,
+        &self,
         gc_context: MutationContext<'gc, '_>,
         other: DisplayObject<'gc>,
     ) {
@@ -823,7 +823,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     }
 
     fn post_instantiation(
-        &mut self,
+        &self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -883,7 +883,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     }
 
     /// Assigns a default instance name `instanceN` to this object.
-    fn set_default_instance_name(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn set_default_instance_name(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.name().is_empty() {
             let name = format!("instance{}", *context.instance_counter);
             self.set_name(context.gc_context, &name);
@@ -924,7 +924,7 @@ macro_rules! impl_display_object_sansbounds {
         fn place_frame(&self) -> u16 {
             self.0.read().$field.place_frame()
         }
-        fn set_place_frame(&mut self, context: gc_arena::MutationContext<'gc, '_>, frame: u16) {
+        fn set_place_frame(&self, context: gc_arena::MutationContext<'gc, '_>, frame: u16) {
             self.0.write(context).$field.set_place_frame(context, frame)
         }
         fn transform(&self) -> std::cell::Ref<crate::transform::Transform> {
@@ -934,7 +934,7 @@ macro_rules! impl_display_object_sansbounds {
             std::cell::Ref::map(self.0.read(), |o| o.$field.matrix())
         }
         fn matrix_mut(
-            &mut self,
+            &self,
             context: gc_arena::MutationContext<'gc, '_>,
         ) -> std::cell::RefMut<swf::Matrix> {
             std::cell::RefMut::map(self.0.write(context), |o| o.$field.matrix_mut(context))
@@ -949,7 +949,7 @@ macro_rules! impl_display_object_sansbounds {
             std::cell::RefMut::map(self.0.write(context), |o| o.$field.color_transform_mut())
         }
         fn set_color_transform(
-            &mut self,
+            &self,
             context: gc_arena::MutationContext<'gc, '_>,
             color_transform: &crate::color_transform::ColorTransform,
         ) {
@@ -958,22 +958,22 @@ macro_rules! impl_display_object_sansbounds {
                 .$field
                 .set_color_transform(context, color_transform)
         }
-        fn rotation(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
+        fn rotation(&self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
             self.0.write(gc_context).$field.rotation()
         }
-        fn set_rotation(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, radians: f64) {
+        fn set_rotation(&self, gc_context: gc_arena::MutationContext<'gc, '_>, radians: f64) {
             self.0.write(gc_context).$field.set_rotation(radians)
         }
-        fn scale_x(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
+        fn scale_x(&self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
             self.0.write(gc_context).$field.scale_x()
         }
-        fn set_scale_x(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+        fn set_scale_x(&self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
             self.0.write(gc_context).$field.set_scale_x(value)
         }
-        fn scale_y(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
+        fn scale_y(&self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
             self.0.write(gc_context).$field.scale_y()
         }
-        fn set_scale_y(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+        fn set_scale_y(&self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
             self.0.write(gc_context).$field.set_scale_y(value)
         }
         fn alpha(&self) -> f64 {
@@ -985,14 +985,14 @@ macro_rules! impl_display_object_sansbounds {
         fn name(&self) -> std::cell::Ref<str> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.name())
         }
-        fn set_name(&mut self, context: gc_arena::MutationContext<'gc, '_>, name: &str) {
+        fn set_name(&self, context: gc_arena::MutationContext<'gc, '_>, name: &str) {
             self.0.write(context).$field.set_name(context, name)
         }
         fn clip_depth(&self) -> crate::prelude::Depth {
             self.0.read().$field.clip_depth()
         }
         fn set_clip_depth(
-            &mut self,
+            &self,
             context: gc_arena::MutationContext<'gc, '_>,
             depth: crate::prelude::Depth,
         ) {
@@ -1041,13 +1041,13 @@ macro_rules! impl_display_object_sansbounds {
         fn removed(&self) -> bool {
             self.0.read().$field.removed()
         }
-        fn set_removed(&mut self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+        fn set_removed(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_removed(value)
         }
         fn visible(&self) -> bool {
             self.0.read().$field.visible()
         }
-        fn set_visible(&mut self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+        fn set_visible(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_visible(value);
         }
         fn transformed_by_script(&self) -> bool {
@@ -1091,20 +1091,16 @@ macro_rules! impl_display_object {
         fn x(&self) -> f64 {
             self.0.read().$field.x()
         }
-        fn set_x(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+        fn set_x(&self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
             self.0.write(gc_context).$field.set_x(value)
         }
         fn y(&self) -> f64 {
             self.0.read().$field.y()
         }
-        fn set_y(&mut self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
+        fn set_y(&self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
             self.0.write(gc_context).$field.set_y(value)
         }
-        fn set_matrix(
-            &mut self,
-            context: gc_arena::MutationContext<'gc, '_>,
-            matrix: &swf::Matrix,
-        ) {
+        fn set_matrix(&self, context: gc_arena::MutationContext<'gc, '_>, matrix: &swf::Matrix) {
             self.0.write(context).$field.set_matrix(context, matrix)
         }
     };

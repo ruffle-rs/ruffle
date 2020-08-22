@@ -140,7 +140,7 @@ fn color_transform<'gc>(
 
 fn set_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut clip: MovieClip<'gc>,
+    clip: MovieClip<'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let as_color_transform = value.coerce_to_object(activation);
@@ -165,7 +165,7 @@ fn matrix<'gc>(
 
 fn set_matrix<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut clip: MovieClip<'gc>,
+    clip: MovieClip<'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let as_matrix = value.coerce_to_object(activation);
@@ -205,7 +205,7 @@ fn pixel_bounds<'gc>(
 pub fn apply_to_display_object<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     transform: Object<'gc>,
-    mut display_object: DisplayObject<'gc>,
+    display_object: DisplayObject<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(transform) = transform.as_transform_object() {
         if let Some(clip) = transform.clip() {

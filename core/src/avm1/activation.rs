@@ -2637,7 +2637,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if let Some(level) = self.context.levels.get(&level_id) {
             *level
         } else {
-            let mut level: DisplayObject<'_> = MovieClip::new(
+            let level: DisplayObject<'_> = MovieClip::new(
                 SwfSlice::empty(self.base_clip().movie().unwrap()),
                 self.context.gc_context,
             )
