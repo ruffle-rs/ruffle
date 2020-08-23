@@ -387,6 +387,11 @@ fn test_swf_approx(
     for (actual, expected) in trace_log.lines().zip(expected_data.lines()) {
         // If these are numbers, compare using approx_eq.
         if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
+            // NaNs should be able to pass in an approx test.
+            if actual.is_nan() && expected.is_nan() {
+                continue;
+            }
+
             // TODO: Lower this epsilon as the accuracy of the properties improves.
             assert_abs_diff_eq!(actual, expected, epsilon = epsilon);
         } else {
