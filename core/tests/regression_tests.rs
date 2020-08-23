@@ -323,6 +323,7 @@ swf_tests_approx! {
     (edittext_bullet, "avm1/edittext_bullet", 1, 3.0),
     (edittext_underline, "avm1/edittext_underline", 1, 4.0),
     (as3_coerce_string_precision, "avm2/coerce_string_precision", 1, 10_000_000.0),
+    (as3_divide, "avm2/divide", 1, 0.0), // TODO: Discrepancy in float formatting.
 }
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.

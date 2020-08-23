@@ -1,0 +1,1058 @@
+//true / true
+1
+//false / true
+0
+//null / true
+0
+//undefined / true
+NaN
+//"" / true
+0
+//"str" / true
+NaN
+//"true" / true
+NaN
+//"false" / true
+NaN
+//0.0 / true
+0
+//NaN / true
+NaN
+//-0.0 / true
+0
+//Infinity / true
+Infinity
+//1.0 / true
+1
+//-1.0 / true
+-1
+//0xFF1306 / true
+16716550
+//new Object() / true
+NaN
+//"0.0" / true
+0
+//"NaN" / true
+NaN
+//"-0.0" / true
+0
+//"Infinity" / true
+Infinity
+//"1.0" / true
+1
+//"-1.0" / true
+-1
+//"0xFF1306" / true
+16716550
+//true / false
+Infinity
+//false / false
+NaN
+//null / false
+NaN
+//undefined / false
+NaN
+//"" / false
+NaN
+//"str" / false
+NaN
+//"true" / false
+NaN
+//"false" / false
+NaN
+//0.0 / false
+NaN
+//NaN / false
+NaN
+//-0.0 / false
+NaN
+//Infinity / false
+Infinity
+//1.0 / false
+Infinity
+//-1.0 / false
+-Infinity
+//0xFF1306 / false
+Infinity
+//new Object() / false
+NaN
+//"0.0" / false
+NaN
+//"NaN" / false
+NaN
+//"-0.0" / false
+NaN
+//"Infinity" / false
+Infinity
+//"1.0" / false
+Infinity
+//"-1.0" / false
+-Infinity
+//"0xFF1306" / false
+Infinity
+//true / null
+Infinity
+//false / null
+NaN
+//null / null
+NaN
+//undefined / null
+NaN
+//"" / null
+NaN
+//"str" / null
+NaN
+//"true" / null
+NaN
+//"false" / null
+NaN
+//0.0 / null
+NaN
+//NaN / null
+NaN
+//-0.0 / null
+NaN
+//Infinity / null
+Infinity
+//1.0 / null
+Infinity
+//-1.0 / null
+-Infinity
+//0xFF1306 / null
+Infinity
+//new Object() / null
+NaN
+//"0.0" / null
+NaN
+//"NaN" / null
+NaN
+//"-0.0" / null
+NaN
+//"Infinity" / null
+Infinity
+//"1.0" / null
+Infinity
+//"-1.0" / null
+-Infinity
+//"0xFF1306" / null
+Infinity
+//true / undefined
+NaN
+//false / undefined
+NaN
+//null / undefined
+NaN
+//undefined / undefined
+NaN
+//"" / undefined
+NaN
+//"str" / undefined
+NaN
+//"true" / undefined
+NaN
+//"false" / undefined
+NaN
+//0.0 / undefined
+NaN
+//NaN / undefined
+NaN
+//-0.0 / undefined
+NaN
+//Infinity / undefined
+NaN
+//1.0 / undefined
+NaN
+//-1.0 / undefined
+NaN
+//0xFF1306 / undefined
+NaN
+//new Object() / undefined
+NaN
+//"0.0" / undefined
+NaN
+//"NaN" / undefined
+NaN
+//"-0.0" / undefined
+NaN
+//"Infinity" / undefined
+NaN
+//"1.0" / undefined
+NaN
+//"-1.0" / undefined
+NaN
+//"0xFF1306" / undefined
+NaN
+//true / ""
+Infinity
+//false / ""
+NaN
+//null / ""
+NaN
+//undefined / ""
+NaN
+//"" / ""
+NaN
+//"str" / ""
+NaN
+//"true" / ""
+NaN
+//"false" / ""
+NaN
+//0.0 / ""
+NaN
+//NaN / ""
+NaN
+//-0.0 / ""
+NaN
+//Infinity / ""
+Infinity
+//1.0 / ""
+Infinity
+//-1.0 / ""
+-Infinity
+//0xFF1306 / ""
+Infinity
+//new Object() / ""
+NaN
+//"0.0" / ""
+NaN
+//"NaN" / ""
+NaN
+//"-0.0" / ""
+NaN
+//"Infinity" / ""
+Infinity
+//"1.0" / ""
+Infinity
+//"-1.0" / ""
+-Infinity
+//"0xFF1306" / ""
+Infinity
+//true / "str"
+NaN
+//false / "str"
+NaN
+//null / "str"
+NaN
+//undefined / "str"
+NaN
+//"" / "str"
+NaN
+//"str" / "str"
+NaN
+//"true" / "str"
+NaN
+//"false" / "str"
+NaN
+//0.0 / "str"
+NaN
+//NaN / "str"
+NaN
+//-0.0 / "str"
+NaN
+//Infinity / "str"
+NaN
+//1.0 / "str"
+NaN
+//-1.0 / "str"
+NaN
+//0xFF1306 / "str"
+NaN
+//new Object() / "str"
+NaN
+//"0.0" / "str"
+NaN
+//"NaN" / "str"
+NaN
+//"-0.0" / "str"
+NaN
+//"Infinity" / "str"
+NaN
+//"1.0" / "str"
+NaN
+//"-1.0" / "str"
+NaN
+//"0xFF1306" / "str"
+NaN
+//true / "true"
+NaN
+//false / "true"
+NaN
+//null / "true"
+NaN
+//undefined / "true"
+NaN
+//"" / "true"
+NaN
+//"str" / "true"
+NaN
+//"true" / "true"
+NaN
+//"false" / "true"
+NaN
+//0.0 / "true"
+NaN
+//NaN / "true"
+NaN
+//-0.0 / "true"
+NaN
+//Infinity / "true"
+NaN
+//1.0 / "true"
+NaN
+//-1.0 / "true"
+NaN
+//0xFF1306 / "true"
+NaN
+//new Object() / "true"
+NaN
+//"0.0" / "true"
+NaN
+//"NaN" / "true"
+NaN
+//"-0.0" / "true"
+NaN
+//"Infinity" / "true"
+NaN
+//"1.0" / "true"
+NaN
+//"-1.0" / "true"
+NaN
+//"0xFF1306" / "true"
+NaN
+//true / "false"
+NaN
+//false / "false"
+NaN
+//null / "false"
+NaN
+//undefined / "false"
+NaN
+//"" / "false"
+NaN
+//"str" / "false"
+NaN
+//"true" / "false"
+NaN
+//"false" / "false"
+NaN
+//0.0 / "false"
+NaN
+//NaN / "false"
+NaN
+//-0.0 / "false"
+NaN
+//Infinity / "false"
+NaN
+//1.0 / "false"
+NaN
+//-1.0 / "false"
+NaN
+//0xFF1306 / "false"
+NaN
+//new Object() / "false"
+NaN
+//"0.0" / "false"
+NaN
+//"NaN" / "false"
+NaN
+//"-0.0" / "false"
+NaN
+//"Infinity" / "false"
+NaN
+//"1.0" / "false"
+NaN
+//"-1.0" / "false"
+NaN
+//"0xFF1306" / "false"
+NaN
+//true / 0.0
+Infinity
+//false / 0.0
+NaN
+//null / 0.0
+NaN
+//undefined / 0.0
+NaN
+//"" / 0.0
+NaN
+//"str" / 0.0
+NaN
+//"true" / 0.0
+NaN
+//"false" / 0.0
+NaN
+//0.0 / 0.0
+NaN
+//NaN / 0.0
+NaN
+//-0.0 / 0.0
+NaN
+//Infinity / 0.0
+Infinity
+//1.0 / 0.0
+Infinity
+//-1.0 / 0.0
+-Infinity
+//0xFF1306 / 0.0
+Infinity
+//new Object() / 0.0
+NaN
+//"0.0" / 0.0
+NaN
+//"NaN" / 0.0
+NaN
+//"-0.0" / 0.0
+NaN
+//"Infinity" / 0.0
+Infinity
+//"1.0" / 0.0
+Infinity
+//"-1.0" / 0.0
+-Infinity
+//"0xFF1306" / 0.0
+Infinity
+//true / NaN
+NaN
+//false / NaN
+NaN
+//null / NaN
+NaN
+//undefined / NaN
+NaN
+//"" / NaN
+NaN
+//"str" / NaN
+NaN
+//"true" / NaN
+NaN
+//"false" / NaN
+NaN
+//0.0 / NaN
+NaN
+//NaN / NaN
+NaN
+//-0.0 / NaN
+NaN
+//Infinity / NaN
+NaN
+//1.0 / NaN
+NaN
+//-1.0 / NaN
+NaN
+//0xFF1306 / NaN
+NaN
+//new Object() / NaN
+NaN
+//"0.0" / NaN
+NaN
+//"NaN" / NaN
+NaN
+//"-0.0" / NaN
+NaN
+//"Infinity" / NaN
+NaN
+//"1.0" / NaN
+NaN
+//"-1.0" / NaN
+NaN
+//"0xFF1306" / NaN
+NaN
+//true / -0.0
+-Infinity
+//false / -0.0
+NaN
+//null / -0.0
+NaN
+//undefined / -0.0
+NaN
+//"" / -0.0
+NaN
+//"str" / -0.0
+NaN
+//"true" / -0.0
+NaN
+//"false" / -0.0
+NaN
+//0.0 / -0.0
+NaN
+//NaN / -0.0
+NaN
+//-0.0 / -0.0
+NaN
+//Infinity / -0.0
+-Infinity
+//1.0 / -0.0
+-Infinity
+//-1.0 / -0.0
+Infinity
+//0xFF1306 / -0.0
+-Infinity
+//new Object() / -0.0
+NaN
+//"0.0" / -0.0
+NaN
+//"NaN" / -0.0
+NaN
+//"-0.0" / -0.0
+NaN
+//"Infinity" / -0.0
+-Infinity
+//"1.0" / -0.0
+-Infinity
+//"-1.0" / -0.0
+Infinity
+//"0xFF1306" / -0.0
+-Infinity
+//true / Infinity
+0
+//false / Infinity
+0
+//null / Infinity
+0
+//undefined / Infinity
+NaN
+//"" / Infinity
+0
+//"str" / Infinity
+NaN
+//"true" / Infinity
+NaN
+//"false" / Infinity
+NaN
+//0.0 / Infinity
+0
+//NaN / Infinity
+NaN
+//-0.0 / Infinity
+0
+//Infinity / Infinity
+NaN
+//1.0 / Infinity
+0
+//-1.0 / Infinity
+0
+//0xFF1306 / Infinity
+0
+//new Object() / Infinity
+NaN
+//"0.0" / Infinity
+0
+//"NaN" / Infinity
+NaN
+//"-0.0" / Infinity
+0
+//"Infinity" / Infinity
+NaN
+//"1.0" / Infinity
+0
+//"-1.0" / Infinity
+0
+//"0xFF1306" / Infinity
+0
+//true / 1.0
+1
+//false / 1.0
+0
+//null / 1.0
+0
+//undefined / 1.0
+NaN
+//"" / 1.0
+0
+//"str" / 1.0
+NaN
+//"true" / 1.0
+NaN
+//"false" / 1.0
+NaN
+//0.0 / 1.0
+0
+//NaN / 1.0
+NaN
+//-0.0 / 1.0
+0
+//Infinity / 1.0
+Infinity
+//1.0 / 1.0
+1
+//-1.0 / 1.0
+-1
+//0xFF1306 / 1.0
+16716550
+//new Object() / 1.0
+NaN
+//"0.0" / 1.0
+0
+//"NaN" / 1.0
+NaN
+//"-0.0" / 1.0
+0
+//"Infinity" / 1.0
+Infinity
+//"1.0" / 1.0
+1
+//"-1.0" / 1.0
+-1
+//"0xFF1306" / 1.0
+16716550
+//true / -1.0
+-1
+//false / -1.0
+0
+//null / -1.0
+0
+//undefined / -1.0
+NaN
+//"" / -1.0
+0
+//"str" / -1.0
+NaN
+//"true" / -1.0
+NaN
+//"false" / -1.0
+NaN
+//0.0 / -1.0
+0
+//NaN / -1.0
+NaN
+//-0.0 / -1.0
+0
+//Infinity / -1.0
+-Infinity
+//1.0 / -1.0
+-1
+//-1.0 / -1.0
+1
+//0xFF1306 / -1.0
+-16716550
+//new Object() / -1.0
+NaN
+//"0.0" / -1.0
+0
+//"NaN" / -1.0
+NaN
+//"-0.0" / -1.0
+0
+//"Infinity" / -1.0
+-Infinity
+//"1.0" / -1.0
+-1
+//"-1.0" / -1.0
+1
+//"0xFF1306" / -1.0
+-16716550
+//true / 0xFF1306
+5.9820955879054e-8
+//false / 0xFF1306
+0
+//null / 0xFF1306
+0
+//undefined / 0xFF1306
+NaN
+//"" / 0xFF1306
+0
+//"str" / 0xFF1306
+NaN
+//"true" / 0xFF1306
+NaN
+//"false" / 0xFF1306
+NaN
+//0.0 / 0xFF1306
+0
+//NaN / 0xFF1306
+NaN
+//-0.0 / 0xFF1306
+0
+//Infinity / 0xFF1306
+Infinity
+//1.0 / 0xFF1306
+5.9820955879054e-8
+//-1.0 / 0xFF1306
+-5.9820955879054e-8
+//0xFF1306 / 0xFF1306
+1
+//new Object() / 0xFF1306
+NaN
+//"0.0" / 0xFF1306
+0
+//"NaN" / 0xFF1306
+NaN
+//"-0.0" / 0xFF1306
+0
+//"Infinity" / 0xFF1306
+Infinity
+//"1.0" / 0xFF1306
+5.9820955879054e-8
+//"-1.0" / 0xFF1306
+-5.9820955879054e-8
+//"0xFF1306" / 0xFF1306
+1
+//true / new Object()
+NaN
+//false / new Object()
+NaN
+//null / new Object()
+NaN
+//undefined / new Object()
+NaN
+//"" / new Object()
+NaN
+//"str" / new Object()
+NaN
+//"true" / new Object()
+NaN
+//"false" / new Object()
+NaN
+//0.0 / new Object()
+NaN
+//NaN / new Object()
+NaN
+//-0.0 / new Object()
+NaN
+//Infinity / new Object()
+NaN
+//1.0 / new Object()
+NaN
+//-1.0 / new Object()
+NaN
+//0xFF1306 / new Object()
+NaN
+//new Object() / new Object()
+NaN
+//"0.0" / new Object()
+NaN
+//"NaN" / new Object()
+NaN
+//"-0.0" / new Object()
+NaN
+//"Infinity" / new Object()
+NaN
+//"1.0" / new Object()
+NaN
+//"-1.0" / new Object()
+NaN
+//"0xFF1306" / new Object()
+NaN
+//true / "0.0"
+Infinity
+//false / "0.0"
+NaN
+//null / "0.0"
+NaN
+//undefined / "0.0"
+NaN
+//"" / "0.0"
+NaN
+//"str" / "0.0"
+NaN
+//"true" / "0.0"
+NaN
+//"false" / "0.0"
+NaN
+//0.0 / "0.0"
+NaN
+//NaN / "0.0"
+NaN
+//-0.0 / "0.0"
+NaN
+//Infinity / "0.0"
+Infinity
+//1.0 / "0.0"
+Infinity
+//-1.0 / "0.0"
+-Infinity
+//0xFF1306 / "0.0"
+Infinity
+//new Object() / "0.0"
+NaN
+//"0.0" / "0.0"
+NaN
+//"NaN" / "0.0"
+NaN
+//"-0.0" / "0.0"
+NaN
+//"Infinity" / "0.0"
+Infinity
+//"1.0" / "0.0"
+Infinity
+//"-1.0" / "0.0"
+-Infinity
+//"0xFF1306" / "0.0"
+Infinity
+//true / "NaN"
+NaN
+//false / "NaN"
+NaN
+//null / "NaN"
+NaN
+//undefined / "NaN"
+NaN
+//"" / "NaN"
+NaN
+//"str" / "NaN"
+NaN
+//"true" / "NaN"
+NaN
+//"false" / "NaN"
+NaN
+//0.0 / "NaN"
+NaN
+//NaN / "NaN"
+NaN
+//-0.0 / "NaN"
+NaN
+//Infinity / "NaN"
+NaN
+//1.0 / "NaN"
+NaN
+//-1.0 / "NaN"
+NaN
+//0xFF1306 / "NaN"
+NaN
+//new Object() / "NaN"
+NaN
+//"0.0" / "NaN"
+NaN
+//"NaN" / "NaN"
+NaN
+//"-0.0" / "NaN"
+NaN
+//"Infinity" / "NaN"
+NaN
+//"1.0" / "NaN"
+NaN
+//"-1.0" / "NaN"
+NaN
+//"0xFF1306" / "NaN"
+NaN
+//true / "-0.0"
+-Infinity
+//false / "-0.0"
+NaN
+//null / "-0.0"
+NaN
+//undefined / "-0.0"
+NaN
+//"" / "-0.0"
+NaN
+//"str" / "-0.0"
+NaN
+//"true" / "-0.0"
+NaN
+//"false" / "-0.0"
+NaN
+//0.0 / "-0.0"
+NaN
+//NaN / "-0.0"
+NaN
+//-0.0 / "-0.0"
+NaN
+//Infinity / "-0.0"
+-Infinity
+//1.0 / "-0.0"
+-Infinity
+//-1.0 / "-0.0"
+Infinity
+//0xFF1306 / "-0.0"
+-Infinity
+//new Object() / "-0.0"
+NaN
+//"0.0" / "-0.0"
+NaN
+//"NaN" / "-0.0"
+NaN
+//"-0.0" / "-0.0"
+NaN
+//"Infinity" / "-0.0"
+-Infinity
+//"1.0" / "-0.0"
+-Infinity
+//"-1.0" / "-0.0"
+Infinity
+//"0xFF1306" / "-0.0"
+-Infinity
+//true / "Infinity"
+0
+//false / "Infinity"
+0
+//null / "Infinity"
+0
+//undefined / "Infinity"
+NaN
+//"" / "Infinity"
+0
+//"str" / "Infinity"
+NaN
+//"true" / "Infinity"
+NaN
+//"false" / "Infinity"
+NaN
+//0.0 / "Infinity"
+0
+//NaN / "Infinity"
+NaN
+//-0.0 / "Infinity"
+0
+//Infinity / "Infinity"
+NaN
+//1.0 / "Infinity"
+0
+//-1.0 / "Infinity"
+0
+//0xFF1306 / "Infinity"
+0
+//new Object() / "Infinity"
+NaN
+//"0.0" / "Infinity"
+0
+//"NaN" / "Infinity"
+NaN
+//"-0.0" / "Infinity"
+0
+//"Infinity" / "Infinity"
+NaN
+//"1.0" / "Infinity"
+0
+//"-1.0" / "Infinity"
+0
+//"0xFF1306" / "Infinity"
+0
+//true / "1.0"
+1
+//false / "1.0"
+0
+//null / "1.0"
+0
+//undefined / "1.0"
+NaN
+//"" / "1.0"
+0
+//"str" / "1.0"
+NaN
+//"true" / "1.0"
+NaN
+//"false" / "1.0"
+NaN
+//0.0 / "1.0"
+0
+//NaN / "1.0"
+NaN
+//-0.0 / "1.0"
+0
+//Infinity / "1.0"
+Infinity
+//1.0 / "1.0"
+1
+//-1.0 / "1.0"
+-1
+//0xFF1306 / "1.0"
+16716550
+//new Object() / "1.0"
+NaN
+//"0.0" / "1.0"
+0
+//"NaN" / "1.0"
+NaN
+//"-0.0" / "1.0"
+0
+//"Infinity" / "1.0"
+Infinity
+//"1.0" / "1.0"
+1
+//"-1.0" / "1.0"
+-1
+//"0xFF1306" / "1.0"
+16716550
+//true / "-1.0"
+-1
+//false / "-1.0"
+0
+//null / "-1.0"
+0
+//undefined / "-1.0"
+NaN
+//"" / "-1.0"
+0
+//"str" / "-1.0"
+NaN
+//"true" / "-1.0"
+NaN
+//"false" / "-1.0"
+NaN
+//0.0 / "-1.0"
+0
+//NaN / "-1.0"
+NaN
+//-0.0 / "-1.0"
+0
+//Infinity / "-1.0"
+-Infinity
+//1.0 / "-1.0"
+-1
+//-1.0 / "-1.0"
+1
+//0xFF1306 / "-1.0"
+-16716550
+//new Object() / "-1.0"
+NaN
+//"0.0" / "-1.0"
+0
+//"NaN" / "-1.0"
+NaN
+//"-0.0" / "-1.0"
+0
+//"Infinity" / "-1.0"
+-Infinity
+//"1.0" / "-1.0"
+-1
+//"-1.0" / "-1.0"
+1
+//"0xFF1306" / "-1.0"
+-16716550
+//true / "0xFF1306"
+5.9820955879054e-8
+//false / "0xFF1306"
+0
+//null / "0xFF1306"
+0
+//undefined / "0xFF1306"
+NaN
+//"" / "0xFF1306"
+0
+//"str" / "0xFF1306"
+NaN
+//"true" / "0xFF1306"
+NaN
+//"false" / "0xFF1306"
+NaN
+//0.0 / "0xFF1306"
+0
+//NaN / "0xFF1306"
+NaN
+//-0.0 / "0xFF1306"
+0
+//Infinity / "0xFF1306"
+Infinity
+//1.0 / "0xFF1306"
+5.9820955879054e-8
+//-1.0 / "0xFF1306"
+-5.9820955879054e-8
+//0xFF1306 / "0xFF1306"
+1
+//new Object() / "0xFF1306"
+NaN
+//"0.0" / "0xFF1306"
+0
+//"NaN" / "0xFF1306"
+NaN
+//"-0.0" / "0xFF1306"
+0
+//"Infinity" / "0xFF1306"
+Infinity
+//"1.0" / "0xFF1306"
+5.9820955879054e-8
+//"-1.0" / "0xFF1306"
+-5.9820955879054e-8
+//"0xFF1306" / "0xFF1306"
+1
