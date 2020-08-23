@@ -500,6 +500,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::MultiplyI => self.op_multiply_i(),
                 Op::Negate => self.op_negate(),
                 Op::NegateI => self.op_negate_i(),
+                Op::RShift => self.op_rshift(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -1638,6 +1639,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
 
         self.context.avm2.push(-value1);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_rshift(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_u32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 >> (value2 & 0x1F));
 
         Ok(FrameControl::Continue)
     }
