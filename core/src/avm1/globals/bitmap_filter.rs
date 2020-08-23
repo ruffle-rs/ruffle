@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
@@ -15,17 +15,11 @@ pub fn constructor<'gc>(
 }
 
 pub fn clone<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let proto = activation
-        .context
-        .avm1
-        .prototypes
-        .bitmap_filter_constructor;
-    let cloned = proto.construct(activation, &[])?;
-    Ok(cloned.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_proto<'gc>(
@@ -35,7 +29,6 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let mut object = ScriptObject::object(gc_context, Some(proto));
 
-    //TODO: attributes
     object.force_set_function("clone", clone, gc_context, EnumSet::empty(), fn_proto);
 
     object.into()
