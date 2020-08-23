@@ -310,6 +310,7 @@ swf_tests! {
     (as3_inclocal_i, "avm2/inclocal_i", 1),
     (as3_increment, "avm2/increment", 1),
     (as3_increment_i, "avm2/increment_i", 1),
+    (as3_lshift, "avm2/lshift", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

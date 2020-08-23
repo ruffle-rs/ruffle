@@ -494,6 +494,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::IncLocalI { index } => self.op_inclocal_i(index),
                 Op::Increment => self.op_increment(),
                 Op::IncrementI => self.op_increment_i(),
+                Op::LShift => self.op_lshift(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -1580,6 +1581,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm2.pop().coerce_to_i32(self)?;
 
         self.context.avm2.push(value + 1);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_lshift(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_u32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 << (value2 & 0x1F));
 
         Ok(FrameControl::Continue)
     }
