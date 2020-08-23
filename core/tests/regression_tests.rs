@@ -315,6 +315,7 @@ swf_tests! {
     (as3_multiply, "avm2/multiply", 1),
     (as3_negate, "avm2/negate", 1),
     (as3_rshift, "avm2/rshift", 1),
+    (as3_subtract, "avm2/subtract", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
