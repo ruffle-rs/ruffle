@@ -299,6 +299,24 @@ swf_tests! {
     (transform, "avm1/transform", 1),
     (target_path, "avm1/target_path", 1),
     (remove_movie_clip, "avm1/remove_movie_clip", 1),
+    (as3_add, "avm2/add", 1),
+    (as3_bitand, "avm2/bitand", 1),
+    (as3_bitnot, "avm2/bitnot", 1),
+    (as3_declocal, "avm2/declocal", 1),
+    (as3_declocal_i, "avm2/declocal_i", 1),
+    (as3_decrement, "avm2/decrement", 1),
+    (as3_decrement_i, "avm2/decrement_i", 1),
+    (as3_inclocal, "avm2/inclocal", 1),
+    (as3_inclocal_i, "avm2/inclocal_i", 1),
+    (as3_increment, "avm2/increment", 1),
+    (as3_increment_i, "avm2/increment_i", 1),
+    (as3_lshift, "avm2/lshift", 1),
+    (as3_modulo, "avm2/modulo", 1),
+    (as3_multiply, "avm2/multiply", 1),
+    (as3_negate, "avm2/negate", 1),
+    (as3_rshift, "avm2/rshift", 1),
+    (as3_subtract, "avm2/subtract", 1),
+    (as3_urshift, "avm2/urshift", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -316,6 +334,7 @@ swf_tests_approx! {
     (edittext_bullet, "avm1/edittext_bullet", 1, 3.0),
     (edittext_underline, "avm1/edittext_underline", 1, 4.0),
     (as3_coerce_string_precision, "avm2/coerce_string_precision", 1, 10_000_000.0),
+    (as3_divide, "avm2/divide", 1, 0.0), // TODO: Discrepancy in float formatting.
 }
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
@@ -380,6 +399,11 @@ fn test_swf_approx(
     for (actual, expected) in trace_log.lines().zip(expected_data.lines()) {
         // If these are numbers, compare using approx_eq.
         if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
+            // NaNs should be able to pass in an approx test.
+            if actual.is_nan() && expected.is_nan() {
+                continue;
+            }
+
             // TODO: Lower this epsilon as the accuracy of the properties improves.
             assert_abs_diff_eq!(actual, expected, epsilon = epsilon);
         } else {

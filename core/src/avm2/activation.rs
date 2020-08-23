@@ -479,6 +479,31 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::ConvertO => self.op_convert_o(),
                 Op::ConvertU => self.op_convert_u(),
                 Op::ConvertS => self.op_convert_s(),
+                Op::Add => self.op_add(),
+                Op::AddI => self.op_add_i(),
+                Op::BitAnd => self.op_bitand(),
+                Op::BitNot => self.op_bitnot(),
+                Op::BitOr => self.op_bitor(),
+                Op::BitXor => self.op_bitxor(),
+                Op::DecLocal { index } => self.op_declocal(index),
+                Op::DecLocalI { index } => self.op_declocal_i(index),
+                Op::Decrement => self.op_decrement(),
+                Op::DecrementI => self.op_decrement_i(),
+                Op::Divide => self.op_divide(),
+                Op::IncLocal { index } => self.op_inclocal(index),
+                Op::IncLocalI { index } => self.op_inclocal_i(index),
+                Op::Increment => self.op_increment(),
+                Op::IncrementI => self.op_increment_i(),
+                Op::LShift => self.op_lshift(),
+                Op::Modulo => self.op_modulo(),
+                Op::Multiply => self.op_multiply(),
+                Op::MultiplyI => self.op_multiply_i(),
+                Op::Negate => self.op_negate(),
+                Op::NegateI => self.op_negate_i(),
+                Op::RShift => self.op_rshift(),
+                Op::Subtract => self.op_subtract(),
+                Op::SubtractI => self.op_subtract_i(),
+                Op::URShift => self.op_urshift(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -1400,6 +1425,259 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm2.pop().coerce_to_string(self)?;
 
         self.context.avm2.push(value);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_add(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        // TODO: Special handling required for `Date` and ECMA-357/E4X `XML`
+        let sum_value = match (value1, value2) {
+            (Value::Number(n1), Value::Number(n2)) => Value::Number(n1 + n2),
+            (Value::String(s), value2) => {
+                let mut out_s = s.to_string();
+                out_s.push_str(&value2.coerce_to_string(self)?);
+
+                Value::String(AvmString::new(self.context.gc_context, out_s))
+            }
+            (value1, Value::String(s)) => {
+                let mut out_s = value1.coerce_to_string(self)?.to_string();
+                out_s.push_str(&s);
+
+                Value::String(AvmString::new(self.context.gc_context, out_s))
+            }
+            (value1, value2) => {
+                let prim_value1 = value1.coerce_to_primitive(None, self)?;
+                let prim_value2 = value2.coerce_to_primitive(None, self)?;
+
+                match (prim_value1, prim_value2) {
+                    (Value::String(s), value2) => {
+                        let mut out_s = s.to_string();
+                        out_s.push_str(&value2.coerce_to_string(self)?);
+
+                        Value::String(AvmString::new(self.context.gc_context, out_s))
+                    }
+                    (value1, Value::String(s)) => {
+                        let mut out_s = value1.coerce_to_string(self)?.to_string();
+                        out_s.push_str(&s);
+
+                        Value::String(AvmString::new(self.context.gc_context, out_s))
+                    }
+                    (value1, value2) => Value::Number(
+                        value1.coerce_to_number(self)? + value2.coerce_to_number(self)?,
+                    ),
+                }
+            }
+        };
+
+        self.context.avm2.push(sum_value);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_add_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_i32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 + value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_bitand(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_i32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 & value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_bitnot(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(!value1);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_bitor(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_i32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 | value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_bitxor(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_i32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 ^ value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_declocal(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
+        let value = self.local_register(index)?.coerce_to_number(self)?;
+
+        self.set_local_register(index, value - 1.0, self.context.gc_context)?;
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_declocal_i(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
+        let value = self.local_register(index)?.coerce_to_i32(self)?;
+
+        self.set_local_register(index, value - 1, self.context.gc_context)?;
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_decrement(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(value - 1.0);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_decrement_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value - 1);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_divide(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_number(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(value1 / value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_inclocal(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
+        let value = self.local_register(index)?.coerce_to_number(self)?;
+
+        self.set_local_register(index, value + 1.0, self.context.gc_context)?;
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_inclocal_i(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
+        let value = self.local_register(index)?.coerce_to_i32(self)?;
+
+        self.set_local_register(index, value + 1, self.context.gc_context)?;
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_increment(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(value + 1.0);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_increment_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value + 1);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_lshift(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_u32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 << (value2 & 0x1F));
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_modulo(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_number(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(value1 % value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_multiply(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_number(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(value1 * value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_multiply_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_i32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 * value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_negate(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value1 = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(-value1);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_negate_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(-value1);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_rshift(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_u32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 >> (value2 & 0x1F));
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_subtract(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_number(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(value1 - value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_subtract_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_i32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 - value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_urshift(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_u32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_u32(self)?;
+
+        self.context.avm2.push(value1 >> (value2 & 0x1F));
 
         Ok(FrameControl::Continue)
     }
