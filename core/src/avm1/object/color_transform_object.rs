@@ -1,3 +1,4 @@
+use crate::add_field_accessors;
 use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::impl_custom_object_without_set;
@@ -25,21 +26,6 @@ pub struct ColorTransformData<'gc> {
     green_offset: f64,
     blue_offset: f64,
     alpha_offset: f64,
-}
-
-macro_rules! add_object_accessors {
-    ($([$set_ident: ident, $get_ident: ident, $var: ident],)*) => {
-        $(
-            pub fn $set_ident(&self, gc_context: MutationContext<'gc, '_>, v: f64) {
-                self.0.write(gc_context).$var = v;
-            }
-
-            pub fn $get_ident(&self) -> f64 {
-                self.0.read()
-                    .$var
-            }
-        )*
-    }
 }
 
 impl fmt::Debug for ColorTransformObject<'_> {
@@ -79,15 +65,30 @@ impl<'gc> ColorTransformObject<'gc> {
         ))
     }
 
-    add_object_accessors!(
-        [set_red_multiplier, get_red_multiplier, red_multiplier],
-        [set_green_multiplier, get_green_multiplier, green_multiplier],
-        [set_blue_multiplier, get_blue_multiplier, blue_multiplier],
-        [set_alpha_multiplier, get_alpha_multiplier, alpha_multiplier],
-        [set_red_offset, get_red_offset, red_offset],
-        [set_green_offset, get_green_offset, green_offset],
-        [set_blue_offset, get_blue_offset, blue_offset],
-        [set_alpha_offset, get_alpha_offset, alpha_offset],
+    add_field_accessors!(
+        [set_red_multiplier, get_red_multiplier, red_multiplier, f64],
+        [
+            set_green_multiplier,
+            get_green_multiplier,
+            green_multiplier,
+            f64
+        ],
+        [
+            set_blue_multiplier,
+            get_blue_multiplier,
+            blue_multiplier,
+            f64
+        ],
+        [
+            set_alpha_multiplier,
+            get_alpha_multiplier,
+            alpha_multiplier,
+            f64
+        ],
+        [set_red_offset, get_red_offset, red_offset, f64],
+        [set_green_offset, get_green_offset, green_offset, f64],
+        [set_blue_offset, get_blue_offset, blue_offset, f64],
+        [set_alpha_offset, get_alpha_offset, alpha_offset, f64],
     );
 }
 

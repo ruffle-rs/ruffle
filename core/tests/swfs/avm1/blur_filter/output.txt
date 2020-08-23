@@ -1,0 +1,40 @@
+// new BlurFilter
+[object Object]
+// x.clone()
+[object Object]
+// x.clone() == x
+false
+// x.blurX
+4
+// x.blurY
+4
+// x.quality
+1
+// x.quality(after set to 100)
+15
+// x.blurX(after set to 100)
+100
+// x.blurY(after set to 100)
+100
+// x.quality(after set to -1)
+0
+// x.blurX(after set to -1)
+0
+// x.blurY(after set to -1)
+0
+// oob_under.blurX
+0
+// oob_under.blurY
+0
+// oob_under.quality
+0
+// oob_over.blurX
+255
+// oob_over.blurY
+255
+// oob_over.quality
+15
+// prototype[clone] = [type Function]
+// prototype[quality] = undefined
+// prototype[blurY] = undefined
+// prototype[blurX] = undefined
