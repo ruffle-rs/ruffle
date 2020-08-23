@@ -485,6 +485,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::BitNot => self.op_bitnot(),
                 Op::BitOr => self.op_bitor(),
                 Op::BitXor => self.op_bitxor(),
+                Op::DecLocal { index } => self.op_declocal(index),
+                Op::DecLocalI { index } => self.op_declocal_i(index),
+                Op::Decrement => self.op_decrement(),
+                Op::DecrementI => self.op_decrement_i(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -1498,6 +1502,38 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
 
         self.context.avm2.push(value1 ^ value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_declocal(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
+        let value = self.local_register(index)?.coerce_to_number(self)?;
+
+        self.set_local_register(index, value - 1.0, self.context.gc_context)?;
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_declocal_i(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
+        let value = self.local_register(index)?.coerce_to_i32(self)?;
+
+        self.set_local_register(index, value - 1, self.context.gc_context)?;
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_decrement(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(value - 1.0);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_decrement_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value - 1);
 
         Ok(FrameControl::Continue)
     }
