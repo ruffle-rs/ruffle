@@ -498,6 +498,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::Modulo => self.op_modulo(),
                 Op::Multiply => self.op_multiply(),
                 Op::MultiplyI => self.op_multiply_i(),
+                Op::Negate => self.op_negate(),
+                Op::NegateI => self.op_negate_i(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -1620,6 +1622,22 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
 
         self.context.avm2.push(value1 * value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_negate(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value1 = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(-value1);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_negate_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(-value1);
 
         Ok(FrameControl::Continue)
     }
