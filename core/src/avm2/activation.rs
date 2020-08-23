@@ -496,6 +496,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::IncrementI => self.op_increment_i(),
                 Op::LShift => self.op_lshift(),
                 Op::Modulo => self.op_modulo(),
+                Op::Multiply => self.op_multiply(),
+                Op::MultiplyI => self.op_multiply_i(),
                 Op::Jump { offset } => self.op_jump(offset, reader),
                 Op::IfTrue { offset } => self.op_if_true(offset, reader),
                 Op::IfFalse { offset } => self.op_if_false(offset, reader),
@@ -1600,6 +1602,24 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value1 = self.context.avm2.pop().coerce_to_number(self)?;
 
         self.context.avm2.push(value1 % value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_multiply(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_number(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(value1 * value2);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_multiply_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop().coerce_to_i32(self)?;
+        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value1 * value2);
 
         Ok(FrameControl::Continue)
     }
