@@ -525,7 +525,7 @@ pub fn create_globals<'gc>(
 
     let bitmap_filter_proto =
         bitmap_filter::create_proto(gc_context, object_proto, Some(function_proto));
-    let bitmap_filter = FunctionObject::function(
+    let bitmap_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(bitmap_filter::constructor),
         Some(function_proto),
@@ -533,8 +533,8 @@ pub fn create_globals<'gc>(
     );
 
     let blur_filter_proto =
-        blur_filter::create_proto(gc_context, bitmap_filter_proto, Some(function_proto));
-    let blur_filter = FunctionObject::function(
+        blur_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
+    let blur_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(blur_filter::constructor),
         Some(function_proto),

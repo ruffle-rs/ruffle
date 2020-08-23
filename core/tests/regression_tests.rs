@@ -241,6 +241,7 @@ swf_tests! {
     (object_function, "avm1/object_function", 1),
     (parse_int, "avm1/parse_int", 1),
     (bitmap_filter, "avm1/bitmap_filter", 1),
+    (blur_filter, "avm1/blur_filter", 1),
     (as3_hello_world, "avm2/hello_world", 1),
     (as3_function_call, "avm2/function_call", 1),
     (as3_function_call_via_call, "avm2/function_call_via_call", 1),

@@ -259,3 +259,19 @@ macro_rules! impl_custom_object {
         }
     };
 }
+
+#[macro_export]
+macro_rules! add_field_accessors {
+    ($([$set_ident: ident, $get_ident: ident, $var: ident, $type_: ident],)*) => {
+        $(
+            pub fn $set_ident(&self, gc_context: MutationContext<'gc, '_>, v: $type_) {
+                self.0.write(gc_context).$var = v;
+            }
+
+            pub fn $get_ident(&self) -> $type_ {
+                self.0.read()
+                    .$var
+            }
+        )*
+    }
+}

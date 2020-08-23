@@ -8,6 +8,7 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 
 use crate::avm1::activation::Activation;
+use crate::avm1::object::blur_filter::BlurFilterObject;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
@@ -23,6 +24,7 @@ use ruffle_macros::enum_trait_object;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
+pub mod blur_filter;
 pub mod color_transform_object;
 mod custom_object;
 pub mod script_object;
@@ -54,6 +56,7 @@ pub mod xml_object;
         SharedObject(SharedObject<'gc>),
         ColorTransformObject(ColorTransformObject<'gc>),
         TransformObject(TransformObject<'gc>),
+        BlurFilterObject(BlurFilterObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -422,6 +425,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `TransformObject`, if it exists
     fn as_transform_object(&self) -> Option<TransformObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `BlurFilterObject`, if it exists
+    fn as_blur_filter_object(&self) -> Option<BlurFilterObject<'gc>> {
         None
     }
 
