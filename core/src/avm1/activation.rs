@@ -1577,8 +1577,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_warn!(
                 self,
-                "Tried to construct {:?} with non-object constructor {:?}",
-                method_name,
+                "Tried to construct with non-object constructor {:?}",
                 constructor
             );
             self.context.avm1.push(Value::Undefined);

@@ -15,21 +15,22 @@ pub fn constructor<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)
+        .map(|x| x.max(255).min(0))
         .unwrap_or(4);
 
     let blur_y = args
         .get(1)
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)
+        .map(|x| x.max(255).min(0))
         .unwrap_or(4);
-    //TODO: clamp to [0, 255]
 
     let quality = args
         .get(3)
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)
+        .map(|x| x.max(15).min(0))
         .unwrap_or(1);
-    //TODO: clamp to [1,3]
 
     //TODO: check if virt
     this.set("blurX", blur_x.into(), activation)?;
@@ -72,8 +73,8 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let mut object = ScriptObject::object(gc_context, Some(proto));
 
-    //TODO: attributes and rest of funcs
     object.force_set_function("clone", clone, gc_context, EnumSet::empty(), fn_proto);
+    //TODO: blurx/y/quality are virtual and clamp on set
 
     object.into()
 }
