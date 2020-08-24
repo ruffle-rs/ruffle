@@ -22,6 +22,7 @@ fn process_html_entity(src: &str) -> Cow<str> {
         // Copy initial segment.
         result_str.push_str(&src[0..amp_index]);
 
+        let src = &src[amp_index..];
         let mut entity_start = None;
         for (i, ch) in src.char_indices() {
             if let Some(start) = entity_start {
@@ -33,16 +34,45 @@ fn process_html_entity(src: &str) -> Cow<str> {
                         "quot" => result_str.push('"'),
                         "apos" => result_str.push('\''),
                         "nbsp" => result_str.push('\u{00A0}'),
-                        _ => {}
+                        s if s.len() >= 2 && s.as_bytes()[0] == b'#' => {
+                            // Number entity: &#nnnn; or &#xhhhh;
+                            let (digits, radix) = if s.as_bytes()[1] == b'x' {
+                                // Only trailing 4 hex digits are used.
+                                let start = usize::max(s.len(), 6) - 4;
+                                (&s[start..], 16)
+                            } else {
+                                // Only trailing 16 digits are used.
+                                let start = usize::max(s.len(), 17) - 16;
+                                (&s[start..], 10)
+                            };
+                            if let Ok(n) = u32::from_str_radix(digits, radix) {
+                                if let Some(c) = std::char::from_u32(n) {
+                                    result_str.push(c);
+                                }
+                            } else {
+                                // Invalid entity; output text as is.
+                                result_str.push_str(&src[start..i + 1]);
+                            }
+                        }
+                        // Invalid entity; output text as is.
+                        _ => result_str.push_str(&src[start..i + 1]),
                     };
 
                     entity_start = None;
+                } else if ch == '&' {
+                    result_str.push_str(&src[start..i]);
+                    entity_start = Some(i);
                 }
             } else if ch == '&' {
                 entity_start = Some(i);
             } else {
                 result_str.push(ch);
             }
+        }
+
+        // Output remaining text if we were in the middle of parsing an entity.
+        if let Some(start) = entity_start {
+            result_str.push_str(&src[start..]);
         }
 
         Cow::Owned(result_str)
