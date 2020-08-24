@@ -6,6 +6,10 @@ ruffle_shadow_tmpl.innerHTML = `
             /* Default width/height; this will get overridden by user styles/attributes */
             width: 550px;
             height: 400px;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #container {
