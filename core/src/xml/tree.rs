@@ -1042,6 +1042,19 @@ impl<'gc> XMLNode<'gc> {
         }
     }
 
+    /// Retrieve the value of a single attribute on this node, case-insensitively.
+    ///
+    /// TODO: Probably won't need this when we have a proper HTML parser.
+    pub fn attribute_value_ignore_ascii_case(self, name: &XMLName) -> Option<String> {
+        match &*self.0.read() {
+            XMLNodeData::Element { attributes, .. } => attributes
+                .iter()
+                .find(|(k, _)| k.eq_ignore_ascii_case(name))
+                .map(|(_, v)| v.clone()),
+            _ => None,
+        }
+    }
+
     /// Set the value of a single attribute on this node.
     ///
     /// If the node does not contain attributes, then this function silently fails.

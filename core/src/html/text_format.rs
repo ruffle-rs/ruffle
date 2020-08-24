@@ -27,7 +27,8 @@ fn process_html_entity(src: &str) -> Cow<str> {
         for (i, ch) in src.char_indices() {
             if let Some(start) = entity_start {
                 if ch == ';' {
-                    match &src[start + 1..i] {
+                    let s = src[start + 1..i].to_ascii_lowercase();
+                    match s.as_str() {
                         "amp" => result_str.push('&'),
                         "lt" => result_str.push('<'),
                         "gt" => result_str.push('>'),
@@ -36,7 +37,7 @@ fn process_html_entity(src: &str) -> Cow<str> {
                         "nbsp" => result_str.push('\u{00A0}'),
                         s if s.len() >= 2 && s.as_bytes()[0] == b'#' => {
                             // Number entity: &#nnnn; or &#xhhhh;
-                            let (digits, radix) = if s.as_bytes()[1] == b'x' {
+                            let (digits, radix) = if src.as_bytes()[1] == b'x' {
                                 // Only trailing 4 hex digits are used.
                                 let start = usize::max(s.len(), 6) - 4;
                                 (&s[start..], 16)
@@ -270,33 +271,46 @@ impl TextFormat {
     /// in this format.
     pub fn from_presentational_markup(node: XMLNode<'_>, mut tf: TextFormat) -> Self {
         match node.tag_name() {
-            Some(name) if name == XMLName::from_str("p") => {
-                match node.attribute_value(&XMLName::from_str("align")).as_deref() {
+            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("p")) => {
+                match node
+                    .attribute_value_ignore_ascii_case(&XMLName::from_str("align"))
+                    .as_deref()
+                {
                     Some("left") => tf.align = Some(swf::TextAlign::Left),
                     Some("center") => tf.align = Some(swf::TextAlign::Center),
                     Some("right") => tf.align = Some(swf::TextAlign::Right),
                     _ => {}
                 }
             }
-            Some(name) if name == XMLName::from_str("a") => {
-                if let Some(href) = node.attribute_value(&XMLName::from_str("href")) {
+            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("a")) => {
+                if let Some(href) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("href"))
+                {
                     tf.url = Some(href);
                 }
 
-                if let Some(target) = node.attribute_value(&XMLName::from_str("target")) {
+                if let Some(target) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("target"))
+                {
                     tf.target = Some(target);
                 }
             }
-            Some(name) if name == XMLName::from_str("font") => {
-                if let Some(face) = node.attribute_value(&XMLName::from_str("face")) {
+            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("font")) => {
+                if let Some(face) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("face"))
+                {
                     tf.font = Some(face);
                 }
 
-                if let Some(size) = node.attribute_value(&XMLName::from_str("size")) {
+                if let Some(size) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("size"))
+                {
                     tf.size = size.parse().ok();
                 }
 
-                if let Some(color) = node.attribute_value(&XMLName::from_str("color")) {
+                if let Some(color) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("color"))
+                {
                     if color.starts_with('#') {
                         let rval = color.get(1..3).and_then(|v| u8::from_str_radix(v, 16).ok());
                         let gval = color.get(3..5).and_then(|v| u8::from_str_radix(v, 16).ok());
@@ -309,13 +323,13 @@ impl TextFormat {
                 }
 
                 if let Some(letter_spacing) =
-                    node.attribute_value(&XMLName::from_str("letterSpacing"))
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("letterSpacing"))
                 {
                     tf.letter_spacing = letter_spacing.parse().ok();
                 }
 
                 tf.kerning = match node
-                    .attribute_value(&XMLName::from_str("kerning"))
+                    .attribute_value_ignore_ascii_case(&XMLName::from_str("kerning"))
                     .as_deref()
                 {
                     Some("1") => Some(true),
@@ -323,43 +337,54 @@ impl TextFormat {
                     _ => tf.kerning,
                 }
             }
-            Some(name) if name == XMLName::from_str("b") => {
+            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("b")) => {
                 tf.bold = Some(true);
             }
-            Some(name) if name == XMLName::from_str("i") => {
+            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("i")) => {
                 tf.italic = Some(true);
             }
-            Some(name) if name == XMLName::from_str("u") => {
+            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("u")) => {
                 tf.underline = Some(true);
             }
-            Some(name) if name == XMLName::from_str("li") => {
+            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("li")) => {
                 tf.bullet = Some(true);
             }
-            Some(name) if name == XMLName::from_str("textformat") => {
+            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("textformat")) => {
                 //TODO: Spec says these are all in twips. That doesn't seem to
                 //match Flash 8.
-                if let Some(left_margin) = node.attribute_value(&XMLName::from_str("leftmargin")) {
+                if let Some(left_margin) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("leftmargin"))
+                {
                     tf.left_margin = left_margin.parse().ok();
                 }
 
-                if let Some(right_margin) = node.attribute_value(&XMLName::from_str("rightmargin"))
+                if let Some(right_margin) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("rightmargin"))
                 {
                     tf.right_margin = right_margin.parse().ok();
                 }
 
-                if let Some(indent) = node.attribute_value(&XMLName::from_str("indent")) {
+                if let Some(indent) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("indent"))
+                {
                     tf.indent = indent.parse().ok();
                 }
 
-                if let Some(blockindent) = node.attribute_value(&XMLName::from_str("blockindent")) {
+                if let Some(blockindent) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("blockindent"))
+                {
                     tf.block_indent = blockindent.parse().ok();
                 }
 
-                if let Some(leading) = node.attribute_value(&XMLName::from_str("leading")) {
+                if let Some(leading) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("leading"))
+                {
                     tf.leading = leading.parse().ok();
                 }
 
-                if let Some(tabstops) = node.attribute_value(&XMLName::from_str("tabstops")) {
+                if let Some(tabstops) =
+                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("tabstops"))
+                {
                     tf.tab_stops = Some(
                         tabstops
                             .split(',')
@@ -1215,14 +1240,30 @@ impl FormatSpans {
         for step in tree.as_node().walk().unwrap() {
             match step {
                 Step::In(node)
-                    if node.tag_name().unwrap().node_name() == "sbr"
-                        || node.tag_name().unwrap().node_name() == "br" =>
+                    if node
+                        .tag_name()
+                        .unwrap()
+                        .node_name()
+                        .eq_ignore_ascii_case("sbr")
+                        || node
+                            .tag_name()
+                            .unwrap()
+                            .node_name()
+                            .eq_ignore_ascii_case("br") =>
                 {
                     self.replace_text(self.text.len(), self.text.len(), "\n", format_stack.last());
                 }
                 Step::Out(node)
-                    if node.tag_name().unwrap().node_name() == "sbr"
-                        || node.tag_name().unwrap().node_name() == "br" => {}
+                    if node
+                        .tag_name()
+                        .unwrap()
+                        .node_name()
+                        .eq_ignore_ascii_case("sbr")
+                        || node
+                            .tag_name()
+                            .unwrap()
+                            .node_name()
+                            .eq_ignore_ascii_case("br") => {}
                 Step::In(node) => format_stack.push(TextFormat::from_presentational_markup(
                     node,
                     format_stack
@@ -1240,8 +1281,16 @@ impl FormatSpans {
                     last_successful_format = format_stack.last().cloned();
                 }
                 Step::Out(node)
-                    if node.tag_name().unwrap().node_name() == "p"
-                        || node.tag_name().unwrap().node_name() == "li" =>
+                    if node
+                        .tag_name()
+                        .unwrap()
+                        .node_name()
+                        .eq_ignore_ascii_case("p")
+                        || node
+                            .tag_name()
+                            .unwrap()
+                            .node_name()
+                            .eq_ignore_ascii_case("li") =>
                 {
                     self.replace_text(
                         self.text.len(),

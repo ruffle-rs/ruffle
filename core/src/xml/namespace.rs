@@ -85,6 +85,20 @@ impl XMLName {
             Cow::Borrowed(&self.name)
         }
     }
+
+    /// Compares both names as case-insensitve ASCII (for use in HTML parsing).
+    /// TODO: We shouldn't need this when we have a proper HTML parser.
+    pub fn eq_ignore_ascii_case(&self, other: &XMLName) -> bool {
+        if !self.name.eq_ignore_ascii_case(&other.name) {
+            return false;
+        }
+
+        match (&self.namespace, &other.namespace) {
+            (None, None) => true,
+            (Some(a), Some(b)) => a.eq_ignore_ascii_case(&b),
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Debug for XMLName {
