@@ -4,11 +4,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::blur_filter::BlurFilterObject;
-use crate::avm1::property::Attribute;
 use crate::avm1::{Object, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
-use quick_xml::events::attributes::Attributes;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -33,15 +31,11 @@ pub fn constructor<'gc>(
         .coerce_to_i32(activation)
         .map(|x| x.max(0).min(15))?;
 
-    println!("args = {}, {}, {}", blur_x, blur_y, quality);
-
     let blur_filter = this.as_blur_filter_object().unwrap();
 
-    blur_filter.set_blur_x(activation.context.gc_context, blur_x.into());
-    blur_filter.set_blur_y(activation.context.gc_context, blur_y.into());
-    blur_filter.set_quality(activation.context.gc_context, quality.into());
-
-    println!("constructor called, bf: {:?}", blur_filter);
+    blur_filter.set_blur_x(activation.context.gc_context, blur_x);
+    blur_filter.set_blur_y(activation.context.gc_context, blur_y);
+    blur_filter.set_quality(activation.context.gc_context, quality);
 
     Ok(Value::Undefined)
 }
@@ -66,7 +60,6 @@ pub fn get_blur_x<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    println!("Get blur x");
     Ok(this.as_blur_filter_object().unwrap().get_blur_x().into())
 }
 
@@ -150,7 +143,6 @@ pub fn create_proto<'gc>(
 
     object.force_set_function("clone", clone, gc_context, EnumSet::empty(), Some(fn_proto));
 
-    //TODO: check attribs
     object.add_property(
         gc_context,
         "blurX",
