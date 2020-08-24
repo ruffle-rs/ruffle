@@ -34,7 +34,3 @@ false
 255
 // oob_over.quality
 15
-// prototype[clone] = [type Function]
-// prototype[quality] = undefined
-// prototype[blurY] = undefined
-// prototype[blurX] = undefined
