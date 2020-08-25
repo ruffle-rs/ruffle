@@ -18,8 +18,8 @@ pub struct BlurFilterData<'gc> {
     /// The underlying script object.
     base: ScriptObject<'gc>,
 
-    blur_x: i32,
-    blur_y: i32,
+    blur_x: f64,
+    blur_y: f64,
     quality: i32,
 }
 
@@ -36,8 +36,8 @@ impl fmt::Debug for BlurFilterObject<'_> {
 
 impl<'gc> BlurFilterObject<'gc> {
     add_field_accessors!(
-        [set_blur_x, get_blur_x, blur_x, i32],
-        [set_blur_y, get_blur_y, blur_y, i32],
+        [set_blur_x, get_blur_x, blur_x, f64],
+        [set_blur_y, get_blur_y, blur_y, f64],
         [set_quality, get_quality, quality, i32],
     );
 
@@ -46,8 +46,8 @@ impl<'gc> BlurFilterObject<'gc> {
             gc_context,
             BlurFilterData {
                 base: ScriptObject::object(gc_context, proto),
-                blur_x: 4,
-                blur_y: 4,
+                blur_x: 4.0,
+                blur_y: 4.0,
                 quality: 1,
             },
         ))
@@ -77,7 +77,6 @@ impl<'gc> TObject<'gc> for BlurFilterObject<'gc> {
         Some(*self)
     }
 
-    // #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
