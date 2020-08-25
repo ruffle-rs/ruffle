@@ -16,14 +16,14 @@ pub fn constructor<'gc>(
     let blur_x = args
         .get(0)
         .unwrap_or(&4.into())
-        .coerce_to_i32(activation)
-        .map(|x| x.max(0).min(255))?;
+        .coerce_to_f64(activation)
+        .map(|x| x.max(0.0).min(255.0))?;
 
     let blur_y = args
         .get(1)
         .unwrap_or(&4.into())
-        .coerce_to_i32(activation)
-        .map(|x| x.max(0).min(255))?;
+        .coerce_to_f64(activation)
+        .map(|x| x.max(0.0).min(255.0))?;
 
     let quality = args
         .get(2)
@@ -71,8 +71,8 @@ pub fn set_blur_x<'gc>(
     let blur_x = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)
-        .map(|x| x.max(0).min(255))?;
+        .coerce_to_f64(activation)
+        .map(|x| x.max(0.0).min(255.0))?;
 
     this.as_blur_filter_object()
         .unwrap()
@@ -97,8 +97,8 @@ pub fn set_blur_y<'gc>(
     let blur_y = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)
-        .map(|x| x.max(0).min(255))?;
+        .coerce_to_f64(activation)
+        .map(|x| x.max(0.0).min(255.0))?;
 
     this.as_blur_filter_object()
         .unwrap()
