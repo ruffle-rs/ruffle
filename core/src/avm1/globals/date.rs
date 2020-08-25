@@ -5,6 +5,7 @@ use crate::avm1::object::date_object::DateObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
+use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
 use num_traits::ToPrimitive;
 use std::f64::NAN;
@@ -600,6 +601,36 @@ fn constructor<'gc>(
     Ok(Value::Undefined)
 }
 
+fn create_utc<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 2 {
+        return Ok(Value::Undefined);
+    }
+
+    // We need a starting value to adjust from.
+    let date = DateObject::with_date_time(
+        activation.context.gc_context,
+        Some(activation.context.avm1.prototypes.date),
+        Some(Utc.ymd(0, 1, 1).and_hms(0, 0, 0)),
+    );
+
+    let timestamp = DateAdjustment::new(activation, &Utc)
+        .year(args.get(0))?
+        .month(args.get(1))?
+        .day_opt(args.get(2))?
+        .hour_opt(args.get(3))?
+        .minute_opt(args.get(4))?
+        .second_opt(args.get(5))?
+        .millisecond_opt(args.get(6))?
+        .adjust_year(|year| if year < 100 { year + 1900 } else { year })
+        .apply(date);
+
+    Ok(timestamp.into())
+}
+
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DateObject<'gc>,
@@ -862,12 +893,17 @@ pub fn create_date_object<'gc>(
     date_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    FunctionObject::function(
+    let date = FunctionObject::function(
         gc_context,
         Executable::Native(constructor),
         fn_proto,
         date_proto,
-    )
+    );
+    let mut object = date.as_script_object().unwrap();
+
+    object.force_set_function("UTC", create_utc, gc_context, EnumSet::empty(), fn_proto);
+
+    date
 }
 
 pub fn create_proto<'gc>(
