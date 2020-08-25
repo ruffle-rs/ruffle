@@ -26,6 +26,7 @@ pub(crate) mod display_object;
 pub(crate) mod error;
 mod external_interface;
 mod function;
+mod glow_filter;
 mod key;
 mod load_vars;
 mod math;
@@ -346,6 +347,8 @@ pub struct SystemPrototypes<'gc> {
     pub blur_filter_constructor: Object<'gc>,
     pub bevel_filter: Object<'gc>,
     pub bevel_filter_constructor: Object<'gc>,
+    pub glow_filter: Object<'gc>,
+    pub glow_filter_constructor: Object<'gc>,
     pub date: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub bitmap_data_constructor: Object<'gc>,
@@ -569,6 +572,15 @@ pub fn create_globals<'gc>(
         bevel_filter_proto,
     );
 
+    let glow_filter_proto =
+        glow_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
+    let glow_filter = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(glow_filter::constructor),
+        Some(function_proto),
+        glow_filter_proto,
+    );
+
     filters.define_value(
         gc_context,
         "BitmapFilter",
@@ -585,6 +597,12 @@ pub fn create_globals<'gc>(
         gc_context,
         "BevelFilter",
         bevel_filter.into(),
+        EnumSet::empty(),
+    );
+    filters.define_value(
+        gc_context,
+        "GlowFilter",
+        glow_filter.into(),
         EnumSet::empty(),
     );
 
@@ -882,6 +900,8 @@ pub fn create_globals<'gc>(
             blur_filter_constructor: blur_filter,
             bevel_filter: bevel_filter_proto,
             bevel_filter_constructor: bevel_filter,
+            glow_filter: glow_filter_proto,
+            glow_filter_constructor: glow_filter,
             date: date_proto,
             bitmap_data: bitmap_data_proto,
             bitmap_data_constructor: bitmap_data,
