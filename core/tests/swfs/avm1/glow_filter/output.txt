@@ -1,0 +1,54 @@
+// new GlowFilter
+[object Object]
+// x.clone()
+[object Object]
+// x.clone() == x
+false
+// x.blurX
+6
+// x.blurY
+6
+// x.quality
+1
+// x.alpha
+1
+// x.inner
+false
+// x.color
+16711680
+// x.knockout
+false
+// x.strength
+2
+// x.quality(after set to 100)
+15
+// x.blurX(after set to 100)
+100
+// x.blurY(after set to 100)
+100
+//x.alpha(after set to 100)
+1
+//x.color(after set to 0xFFFFFFF
+16777215
+// x.quality(after set to -1)
+0
+// x.blurX(after set to -1)
+0
+// x.blurY(after set to -1)
+0
+//x.alpha(after set to -1)
+0
+//x.color(after set to -0xFFFFFFF
+1
+// oob_under.blurX
+0
+// oob_under.blurY
+0
+// oob_under.quality
+0
+// oob_over.blurX
+100
+// oob_over.blurY
+100
+// oob_over.quality
+15

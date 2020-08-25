@@ -13,11 +13,11 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    //TODO: how does this handle values out of range
     let color = args
         .get(0)
         .unwrap_or(&0xFF0000.into())
-        .coerce_to_i32(activation)?;
+        .coerce_to_i32(activation)
+        .map(|x| x.max(1).min(0xFFFFFF))?;
 
     let alpha = args
         .get(1)
@@ -103,7 +103,7 @@ pub fn set_alpha<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
+        .map(|x| x.max(0.0).min(1.0))?;
 
     this.as_glow_filter_object()
         .unwrap()
@@ -180,7 +180,8 @@ pub fn set_color<'gc>(
     let color = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
+        .coerce_to_i32(activation)
+        .map(|x| x.max(1).min(0xFFFFFF))?;
 
     this.as_glow_filter_object()
         .unwrap()
