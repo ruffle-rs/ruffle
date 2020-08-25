@@ -246,6 +246,7 @@ swf_tests! {
     (bitmap_filter, "avm1/bitmap_filter", 1),
     (blur_filter, "avm1/blur_filter", 1),
     (date_constructor, "avm1/date/constructor", 1),
+    (date_utc, "avm1/date/UTC", 1),
     (date_set_date, "avm1/date/setDate", 1),
     (date_set_full_year, "avm1/date/setFullYear", 1),
     (date_set_hours, "avm1/date/setHours", 1),
