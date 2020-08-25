@@ -584,12 +584,17 @@ fn constructor<'gc>(
                 .millisecond_opt(args.get(6))?
                 .adjust_year(|year| if year < 100 { year + 1900 } else { year })
                 .apply(this);
-        } else if let LocalResult::Single(time) =
-            Utc.timestamp_millis_opt(timestamp.coerce_to_f64(activation)? as i64)
-        {
-            this.set_date_time(activation.context.gc_context, Some(time))
         } else {
-            this.set_date_time(activation.context.gc_context, None);
+            let timestamp = timestamp.coerce_to_f64(activation)?;
+            if timestamp.is_finite() {
+                if let LocalResult::Single(time) = Utc.timestamp_millis_opt(timestamp as i64) {
+                    this.set_date_time(activation.context.gc_context, Some(time))
+                } else {
+                    this.set_date_time(activation.context.gc_context, None);
+                }
+            } else {
+                this.set_date_time(activation.context.gc_context, None);
+            }
         }
     } else {
         this.set_date_time(
