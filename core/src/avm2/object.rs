@@ -1,6 +1,7 @@
 //! AVM2 objects.
 
 use crate::avm2::activation::Activation;
+use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
@@ -14,12 +15,14 @@ use ruffle_macros::enum_trait_object;
 use std::cell::Ref;
 use std::fmt::Debug;
 
+mod array_object;
 mod custom_object;
 mod function_object;
 mod namespace_object;
 mod primitive_object;
 mod script_object;
 
+pub use crate::avm2::object::array_object::ArrayObject;
 pub use crate::avm2::object::function_object::FunctionObject;
 pub use crate::avm2::object::namespace_object::NamespaceObject;
 pub use crate::avm2::object::primitive_object::PrimitiveObject;
@@ -35,6 +38,7 @@ pub use crate::avm2::object::script_object::ScriptObject;
         FunctionObject(FunctionObject<'gc>),
         PrimitiveObject(PrimitiveObject<'gc>),
         NamespaceObject(NamespaceObject<'gc>),
+        ArrayObject(ArrayObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -733,6 +737,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
     fn as_namespace(&self) -> Option<Ref<Namespace<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as array storage.
+    fn as_array_storage(&self) -> Option<Ref<ArrayStorage<'gc>>> {
         None
     }
 }

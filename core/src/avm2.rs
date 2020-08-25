@@ -23,6 +23,7 @@ macro_rules! avm_debug {
 }
 
 mod activation;
+mod array;
 mod class;
 mod function;
 mod globals;
