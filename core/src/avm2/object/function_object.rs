@@ -30,6 +30,15 @@ pub struct FunctionObjectData<'gc> {
     exec: Option<Executable<'gc>>,
 }
 
+pub fn implicit_deriver<'gc>(
+    base_proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    base_proto.derive(activation, class, scope)
+}
+
 impl<'gc> FunctionObject<'gc> {
     /// Construct a class.
     ///
@@ -47,8 +56,40 @@ impl<'gc> FunctionObject<'gc> {
         base_class: Option<Object<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
+        FunctionObject::from_class_with_deriver(
+            activation,
+            class,
+            base_class,
+            scope,
+            implicit_deriver,
+        )
+    }
+
+    /// Construct a class with a different `TObject` implementation than it's
+    /// base class.
+    ///
+    /// This is identical to `from_class`, save for the fact that you must also
+    /// provide a deriver function to create the subclass prototype with. This
+    /// accepts the superclass's prototype, the activation, class definition,
+    /// and scope. It must return the prototype object that should be used to
+    /// create the class.
+    pub fn from_class_with_deriver<DERIVE>(
+        activation: &mut Activation<'_, 'gc, '_>,
+        class: GcCell<'gc, Class<'gc>>,
+        base_class: Option<Object<'gc>>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        derive: DERIVE,
+    ) -> Result<(Object<'gc>, Object<'gc>), Error>
+    where
+        DERIVE: FnOnce(
+            Object<'gc>,
+            &mut Activation<'_, 'gc, '_>,
+            GcCell<'gc, Class<'gc>>,
+            Option<GcCell<'gc, Scope<'gc>>>,
+        ) -> Result<Object<'gc>, Error>,
+    {
         let class_read = class.read();
-        let mut class_proto = if let Some(mut base_class) = base_class {
+        let class_proto = if let Some(mut base_class) = base_class {
             let super_proto: Result<_, Error> = base_class
                 .get_property(
                     base_class,
@@ -68,11 +109,21 @@ impl<'gc> FunctionObject<'gc> {
                     .into()
                 });
 
-            super_proto?.derive(activation, class, scope)?
+            derive(super_proto?, activation, class, scope)?
         } else {
             ScriptObject::bare_object(activation.context.gc_context)
         };
 
+        FunctionObject::from_class_and_proto(activation, class, class_proto, scope)
+    }
+
+    /// Construct a class with a custom object type as it's prototype.
+    fn from_class_and_proto(
+        activation: &mut Activation<'_, 'gc, '_>,
+        class: GcCell<'gc, Class<'gc>>,
+        mut class_proto: Object<'gc>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+    ) -> Result<(Object<'gc>, Object<'gc>), Error> {
         let mut interfaces = Vec::new();
         let interface_names = class.read().interfaces().to_vec();
         for interface_name in interface_names {
@@ -107,6 +158,7 @@ impl<'gc> FunctionObject<'gc> {
         let fn_proto = activation.avm2().prototypes().function;
         let class_constr_proto = activation.avm2().prototypes().class;
 
+        let class_read = class.read();
         let initializer = class_read.instance_init();
 
         let mut constr: Object<'gc> = FunctionObject(GcCell::allocate(

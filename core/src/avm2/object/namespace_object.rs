@@ -44,6 +44,28 @@ impl<'gc> NamespaceObject<'gc> {
         ))
         .into())
     }
+
+    /// Construct a namespace subclass.
+    pub fn derive(
+        base_proto: Object<'gc>,
+        mc: MutationContext<'gc, '_>,
+        class: GcCell<'gc, Class<'gc>>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+    ) -> Result<Object<'gc>, Error> {
+        let base = ScriptObjectData::base_new(
+            Some(base_proto),
+            ScriptObjectClass::InstancePrototype(class, scope),
+        );
+
+        Ok(NamespaceObject(GcCell::allocate(
+            mc,
+            NamespaceObjectData {
+                base,
+                namespace: Namespace::public_namespace(),
+            },
+        ))
+        .into())
+    }
 }
 
 impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
