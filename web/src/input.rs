@@ -33,6 +33,7 @@ impl WebInputBackend {
 
     /// Register a key release for a given code string.
     pub fn keyup(&mut self, code: String) {
+        self.last_key = web_to_ruffle_key_code(&code).unwrap_or_else(|| KeyCode::Unknown);
         self.keys_down.remove(&code);
     }
 
