@@ -15,7 +15,7 @@ gif = "0.10.3"
 indexmap = "1.5.1"
 libflate = "1.0.2"
 log = "0.4"
-minimp3 = { version = "0.3.5", optional = true }
+minimp3 = { version = "0.4.0", optional = true }
 png = { version = "0.16.7" }
 puremp3 = { version = "0.1", optional = true }
 ruffle_macros = { path = "macros" }
