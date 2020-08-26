@@ -4,15 +4,18 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::object::{
+    implicit_deriver, ArrayObject, FunctionObject, NamespaceObject, Object, PrimitiveObject,
+    ScriptObject, TObject,
+};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::f64::NAN;
 
+mod array;
 mod boolean;
 mod class;
 mod flash;
@@ -50,6 +53,7 @@ pub struct SystemPrototypes<'gc> {
     pub int: Object<'gc>,
     pub uint: Object<'gc>,
     pub namespace: Object<'gc>,
+    pub array: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -76,6 +80,7 @@ impl<'gc> SystemPrototypes<'gc> {
             int: empty,
             uint: empty,
             namespace: empty,
+            array: empty,
         }
     }
 }
@@ -121,16 +126,59 @@ fn dynamic_class<'gc>(
 /// Add a class builtin to the global scope.
 ///
 /// This function returns a prototype which may be stored in `SystemPrototypes`.
-fn class<'gc>(
+/// The `custom_derive` is used to select a particular `TObject` impl, or you
+/// can use `None` to indicate that this class does not change host object
+/// impls.
+fn class<'gc, DERIVE>(
     activation: &mut Activation<'_, 'gc, '_>,
     mut global: Object<'gc>,
     class_def: GcCell<'gc, Class<'gc>>,
-) -> Result<Object<'gc>, Error> {
-    let class_trait = Trait::from_class(class_def);
+    custom_derive: DERIVE,
+) -> Result<Object<'gc>, Error>
+where
+    DERIVE: FnOnce(
+        Object<'gc>,
+        &mut Activation<'_, 'gc, '_>,
+        GcCell<'gc, Class<'gc>>,
+        Option<GcCell<'gc, Scope<'gc>>>,
+    ) -> Result<Object<'gc>, Error>,
+{
     let global_scope = Scope::push_scope(global.get_scope(), global, activation.context.gc_context);
-    let mut constr = global
-        .install_foreign_trait(activation, class_trait, Some(global_scope), global)?
-        .coerce_to_object(activation)?;
+    /*let mut constr = global
+    .install_foreign_trait(activation, class_trait, Some(global_scope), global)?
+    .coerce_to_object(activation)?;*/
+
+    let class_read = class_def.read();
+    let super_class = if let Some(sc_name) = class_read.super_class_name() {
+        let super_name = global
+            .resolve_multiname(sc_name)?
+            .unwrap_or_else(|| QName::dynamic_name("Object"));
+
+        let super_class: Result<Object<'gc>, Error> = global
+            .get_property(global, &super_name, activation)?
+            .coerce_to_object(activation)
+            .map_err(|_e| {
+                format!("Could not resolve superclass {:?}", super_name.local_name()).into()
+            });
+
+        Some(super_class?)
+    } else {
+        None
+    };
+
+    let (mut constr, _cinit) = FunctionObject::from_class_with_deriver(
+        activation,
+        class_def,
+        super_class,
+        Some(global_scope),
+        custom_derive,
+    )?;
+    global.install_const(
+        activation.context.gc_context,
+        class_read.name().clone(),
+        0,
+        constr.into(),
+    );
 
     constr
         .get_property(
@@ -139,6 +187,33 @@ fn class<'gc>(
             activation,
         )?
         .coerce_to_object(activation)
+}
+
+fn primitive_deriver<'gc>(
+    base_proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    PrimitiveObject::derive(base_proto, activation.context.gc_context, class, scope)
+}
+
+fn namespace_deriver<'gc>(
+    base_proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    NamespaceObject::derive(base_proto, activation.context.gc_context, class, scope)
+}
+
+fn array_deriver<'gc>(
+    base_proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    ArrayObject::derive(base_proto, activation.context.gc_context, class, scope)
 }
 
 /// Add a builtin constant to the global scope.
@@ -191,31 +266,43 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
         activation,
         gs,
         string::create_class(activation.context.gc_context),
+        primitive_deriver,
     )?;
     sp.boolean = class(
         activation,
         gs,
         boolean::create_class(activation.context.gc_context),
+        primitive_deriver,
     )?;
     sp.number = class(
         activation,
         gs,
         number::create_class(activation.context.gc_context),
+        primitive_deriver,
     )?;
     sp.int = class(
         activation,
         gs,
         int::create_class(activation.context.gc_context),
+        primitive_deriver,
     )?;
     sp.uint = class(
         activation,
         gs,
         uint::create_class(activation.context.gc_context),
+        primitive_deriver,
     )?;
     sp.namespace = class(
         activation,
         gs,
         namespace::create_class(activation.context.gc_context),
+        namespace_deriver,
+    )?;
+    sp.array = class(
+        activation,
+        gs,
+        array::create_class(activation.context.gc_context),
+        array_deriver,
     )?;
 
     activation.context.avm2.system_prototypes = Some(sp);
@@ -250,6 +337,7 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
         activation,
         gs,
         flash::events::eventdispatcher::create_class(activation.context.gc_context),
+        implicit_deriver,
     )?;
 
     // package `flash.display`
@@ -257,26 +345,31 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
         activation,
         gs,
         flash::display::displayobject::create_class(activation.context.gc_context),
+        implicit_deriver,
     )?;
     class(
         activation,
         gs,
         flash::display::interactiveobject::create_class(activation.context.gc_context),
+        implicit_deriver,
     )?;
     class(
         activation,
         gs,
         flash::display::displayobjectcontainer::create_class(activation.context.gc_context),
+        implicit_deriver,
     )?;
     class(
         activation,
         gs,
         flash::display::sprite::create_class(activation.context.gc_context),
+        implicit_deriver,
     )?;
     class(
         activation,
         gs,
         flash::display::movieclip::create_class(activation.context.gc_context),
+        implicit_deriver,
     )?;
 
     Ok(())

@@ -23,7 +23,7 @@ mod primitive_object;
 mod script_object;
 
 pub use crate::avm2::object::array_object::ArrayObject;
-pub use crate::avm2::object::function_object::FunctionObject;
+pub use crate::avm2::object::function_object::{implicit_deriver, FunctionObject};
 pub use crate::avm2::object::namespace_object::NamespaceObject;
 pub use crate::avm2::object::primitive_object::PrimitiveObject;
 pub use crate::avm2::object::script_object::ScriptObject;

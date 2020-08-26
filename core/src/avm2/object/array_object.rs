@@ -30,6 +30,44 @@ pub struct ArrayObjectData<'gc> {
     array: ArrayStorage<'gc>,
 }
 
+impl<'gc> ArrayObject<'gc> {
+    /// Construct a
+    pub fn construct(base_proto: Object<'gc>, mc: MutationContext<'gc, '_>) -> Object<'gc> {
+        let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
+
+        ArrayObject(GcCell::allocate(
+            mc,
+            ArrayObjectData {
+                base,
+                array: ArrayStorage::new(0),
+            },
+        ))
+        .into()
+    }
+
+    /// Construct a primitive subclass.
+    pub fn derive(
+        base_proto: Object<'gc>,
+        mc: MutationContext<'gc, '_>,
+        class: GcCell<'gc, Class<'gc>>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+    ) -> Result<Object<'gc>, Error> {
+        let base = ScriptObjectData::base_new(
+            Some(base_proto),
+            ScriptObjectClass::InstancePrototype(class, scope),
+        );
+
+        Ok(ArrayObject(GcCell::allocate(
+            mc,
+            ArrayObjectData {
+                base,
+                array: ArrayStorage::new(0),
+            },
+        ))
+        .into())
+    }
+}
+
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     impl_avm2_custom_object!(base);
 
