@@ -73,6 +73,9 @@ struct GcRootData<'gc> {
 
     /// Timed callbacks created with `setInterval`/`setTimeout`.
     timers: Timers<'gc>,
+
+    /// External interface for (for example) Javascript <-> Actionscript interaction
+    external_interface: ExternalInterface<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -92,6 +95,7 @@ impl<'gc> GcRootData<'gc> {
         &mut HashMap<String, Object<'gc>>,
         &mut Vec<EditText<'gc>>,
         &mut Timers<'gc>,
+        &mut ExternalInterface<'gc>,
     ) {
         (
             &mut self.levels,
@@ -104,6 +108,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.shared_objects,
             &mut self.unbound_text_fields,
             &mut self.timers,
+            &mut self.external_interface,
         )
     }
 }
@@ -181,9 +186,6 @@ pub struct Player {
     /// contexts to other parts of the player. It can be used to ensure the
     /// player lives across `await` calls in async code.
     self_reference: Option<Weak<Mutex<Self>>>,
-
-    /// External interface for (for example) Javascript <-> Actionscript interaction
-    external_interface: ExternalInterface,
 }
 
 impl Player {
@@ -239,6 +241,7 @@ impl Player {
                         shared_objects: HashMap::new(),
                         unbound_text_fields: Vec::new(),
                         timers: Timers::new(),
+                        external_interface: ExternalInterface::new(),
                     },
                 ))
             }),
@@ -266,7 +269,6 @@ impl Player {
             instance_counter: 0,
             time_til_next_timer: None,
             storage,
-            external_interface: ExternalInterface::new(),
         };
 
         player.mutate_with_update_context(|context| Avm2::load_player_globals(context))?;
@@ -1015,7 +1017,6 @@ impl Player {
             storage,
             locale,
             needs_render,
-            external_interface,
         ) = (
             self.player_version,
             &self.swf,
@@ -1034,7 +1035,6 @@ impl Player {
             self.storage.deref_mut(),
             self.locale.deref_mut(),
             &mut self.needs_render,
-            &self.external_interface,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -1051,6 +1051,7 @@ impl Player {
                 shared_objects,
                 unbound_text_fields,
                 timers,
+                external_interface,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -1162,12 +1163,10 @@ impl Player {
         self.mutate_with_update_context(|context| context.avm1.has_mouse_listener())
     }
 
-    pub fn external_interface(&self) -> &ExternalInterface {
-        &self.external_interface
-    }
-
     pub fn add_external_interface(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {
-        self.external_interface.add_provider(provider);
+        self.mutate_with_update_context(|context| {
+            context.external_interface.add_provider(provider)
+        });
     }
 }
 

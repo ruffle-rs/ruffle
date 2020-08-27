@@ -74,7 +74,7 @@ where
             needs_render: &mut false,
             avm1: &mut avm1,
             avm2: &mut avm2,
-            external_interface: &Default::default(),
+            external_interface: &mut Default::default(),
         };
         root.post_instantiation(&mut context, root, None, false, false);
         root.set_name(context.gc_context, "");
