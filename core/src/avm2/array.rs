@@ -68,7 +68,7 @@ impl<'gc> ArrayStorage<'gc> {
     ///
     /// If the item index extends beyond the length of the array, then the
     /// array will be extended with holes.
-    fn set(&mut self, item: usize, value: Value<'gc>) {
+    pub fn set(&mut self, item: usize, value: Value<'gc>) {
         if self.storage.len() < (item + 1) {
             self.storage.resize(item + 1, None)
         }
@@ -82,7 +82,7 @@ impl<'gc> ArrayStorage<'gc> {
     }
 
     /// Set the length of the array.
-    fn set_length(&mut self, size: usize) {
+    pub fn set_length(&mut self, size: usize) {
         self.storage.resize(size, None)
     }
 }
