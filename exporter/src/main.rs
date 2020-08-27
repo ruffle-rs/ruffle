@@ -332,23 +332,23 @@ fn capture_multiple_swfs(
 
 fn main() -> Result<(), Box<dyn Error>> {
     let opt: Opt = Opt::parse();
-    let adapter = block_on(wgpu::Adapter::request(
-        &wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::Default,
-            compatible_surface: None,
-        },
-        wgpu::BackendBit::PRIMARY,
-    ))
+    let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+    let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+        power_preference: wgpu::PowerPreference::Default,
+        compatible_surface: None,
+    }))
     .ok_or_else(|| {
         "This tool requires hardware acceleration, but no compatible graphics device was found."
     })?;
 
-    let (device, queue) = block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-        extensions: wgpu::Extensions {
-            anisotropic_filtering: false,
+    let (device, queue) = block_on(adapter.request_device(
+        &wgpu::DeviceDescriptor {
+            features: Default::default(),
+            limits: wgpu::Limits::default(),
+            shader_validation: false,
         },
-        limits: wgpu::Limits::default(),
-    }));
+        None,
+    ))?;
 
     if opt.swf.is_file() {
         capture_single_swf(Rc::new(device), Rc::new(queue), &opt)?;

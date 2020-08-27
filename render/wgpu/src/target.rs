@@ -1,3 +1,4 @@
+use crate::utils::BufferDimensions;
 use futures::executor::block_on;
 use image::buffer::ConvertBuffer;
 use image::{Bgra, ImageBuffer, RgbaImage};
@@ -18,13 +19,13 @@ pub trait RenderTarget: Debug + 'static {
 
     fn height(&self) -> u32;
 
-    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::TimeOut>;
+    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SwapChainError>;
 
-    fn submit(
+    fn submit<I: IntoIterator<Item = wgpu::CommandBuffer>>(
         &self,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        command_buffers: &[wgpu::CommandBuffer],
+        command_buffers: I,
     );
 }
 
@@ -36,11 +37,11 @@ pub struct SwapChainTarget {
 }
 
 #[derive(Debug)]
-pub struct SwapChainTargetFrame(wgpu::SwapChainOutput);
+pub struct SwapChainTargetFrame(wgpu::SwapChainFrame);
 
 impl RenderTargetFrame for SwapChainTargetFrame {
     fn view(&self) -> &wgpu::TextureView {
-        &self.0.view
+        &self.0.output.view
     }
 }
 
@@ -83,15 +84,17 @@ impl RenderTarget for SwapChainTarget {
         self.swap_chain_desc.height
     }
 
-    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::TimeOut> {
-        self.swap_chain.get_next_texture().map(SwapChainTargetFrame)
+    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SwapChainError> {
+        self.swap_chain
+            .get_current_frame()
+            .map(SwapChainTargetFrame)
     }
 
-    fn submit(
+    fn submit<I: IntoIterator<Item = wgpu::CommandBuffer>>(
         &self,
         _device: &wgpu::Device,
         queue: &wgpu::Queue,
-        command_buffers: &[wgpu::CommandBuffer],
+        command_buffers: I,
     ) {
         queue.submit(command_buffers);
     }
@@ -103,6 +106,7 @@ pub struct TextureTarget {
     texture: wgpu::Texture,
     format: wgpu::TextureFormat,
     buffer: wgpu::Buffer,
+    buffer_dimensions: BufferDimensions,
 }
 
 #[derive(Debug)]
@@ -118,6 +122,7 @@ impl RenderTargetFrame for TextureTargetFrame {
 
 impl TextureTarget {
     pub fn new(device: &wgpu::Device, size: (u32, u32)) -> Self {
+        let buffer_dimensions = BufferDimensions::new(size.0 as usize, size.1 as usize);
         let size = wgpu::Extent3d {
             width: size.0,
             height: size.1,
@@ -128,7 +133,6 @@ impl TextureTarget {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: texture_label.as_deref(),
             size,
-            array_layer_count: 1,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -138,29 +142,35 @@ impl TextureTarget {
         let buffer_label = create_debug_label!("Render target buffer");
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: buffer_label.as_deref(),
-            size: size.width as u64 * size.height as u64 * 4,
+            size: (buffer_dimensions.padded_bytes_per_row * buffer_dimensions.height) as u64,
             usage: wgpu::BufferUsage::COPY_DST | wgpu::BufferUsage::MAP_READ,
+            mapped_at_creation: false,
         });
         Self {
             size,
             texture,
             format,
             buffer,
+            buffer_dimensions,
         }
     }
 
     pub fn capture(&self, device: &wgpu::Device) -> Option<RgbaImage> {
-        let buffer_future = self
-            .buffer
-            .map_read(0, self.size.width as u64 * self.size.height as u64 * 4);
+        let buffer_future = self.buffer.slice(..).map_async(wgpu::MapMode::Read);
         device.poll(wgpu::Maintain::Wait);
         match block_on(buffer_future) {
-            Ok(map) => {
-                let bgra = BgraImage::from_raw(
-                    self.size.width,
-                    self.size.height,
-                    Vec::from(map.as_slice()),
+            Ok(()) => {
+                let map = self.buffer.slice(..).get_mapped_range();
+                let mut buffer = Vec::with_capacity(
+                    self.buffer_dimensions.height * self.buffer_dimensions.unpadded_bytes_per_row,
                 );
+
+                for chunk in map.chunks(self.buffer_dimensions.padded_bytes_per_row) {
+                    buffer
+                        .extend_from_slice(&chunk[..self.buffer_dimensions.unpadded_bytes_per_row]);
+                }
+
+                let bgra = BgraImage::from_raw(self.size.width, self.size.height, buffer);
                 bgra.map(|image| image.convert())
             }
             Err(e) => {
@@ -182,7 +192,6 @@ impl RenderTarget for TextureTarget {
         self.texture = device.create_texture(&wgpu::TextureDescriptor {
             label: label.as_deref(),
             size: self.size,
-            array_layer_count: 1,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -195,6 +204,7 @@ impl RenderTarget for TextureTarget {
             label: buffer_label.as_deref(),
             size: width as u64 * height as u64 * 4,
             usage: wgpu::BufferUsage::COPY_DST | wgpu::BufferUsage::MAP_READ,
+            mapped_at_creation: false,
         });
     }
 
@@ -210,15 +220,17 @@ impl RenderTarget for TextureTarget {
         self.size.height
     }
 
-    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::TimeOut> {
-        Ok(TextureTargetFrame(self.texture.create_default_view()))
+    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SwapChainError> {
+        Ok(TextureTargetFrame(
+            self.texture.create_view(&Default::default()),
+        ))
     }
 
-    fn submit(
+    fn submit<I: IntoIterator<Item = wgpu::CommandBuffer>>(
         &self,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        command_buffers: &[wgpu::CommandBuffer],
+        command_buffers: I,
     ) {
         let label = create_debug_label!("Render target transfer encoder");
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -228,18 +240,18 @@ impl RenderTarget for TextureTarget {
             wgpu::TextureCopyView {
                 texture: &self.texture,
                 mip_level: 0,
-                array_layer: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
             wgpu::BufferCopyView {
                 buffer: &self.buffer,
-                offset: 0,
-                bytes_per_row: self.width() * 4,
-                rows_per_image: 0,
+                layout: wgpu::TextureDataLayout {
+                    offset: 0,
+                    bytes_per_row: self.buffer_dimensions.padded_bytes_per_row as u32,
+                    rows_per_image: 0,
+                },
             },
             self.size,
         );
-        queue.submit(command_buffers);
-        queue.submit(&[encoder.finish()]);
+        queue.submit(command_buffers.into_iter().chain(Some(encoder.finish())));
     }
 }

@@ -33,35 +33,47 @@ impl ShapePipeline {
 
 impl Pipelines {
     pub fn new(device: &wgpu::Device, msaa_sample_count: u32) -> Result<Self, Error> {
-        let color_vs_bytes = include_bytes!("../shaders/color.vert.spv");
-        let color_vs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
-            &color_vs_bytes[..],
-        ))?);
-        let color_fs_bytes = include_bytes!("../shaders/color.frag.spv");
-        let color_fs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
-            &color_fs_bytes[..],
-        ))?);
-        let texture_vs_bytes = include_bytes!("../shaders/texture.vert.spv");
-        let texture_vs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
-            &texture_vs_bytes[..],
-        ))?);
-        let gradient_fs_bytes = include_bytes!("../shaders/gradient.frag.spv");
-        let gradient_fs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
-            &gradient_fs_bytes[..],
-        ))?);
-        let bitmap_fs_bytes = include_bytes!("../shaders/bitmap.frag.spv");
-        let bitmap_fs = device.create_shader_module(&wgpu::read_spirv(std::io::Cursor::new(
-            &bitmap_fs_bytes[..],
-        ))?);
+        let color_vs =
+            device.create_shader_module(wgpu::include_spirv!("../shaders/color.vert.spv"));
+        let color_fs =
+            device.create_shader_module(wgpu::include_spirv!("../shaders/color.frag.spv"));
+        let texture_vs =
+            device.create_shader_module(wgpu::include_spirv!("../shaders/texture.vert.spv"));
+        let gradient_fs =
+            device.create_shader_module(wgpu::include_spirv!("../shaders/gradient.frag.spv"));
+        let bitmap_fs =
+            device.create_shader_module(wgpu::include_spirv!("../shaders/bitmap.frag.spv"));
+
+        let vertex_buffers_description = [wgpu::VertexBufferDescriptor {
+            stride: std::mem::size_of::<GPUVertex>() as u64,
+            step_mode: wgpu::InputStepMode::Vertex,
+            attributes: &vertex_attr_array![
+                0 => Float2,
+                1 => Float4
+            ],
+        }];
 
         Ok(Self {
-            color: create_color_pipelines(&device, &color_vs, &color_fs, msaa_sample_count),
-            bitmap: create_bitmap_pipeline(&device, &texture_vs, &bitmap_fs, msaa_sample_count),
+            color: create_color_pipelines(
+                &device,
+                &color_vs,
+                &color_fs,
+                msaa_sample_count,
+                &vertex_buffers_description,
+            ),
+            bitmap: create_bitmap_pipeline(
+                &device,
+                &texture_vs,
+                &bitmap_fs,
+                msaa_sample_count,
+                &vertex_buffers_description,
+            ),
             gradient: create_gradient_pipeline(
                 &device,
                 &texture_vs,
                 &gradient_fs,
                 msaa_sample_count,
+                &vertex_buffers_description,
             ),
         })
     }
@@ -73,10 +85,12 @@ fn create_pipeline_descriptor<'a>(
     pipeline_layout: &'a wgpu::PipelineLayout,
     depth_stencil_state: Option<wgpu::DepthStencilStateDescriptor>,
     color_states: &'a [wgpu::ColorStateDescriptor],
+    vertex_buffers_description: &'a [wgpu::VertexBufferDescriptor<'a>],
     msaa_sample_count: u32,
 ) -> wgpu::RenderPipelineDescriptor<'a> {
     wgpu::RenderPipelineDescriptor {
-        layout: &pipeline_layout,
+        label: None,
+        layout: Some(&pipeline_layout),
         vertex_stage: wgpu::ProgrammableStageDescriptor {
             module: &vertex_shader,
             entry_point: "main",
@@ -88,6 +102,7 @@ fn create_pipeline_descriptor<'a>(
         rasterization_state: Some(wgpu::RasterizationStateDescriptor {
             front_face: wgpu::FrontFace::Ccw,
             cull_mode: wgpu::CullMode::None,
+            clamp_depth: false,
             depth_bias: 0,
             depth_bias_slope_scale: 0.0,
             depth_bias_clamp: 0.0,
@@ -100,14 +115,7 @@ fn create_pipeline_descriptor<'a>(
         alpha_to_coverage_enabled: false,
         vertex_state: wgpu::VertexStateDescriptor {
             index_format: wgpu::IndexFormat::Uint16,
-            vertex_buffers: &[wgpu::VertexBufferDescriptor {
-                stride: std::mem::size_of::<GPUVertex>() as u64,
-                step_mode: wgpu::InputStepMode::Vertex,
-                attributes: &vertex_attr_array![
-                    0 => Float2,
-                    1 => Float4
-                ],
-            }],
+            vertex_buffers: vertex_buffers_description,
         },
     }
 }
@@ -117,26 +125,37 @@ fn create_color_pipelines(
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
+    vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
 ) -> ShapePipeline {
     let label = create_debug_label!("Color shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[
+        entries: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                ty: wgpu::BindingType::UniformBuffer {
+                    dynamic: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
             wgpu::BindGroupLayoutEntry {
                 binding: 1,
                 visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                ty: wgpu::BindingType::UniformBuffer {
+                    dynamic: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
         ],
         label: label.as_deref(),
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: None,
         bind_group_layouts: &[&bind_layout],
+        push_constant_ranges: &[],
     });
 
     let mut write_mask_pipelines = Vec::new();
@@ -151,20 +170,22 @@ fn create_color_pipelines(
                 format: wgpu::TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Always,
-                stencil_front: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Always,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Replace,
+                stencil: wgpu::StencilStateDescriptor {
+                    front: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Always,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Replace,
+                    },
+                    back: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Always,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Replace,
+                    },
+                    read_mask: 0,
+                    write_mask: 1 << i,
                 },
-                stencil_back: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Always,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Replace,
-                },
-                stencil_read_mask: 0,
-                stencil_write_mask: 1 << i,
             }),
             &[wgpu::ColorStateDescriptor {
                 format: wgpu::TextureFormat::Bgra8Unorm,
@@ -180,6 +201,7 @@ fn create_color_pipelines(
                 },
                 write_mask: wgpu::ColorWrite::empty(),
             }],
+            vertex_buffers_description,
             msaa_sample_count,
         )));
     }
@@ -193,20 +215,22 @@ fn create_color_pipelines(
                 format: wgpu::TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Always,
-                stencil_front: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Equal,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Keep,
+                stencil: wgpu::StencilStateDescriptor {
+                    front: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Equal,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Keep,
+                    },
+                    back: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Equal,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Keep,
+                    },
+                    read_mask: i,
+                    write_mask: 0,
                 },
-                stencil_back: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Equal,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Keep,
-                },
-                stencil_read_mask: i,
-                stencil_write_mask: 0,
             }),
             &[wgpu::ColorStateDescriptor {
                 format: wgpu::TextureFormat::Bgra8Unorm,
@@ -222,6 +246,7 @@ fn create_color_pipelines(
                 },
                 write_mask: wgpu::ColorWrite::ALL,
             }],
+            vertex_buffers_description,
             msaa_sample_count,
         )));
     }
@@ -238,24 +263,37 @@ fn create_bitmap_pipeline(
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
+    vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
 ) -> ShapePipeline {
     let label = create_debug_label!("Bitmap shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[
+        entries: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                ty: wgpu::BindingType::UniformBuffer {
+                    dynamic: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
             wgpu::BindGroupLayoutEntry {
                 binding: 1,
                 visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                ty: wgpu::BindingType::UniformBuffer {
+                    dynamic: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
             wgpu::BindGroupLayoutEntry {
                 binding: 2,
                 visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                ty: wgpu::BindingType::UniformBuffer {
+                    dynamic: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
             wgpu::BindGroupLayoutEntry {
                 binding: 3,
@@ -265,18 +303,22 @@ fn create_bitmap_pipeline(
                     component_type: wgpu::TextureComponentType::Float,
                     dimension: wgpu::TextureViewDimension::D2,
                 },
+                count: None,
             },
             wgpu::BindGroupLayoutEntry {
                 binding: 4,
                 visibility: wgpu::ShaderStage::FRAGMENT,
                 ty: wgpu::BindingType::Sampler { comparison: false },
+                count: None,
             },
         ],
         label: label.as_deref(),
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: None,
         bind_group_layouts: &[&bind_layout],
+        push_constant_ranges: &[],
     });
 
     let mut write_mask_pipelines = Vec::new();
@@ -291,20 +333,22 @@ fn create_bitmap_pipeline(
                 format: wgpu::TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Always,
-                stencil_front: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Always,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Replace,
+                stencil: wgpu::StencilStateDescriptor {
+                    front: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Always,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Replace,
+                    },
+                    back: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Always,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Replace,
+                    },
+                    read_mask: 0,
+                    write_mask: 1 << i,
                 },
-                stencil_back: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Always,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Replace,
-                },
-                stencil_read_mask: 0,
-                stencil_write_mask: 1 << i,
             }),
             &[wgpu::ColorStateDescriptor {
                 format: wgpu::TextureFormat::Bgra8Unorm,
@@ -320,6 +364,7 @@ fn create_bitmap_pipeline(
                 },
                 write_mask: wgpu::ColorWrite::empty(),
             }],
+            vertex_buffers_description,
             msaa_sample_count,
         )));
     }
@@ -333,20 +378,22 @@ fn create_bitmap_pipeline(
                 format: wgpu::TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Always,
-                stencil_front: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Equal,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Keep,
+                stencil: wgpu::StencilStateDescriptor {
+                    front: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Equal,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Keep,
+                    },
+                    back: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Equal,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Keep,
+                    },
+                    read_mask: i,
+                    write_mask: 0,
                 },
-                stencil_back: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Equal,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Keep,
-                },
-                stencil_read_mask: i,
-                stencil_write_mask: 0,
             }),
             &[wgpu::ColorStateDescriptor {
                 format: wgpu::TextureFormat::Bgra8Unorm,
@@ -362,6 +409,7 @@ fn create_bitmap_pipeline(
                 },
                 write_mask: wgpu::ColorWrite::ALL,
             }],
+            vertex_buffers_description,
             msaa_sample_count,
         )));
     }
@@ -378,39 +426,56 @@ fn create_gradient_pipeline(
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
+    vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
 ) -> ShapePipeline {
     let label = create_debug_label!("Gradient shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[
+        entries: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                ty: wgpu::BindingType::UniformBuffer {
+                    dynamic: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
             wgpu::BindGroupLayoutEntry {
                 binding: 1,
                 visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                ty: wgpu::BindingType::UniformBuffer {
+                    dynamic: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
             wgpu::BindGroupLayoutEntry {
                 binding: 2,
                 visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                ty: wgpu::BindingType::UniformBuffer {
+                    dynamic: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
             wgpu::BindGroupLayoutEntry {
                 binding: 3,
                 visibility: wgpu::ShaderStage::FRAGMENT,
                 ty: wgpu::BindingType::StorageBuffer {
                     dynamic: false,
+                    min_binding_size: None,
                     readonly: true,
                 },
+                count: None,
             },
         ],
         label: label.as_deref(),
     });
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: None,
         bind_group_layouts: &[&bind_layout],
+        push_constant_ranges: &[],
     });
 
     let mut write_mask_pipelines = Vec::new();
@@ -425,20 +490,22 @@ fn create_gradient_pipeline(
                 format: wgpu::TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Always,
-                stencil_front: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Always,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Replace,
+                stencil: wgpu::StencilStateDescriptor {
+                    front: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Always,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Replace,
+                    },
+                    back: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Always,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Replace,
+                    },
+                    read_mask: 0,
+                    write_mask: 1 << i,
                 },
-                stencil_back: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Always,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Replace,
-                },
-                stencil_read_mask: 0,
-                stencil_write_mask: 1 << i,
             }),
             &[wgpu::ColorStateDescriptor {
                 format: wgpu::TextureFormat::Bgra8Unorm,
@@ -454,6 +521,7 @@ fn create_gradient_pipeline(
                 },
                 write_mask: wgpu::ColorWrite::empty(),
             }],
+            vertex_buffers_description,
             msaa_sample_count,
         )));
     }
@@ -467,20 +535,22 @@ fn create_gradient_pipeline(
                 format: wgpu::TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Always,
-                stencil_front: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Equal,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Keep,
+                stencil: wgpu::StencilStateDescriptor {
+                    front: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Equal,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Keep,
+                    },
+                    back: wgpu::StencilStateFaceDescriptor {
+                        compare: wgpu::CompareFunction::Equal,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Keep,
+                    },
+                    read_mask: i,
+                    write_mask: 0,
                 },
-                stencil_back: wgpu::StencilStateFaceDescriptor {
-                    compare: wgpu::CompareFunction::Equal,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Keep,
-                },
-                stencil_read_mask: i,
-                stencil_write_mask: 0,
             }),
             &[wgpu::ColorStateDescriptor {
                 format: wgpu::TextureFormat::Bgra8Unorm,
@@ -496,6 +566,7 @@ fn create_gradient_pipeline(
                 },
                 write_mask: wgpu::ColorWrite::ALL,
             }],
+            vertex_buffers_description,
             msaa_sample_count,
         )));
     }
