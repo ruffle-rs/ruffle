@@ -77,7 +77,7 @@ impl<'gc> ArrayStorage<'gc> {
     }
 
     /// Get the length of the array.
-    fn length(&self) -> usize {
+    pub fn length(&self) -> usize {
         self.storage.len()
     }
 
