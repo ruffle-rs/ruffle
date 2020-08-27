@@ -222,6 +222,31 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Get the numerical portion of the value, if it exists.
+    ///
+    /// This function performs no numerical coercion, nor are user-defined
+    /// object methods called. This should only be used if you specifically
+    /// need the behavior of only handling actual numbers; otherwise you should
+    /// use the appropriate `coerce_to_` method.
+    pub fn as_number(&self, mc: MutationContext<'gc, '_>) -> Result<f64, Error> {
+        match self {
+            // Methods that look for numbers in Flash Player don't seem to care
+            // about user-defined `valueOf` implementations. This code upholds
+            // that limitation as long as `TObject`'s `value_of` method also
+            // does not call user-defined functions.
+            Value::Object(num) => match num.value_of(mc)? {
+                Value::Number(num) => Ok(num),
+                Value::Integer(num) => Ok(num as f64),
+                Value::Unsigned(num) => Ok(num as f64),
+                _ => Err(format!("Expected Number, int, or uint, found {:?}", self).into()),
+            },
+            Value::Number(num) => Ok(*num),
+            Value::Integer(num) => Ok(*num as f64),
+            Value::Unsigned(num) => Ok(*num as f64),
+            _ => Err(format!("Expected Number, int, or uint, found {:?}", self).into()),
+        }
+    }
+
     /// Yields `true` if the given value is a primitive value.
     ///
     /// Note: Boxed primitive values are not considered primitive - it is
