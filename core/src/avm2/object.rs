@@ -12,7 +12,7 @@ use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
-use std::cell::Ref;
+use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
 mod array_object;
@@ -742,6 +742,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object as array storage.
     fn as_array_storage(&self) -> Option<Ref<ArrayStorage<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as mutable array storage.
+    fn as_array_storage_mut(
+        &self,
+        _mc: MutationContext<'gc, '_>,
+    ) -> Option<RefMut<ArrayStorage<'gc>>> {
         None
     }
 }
