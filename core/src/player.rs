@@ -12,6 +12,7 @@ use crate::backend::{audio::AudioBackend, render::Letterbox, render::RenderBacke
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{EditText, MorphShape, MovieClip};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
+use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
@@ -180,6 +181,9 @@ pub struct Player {
     /// contexts to other parts of the player. It can be used to ensure the
     /// player lives across `await` calls in async code.
     self_reference: Option<Weak<Mutex<Self>>>,
+
+    /// External interface for (for example) Javascript <-> Actionscript interaction
+    external_interface: ExternalInterface,
 }
 
 impl Player {
@@ -262,6 +266,7 @@ impl Player {
             instance_counter: 0,
             time_til_next_timer: None,
             storage,
+            external_interface: ExternalInterface::new(),
         };
 
         player.mutate_with_update_context(|context| Avm2::load_player_globals(context))?;
@@ -1152,6 +1157,14 @@ impl Player {
     /// Used by web to prevent scrolling.
     pub fn should_prevent_scrolling(&mut self) -> bool {
         self.mutate_with_update_context(|context| context.avm1.has_mouse_listener())
+    }
+
+    pub fn external_interface(&self) -> &ExternalInterface {
+        &self.external_interface
+    }
+
+    pub fn add_external_interface(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {
+        self.external_interface.add_provider(provider);
     }
 }
 

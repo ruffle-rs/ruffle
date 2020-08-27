@@ -38,6 +38,7 @@ mod transform;
 mod xml;
 
 pub mod backend;
+pub mod external;
 
 pub use chrono;
 pub use events::PlayerEvent;
