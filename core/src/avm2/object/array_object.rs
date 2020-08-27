@@ -31,7 +31,7 @@ pub struct ArrayObjectData<'gc> {
 }
 
 impl<'gc> ArrayObject<'gc> {
-    /// Construct a
+    /// Construct a fresh array.
     pub fn construct(base_proto: Object<'gc>, mc: MutationContext<'gc, '_>) -> Object<'gc> {
         let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
 
@@ -65,6 +65,17 @@ impl<'gc> ArrayObject<'gc> {
             },
         ))
         .into())
+    }
+
+    /// Wrap an existing array in an object.
+    pub fn from_array(
+        array: ArrayStorage<'gc>,
+        base_proto: Object<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Object<'gc> {
+        let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
+
+        ArrayObject(GcCell::allocate(mc, ArrayObjectData { base, array })).into()
     }
 }
 
