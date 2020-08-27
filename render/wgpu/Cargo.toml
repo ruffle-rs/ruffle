@@ -6,7 +6,7 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-wgpu = "0.5"
+wgpu = "0.6"
 wgpu-native = "0.5"
 image = "0.23.8"
 jpeg-decoder = "0.1.20"

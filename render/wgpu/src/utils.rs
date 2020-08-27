@@ -1,7 +1,9 @@
 use lyon::lyon_algorithms::path::Path;
 use ruffle_core::shape_utils::DrawCommand;
 use ruffle_core::swf;
+use std::mem::size_of;
 use swf::{GradientSpread, Twips};
+use wgpu::util::DeviceExt;
 macro_rules! create_debug_label {
     ($($arg:tt)*) => (
         if cfg!(feature = "render_debug_labels") {
@@ -18,13 +20,11 @@ pub fn create_buffer_with_data(
     usage: wgpu::BufferUsage,
     label: Option<String>,
 ) -> wgpu::Buffer {
-    let mapped = device.create_buffer_mapped(&wgpu::BufferDescriptor {
-        size: data.len() as u64,
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         usage,
         label: label.as_deref(),
-    });
-    mapped.data.copy_from_slice(data);
-    mapped.finish()
+        contents: data,
+    })
 }
 
 pub fn point(x: Twips, y: Twips) -> lyon::math::Point {
@@ -144,5 +144,30 @@ pub fn gradient_spread_mode_index(spread: GradientSpread) -> i32 {
         GradientSpread::Pad => 0,
         GradientSpread::Repeat => 1,
         GradientSpread::Reflect => 2,
+    }
+}
+
+// Based off wgpu example 'capture'
+#[derive(Debug)]
+pub struct BufferDimensions {
+    pub width: usize,
+    pub height: usize,
+    pub unpadded_bytes_per_row: usize,
+    pub padded_bytes_per_row: usize,
+}
+
+impl BufferDimensions {
+    pub fn new(width: usize, height: usize) -> Self {
+        let bytes_per_pixel = size_of::<u32>();
+        let unpadded_bytes_per_row = width * bytes_per_pixel;
+        let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
+        let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
+        let padded_bytes_per_row = unpadded_bytes_per_row + padded_bytes_per_row_padding;
+        Self {
+            width,
+            height,
+            unpadded_bytes_per_row,
+            padded_bytes_per_row,
+        }
     }
 }
