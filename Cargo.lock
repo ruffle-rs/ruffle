@@ -1594,7 +1594,7 @@ dependencies = [
 
 [[package]]
 name = "minimp3"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "minimp3-sys 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2262,7 +2262,7 @@ dependencies = [
  "json 0.12.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "libflate 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "minimp3 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "minimp3 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_enum 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "percent-encoding 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "png 0.16.7 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3480,7 +3480,7 @@ dependencies = [
 "checksum memoffset 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b4fc2c02a7e374099d4ee95a193111f72d2110197fe200272371758f6c3643d8"
 "checksum metal 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e198a0ee42bdbe9ef2c09d0b9426f3b2b47d90d93a4a9b0395c4cea605e92dc0"
 "checksum metal 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5c4e8a431536529327e28c9ba6992f2cb0c15d4222f0602a16e6d7695ff3bccf"
-"checksum minimp3 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c774cf8909b7170c02e767e920f461124a176447e7505a99f53cab261fd90f51"
+"checksum minimp3 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9684a8c55935322fdab159b5d7a6163b33f6e7d32c4a8a54fe53d1bcfad738db"
 "checksum minimp3-sys 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e21c73734c69dc95696c9ed8926a2b393171d98b3f5f5935686a26a487ab9b90"
 "checksum miniz_oxide 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "aa679ff6578b1cddee93d7e82e263b94a575e0bfced07284eb0c037c1d2416a5"
 "checksum miniz_oxide 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "be0f75932c1f6cfae3c04000e40114adf955636e19040f9c0a2c380702aa1c7f"
