@@ -13,7 +13,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::impl_avm2_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::cell::Ref;
+use std::cell::{Ref, RefMut};
 
 /// An Object which stores numerical properties in an array.
 #[derive(Collect, Debug, Clone, Copy)]
@@ -81,6 +81,13 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn as_array_storage(&self) -> Option<Ref<ArrayStorage<'gc>>> {
         Some(Ref::map(self.0.read(), |aod| &aod.array))
+    }
+
+    fn as_array_storage_mut(
+        &self,
+        mc: MutationContext<'gc, '_>,
+    ) -> Option<RefMut<ArrayStorage<'gc>>> {
+        Some(RefMut::map(self.0.write(mc), |aod| &mut aod.array))
     }
 
     fn construct(
