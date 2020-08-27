@@ -9,6 +9,7 @@ use crate::backend::locale::LocaleBackend;
 use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::display_object::EditText;
+use crate::external::ExternalInterface;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
@@ -125,6 +126,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The AVM2 global state.
     pub avm2: &'a mut Avm2<'gc>,
+
+    /// External interface for (for example) Javascript <-> Actionscript interaction
+    pub external_interface: &'a ExternalInterface,
 }
 
 unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context> {
@@ -199,6 +203,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             timers: self.timers,
             avm1: self.avm1,
             avm2: self.avm2,
+            external_interface: self.external_interface,
         }
     }
 }

@@ -1015,6 +1015,7 @@ impl Player {
             storage,
             locale,
             needs_render,
+            external_interface,
         ) = (
             self.player_version,
             &self.swf,
@@ -1033,6 +1034,7 @@ impl Player {
             self.storage.deref_mut(),
             self.locale.deref_mut(),
             &mut self.needs_render,
+            &self.external_interface,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -1081,6 +1083,7 @@ impl Player {
                 needs_render,
                 avm1,
                 avm2,
+                external_interface,
             };
 
             let ret = f(&mut update_context);

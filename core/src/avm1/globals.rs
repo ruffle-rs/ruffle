@@ -22,6 +22,7 @@ pub(crate) mod context_menu_item;
 mod date;
 pub(crate) mod display_object;
 pub(crate) mod error;
+mod external_interface;
 mod function;
 mod key;
 mod load_vars;
@@ -393,6 +394,8 @@ pub fn create_globals<'gc>(
         color_transform::create_proto(gc_context, object_proto, function_proto);
     let transform_proto: Object<'gc> =
         transform::create_proto(gc_context, object_proto, function_proto);
+    let external_interface_proto: Object<'gc> =
+        external_interface::create_proto(gc_context, object_proto);
 
     let (broadcaster_functions, as_broadcaster) =
         as_broadcaster::create(gc_context, Some(object_proto), function_proto);
@@ -495,6 +498,7 @@ pub fn create_globals<'gc>(
     let date = date::create_date_object(gc_context, date_proto, Some(function_proto));
 
     let flash = ScriptObject::object(gc_context, Some(object_proto));
+
     let geom = ScriptObject::object(gc_context, Some(object_proto));
     let filters = ScriptObject::object(gc_context, Some(object_proto));
 
@@ -556,6 +560,21 @@ pub fn create_globals<'gc>(
         gc_context,
         "BlurFilter",
         blur_filter.into(),
+        EnumSet::empty(),
+    );
+
+    let external = ScriptObject::object(gc_context, Some(object_proto));
+    let external_interface = external_interface::create_external_interface_object(
+        gc_context,
+        external_interface_proto,
+        function_proto,
+    );
+
+    flash.define_value(gc_context, "external", external.into(), EnumSet::empty());
+    external.define_value(
+        gc_context,
+        "ExternalInterface",
+        external_interface.into(),
         EnumSet::empty(),
     );
 

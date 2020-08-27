@@ -913,6 +913,7 @@ mod tests {
                 needs_render: &mut false,
                 avm1: &mut avm1,
                 avm2: &mut avm2,
+                external_interface: &Default::default(),
             };
 
             root.post_instantiation(&mut context, root, None, false, false);
