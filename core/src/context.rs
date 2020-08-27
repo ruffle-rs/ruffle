@@ -128,7 +128,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub avm2: &'a mut Avm2<'gc>,
 
     /// External interface for (for example) Javascript <-> Actionscript interaction
-    pub external_interface: &'a ExternalInterface,
+    pub external_interface: &'a mut ExternalInterface<'gc>,
 }
 
 unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context> {
