@@ -85,4 +85,23 @@ impl<'gc> ArrayStorage<'gc> {
     pub fn set_length(&mut self, size: usize) {
         self.storage.resize(size, None)
     }
+
+    /// Append the contents of another array into this one.
+    ///
+    /// The values in the other array remain there and are merely copied into
+    /// this one.
+    ///
+    /// Holes are copied as holes and not resolved at append time.
+    pub fn append(&mut self, other_array: &Self) {
+        for other_item in other_array.storage.iter() {
+            self.storage.push(other_item.clone())
+        }
+    }
+
+    /// Push a single value onto the end of this array.
+    ///
+    /// It is not possible to push a hole onto the array.
+    pub fn push(&mut self, item: Value<'gc>) {
+        self.storage.push(Some(item))
+    }
 }

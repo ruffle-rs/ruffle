@@ -1,10 +1,12 @@
 //! Array class
 
 use crate::avm2::activation::Activation;
+use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -46,13 +48,53 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Array.concat`
+#[allow(clippy::map_clone)] //You can't clone `Option<Ref<T>>` without it
+pub fn concat<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let mut base_array = this
+        .and_then(|this| this.as_array_storage().map(|a| a.clone()))
+        .unwrap_or_else(|| ArrayStorage::new(0));
+
+    for arg in args {
+        if let Some(other_array) = arg.coerce_to_object(activation)?.as_array_storage() {
+            base_array.append(&other_array);
+        } else {
+            base_array.push(arg.clone());
+        }
+    }
+
+    Ok(ArrayObject::from_array(
+        base_array,
+        activation
+            .context
+            .avm2
+            .system_prototypes
+            .as_ref()
+            .map(|sp| sp.array)
+            .unwrap(),
+        activation.context.gc_context,
+    )
+    .into())
+}
+
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
-    Class::new(
+    let class = Class::new(
         QName::new(Namespace::package(""), "Array"),
         Some(QName::new(Namespace::public_namespace(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
-    )
+    );
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::as3_namespace(), "concat"),
+        Method::from_builtin(concat),
+    ));
+
+    class
 }
