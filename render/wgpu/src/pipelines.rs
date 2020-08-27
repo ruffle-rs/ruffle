@@ -79,7 +79,9 @@ impl Pipelines {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn create_pipeline_descriptor<'a>(
+    label: Option<&'a str>,
     vertex_shader: &'a wgpu::ShaderModule,
     fragment_shader: &'a wgpu::ShaderModule,
     pipeline_layout: &'a wgpu::PipelineLayout,
@@ -89,7 +91,7 @@ fn create_pipeline_descriptor<'a>(
     msaa_sample_count: u32,
 ) -> wgpu::RenderPipelineDescriptor<'a> {
     wgpu::RenderPipelineDescriptor {
-        label: None,
+        label,
         layout: Some(&pipeline_layout),
         vertex_stage: wgpu::ProgrammableStageDescriptor {
             module: &vertex_shader,
@@ -127,7 +129,7 @@ fn create_color_pipelines(
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
 ) -> ShapePipeline {
-    let label = create_debug_label!("Color shape bind group");
+    let bind_layout_label = create_debug_label!("Color shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         entries: &[
             wgpu::BindGroupLayoutEntry {
@@ -149,11 +151,12 @@ fn create_color_pipelines(
                 count: None,
             },
         ],
-        label: label.as_deref(),
+        label: bind_layout_label.as_deref(),
     });
 
+    let pipeline_layout_label = create_debug_label!("Color shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: None,
+        label: pipeline_layout_label.as_deref(),
         bind_group_layouts: &[&bind_layout],
         push_constant_ranges: &[],
     });
@@ -162,7 +165,9 @@ fn create_color_pipelines(
     let mut read_mask_pipelines = Vec::new();
 
     for i in 0..8 {
+        let label = create_debug_label!("Color pipeline write mask {}", i);
         write_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            label.as_deref(),
             vertex_shader,
             fragment_shader,
             &pipeline_layout,
@@ -207,7 +212,9 @@ fn create_color_pipelines(
     }
 
     for i in 0..256 {
+        let label = create_debug_label!("Color pipeline read mask {}", i);
         read_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            label.as_deref(),
             vertex_shader,
             fragment_shader,
             &pipeline_layout,
@@ -265,7 +272,7 @@ fn create_bitmap_pipeline(
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
 ) -> ShapePipeline {
-    let label = create_debug_label!("Bitmap shape bind group");
+    let bind_layout_label = create_debug_label!("Bitmap shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         entries: &[
             wgpu::BindGroupLayoutEntry {
@@ -312,11 +319,12 @@ fn create_bitmap_pipeline(
                 count: None,
             },
         ],
-        label: label.as_deref(),
+        label: bind_layout_label.as_deref(),
     });
 
+    let pipeline_layout_label = create_debug_label!("Bitmap shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: None,
+        label: pipeline_layout_label.as_deref(),
         bind_group_layouts: &[&bind_layout],
         push_constant_ranges: &[],
     });
@@ -325,7 +333,9 @@ fn create_bitmap_pipeline(
     let mut read_mask_pipelines = Vec::new();
 
     for i in 0..8 {
+        let label = create_debug_label!("Bitmap pipeline write mask {}", i);
         write_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            label.as_deref(),
             vertex_shader,
             fragment_shader,
             &pipeline_layout,
@@ -370,7 +380,9 @@ fn create_bitmap_pipeline(
     }
 
     for i in 0..256 {
+        let label = create_debug_label!("Bitmap pipeline read mask {}", i);
         read_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            label.as_deref(),
             vertex_shader,
             fragment_shader,
             &pipeline_layout,
@@ -428,7 +440,7 @@ fn create_gradient_pipeline(
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
 ) -> ShapePipeline {
-    let label = create_debug_label!("Gradient shape bind group");
+    let bind_layout_label = create_debug_label!("Gradient shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         entries: &[
             wgpu::BindGroupLayoutEntry {
@@ -469,11 +481,12 @@ fn create_gradient_pipeline(
                 count: None,
             },
         ],
-        label: label.as_deref(),
+        label: bind_layout_label.as_deref(),
     });
 
+    let pipeline_layout_label = create_debug_label!("Gradient shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: None,
+        label: pipeline_layout_label.as_deref(),
         bind_group_layouts: &[&bind_layout],
         push_constant_ranges: &[],
     });
@@ -482,7 +495,9 @@ fn create_gradient_pipeline(
     let mut read_mask_pipelines = Vec::new();
 
     for i in 0..8 {
+        let label = create_debug_label!("Gradient pipeline write mask {}", i);
         write_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            label.as_deref(),
             vertex_shader,
             fragment_shader,
             &pipeline_layout,
@@ -527,7 +542,9 @@ fn create_gradient_pipeline(
     }
 
     for i in 0..256 {
+        let label = create_debug_label!("Gradient pipeline read mask {}", i);
         read_mask_pipelines.push(device.create_render_pipeline(&create_pipeline_descriptor(
+            label.as_deref(),
             vertex_shader,
             fragment_shader,
             &pipeline_layout,

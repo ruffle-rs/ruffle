@@ -224,8 +224,10 @@ impl IncompleteDrawType {
                     wgpu::FilterMode::Nearest
                 };
 
+                let sampler_label =
+                    create_debug_label!("Shape {} (bitmap) draw {} sampler", shape_id, draw_id);
                 let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-                    label: None,
+                    label: sampler_label.as_deref(),
                     address_mode_u: address_mode,
                     address_mode_v: address_mode,
                     address_mode_w: address_mode,
