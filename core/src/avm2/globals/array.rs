@@ -48,6 +48,21 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Array.length`
+pub fn length<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(array) = this.as_array_storage() {
+            return Ok(array.length().into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Array.concat`
 #[allow(clippy::map_clone)] //You can't clone `Option<Ref<T>>` without it
 pub fn concat<'gc>(
@@ -90,6 +105,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         Method::from_builtin(class_init),
         mc,
     );
+
+    class.write(mc).define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public_namespace(), "length"),
+        Method::from_builtin(length),
+    ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::as3_namespace(), "concat"),
