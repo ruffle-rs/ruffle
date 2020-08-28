@@ -4,3 +4,11 @@ true
 // ExternalInterface.addCallback("dump", object, dump)
 true
 
+/// dump() start
+// this
+[object Object]
+
+// this == object
+true
+
+/// dump() end

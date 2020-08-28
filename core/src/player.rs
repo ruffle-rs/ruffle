@@ -1168,6 +1168,14 @@ impl Player {
             context.external_interface.add_provider(provider)
         });
     }
+
+    pub fn call_internal_interface(&mut self, name: &str) {
+        self.mutate_with_update_context(|context| {
+            if let Some(callback) = context.external_interface.get_callback(name) {
+                callback.call(context, name);
+            }
+        });
+    }
 }
 
 pub struct DragObject<'gc> {
