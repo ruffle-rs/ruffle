@@ -1,0 +1,6 @@
+// ExternalInterface.available
+true
+
+// ExternalInterface.addCallback("dump", object, dump)
+true
+
