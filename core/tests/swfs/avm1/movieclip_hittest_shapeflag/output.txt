@@ -1,0 +1,167 @@
+// donut
+// clip.hitTest(400, 400, true)
+false
+// clip.hitTest(250, 250, true)
+false
+// clip.hitTest(550, 250, true)
+false
+// clip.hitTest(250, 550, true)
+false
+// clip.hitTest(550, 550, true)
+false
+// clip.hitTest(400, 500, true)
+true
+// clip.hitTest(500, 400, true)
+true
+// clip.hitTest(400, 300, true)
+true
+// clip.hitTest(300, 400, true)
+true
+// clip.hitTest(NaN, NaN, true)
+false
+
+// donut, root transformed
+// clip.hitTest(400, 400, true)
+false
+// clip.hitTest(250, 250, true)
+false
+// clip.hitTest(550, 250, true)
+false
+// clip.hitTest(250, 550, true)
+false
+// clip.hitTest(550, 550, true)
+false
+// clip.hitTest(400, 500, true)
+true
+// clip.hitTest(500, 400, true)
+true
+// clip.hitTest(400, 300, true)
+true
+// clip.hitTest(300, 400, true)
+true
+
+// strokes
+// clip.hitTest(400, 50, true)
+true
+// clip.hitTest(50, 400, true)
+true
+// clip.hitTest(750, 400, true)
+true
+// clip.hitTest(400, 750, true)
+true
+// clip.hitTest(575, 575, true)
+true
+// clip.hitTest(400, 350, true)
+true
+// clip.hitTest(350, 400, true)
+true
+// clip.hitTest(390, 200, true)
+true
+// clip.hitTest(400, 270, true)
+true
+// clip.hitTest(400, 200, true)
+false
+
+// layers
+// clip.hitTest(400, 400, true)
+true
+// clip.hitTest(400, 300, true)
+true
+// clip.hitTest(300, 400, true)
+true
+// clip.hitTest(200, 300, true)
+true
+// clip.hitTest(400, 200, true)
+false
+// clip.hitTest(400, 150, true)
+false
+// clip.hitTest(400, 655, true)
+false
+
+// scribble
+// clip.hitTest(100, 100, true)
+false
+// clip.hitTest(200, 204, true)
+true
+// clip.hitTest(700, 750, true)
+false
+// clip.hitTest(590, 652, true)
+true
+// clip.hitTest(400, 400, true)
+false
+
+// children + visible
+// clip.hitTest(400, 400, true)
+true
+// clip.hitTest(700, 50, true)
+true
+// clip.hitTest(400, 600, true)
+true
+// clip.hitTest(600, 600, true)
+true
+// clip.hitTest(500, 300, true)
+false
+// clip.hitTest(700, 600, true)
+false
+// clip.hitTest(50, 500, true)
+false
+// clip.hitTest(100, 600, true)
+true
+// clip.hitTest(700, 750, true)
+true
+
+// drawing API
+// clip.hitTest(400, 400, true)
+true
+// clip.hitTest(470, 550, true)
+false
+// clip.hitTest(350, 50, true)
+true
+// clip.hitTest(100, 335, true)
+true
+// clip.hitTest(250, 385, true)
+true
+// clip.hitTest(350, 335, true)
+false
+// clip.hitTest(550, 535, true)
+false
+// clip.hitTest(50, 35, true)
+false
+// clip.hitTest(60, 635, true)
+false
+
+// drawing API, root transformed
+// clip.hitTest(400, 400, true)
+false
+// clip.hitTest(470, 550, true)
+false
+// clip.hitTest(350, 50, true)
+false
+// clip.hitTest(100, 335, true)
+false
+// clip.hitTest(250, 385, true)
+false
+// clip.hitTest(350, 335, true)
+false
+// clip.hitTest(550, 535, true)
+false
+// clip.hitTest(50, 35, true)
+false
+// clip.hitTest(60, 635, true)
+false
+
+// bg art
+// clip.hitTest(500, 500, true)
+true
+// clip.hitTest(-100, 500, true)
+true
+// clip.hitTest(100, 200, true)
+true
+// clip.hitTest(700, 200, true)
+true
+// clip.hitTest(400, 150, true)
+true
+// clip.hitTest(300, 300, true)
+false
+// clip.hitTest(400, 200, true)
+false
