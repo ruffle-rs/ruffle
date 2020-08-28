@@ -4,6 +4,16 @@ true
 // ExternalInterface.addCallback("dump", object, dump)
 true
 
+// ExternalInterface.call()
+null
+
+// ExternalInterface.call("ping")
+[ExternalInterface] ping
+null
+
+// ExternalInterface.call("non_existent")
+null
+
 /// dump() start
 // this
 [object Object]

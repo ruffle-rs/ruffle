@@ -36,7 +36,9 @@ impl<'gc> Callback<'gc> {
     }
 }
 
-pub trait ExternalInterfaceProvider {}
+pub trait ExternalInterfaceProvider {
+    fn call(&self, name: &str) -> Option<()>;
+}
 
 #[derive(Default)]
 pub struct ExternalInterface<'gc> {
@@ -66,6 +68,14 @@ impl<'gc> ExternalInterface<'gc> {
 
     pub fn get_callback(&self, name: &str) -> Option<Callback<'gc>> {
         self.callbacks.get(name).cloned()
+    }
+
+    pub fn call_external(&self, name: &str) {
+        for provider in &self.providers {
+            if provider.call(name).is_some() {
+                return;
+            }
+        }
     }
 
     pub fn available(&self) -> bool {
