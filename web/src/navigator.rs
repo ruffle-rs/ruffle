@@ -4,9 +4,9 @@ use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
     url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
+use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::time::Duration;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
@@ -34,7 +34,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         &self,
         url: String,
         window_spec: Option<String>,
-        vars_method: Option<(NavigationMethod, HashMap<String, String>)>,
+        vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
         if let Some(window) = window() {
             //TODO: Should we return a result for failed opens? Does Flash care?

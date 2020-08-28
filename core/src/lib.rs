@@ -40,6 +40,7 @@ mod xml;
 pub mod backend;
 
 pub use events::PlayerEvent;
+pub use indexmap;
 pub use player::Player;
 pub use swf;
 pub use swf::Color;

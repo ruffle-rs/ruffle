@@ -4,9 +4,9 @@ use crate::custom_event::RuffleEvent;
 use ruffle_core::backend::navigator::{
     url_from_relative_path, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
+use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
@@ -68,7 +68,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         &self,
         url: String,
         _window_spec: Option<String>,
-        vars_method: Option<(NavigationMethod, HashMap<String, String>)>,
+        vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
         //TODO: Should we return a result for failed opens? Does Flash care?
 
