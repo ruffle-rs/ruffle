@@ -356,6 +356,7 @@ swf_tests! {
     (as3_in, "avm2/in", 1),
     (as3_array_constr, "avm2/array_constr", 1),
     (as3_array_access, "avm2/array_access", 1),
+    (as3_array_storage, "avm2/array_storage", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
