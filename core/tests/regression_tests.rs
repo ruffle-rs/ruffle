@@ -10,11 +10,12 @@ use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::{
     audio::NullAudioBackend, input::NullInputBackend, render::NullRenderer,
 };
+use ruffle_core::external::ExternalInterfaceProvider;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use std::cell::RefCell;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 type Error = Box<dyn std::error::Error>;
 
@@ -29,6 +30,8 @@ macro_rules! swf_tests {
                 concat!("tests/swfs/", $path, "/test.swf"),
                 $num_frames,
                 concat!("tests/swfs/", $path, "/output.txt"),
+                |_| Ok(()),
+                |_| Ok(()),
             )
         }
         )*
@@ -46,7 +49,9 @@ macro_rules! swf_tests_approx {
                 concat!("tests/swfs/", $path, "/test.swf"),
                 $num_frames,
                 concat!("tests/swfs/", $path, "/output.txt"),
-                $epsilon
+                $epsilon,
+                |_| Ok(()),
+                |_| Ok(()),
             )
         }
         )*
@@ -362,6 +367,23 @@ swf_tests_approx! {
     (as3_divide, "avm2/divide", 1, 0.0), // TODO: Discrepancy in float formatting.
 }
 
+#[test]
+fn external_interface_avm1() -> Result<(), Error> {
+    test_swf(
+        "tests/swfs/avm1/external_interface/test.swf",
+        1,
+        "tests/swfs/avm1/external_interface/output.txt",
+        |player| {
+            player
+                .lock()
+                .unwrap()
+                .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
+            Ok(())
+        },
+        |_| Ok(()),
+    )
+}
+
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
 /// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
 /// test failures to show nice diffs.
@@ -392,10 +414,16 @@ macro_rules! assert_eq {
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
-fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Result<(), Error> {
+fn test_swf(
+    swf_path: &str,
+    num_frames: u32,
+    expected_output_path: &str,
+    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
+    before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
+) -> Result<(), Error> {
     let expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
 
-    let trace_log = run_swf(swf_path, num_frames)?;
+    let trace_log = run_swf(swf_path, num_frames, before_start, before_end)?;
     assert_eq!(
         trace_log, expected_output,
         "ruffle output != flash player output"
@@ -412,8 +440,10 @@ fn test_swf_approx(
     num_frames: u32,
     expected_output_path: &str,
     epsilon: f64,
+    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
+    before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
 ) -> Result<(), Error> {
-    let trace_log = run_swf(swf_path, num_frames)?;
+    let trace_log = run_swf(swf_path, num_frames, before_start, before_end)?;
     let expected_data = std::fs::read_to_string(expected_output_path)?;
     std::assert_eq!(
         trace_log.lines().count(),
@@ -440,7 +470,12 @@ fn test_swf_approx(
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
-fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
+fn run_swf(
+    swf_path: &str,
+    num_frames: u32,
+    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
+    before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
+) -> Result<String, Error> {
     let _ = log::set_logger(&TRACE_LOGGER).map(|()| log::set_max_level(log::LevelFilter::Info));
 
     let base_path = Path::new(swf_path).parent().unwrap();
@@ -457,11 +492,15 @@ fn run_swf(swf_path: &str, num_frames: u32) -> Result<String, Error> {
     )?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
 
+    before_start(player.clone())?;
+
     for _ in 0..num_frames {
         player.lock().unwrap().run_frame();
         player.lock().unwrap().update_timers(frame_time);
         executor.poll_all().unwrap();
     }
+
+    before_end(player)?;
 
     executor.block_all().unwrap();
 
@@ -494,3 +533,14 @@ impl log::Log for TraceLogger {
 
     fn flush(&self) {}
 }
+
+#[derive(Default)]
+pub struct ExternalInterfaceTestProvider {}
+
+impl ExternalInterfaceTestProvider {
+    pub fn new() -> Self {
+        Default::default()
+    }
+}
+
+impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {}
