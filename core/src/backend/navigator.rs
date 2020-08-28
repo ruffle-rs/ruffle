@@ -1,8 +1,9 @@
 //! Browser-related platform functions
 
 use crate::loader::Error;
+use indexmap::IndexMap;
 use std::borrow::Cow;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::fs;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -168,7 +169,7 @@ pub trait NavigatorBackend {
         &self,
         url: String,
         window: Option<String>,
-        vars_method: Option<(NavigationMethod, HashMap<String, String>)>,
+        vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     );
 
     /// Fetch data at a given URL and return it some time in the future.
@@ -348,7 +349,7 @@ impl NavigatorBackend for NullNavigatorBackend {
         &self,
         _url: String,
         _window: Option<String>,
-        _vars_method: Option<(NavigationMethod, HashMap<String, String>)>,
+        _vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
     }
 

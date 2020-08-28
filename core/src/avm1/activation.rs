@@ -14,11 +14,11 @@ use crate::tag_utils::SwfSlice;
 use crate::{avm_error, avm_warn};
 use enumset::EnumSet;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use indexmap::IndexMap;
 use rand::Rng;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cell::{Ref, RefMut};
-use std::collections::HashMap;
 use std::fmt;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, CatchVar, Function, TryBlock};
@@ -2209,8 +2209,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
     ///
     /// WARNING: This does not support user defined virtual properties!
-    pub fn object_into_form_values(&mut self, object: Object<'gc>) -> HashMap<String, String> {
-        let mut form_values = HashMap::new();
+    pub fn object_into_form_values(&mut self, object: Object<'gc>) -> IndexMap<String, String> {
+        let mut form_values = IndexMap::new();
         let keys = object.get_keys(self);
 
         for k in keys {
@@ -2273,7 +2273,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// legacy methods, such as the `ActionGetURL2` opcode or `getURL` function.
     ///
     /// WARNING: This does not support user defined virtual properties!
-    pub fn locals_into_form_values(&mut self) -> HashMap<String, String> {
+    pub fn locals_into_form_values(&mut self) -> IndexMap<String, String> {
         let scope = self.scope_cell();
         let locals = scope.read().locals_cell();
         self.object_into_form_values(locals)

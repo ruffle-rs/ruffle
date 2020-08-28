@@ -15,6 +15,10 @@ fn locals_into_form_values() {
         assert_eq!(my_local_values.len(), 2);
         assert_eq!(my_local_values.get("value1"), Some(&"string".to_string()));
         assert_eq!(my_local_values.get("value2"), Some(&"2".to_string()));
+        assert_eq!(
+            my_local_values.keys().cloned().collect::<Vec<String>>(),
+            vec!["value2".to_string(), "value1".to_string()]
+        );
 
         Ok(())
     });
