@@ -12,6 +12,7 @@ use crate::backend::{audio::AudioBackend, render::Letterbox, render::RenderBacke
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{EditText, MorphShape, MovieClip};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
+use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::library::Library;
 use crate::loader::LoadManager;
@@ -1169,12 +1170,18 @@ impl Player {
         });
     }
 
-    pub fn call_internal_interface(&mut self, name: &str) {
+    pub fn call_internal_interface(
+        &mut self,
+        name: &str,
+        args: impl IntoIterator<Item = ExternalValue>,
+    ) -> ExternalValue {
         self.mutate_with_update_context(|context| {
             if let Some(callback) = context.external_interface.get_callback(name) {
-                callback.call(context, name);
+                callback.call(context, name, args)
+            } else {
+                ExternalValue::Null
             }
-        });
+        })
     }
 }
 

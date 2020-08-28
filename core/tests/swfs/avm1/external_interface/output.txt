@@ -1,7 +1,13 @@
 // ExternalInterface.available
 true
 
-// ExternalInterface.addCallback("dump", object, dump)
+// ExternalInterface.addCallback("dump", thisTarget, dump)
+true
+
+// ExternalInterface.addCallback("parrot", thisTarget, parrot)
+true
+
+// ExternalInterface.addCallback("callWith", thatTarget, callWith)
 true
 
 // ExternalInterface.call()
@@ -9,16 +15,45 @@ null
 
 // ExternalInterface.call("ping")
 [ExternalInterface] ping
-null
+Pong!
 
 // ExternalInterface.call("non_existent")
 null
 
-/// dump() start
+/// parrot() start
 // this
 [object Object]
 
-// this == object
+// this == thisTarget
 true
 
-/// dump() end
+// arguments.length
+1
+
+// arguments[0]
+Hello World!
+
+/// parrot() end
+After calling `parrot` with a string: String("Hello World!")
+/// callWith() start
+// this
+[object Object]
+
+// this == thatTarget
+true
+
+// arguments.length
+2
+
+// name
+trace
+
+// payload
+[object Object]
+
+// ExternalInterface.call(name, payload)
+[ExternalInterface] trace: [String("trace"), Object({"false": Bool(false), "nested": Object({"list": List([String("string"), Number(100.0), Bool(false), Object({})])}), "null": Null, "number": Number(-500.1), "string": String("A string!"), "true": Bool(true)})]
+Traced!
+
+/// callWith() end
+After calling `callWith` with a complex payload: Null

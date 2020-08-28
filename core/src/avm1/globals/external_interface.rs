@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::external::Callback;
+use crate::external::{Callback, Value as ExternalValue};
 use gc_arena::MutationContext;
 
 pub fn get_available<'gc>(
@@ -51,9 +51,16 @@ pub fn call<'gc>(
     }
 
     let name = args.get(0).unwrap().coerce_to_string(activation)?;
-    activation.context.external_interface.call_external(&name);
+    let mut external_args = Vec::with_capacity(args.len() - 1);
+    for arg in args {
+        external_args.push(ExternalValue::from_avm1(activation, arg.to_owned())?);
+    }
+    let result = activation
+        .context
+        .external_interface
+        .call_external(&name, &external_args);
 
-    Ok(Value::Null)
+    Ok(result.into_avm1(activation))
 }
 
 pub fn create_external_interface_object<'gc>(
