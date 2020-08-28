@@ -1,0 +1,8 @@
+//Overwriting array values 0 thru 3
+//Array 0 thru 3...
+d
+e
+f
+g
+//array.length
+4
