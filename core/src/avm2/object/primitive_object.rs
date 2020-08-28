@@ -10,7 +10,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::impl_avm2_custom_object;
+use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// An Object which represents a primitive value of some other kind.
@@ -73,6 +73,7 @@ impl<'gc> PrimitiveObject<'gc> {
 
 impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
     impl_avm2_custom_object!(base);
+    impl_avm2_custom_object_properties!(base);
 
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(self.0.read().primitive.clone())

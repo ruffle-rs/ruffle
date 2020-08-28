@@ -1,7 +1,7 @@
 //! Custom object macro
 
 #[macro_export]
-macro_rules! impl_avm2_custom_object {
+macro_rules! impl_avm2_custom_object_properties {
     ($field:ident) => {
         fn get_property_local(
             self,
@@ -74,6 +74,15 @@ macro_rules! impl_avm2_custom_object {
             self.0.write(gc_context).$field.delete_property(multiname)
         }
 
+        fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+            self.0.read().$field.has_own_property(name)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_avm2_custom_object {
+    ($field:ident) => {
         fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
             self.0.read().$field.get_slot(id)
         }
@@ -125,10 +134,6 @@ macro_rules! impl_avm2_custom_object {
             local_name: AvmString<'gc>,
         ) -> Result<Option<Namespace<'gc>>, Error> {
             self.0.read().$field.resolve_any_trait(local_name)
-        }
-
-        fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
-            self.0.read().$field.has_own_property(name)
         }
 
         fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
