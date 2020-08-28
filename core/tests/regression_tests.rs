@@ -380,7 +380,10 @@ fn external_interface_avm1() -> Result<(), Error> {
                 .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
             Ok(())
         },
-        |_| Ok(()),
+        |player| {
+            player.lock().unwrap().call_internal_interface("dump");
+            Ok(())
+        },
     )
 }
 
