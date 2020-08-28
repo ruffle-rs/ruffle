@@ -41,6 +41,21 @@ pub fn add_callback<'gc>(
     }
 }
 
+pub fn call<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if args.is_empty() {
+        return Ok(Value::Null);
+    }
+
+    let name = args.get(0).unwrap().coerce_to_string(activation)?;
+    activation.context.external_interface.call_external(&name);
+
+    Ok(Value::Null)
+}
+
 pub fn create_external_interface_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -64,6 +79,14 @@ pub fn create_external_interface_object<'gc>(
     object.force_set_function(
         "addCallback",
         add_callback,
+        gc_context,
+        Attribute::DontDelete | Attribute::DontEnum,
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "call",
+        call,
         gc_context,
         Attribute::DontDelete | Attribute::DontEnum,
         Some(fn_proto),

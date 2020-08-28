@@ -545,4 +545,14 @@ impl ExternalInterfaceTestProvider {
     }
 }
 
-impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {}
+impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
+    fn call(&self, name: &str) -> Option<()> {
+        match name {
+            "ping" => {
+                log::info!(target: "avm_trace", "[ExternalInterface] ping");
+                Some(())
+            }
+            _ => None,
+        }
+    }
+}
