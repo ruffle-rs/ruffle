@@ -11,9 +11,11 @@ use ruffle_core::backend::{
     audio::NullAudioBackend, input::NullInputBackend, render::NullRenderer,
 };
 use ruffle_core::external::ExternalInterfaceProvider;
+use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
@@ -381,7 +383,30 @@ fn external_interface_avm1() -> Result<(), Error> {
             Ok(())
         },
         |player| {
-            player.lock().unwrap().call_internal_interface("dump");
+            let mut player_locked = player.lock().unwrap();
+
+            log::info!(target: "avm_trace", "After calling `parrot` with a string: {:?}", player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]));
+
+            let mut nested = BTreeMap::new();
+            nested.insert(
+                "list".to_string(),
+                vec![
+                    "string".into(),
+                    100.into(),
+                    false.into(),
+                    ExternalValue::Object(BTreeMap::new()),
+                ]
+                .into(),
+            );
+
+            let mut root = BTreeMap::new();
+            root.insert("number".to_string(), (-500.1).into());
+            root.insert("string".to_string(), "A string!".into());
+            root.insert("true".to_string(), true.into());
+            root.insert("false".to_string(), false.into());
+            root.insert("null".to_string(), ExternalValue::Null);
+            root.insert("nested".to_string(), nested.into());
+            log::info!(target: "avm_trace", "After calling `callWith` with a complex payload: {:?}", player_locked.call_internal_interface("callWith", vec!["trace".into(), root.into()]));
             Ok(())
         },
     )
@@ -547,11 +572,15 @@ impl ExternalInterfaceTestProvider {
 }
 
 impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
-    fn call(&self, name: &str) -> Option<()> {
+    fn call(&self, name: &str, args: &[ExternalValue]) -> Option<ExternalValue> {
         match name {
+            "trace" => {
+                log::info!(target: "avm_trace", "[ExternalInterface] trace: {:?}", args);
+                Some("Traced!".into())
+            }
             "ping" => {
                 log::info!(target: "avm_trace", "[ExternalInterface] ping");
-                Some(())
+                Some("Pong!".into())
             }
             _ => None,
         }
