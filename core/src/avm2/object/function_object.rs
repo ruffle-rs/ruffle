@@ -12,7 +12,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::impl_avm2_custom_object;
+use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// An Object which can be called to execute it's function code.
@@ -278,6 +278,7 @@ impl<'gc> FunctionObject<'gc> {
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     impl_avm2_custom_object!(base);
+    impl_avm2_custom_object_properties!(base);
 
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         if let ScriptObjectClass::ClassConstructor(class, ..) = self.0.read().base.class() {

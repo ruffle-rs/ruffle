@@ -1,11 +1,6 @@
 //! Array support types
 
-use crate::avm2::activation::Activation;
-use crate::avm2::names::QName;
-use crate::avm2::object::{Object, TObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use gc_arena::Collect;
 
 /// The array storage portion of an array object.
@@ -34,34 +29,10 @@ impl<'gc> ArrayStorage<'gc> {
 
     /// Retrieve a value from array storage by index.
     ///
-    /// Array holes will be resolved on the prototype. No reference to
-    /// class traits will be made.
-    fn get(
-        &self,
-        item: usize,
-        proto: Option<Object<'gc>>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
-        Ok(self
-            .storage
-            .get(item)
-            .cloned()
-            .unwrap_or(None)
-            .map(Ok)
-            .unwrap_or_else(|| {
-                if let Some(mut proto) = proto {
-                    proto.get_property(
-                        proto,
-                        &QName::dynamic_name(AvmString::new(
-                            activation.context.gc_context,
-                            format!("{}", item),
-                        )),
-                        activation,
-                    )
-                } else {
-                    Ok(Value::Undefined)
-                }
-            })?)
+    /// Array holes and out of bounds values will be treated the same way, by
+    /// yielding `None`.
+    pub fn get(&self, item: usize) -> Option<Value<'gc>> {
+        self.storage.get(item).cloned().unwrap_or(None)
     }
 
     /// Set an array storage slot to a particular value.
@@ -74,6 +45,22 @@ impl<'gc> ArrayStorage<'gc> {
         }
 
         *self.storage.get_mut(item).unwrap() = Some(value)
+    }
+
+    /// Delete an array storage slot, leaving a hole.
+    ///
+    /// Yields `true` if the slot deleted was an item, and `false` for an
+    /// already empty hole.
+    pub fn delete(&mut self, item: usize) -> bool {
+        if self.storage.len() < (item + 1) {
+            return false;
+        }
+
+        let was_item = self.storage.get(item).is_some();
+
+        *self.storage.get_mut(item).unwrap() = None;
+
+        was_item
     }
 
     /// Get the length of the array.

@@ -82,6 +82,111 @@ impl<'gc> ArrayObject<'gc> {
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     impl_avm2_custom_object!(base);
 
+    fn get_property_local(
+        self,
+        reciever: Object<'gc>,
+        name: &QName<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        let read = self.0.read();
+
+        if name.namespace().is_public() {
+            if let Ok(index) = name.local_name().parse::<usize>() {
+                return Ok(read.array.get(index).unwrap_or(Value::Undefined));
+            }
+        }
+
+        let rv = read.base.get_property_local(reciever, name, activation)?;
+
+        drop(read);
+
+        rv.resolve(activation)
+    }
+
+    fn set_property_local(
+        self,
+        reciever: Object<'gc>,
+        name: &QName<'gc>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let mut write = self.0.write(activation.context.gc_context);
+
+        if name.namespace().is_public() {
+            if let Ok(index) = name.local_name().parse::<usize>() {
+                write.array.set(index, value);
+
+                return Ok(());
+            }
+        }
+
+        let rv = write
+            .base
+            .set_property_local(reciever, name, value, activation)?;
+
+        drop(write);
+
+        rv.resolve(activation)?;
+
+        Ok(())
+    }
+
+    fn init_property_local(
+        self,
+        reciever: Object<'gc>,
+        name: &QName<'gc>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let mut write = self.0.write(activation.context.gc_context);
+
+        if name.namespace().is_public() {
+            if let Ok(index) = name.local_name().parse::<usize>() {
+                write.array.set(index, value);
+
+                return Ok(());
+            }
+        }
+
+        let rv = write
+            .base
+            .init_property_local(reciever, name, value, activation)?;
+
+        drop(write);
+
+        rv.resolve(activation)?;
+
+        Ok(())
+    }
+
+    fn is_property_overwritable(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &QName<'gc>,
+    ) -> bool {
+        self.0.write(gc_context).base.is_property_overwritable(name)
+    }
+
+    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
+        if name.namespace().is_public() {
+            if let Ok(index) = name.local_name().parse::<usize>() {
+                return self.0.write(gc_context).array.delete(index);
+            }
+        }
+
+        self.0.write(gc_context).base.delete_property(name)
+    }
+
+    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+        if name.namespace().is_public() {
+            if let Ok(index) = name.local_name().parse::<usize>() {
+                return Ok(self.0.read().array.get(index).is_some());
+            }
+        }
+
+        self.0.read().base.has_own_property(name)
+    }
+
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok("function Function() {}".into())
     }

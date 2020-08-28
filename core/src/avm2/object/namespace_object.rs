@@ -10,7 +10,7 @@ use crate::avm2::scope::Scope;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::impl_avm2_custom_object;
+use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 
@@ -70,6 +70,7 @@ impl<'gc> NamespaceObject<'gc> {
 
 impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
     impl_avm2_custom_object!(base);
+    impl_avm2_custom_object_properties!(base);
 
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(self.0.read().namespace.as_uri().into())
