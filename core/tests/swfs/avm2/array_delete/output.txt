@@ -1,0 +1,44 @@
+//delete a[1]
+true
+//Array 0 thru 3...
+a
+undefined
+c
+undefined
+//array.length
+3
+//array.hasOwnProperty(1)
+false
+//delete a[2]
+true
+//Array 0 thru 3...
+a
+undefined
+undefined
+undefined
+//array.length
+3
+//array.hasOwnProperty(2)
+false
+//delete a[3]
+true
+//Array 0 thru 3...
+a
+undefined
+undefined
+undefined
+//array.length
+3
+//array.hasOwnProperty(3)
+false
+//delete a[4]
+true
+//Array 0 thru 3...
+a
+undefined
+undefined
+undefined
+//array.length
+3
+//array.hasOwnProperty(4)
+false
