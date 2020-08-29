@@ -1,0 +1,9 @@
+//var a = new Array(5);
+//Array.prototype[3] = "works";
+//a[2]
+undefined
+//a[3]
+works
+//a[3] = "nohole"
+//a[3]
+nohole
