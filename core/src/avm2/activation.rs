@@ -981,7 +981,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 .avm2
                 .push(object.delete_property(self.context.gc_context, &name))
         } else {
-            self.context.avm2.push(false)
+            // Unknown properties on a dynamic class delete successfully.
+            self.context.avm2.push(
+                !object
+                    .as_proto_class()
+                    .map(|c| c.read().is_sealed())
+                    .unwrap_or(false),
+            )
         }
 
         Ok(FrameControl::Continue)

@@ -48,19 +48,10 @@ impl<'gc> ArrayStorage<'gc> {
     }
 
     /// Delete an array storage slot, leaving a hole.
-    ///
-    /// Yields `true` if the slot deleted was an item, and `false` for an
-    /// already empty hole.
-    pub fn delete(&mut self, item: usize) -> bool {
-        if self.storage.len() < (item + 1) {
-            return false;
+    pub fn delete(&mut self, item: usize) {
+        if let Some(i) = self.storage.get_mut(item) {
+            *i = None;
         }
-
-        let was_item = self.storage.get(item).is_some();
-
-        *self.storage.get_mut(item).unwrap() = None;
-
-        was_item
     }
 
     /// Get the length of the array.
