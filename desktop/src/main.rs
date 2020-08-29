@@ -73,9 +73,12 @@ impl From<PowerPreference> for ruffle_render_wgpu::wgpu::PowerPreference {
     version = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt")),
 )]
 struct Opt {
+    /// Path to a flash movie (swf) to play
     #[clap(name = "FILE", parse(from_os_str))]
     input_path: PathBuf,
 
+    /// Type of graphics backend to use. Not all options may be supported by your current system.
+    /// Default will attempt to pick the most supported graphics backend.
     #[clap(
         long,
         short,
@@ -85,6 +88,10 @@ struct Opt {
     )]
     graphics: GraphicsBackend,
 
+    /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
+    /// whereas a low power usage tends prefer integrated GPUs.
+    /// Default will pick the best device depending on the status of your computer (ie, wall-power
+    /// may choose high, battery power may choose low)
     #[clap(
         long,
         short,
