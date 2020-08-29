@@ -91,4 +91,9 @@ impl<'gc> ArrayStorage<'gc> {
     pub fn push(&mut self, item: Value<'gc>) {
         self.storage.push(Some(item))
     }
+
+    /// Iterate over array values.
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = Option<Value<'gc>>> + 'a {
+        self.storage.iter().cloned()
+    }
 }

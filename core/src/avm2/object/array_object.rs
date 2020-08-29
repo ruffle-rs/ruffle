@@ -189,7 +189,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     }
 
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok("function Function() {}".into())
+        Ok(Value::Object(Object::from(*self)))
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {

@@ -1,0 +1,9 @@
+//var a = new Array("a", "b", "c");
+//var b = new Array(1, 2, 3);
+//var c = new Array(a, b);
+//a.valueOf();
+a,b,c
+//b.valueOf();
+1,2,3
+//c.valueOf();
+a,b,c,1,2,3

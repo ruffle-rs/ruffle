@@ -1,0 +1,23 @@
+//var a = new Array("a", "b", "c");
+//var b = new Array(1, 2, 3);
+//var c = new Array(a, b);
+//a.join();
+a,b,c
+//b.join();
+1,2,3
+//c.join();
+a,b,c,1,2,3
+//c.join(undefined);
+a,b,c,1,2,3
+//c.join(null);
+a,b,cnull1,2,3
+//c.join(false);
+a,b,cfalse1,2,3
+//a.join(NaN);
+aNaNbNaNc
+//b.join(5);
+15253
+//c.join(" + ");
+a,b,c + 1,2,3
+//c.join(b);
+a,b,c1,2,31,2,3
