@@ -2,6 +2,15 @@
 
 use crate::avm2::value::Value;
 use gc_arena::Collect;
+use std::iter::ExactSizeIterator;
+
+/// Trait which exists purely so that we can reverse the iterators that come
+/// out of `ArrayStorage.iter`.
+///
+/// Not to be confused with the `ArrayIterator` struct in `globals::array`.
+pub trait ArrayIterator: DoubleEndedIterator + ExactSizeIterator {}
+
+impl<T> ArrayIterator for T where T: DoubleEndedIterator + ExactSizeIterator {}
 
 /// The array storage portion of an array object.
 ///
@@ -93,7 +102,7 @@ impl<'gc> ArrayStorage<'gc> {
     }
 
     /// Iterate over array values.
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = Option<Value<'gc>>> + 'a {
+    pub fn iter<'a>(&'a self) -> impl ArrayIterator<Item = Option<Value<'gc>>> + 'a {
         self.storage.iter().cloned()
     }
 }

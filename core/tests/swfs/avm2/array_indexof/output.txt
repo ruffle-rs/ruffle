@@ -1,0 +1,17 @@
+//var a = new Array(5,"5",3,false,4,5,undefined,9)
+//a.indexOf(5);
+0
+//a.indexOf(5, 1);
+5
+//a.indexOf(5, 2);
+5
+//a.indexOf(5, 6);
+-1
+//a.indexOf(5, 10);
+-1
+//a.indexOf(true);
+-1
+//a.indexOf(undefined);
+6
+//a.indexOf("5");
+1

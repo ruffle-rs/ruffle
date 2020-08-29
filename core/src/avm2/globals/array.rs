@@ -452,6 +452,64 @@ pub fn some<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Array.indexOf`
+pub fn index_of<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(array) = this.as_array_storage() {
+            let search_val = args.get(0).cloned().unwrap_or(Value::Undefined);
+            let from = args
+                .get(1)
+                .cloned()
+                .unwrap_or_else(|| 0.into())
+                .coerce_to_u32(activation)?;
+
+            for (i, val) in array.iter().enumerate() {
+                let val = resolve_array_hole(activation, this, i, val)?;
+                if i >= from as usize && val == search_val {
+                    return Ok(i.into());
+                }
+            }
+
+            return Ok((-1).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.lastIndexOf`
+pub fn last_index_of<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(array) = this.as_array_storage() {
+            let search_val = args.get(0).cloned().unwrap_or(Value::Undefined);
+            let from = args
+                .get(1)
+                .cloned()
+                .unwrap_or_else(|| i32::MAX.into())
+                .coerce_to_u32(activation)?;
+
+            for (i, val) in array.iter().enumerate().rev() {
+                let val = resolve_array_hole(activation, this, i, val)?;
+                if i <= from as usize && val == search_val {
+                    return Ok(i.into());
+                }
+            }
+
+            return Ok((-1).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -510,6 +568,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "some"),
         Method::from_builtin(some),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "indexOf"),
+        Method::from_builtin(index_of),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "lastIndexOf"),
+        Method::from_builtin(last_index_of),
     ));
 
     class

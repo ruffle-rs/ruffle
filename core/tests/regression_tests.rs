@@ -369,6 +369,8 @@ swf_tests! {
     (as3_array_filter, "avm2/array_filter", 1),
     (as3_array_every, "avm2/array_every", 1),
     (as3_array_some, "avm2/array_some", 1),
+    (as3_array_indexof, "avm2/array_indexof", 1),
+    (as3_array_lastindexof, "avm2/array_lastindexof", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
