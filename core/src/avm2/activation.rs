@@ -1,9 +1,10 @@
 //! Activation frames
 
+use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::method::BytecodeMethod;
 use crate::avm2::names::{Multiname, Namespace, QName};
-use crate::avm2::object::{FunctionObject, NamespaceObject, ScriptObject};
+use crate::avm2::object::{ArrayObject, FunctionObject, NamespaceObject, ScriptObject};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
@@ -472,6 +473,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::NewObject { num_args } => self.op_new_object(num_args),
                 Op::NewFunction { index } => self.op_new_function(method, index),
                 Op::NewClass { index } => self.op_new_class(method, index),
+                Op::NewArray { num_args } => self.op_new_array(num_args),
                 Op::CoerceA => self.op_coerce_a(),
                 Op::CoerceS => self.op_coerce_s(),
                 Op::ConvertB => self.op_convert_b(),
@@ -1389,6 +1391,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         class_init.call(Some(new_class), &[], self, None)?;
 
         self.context.avm2.push(new_class);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_new_array(&mut self, num_args: u32) -> Result<FrameControl<'gc>, Error> {
+        let args = self.context.avm2.pop_args(num_args);
+        let array = ArrayStorage::from_args(&args[..]);
+        let array_obj = ArrayObject::from_array(
+            array,
+            self.context.avm2.system_prototypes.clone().unwrap().array,
+            self.context.gc_context,
+        );
+
+        self.context.avm2.push(array_obj);
 
         Ok(FrameControl::Continue)
     }
