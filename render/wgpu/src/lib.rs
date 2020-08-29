@@ -128,6 +128,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         window: &W,
         size: (u32, u32),
         backend: wgpu::BackendBit,
+        power_preference: wgpu::PowerPreference,
     ) -> Result<Self, Error> {
         if wgpu::BackendBit::SECONDARY.contains(backend) {
             log::warn!(
@@ -141,7 +142,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         let surface = unsafe { instance.create_surface(window) };
 
         let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
+            power_preference,
             compatible_surface: Some(&surface),
         }))
         .ok_or_else(|| {
