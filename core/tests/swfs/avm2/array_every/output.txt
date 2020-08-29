@@ -1,0 +1,8 @@
+//var a = new Array(5,3,1,9,16)
+//trace(a.every(function (val) { return val === 5; }));
+false
+//trace(a.every(function (val) { return val !== 20; }));
+true
+//var b = new Array();
+//trace(b.every(function (val) { return val === 5; }));
+true

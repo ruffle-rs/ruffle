@@ -1,0 +1,6 @@
+//var a = new Array(5,3,1,9,16)
+//var b = a.filter(function (val) { ... });
+//(contents of b)
+5
+3
+1

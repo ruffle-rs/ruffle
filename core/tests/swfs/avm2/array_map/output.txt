@@ -1,0 +1,8 @@
+//var a = new Array(5,3,1,9,16)
+//var b = a.map(function (val) { return val + 1; });
+//(contents of b)
+6
+4
+2
+10
+17

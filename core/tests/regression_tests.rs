@@ -364,6 +364,11 @@ swf_tests! {
     (as3_array_tostring, "avm2/array_tostring", 1),
     (as3_array_valueof, "avm2/array_valueof", 1),
     (as3_array_join, "avm2/array_join", 1),
+    (as3_array_foreach, "avm2/array_foreach", 1),
+    (as3_array_map, "avm2/array_map", 1),
+    (as3_array_filter, "avm2/array_filter", 1),
+    (as3_array_every, "avm2/array_every", 1),
+    (as3_array_some, "avm2/array_some", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
