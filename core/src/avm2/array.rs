@@ -27,6 +27,15 @@ impl<'gc> ArrayStorage<'gc> {
         Self { storage }
     }
 
+    pub fn from_args(values: &[Value<'gc>]) -> Self {
+        let storage = values
+            .iter()
+            .map(|v| Some(v.clone()))
+            .collect::<Vec<Option<Value<'gc>>>>();
+
+        Self { storage }
+    }
+
     /// Retrieve a value from array storage by index.
     ///
     /// Array holes and out of bounds values will be treated the same way, by
