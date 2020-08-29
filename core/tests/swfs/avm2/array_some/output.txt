@@ -1,0 +1,8 @@
+//var a = new Array(5,3,1,9,16)
+//trace(a.some(function (val) { return val === 5; }));
+true
+//trace(a.some(function (val) { return val === 20; }));
+false
+//var b = new Array();
+//trace(b.some(function (val) { return val === 20; }));
+false

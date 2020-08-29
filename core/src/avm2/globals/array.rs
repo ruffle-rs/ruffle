@@ -64,6 +64,25 @@ pub fn length<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Bundle an already-constructed `ArrayStorage` in an `Object`.
+pub fn build_array<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    array: ArrayStorage<'gc>,
+) -> Result<Value<'gc>, Error> {
+    Ok(ArrayObject::from_array(
+        array,
+        activation
+            .context
+            .avm2
+            .system_prototypes
+            .as_ref()
+            .map(|sp| sp.array)
+            .unwrap(),
+        activation.context.gc_context,
+    )
+    .into())
+}
+
 /// Implements `Array.concat`
 #[allow(clippy::map_clone)] //You can't clone `Option<Ref<T>>` without it
 pub fn concat<'gc>(
@@ -83,18 +102,30 @@ pub fn concat<'gc>(
         }
     }
 
-    Ok(ArrayObject::from_array(
-        base_array,
-        activation
-            .context
-            .avm2
-            .system_prototypes
-            .as_ref()
-            .map(|sp| sp.array)
-            .unwrap(),
-        activation.context.gc_context,
-    )
-    .into())
+    build_array(activation, base_array)
+}
+
+/// Resolves array holes.
+fn resolve_array_hole<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    i: usize,
+    item: Option<Value<'gc>>,
+) -> Result<Value<'gc>, Error> {
+    item.map(Ok).unwrap_or_else(|| {
+        this.proto()
+            .map(|mut p| {
+                p.get_property(
+                    p,
+                    &QName::new(
+                        Namespace::public_namespace(),
+                        AvmString::new(activation.context.gc_context, format!("{}", i)),
+                    ),
+                    activation,
+                )
+            })
+            .unwrap_or(Ok(Value::Undefined))
+    })
 }
 
 /// Implements `Array.join`
@@ -114,22 +145,9 @@ pub fn join<'gc>(
             let mut accum = Vec::new();
 
             for (i, item) in array.iter().enumerate() {
-                let item = item.map(Ok).unwrap_or_else(|| {
-                    this.proto()
-                        .map(|mut p| {
-                            p.get_property(
-                                p,
-                                &QName::new(
-                                    Namespace::public_namespace(),
-                                    AvmString::new(activation.context.gc_context, format!("{}", i)),
-                                ),
-                                activation,
-                            )
-                        })
-                        .unwrap_or(Ok(Value::Undefined))
-                });
+                let item = resolve_array_hole(activation, this, i, item)?;
 
-                accum.push(item?.coerce_to_string(activation)?.to_string());
+                accum.push(item.coerce_to_string(activation)?.to_string());
             }
 
             return Ok(AvmString::new(
@@ -159,6 +177,208 @@ pub fn value_of<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     join(activation, this, &[",".into()])
+}
+
+/// Implements `Array.forEach`
+pub fn for_each<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(array) = this.as_array_storage() {
+            let callback = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_object(activation)?;
+            let reciever = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Null)
+                .coerce_to_object(activation)
+                .ok();
+
+            for (i, item) in array.iter().enumerate() {
+                let item = resolve_array_hole(activation, this, i, item)?;
+
+                callback.call(
+                    reciever,
+                    &[item, i.into(), this.into()],
+                    activation,
+                    reciever.and_then(|r| r.proto()),
+                )?;
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.map`
+pub fn map<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(array) = this.as_array_storage() {
+            let callback = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_object(activation)?;
+            let reciever = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Null)
+                .coerce_to_object(activation)
+                .ok();
+            let mut new_array = ArrayStorage::new(0);
+
+            for (i, item) in array.iter().enumerate() {
+                let item = resolve_array_hole(activation, this, i, item)?;
+                let new_item = callback.call(
+                    reciever,
+                    &[item, i.into(), this.into()],
+                    activation,
+                    reciever.and_then(|r| r.proto()),
+                )?;
+
+                new_array.push(new_item);
+            }
+
+            return build_array(activation, new_array);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.filter`
+pub fn filter<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(array) = this.as_array_storage() {
+            let callback = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_object(activation)?;
+            let reciever = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Null)
+                .coerce_to_object(activation)
+                .ok();
+            let mut new_array = ArrayStorage::new(0);
+
+            for (i, item) in array.iter().enumerate() {
+                let item = resolve_array_hole(activation, this, i, item)?;
+                let is_allowed = callback
+                    .call(
+                        reciever,
+                        &[item.clone(), i.into(), this.into()],
+                        activation,
+                        reciever.and_then(|r| r.proto()),
+                    )?
+                    .coerce_to_boolean();
+
+                if is_allowed {
+                    new_array.push(item);
+                }
+            }
+
+            return build_array(activation, new_array);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.every`
+pub fn every<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(array) = this.as_array_storage() {
+            let callback = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_object(activation)?;
+            let reciever = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Null)
+                .coerce_to_object(activation)
+                .ok();
+            let mut is_every = true;
+
+            for (i, item) in array.iter().enumerate() {
+                let item = resolve_array_hole(activation, this, i, item)?;
+
+                is_every &= callback
+                    .call(
+                        reciever,
+                        &[item, i.into(), this.into()],
+                        activation,
+                        reciever.and_then(|r| r.proto()),
+                    )?
+                    .coerce_to_boolean();
+            }
+
+            return Ok(is_every.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.some`
+pub fn some<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(array) = this.as_array_storage() {
+            let callback = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_object(activation)?;
+            let reciever = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Null)
+                .coerce_to_object(activation)
+                .ok();
+            let mut is_some = false;
+
+            for (i, item) in array.iter().enumerate() {
+                let item = resolve_array_hole(activation, this, i, item)?;
+
+                is_some |= callback
+                    .call(
+                        reciever,
+                        &[item, i.into(), this.into()],
+                        activation,
+                        reciever.and_then(|r| r.proto()),
+                    )?
+                    .coerce_to_boolean();
+            }
+
+            return Ok(is_some.into());
+        }
+    }
+
+    Ok(Value::Undefined)
 }
 
 /// Construct `Array`'s class.
@@ -194,6 +414,31 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "valueOf"),
         Method::from_builtin(value_of),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "forEach"),
+        Method::from_builtin(for_each),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "map"),
+        Method::from_builtin(map),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "filter"),
+        Method::from_builtin(filter),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "every"),
+        Method::from_builtin(every),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "some"),
+        Method::from_builtin(some),
     ));
 
     class

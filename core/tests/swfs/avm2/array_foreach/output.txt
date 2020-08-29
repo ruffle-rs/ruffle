@@ -1,0 +1,18 @@
+//var a = new Array(5,"abc")
+//a.forEach(function (val) { ... }, a);
+//(in callback) this === a;
+true
+//val
+5
+//index
+0
+//array === a
+true
+//(in callback) this === a;
+true
+//val
+abc
+//index
+1
+//array === a
+true
