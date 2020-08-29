@@ -179,6 +179,82 @@ pub fn value_of<'gc>(
     join(activation, this, &[",".into()])
 }
 
+/// An iterator that allows iterating over the contents of an array whilst also
+/// executing user code.
+///
+/// Note that this does not actually implement `Iterator` as this struct needs
+/// to share access to the activation with you. We can't claim your activation
+/// and give it back in `next`, so we instead ask for it in `next`, which is
+/// incompatible with the trait.
+///
+/// This technically works with Array-shaped, non-Array objects, since we
+/// access arrays in this iterator the same way user code would. If it is
+/// necessary to only work with Arrays, you must first check for array storage
+/// before creating this iterator.
+///
+/// The primary purpose of `ArrayIterator` is to maintain lock safety in the
+/// presence of arbitrary user code. It is legal for, say, a method callback to
+/// mutate the array under iteration. Normally, holding an `Iterator` on the
+/// array while this happens would cause a panic; this code exists to prevent
+/// that.
+struct ArrayIterator<'gc> {
+    array_object: Object<'gc>,
+    index: u32,
+    length: u32,
+}
+
+impl<'gc> ArrayIterator<'gc> {
+    /// Construct a new `ArrayIterator`.
+    pub fn new(
+        activation: &mut Activation<'_, 'gc, '_>,
+        mut array_object: Object<'gc>,
+    ) -> Result<Self, Error> {
+        let length = array_object
+            .get_property(
+                array_object,
+                &QName::new(Namespace::public_namespace(), "length"),
+                activation,
+            )?
+            .coerce_to_u32(activation)?;
+
+        Ok(Self {
+            array_object,
+            index: 0,
+            length,
+        })
+    }
+
+    /// Get the next item in the array.
+    ///
+    /// Since this isn't a real iterator, this comes pre-enumerated; it yields
+    /// a pair of the index and then the value.
+    fn next(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Result<(u32, Value<'gc>), Error>> {
+        if self.index < self.length {
+            let i = self.index;
+
+            self.index += 1;
+
+            Some(
+                self.array_object
+                    .get_property(
+                        self.array_object,
+                        &QName::new(
+                            Namespace::public_namespace(),
+                            AvmString::new(activation.context.gc_context, format!("{}", i)),
+                        ),
+                        activation,
+                    )
+                    .map(|val| (i, val)),
+            )
+        } else {
+            None
+        }
+    }
+}
+
 /// Implements `Array.forEach`
 pub fn for_each<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -186,29 +262,28 @@ pub fn for_each<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(array) = this.as_array_storage() {
-            let callback = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_object(activation)?;
-            let reciever = args
-                .get(1)
-                .cloned()
-                .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok();
+        let callback = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let reciever = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok();
+        let mut iter = ArrayIterator::new(activation, this)?;
 
-            for (i, item) in array.iter().enumerate() {
-                let item = resolve_array_hole(activation, this, i, item)?;
+        while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
 
-                callback.call(
-                    reciever,
-                    &[item, i.into(), this.into()],
-                    activation,
-                    reciever.and_then(|r| r.proto()),
-                )?;
-            }
+            callback.call(
+                reciever,
+                &[item, i.into(), this.into()],
+                activation,
+                reciever.and_then(|r| r.proto()),
+            )?;
         }
     }
 
@@ -222,34 +297,33 @@ pub fn map<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(array) = this.as_array_storage() {
-            let callback = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_object(activation)?;
-            let reciever = args
-                .get(1)
-                .cloned()
-                .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok();
-            let mut new_array = ArrayStorage::new(0);
+        let callback = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let reciever = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok();
+        let mut new_array = ArrayStorage::new(0);
+        let mut iter = ArrayIterator::new(activation, this)?;
 
-            for (i, item) in array.iter().enumerate() {
-                let item = resolve_array_hole(activation, this, i, item)?;
-                let new_item = callback.call(
-                    reciever,
-                    &[item, i.into(), this.into()],
-                    activation,
-                    reciever.and_then(|r| r.proto()),
-                )?;
+        while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
+            let new_item = callback.call(
+                reciever,
+                &[item, i.into(), this.into()],
+                activation,
+                reciever.and_then(|r| r.proto()),
+            )?;
 
-                new_array.push(new_item);
-            }
-
-            return build_array(activation, new_array);
+            new_array.push(new_item);
         }
+
+        return build_array(activation, new_array);
     }
 
     Ok(Value::Undefined)
@@ -262,38 +336,37 @@ pub fn filter<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(array) = this.as_array_storage() {
-            let callback = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_object(activation)?;
-            let reciever = args
-                .get(1)
-                .cloned()
-                .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok();
-            let mut new_array = ArrayStorage::new(0);
+        let callback = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let reciever = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok();
+        let mut new_array = ArrayStorage::new(0);
+        let mut iter = ArrayIterator::new(activation, this)?;
 
-            for (i, item) in array.iter().enumerate() {
-                let item = resolve_array_hole(activation, this, i, item)?;
-                let is_allowed = callback
-                    .call(
-                        reciever,
-                        &[item.clone(), i.into(), this.into()],
-                        activation,
-                        reciever.and_then(|r| r.proto()),
-                    )?
-                    .coerce_to_boolean();
+        while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
+            let is_allowed = callback
+                .call(
+                    reciever,
+                    &[item.clone(), i.into(), this.into()],
+                    activation,
+                    reciever.and_then(|r| r.proto()),
+                )?
+                .coerce_to_boolean();
 
-                if is_allowed {
-                    new_array.push(item);
-                }
+            if is_allowed {
+                new_array.push(item);
             }
-
-            return build_array(activation, new_array);
         }
+
+        return build_array(activation, new_array);
     }
 
     Ok(Value::Undefined)
@@ -306,35 +379,34 @@ pub fn every<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(array) = this.as_array_storage() {
-            let callback = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_object(activation)?;
-            let reciever = args
-                .get(1)
-                .cloned()
-                .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok();
-            let mut is_every = true;
+        let callback = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let reciever = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok();
+        let mut is_every = true;
+        let mut iter = ArrayIterator::new(activation, this)?;
 
-            for (i, item) in array.iter().enumerate() {
-                let item = resolve_array_hole(activation, this, i, item)?;
+        while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
 
-                is_every &= callback
-                    .call(
-                        reciever,
-                        &[item, i.into(), this.into()],
-                        activation,
-                        reciever.and_then(|r| r.proto()),
-                    )?
-                    .coerce_to_boolean();
-            }
-
-            return Ok(is_every.into());
+            is_every &= callback
+                .call(
+                    reciever,
+                    &[item, i.into(), this.into()],
+                    activation,
+                    reciever.and_then(|r| r.proto()),
+                )?
+                .coerce_to_boolean();
         }
+
+        return Ok(is_every.into());
     }
 
     Ok(Value::Undefined)
@@ -347,35 +419,34 @@ pub fn some<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(array) = this.as_array_storage() {
-            let callback = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_object(activation)?;
-            let reciever = args
-                .get(1)
-                .cloned()
-                .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok();
-            let mut is_some = false;
+        let callback = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let reciever = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok();
+        let mut is_some = false;
+        let mut iter = ArrayIterator::new(activation, this)?;
 
-            for (i, item) in array.iter().enumerate() {
-                let item = resolve_array_hole(activation, this, i, item)?;
+        while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
 
-                is_some |= callback
-                    .call(
-                        reciever,
-                        &[item, i.into(), this.into()],
-                        activation,
-                        reciever.and_then(|r| r.proto()),
-                    )?
-                    .coerce_to_boolean();
-            }
-
-            return Ok(is_some.into());
+            is_some |= callback
+                .call(
+                    reciever,
+                    &[item, i.into(), this.into()],
+                    activation,
+                    reciever.and_then(|r| r.proto()),
+                )?
+                .coerce_to_boolean();
         }
+
+        return Ok(is_some.into());
     }
 
     Ok(Value::Undefined)
