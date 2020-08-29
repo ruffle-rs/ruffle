@@ -20,8 +20,9 @@ use crate::pipelines::Pipelines;
 use crate::shapes::{Draw, DrawType, GradientUniforms, IncompleteDrawType, Mesh};
 use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
 use crate::utils::{
-    build_view_matrix, create_buffer_with_data, gradient_spread_mode_index,
-    ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix, swf_to_gl_matrix,
+    build_view_matrix, create_buffer_with_data, format_list, get_backend_names,
+    gradient_spread_mode_index, ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix,
+    swf_to_gl_matrix,
 };
 use ruffle_core::color_transform::ColorTransform;
 use std::mem::replace;
@@ -35,6 +36,8 @@ mod utils;
 mod pipelines;
 mod shapes;
 pub mod target;
+
+pub use wgpu;
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
     device: Rc<wgpu::Device>,
@@ -121,8 +124,19 @@ unsafe impl Pod for GPUVertex {}
 unsafe impl Zeroable for GPUVertex {}
 
 impl WgpuRenderBackend<SwapChainTarget> {
-    pub fn for_window<W: HasRawWindowHandle>(window: &W, size: (u32, u32)) -> Result<Self, Error> {
-        let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+    pub fn for_window<W: HasRawWindowHandle>(
+        window: &W,
+        size: (u32, u32),
+        backend: wgpu::BackendBit,
+    ) -> Result<Self, Error> {
+        if wgpu::BackendBit::SECONDARY.contains(backend) {
+            log::warn!(
+                "{} graphics backend support may not be fully supported.",
+                format_list(&get_backend_names(backend), "and")
+            );
+        }
+
+        let instance = wgpu::Instance::new(backend);
 
         let surface = unsafe { instance.create_surface(window) };
 
@@ -131,7 +145,12 @@ impl WgpuRenderBackend<SwapChainTarget> {
             compatible_surface: Some(&surface),
         }))
         .ok_or_else(|| {
-            "Ruffle requires hardware acceleration, but no compatible graphics device was found."
+            let names = get_backend_names(backend);
+            if names.is_empty() {
+                "Ruffle requires hardware acceleration, but no compatible graphics device was found (no backend provided?)".to_string()
+            } else {
+                format!("Ruffle requires hardware acceleration, but no compatible graphics device was found supporting {}", format_list(&names, "or"))
+            }
         })?;
 
         let (device, queue) = block_on(adapter.request_device(

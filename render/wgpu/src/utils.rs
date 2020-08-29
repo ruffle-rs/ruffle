@@ -1,6 +1,7 @@
 use lyon::lyon_algorithms::path::Path;
 use ruffle_core::shape_utils::DrawCommand;
 use ruffle_core::swf;
+use std::borrow::Cow;
 use std::mem::size_of;
 use swf::{GradientSpread, Twips};
 use wgpu::util::DeviceExt;
@@ -12,6 +13,45 @@ macro_rules! create_debug_label {
             None
         }
     )
+}
+
+pub fn format_list<'a>(values: &[&'a str], connector: &'a str) -> Cow<'a, str> {
+    match values.len() {
+        0 => Cow::Borrowed(""),
+        1 => Cow::Borrowed(values[0]),
+        _ => Cow::Owned(
+            values[0..values.len() - 1].join(", ")
+                + " "
+                + connector
+                + " "
+                + values[values.len() - 1],
+        ),
+    }
+}
+
+pub fn get_backend_names(backends: wgpu::BackendBit) -> Vec<&'static str> {
+    let mut names = Vec::new();
+
+    if backends.contains(wgpu::BackendBit::VULKAN) {
+        names.push("Vulkan");
+    }
+    if backends.contains(wgpu::BackendBit::DX12) {
+        names.push("DirectX 12");
+    }
+    if backends.contains(wgpu::BackendBit::DX11) {
+        names.push("DirectX 11");
+    }
+    if backends.contains(wgpu::BackendBit::METAL) {
+        names.push("Metal");
+    }
+    if backends.contains(wgpu::BackendBit::GL) {
+        names.push("Open GL");
+    }
+    if backends.contains(wgpu::BackendBit::BROWSER_WEBGPU) {
+        names.push("Web GPU");
+    }
+
+    names
 }
 
 pub fn create_buffer_with_data(
