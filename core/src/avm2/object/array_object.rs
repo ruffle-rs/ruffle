@@ -170,7 +170,8 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
         if name.namespace().is_public() {
             if let Ok(index) = name.local_name().parse::<usize>() {
-                return self.0.write(gc_context).array.delete(index);
+                self.0.write(gc_context).array.delete(index);
+                return true;
             }
         }
 
