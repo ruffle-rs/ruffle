@@ -6,6 +6,7 @@ use crate::avm2::class::Class;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -96,6 +97,70 @@ pub fn concat<'gc>(
     .into())
 }
 
+/// Implements `Array.join`
+pub fn join<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let mut separator = args.get(0).cloned().unwrap_or(Value::Undefined);
+    if separator == Value::Undefined {
+        separator = ",".into();
+    }
+
+    if let Some(this) = this {
+        if let Some(array) = this.as_array_storage() {
+            let string_separator = separator.coerce_to_string(activation)?;
+            let mut accum = Vec::new();
+
+            for (i, item) in array.iter().enumerate() {
+                let item = item.map(Ok).unwrap_or_else(|| {
+                    this.proto()
+                        .map(|mut p| {
+                            p.get_property(
+                                p,
+                                &QName::new(
+                                    Namespace::public_namespace(),
+                                    AvmString::new(activation.context.gc_context, format!("{}", i)),
+                                ),
+                                activation,
+                            )
+                        })
+                        .unwrap_or(Ok(Value::Undefined))
+                });
+
+                accum.push(item?.coerce_to_string(activation)?.to_string());
+            }
+
+            return Ok(AvmString::new(
+                activation.context.gc_context,
+                accum.join(&string_separator),
+            )
+            .into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.toString`
+pub fn to_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    join(activation, this, &[",".into()])
+}
+
+/// Implements `Array.valueOf`
+pub fn value_of<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    join(activation, this, &[",".into()])
+}
+
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -114,6 +179,21 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::as3_namespace(), "concat"),
         Method::from_builtin(concat),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::as3_namespace(), "join"),
+        Method::from_builtin(join),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "toString"),
+        Method::from_builtin(to_string),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "valueOf"),
+        Method::from_builtin(value_of),
     ));
 
     class
