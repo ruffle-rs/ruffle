@@ -49,6 +49,23 @@ impl From<GraphicsBackend> for ruffle_render_wgpu::wgpu::BackendBit {
     }
 }
 
+#[derive(Clap, PartialEq, Debug)]
+pub enum PowerPreference {
+    Default = 0,
+    Low = 1,
+    High = 2,
+}
+
+impl From<PowerPreference> for ruffle_render_wgpu::wgpu::PowerPreference {
+    fn from(preference: PowerPreference) -> Self {
+        match preference {
+            PowerPreference::Default => ruffle_render_wgpu::wgpu::PowerPreference::Default,
+            PowerPreference::Low => ruffle_render_wgpu::wgpu::PowerPreference::LowPower,
+            PowerPreference::High => ruffle_render_wgpu::wgpu::PowerPreference::HighPerformance,
+        }
+    }
+}
+
 #[derive(Clap, Debug)]
 #[clap(
     name = "Ruffle",
@@ -67,6 +84,15 @@ struct Opt {
         arg_enum
     )]
     graphics: GraphicsBackend,
+
+    #[clap(
+        long,
+        short,
+        case_insensitive = true,
+        default_value = "default",
+        arg_enum
+    )]
+    power: PowerPreference,
 }
 
 fn main() {
@@ -76,7 +102,7 @@ fn main() {
 
     let opt = Opt::parse();
 
-    let ret = run_player(opt.input_path, opt.graphics);
+    let ret = run_player(opt.input_path, opt.graphics, opt.power);
 
     if let Err(e) = ret {
         eprintln!("Fatal error:\n{}", e);
@@ -87,6 +113,7 @@ fn main() {
 fn run_player(
     input_path: PathBuf,
     graphics: GraphicsBackend,
+    power_preference: PowerPreference,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&input_path)?;
     let movie_size = LogicalSize::new(movie.width(), movie.height());
@@ -118,6 +145,7 @@ fn run_player(
         window.as_ref(),
         (viewport_size.width, viewport_size.height),
         graphics.into(),
+        power_preference.into(),
     )?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
     let navigator = Box::new(navigator::ExternalNavigatorBackend::with_base_path(
