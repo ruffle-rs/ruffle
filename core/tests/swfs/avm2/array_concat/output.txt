@@ -1,0 +1,35 @@
+//var a = new Array("a", "b", "c");
+//var b = new Array("d", "e", "f");
+//a.concat(b)
+a
+b
+c
+d
+e
+f
+//a.concat("d", "e", "f");
+a
+b
+c
+d
+e
+f
+//a.concat("g", b, "h");
+a
+b
+c
+g
+d
+e
+f
+h
+//a.concat(b, b);
+a
+b
+c
+d
+e
+f
+d
+e
+f
