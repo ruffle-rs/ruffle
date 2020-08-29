@@ -730,6 +730,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get this object's `Class`, if it has one.
     fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>>;
 
+    /// Get this object's `Class`, or any `Class` on it's prototype chain.
+    ///
+    /// This only yields `None` for bare objects.
+    fn as_proto_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+        let mut class = self.as_class();
+
+        while class.is_none() {
+            if let Some(proto) = self.proto() {
+                class = proto.as_class();
+            } else {
+                return None;
+            }
+        }
+
+        class
+    }
+
     /// Get this object's `Executable`, if it has one.
     fn as_executable(&self) -> Option<Executable<'gc>> {
         None
