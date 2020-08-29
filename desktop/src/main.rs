@@ -28,6 +28,27 @@ use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Icon, WindowBuilder};
 
+#[derive(Clap, PartialEq, Debug)]
+pub enum GraphicsBackend {
+    Default,
+    Vulkan,
+    Metal,
+    Dx12,
+    Dx11,
+}
+
+impl From<GraphicsBackend> for ruffle_render_wgpu::wgpu::BackendBit {
+    fn from(backend: GraphicsBackend) -> Self {
+        match backend {
+            GraphicsBackend::Default => ruffle_render_wgpu::wgpu::BackendBit::PRIMARY,
+            GraphicsBackend::Vulkan => ruffle_render_wgpu::wgpu::BackendBit::VULKAN,
+            GraphicsBackend::Metal => ruffle_render_wgpu::wgpu::BackendBit::METAL,
+            GraphicsBackend::Dx12 => ruffle_render_wgpu::wgpu::BackendBit::DX12,
+            GraphicsBackend::Dx11 => ruffle_render_wgpu::wgpu::BackendBit::DX11,
+        }
+    }
+}
+
 #[derive(Clap, Debug)]
 #[clap(
     name = "Ruffle",
@@ -37,6 +58,15 @@ use winit::window::{Icon, WindowBuilder};
 struct Opt {
     #[clap(name = "FILE", parse(from_os_str))]
     input_path: PathBuf,
+
+    #[clap(
+        long,
+        short,
+        case_insensitive = true,
+        default_value = "default",
+        arg_enum
+    )]
+    graphics: GraphicsBackend,
 }
 
 fn main() {
@@ -46,7 +76,7 @@ fn main() {
 
     let opt = Opt::parse();
 
-    let ret = run_player(opt.input_path);
+    let ret = run_player(opt.input_path, opt.graphics);
 
     if let Err(e) = ret {
         eprintln!("Fatal error:\n{}", e);
@@ -54,7 +84,10 @@ fn main() {
     }
 }
 
-fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+fn run_player(
+    input_path: PathBuf,
+    graphics: GraphicsBackend,
+) -> Result<(), Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&input_path)?;
     let movie_size = LogicalSize::new(movie.width(), movie.height());
 
@@ -84,6 +117,7 @@ fn run_player(input_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let renderer = Box::new(WgpuRenderBackend::for_window(
         window.as_ref(),
         (viewport_size.width, viewport_size.height),
+        graphics.into(),
     )?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
     let navigator = Box::new(navigator::ExternalNavigatorBackend::with_base_path(
