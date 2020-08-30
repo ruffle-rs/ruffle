@@ -10,7 +10,7 @@ clap = "3.0.0-beta.1"
 ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu" }
 env_logger = "0.7.1"
-image = "0.23.8"
+image = "0.23.9"
 log = "0.4"
 sample = "0.11.0"
 futures = "0.3.4"
