@@ -510,6 +510,36 @@ pub fn last_index_of<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Array.pop`
+pub fn pop<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+            return Ok(array.pop());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.push`
+pub fn push<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+            array.push(args.get(0).cloned().unwrap_or(Value::Undefined))
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -578,6 +608,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "lastIndexOf"),
         Method::from_builtin(last_index_of),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "pop"),
+        Method::from_builtin(pop),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "push"),
+        Method::from_builtin(push),
     ));
 
     class

@@ -101,6 +101,29 @@ impl<'gc> ArrayStorage<'gc> {
         self.storage.push(Some(item))
     }
 
+    /// Pop a value from the array.
+    ///
+    /// This method preferrentially pops non-holes from the array first. If a
+    /// hole is popped, it will become `undefined`.
+    pub fn pop(&mut self) -> Value<'gc> {
+        let mut non_hole = None;
+
+        for (i, item) in self.storage.iter().enumerate().rev() {
+            if item.is_some() {
+                non_hole = Some(i);
+            }
+        }
+
+        if let Some(non_hole) = non_hole {
+            self.storage.remove(non_hole).unwrap()
+        } else {
+            self.storage
+                .pop()
+                .unwrap_or(None)
+                .unwrap_or(Value::Undefined)
+        }
+    }
+
     /// Iterate over array values.
     pub fn iter<'a>(&'a self) -> impl ArrayIterator<Item = Option<Value<'gc>>> + 'a {
         self.storage.iter().cloned()
