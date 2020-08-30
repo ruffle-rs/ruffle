@@ -1086,24 +1086,27 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {
-        if self.visible() {
-            if self.world_bounds().contains(point) {
+        if self.visible() && self.world_bounds().contains(point) {
+            // This movieclip operates in "button mode" if it has a mouse handler,
+            // either via on(..) or via property mc.onRelease, etc.
+            let is_button_mode = {
                 if self.0.read().has_button_clip_event {
-                    return Some(self_node);
-                }
+                    true
+                } else {
+                    let mut activation = Activation::from_stub(
+                        context.reborrow(),
+                        ActivationIdentifier::root("[Mouse Pick]"),
+                    );
+                    let object = self.object().coerce_to_object(&mut activation);
 
-                let mut activation = Activation::from_stub(
-                    context.reborrow(),
-                    ActivationIdentifier::root("[Mouse Pick]"),
-                );
-                let object = self.object().coerce_to_object(&mut activation);
-
-                if ClipEvent::BUTTON_EVENT_METHODS
-                    .iter()
-                    .any(|handler| object.has_property(&mut activation, handler))
-                {
-                    return Some(self_node);
+                    ClipEvent::BUTTON_EVENT_METHODS
+                        .iter()
+                        .any(|handler| object.has_property(&mut activation, handler))
                 }
+            };
+
+            if is_button_mode && self.hit_test_shape(point) {
+                return Some(self_node);
             }
 
             // Maybe we could skip recursing down at all if !world_bounds.contains(point),
