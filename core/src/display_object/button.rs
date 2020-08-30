@@ -280,13 +280,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 
     fn hit_test_bounds(&self, point: (Twips, Twips)) -> bool {
-        for child in self.0.read().hit_area.values().rev() {
-            if child.world_bounds().contains(point) {
-                return true;
-            }
-        }
-
-        false
+        self.world_bounds().contains(point)
     }
 
     fn hit_test_shape(&self, point: (Twips, Twips)) -> bool {
@@ -306,11 +300,14 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         point: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
-        if self.hit_test_bounds(point) {
-            Some(self_node)
-        } else {
-            None
+        if self.visible() {
+            for child in self.0.read().hit_area.values() {
+                if child.hit_test_shape(point) {
+                    return Some(self_node);
+                }
+            }
         }
+        None
     }
 
     fn object(&self) -> Value<'gc> {
