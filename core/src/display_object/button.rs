@@ -165,7 +165,7 @@ impl<'gc> Button<'gc> {
                 self.set_first_child(context.gc_context, Some(child));
             }
             // Initialize child.
-            child.post_instantiation(context, child, None, false);
+            child.post_instantiation(context, child, None, false, false);
             child.run_frame(context);
             self.0
                 .write(context.gc_context)
@@ -193,6 +193,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
         _instantiated_from_avm: bool,
+        run_frame: bool,
     ) {
         self.set_default_instance_name(context);
 
@@ -204,6 +205,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
                 Some(context.system_prototypes.button),
             );
             mc.object = Some(object.into());
+
+            if run_frame {
+                self.run_frame(context);
+            }
         }
     }
 
@@ -248,7 +253,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             drop(read);
 
             for (child, depth) in new_children {
-                child.post_instantiation(context, child, None, false);
+                child.post_instantiation(context, child, None, false, false);
                 self.0
                     .write(context.gc_context)
                     .hit_area

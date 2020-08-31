@@ -913,7 +913,7 @@ mod tests {
                 avm2: &mut avm2,
             };
 
-            root.post_instantiation(&mut context, root, None, false);
+            root.post_instantiation(&mut context, root, None, false, false);
             root.set_name(context.gc_context, "");
 
             let base_clip = *context.levels.get(&0).unwrap();

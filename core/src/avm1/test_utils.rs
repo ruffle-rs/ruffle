@@ -73,7 +73,7 @@ where
             avm1: &mut avm1,
             avm2: &mut avm2,
         };
-        root.post_instantiation(&mut context, root, None, false);
+        root.post_instantiation(&mut context, root, None, false, false);
         root.set_name(context.gc_context, "");
 
         fn run_test<'a, 'gc: 'a, F>(
