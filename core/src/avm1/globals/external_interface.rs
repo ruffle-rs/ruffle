@@ -51,16 +51,17 @@ pub fn call<'gc>(
     }
 
     let name = args.get(0).unwrap().coerce_to_string(activation)?;
-    let mut external_args = Vec::with_capacity(args.len() - 1);
-    for arg in args {
-        external_args.push(ExternalValue::from_avm1(activation, arg.to_owned())?);
+    if let Some(method) = activation.context.external_interface.get_method_for(&name) {
+        let mut external_args = Vec::with_capacity(args.len() - 1);
+        for arg in args {
+            external_args.push(ExternalValue::from_avm1(activation, arg.to_owned())?);
+        }
+        Ok(method
+            .call(&mut activation.context, &external_args)
+            .into_avm1(activation))
+    } else {
+        Ok(Value::Null)
     }
-    let result = activation
-        .context
-        .external_interface
-        .call_external(&name, &external_args);
-
-    Ok(result.into_avm1(activation))
 }
 
 pub fn create_external_interface_object<'gc>(
