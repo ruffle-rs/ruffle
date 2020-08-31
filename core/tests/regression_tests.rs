@@ -10,8 +10,9 @@ use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::{
     audio::NullAudioBackend, input::NullInputBackend, render::NullRenderer,
 };
-use ruffle_core::external::ExternalInterfaceProvider;
+use ruffle_core::context::UpdateContext;
 use ruffle_core::external::Value as ExternalValue;
+use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use std::cell::RefCell;
@@ -571,17 +572,35 @@ impl ExternalInterfaceTestProvider {
     }
 }
 
+fn do_trace(_context: &mut UpdateContext<'_, '_, '_>, args: &[ExternalValue]) -> ExternalValue {
+    log::info!(target: "avm_trace", "[ExternalInterface] trace: {:?}", args);
+    "Traced!".into()
+}
+
+fn do_ping(_context: &mut UpdateContext<'_, '_, '_>, _args: &[ExternalValue]) -> ExternalValue {
+    log::info!(target: "avm_trace", "[ExternalInterface] ping");
+    "Pong!".into()
+}
+
+fn do_reentry(context: &mut UpdateContext<'_, '_, '_>, _args: &[ExternalValue]) -> ExternalValue {
+    log::info!(target: "avm_trace", "[ExternalInterface] starting reentry");
+    if let Some(callback) = context.external_interface.get_callback("callWith") {
+        callback.call(
+            context,
+            "callWith",
+            vec!["trace".into(), "successful reentry!".into()],
+        )
+    } else {
+        ExternalValue::Null
+    }
+}
+
 impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
-    fn call(&self, name: &str, args: &[ExternalValue]) -> Option<ExternalValue> {
+    fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
         match name {
-            "trace" => {
-                log::info!(target: "avm_trace", "[ExternalInterface] trace: {:?}", args);
-                Some("Traced!".into())
-            }
-            "ping" => {
-                log::info!(target: "avm_trace", "[ExternalInterface] ping");
-                Some("Pong!".into())
-            }
+            "trace" => Some(Box::new(do_trace)),
+            "ping" => Some(Box::new(do_ping)),
+            "reentry" => Some(Box::new(do_reentry)),
             _ => None,
         }
     }

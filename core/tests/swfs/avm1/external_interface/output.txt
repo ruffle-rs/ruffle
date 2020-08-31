@@ -20,6 +20,31 @@ Pong!
 // ExternalInterface.call("non_existent")
 null
 
+// ExternalInterface.call("reentry")
+[ExternalInterface] starting reentry
+/// callWith() start
+// this
+[object Object]
+
+// this == thatTarget
+true
+
+// arguments.length
+2
+
+// name
+trace
+
+// payload
+successful reentry!
+
+// ExternalInterface.call(name, payload)
+[ExternalInterface] trace: [String("trace"), String("successful reentry!")]
+Traced!
+
+</// callWith() end
+<null
+
 /// parrot() start
 // this
 [object Object]

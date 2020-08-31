@@ -20,7 +20,7 @@ mod bounding_box;
 mod character;
 mod collect;
 pub mod color_transform;
-mod context;
+pub mod context;
 mod drawing;
 mod ecma_conversions;
 pub mod events;

@@ -232,7 +232,20 @@ impl<'gc> Callback<'gc> {
 }
 
 pub trait ExternalInterfaceProvider {
-    fn call(&self, name: &str, args: &[Value]) -> Option<Value>;
+    fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>>;
+}
+
+pub trait ExternalInterfaceMethod {
+    fn call(&self, context: &mut UpdateContext<'_, '_, '_>, args: &[Value]) -> Value;
+}
+
+impl<F> ExternalInterfaceMethod for F
+where
+    F: Fn(&mut UpdateContext<'_, '_, '_>, &[Value]) -> Value,
+{
+    fn call(&self, context: &mut UpdateContext<'_, '_, '_>, args: &[Value]) -> Value {
+        self(context, args)
+    }
 }
 
 #[derive(Default)]
@@ -265,14 +278,13 @@ impl<'gc> ExternalInterface<'gc> {
         self.callbacks.get(name).cloned()
     }
 
-    pub fn call_external(&self, name: &str, args: &[Value]) -> Value {
+    pub fn get_method_for(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
         for provider in &self.providers {
-            if let Some(value) = provider.call(name, args) {
-                return value;
+            if let Some(method) = provider.get_method(name) {
+                return Some(method);
             }
         }
-
-        Value::Null
+        None
     }
 
     pub fn available(&self) -> bool {
