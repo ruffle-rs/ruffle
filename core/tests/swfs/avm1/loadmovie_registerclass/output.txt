@@ -1,6 +1,12 @@
 Registered clip from original movie
+// this.box
+_level0.target.custom_clip.box
+
 // target_clip
 _level0.target.custom_clip
+
+// target_clip.box
+_level0.target.custom_clip.box
 
 // target_clip instanceof CustomClip
 true
@@ -8,8 +14,14 @@ true
 // original_clip_from_target
 undefined
 
+// original_clip_from_target.box
+undefined
+
 // original_clip_from_target instanceof CustomClip
 false
+
+// this.box
+undefined
 
 // original_clip_from_original
 _level0.original_movie_custom_clip

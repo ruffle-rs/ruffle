@@ -106,6 +106,53 @@ _level0.b.box
 root first frame end
 
 
+// attachMovie("a", c, getNextHighestDepth());
+a constructor()
+
+// trace(this._name)
+undefined
+
+// trace(this._name)
+undefined
+
+// trace(this.box)
+_level0.undefined.box
+
+// trace(this.custom)
+true
+
+// trace(this.box.custom)
+undefined
+
+// trace(this.box.box)
+_level0.undefined.box.box
+
+a constructor() end
+
+
+aaclass constructor
+
+// trace(this._name)
+box
+
+// trace(this.__constructor__)
+[type Function]
+
+// trace(this.__constructor__ === aaclass)
+true
+
+aaclass test()
+
+// trace(this._name)
+box
+
+// trace(this.box)
+_level0.undefined.box.box
+
+aaclass test() end
+aaclass constructor end
+
+
 aaclass constructor
 
 // trace(this._name)
@@ -127,6 +174,46 @@ _level0.d.box
 
 aaclass test() end
 aaclass constructor end
+
+
+a first frame
+
+// trace(this._name)
+undefined
+
+// trace(this.box)
+_level0.undefined.box
+
+// trace(this.custom)
+true
+
+// trace(this.box.custom)
+undefined
+
+// trace(this.box.box)
+_level0.undefined.box.box
+
+// trace(this.oldbox)
+_level0.undefined.box
+
+// trace(this.box === this.oldbox)
+true
+
+a first frame end
+
+
+aa first frame
+
+// trace(this._name)
+box
+
+// trace(this.box)
+_level0.undefined.box.box
+
+// trace(this.custom)
+undefined
+
+aa first frame end
 
 
 root frame 2
