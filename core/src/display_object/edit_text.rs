@@ -848,6 +848,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
         _instantiated_from_avm: bool,
+        run_frame: bool,
     ) {
         self.set_default_instance_name(context);
 
@@ -894,6 +895,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 self.bind_text_field_variables(activation);
             },
         );
+
+        if run_frame {
+            self.run_frame(context);
+        }
     }
 
     fn object(&self) -> Value<'gc> {

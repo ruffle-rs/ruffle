@@ -781,7 +781,7 @@ impl<'gc> MovieClip<'gc> {
                 }
                 // Run first frame.
                 child.apply_place_object(context.gc_context, place_object);
-                child.post_instantiation(context, child, None, false);
+                child.post_instantiation(context, child, None, false, false);
                 child.run_frame(context);
             }
             Some(child)
@@ -1127,6 +1127,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         display_object: DisplayObject<'gc>,
         init_object: Option<Object<'gc>>,
         instantiated_from_avm: bool,
+        run_frame: bool,
     ) {
         self.set_default_instance_name(context);
 
@@ -1164,6 +1165,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         }
                     }
                     self.0.write(activation.context.gc_context).object = Some(object);
+                    if run_frame {
+                        self.run_frame(&mut activation.context);
+                    }
                     let _ = constructor.construct_on_existing(&mut activation, object, &[]);
                 }
 
@@ -1211,6 +1215,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 },
                 false,
             );
+        }
+
+        if run_frame {
+            self.run_frame(context);
         }
 
         // If this text field has a variable set, initialize text field binding.

@@ -437,6 +437,8 @@ impl<'gc> Loader<'gc> {
                         .unwrap()
                         .replace_with_movie(uc.gc_context, None);
 
+                    dbg!("movie_loader 440");
+
                     if let Some(broadcaster) = broadcaster {
                         Avm1::run_stack_frame_for_method(
                             clip,
@@ -491,7 +493,7 @@ impl<'gc> Loader<'gc> {
                             .expect("Attempted to load movie into not movie clip");
 
                         mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
-                        mc.post_instantiation(uc, clip, None, false);
+                        mc.post_instantiation(uc, clip, None, false, false);
 
                         let mut morph_shapes = fnv::FnvHashMap::default();
                         mc.preload(uc, &mut morph_shapes);

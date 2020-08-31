@@ -2645,7 +2645,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             level.set_depth(self.context.gc_context, level_id as i32);
             self.context.levels.insert(level_id, level);
-            level.post_instantiation(&mut self.context, level, None, false);
+            level.post_instantiation(&mut self.context, level, None, false, false);
 
             level
         }

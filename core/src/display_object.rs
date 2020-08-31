@@ -824,11 +824,15 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
 
     fn post_instantiation(
         &self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         _display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
         _instantiated_from_avm: bool,
+        run_frame: bool,
     ) {
+        if run_frame {
+            self.run_frame(context);
+        }
     }
 
     /// Return the version of the SWF that created this movie clip.

@@ -310,7 +310,7 @@ impl Player {
             let root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
             root.set_depth(context.gc_context, 0);
-            root.post_instantiation(context, root, None, false);
+            root.post_instantiation(context, root, None, false, false);
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
