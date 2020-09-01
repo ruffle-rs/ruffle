@@ -38,3 +38,9 @@ assert_array(a);
 
 trace("//(contents of b);");
 assert_array(b);
+
+trace("//Array.prototype[4] = 999;");
+Array.prototype[4] = 999;
+
+trace("//(contents of b);");
+assert_array(b);

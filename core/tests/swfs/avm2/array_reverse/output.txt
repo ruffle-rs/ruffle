@@ -19,3 +19,10 @@ undefined
 1
 undefined
 4
+//Array.prototype[4] = 999;
+//(contents of b);
+undefined
+2
+1
+undefined
+999
