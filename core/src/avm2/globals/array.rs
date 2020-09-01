@@ -612,6 +612,59 @@ pub fn unshift<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Array.slice`
+pub fn slice<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let array_length = this.as_array_storage().map(|a| a.length());
+
+        if let Some(array_length) = array_length {
+            let start = args
+                .get(0)
+                .cloned()
+                .unwrap_or_else(|| 0.into())
+                .coerce_to_i32(activation)?;
+            let end = args
+                .get(1)
+                .cloned()
+                .unwrap_or_else(|| 0xFFFFFF.into())
+                .coerce_to_i32(activation)?;
+
+            let actual_start = if start < 0 {
+                (array_length as isize).saturating_add(start as isize) as usize
+            } else {
+                start as usize
+            };
+            let actual_end = if end < 0 {
+                (array_length as isize).saturating_add(end as isize) as usize
+            } else {
+                end as usize
+            };
+
+            let mut new_array = ArrayStorage::new(0);
+            for i in actual_start..actual_end {
+                if i >= array_length {
+                    break;
+                }
+
+                new_array.push(resolve_array_hole(
+                    activation,
+                    this,
+                    i,
+                    this.as_array_storage().unwrap().get(i),
+                )?);
+            }
+
+            return build_array(activation, new_array);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -705,6 +758,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "unshift"),
         Method::from_builtin(unshift),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "slice"),
+        Method::from_builtin(slice),
     ));
 
     class
