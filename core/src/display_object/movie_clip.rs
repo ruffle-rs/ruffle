@@ -1012,6 +1012,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Some(self.0.read().movie())
     }
 
+    fn swf_version(&self) -> u8 {
+        self.0.read().movie().version()
+    }
+
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
         for child in self.children() {

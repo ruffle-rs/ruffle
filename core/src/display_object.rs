@@ -1063,9 +1063,6 @@ macro_rules! impl_display_object_sansbounds {
                 .$field
                 .set_transformed_by_script(value)
         }
-        fn swf_version(&self) -> u8 {
-            self.0.read().$field.swf_version()
-        }
         fn instantiate(
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
