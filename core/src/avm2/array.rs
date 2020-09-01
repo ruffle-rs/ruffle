@@ -112,7 +112,7 @@ impl<'gc> ArrayStorage<'gc> {
         self.storage.push(None)
     }
 
-    /// Pop a value from the array.
+    /// Pop a value from the back of the array.
     ///
     /// This method preferrentially pops non-holes from the array first. If a
     /// hole is popped, it will become `undefined`.
@@ -133,6 +133,25 @@ impl<'gc> ArrayStorage<'gc> {
                 .unwrap_or(None)
                 .unwrap_or(Value::Undefined)
         }
+    }
+
+    /// Shift a value from the front of the array.
+    ///
+    /// This method preferrentially pops non-holes from the array first. If a
+    /// hole is popped, it will become `undefined`.
+    pub fn shift(&mut self) -> Value<'gc> {
+        if !self.storage.is_empty() {
+            self.storage.remove(0).unwrap_or(Value::Undefined)
+        } else {
+            Value::Undefined
+        }
+    }
+
+    /// Unshift a single value onto the start of this array.
+    ///
+    /// It is not possible to push a hole onto the array.
+    pub fn unshift(&mut self, item: Value<'gc>) {
+        self.storage.insert(0, Some(item))
     }
 
     /// Iterate over array values.

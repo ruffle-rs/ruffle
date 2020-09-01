@@ -20,12 +20,12 @@ Array.prototype[3] = "works";
 
 assert_array(a);
 
-trace("//a.push(\"hi\", \"bye\");");
-a.push("hi", "bye");
+trace("//a.unshift(\"hi\", \"bye\");");
+a.unshift("hi", "bye");
 
 assert_array(a);
 
-trace("//a.push();");
-a.push();
+trace("//a.unshift();");
+a.unshift();
 
 assert_array(a);

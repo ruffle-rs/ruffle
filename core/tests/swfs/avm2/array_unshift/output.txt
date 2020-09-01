@@ -6,19 +6,19 @@ undefined
 test
 works
 undefined
-//a.push("hi", "bye");
-undefined
-undefined
-test
-works
-undefined
+//a.unshift("hi", "bye");
 hi
 bye
-//a.push();
 undefined
-undefined
-test
 works
+test
 undefined
+undefined
+//a.unshift();
 hi
 bye
+undefined
+works
+test
+undefined
+undefined

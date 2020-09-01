@@ -534,7 +534,9 @@ pub fn push<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
-            array.push(args.get(0).cloned().unwrap_or(Value::Undefined))
+            for arg in args {
+                array.push(arg.clone())
+            }
         }
     }
 
@@ -544,7 +546,7 @@ pub fn push<'gc>(
 pub fn reverse<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
-    args: &[Value<'gc>],
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
@@ -572,6 +574,38 @@ pub fn reverse<'gc>(
             swap(&mut *array, &mut new_array);
 
             return Ok(this.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.shift`
+pub fn shift<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+            return Ok(array.shift());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.unshift`
+pub fn unshift<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+            for arg in args.iter().rev() {
+                array.unshift(arg.clone())
+            }
         }
     }
 
@@ -661,6 +695,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "reverse"),
         Method::from_builtin(reverse),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "shift"),
+        Method::from_builtin(shift),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "unshift"),
+        Method::from_builtin(unshift),
     ));
 
     class

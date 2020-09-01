@@ -1,0 +1,51 @@
+//var a = new Array(5);
+//a[2] = "test";
+//Array.prototype[3] = "works";
+//(contents of a)
+undefined
+undefined
+test
+works
+undefined
+//a.length
+5
+//a.shift();
+undefined
+//(contents of a)
+undefined
+test
+undefined
+works
+//a.length
+4
+//a.shift();
+undefined
+//(contents of a)
+test
+undefined
+undefined
+//a.length
+3
+//a.shift();
+test
+//(contents of a)
+undefined
+undefined
+//a.length
+2
+//a.shift();
+undefined
+//(contents of a)
+undefined
+//a.length
+1
+//a.shift();
+undefined
+//(contents of a)
+//a.length
+0
+//a.shift();
+undefined
+//(contents of a)
+//a.length
+0
