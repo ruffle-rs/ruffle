@@ -11,6 +11,7 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
+use std::mem::swap;
 
 /// Implements `Array`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -540,6 +541,43 @@ pub fn push<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn reverse<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+            let mut last_non_hole_index = None;
+            for (i, val) in array.iter().enumerate() {
+                if val.is_some() {
+                    last_non_hole_index = Some(i + 1);
+                }
+            }
+
+            let mut new_array = ArrayStorage::new(0);
+
+            for i in
+                (0..last_non_hole_index.unwrap_or_else(|| array.length().saturating_sub(1))).rev()
+            {
+                if let Some(value) = array.get(i) {
+                    new_array.push(value)
+                } else {
+                    new_array.push_hole()
+                }
+            }
+
+            new_array.set_length(array.length());
+
+            swap(&mut *array, &mut new_array);
+
+            return Ok(this.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -618,6 +656,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "push"),
         Method::from_builtin(push),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "reverse"),
+        Method::from_builtin(reverse),
     ));
 
     class

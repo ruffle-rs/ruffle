@@ -373,6 +373,7 @@ swf_tests! {
     (as3_array_lastindexof, "avm2/array_lastindexof", 1),
     (as3_array_push, "avm2/array_push", 1),
     (as3_array_pop, "avm2/array_pop", 1),
+    (as3_array_reverse, "avm2/array_reverse", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
