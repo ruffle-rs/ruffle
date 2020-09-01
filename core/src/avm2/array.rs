@@ -36,12 +36,18 @@ impl<'gc> ArrayStorage<'gc> {
         Self { storage }
     }
 
+    /// Convert a set of arguments into array storage.
     pub fn from_args(values: &[Value<'gc>]) -> Self {
         let storage = values
             .iter()
             .map(|v| Some(v.clone()))
             .collect::<Vec<Option<Value<'gc>>>>();
 
+        Self { storage }
+    }
+
+    /// Wrap an existing storage Vec in an `ArrayStorage`.
+    pub fn from_storage(storage: Vec<Option<Value<'gc>>>) -> Self {
         Self { storage }
     }
 
@@ -99,6 +105,11 @@ impl<'gc> ArrayStorage<'gc> {
     /// It is not possible to push a hole onto the array.
     pub fn push(&mut self, item: Value<'gc>) {
         self.storage.push(Some(item))
+    }
+
+    /// Push an array hole onto the end of this array.
+    pub fn push_hole(&mut self) {
+        self.storage.push(None)
     }
 
     /// Pop a value from the array.

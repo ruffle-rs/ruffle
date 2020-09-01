@@ -1,0 +1,21 @@
+//var a = new Array(5);
+//Array.prototype[0] = 0;
+//a[1] = 1;
+//a[2] = 2;
+//a[3] = undefined;
+//Array.prototype[4] = 4;
+//a.length;
+5
+//var b = a.reverse();
+//(contents of a);
+undefined
+2
+1
+undefined
+4
+//(contents of b);
+undefined
+2
+1
+undefined
+4
