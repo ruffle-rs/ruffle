@@ -1,0 +1,39 @@
+//var a = new Array(8)
+//Array.prototype[0] = 999
+//Array.prototype[1] = 998
+//a[2] = 2
+//Array.prototype[3] = 997
+//a[4] = 4
+//Array.prototype[5] = 996
+//a[6] = 6
+//Array.prototype[7] = 995
+//var b = a.slice();
+//(contents of b)
+999
+998
+2
+997
+4
+996
+6
+995
+//var c = a.slice(0, 3);
+//(contents of c)
+999
+998
+2
+//var d = a.slice(-1, 3);
+//(contents of d)
+//var e = a.slice(0, 3);
+//(contents of e)
+999
+998
+2
+997
+4
+//var f = a.slice(-1, -3);
+//(contents of f)
+//var g = a.slice(-3, -1);
+//(contents of g)
+996
+6
