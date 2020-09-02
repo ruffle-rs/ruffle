@@ -53,7 +53,7 @@ pub fn call<'gc>(
     let name = args.get(0).unwrap().coerce_to_string(activation)?;
     if let Some(method) = activation.context.external_interface.get_method_for(&name) {
         let mut external_args = Vec::with_capacity(args.len() - 1);
-        for arg in args {
+        for arg in &args[1..] {
             external_args.push(ExternalValue::from_avm1(activation, arg.to_owned())?);
         }
         Ok(method

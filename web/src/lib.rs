@@ -39,6 +39,8 @@ thread_local! {
     /// This gives us a clear boundary between the JS side and Rust side, avoiding
     /// issues with lifetimes and type paramters (which cannot be exported with wasm-bindgen).
     static INSTANCES: RefCell<Arena<RuffleInstance>> = RefCell::new(Arena::new());
+
+    static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static, 'static>>> = RefCell::new(None);
 }
 
 type AnimationHandler = Closure<dyn FnMut(f64)>;
@@ -167,6 +169,19 @@ impl Ruffle {
     #[allow(clippy::boxed_local)] // for js_bind
     pub fn call_exposed_callback(&self, name: &str, args: Box<[JsValue]>) -> JsValue {
         let args: Vec<ExternalValue> = args.iter().map(js_to_external_value).collect();
+
+        // Re-entrant callbacks need to return through the hole that was punched through for them
+        // We record the context of external functions, and then if we get an internal callback
+        // during the same call we'll reuse that.
+        // This is unsafe by nature. I don't know any safe way to do this.
+        if let Some(context) = CURRENT_CONTEXT.with(|v| *v.borrow()) {
+            unsafe {
+                if let Some(callback) = (*context).external_interface.get_callback(name) {
+                    return external_to_js_value(callback.call(&mut *context, name, args));
+                }
+            }
+        }
+
         INSTANCES.with(move |instances| {
             if let Ok(mut instances) = instances.try_borrow_mut() {
                 if let Some(instance) = instances.get_mut(self.0) {
@@ -608,10 +623,18 @@ struct JavascriptMethod {
 impl ExternalInterfaceMethod for JavascriptMethod {
     fn call(
         &self,
-        _context: &mut UpdateContext<'_, '_, '_>,
+        context: &mut UpdateContext<'_, '_, '_>,
         args: &[ExternalValue],
     ) -> ExternalValue {
-        if let Some(function) = self.function.dyn_ref::<Function>() {
+        let old_context = CURRENT_CONTEXT.with(|v| {
+            v.replace(Some(unsafe {
+                std::mem::transmute::<
+                    &mut UpdateContext,
+                    &mut UpdateContext<'static, 'static, 'static>,
+                >(context)
+            } as *mut UpdateContext))
+        });
+        let result = if let Some(function) = self.function.dyn_ref::<Function>() {
             let args_array = Array::new();
             for arg in args {
                 args_array.push(&external_to_js_value(arg.to_owned()));
@@ -623,7 +646,9 @@ impl ExternalInterfaceMethod for JavascriptMethod {
             }
         } else {
             ExternalValue::Null
-        }
+        };
+        CURRENT_CONTEXT.with(|v| v.replace(old_context));
+        result
     }
 }
 

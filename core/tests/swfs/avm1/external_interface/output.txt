@@ -39,7 +39,7 @@ trace
 successful reentry!
 
 // ExternalInterface.call(name, payload)
-[ExternalInterface] trace: [String("trace"), String("successful reentry!")]
+[ExternalInterface] trace: [String("successful reentry!")]
 Traced!
 
 /// callWith() end
@@ -77,7 +77,7 @@ trace
 [object Object]
 
 // ExternalInterface.call(name, payload)
-[ExternalInterface] trace: [String("trace"), Object({"false": Bool(false), "nested": Object({"list": List([String("string"), Number(100.0), Bool(false), Object({})])}), "null": Null, "number": Number(-500.1), "string": String("A string!"), "true": Bool(true)})]
+[ExternalInterface] trace: [Object({"false": Bool(false), "nested": Object({"list": List([String("string"), Number(100.0), Bool(false), Object({})])}), "null": Null, "number": Number(-500.1), "string": String("A string!"), "true": Bool(true)})]
 Traced!
 
 /// callWith() end
