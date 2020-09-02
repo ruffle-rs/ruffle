@@ -107,7 +107,7 @@ module.exports = class RuffleObject extends RufflePlayer {
     static find_case_insensitive(obj, key, defaultValue) {
         key = key.toLowerCase();
         for (const k in obj) {
-            if (obj.hasOwnProperty(k) && key === k.toLowerCase()) {
+            if (Object.hasOwnProperty.call(obj, k) && key === k.toLowerCase()) {
                 return obj[k];
             }
         }
