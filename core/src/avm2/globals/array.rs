@@ -130,12 +130,15 @@ fn resolve_array_hole<'gc>(
     })
 }
 
-/// Implements `Array.join`
-pub fn join<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+pub fn join_inner<'gc, 'a, 'ctxt, C>(
+    activation: &mut Activation<'a, 'gc, 'ctxt>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+    mut conv: C,
+) -> Result<Value<'gc>, Error>
+where
+    C: for<'b> FnMut(Value<'gc>, &'b mut Activation<'a, 'gc, 'ctxt>) -> Result<Value<'gc>, Error>,
+{
     let mut separator = args.get(0).cloned().unwrap_or(Value::Undefined);
     if separator == Value::Undefined {
         separator = ",".into();
@@ -149,7 +152,11 @@ pub fn join<'gc>(
             for (i, item) in array.iter().enumerate() {
                 let item = resolve_array_hole(activation, this, i, item)?;
 
-                accum.push(item.coerce_to_string(activation)?.to_string());
+                accum.push(
+                    conv(item, activation)?
+                        .coerce_to_string(activation)?
+                        .to_string(),
+                );
             }
 
             return Ok(AvmString::new(
@@ -163,13 +170,42 @@ pub fn join<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Array.join`
+pub fn join<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    join_inner(activation, this, args, |v, _act| Ok(v))
+}
+
 /// Implements `Array.toString`
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    join(activation, this, &[",".into()])
+    join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
+}
+
+/// Implements `Array.toLocaleString`
+pub fn to_locale_string<'gc>(
+    act: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    join_inner(act, this, &[",".into()], |v, activation| {
+        let mut o = v.coerce_to_object(activation)?;
+
+        let tls = o.get_property(
+            o,
+            &QName::new(Namespace::public_namespace(), "toLocaleString"),
+            activation,
+        )?;
+
+        tls.coerce_to_object(activation)?
+            .call(Some(o), &[], activation, o.proto())
+    })
 }
 
 /// Implements `Array.valueOf`
@@ -178,7 +214,7 @@ pub fn value_of<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    join(activation, this, &[",".into()])
+    join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
 }
 
 /// An iterator that allows iterating over the contents of an array whilst also
@@ -756,6 +792,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "toString"),
         Method::from_builtin(to_string),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "toLocaleString"),
+        Method::from_builtin(to_locale_string),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
