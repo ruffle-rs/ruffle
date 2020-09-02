@@ -12,7 +12,7 @@ gc-arena = "0.2.0"
 gc-arena-derive = "0.2.0"
 generational-arena = "0.2.8"
 gif = "0.10.3"
-indexmap = "1.5.1"
+indexmap = "1.5.2"
 libflate = "1.0.2"
 log = "0.4"
 minimp3 = { version = "0.5.0", optional = true }
