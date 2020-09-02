@@ -77,7 +77,6 @@ extern "C" {
 
 struct JavascriptInterface {
     js_player: JavascriptPlayer,
-    element: HtmlElement,
 }
 
 /// An opaque handle to a `RuffleInstance` inside the pool.
@@ -273,7 +272,6 @@ impl Ruffle {
                     .lock()
                     .unwrap()
                     .add_external_interface(Box::new(JavascriptInterface::new(
-                        canvas.clone().into(),
                         instance.js_player.clone(),
                     )));
             }
@@ -659,8 +657,8 @@ impl ExternalInterfaceMethod for JavascriptMethod {
 }
 
 impl JavascriptInterface {
-    fn new(element: HtmlElement, js_player: JavascriptPlayer) -> Self {
-        Self { element, js_player }
+    fn new(js_player: JavascriptPlayer) -> Self {
+        Self { js_player }
     }
 
     fn find_method(&self, root: JsValue, name: &str) -> Option<JavascriptMethod> {
@@ -683,7 +681,7 @@ impl JavascriptInterface {
 
 impl ExternalInterfaceProvider for JavascriptInterface {
     fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
-        if let Some(method) = self.find_method(self.element.clone().into(), name) {
+        if let Some(method) = self.find_method(self.js_player.clone().into(), name) {
             return Some(Box::new(method));
         }
         if let Some(window) = web_sys::window() {
