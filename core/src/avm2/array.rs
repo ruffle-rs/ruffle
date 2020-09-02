@@ -3,6 +3,7 @@
 use crate::avm2::value::Value;
 use gc_arena::Collect;
 use std::iter::ExactSizeIterator;
+use std::ops::RangeBounds;
 
 /// Trait which exists purely so that we can reverse the iterators that come
 /// out of `ArrayStorage.iter`.
@@ -157,5 +158,19 @@ impl<'gc> ArrayStorage<'gc> {
     /// Iterate over array values.
     pub fn iter<'a>(&'a self) -> impl ArrayIterator<Item = Option<Value<'gc>>> + 'a {
         self.storage.iter().cloned()
+    }
+
+    pub fn splice<'a, R, I>(
+        &'a mut self,
+        range: R,
+        replace_with: I,
+    ) -> impl Iterator<Item = Option<Value<'gc>>> + 'a
+    where
+        R: RangeBounds<usize>,
+        I: IntoIterator<Item = Value<'gc>>,
+        <I as IntoIterator>::IntoIter: 'a,
+    {
+        self.storage
+            .splice(range, replace_with.into_iter().map(Some))
     }
 }

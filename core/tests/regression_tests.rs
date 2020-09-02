@@ -377,6 +377,7 @@ swf_tests! {
     (as3_array_shift, "avm2/array_shift", 1),
     (as3_array_unshift, "avm2/array_unshift", 1),
     (as3_array_slice, "avm2/array_slice", 1),
+    (as3_array_splice, "avm2/array_splice", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
