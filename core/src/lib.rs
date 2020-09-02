@@ -39,6 +39,7 @@ mod xml;
 
 pub mod backend;
 
+pub use chrono;
 pub use events::PlayerEvent;
 pub use indexmap;
 pub use player::Player;
