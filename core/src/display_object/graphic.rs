@@ -15,12 +15,12 @@ pub struct GraphicData<'gc> {
 }
 
 impl<'gc> Graphic<'gc> {
-    pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, swf_shape: &swf::Shape) -> Self {
+    pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, swf_shape: swf::Shape) -> Self {
         let static_data = GraphicStatic {
             id: swf_shape.id,
-            shape: swf_shape.clone(),
-            render_handle: context.renderer.register_shape(swf_shape.into()),
             bounds: swf_shape.shape_bounds.clone().into(),
+            render_handle: context.renderer.register_shape((&swf_shape).into()),
+            shape: swf_shape,
         };
         Graphic(GcCell::allocate(
             context.gc_context,

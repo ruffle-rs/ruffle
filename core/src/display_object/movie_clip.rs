@@ -1647,11 +1647,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
         version: u8,
     ) -> DecodeResult {
         let swf_shape = reader.read_define_shape(version)?;
-        let graphic = Graphic::from_swf_tag(context, &swf_shape);
+        let id = swf_shape.id;
+        let graphic = Graphic::from_swf_tag(context, swf_shape);
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(swf_shape.id, Character::Graphic(graphic));
+            .register_character(id, Character::Graphic(graphic));
         Ok(())
     }
 
