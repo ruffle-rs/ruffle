@@ -2,7 +2,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::object::{value_object, Object, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::scope::Scope;
+use crate::avm1::scope::{Scope, ScopeClass};
 use crate::avm1::{
     fscommand, globals, scope, skip_actions, start_drag, AvmString, ScriptObject, Value,
 };
@@ -765,7 +765,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let target_fn = self.get_variable(&fn_name)?;
 
-        let this = self.target_clip_or_root().object().coerce_to_object(self);
+        let this = if matches!(self.scope.read().get_class(), ScopeClass::With) {
+            self.scope.read().locals_cell()
+        } else {
+            self.target_clip_or_root().object().coerce_to_object(self)
+        };
+
         let result = target_fn.call(&fn_name, self, this, None, &args)?;
         self.context.avm1.push(result);
 

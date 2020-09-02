@@ -274,6 +274,7 @@ swf_tests! {
     (date_set_utc_month, "avm1/date/setUTCMonth", 1),
     (date_set_utc_seconds, "avm1/date/setUTCSeconds", 1),
     (date_set_year, "avm1/date/setYear", 1),
+    (this_scoping, "avm1/this_scoping", 1),
     (as3_hello_world, "avm2/hello_world", 1),
     (as3_function_call, "avm2/function_call", 1),
     (as3_function_call_via_call, "avm2/function_call_via_call", 1),

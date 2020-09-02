@@ -61,6 +61,10 @@ impl<'gc> Scope<'gc> {
         }
     }
 
+    pub fn get_class(&self) -> ScopeClass {
+        self.class
+    }
+
     /// Construct a closure scope to be used as the parent of all local scopes
     /// when invoking a function.
     ///
