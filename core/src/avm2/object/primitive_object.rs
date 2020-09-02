@@ -79,6 +79,20 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
         Ok(self.0.read().primitive.clone())
     }
 
+    fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        match self.0.read().primitive.clone() {
+            val @ Value::Integer(_) | val @ Value::Unsigned(_) => Ok(val),
+            _ => {
+                let class_name = self
+                    .as_proto_class()
+                    .map(|c| c.read().name().local_name())
+                    .unwrap_or_else(|| "Object".into());
+
+                Ok(AvmString::new(mc, format!("[object {}]", class_name)).into())
+            }
+        }
+    }
+
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(self.0.read().primitive.clone())
     }
