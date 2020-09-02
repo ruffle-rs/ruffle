@@ -4,6 +4,7 @@ mod audio;
 mod custom_event;
 mod executor;
 mod input;
+mod locale;
 mod navigator;
 mod storage;
 mod task;
@@ -21,7 +22,6 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use crate::storage::DiskStorageBackend;
-use ruffle_core::backend::locale::NullLocaleBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
@@ -167,7 +167,7 @@ fn run_player(
     let storage = Box::new(DiskStorageBackend::new(
         input_path.file_name().unwrap_or_default().as_ref(),
     ));
-    let locale = Box::new(NullLocaleBackend::new());
+    let locale = Box::new(locale::DesktopLocaleBackend::new());
     let player = Player::new(renderer, audio, navigator, input, storage, locale)?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
     player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.
