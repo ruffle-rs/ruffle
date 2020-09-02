@@ -13,14 +13,19 @@ use crate::{
     navigator::WebNavigatorBackend,
 };
 use generational_arena::{Arena, Index};
-use js_sys::Uint8Array;
+use js_sys::{Array, Function, Object, Uint8Array};
 use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::storage::StorageBackend;
+use ruffle_core::context::UpdateContext;
 use ruffle_core::events::MouseWheelDelta;
+use ruffle_core::external::{
+    ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
+};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerEvent;
 use ruffle_web_common::JsResult;
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
@@ -40,6 +45,7 @@ type AnimationHandler = Closure<dyn FnMut(f64)>;
 
 struct RuffleInstance {
     core: Arc<Mutex<ruffle_core::Player>>,
+    js_player: JavascriptPlayer,
     canvas: HtmlCanvasElement,
     canvas_width: i32,
     canvas_height: i32,
@@ -58,6 +64,20 @@ struct RuffleInstance {
     has_focus: bool,
 }
 
+#[wasm_bindgen(module = "/packages/core/src/ruffle-player.js")]
+extern "C" {
+    #[derive(Clone)]
+    pub type JavascriptPlayer;
+
+    #[wasm_bindgen(method)]
+    fn on_callback_available(this: &JavascriptPlayer, name: &str);
+}
+
+struct JavascriptInterface {
+    js_player: JavascriptPlayer,
+    element: HtmlElement,
+}
+
 /// An opaque handle to a `RuffleInstance` inside the pool.
 ///
 /// This type is exported to JS, and is used to interact with the library.
@@ -67,8 +87,8 @@ pub struct Ruffle(Index);
 
 #[wasm_bindgen]
 impl Ruffle {
-    pub fn new(parent: HtmlElement) -> Result<Ruffle, JsValue> {
-        Ruffle::new_internal(parent).map_err(|_| "Error creating player".into())
+    pub fn new(parent: HtmlElement, js_player: JavascriptPlayer) -> Result<Ruffle, JsValue> {
+        Ruffle::new_internal(parent, js_player).map_err(|_| "Error creating player".into())
     }
 
     /// Stream an arbitrary movie file from (presumably) the Internet.
@@ -143,10 +163,28 @@ impl Ruffle {
         // Player is dropped at this point.
         Ok(())
     }
+
+    #[allow(clippy::boxed_local)] // for js_bind
+    pub fn call_exposed_callback(&self, name: &str, args: Box<[JsValue]>) -> JsValue {
+        let args: Vec<ExternalValue> = args.iter().map(js_to_external_value).collect();
+        INSTANCES.with(move |instances| {
+            if let Ok(mut instances) = instances.try_borrow_mut() {
+                if let Some(instance) = instances.get_mut(self.0) {
+                    if let Ok(mut player) = instance.core.try_lock() {
+                        return external_to_js_value(player.call_internal_interface(name, args));
+                    }
+                }
+            }
+            JsValue::NULL
+        })
+    }
 }
 
 impl Ruffle {
-    fn new_internal(parent: HtmlElement) -> Result<Ruffle, Box<dyn Error>> {
+    fn new_internal(
+        parent: HtmlElement,
+        js_player: JavascriptPlayer,
+    ) -> Result<Ruffle, Box<dyn Error>> {
         console_error_panic_hook::set_once();
         let _ = console_log::init_with_level(log::Level::Trace);
 
@@ -179,6 +217,7 @@ impl Ruffle {
         // Create instance.
         let instance = RuffleInstance {
             core,
+            js_player,
             canvas: canvas.clone(),
             canvas_width: 0, // Intiailize canvas width and height to 0 to force an initial canvas resize.
             canvas_height: 0,
@@ -204,6 +243,19 @@ impl Ruffle {
             let mut instances = instances.borrow_mut();
             let index = instances.insert(instance);
             let ruffle = Ruffle(index);
+
+            // Create the external interface
+            {
+                let instance = instances.get_mut(index).unwrap();
+                instance
+                    .core
+                    .lock()
+                    .unwrap()
+                    .add_external_interface(Box::new(JavascriptInterface::new(
+                        canvas.clone().into(),
+                        instance.js_player.clone(),
+                    )));
+            }
 
             // Create the animation frame closure.
             {
@@ -545,6 +597,134 @@ impl Ruffle {
                 }
             }
         });
+    }
+}
+
+struct JavascriptMethod {
+    this: JsValue,
+    function: JsValue,
+}
+
+impl ExternalInterfaceMethod for JavascriptMethod {
+    fn call(
+        &self,
+        _context: &mut UpdateContext<'_, '_, '_>,
+        args: &[ExternalValue],
+    ) -> ExternalValue {
+        if let Some(function) = self.function.dyn_ref::<Function>() {
+            let args_array = Array::new();
+            for arg in args {
+                args_array.push(&external_to_js_value(arg.to_owned()));
+            }
+            if let Ok(result) = function.apply(&self.this, &args_array) {
+                js_to_external_value(&result)
+            } else {
+                ExternalValue::Null
+            }
+        } else {
+            ExternalValue::Null
+        }
+    }
+}
+
+impl JavascriptInterface {
+    fn new(element: HtmlElement, js_player: JavascriptPlayer) -> Self {
+        Self { element, js_player }
+    }
+
+    fn find_method(&self, root: JsValue, name: &str) -> Option<JavascriptMethod> {
+        let mut parent = JsValue::UNDEFINED;
+        let mut value = root;
+        for key in name.split('.') {
+            parent = value;
+            value = js_sys::Reflect::get(&parent, &JsValue::from_str(key)).ok()?;
+        }
+        if value.is_function() {
+            Some(JavascriptMethod {
+                this: parent,
+                function: value,
+            })
+        } else {
+            None
+        }
+    }
+}
+
+impl ExternalInterfaceProvider for JavascriptInterface {
+    fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
+        if let Some(method) = self.find_method(self.element.clone().into(), name) {
+            return Some(Box::new(method));
+        }
+        if let Some(window) = web_sys::window() {
+            if let Some(method) = self.find_method(window.into(), name) {
+                return Some(Box::new(method));
+            }
+        }
+        None
+    }
+
+    fn on_callback_available(&self, name: &str) {
+        self.js_player.on_callback_available(name);
+    }
+}
+
+fn js_to_external_value(js: &JsValue) -> ExternalValue {
+    if let Some(value) = js.as_f64() {
+        ExternalValue::Number(value)
+    } else if let Some(value) = js.as_string() {
+        ExternalValue::String(value)
+    } else if let Some(value) = js.as_bool() {
+        ExternalValue::Bool(value)
+    } else if let Some(array) = js.dyn_ref::<Array>() {
+        let mut values = Vec::new();
+        for value in array.values() {
+            if let Ok(value) = value {
+                values.push(js_to_external_value(&value));
+            }
+        }
+        ExternalValue::List(values)
+    } else if let Some(object) = js.dyn_ref::<Object>() {
+        let mut values = BTreeMap::new();
+        for entry in Object::entries(&object).values() {
+            if let Ok(entry) = entry.and_then(|v| v.dyn_into::<Array>()) {
+                if let Some(key) = entry.get(0).as_string() {
+                    values.insert(key, js_to_external_value(&entry.get(1)));
+                }
+            }
+        }
+        ExternalValue::Object(values)
+    } else {
+        ExternalValue::Null
+    }
+}
+
+fn external_to_js_value(external: ExternalValue) -> JsValue {
+    match external {
+        Value::Null => JsValue::NULL,
+        Value::Bool(value) => JsValue::from_bool(value),
+        Value::Number(value) => JsValue::from_f64(value),
+        Value::String(value) => JsValue::from_str(&value),
+        Value::Object(object) => {
+            let entries = Array::new();
+            for (key, value) in object {
+                entries.push(&Array::of2(
+                    &JsValue::from_str(&key),
+                    &external_to_js_value(value),
+                ));
+            }
+            if let Ok(result) = Object::from_entries(&entries) {
+                result.into()
+            } else {
+                JsValue::NULL
+            }
+        }
+        Value::List(values) => {
+            let array = Array::new();
+            for value in values {
+                array.push(&external_to_js_value(value));
+            }
+            array.into()
+        }
     }
 }
 

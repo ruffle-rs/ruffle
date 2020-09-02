@@ -604,4 +604,6 @@ impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
             _ => None,
         }
     }
+
+    fn on_callback_available(&self, _name: &str) {}
 }
