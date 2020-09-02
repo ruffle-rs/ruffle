@@ -11,6 +11,7 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
+use std::cmp::min;
 use std::mem::swap;
 
 /// Implements `Array`'s instance initializer.
@@ -612,6 +613,21 @@ pub fn unshift<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Resolve a possibly-negative array index to something guaranteed to be positive.
+pub fn resolve_index<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    index: Value<'gc>,
+    length: usize,
+) -> Result<usize, Error> {
+    let index = index.coerce_to_i32(activation)?;
+
+    Ok(if index < 0 {
+        (length as isize).saturating_add(index as isize) as usize
+    } else {
+        index as usize
+    })
+}
+
 /// Implements `Array.slice`
 pub fn slice<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -622,28 +638,16 @@ pub fn slice<'gc>(
         let array_length = this.as_array_storage().map(|a| a.length());
 
         if let Some(array_length) = array_length {
-            let start = args
-                .get(0)
-                .cloned()
-                .unwrap_or_else(|| 0.into())
-                .coerce_to_i32(activation)?;
-            let end = args
-                .get(1)
-                .cloned()
-                .unwrap_or_else(|| 0xFFFFFF.into())
-                .coerce_to_i32(activation)?;
-
-            let actual_start = if start < 0 {
-                (array_length as isize).saturating_add(start as isize) as usize
-            } else {
-                start as usize
-            };
-            let actual_end = if end < 0 {
-                (array_length as isize).saturating_add(end as isize) as usize
-            } else {
-                end as usize
-            };
-
+            let actual_start = resolve_index(
+                activation,
+                args.get(0).cloned().unwrap_or_else(|| 0.into()),
+                array_length,
+            )?;
+            let actual_end = resolve_index(
+                activation,
+                args.get(1).cloned().unwrap_or_else(|| 0xFFFFFF.into()),
+                array_length,
+            )?;
             let mut new_array = ArrayStorage::new(0);
             for i in actual_start..actual_end {
                 if i >= array_length {
@@ -659,6 +663,65 @@ pub fn slice<'gc>(
             }
 
             return build_array(activation, new_array);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.splice`
+pub fn splice<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let array_length = this.as_array_storage().map(|a| a.length());
+
+        if let Some(array_length) = array_length {
+            if let Some(start) = args.get(0).cloned() {
+                let actual_start = resolve_index(activation, start, array_length)?;
+                let delete_count = args
+                    .get(1)
+                    .cloned()
+                    .unwrap_or_else(|| array_length.into())
+                    .coerce_to_i32(activation)?;
+
+                let mut removed_array = ArrayStorage::new(0);
+                if delete_count > 0 {
+                    let actual_end = min(array_length, actual_start + delete_count as usize);
+                    let args_slice = if args.len() > 2 {
+                        args[2..].iter().cloned()
+                    } else {
+                        [].iter().cloned()
+                    };
+
+                    let contents = this
+                        .as_array_storage()
+                        .map(|a| a.iter().collect::<Vec<Option<Value<'gc>>>>())
+                        .unwrap();
+                    let mut resolved = Vec::new();
+
+                    for (i, v) in contents.iter().enumerate() {
+                        resolved.push(resolve_array_hole(activation, this, i, v.clone())?);
+                    }
+
+                    let removed = resolved
+                        .splice(actual_start..actual_end, args_slice)
+                        .collect::<Vec<Value<'gc>>>();
+                    removed_array = ArrayStorage::from_args(&removed[..]);
+
+                    let mut resolved_array = ArrayStorage::from_args(&resolved[..]);
+
+                    if let Some(mut array) =
+                        this.as_array_storage_mut(activation.context.gc_context)
+                    {
+                        swap(&mut *array, &mut resolved_array)
+                    }
+                }
+
+                return build_array(activation, removed_array);
+            }
         }
     }
 
@@ -763,6 +826,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "slice"),
         Method::from_builtin(slice),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "splice"),
+        Method::from_builtin(splice),
     ));
 
     class
