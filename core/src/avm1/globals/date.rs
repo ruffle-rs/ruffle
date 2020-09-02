@@ -859,7 +859,7 @@ fn set_time<'gc>(
     if new_time.is_finite() {
         let time = Utc.timestamp_millis(new_time as i64);
         this.set_date_time(activation.context.gc_context, Some(time));
-        return Ok(time.timestamp_millis().into());
+        return Ok((time.timestamp_millis() as f64).into());
     }
 
     this.set_date_time(activation.context.gc_context, None);
@@ -938,8 +938,8 @@ pub fn create_proto<'gc>(
         gc_context,
         object,
         Some(fn_proto),
-        "valueOf" => DateTime::timestamp_millis,
-        "getTime" => DateTime::timestamp_millis,
+        "valueOf" => |date: &DateTime<Utc>| date.timestamp_millis() as f64,
+        "getTime" => |date: &DateTime<Utc>| date.timestamp_millis() as f64,
         "getUTCDate" => Datelike::day,
         "getUTCDay" => |date: &DateTime<Utc>| date.weekday().num_days_from_sunday(),
         "getUTCFullYear" => Datelike::year,
