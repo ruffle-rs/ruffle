@@ -233,6 +233,8 @@ impl<'gc> Callback<'gc> {
 
 pub trait ExternalInterfaceProvider {
     fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>>;
+
+    fn on_callback_available(&self, name: &str);
 }
 
 pub trait ExternalInterfaceMethod {
@@ -271,7 +273,10 @@ impl<'gc> ExternalInterface<'gc> {
     }
 
     pub fn add_callback(&mut self, name: String, callback: Callback<'gc>) {
-        self.callbacks.insert(name, callback);
+        self.callbacks.insert(name.clone(), callback);
+        for provider in &self.providers {
+            provider.on_callback_available(&name);
+        }
     }
 
     pub fn get_callback(&self, name: &str) -> Option<Callback<'gc>> {

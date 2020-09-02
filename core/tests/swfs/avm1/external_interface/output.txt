@@ -42,8 +42,8 @@ successful reentry!
 [ExternalInterface] trace: [String("trace"), String("successful reentry!")]
 Traced!
 
-</// callWith() end
-<null
+/// callWith() end
+null
 
 /// parrot() start
 // this

@@ -134,7 +134,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             throw e;
         });
 
-        this.instance = Ruffle.new(this.container);
+        this.instance = Ruffle.new(this.container, this);
         console.log("New Ruffle instance created.");
     }
 
@@ -260,6 +260,17 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             }
         }
         return null;
+    }
+
+    /*
+     * When a movie presents a new callback through `ExternalInterface.addCallback`,
+     * we are informed so that we can expose the method on any relevant DOM element.
+     */
+    on_callback_available(name) {
+        const instance = this.instance;
+        this.container[name] = () => {
+            return instance.call_exposed_callback(name, arguments);
+        };
     }
 };
 
