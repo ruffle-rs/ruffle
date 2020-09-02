@@ -28,6 +28,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         }
 
         self.instance = null;
+        self.allow_script_access = false;
 
         self.Ruffle = load_ruffle();
 
@@ -134,7 +135,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             throw e;
         });
 
-        this.instance = Ruffle.new(this.container, this);
+        this.instance = Ruffle.new(this.container, this, this.allow_script_access);
         console.log("New Ruffle instance created.");
     }
 

@@ -89,8 +89,13 @@ pub struct Ruffle(Index);
 
 #[wasm_bindgen]
 impl Ruffle {
-    pub fn new(parent: HtmlElement, js_player: JavascriptPlayer) -> Result<Ruffle, JsValue> {
-        Ruffle::new_internal(parent, js_player).map_err(|_| "Error creating player".into())
+    pub fn new(
+        parent: HtmlElement,
+        js_player: JavascriptPlayer,
+        allow_script_access: bool,
+    ) -> Result<Ruffle, JsValue> {
+        Ruffle::new_internal(parent, js_player, allow_script_access)
+            .map_err(|_| "Error creating player".into())
     }
 
     /// Stream an arbitrary movie file from (presumably) the Internet.
@@ -199,6 +204,7 @@ impl Ruffle {
     fn new_internal(
         parent: HtmlElement,
         js_player: JavascriptPlayer,
+        allow_script_access: bool,
     ) -> Result<Ruffle, Box<dyn Error>> {
         console_error_panic_hook::set_once();
         let _ = console_log::init_with_level(log::Level::Trace);
@@ -260,7 +266,7 @@ impl Ruffle {
             let ruffle = Ruffle(index);
 
             // Create the external interface
-            {
+            if allow_script_access {
                 let instance = instances.get_mut(index).unwrap();
                 instance
                     .core
