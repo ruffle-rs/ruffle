@@ -673,6 +673,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions.
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error>;
 
+    /// Implement the result of calling `Object.prototype.toLocaleString` on this
+    /// object class.
+    ///
+    /// `toLocaleString` is a method used to request an object be coerced to a
+    /// locale-dependent string value. The default implementation appears to
+    /// generate a debug-style string based on the name of the class this
+    /// object is, in the format of `[object Class]` (where `Class` is the name
+    /// of the class that created this object).
+    fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        let class_name = self
+            .as_proto_class()
+            .map(|c| c.read().name().local_name())
+            .unwrap_or_else(|| "Object".into());
+
+        Ok(AvmString::new(mc, format!("[object {}]", class_name)).into())
+    }
+
     /// Implement the result of calling `Object.prototype.valueOf` on this
     /// object class.
     ///

@@ -288,6 +288,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         }
     }
 
+    fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        self.to_string(mc)
+    }
+
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }

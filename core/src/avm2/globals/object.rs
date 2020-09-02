@@ -46,7 +46,7 @@ fn to_locale_string<'gc>(
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     Ok(this
-        .map(|t| t.to_string(activation.context.gc_context))
+        .map(|t| t.to_locale_string(activation.context.gc_context))
         .unwrap_or(Ok(Value::Undefined))?)
 }
 
