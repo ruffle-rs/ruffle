@@ -362,6 +362,7 @@ swf_tests! {
     (as3_array_literal, "avm2/array_literal", 1),
     (as3_array_concat, "avm2/array_concat", 1),
     (as3_array_tostring, "avm2/array_tostring", 1),
+    (as3_array_tolocalestring, "avm2/array_tolocalestring", 1),
     (as3_array_valueof, "avm2/array_valueof", 1),
     (as3_array_join, "avm2/array_join", 1),
     (as3_array_foreach, "avm2/array_foreach", 1),
