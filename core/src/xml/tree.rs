@@ -1042,6 +1042,17 @@ impl<'gc> XMLNode<'gc> {
         }
     }
 
+    /// Retrieve all keys defined on this node.
+    pub fn attribute_keys(self) -> Vec<String> {
+        match &*self.0.read() {
+            XMLNodeData::Element { attributes, .. } => attributes
+                .keys()
+                .map(|v| v.node_name().to_string())
+                .collect::<Vec<String>>(),
+            _ => Vec::new(),
+        }
+    }
+
     /// Retrieve the value of a single attribute on this node, case-insensitively.
     ///
     /// TODO: Probably won't need this when we have a proper HTML parser.
