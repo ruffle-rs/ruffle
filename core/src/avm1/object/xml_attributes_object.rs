@@ -215,7 +215,9 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
     }
 
     fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
-        self.base().get_keys(activation)
+        let mut base = self.base().get_keys(activation);
+        base.extend(self.node().attribute_keys());
+        base
     }
 
     fn as_string(&self) -> Cow<str> {

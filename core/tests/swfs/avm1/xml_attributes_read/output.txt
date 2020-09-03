@@ -1,3 +1,5 @@
 
 attr y string
 undefined
+attrx
+attry
