@@ -74,10 +74,6 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         context.transform_stack.pop();
     }
 
-    fn hit_test_bounds(&self, point: (Twips, Twips)) -> bool {
-        self.world_bounds().contains(point)
-    }
-
     fn hit_test_shape(&self, point: (Twips, Twips)) -> bool {
         // Transform point to local coordinates and test.
         if self.world_bounds().contains(point) {

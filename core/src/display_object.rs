@@ -809,8 +809,8 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     }
 
     /// Tests if a given stage position point intersects with the world bounds of this object.
-    fn hit_test_bounds(&self, _pos: (Twips, Twips)) -> bool {
-        false
+    fn hit_test_bounds(&self, pos: (Twips, Twips)) -> bool {
+        self.world_bounds().contains(pos)
     }
 
     /// Tests if a given stage position point intersects within this object, considering the art.

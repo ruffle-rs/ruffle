@@ -279,10 +279,6 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         BoundingBox::default()
     }
 
-    fn hit_test_bounds(&self, point: (Twips, Twips)) -> bool {
-        self.world_bounds().contains(point)
-    }
-
     fn hit_test_shape(&self, point: (Twips, Twips)) -> bool {
         for child in self.children() {
             if child.hit_test_shape(point) {
