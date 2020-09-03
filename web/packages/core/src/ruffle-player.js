@@ -273,7 +273,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      */
     on_callback_available(name) {
         const instance = this.instance;
-        this.container[name] = (...args) => {
+        this[name] = (...args) => {
             return instance.call_exposed_callback(name, args);
         };
     }
