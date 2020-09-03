@@ -1,2 +1,22 @@
+// call foo() from with (this)
+_root.foot() called
 Foo
+Foo
+// call foo from with(mc)
+// mc.foo() called
+// self.bar
+Foo
+// this.bar
 Bar
+// bar
+Foo
+// call bar() from with(mc)
+// typeof(bar)
+string
+// mc2.foo() called
+// self.foobar
+undefined
+// foobar
+undefined
+// foobar
+foobar
