@@ -4,12 +4,13 @@ use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::method::Method;
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use enumset::{EnumSet, EnumSetType};
 use gc_arena::{GcCell, MutationContext};
 use std::cmp::min;
 use std::mem::swap;
@@ -764,6 +765,27 @@ pub fn splice<'gc>(
     Ok(Value::Undefined)
 }
 
+/// The array options that a given sort operation may use.
+///
+/// These are provided as a number by the VM and converted into an enumset.
+#[derive(EnumSetType)]
+enum SortOptions {
+    /// Request case-insensitive string value sort.
+    CaseInsensitive,
+
+    /// Reverse the order of sorting.
+    Descending,
+
+    /// Reject sorting on arrays with multiple equivalent values.
+    UniqueSort,
+
+    /// Yield a list of indicies rather than sorting the array in-place.
+    ReturnIndexedArray,
+
+    /// Request numeric value sort.
+    Numeric,
+}
+
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -872,6 +894,40 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "splice"),
         Method::from_builtin(splice),
+    ));
+
+    class.write(mc).define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CASEINSENSITIVE"),
+        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
+        Some(EnumSet::from(SortOptions::CaseInsensitive).as_u32().into()),
+    ));
+
+    class.write(mc).define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "DESCENDING"),
+        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
+        Some(EnumSet::from(SortOptions::Descending).as_u32().into()),
+    ));
+
+    class.write(mc).define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "NUMERIC"),
+        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
+        Some(EnumSet::from(SortOptions::Numeric).as_u32().into()),
+    ));
+
+    class.write(mc).define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "RETURNINDEXEDARRAY"),
+        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
+        Some(
+            EnumSet::from(SortOptions::ReturnIndexedArray)
+                .as_u32()
+                .into(),
+        ),
+    ));
+
+    class.write(mc).define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "UNIQUESORT"),
+        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
+        Some(EnumSet::from(SortOptions::UniqueSort).as_u32().into()),
     ));
 
     class
