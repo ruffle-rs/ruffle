@@ -438,8 +438,9 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         error_proto,
     );
-    let function = FunctionObject::constructor(
+    let function = FunctionObject::function_and_constructor(
         gc_context,
+        Executable::Native(function::function),
         Executable::Native(function::constructor),
         Some(function_proto),
         function_proto,

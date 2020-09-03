@@ -7,13 +7,27 @@ use crate::avm1::{Object, ScriptObject, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
-/// Implements `Function`
+/// Implements `new Function()`
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
+}
+
+/// Implements `Function()`
+pub fn function<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(arg) = args.get(0) {
+        Ok(arg.to_owned())
+    } else {
+        // Calling `Function()` seems to give a prototypeless bare object.
+        Ok(ScriptObject::object(activation.context.gc_context, None).into())
+    }
 }
 
 /// Implements `Function.prototype.call`
