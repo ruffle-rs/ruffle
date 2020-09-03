@@ -1,0 +1,36 @@
+// var f = Function(parrot);
+[type Function]
+
+// f == parrot
+true
+
+// f === parrot
+true
+
+// f(500)
+// input
+500
+
+500
+
+// Function()
+[type Object]
+
+// typeof Function()
+object
+
+// Function().__proto__
+undefined
+
+// Function() === Function()
+false
+
+// Function(true)
+true
+
+// Function("return 5")
+return 5
+
+// Function(1, 2)
+1
+

@@ -218,6 +218,7 @@ swf_tests! {
     (as1_constructor_v7, "avm1/as1_constructor_v7", 1),
     (issue_710, "avm1/issue_710", 1),
     (issue_1086, "avm1/issue_1086", 1),
+    (function_as_function, "avm1/function_as_function", 1),
     (infinite_recursion_function, "avm1/infinite_recursion_function", 1),
     (infinite_recursion_function_in_setter, "avm1/infinite_recursion_function_in_setter", 1),
     (infinite_recursion_virtual_property, "avm1/infinite_recursion_virtual_property", 1),
