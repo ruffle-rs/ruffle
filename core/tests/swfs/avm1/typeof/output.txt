@@ -5,6 +5,14 @@ boolean
 null
 undefined
 string
+object
+movieclip
+object
+object
+string
+string
+string
+string
 string
 string
 string
