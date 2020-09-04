@@ -2,7 +2,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::object::{value_object, Object, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::scope::{Scope, ScopeClass};
+use crate::avm1::scope::Scope;
 use crate::avm1::{
     fscommand, globals, scope, skip_actions, start_drag, AvmString, ScriptObject, Value,
 };
@@ -763,13 +763,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             args.push(self.context.avm1.pop());
         }
 
-        let target_fn = self.get_variable(&fn_name)?;
+        let (this, target_fn) = self.get_variable(&fn_name)?;
 
-        let this = if matches!(self.scope.read().get_class(), ScopeClass::With) {
-            self.scope.read().locals_cell()
-        } else {
+        let this = this.unwrap_or_else(|| {
             self.target_clip_or_root().object().coerce_to_object(self)
-        };
+        } );
 
         let result = target_fn.call(&fn_name, self, this, None, &args)?;
         self.context.avm1.push(result);
@@ -1007,7 +1005,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name_value = self.context.avm1.pop();
         let name = name_value.coerce_to_string(self)?;
         self.context.avm1.push(Value::Null); // Sentinel that indicates end of enumeration
-        let object = self.resolve(&name)?;
+        let (_, object) = self.resolve(&name)?;
 
         match object {
             Value::Object(ob) => {
@@ -1142,7 +1140,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let var_path = self.context.avm1.pop();
         let path = var_path.coerce_to_string(self)?;
 
-        let value = self.get_variable(&path)?;
+        let (_, value) = self.get_variable(&path)?;
         self.context.avm1.push(value);
 
         Ok(FrameControl::Continue)
@@ -1600,7 +1598,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             args.push(self.context.avm1.pop());
         }
 
-        let constructor = self.resolve(&fn_name)?.coerce_to_object(self);
+        let (_, r) = self.resolve(&fn_name)?;
+        let constructor = r.coerce_to_object(self);
 
         let this = constructor.construct(self, &args)?;
 
@@ -2508,7 +2507,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// Finally, if none of the above applies, it is a normal variable name resovled via the
     /// scope chain.
-    pub fn get_variable<'s>(&mut self, path: &'s str) -> Result<Value<'gc>, Error<'gc>> {
+    pub fn get_variable<'s>(&mut self, path: &'s str) -> Result<(Option<Object<'gc>>, Value<'gc>), Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root();
 
@@ -2539,13 +2538,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     self.resolve_target_path(start.root(), *scope.read().locals(), path)?
                 {
                     if object.has_property(self, var_name) {
-                        return Ok(object.get(var_name, self)?);
+                        return Ok((Some(object), object.get(var_name, self)?));
                     }
                 }
                 current_scope = scope.read().parent_cell();
             }
 
-            return Ok(Value::Undefined);
+            return Ok((None, Value::Undefined));
         }
 
         // If it doesn't have a trailing variable, it can still be a slash path.
@@ -2556,7 +2555,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if let Some(object) =
                     self.resolve_target_path(start.root(), *scope.read().locals(), path)?
                 {
-                    return Ok(object.into());
+                    return Ok((None, object.into()));
                 }
                 current_scope = scope.read().parent_cell();
             }
@@ -2684,13 +2683,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// Because scopes are object chains, the same rules for `Object::get`
     /// still apply here.
-    pub fn resolve(&mut self, name: &str) -> Result<Value<'gc>, Error<'gc>> {
+    pub fn resolve(&mut self, name: &str) -> Result<(Option<Object<'gc>>, Value<'gc>), Error<'gc>> {
         if name == "this" {
-            return Ok(Value::Object(self.this_cell()));
+            return Ok((None, Value::Object(self.this_cell())));
         }
 
         if name == "arguments" && self.arguments.is_some() {
-            return Ok(Value::Object(self.arguments.unwrap()));
+            return Ok((None, Value::Object(self.arguments.unwrap())));
         }
 
         self.scope_cell()
