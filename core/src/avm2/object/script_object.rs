@@ -654,10 +654,20 @@ impl<'gc> ScriptObjectData<'gc> {
             }
         }
 
-        match self.class {
-            ScriptObjectClass::ClassConstructor(..) => self.resolve_any_trait(local_name),
-            ScriptObjectClass::NoClass => self.resolve_any_trait(local_name),
-            _ => Ok(None),
+        let trait_ns = match self.class {
+            ScriptObjectClass::ClassConstructor(..) => self.resolve_any_trait(local_name)?,
+            ScriptObjectClass::NoClass => self.resolve_any_trait(local_name)?,
+            _ => None,
+        };
+
+        if trait_ns.is_none() {
+            if let Some(proto) = self.proto() {
+                proto.resolve_any(local_name)
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(trait_ns)
         }
     }
 
