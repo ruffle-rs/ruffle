@@ -374,7 +374,9 @@ impl<'gc> DisplayObjectBase<'gc> {
         Text(Text<'gc>),
     }
 )]
-pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> {
+pub trait TDisplayObject<'gc>:
+    'gc + Clone + Copy + Collect + Debug + Into<DisplayObject<'gc>>
+{
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth;
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
@@ -618,14 +620,29 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     /// Returns the Flash 4 slash-syntax path to this display object, e.g. `/foo/clip`.
     /// Returned by the `_target` property in AVM1.
     fn slash_path(&self) -> String {
-        if let Some(parent) = self.parent() {
-            let mut path = parent.slash_path();
-            path.push('/');
-            path.push_str(&*self.name());
-            path
+        fn build_slash_path(object: DisplayObject<'_>) -> String {
+            if let Some(parent) = object.parent() {
+                let mut path = build_slash_path(parent);
+                path.push('/');
+                path.push_str(&*object.name());
+                path
+            } else {
+                let level = object.depth();
+                if level == 0 {
+                    // _level0 does not append its name in slash syntax.
+                    String::new()
+                } else {
+                    // Other levels do append their name.
+                    format!("_level{}", level)
+                }
+            }
+        }
+
+        if self.parent().is_some() {
+            build_slash_path((*self).into())
         } else {
-            // The stage/root levels do not append their name in slash syntax.
-            "".to_string()
+            // _target of _level0 should just be '/'.
+            '/'.to_string()
         }
     }
 
