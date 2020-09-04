@@ -140,6 +140,12 @@ undefined
 // s.lastIndexOf(null)
 17
 
+// s.lastIndexOf(undefined)
+-1
+
+// "hello undefined hi".lastIndexOf(undefined)
+6
+
 // slice
 // s.slice(1, 4)
 ell

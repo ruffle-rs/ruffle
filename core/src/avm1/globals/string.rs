@@ -319,7 +319,7 @@ fn last_index_of<'gc>(
         .encode_utf16()
         .collect::<Vec<u16>>();
     let pattern = match args.get(0) {
-        None | Some(Value::Undefined) => return Ok(Value::Undefined),
+        None => return Ok(Value::Undefined),
         Some(s) => s
             .clone()
             .coerce_to_string(activation)?
