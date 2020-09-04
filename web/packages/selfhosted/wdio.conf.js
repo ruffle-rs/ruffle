@@ -1,3 +1,14 @@
+let chrome_binary = undefined;
+
+if (process.platform === "win32" && process.env.CI) {
+    // Chrome 84->85 changed the location where Chrome is installed on Windows.
+    // ChromeDriver can't find it yet, so we'll manually specify it for GitHub Actions.
+    // See https://github.com/actions/virtual-environments/issues/1546
+    // See https://developercommunity.visualstudio.com/content/problem/1170486/selenium-ui-test-can-no-longer-find-chrome-binary.html#reply-1171966
+    chrome_binary =
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+}
+
 exports.config = {
     //
     // ====================
@@ -53,6 +64,7 @@ exports.config = {
             browserName: "chrome",
             "goog:chromeOptions": {
                 args: ["--headless", "--disable-gpu"],
+                binary: chrome_binary,
             },
             // If outputDir is provided WebdriverIO can capture driver session logs
             // it is possible to configure which logTypes to include/exclude.
