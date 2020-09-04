@@ -1,0 +1,102 @@
+//'test_var' in es4inst
+true
+//'test_const' in es4inst
+true
+//'test_function' in es4inst
+true
+//'test_virt' in es4inst
+true
+//'test_static_var' in es4inst
+false
+//'test_static_const' in es4inst
+false
+//'test_static_function' in es4inst
+false
+//'test_static_virt' in es4inst
+false
+//'test_private_var' in es4inst
+false
+//'test_private_const' in es4inst
+false
+//'test_private_function' in es4inst
+false
+//'test_private_virt' in es4inst
+false
+//'test_var' in ES4Class
+false
+//'test_const' in ES4Class
+false
+//'test_function' in ES4Class
+false
+//'test_virt' in ES4Class
+false
+//'test_static_var' in ES4Class
+true
+//'test_static_const' in ES4Class
+true
+//'test_static_function' in ES4Class
+true
+//'test_static_virt' in ES4Class
+true
+//'test_private_var' in ES4Class
+false
+//'test_private_const' in ES4Class
+false
+//'test_private_function' in ES4Class
+false
+//'test_private_virt' in ES4Class
+false
+//'test_var' in ES4Class.prototype
+false
+//'test_const' in ES4Class.prototype
+false
+//'test_function' in ES4Class.prototype
+false
+//'test_virt' in ES4Class.prototype
+false
+//'test_static_var' in ES4Class.prototype
+false
+//'test_static_const' in ES4Class.prototype
+false
+//'test_static_function' in ES4Class.prototype
+false
+//'test_static_virt' in ES4Class.prototype
+false
+//'test_private_var' in ES4Class.prototype
+false
+//'test_private_const' in ES4Class.prototype
+false
+//'test_private_function' in ES4Class.prototype
+false
+//'test_private_virt' in ES4Class.prototype
+false
+//'test_var' in es3inst
+true
+//'test_function' in es3inst
+true
+//'test_proto' in es3inst
+true
+//'test_static_var' in es3inst
+false
+//'test_static_function' in es3inst
+false
+//'test_var' in ES3Class
+false
+//'test_function' in ES3Class
+false
+//'test_proto' in ES3Class
+false
+//'test_static_var' in ES3Class
+true
+//'test_static_function' in ES3Class
+true
+//'test_var' in ES3Class.prototype
+false
+//'test_function' in ES3Class.prototype
+true
+//'test_proto' in ES3Class.prototype
+true
+//'test_static_var' in ES3Class.prototype
+false
+//'test_static_function' in ES3Class.prototype
+false
