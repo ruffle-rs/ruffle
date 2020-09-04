@@ -106,6 +106,12 @@ undefined
 // s.indexOf(null)
 17
 
+// s.indexOf(undefined)
+-1
+
+// "hello undefined hi".indexOf(undefined)
+6
+
 // lastIndexOf
 // s.lastIndexOf("test")
 10
