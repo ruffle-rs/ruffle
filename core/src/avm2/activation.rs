@@ -450,6 +450,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::DeleteProperty { index } => self.op_delete_property(method, index),
                 Op::GetSuper { index } => self.op_get_super(method, index),
                 Op::SetSuper { index } => self.op_set_super(method, index),
+                Op::In => self.op_in(),
                 Op::PushScope => self.op_push_scope(),
                 Op::PushWith => self.op_push_with(),
                 Op::PopScope => self.op_pop_scope(),
@@ -1029,6 +1030,24 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         });
 
         base.set_property(object, &name?, value, self)?;
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_in(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let obj = self.context.avm2.pop().coerce_to_object(self)?;
+        let name = self.context.avm2.pop().coerce_to_string(self)?;
+
+        let mut has_prop = false;
+
+        if let Some(ns) = obj.resolve_any(name)? {
+            if !ns.is_private() {
+                let qname = QName::new(ns, name);
+                has_prop = obj.has_property(&qname)?;
+            }
+        }
+
+        self.context.avm2.push(has_prop);
 
         Ok(FrameControl::Continue)
     }
