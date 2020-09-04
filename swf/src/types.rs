@@ -266,13 +266,13 @@ pub struct PlaceObject {
     pub name: Option<String>,
     pub clip_depth: Option<Depth>,
     pub class_name: Option<String>,
-    pub filters: Vec<Filter>,
+    pub filters: Option<Vec<Filter>>,
     pub background_color: Option<Color>,
-    pub blend_mode: BlendMode,
-    pub clip_actions: Vec<ClipAction>,
+    pub blend_mode: Option<BlendMode>,
+    pub clip_actions: Option<Vec<ClipAction>>,
     pub is_image: bool,
-    pub is_bitmap_cached: bool,
-    pub is_visible: bool,
+    pub is_bitmap_cached: Option<bool>,
+    pub is_visible: Option<bool>,
     pub amf_data: Option<Vec<u8>>,
 }
 

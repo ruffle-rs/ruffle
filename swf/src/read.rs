@@ -2094,13 +2094,13 @@ impl<R: Read> Reader<R> {
             name: None,
             clip_depth: None,
             class_name: None,
-            filters: vec![],
+            filters: None,
             background_color: None,
-            blend_mode: BlendMode::Normal,
-            clip_actions: vec![],
+            blend_mode: None,
+            clip_actions: None,
             is_image: false,
-            is_bitmap_cached: false,
-            is_visible: true,
+            is_bitmap_cached: None,
+            is_visible: None,
             amf_data: None,
         })
     }
@@ -2161,20 +2161,31 @@ impl<R: Read> Reader<R> {
         };
 
         // PlaceObject3
-        let mut filters = vec![];
-        if (flags & 0b1_00000000) != 0 {
+        let filters = if (flags & 0b1_00000000) != 0 {
+            let mut filters = vec![];
             let num_filters = self.read_u8()?;
             for _ in 0..num_filters {
                 filters.push(self.read_filter()?);
             }
-        }
-        let blend_mode = if (flags & 0b10_00000000) != 0 {
-            self.read_blend_mode()?
+            Some(filters)
         } else {
-            BlendMode::Normal
+            None
         };
-        let is_bitmap_cached = (flags & 0b100_00000000) != 0 && self.read_u8()? != 0;
-        let is_visible = (flags & 0b100000_00000000) == 0 || self.read_u8()? != 0;
+        let blend_mode = if (flags & 0b10_00000000) != 0 {
+            Some(self.read_blend_mode()?)
+        } else {
+            None
+        };
+        let is_bitmap_cached = if (flags & 0b100_00000000) != 0 {
+            Some(self.read_u8()? != 0)
+        } else {
+            None
+        };
+        let is_visible = if (flags & 0b100000_00000000) != 0 {
+            Some(self.read_u8()? != 0)
+        } else {
+            None
+        };
         let background_color = if (flags & 0b1000000_00000000) != 0 {
             Some(self.read_rgba()?)
         } else {
@@ -2182,9 +2193,9 @@ impl<R: Read> Reader<R> {
         };
 
         let clip_actions = if (flags & 0b1000_0000) != 0 {
-            self.read_clip_actions()?
+            Some(self.read_clip_actions()?)
         } else {
-            vec![]
+            None
         };
         let amf_data = if place_object_version >= 4 {
             let mut amf = vec![];

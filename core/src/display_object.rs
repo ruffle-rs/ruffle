@@ -767,13 +767,14 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
                 }
             }
             // Clip events only apply to movie clips.
-            if let Some(clip) = self.as_movie_clip() {
+            if let (Some(clip_actions), Some(clip)) =
+                (&place_object.clip_actions, self.as_movie_clip())
+            {
                 // Convert from `swf::ClipAction` to Ruffle's `ClipAction`.
                 use crate::display_object::movie_clip::ClipAction;
                 clip.set_clip_actions(
                     gc_context,
-                    place_object
-                        .clip_actions
+                    clip_actions
                         .iter()
                         .cloned()
                         .map(|a| ClipAction::from_action_and_movie(a, clip.movie().unwrap()))
