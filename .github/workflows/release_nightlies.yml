@@ -1,0 +1,199 @@
+name: Release Nightly
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  create-nightly-release:
+    name: Create nightly release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      date: ${{ steps.current_time_underscores.outputs.formattedTime }}
+      activity_check: ${{ env.GHA_REPO_ALIVE }}
+    steps:
+      - name: Activity check
+        run: |
+          :
+          # Based off https://github.community/t/trigger-workflow-if-there-is-commit-in-last-24-hours/17074/3
+          curl -sL https://api.github.com/repos/$GITHUB_REPOSITORY/commits | jq -r '[.[]][0]' > $HOME/commit.json
+          date="$(jq -r '.commit.author.date' $HOME/commit.json)"
+          timestamp=$(date --utc -d "$date" +%s)
+          author="$(jq -r '.commit.author.name' $HOME/commit.json)"
+          url="$(jq -r '.html_url' $HOME/commit.json)"
+          days=$(( ( $(date --utc +%s) - $timestamp ) / 86400 ))
+          rm -f $HOME/commit.json
+          echo "Repository activity : $timestamp $author $url"
+          alive=0
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+             echo "[WARNING] Ignoring activity limits : workflow triggered manually"
+             alive=1
+          else
+             if [ $days -lt 1 ]; then
+                echo Repository active : $days days
+                alive=1
+             else
+                echo "[WARNING] Repository not updated : event<${{ github.event_name }}> not allowed to modify stale repository"
+             fi
+          fi
+          if [ $alive -eq 1 ]; then
+             echo ::set-env name=GHA_REPO_ALIVE::true
+          fi
+        shell: bash
+
+      - name: Get current time
+        uses: 1466587594/get-current-time@v2
+        id: current_time_dashes
+        with:
+          format: YYYY-MM-DD
+
+      - name: Get current time with underscores
+        uses: 1466587594/get-current-time@v2
+        id: current_time_underscores
+        with:
+          format: YYYY_MM_DD
+
+      - name: Create release
+        if: env.GHA_REPO_ALIVE == 'true'
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: nightly-${{ steps.current_time_dashes.outputs.formattedTime }}
+          release_name: Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}
+          prerelease: true
+
+  build-desktop-nightlies:
+    name: Build desktop nightly for ${{ matrix.os }}
+    needs: create-nightly-release
+    if: needs.create-nightly-release.outputs.activity_check == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Use stable rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - name: Install linux depencencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
+
+      - name: Setup node
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+
+      - name: Build web
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: web
+        run: |
+          npm run bootstrap
+          npm run build
+
+      - name: Build desktop
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Package common
+        run: |
+          mkdir release
+          cp README.md release/README.md
+          cp LICENSE_APACHE release/LICENSE_APACHE
+          cp LICENSE_MIT release/LICENSE_MIT
+
+      - name: Package windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          cp target/release/ruffle_desktop.exe release/ruffle.exe
+          7z a release.zip release/*
+
+      - name: Package linux/mac
+        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
+        run: |
+          cp target/release/ruffle_desktop release/ruffle
+          cd release
+          tar -czvf ../release.tar.gz *
+
+      - name: Package selfhosted
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd web/packages/selfhosted/dist
+          zip -r release.zip .
+
+      - name: Upload windows
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./release.zip
+          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_windows.zip
+          asset_content_type: application/zip
+
+      - name: Upload mac
+        if: matrix.os == 'macOS-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./release.tar.gz
+          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_mac.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload linux
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./release.tar.gz
+          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_linux.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload selfhosted
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./web/packages/selfhosted/dist/release.zip
+          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_selfhosted.zip
+          asset_content_type: application/zip
+
+      - name: Upload firefox extension
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./web/packages/extension/dist/firefox_unsigned.xpi
+          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_firefox.xpi
+          asset_content_type: application/x-xpinstall
+
+      - name: Upload generic extension
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./web/packages/extension/dist/ruffle_extension.zip
+          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_extension.zip
+          asset_content_type: application/zip
