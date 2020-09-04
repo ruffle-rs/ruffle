@@ -1929,7 +1929,7 @@ impl<W: Write> Writer<W> {
             // TODO: Assert version.
             let mut writer = Writer::new(&mut buf, self.version);
             writer.write_u8(
-                if !place_object.clip_actions.is_empty() {
+                if place_object.clip_actions.is_some() {
                     0b1000_0000
                 } else {
                     0
@@ -1965,7 +1965,7 @@ impl<W: Write> Writer<W> {
                         0b100_0000
                     } else {
                         0
-                    } | if !place_object.is_visible {
+                    } | if place_object.is_visible.is_some() {
                         0b10_0000
                     } else {
                         0
@@ -1975,17 +1975,17 @@ impl<W: Write> Writer<W> {
                         } else {
                             0
                         }
-                        | if place_object.is_bitmap_cached {
+                        | if place_object.is_bitmap_cached.is_some() {
                             0b100
                         } else {
                             0
                         }
-                        | if place_object.blend_mode != BlendMode::Normal {
+                        | if place_object.blend_mode.is_some() {
                             0b10
                         } else {
                             0
                         }
-                        | if !place_object.filters.is_empty() {
+                        | if place_object.filters.is_some() {
                             0b1
                         } else {
                             0
@@ -2022,23 +2022,23 @@ impl<W: Write> Writer<W> {
             }
 
             if place_object_version >= 3 {
-                if !place_object.filters.is_empty() {
-                    writer.write_u8(place_object.filters.len() as u8)?;
-                    for filter in &place_object.filters {
+                if let Some(filters) = &place_object.filters {
+                    writer.write_u8(filters.len() as u8)?;
+                    for filter in filters {
                         writer.write_filter(filter)?;
                     }
                 }
 
-                if place_object.blend_mode != BlendMode::Normal {
-                    writer.write_blend_mode(place_object.blend_mode)?;
+                if let Some(blend_mode) = place_object.blend_mode {
+                    writer.write_blend_mode(blend_mode)?;
                 }
 
-                if place_object.is_bitmap_cached {
-                    writer.write_u8(1)?;
+                if let Some(is_bitmap_cached) = place_object.is_bitmap_cached {
+                    writer.write_u8(if is_bitmap_cached { 1 } else { 0 })?;
                 }
 
-                if !place_object.is_visible {
-                    writer.write_u8(0)?;
+                if let Some(is_visible) = place_object.is_visible {
+                    writer.write_u8(if is_visible { 1 } else { 0 })?;
                 }
 
                 if let Some(ref background_color) = place_object.background_color {
@@ -2046,8 +2046,8 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            if !place_object.clip_actions.is_empty() {
-                writer.write_clip_actions(&place_object.clip_actions)?;
+            if let Some(clip_actions) = &place_object.clip_actions {
+                writer.write_clip_actions(clip_actions)?;
             }
             writer.flush_bits()?;
 
