@@ -224,15 +224,11 @@ impl Player {
             rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
-                let fake_root = MovieClip::from_movie(gc_context, fake_movie);
-                let mut levels = BTreeMap::new();
-                levels.insert(0 as u32, fake_root.into());
-
                 GcRoot(GcCell::allocate(
                     gc_context,
                     GcRootData {
                         library: Library::default(),
-                        levels,
+                        levels: BTreeMap::new(),
                         mouse_hovered_object: None,
                         drag_object: None,
                         avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
@@ -272,7 +268,15 @@ impl Player {
             storage,
         };
 
-        player.mutate_with_update_context(|context| Avm2::load_player_globals(context))?;
+        player.mutate_with_update_context(|context| {
+            // Instantiate an empty root before the main movie loads.
+            let fake_root = MovieClip::from_movie(context.gc_context, fake_movie);
+            fake_root.post_instantiation(context, fake_root.into(), None, false, false);
+            context.levels.insert(0 as u32, fake_root.into());
+
+            Avm2::load_player_globals(context)
+        })?;
+
         player.build_matrices();
         player.audio.set_frame_rate(frame_rate);
 
@@ -318,6 +322,7 @@ impl Player {
         self.movie_height = movie.height();
         self.frame_rate = movie.header().frame_rate.into();
         self.swf = movie;
+        self.instance_counter = 0;
 
         self.mutate_with_update_context(|context| {
             let root: DisplayObject =
