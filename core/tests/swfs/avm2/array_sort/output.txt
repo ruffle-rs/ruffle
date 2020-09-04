@@ -1,0 +1,297 @@
+//var a = new Array(5,3,1,"Abc","2","aba",false,null,"zzz")
+//a[11] = "not a hole";
+//Array.prototype[9] = undefined;
+//Array.prototype[10] = "hole in slot 10";
+//a.sort(Array.UNIQUESORT) === 0
+false
+//var a = new Array(5,3,1,"Abc","2","aba",false,null,"zzz")
+//a[11] = "not a hole";
+//(contents of a.sort(Array.RETURNINDEXEDARRAY))
+2
+4
+1
+0
+3
+5
+6
+10
+11
+7
+8
+9
+//(contents of a.sort())
+1
+2
+3
+5
+Abc
+aba
+false
+hole in slot 10
+not a hole
+null
+zzz
+undefined
+//Array.prototype[10] = "hole10";
+//Array.prototype[11] = "hole11";
+//Array.prototype[12] = "hole12";
+//(contents of previous array)
+1
+2
+3
+5
+Abc
+aba
+false
+hole in slot 10
+not a hole
+null
+zzz
+hole11
+//(cleaning up our holes...)
+//Array.prototype[9] = undefined;
+//Array.prototype[10] = "hole in slot 10";
+//var a = new Array(5,3,1,"Abc","2","aba",false,null,"zzz")
+//a[11] = "not a hole";
+//(contents of a.sort(Array.CASEINSENSITIVE | Array.RETURNINDEXEDARRAY))
+2
+4
+1
+0
+5
+3
+6
+10
+11
+7
+8
+9
+//(contents of a.sort(Array.CASEINSENSITIVE))
+1
+2
+3
+5
+aba
+Abc
+false
+hole in slot 10
+not a hole
+null
+zzz
+undefined
+//Array.prototype[10] = "hole10";
+//Array.prototype[11] = "hole11";
+//Array.prototype[12] = "hole12";
+//(contents of previous array)
+1
+2
+3
+5
+aba
+Abc
+false
+hole in slot 10
+not a hole
+null
+zzz
+hole11
+//(cleaning up our holes...)
+//Array.prototype[9] = undefined;
+//Array.prototype[10] = "hole in slot 10";
+//var a = new Array(5,3,1,"Abc","2","aba",false,null,"zzz")
+//a[11] = "not a hole";
+//(contents of a.sort(Array.DESCENDING | Array.RETURNINDEXEDARRAY))
+8
+7
+11
+10
+6
+5
+3
+0
+1
+4
+2
+9
+//(contents of a.sort(Array.DESCENDING))
+zzz
+null
+not a hole
+hole in slot 10
+false
+aba
+Abc
+5
+3
+2
+1
+undefined
+//Array.prototype[10] = "hole10";
+//Array.prototype[11] = "hole11";
+//Array.prototype[12] = "hole12";
+//(contents of previous array)
+zzz
+null
+not a hole
+hole in slot 10
+false
+aba
+Abc
+5
+3
+2
+1
+hole11
+//(cleaning up our holes...)
+//Array.prototype[9] = undefined;
+//Array.prototype[10] = "hole in slot 10";
+//var a = new Array(5,3,1,"Abc","2","aba",false,null,"zzz")
+//a[11] = "not a hole";
+//(contents of a.sort(Array.CASEINSENSITIVE | Array.DESCENDING | Array.RETURNINDEXEDARRAY))
+8
+7
+11
+10
+6
+3
+5
+0
+1
+4
+2
+9
+//(contents of a.sort(Array.CASEINSENSITIVE | Array.DESCENDING))
+zzz
+null
+not a hole
+hole in slot 10
+false
+Abc
+aba
+5
+3
+2
+1
+undefined
+//Array.prototype[10] = "hole10";
+//Array.prototype[11] = "hole11";
+//Array.prototype[12] = "hole12";
+//(contents of previous array)
+zzz
+null
+not a hole
+hole in slot 10
+false
+Abc
+aba
+5
+3
+2
+1
+hole11
+//(cleaning up our holes...)
+//Array.prototype[9] = undefined;
+//Array.prototype[10] = "hole in slot 10";
+//var a = new Array(5,3,1,"Abc","2","aba",false,null,"zzz")
+//a[11] = "not a hole";
+//var b = new Array(5,3,2,1,"2",false,true,NaN)
+//b.sort(Array.NUMERIC | Array.UNIQUESORT) === 0
+true
+//var b = new Array(5,3,"2",false,true,NaN)
+//(contents of b.sort(Array.NUMERIC | Array.RETURNINDEXEDARRAY))
+3
+4
+2
+1
+0
+5
+//(contents of b.sort(Array.NUMERIC))
+false
+true
+2
+3
+5
+NaN
+//Array.prototype[10] = "hole10";
+//Array.prototype[11] = "hole11";
+//Array.prototype[12] = "hole12";
+//(contents of previous array)
+false
+true
+2
+3
+5
+NaN
+//(cleaning up our holes...)
+//Array.prototype[9] = undefined;
+//Array.prototype[10] = "hole in slot 10";
+//var b = new Array(5,3,"2",false,true,NaN)
+//(contents of b.sort(Array.NUMERIC | 1))
+false
+true
+2
+3
+5
+NaN
+//var b = new Array(5,3,"2",false,true,NaN)
+//(contents of b.sort(Array.NUMERIC | Array.DESCENDING | Array.RETURNINDEXEDARRAY))
+5
+0
+1
+2
+4
+3
+//(contents of b.sort(16 | Array.DESCENDING))
+NaN
+5
+3
+2
+true
+false
+//Array.prototype[10] = "hole10";
+//Array.prototype[11] = "hole11";
+//Array.prototype[12] = "hole12";
+//(contents of previous array)
+NaN
+5
+3
+2
+true
+false
+//(cleaning up our holes...)
+//Array.prototype[9] = undefined;
+//Array.prototype[10] = "hole in slot 10";
+//var a = new Array(7,2,1,"3","4")
+//(contents of a.sort(sub_comparison))
+1
+2
+3
+4
+7
+//(contents of a.sort(sub_comparison, 2))
+7
+4
+3
+2
+1
+//(contents of a.sort(sub_comparison, Array.RETURNINDEXEDARRAY))
+4
+3
+2
+1
+0
+//(contents of a.sort(sub_comparison, Array.DESCENDING | 8))
+0
+1
+2
+3
+4
+//a.sort(sub_comparison, Array.UNIQUESORT) === 0
+false
+//var c = new Array(3,"abc")
+//c.sort(sub_comparison, Array.UNIQUESORT) === 0
+true
+//var d = new Array(3,"4")
+//(contents of d.sort(sub_comparison, 4))
+3
+4

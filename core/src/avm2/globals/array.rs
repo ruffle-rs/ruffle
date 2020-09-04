@@ -12,7 +12,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{GcCell, MutationContext};
-use std::cmp::min;
+use std::cmp::{min, Ordering};
 use std::mem::swap;
 
 /// Implements `Array`'s instance initializer.
@@ -786,6 +786,222 @@ enum SortOptions {
     Numeric,
 }
 
+/// Identity closure shim which exists purely to decorate closure types with
+/// the HRTB necessary to accept an activation.
+fn constrain<'a, 'gc, 'ctxt, F>(f: F) -> F
+where
+    F: FnMut(&mut Activation<'a, 'gc, 'ctxt>, Value<'gc>, Value<'gc>) -> Result<Ordering, Error>,
+{
+    f
+}
+
+/// Sort array storage.
+///
+/// This function expects it's values to have been pre-enumerated. They will be
+/// sorted in-place. It is the caller's responsibility to place the resulting
+/// half of the sorted array wherever.
+///
+/// This function will reverse the sort order if `Descending` sort is requested.
+///
+/// This function will return `false` in the event that the `UniqueSort`
+/// constraint has been violated (`sort_func` returned `Ordering::Equal`). In
+/// this case, you should cancel the in-place sorting operation and return 0 to
+/// the caller. In the event that this function yields a runtime error, the
+/// contents of the `values` array will be sorted in a random order.
+fn sort_inner<'a, 'gc, 'ctxt, C>(
+    activation: &mut Activation<'a, 'gc, 'ctxt>,
+    values: &mut [(usize, Option<Value<'gc>>)],
+    options: EnumSet<SortOptions>,
+    mut sort_func: C,
+) -> Result<bool, Error>
+where
+    C: FnMut(&mut Activation<'a, 'gc, 'ctxt>, Value<'gc>, Value<'gc>) -> Result<Ordering, Error>,
+{
+    let mut unique_sort_satisfied = true;
+    let mut error_signal = Ok(());
+
+    values.sort_unstable_by(|(_a_index, a), (_b_index, b)| {
+        let unresolved_a = a.clone().unwrap_or(Value::Undefined);
+        let unresolved_b = b.clone().unwrap_or(Value::Undefined);
+
+        if matches!(unresolved_a, Value::Undefined) && matches!(unresolved_b, Value::Undefined) {
+            unique_sort_satisfied = false;
+            return Ordering::Equal;
+        } else if matches!(unresolved_a, Value::Undefined) {
+            return Ordering::Greater;
+        } else if matches!(unresolved_b, Value::Undefined) {
+            return Ordering::Less;
+        }
+
+        match sort_func(
+            activation,
+            a.clone().unwrap_or(Value::Undefined),
+            b.clone().unwrap_or(Value::Undefined),
+        ) {
+            Ok(Ordering::Equal) => {
+                unique_sort_satisfied = false;
+                Ordering::Equal
+            }
+            Ok(v) if options.contains(SortOptions::Descending) => v.reverse(),
+            Ok(v) => v,
+            Err(e) => {
+                error_signal = Err(e);
+                Ordering::Less
+            }
+        }
+    });
+
+    error_signal?;
+
+    Ok(!options.contains(SortOptions::UniqueSort) || unique_sort_satisfied)
+}
+
+fn compare_string_case_sensitive<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    a: Value<'gc>,
+    b: Value<'gc>,
+) -> Result<Ordering, Error> {
+    let string_a = a.coerce_to_string(activation)?;
+    let string_b = b.coerce_to_string(activation)?;
+
+    Ok(string_a.cmp(&string_b))
+}
+
+fn compare_string_case_insensitive<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    a: Value<'gc>,
+    b: Value<'gc>,
+) -> Result<Ordering, Error> {
+    let string_a = a.coerce_to_string(activation)?.to_lowercase();
+    let string_b = b.coerce_to_string(activation)?.to_lowercase();
+
+    Ok(string_a.cmp(&string_b))
+}
+
+fn compare_numeric<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    a: Value<'gc>,
+    b: Value<'gc>,
+) -> Result<Ordering, Error> {
+    let num_a = a.coerce_to_number(activation)?;
+    let num_b = b.coerce_to_number(activation)?;
+
+    if num_a.is_nan() && num_b.is_nan() {
+        Ok(Ordering::Equal)
+    } else if num_a.is_nan() {
+        Ok(Ordering::Greater)
+    } else if num_b.is_nan() {
+        Ok(Ordering::Less)
+    } else {
+        Ok(num_a.partial_cmp(&num_b).unwrap())
+    }
+}
+
+/// Impl `Array.sort`
+pub fn sort<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let (compare_fnc, options) = if args.len() > 1 {
+            (
+                Some(
+                    args.get(0)
+                        .cloned()
+                        .unwrap_or(Value::Undefined)
+                        .coerce_to_object(activation)?,
+                ),
+                args.get(1)
+                    .cloned()
+                    .unwrap_or_else(|| 0.into())
+                    .coerce_to_enumset(activation)?,
+            )
+        } else {
+            (
+                None,
+                args.get(0)
+                    .cloned()
+                    .unwrap_or_else(|| 0.into())
+                    .coerce_to_enumset(activation)?,
+            )
+        };
+
+        let mut values = if let Some(array) = this.as_array_storage() {
+            array
+                .iter()
+                .enumerate()
+                .collect::<Vec<(usize, Option<Value<'gc>>)>>()
+        } else {
+            return Ok(0.into());
+        };
+
+        let unique_satisified = if let Some(v) = compare_fnc {
+            sort_inner(
+                activation,
+                &mut values,
+                options,
+                constrain(|activation, a, b| {
+                    let order = v
+                        .call(None, &[a, b], activation, None)?
+                        .coerce_to_number(activation)?;
+
+                    if order > 0.0 {
+                        Ok(Ordering::Greater)
+                    } else if order < 0.0 {
+                        Ok(Ordering::Less)
+                    } else {
+                        Ok(Ordering::Equal)
+                    }
+                }),
+            )?
+        } else if options.contains(SortOptions::Numeric) {
+            sort_inner(activation, &mut values, options, compare_numeric)?
+        } else if options.contains(SortOptions::CaseInsensitive) {
+            sort_inner(
+                activation,
+                &mut values,
+                options,
+                compare_string_case_insensitive,
+            )?
+        } else {
+            sort_inner(
+                activation,
+                &mut values,
+                options,
+                compare_string_case_sensitive,
+            )?
+        };
+
+        if unique_satisified {
+            if options.contains(SortOptions::ReturnIndexedArray) {
+                return build_array(
+                    activation,
+                    ArrayStorage::from_storage(
+                        values
+                            .iter()
+                            .map(|(i, _v)| Some(i.clone().into()))
+                            .collect(),
+                    ),
+                );
+            } else {
+                let mut new_array =
+                    ArrayStorage::from_storage(values.iter().map(|(_i, v)| v.clone()).collect());
+
+                if let Some(mut old_array) =
+                    this.as_array_storage_mut(activation.context.gc_context)
+                {
+                    swap(&mut *old_array, &mut new_array);
+                }
+
+                return Ok(this.into());
+            }
+        }
+    }
+
+    Ok(0.into())
+}
+
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -894,6 +1110,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "splice"),
         Method::from_builtin(splice),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "sort"),
+        Method::from_builtin(sort),
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
