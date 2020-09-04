@@ -61,10 +61,6 @@ impl<'gc> Scope<'gc> {
         }
     }
 
-    pub fn get_class(&self) -> ScopeClass {
-        self.class
-    }
-
     /// Construct a closure scope to be used as the parent of all local scopes
     /// when invoking a function.
     ///
@@ -235,7 +231,7 @@ impl<'gc> Scope<'gc> {
         self.parent
     }
 
-    /// Resolve a particular value in the scope chain.
+    /// Resolve a particular value in the scope chain and the object which this value would expect as its `this` parameter if called.
     ///
     /// Because scopes are object chains, the same rules for `Object::get`
     /// still apply here. This function is allowed to yield `None` to indicate
@@ -245,16 +241,16 @@ impl<'gc> Scope<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    ) -> Result<(Option<Object<'gc>>, Value<'gc>), Error<'gc>> {
         if self.locals().has_property(activation, name) {
-            return self.locals().get(name, activation);
+            return Ok((Some(self.locals_cell()), self.locals().get(name, activation).unwrap()));
         }
         if let Some(scope) = self.parent() {
             return scope.resolve(name, activation, this);
         }
 
         //TODO: Should undefined variables halt execution?
-        Ok(Value::Undefined)
+        Ok((None, Value::Undefined))
     }
 
     /// Check if a particular property in the scope chain is defined.
