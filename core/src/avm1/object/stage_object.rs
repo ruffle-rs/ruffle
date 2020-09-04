@@ -47,8 +47,10 @@ impl<'gc> StageObject<'gc> {
     ) -> Self {
         let mut base = ScriptObject::object(gc_context, proto);
 
-        //TODO: Do other display node objects have different typestrings?
-        base.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
+        // Movieclips have a special typeof "movieclip", while others are the default "object".
+        if display_object.as_movie_clip().is_some() {
+            base.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
+        }
 
         Self(GcCell::allocate(
             gc_context,
