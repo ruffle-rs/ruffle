@@ -81,14 +81,14 @@ pub fn create_external_interface_object<'gc>(
             fn_proto,
         ),
         None,
-        Attribute::DontDelete | Attribute::DontEnum,
+        Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
     );
 
     object.force_set_function(
         "addCallback",
         add_callback,
         gc_context,
-        Attribute::DontDelete | Attribute::DontEnum,
+        Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
         Some(fn_proto),
     );
 
@@ -96,7 +96,7 @@ pub fn create_external_interface_object<'gc>(
         "call",
         call,
         gc_context,
-        Attribute::DontDelete | Attribute::DontEnum,
+        Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
         Some(fn_proto),
     );
 
