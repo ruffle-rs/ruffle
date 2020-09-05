@@ -1,3 +1,4 @@
+use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::object::{value_object, Object, TObject};
@@ -763,13 +764,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             args.push(self.context.avm1.pop());
         }
 
-        let (this, target_fn) = self.get_variable(&fn_name)?;
+        let variable = self.get_variable(&fn_name)?;
 
-        let this = this.unwrap_or_else(|| {
-            self.target_clip_or_root().object().coerce_to_object(self)
-        } );
+        let result = variable.call_with_default_this(
+            self.target_clip_or_root().object().coerce_to_object(self),
+            &fn_name,
+            self,
+            None,
+            &args,
+        )?;
 
-        let result = target_fn.call(&fn_name, self, this, None, &args)?;
         self.context.avm1.push(result);
 
         Ok(FrameControl::Continue)
@@ -1005,7 +1009,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name_value = self.context.avm1.pop();
         let name = name_value.coerce_to_string(self)?;
         self.context.avm1.push(Value::Null); // Sentinel that indicates end of enumeration
-        let (_, object) = self.resolve(&name)?;
+        let object: Value<'gc> = self.resolve(&name)?.into();
 
         match object {
             Value::Object(ob) => {
@@ -1140,7 +1144,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let var_path = self.context.avm1.pop();
         let path = var_path.coerce_to_string(self)?;
 
-        let (_, value) = self.get_variable(&path)?;
+        let value: Value<'gc> = self.get_variable(&path)?.into();
         self.context.avm1.push(value);
 
         Ok(FrameControl::Continue)
@@ -1598,8 +1602,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             args.push(self.context.avm1.pop());
         }
 
-        let (_, r) = self.resolve(&fn_name)?;
-        let constructor = r.coerce_to_object(self);
+        let name_value: Value<'gc> = self.resolve(&fn_name)?.into();
+        let constructor = name_value.coerce_to_object(self);
 
         let this = constructor.construct(self, &args)?;
 
@@ -2507,7 +2511,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// Finally, if none of the above applies, it is a normal variable name resovled via the
     /// scope chain.
-    pub fn get_variable<'s>(&mut self, path: &'s str) -> Result<(Option<Object<'gc>>, Value<'gc>), Error<'gc>> {
+    pub fn get_variable<'s>(&mut self, path: &'s str) -> Result<CallableValue<'gc>, Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root();
 
@@ -2538,13 +2542,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     self.resolve_target_path(start.root(), *scope.read().locals(), path)?
                 {
                     if object.has_property(self, var_name) {
-                        return Ok((Some(object), object.get(var_name, self)?));
+                        return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
                     }
                 }
                 current_scope = scope.read().parent_cell();
             }
 
-            return Ok((None, Value::Undefined));
+            return Ok(CallableValue::UnCallable(Value::Undefined));
         }
 
         // If it doesn't have a trailing variable, it can still be a slash path.
@@ -2555,7 +2559,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if let Some(object) =
                     self.resolve_target_path(start.root(), *scope.read().locals(), path)?
                 {
-                    return Ok((None, object.into()));
+                    return Ok(CallableValue::UnCallable(object.into()));
                 }
                 current_scope = scope.read().parent_cell();
             }
@@ -2683,13 +2687,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// Because scopes are object chains, the same rules for `Object::get`
     /// still apply here.
-    pub fn resolve(&mut self, name: &str) -> Result<(Option<Object<'gc>>, Value<'gc>), Error<'gc>> {
+    pub fn resolve(&mut self, name: &str) -> Result<CallableValue<'gc>, Error<'gc>> {
         if name == "this" {
-            return Ok((None, Value::Object(self.this_cell())));
+            return Ok(CallableValue::UnCallable(Value::Object(self.this_cell())));
         }
 
         if name == "arguments" && self.arguments.is_some() {
-            return Ok((None, Value::Object(self.arguments.unwrap())));
+            return Ok(CallableValue::UnCallable(Value::Object(
+                self.arguments.unwrap(),
+            )));
         }
 
         self.scope_cell()

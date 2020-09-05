@@ -14,6 +14,7 @@ use crate::tag_utils::SwfSlice;
 mod test_utils;
 
 pub mod activation;
+mod callable_value;
 pub mod debug;
 pub mod error;
 mod fscommand;
