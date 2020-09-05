@@ -1798,7 +1798,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 target,
                 base_clip.path()
             );
-            self.context.logging.avm_trace(&message);
+            self.context.log.avm_trace(&message);
             log::info!(target: "avm_trace", "{}", message);
 
             // When SetTarget has an invalid target, subsequent GetVariables act
@@ -2128,7 +2128,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 // Mimic Flash's error output.
                 let message =
                     "Error: A 'with' action failed because the specified object did not exist.\n";
-                self.context.logging.avm_trace(&message);
+                self.context.log.avm_trace(&message);
                 log::info!(target: "avm_trace", "{}", message);
                 Ok(FrameControl::Continue)
             }
