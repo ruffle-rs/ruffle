@@ -30,7 +30,9 @@ fn trace<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(s) = args.get(0) {
-        log::info!(target: "avm_trace", "{}", s.clone().coerce_to_string(activation)?);
+        let message = s.clone().coerce_to_string(activation)?;
+        activation.context.logging.avm_trace(&message);
+        log::info!(target: "avm_trace", "{}", message);
     }
 
     Ok(Value::Undefined)

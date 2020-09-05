@@ -1197,6 +1197,10 @@ impl Player {
             }
         })
     }
+
+    pub fn logging_backend(&self) -> &Logging {
+        &self.logging
+    }
 }
 
 pub struct DragObject<'gc> {

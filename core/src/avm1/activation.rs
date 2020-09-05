@@ -1793,7 +1793,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_warn!(self, "SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
-            log::info!(target: "avm_trace", "Target not found: Target=\"{}\" Base=\"{}\"", target, base_clip.path());
+            let message = format!(
+                "Target not found: Target=\"{}\" Base=\"{}\"",
+                target,
+                base_clip.path()
+            );
+            self.context.logging.avm_trace(&message);
+            log::info!(target: "avm_trace", "{}", message);
 
             // When SetTarget has an invalid target, subsequent GetVariables act
             // as if they are targeting root, but subsequent Play/Stop/etc.
@@ -2120,7 +2126,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // Undefined/null with is ignored.
             Value::Undefined | Value::Null => {
                 // Mimic Flash's error output.
-                log::info!(target: "avm_trace", "Error: A 'with' action failed because the specified object did not exist.\n");
+                let message =
+                    "Error: A 'with' action failed because the specified object did not exist.\n";
+                self.context.logging.avm_trace(&message);
+                log::info!(target: "avm_trace", "{}", message);
                 Ok(FrameControl::Continue)
             }
 

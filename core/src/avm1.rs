@@ -455,10 +455,11 @@ impl<'gc> Avm1<'gc> {
 
 pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: Error<'gc>) {
     if let Error::ThrownValue(error) = &error {
-        let string = error
+        let message = error
             .coerce_to_string(activation)
             .unwrap_or_else(|_| "undefined".into());
-        log::info!(target: "avm_trace", "{}", string);
+        activation.context.logging.avm_trace(&message);
+        log::info!(target: "avm_trace", "{}", message);
     } else {
         log::error!("{}", error);
     }
