@@ -5,7 +5,7 @@ const fs = require("fs");
 
 use(chaiHtml);
 
-describe("Object and embed", () => {
+describe("Object with unexpected string", () => {
     it("loads the test", () => {
         open_test(browser, __dirname);
     });
