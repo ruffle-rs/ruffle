@@ -1198,8 +1198,8 @@ impl Player {
         })
     }
 
-    pub fn logging_backend(&self) -> &Logging {
-        &self.logging
+    pub fn log_backend(&self) -> &Log {
+        &self.log
     }
 }
 

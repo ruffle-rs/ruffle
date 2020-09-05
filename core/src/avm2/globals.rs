@@ -31,7 +31,7 @@ fn trace<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(s) = args.get(0) {
         let message = s.clone().coerce_to_string(activation)?;
-        activation.context.logging.avm_trace(&message);
+        activation.context.log.avm_trace(&message);
         log::info!(target: "avm_trace", "{}", message);
     }
 

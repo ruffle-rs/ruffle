@@ -3,9 +3,8 @@
 //! Trace output can be compared with correct output from the official Flash Payer.
 
 use approx::assert_abs_diff_eq;
-use log::{Metadata, Record};
 use ruffle_core::backend::locale::NullLocaleBackend;
-use ruffle_core::backend::log::NullLogBackend;
+use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::{
@@ -19,6 +18,7 @@ use ruffle_core::Player;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::Path;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 type Error = Box<dyn std::error::Error>;
@@ -392,7 +392,7 @@ fn external_interface_avm1() -> Result<(), Error> {
 
             let parroted =
                 player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
-            player_locked.logging_backend().avm_trace(&format!(
+            player_locked.log_backend().avm_trace(&format!(
                 "After calling `parrot` with a string: {:?}",
                 parroted
             ));
@@ -418,7 +418,7 @@ fn external_interface_avm1() -> Result<(), Error> {
             root.insert("nested".to_string(), nested.into());
             let result = player_locked
                 .call_internal_interface("callWith", vec!["trace".into(), root.into()]);
-            player_locked.logging_backend().avm_trace(&format!(
+            player_locked.log_backend().avm_trace(&format!(
                 "After calling `callWith` with a complex payload: {:?}",
                 result
             ));
@@ -467,7 +467,7 @@ fn test_swf(
     let mut expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
 
     // Strip a trailing newline if it has one.
-    if expected_output.ends_with("\n") {
+    if expected_output.ends_with('\n') {
         expected_output = expected_output[0..expected_output.len() - "\n".len()].to_string();
     }
 
@@ -495,7 +495,7 @@ fn test_swf_approx(
     let mut expected_data = std::fs::read_to_string(expected_output_path)?;
 
     // Strip a trailing newline if it has one.
-    if expected_data.ends_with("\n") {
+    if expected_data.ends_with('\n') {
         expected_data = expected_data[0..expected_data.len() - "\n".len()].to_string();
     }
 
@@ -530,12 +530,12 @@ fn run_swf(
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
 ) -> Result<String, Error> {
-    let _ = log::set_logger(&TRACE_LOGGER).map(|()| log::set_max_level(log::LevelFilter::Info));
-
     let base_path = Path::new(swf_path).parent().unwrap();
     let (mut executor, channel) = NullExecutor::new();
     let movie = SwfMovie::from_path(swf_path)?;
     let frame_time = 1000.0 / movie.header().frame_rate as f64;
+    let trace_output = Rc::new(RefCell::new(Vec::new()));
+
     let player = Player::new(
         Box::new(NullRenderer),
         Box::new(NullAudioBackend::new()),
@@ -543,7 +543,7 @@ fn run_swf(
         Box::new(NullInputBackend::new()),
         Box::new(MemoryStorageBackend::default()),
         Box::new(NullLocaleBackend::new()),
-        Box::new(NullLogBackend::new()),
+        Box::new(TestLogBackend::new(trace_output.clone())),
     )?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
 
@@ -559,34 +559,24 @@ fn run_swf(
 
     executor.block_all().unwrap();
 
-    Ok(trace_log())
+    let trace = trace_output.borrow().join("\n");
+    Ok(trace)
 }
 
-thread_local! {
-    static TRACE_LOG: RefCell<String> = RefCell::new(String::new());
+struct TestLogBackend {
+    trace_output: Rc<RefCell<Vec<String>>>,
 }
 
-static TRACE_LOGGER: TraceLogger = TraceLogger;
-
-/// `TraceLogger` captures output from AVM trace actions into a String.
-struct TraceLogger;
-
-fn trace_log() -> String {
-    TRACE_LOG.with(|log| log.borrow().clone())
-}
-
-impl log::Log for TraceLogger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.target() == "avm_trace"
+impl TestLogBackend {
+    pub fn new(trace_output: Rc<RefCell<Vec<String>>>) -> Self {
+        Self { trace_output }
     }
+}
 
-    fn log(&self, record: &Record) {
-        if self.enabled(record.metadata()) {
-            TRACE_LOG.with(|log| log.borrow_mut().push_str(&format!("{}\n", record.args())));
-        }
+impl LogBackend for TestLogBackend {
+    fn avm_trace(&self, message: &str) {
+        self.trace_output.borrow_mut().push(message.to_string());
     }
-
-    fn flush(&self) {}
 }
 
 #[derive(Default)]
@@ -600,19 +590,19 @@ impl ExternalInterfaceTestProvider {
 
 fn do_trace(context: &mut UpdateContext<'_, '_, '_>, args: &[ExternalValue]) -> ExternalValue {
     context
-        .logging
+        .log
         .avm_trace(&format!("[ExternalInterface] trace: {:?}", args));
     "Traced!".into()
 }
 
 fn do_ping(context: &mut UpdateContext<'_, '_, '_>, _args: &[ExternalValue]) -> ExternalValue {
-    context.logging.avm_trace("[ExternalInterface] ping");
+    context.log.avm_trace("[ExternalInterface] ping");
     "Pong!".into()
 }
 
 fn do_reentry(context: &mut UpdateContext<'_, '_, '_>, _args: &[ExternalValue]) -> ExternalValue {
     context
-        .logging
+        .log
         .avm_trace("[ExternalInterface] starting reentry");
     if let Some(callback) = context.external_interface.get_callback("callWith") {
         callback.call(
