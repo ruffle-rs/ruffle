@@ -5,6 +5,7 @@
 use approx::assert_abs_diff_eq;
 use log::{Metadata, Record};
 use ruffle_core::backend::locale::NullLocaleBackend;
+use ruffle_core::backend::log::NullLogBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::{
@@ -521,6 +522,7 @@ fn run_swf(
         Box::new(NullInputBackend::new()),
         Box::new(MemoryStorageBackend::default()),
         Box::new(NullLocaleBackend::new()),
+        Box::new(NullLogBackend::new()),
     )?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
 

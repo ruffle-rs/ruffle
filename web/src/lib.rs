@@ -14,6 +14,7 @@ use crate::{
 };
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Function, Object, Uint8Array};
+use ruffle_core::backend::log::NullLogBackend;
 use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::storage::StorageBackend;
@@ -231,8 +232,17 @@ impl Ruffle {
             })
             .unwrap_or_else(|| Box::new(MemoryStorageBackend::default()));
 
-        let core =
-            ruffle_core::Player::new(renderer, audio, navigator, input, local_storage, locale)?;
+        let log = Box::new(NullLogBackend::new());
+
+        let core = ruffle_core::Player::new(
+            renderer,
+            audio,
+            navigator,
+            input,
+            local_storage,
+            locale,
+            log,
+        )?;
 
         // Create instance.
         let instance = RuffleInstance {
