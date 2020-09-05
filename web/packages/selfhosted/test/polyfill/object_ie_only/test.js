@@ -1,4 +1,8 @@
-const { inject_ruffle_and_wait, open_test } = require("../utils");
+const {
+    inject_ruffle_and_wait,
+    open_test,
+    play_and_monitor,
+} = require("../utils");
 const { expect, use } = require("chai");
 const chaiHtml = require("chai-html");
 const fs = require("fs");
@@ -15,5 +19,12 @@ describe("Object for old IE must work everywhere", () => {
         const actual = browser.$("#test-container").getHTML(false);
         const expected = fs.readFileSync(`${__dirname}/expected.html`, "utf8");
         expect(actual).html.to.equal(expected);
+    });
+
+    it("Plays a movie", () => {
+        play_and_monitor(
+            browser,
+            browser.$("#test-container").$("<ruffle-object />")
+        );
     });
 });
