@@ -4,9 +4,11 @@
 mod audio;
 mod input;
 mod locale;
+mod log_adapter;
 mod navigator;
 mod storage;
 
+use crate::log_adapter::WebLogBackend;
 use crate::storage::LocalStorageBackend;
 use crate::{
     audio::WebAudioBackend, input::WebInputBackend, locale::WebLocaleBackend,
@@ -14,7 +16,6 @@ use crate::{
 };
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Function, Object, Uint8Array};
-use ruffle_core::backend::log::NullLogBackend;
 use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::storage::StorageBackend;
@@ -65,6 +66,7 @@ struct RuffleInstance {
     key_down_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
     key_up_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
     has_focus: bool,
+    trace_observer: Arc<RefCell<JsValue>>,
 }
 
 #[wasm_bindgen(module = "/packages/core/src/ruffle-player.js")]
@@ -198,6 +200,16 @@ impl Ruffle {
             JsValue::NULL
         })
     }
+
+    pub fn set_trace_observer(&self, observer: JsValue) {
+        INSTANCES.with(move |instances| {
+            if let Ok(mut instances) = instances.try_borrow_mut() {
+                if let Some(instance) = instances.get_mut(self.0) {
+                    *instance.trace_observer.borrow_mut() = observer;
+                }
+            }
+        })
+    }
 }
 
 impl Ruffle {
@@ -232,7 +244,8 @@ impl Ruffle {
             })
             .unwrap_or_else(|| Box::new(MemoryStorageBackend::default()));
 
-        let log = Box::new(NullLogBackend::new());
+        let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
+        let log = Box::new(WebLogBackend::new(trace_observer.clone()));
 
         let core = ruffle_core::Player::new(
             renderer,
@@ -263,6 +276,7 @@ impl Ruffle {
             key_up_callback: None,
             timestamp: None,
             has_focus: false,
+            trace_observer,
         };
 
         // Prevent touch-scrolling on canvas.
