@@ -8,7 +8,9 @@ use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::locale::LocaleBackend;
 use crate::backend::navigator::{NavigatorBackend, RequestOptions};
 use crate::backend::storage::StorageBackend;
-use crate::backend::{audio::AudioBackend, render::Letterbox, render::RenderBackend};
+use crate::backend::{
+    audio::AudioBackend, log::LogBackend, render::Letterbox, render::RenderBackend,
+};
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{EditText, MorphShape, MovieClip};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
@@ -123,6 +125,7 @@ type Renderer = Box<dyn RenderBackend>;
 type Input = Box<dyn InputBackend>;
 type Storage = Box<dyn StorageBackend>;
 type Locale = Box<dyn LocaleBackend>;
+type Log = Box<dyn LogBackend>;
 
 pub struct Player {
     /// The version of the player we're emulating.
@@ -147,6 +150,7 @@ pub struct Player {
     pub navigator: Navigator,
     input: Input,
     locale: Locale,
+    log: Log,
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
@@ -197,6 +201,7 @@ impl Player {
         input: Input,
         storage: Storage,
         locale: Locale,
+        log: Log,
     ) -> Result<Arc<Mutex<Self>>, Error> {
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
         let movie_width = 550;
@@ -261,6 +266,7 @@ impl Player {
             navigator,
             input,
             locale,
+            log,
             self_reference: None,
             system: SystemProperties::default(),
             instance_counter: 0,
@@ -1022,6 +1028,7 @@ impl Player {
             instance_counter,
             storage,
             locale,
+            logging,
             needs_render,
         ) = (
             self.player_version,
@@ -1040,6 +1047,7 @@ impl Player {
             &mut self.instance_counter,
             self.storage.deref_mut(),
             self.locale.deref_mut(),
+            self.log.deref_mut(),
             &mut self.needs_render,
         );
 
@@ -1084,6 +1092,7 @@ impl Player {
                 instance_counter,
                 storage,
                 locale,
+                log: logging,
                 shared_objects,
                 unbound_text_fields,
                 timers,

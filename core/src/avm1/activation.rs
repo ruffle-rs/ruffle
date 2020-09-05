@@ -2056,6 +2056,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             val.coerce_to_string(self)?
         };
+        self.context.log.avm_trace(&out);
         log::info!(target: "avm_trace", "{}", out);
         Ok(FrameControl::Continue)
     }

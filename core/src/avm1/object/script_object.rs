@@ -847,6 +847,7 @@ mod tests {
     use crate::backend::audio::NullAudioBackend;
     use crate::backend::input::NullInputBackend;
     use crate::backend::locale::NullLocaleBackend;
+    use crate::backend::log::NullLogBackend;
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::backend::render::NullRenderer;
     use crate::backend::storage::MemoryStorageBackend;
@@ -897,6 +898,7 @@ mod tests {
                 navigator: &mut NullNavigatorBackend::new(),
                 renderer: &mut NullRenderer::new(),
                 locale: &mut NullLocaleBackend::new(),
+                log: &mut NullLogBackend::new(),
                 system_prototypes: avm1.prototypes().clone(),
                 mouse_hovered_object: None,
                 mouse_position: &(Twips::new(0), Twips::new(0)),
