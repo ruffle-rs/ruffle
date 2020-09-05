@@ -29,6 +29,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
 
         self.instance = null;
         self.allow_script_access = false;
+        self._trace_observer = null;
 
         self.Ruffle = load_ruffle();
 
@@ -276,6 +277,15 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         this[name] = (...args) => {
             return instance.call_exposed_callback(name, args);
         };
+    }
+
+    /*
+     * Sets a trace observer on this flash player.
+     *
+     * The observer will be called, as a function, for each message that the playing movie will "trace" (output).
+     */
+    set trace_observer(observer) {
+        this.instance.set_trace_observer(observer);
     }
 };
 
