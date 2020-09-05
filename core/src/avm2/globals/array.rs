@@ -797,9 +797,9 @@ where
 
 /// Sort array storage.
 ///
-/// This function expects it's values to have been pre-enumerated. They will be
-/// sorted in-place. It is the caller's responsibility to place the resulting
-/// half of the sorted array wherever.
+/// This function expects it's values to have been pre-enumerated and
+/// pre-resolved. They will be sorted in-place. It is the caller's
+/// responsibility to place the resulting half of the sorted array wherever.
 ///
 /// This function will reverse the sort order if `Descending` sort is requested.
 ///
@@ -810,7 +810,7 @@ where
 /// contents of the `values` array will be sorted in a random order.
 fn sort_inner<'a, 'gc, 'ctxt, C>(
     activation: &mut Activation<'a, 'gc, 'ctxt>,
-    values: &mut [(usize, Option<Value<'gc>>)],
+    values: &mut [(usize, Value<'gc>)],
     options: EnumSet<SortOptions>,
     mut sort_func: C,
 ) -> Result<bool, Error>
@@ -821,8 +821,8 @@ where
     let mut error_signal = Ok(());
 
     values.sort_unstable_by(|(_a_index, a), (_b_index, b)| {
-        let unresolved_a = a.clone().unwrap_or(Value::Undefined);
-        let unresolved_b = b.clone().unwrap_or(Value::Undefined);
+        let unresolved_a = a.clone();
+        let unresolved_b = b.clone();
 
         if matches!(unresolved_a, Value::Undefined) && matches!(unresolved_b, Value::Undefined) {
             unique_sort_satisfied = false;
@@ -833,11 +833,7 @@ where
             return Ordering::Less;
         }
 
-        match sort_func(
-            activation,
-            a.clone().unwrap_or(Value::Undefined),
-            b.clone().unwrap_or(Value::Undefined),
-        ) {
+        match sort_func(activation, a.clone(), b.clone()) {
             Ok(Ordering::Equal) => {
                 unique_sort_satisfied = false;
                 Ordering::Equal
@@ -897,6 +893,86 @@ fn compare_numeric<'gc>(
     }
 }
 
+/// Take a sorted set of values and produce the result requested by the caller.
+fn sort_postprocess<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    options: EnumSet<SortOptions>,
+    unique_satisfied: bool,
+    values: Vec<(usize, Value<'gc>)>,
+) -> Result<Value<'gc>, Error> {
+    if unique_satisfied {
+        if options.contains(SortOptions::ReturnIndexedArray) {
+            return build_array(
+                activation,
+                ArrayStorage::from_storage(
+                    values
+                        .iter()
+                        .map(|(i, _v)| Some(i.clone().into()))
+                        .collect(),
+                ),
+            );
+        } else {
+            if let Some(mut old_array) = this.as_array_storage_mut(activation.context.gc_context) {
+                let mut new_vec = Vec::new();
+
+                for (src, v) in values.iter() {
+                    if old_array.get(*src).is_none() && !matches!(v, Value::Undefined) {
+                        new_vec.push(Some(v.clone()));
+                    } else {
+                        new_vec.push(old_array.get(*src).clone());
+                    }
+                }
+
+                let mut new_array = ArrayStorage::from_storage(new_vec);
+
+                swap(&mut *old_array, &mut new_array);
+            }
+
+            return Ok(this.into());
+        }
+    }
+
+    Ok(0.into())
+}
+
+/// Given a value, extract it's array values.
+///
+/// If the value is not an array, this function yields `None`.
+fn extract_array_values<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<Option<Vec<Value<'gc>>>, Error> {
+    let object = value.coerce_to_object(activation).ok();
+    let holey_vec = if let Some(object) = object {
+        if let Some(field_array) = object.as_array_storage() {
+            let mut array = Vec::new();
+
+            for v in field_array.iter() {
+                array.push(v);
+            }
+
+            array
+        } else {
+            return Ok(None);
+        }
+    } else {
+        return Ok(None);
+    };
+
+    let mut unholey_vec = Vec::new();
+    for (i, v) in holey_vec.iter().enumerate() {
+        unholey_vec.push(resolve_array_hole(
+            activation,
+            object.unwrap(),
+            i,
+            v.clone(),
+        )?);
+    }
+
+    Ok(Some(unholey_vec))
+}
+
 /// Impl `Array.sort`
 pub fn sort<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -927,16 +1003,17 @@ pub fn sort<'gc>(
             )
         };
 
-        let mut values = if let Some(array) = this.as_array_storage() {
-            array
+        let mut values = if let Some(values) = extract_array_values(activation, this.into())? {
+            values
                 .iter()
                 .enumerate()
-                .collect::<Vec<(usize, Option<Value<'gc>>)>>()
+                .map(|(i, v)| (i, v.clone()))
+                .collect::<Vec<(usize, Value<'gc>)>>()
         } else {
             return Ok(0.into());
         };
 
-        let unique_satisified = if let Some(v) = compare_fnc {
+        let unique_satisfied = if let Some(v) = compare_fnc {
             sort_inner(
                 activation,
                 &mut values,
@@ -973,29 +1050,145 @@ pub fn sort<'gc>(
             )?
         };
 
-        if unique_satisified {
-            if options.contains(SortOptions::ReturnIndexedArray) {
-                return build_array(
-                    activation,
-                    ArrayStorage::from_storage(
-                        values
-                            .iter()
-                            .map(|(i, _v)| Some(i.clone().into()))
-                            .collect(),
-                    ),
-                );
+        return sort_postprocess(activation, this, options, unique_satisfied, values);
+    }
+
+    Ok(0.into())
+}
+
+/// Given a value, extract it's array values.
+///
+/// If the value is not an array, it will be returned as if it was present in a
+/// one-element array containing itself. This is intended for use with parsing
+/// parameters which are optionally arrays.
+fn extract_maybe_array_values<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<Vec<Value<'gc>>, Error> {
+    Ok(extract_array_values(activation, value.clone())?.unwrap_or_else(|| vec![value]))
+}
+
+/// Given a value, extract it's array values and coerce them to strings.
+///
+/// If the value is not an array, it will be returned as if it was present in a
+/// one-element array containing itself. This is intended for use with parsing
+/// parameters which are optionally arrays. The returned value will still be
+/// coerced into a string in this case.
+fn extract_maybe_array_strings<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<Vec<AvmString<'gc>>, Error> {
+    let mut out = Vec::new();
+
+    for value in extract_maybe_array_values(activation, value)? {
+        out.push(value.coerce_to_string(activation)?);
+    }
+
+    Ok(out)
+}
+
+/// Given a value, extract it's array values and coerce them to enumsets.
+///
+/// If the value is not an array, it will be returned as if it was present in a
+/// one-element array containing itself. This is intended for use with parsing
+/// parameters which are optionally arrays. The returned value will still be
+/// coerced into a string in this case.
+fn extract_maybe_array_enumsets<'gc, E>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<Vec<EnumSet<E>>, Error>
+where
+    E: EnumSetType,
+{
+    let mut out = Vec::new();
+
+    for value in extract_maybe_array_values(activation, value)? {
+        out.push(value.coerce_to_enumset(activation)?);
+    }
+
+    Ok(out)
+}
+
+/// Impl `Array.sortOn`
+pub fn sort_on<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(field_names_value) = args.get(0).cloned() {
+            let field_names = extract_maybe_array_strings(activation, field_names_value)?;
+            let mut options = extract_maybe_array_enumsets(
+                activation,
+                args.get(1).cloned().unwrap_or_else(|| 0.into()),
+            )?;
+
+            let first_option = options
+                .get(0)
+                .cloned()
+                .unwrap_or_else(EnumSet::empty)
+                .intersection(SortOptions::UniqueSort | SortOptions::ReturnIndexedArray);
+            let mut values = if let Some(values) = extract_array_values(activation, this.into())? {
+                values
+                    .iter()
+                    .enumerate()
+                    .map(|(i, v)| (i, v.clone()))
+                    .collect::<Vec<(usize, Value<'gc>)>>()
             } else {
-                let mut new_array =
-                    ArrayStorage::from_storage(values.iter().map(|(_i, v)| v.clone()).collect());
+                return Ok(0.into());
+            };
 
-                if let Some(mut old_array) =
-                    this.as_array_storage_mut(activation.context.gc_context)
-                {
-                    swap(&mut *old_array, &mut new_array);
-                }
-
-                return Ok(this.into());
+            if options.len() < field_names.len() {
+                options.resize(
+                    field_names.len(),
+                    options.last().cloned().unwrap_or_else(EnumSet::empty),
+                );
             }
+
+            let unique_satisfied = sort_inner(
+                activation,
+                &mut values,
+                first_option,
+                constrain(|activation, a, b| {
+                    for (field_name, options) in field_names.iter().zip(options.iter()) {
+                        let mut a_object = a.coerce_to_object(activation)?;
+                        let a_field = a_object.get_property(
+                            a_object,
+                            &QName::new(Namespace::public_namespace(), *field_name),
+                            activation,
+                        )?;
+
+                        let mut b_object = b.coerce_to_object(activation)?;
+                        let b_field = b_object.get_property(
+                            b_object,
+                            &QName::new(Namespace::public_namespace(), *field_name),
+                            activation,
+                        )?;
+
+                        let ord = if options.contains(SortOptions::Numeric) {
+                            compare_numeric(activation, a_field, b_field)?
+                        } else if options.contains(SortOptions::CaseInsensitive) {
+                            compare_string_case_insensitive(activation, a_field, b_field)?
+                        } else {
+                            compare_string_case_sensitive(activation, a_field, b_field)?
+                        };
+
+                        if matches!(ord, Ordering::Equal) {
+                            continue;
+                        }
+
+                        if options.contains(SortOptions::Descending) {
+                            return Ok(ord.reverse());
+                        } else {
+                            return Ok(ord);
+                        }
+                    }
+
+                    Ok(Ordering::Equal)
+                }),
+            )?;
+
+            return sort_postprocess(activation, this, first_option, unique_satisfied, values);
         }
     }
 
@@ -1115,6 +1308,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "sort"),
         Method::from_builtin(sort),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "sortOn"),
+        Method::from_builtin(sort_on),
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(

@@ -1,0 +1,539 @@
+//var item1 = {"numprop": 3, "strprop": "Abc", "numprop2": 3}
+//var item2 = {"numprop": 3, "strprop": "Azc", "numprop2": 2}
+//var item3 = {"numprop": 3, "strprop": "aXc", "numprop2": 1}
+//var item4 = {"numprop": 3, "strprop": "boo", "numprop2": 4}
+//var item5 = {"numprop": 5, "strprop": "bool", "numprop2": "5"}
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//Array.prototype[3] = item4;
+//a.sortOn("numprop", Array.UNIQUESORT) === 0
+false
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], Array.RETURNINDEXEDARRAY))
+4
+1
+0
+2
+3
+//(properties of contents of a.sortOn(["numprop", "strprop"]))
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], Array.CASEINSENSITIVE | Array.RETURNINDEXEDARRAY))
+4
+1
+0
+2
+3
+//(properties of contents of a.sortOn(["numprop", "strprop"], Array.CASEINSENSITIVE))
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], Array.DESCENDING | Array.RETURNINDEXEDARRAY))
+3
+2
+0
+1
+4
+//(properties of contents of a.sortOn(["numprop", "strprop"], Array.DESCENDING))
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+11
+bool
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+11
+bool
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], Array.CASEINSENSITIVE | Array.DESCENDING | Array.RETURNINDEXEDARRAY))
+3
+2
+0
+1
+4
+//(properties of contents of a.sortOn(["numprop", "strprop"], Array.CASEINSENSITIVE | Array.DESCENDING))
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+11
+bool
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+11
+bool
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], Array.NUMERIC | Array.RETURNINDEXEDARRAY))
+1
+0
+2
+3
+4
+//(properties of contents of a.sortOn(["numprop", "strprop"], Array.NUMERIC))
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+11
+bool
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+11
+bool
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], Array.DESCENDING | Array.NUMERIC | Array.RETURNINDEXEDARRAY))
+4
+3
+2
+0
+1
+//(properties of contents of a.sortOn(["numprop", "strprop"], Array.DESCENDING | Array.NUMERIC))
+11
+bool
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+11
+bool
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], [Array.RETURNINDEXEDARRAY, 0]))
+4
+1
+0
+2
+3
+//(properties of contents of a.sortOn(["numprop", "strprop"], [0, 0]))
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], [Array.RETURNINDEXEDARRAY, Array.DESCENDING]))
+4
+1
+0
+2
+3
+//(properties of contents of a.sortOn(["numprop", "strprop"], [0, Array.DESCENDING]))
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], [Array.RETURNINDEXEDARRAY | Array.DESCENDING, 0]))
+3
+2
+0
+1
+4
+//(properties of contents of a.sortOn(["numprop", "strprop"], [Array.DESCENDING, 0]))
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+11
+bool
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+11
+bool
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], [Array.RETURNINDEXEDARRAY, Array.CASEINSENSITIVE]))
+4
+1
+0
+2
+3
+//(properties of contents of a.sortOn(["numprop", "strprop"], [0, Array.CASEINSENSITIVE]))
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], [Array.RETURNINDEXEDARRAY | Array.CASEINSENSITIVE, 0]))
+4
+1
+0
+2
+3
+//(properties of contents of a.sortOn(["numprop", "strprop"], [Array.CASEINSENSITIVE, 0]))
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], [Array.RETURNINDEXEDARRAY, Array.CASEINSENSITIVE | Array.DESCENDING]))
+4
+1
+0
+2
+3
+//(properties of contents of a.sortOn(["numprop", "strprop"], [0, Array.CASEINSENSITIVE | Array.DESCENDING]))
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], [Array.RETURNINDEXEDARRAY | Array.CASEINSENSITIVE | Array.DESCENDING, 0]))
+3
+2
+0
+1
+4
+//(properties of contents of a.sortOn(["numprop", "strprop"], [Array.CASEINSENSITIVE | Array.DESCENDING, 0]))
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+11
+bool
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+11
+bool
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], [Array.RETURNINDEXEDARRAY | Array.DESCENDING, Array.CASEINSENSITIVE]))
+3
+2
+0
+1
+4
+//(properties of contents of a.sortOn(["numprop", "strprop"], [Array.DESCENDING, Array.CASEINSENSITIVE]))
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+11
+bool
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+9
+boo
+7
+aXc
+5
+Abc
+3
+Azc
+11
+bool
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//(contents of a.sortOn(["numprop", "strprop"], [Array.RETURNINDEXEDARRAY | Array.CASEINSENSITIVE, Array.DESCENDING]))
+4
+1
+0
+2
+3
+//(properties of contents of a.sortOn(["numprop", "strprop"], [Array.CASEINSENSITIVE, Array.DESCENDING]))
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//Array.prototype[2] = "hole10";
+//Array.prototype[3] = "hole11";
+//Array.prototype[4] = "hole12";
+//(properties of contents of a)
+11
+bool
+3
+Azc
+5
+Abc
+7
+aXc
+9
+boo
+//(cleaning up our holes...)
+//Array.prototype[3] = item4;
+//var a = new Array(item1, item2, item3)
+//a[4] = item5;
+//a.sortOn(["strprop", "numprop"], [Array.NUMERIC, Array.UNIQUESORT]) === 0
+false
