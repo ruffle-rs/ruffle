@@ -390,7 +390,12 @@ fn external_interface_avm1() -> Result<(), Error> {
         |player| {
             let mut player_locked = player.lock().unwrap();
 
-            log::info!(target: "avm_trace", "After calling `parrot` with a string: {:?}", player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]));
+            let parroted =
+                player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
+            player_locked.logging_backend().avm_trace(&format!(
+                "After calling `parrot` with a string: {:?}",
+                parroted
+            ));
 
             let mut nested = BTreeMap::new();
             nested.insert(
@@ -411,7 +416,12 @@ fn external_interface_avm1() -> Result<(), Error> {
             root.insert("false".to_string(), false.into());
             root.insert("null".to_string(), ExternalValue::Null);
             root.insert("nested".to_string(), nested.into());
-            log::info!(target: "avm_trace", "After calling `callWith` with a complex payload: {:?}", player_locked.call_internal_interface("callWith", vec!["trace".into(), root.into()]));
+            let result = player_locked
+                .call_internal_interface("callWith", vec!["trace".into(), root.into()]);
+            player_locked.logging_backend().avm_trace(&format!(
+                "After calling `callWith` with a complex payload: {:?}",
+                result
+            ));
             Ok(())
         },
     )
@@ -454,7 +464,12 @@ fn test_swf(
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
 ) -> Result<(), Error> {
-    let expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
+    let mut expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
+
+    // Strip a trailing newline if it has one.
+    if expected_output.ends_with("\n") {
+        expected_output = expected_output[0..expected_output.len() - "\n".len()].to_string();
+    }
 
     let trace_log = run_swf(swf_path, num_frames, before_start, before_end)?;
     assert_eq!(
@@ -477,7 +492,13 @@ fn test_swf_approx(
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
 ) -> Result<(), Error> {
     let trace_log = run_swf(swf_path, num_frames, before_start, before_end)?;
-    let expected_data = std::fs::read_to_string(expected_output_path)?;
+    let mut expected_data = std::fs::read_to_string(expected_output_path)?;
+
+    // Strip a trailing newline if it has one.
+    if expected_data.ends_with("\n") {
+        expected_data = expected_data[0..expected_data.len() - "\n".len()].to_string();
+    }
+
     std::assert_eq!(
         trace_log.lines().count(),
         expected_data.lines().count(),
@@ -577,18 +598,22 @@ impl ExternalInterfaceTestProvider {
     }
 }
 
-fn do_trace(_context: &mut UpdateContext<'_, '_, '_>, args: &[ExternalValue]) -> ExternalValue {
-    log::info!(target: "avm_trace", "[ExternalInterface] trace: {:?}", args);
+fn do_trace(context: &mut UpdateContext<'_, '_, '_>, args: &[ExternalValue]) -> ExternalValue {
+    context
+        .logging
+        .avm_trace(&format!("[ExternalInterface] trace: {:?}", args));
     "Traced!".into()
 }
 
-fn do_ping(_context: &mut UpdateContext<'_, '_, '_>, _args: &[ExternalValue]) -> ExternalValue {
-    log::info!(target: "avm_trace", "[ExternalInterface] ping");
+fn do_ping(context: &mut UpdateContext<'_, '_, '_>, _args: &[ExternalValue]) -> ExternalValue {
+    context.logging.avm_trace("[ExternalInterface] ping");
     "Pong!".into()
 }
 
 fn do_reentry(context: &mut UpdateContext<'_, '_, '_>, _args: &[ExternalValue]) -> ExternalValue {
-    log::info!(target: "avm_trace", "[ExternalInterface] starting reentry");
+    context
+        .logging
+        .avm_trace("[ExternalInterface] starting reentry");
     if let Some(callback) = context.external_interface.get_callback("callWith") {
         callback.call(
             context,
