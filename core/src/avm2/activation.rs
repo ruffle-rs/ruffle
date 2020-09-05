@@ -1038,14 +1038,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let obj = self.context.avm2.pop().coerce_to_object(self)?;
         let name = self.context.avm2.pop().coerce_to_string(self)?;
 
-        let mut has_prop = false;
-
-        if let Some(ns) = obj.resolve_any(name)? {
-            if !ns.is_private() {
-                let qname = QName::new(ns, name);
-                has_prop = obj.has_property(&qname)?;
-            }
-        }
+        let qname = QName::new(Namespace::public_namespace(), name);
+        let has_prop = obj.has_property(&qname)?;
 
         self.context.avm2.push(has_prop);
 
