@@ -2220,7 +2220,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             form_values.insert(
                 k,
                 v.ok()
-                    .unwrap_or_else(|| Value::Undefined)
+                    .unwrap_or(Value::Undefined)
                     .coerce_to_string(self)
                     .unwrap_or_else(|_| "undefined".into())
                     .to_string(),

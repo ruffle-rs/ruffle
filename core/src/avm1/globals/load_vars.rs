@@ -244,7 +244,7 @@ fn send<'gc>(
         form_values.insert(
             k,
             v.ok()
-                .unwrap_or_else(|| Value::Undefined)
+                .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)
                 .unwrap_or_else(|_| "undefined".into())
                 .to_string(),
@@ -302,7 +302,7 @@ fn to_string<'gc>(
         form_values.insert(
             k,
             v.ok()
-                .unwrap_or_else(|| Value::Undefined)
+                .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)
                 .unwrap_or_else(|_| "undefined".into())
                 .to_string(),

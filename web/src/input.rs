@@ -27,13 +27,13 @@ impl WebInputBackend {
 
     /// Register a key press for a given code string.
     pub fn keydown(&mut self, code: String) {
-        self.last_key = web_to_ruffle_key_code(&code).unwrap_or_else(|| KeyCode::Unknown);
+        self.last_key = web_to_ruffle_key_code(&code).unwrap_or(KeyCode::Unknown);
         self.keys_down.insert(code);
     }
 
     /// Register a key release for a given code string.
     pub fn keyup(&mut self, code: String) {
-        self.last_key = web_to_ruffle_key_code(&code).unwrap_or_else(|| KeyCode::Unknown);
+        self.last_key = web_to_ruffle_key_code(&code).unwrap_or(KeyCode::Unknown);
         self.keys_down.remove(&code);
     }
 

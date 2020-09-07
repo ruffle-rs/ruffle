@@ -607,7 +607,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     fn path(&self) -> String {
         if let Some(parent) = self.parent() {
             let mut path = parent.path();
-            path.push_str(".");
+            path.push('.');
             path.push_str(&*self.name());
             path
         } else {
@@ -620,7 +620,7 @@ pub trait TDisplayObject<'gc>: 'gc + Collect + Debug + Into<DisplayObject<'gc>> 
     fn slash_path(&self) -> String {
         if let Some(parent) = self.parent() {
             let mut path = parent.slash_path();
-            path.push_str("/");
+            path.push('/');
             path.push_str(&*self.name());
             path
         } else {

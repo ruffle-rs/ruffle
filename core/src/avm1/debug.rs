@@ -55,7 +55,7 @@ impl<'a> VariableDumper<'a> {
     }
 
     pub fn print_string(&mut self, string: &str) {
-        self.output.push_str("\"");
+        self.output.push('\"');
 
         for c in string.chars() {
             if c == '"' {
@@ -77,7 +77,7 @@ impl<'a> VariableDumper<'a> {
             }
         }
 
-        self.output.push_str("\"");
+        self.output.push('\"');
     }
 
     pub fn print_object<'gc>(
@@ -88,7 +88,7 @@ impl<'a> VariableDumper<'a> {
         let (id, new) = self.object_id(object);
         self.output.push_str("[object #");
         self.output.push_str(&id.to_string());
-        self.output.push_str("]");
+        self.output.push(']');
 
         if new {
             self.print_properties(object, activation);
@@ -108,7 +108,7 @@ impl<'a> VariableDumper<'a> {
             Err(e) => {
                 self.output.push_str("Error: \"");
                 self.output.push_str(&e.to_string());
-                self.output.push_str("\"");
+                self.output.push('\"');
             }
         }
     }
@@ -130,12 +130,12 @@ impl<'a> VariableDumper<'a> {
                 self.output.push_str(&key);
                 self.output.push_str(": ");
                 self.print_property(object, &key, activation);
-                self.output.push_str("\n");
+                self.output.push('\n');
             }
 
             self.depth -= 1;
             self.indent();
-            self.output.push_str("}");
+            self.output.push('}');
         }
     }
 
@@ -171,18 +171,18 @@ impl<'a> VariableDumper<'a> {
         }
 
         self.output.push_str(header);
-        self.output.push_str("\n");
+        self.output.push('\n');
         self.depth += 1;
 
         for key in keys.into_iter() {
             self.output.push_str(&format!("{}.{}", name, key));
             self.output.push_str(" = ");
             self.print_property(object, &key, activation);
-            self.output.push_str("\n");
+            self.output.push('\n');
         }
 
         self.depth -= 1;
-        self.output.push_str("\n");
+        self.output.push('\n');
     }
 }
 

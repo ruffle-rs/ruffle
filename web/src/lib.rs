@@ -208,7 +208,7 @@ impl Ruffle {
         console_error_panic_hook::set_once();
         let _ = console_log::init_with_level(log::Level::Trace);
 
-        let window = web_sys::window().ok_or_else(|| "Expected window")?;
+        let window = web_sys::window().ok_or("Expected window")?;
         let document = window.document().ok_or("Expected document")?;
 
         let (canvas, renderer) = create_renderer(&document)?;
