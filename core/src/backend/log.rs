@@ -2,7 +2,7 @@ pub trait LogBackend {
     fn avm_trace(&self, message: &str);
 }
 
-/// Logging backend that does nothing.
+/// Logging backend that just reroutes traces to the log crate
 pub struct NullLogBackend {}
 
 impl NullLogBackend {
@@ -12,7 +12,9 @@ impl NullLogBackend {
 }
 
 impl LogBackend for NullLogBackend {
-    fn avm_trace(&self, _message: &str) {}
+    fn avm_trace(&self, message: &str) {
+        log::info!(target: "avm_trace", "{}", message);
+    }
 }
 
 impl Default for NullLogBackend {

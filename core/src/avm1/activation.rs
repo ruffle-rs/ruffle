@@ -1799,7 +1799,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 base_clip.path()
             );
             self.context.log.avm_trace(&message);
-            log::info!(target: "avm_trace", "{}", message);
 
             // When SetTarget has an invalid target, subsequent GetVariables act
             // as if they are targeting root, but subsequent Play/Stop/etc.
@@ -2063,7 +2062,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             val.coerce_to_string(self)?
         };
         self.context.log.avm_trace(&out);
-        log::info!(target: "avm_trace", "{}", out);
         Ok(FrameControl::Continue)
     }
 
@@ -2129,7 +2127,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 let message =
                     "Error: A 'with' action failed because the specified object did not exist.\n";
                 self.context.log.avm_trace(&message);
-                log::info!(target: "avm_trace", "{}", message);
                 Ok(FrameControl::Continue)
             }
 

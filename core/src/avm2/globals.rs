@@ -32,7 +32,6 @@ fn trace<'gc>(
     if let Some(s) = args.get(0) {
         let message = s.clone().coerce_to_string(activation)?;
         activation.context.log.avm_trace(&message);
-        log::info!(target: "avm_trace", "{}", message);
     }
 
     Ok(Value::Undefined)
