@@ -459,7 +459,6 @@ pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: 
             .coerce_to_string(activation)
             .unwrap_or_else(|_| "undefined".into());
         activation.context.log.avm_trace(&message);
-        log::info!(target: "avm_trace", "{}", message);
     } else {
         log::error!("{}", error);
     }
