@@ -14,7 +14,7 @@ log = "0.4"
 lyon = "0.16.0"
 ruffle_core = { path = "../../core" }
 futures = "0.3.5"
-bytemuck = "1.4.0"
+bytemuck = "1.4.1"
 raw-window-handle = "0.3.3"
 
 [features]
