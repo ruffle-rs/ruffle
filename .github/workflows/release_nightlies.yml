@@ -18,9 +18,9 @@ jobs:
           :
           # Based off https://github.community/t/trigger-workflow-if-there-is-commit-in-last-24-hours/17074/3
           curl -sL https://api.github.com/repos/$GITHUB_REPOSITORY/commits | jq -r '[.[]][0]' > $HOME/commit.json
-          date="$(jq -r '.commit.author.date' $HOME/commit.json)"
+          date="$(jq -r '.commit.committer.date' $HOME/commit.json)"
           timestamp=$(date --utc -d "$date" +%s)
-          author="$(jq -r '.commit.author.name' $HOME/commit.json)"
+          author="$(jq -r '.commit.committer.name' $HOME/commit.json)"
           url="$(jq -r '.html_url' $HOME/commit.json)"
           days=$(( ( $(date --utc +%s) - $timestamp ) / 86400 ))
           rm -f $HOME/commit.json
