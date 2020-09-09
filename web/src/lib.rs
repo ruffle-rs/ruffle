@@ -28,6 +28,7 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerEvent;
 use ruffle_web_common::JsResult;
 use std::collections::BTreeMap;
+use std::sync::Once;
 use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
@@ -35,6 +36,8 @@ use web_sys::{
     AddEventListenerOptions, Element, EventTarget, HtmlCanvasElement, HtmlElement, KeyboardEvent,
     PointerEvent, WheelEvent,
 };
+
+static RUFFLE_GLOBAL_PANIC: Once = Once::new();
 
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
@@ -76,6 +79,9 @@ extern "C" {
 
     #[wasm_bindgen(method)]
     fn on_callback_available(this: &JavascriptPlayer, name: &str);
+
+    #[wasm_bindgen(method)]
+    fn panic(this: &JavascriptPlayer);
 }
 
 struct JavascriptInterface {
@@ -96,6 +102,12 @@ impl Ruffle {
         js_player: JavascriptPlayer,
         allow_script_access: bool,
     ) -> Result<Ruffle, JsValue> {
+        if RUFFLE_GLOBAL_PANIC.is_completed() {
+            // If an actual panic happened, then we can't trust the state it left us in.
+            // Prevent future players from loading so that they can inform the user about the error.
+            return Err("Ruffle is panicking!".into());
+        }
+        set_panic_handler();
         Ruffle::new_internal(parent, js_player, allow_script_access)
             .map_err(|_| "Error creating player".into())
     }
@@ -218,7 +230,6 @@ impl Ruffle {
         js_player: JavascriptPlayer,
         allow_script_access: bool,
     ) -> Result<Ruffle, Box<dyn Error>> {
-        console_error_panic_hook::set_once();
         let _ = console_log::init_with_level(log::Level::Trace);
 
         let window = web_sys::window().ok_or("Expected window")?;
@@ -817,4 +828,22 @@ fn create_renderer(
     }
 
     Err("Unable to create renderer".into())
+}
+
+pub fn set_panic_handler() {
+    static HOOK_HAS_BEEN_SET: Once = Once::new();
+    HOOK_HAS_BEEN_SET.call_once(|| {
+        std::panic::set_hook(Box::new(|info| {
+            RUFFLE_GLOBAL_PANIC.call_once(|| {
+                let _ = INSTANCES.try_with(|instances| {
+                    if let Ok(instances) = instances.try_borrow() {
+                        for (_, instance) in instances.iter() {
+                            instance.js_player.panic();
+                        }
+                    }
+                });
+                console_error_panic_hook::hook(info);
+            });
+        }));
+    });
 }

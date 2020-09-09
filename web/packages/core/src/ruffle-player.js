@@ -126,7 +126,11 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      */
     async ensure_fresh_instance() {
         if (this.instance) {
-            this.instance.destroy();
+            try {
+                this.instance.destroy();
+            } catch (e) {
+                console.warn("Error destroying old ruffle player:", e);
+            }
             this.instance = null;
             console.log("Ruffle instance destroyed.");
         }
@@ -286,6 +290,28 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      */
     set trace_observer(observer) {
         this.instance.set_trace_observer(observer);
+    }
+
+    /*
+     * Panics this specific player, forcefully destroying all resources and displays an error message to the user.
+     *
+     * This should be called when something went absolutely, incredibly and disastrously wrong and there is no chance
+     * of recovery.
+     *
+     * Ruffle will attempt to isolate all damage to this specific player instance, but no guarantees can be made if there
+     * was a core issue which triggered the panic. If Ruffle is unable to isolate the cause to a specific player, then
+     * all players will panic and Ruffle will become "poisoned" - no more players will run on this page until it is
+     * reloaded fresh.
+     */
+    panic() {
+        if (this.instance) {
+            try {
+                this.instance.destroy();
+            } catch (e) {
+                console.error("Whilst panicking ruffle, an additional error was encountered during destruction:", e);
+            }
+            this.instance = null;
+        }
     }
 };
 
