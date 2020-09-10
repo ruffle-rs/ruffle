@@ -46,6 +46,46 @@ ruffle_shadow_tmpl.innerHTML = `
         #play_button:hover .icon {
             filter: brightness(1.3);
         }
+
+        #panic {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            /* Inverted colours from play button! */
+            background: linear-gradient(180deg, rgba(253,58,64,1) 0%, rgba(253,161,56,1) 100%);
+            color: black;
+        }
+    
+        #panic a {
+            color: #37528C;
+        }
+    
+        #panic-title {
+            margin-top: 5%;
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+        }
+    
+        #panic-body {
+            margin: 5%;
+            text-align: center;
+            font-size: 20px;
+        }
+    
+        #panic ul {
+            margin: 35px 0 0 0;
+            padding: 0;
+            max-width: 100%;
+            display: flex;
+            list-style-type: none;
+            justify-content: center;
+            align-items: center;
+        }
+    
+        #panic li {
+            padding: 10px 50px;
+        }
     </style>
     <style id="dynamic_styles"></style>
 
