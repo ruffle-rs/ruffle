@@ -135,8 +135,9 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             console.log("Ruffle instance destroyed.");
         }
 
-        let Ruffle = await this.Ruffle.catch(function (e) {
+        let Ruffle = await this.Ruffle.catch((e) => {
             console.error("Serious error loading Ruffle: " + e);
+            this.panic();
             throw e;
         });
 
@@ -175,7 +176,8 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 );
             }
         } catch (err) {
-            console.error("Serious error occured loading SWF file: " + err);
+            console.error("Serious error occurred loading SWF file: " + err);
+            this.panic();
             throw err;
         }
     }
@@ -201,20 +203,26 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * @param {String} url The URL to stream.
      */
     async play_swf_data(data) {
-        if (this.isConnected && !this.is_unused_fallback_object()) {
-            console.log("Got SWF data");
+        try {
+            if (this.isConnected && !this.is_unused_fallback_object()) {
+                console.log("Got SWF data");
 
-            await this.ensure_fresh_instance();
-            this.instance.load_data(new Uint8Array(data));
-            console.log("New Ruffle instance created.");
+                await this.ensure_fresh_instance();
+                this.instance.load_data(new Uint8Array(data));
+                console.log("New Ruffle instance created.");
 
-            if (this.play_button) {
-                this.play_button.style.display = "block";
+                if (this.play_button) {
+                    this.play_button.style.display = "block";
+                }
+            } else {
+                console.warn(
+                    "Ignoring attempt to play a disconnected or suspended Ruffle element"
+                );
             }
-        } else {
-            console.warn(
-                "Ignoring attempt to play a disconnected or suspended Ruffle element"
-            );
+        } catch (err) {
+            console.error("Serious error occurred loading SWF file: " + err);
+            this.panic();
+            throw err;
         }
     }
 
@@ -308,10 +316,27 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             try {
                 this.instance.destroy();
             } catch (e) {
-                console.error("Whilst panicking ruffle, an additional error was encountered during destruction:", e);
+                console.error(
+                    "Whilst panicking ruffle, an additional error was encountered during destruction:",
+                    e
+                );
             }
             this.instance = null;
         }
+        // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
+        this.container.innerHTML = `
+            <div id="panic">
+                <div id="panic-title">Something went wrong :(</div>
+                <div id="panic-body">
+                    <p>Ruffle has encountered a major issue whilst trying to display this Flash content.</p>
+                    <p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>
+                    <ul>
+                        <li><a href="https://github.com/ruffle-rs/ruffle/issues/new">report bug</a></li>
+                        <!--li><a href="#">view error details</a></li-->
+                    </ul>
+                </div>
+            </div>
+        `;
     }
 };
 
