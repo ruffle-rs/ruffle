@@ -92,7 +92,7 @@ module.exports = class RuffleObject extends RufflePlayer {
             let has_movie = false;
             let params = elem.getElementsByTagName("param");
             for (let i = 0; i < params.length; i++) {
-                if (params[i].name == "movie" && params[i].value) {
+                if (params[i].name === "movie" && params[i].value) {
                     has_movie = true;
                 }
             }
@@ -103,8 +103,8 @@ module.exports = class RuffleObject extends RufflePlayer {
         if (
             elem.type.toLowerCase() === FLASH_MIMETYPE.toLowerCase() ||
             elem.type.toLowerCase() === FUTURESPLASH_MIMETYPE.toLowerCase() ||
-            elem.type.toLowerCase() == FLASH7_AND_8_MIMETYPE.toLowerCase() ||
-            elem.type.toLowerCase() == FLASH_MOVIE_MIMETYPE.toLowerCase()
+            elem.type.toLowerCase() === FLASH7_AND_8_MIMETYPE.toLowerCase() ||
+            elem.type.toLowerCase() === FLASH_MOVIE_MIMETYPE.toLowerCase()
         ) {
             return true;
         } else if (

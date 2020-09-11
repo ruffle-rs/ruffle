@@ -54,8 +54,8 @@ module.exports = class RuffleEmbed extends RufflePlayer {
         if (
             elem.type.toLowerCase() === FLASH_MIMETYPE.toLowerCase() ||
             elem.type.toLowerCase() === FUTURESPLASH_MIMETYPE.toLowerCase() ||
-            elem.type.toLowerCase() == FLASH7_AND_8_MIMETYPE.toLowerCase() ||
-            elem.type.toLowerCase() == FLASH_MOVIE_MIMETYPE.toLowerCase()
+            elem.type.toLowerCase() === FLASH7_AND_8_MIMETYPE.toLowerCase() ||
+            elem.type.toLowerCase() === FLASH_MOVIE_MIMETYPE.toLowerCase()
         ) {
             return true;
         } else if (elem.type === undefined || elem.type === "") {

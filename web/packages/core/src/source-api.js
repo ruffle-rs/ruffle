@@ -46,15 +46,20 @@ exports.SourceAPI = class SourceAPI {
     /**
      * Create a Ruffle player element using this particular version of Ruffle.
      *
+     * @param {Object} [options] The configuration for this Ruffle instance.
+     *
      * @returns {RufflePlayer} The player element. This is a DOM element that
      * may be inserted into the current page as you wish.
      */
-    create_player() {
+    create_player(options) {
         let player_element_name = register_element(
             "ruffle-player",
             RufflePlayer
         );
         let player = document.createElement(player_element_name);
+        if (typeof options === "object" && options !== null) {
+            player.user_config = options;
+        }
 
         return player;
     }

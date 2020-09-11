@@ -43,14 +43,109 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 self.play_button_clicked.bind(self)
             );
         }
+        self.unmute_overlay = self.shadow.getElementById("unmute_overlay");
+        if (self.unmute_overlay) {
+            self.unmute_overlay.addEventListener(
+                "click",
+                self.unmute_overlay_clicked.bind(self)
+            );
+        }
 
         self.instance = null;
         self.allow_script_access = false;
+        self.user_config = null;
+        self._applied_config = null;
         self._trace_observer = null;
 
         self.Ruffle = load_ruffle();
 
         return self;
+    }
+
+    set_user_config() {
+        // Set the default config.
+        let config = (this._applied_config = {
+            autoplay: "auto",
+            displayUnmuteOverlay: "on",
+        });
+
+        // Get the global user config if specified.
+        let global_player = window.RufflePlayer;
+        if (global_player && global_player.config) {
+            let global_config = global_player.config;
+            for (let option in config) {
+                if (
+                    Object.prototype.hasOwnProperty.call(config, option) &&
+                    Object.prototype.hasOwnProperty.call(global_config, option)
+                ) {
+                    config[option] = global_config[option];
+                }
+            }
+        }
+
+        // Get the user config for the current file if specified, this is only possible using the JS API.
+        if (this.user_config !== null) {
+            let user_config = this.user_config;
+            for (let option in config) {
+                if (
+                    Object.prototype.hasOwnProperty.call(config, option) &&
+                    Object.prototype.hasOwnProperty.call(user_config, option)
+                ) {
+                    config[option] = user_config[option];
+                }
+            }
+        }
+
+        // Apply the config to the different options.
+        this.set_autoplay_config(config.autoplay);
+        this.set_unmuteoverlay_config(config.displayUnmuteOverlay);
+    }
+
+    set_autoplay_config(behavior) {
+        let applied_config = this._applied_config;
+        applied_config.autoplay = false;
+        switch (behavior) {
+            case "auto":
+            default:
+                if (this.audio_state() === "running") {
+                    applied_config.autoplay = true;
+                }
+                break;
+            case "on":
+                applied_config.autoplay = true;
+                break;
+            case "off":
+                break;
+        }
+    }
+
+    set_unmuteoverlay_config(behavior) {
+        let applied_config = this._applied_config;
+        applied_config.displayUnmuteOverlay = false;
+        switch (behavior) {
+            case "on":
+            default:
+                if (
+                    this.unmute_overlay &&
+                    applied_config.autoplay &&
+                    this.audio_state() !== "running"
+                ) {
+                    this.unmute_overlay.style.display = "block";
+                    let self = this;
+                    let audio_context = this.instance && this.instance.audio_context();
+                    if (audio_context) {
+                        audio_context.onstatechange = function () {
+                            if (this.state === "running") {
+                                self.unmute_overlay_clicked();
+                            }
+                            this.onstatechange = null;
+                        };
+                    }
+                }
+                break;
+            case "off":
+                break;
+        }
     }
 
     connectedCallback() {
@@ -158,6 +253,13 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             this,
             this.allow_script_access
         );
+        if (this._applied_config.autoplay) {
+            this.play_button_clicked(this);
+        } else {
+            if (this.play_button) {
+                this.play_button.style.display = "block";
+            }
+        }
         console.log("New Ruffle instance created.");
     }
 
@@ -180,16 +282,13 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             if (this.isConnected && !this.is_unused_fallback_object()) {
                 console.log("Loading SWF file " + url);
 
+                this.set_user_config();
                 await this.ensure_fresh_instance();
                 parameters = {
                     ...sanitize_parameters(url.substring(url.indexOf("?"))),
                     ...sanitize_parameters(parameters),
                 };
                 this.instance.stream_from(url, parameters);
-
-                if (this.play_button) {
-                    this.play_button.style.display = "block";
-                }
             } else {
                 console.warn(
                     "Ignoring attempt to play a disconnected or suspended Ruffle element"
@@ -220,6 +319,28 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         }
     }
 
+    audio_state() {
+        if (this.instance) {
+            let audio_context = this.instance.audio_context();
+            return (audio_context && audio_context.state) || "running";
+        }
+        return "suspended";
+    }
+
+    unmute_overlay_clicked() {
+        if (this.instance) {
+            if (this.audio_state() !== "running") {
+                let audio_context = this.instance.audio_context();
+                if (audio_context) {
+                    audio_context.resume();
+                }
+            }
+            if (this.unmute_overlay) {
+                this.unmute_overlay.style.display = "none";
+            }
+        }
+    }
+
     /**
      * Load a movie's data into this Ruffle Player instance.
      *
@@ -229,7 +350,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * Please note that by doing this, no URL information will be provided to
      * the movie being loaded.
      *
-     * @param {String} url The URL to stream.
+     * @param {String} data The data to decode.
      * @param {URLSearchParams|String|Object} [parameters] The parameters (also known as "flashvars") to load the movie with.
      * If it's a string, it will be decoded into an object.
      * If it's an object, every key and value must be a String.
@@ -239,16 +360,13 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             if (this.isConnected && !this.is_unused_fallback_object()) {
                 console.log("Got SWF data");
 
+                this.set_user_config();
                 await this.ensure_fresh_instance();
                 this.instance.load_data(
                     new Uint8Array(data),
                     sanitize_parameters(parameters)
                 );
                 console.log("New Ruffle instance created.");
-
-                if (this.play_button) {
-                    this.play_button.style.display = "block";
-                }
             } else {
                 console.warn(
                     "Ignoring attempt to play a disconnected or suspended Ruffle element"
