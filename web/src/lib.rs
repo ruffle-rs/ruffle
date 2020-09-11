@@ -43,7 +43,7 @@ thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
     /// This gives us a clear boundary between the JS side and Rust side, avoiding
     /// issues with lifetimes and type paramters (which cannot be exported with wasm-bindgen).
-    static INSTANCES: RefCell<Arena<RuffleInstance>> = RefCell::new(Arena::new());
+    static INSTANCES: RefCell<Arena<RefCell<RuffleInstance>>> = RefCell::new(Arena::new());
 
     static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static, 'static>>> = RefCell::new(None);
 }
@@ -118,7 +118,7 @@ impl Ruffle {
     pub fn stream_from(&mut self, movie_url: &str) {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
-            let instance = instances.get(self.0).unwrap();
+            let instance = instances.get(self.0).unwrap().borrow();
             instance.core.lock().unwrap().fetch_root_movie(movie_url);
         });
     }
@@ -136,7 +136,7 @@ impl Ruffle {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
-            instance.core.lock().unwrap().set_root_movie(movie);
+            instance.borrow().core.lock().unwrap().set_root_movie(movie);
         });
 
         Ok(())
@@ -147,23 +147,22 @@ impl Ruffle {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
-            instance.core.lock().unwrap().set_is_playing(true);
+            instance.borrow().core.lock().unwrap().set_is_playing(true);
             log::info!("PLAY!");
         });
     }
 
     pub fn destroy(&mut self) -> Result<(), JsValue> {
         // Remove instance from the active list.
-        if let Some(mut instance) = INSTANCES.with(|instances| {
+        if let Some(instance) = INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
             instances.remove(self.0)
         }) {
+            let mut instance = instance.borrow_mut();
             instance.canvas.remove();
 
             // Stop all audio playing from the instance
-            let mut player = instance.core.lock().unwrap();
-            let audio = player.audio_mut();
-            audio.stop_all_sounds();
+            instance.core.lock().unwrap().audio_mut().stop_all_sounds();
 
             // Clean up all event listeners.
             instance.key_down_callback = None;
@@ -204,7 +203,7 @@ impl Ruffle {
         INSTANCES.with(move |instances| {
             if let Ok(instances) = instances.try_borrow() {
                 if let Some(instance) = instances.get(self.0) {
-                    if let Ok(mut player) = instance.core.try_lock() {
+                    if let Ok(mut player) = instance.borrow().core.try_lock() {
                         return external_to_js_value(player.call_internal_interface(name, args));
                     }
                 }
@@ -215,9 +214,9 @@ impl Ruffle {
 
     pub fn set_trace_observer(&self, observer: JsValue) {
         INSTANCES.with(move |instances| {
-            if let Ok(mut instances) = instances.try_borrow_mut() {
-                if let Some(instance) = instances.get_mut(self.0) {
-                    *instance.trace_observer.borrow_mut() = observer;
+            if let Ok(instances) = instances.try_borrow() {
+                if let Some(instance) = instances.get(self.0) {
+                    *instance.borrow_mut().trace_observer.borrow_mut() = observer;
                 }
             }
         })
@@ -295,30 +294,30 @@ impl Ruffle {
 
         // Register the instance and create the animation frame closure.
         let mut ruffle = INSTANCES.with(move |instances| {
-            let mut instances = instances.borrow_mut();
-            let index = instances.insert(instance);
+            let index = instances.borrow_mut().insert(RefCell::new(instance));
+            let instances = instances.borrow();
             let ruffle = Ruffle(index);
 
             // Create the external interface
             if allow_script_access {
-                let instance = instances.get_mut(index).unwrap();
+                let instance = instances.get(index).unwrap();
+                let player = instance.borrow().js_player.clone();
                 instance
+                    .borrow()
                     .core
                     .lock()
                     .unwrap()
-                    .add_external_interface(Box::new(JavascriptInterface::new(
-                        instance.js_player.clone(),
-                    )));
+                    .add_external_interface(Box::new(JavascriptInterface::new(player)));
             }
 
             // Create the animation frame closure.
             {
                 let mut ruffle = ruffle.clone();
-                let instance = instances.get_mut(index).unwrap();
-                instance.animation_handler = Some(Closure::wrap(Box::new(move |timestamp: f64| {
-                    ruffle.tick(timestamp);
-                })
-                    as Box<dyn FnMut(f64)>));
+                let instance = instances.get(index).unwrap();
+                instance.borrow_mut().animation_handler =
+                    Some(Closure::wrap(Box::new(move |timestamp: f64| {
+                        ruffle.tick(timestamp);
+                    }) as Box<dyn FnMut(f64)>));
             }
 
             // Create mouse move handler.
@@ -327,6 +326,7 @@ impl Ruffle {
                     INSTANCES.with(move |instances| {
                         let instances = instances.borrow();
                         if let Some(instance) = instances.get(index) {
+                            let instance = instance.borrow();
                             let event = PlayerEvent::MouseMove {
                                 x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
                                 y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
@@ -346,27 +346,28 @@ impl Ruffle {
                         mouse_move_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
-                let instance = instances.get_mut(index).unwrap();
-                instance.mouse_move_callback = Some(mouse_move_callback);
+                let instance = instances.get(index).unwrap();
+                instance.borrow_mut().mouse_move_callback = Some(mouse_move_callback);
             }
 
             // Create mouse down handler.
             {
                 let mouse_down_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
                     INSTANCES.with(move |instances| {
-                        let mut instances = instances.borrow_mut();
-                        if let Some(instance) = instances.get_mut(index) {
-                            instance.has_focus = true;
+                        let instances = instances.borrow();
+                        if let Some(instance) = instances.get(index) {
+                            instance.borrow_mut().has_focus = true;
                             if let Some(target) = js_event.current_target() {
                                 let _ = target
                                     .unchecked_ref::<Element>()
                                     .set_pointer_capture(js_event.pointer_id());
                             }
+                            let device_pixel_ratio = instance.borrow().device_pixel_ratio;
                             let event = PlayerEvent::MouseDown {
-                                x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
-                                y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
+                                x: f64::from(js_event.offset_x()) * device_pixel_ratio,
+                                y: f64::from(js_event.offset_y()) * device_pixel_ratio,
                             };
-                            instance.core.lock().unwrap().handle_event(event);
+                            instance.borrow().core.lock().unwrap().handle_event(event);
                             js_event.prevent_default();
                         }
                     });
@@ -379,8 +380,8 @@ impl Ruffle {
                         mouse_down_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
-                let instance = instances.get_mut(index).unwrap();
-                instance.mouse_down_callback = Some(mouse_down_callback);
+                let instance = instances.get(index).unwrap();
+                instance.borrow_mut().mouse_down_callback = Some(mouse_down_callback);
             }
 
             // Create window mouse down handler.
@@ -388,11 +389,11 @@ impl Ruffle {
                 let window_mouse_down_callback =
                     Closure::wrap(Box::new(move |_js_event: PointerEvent| {
                         INSTANCES.with(|instances| {
-                            let mut instances = instances.borrow_mut();
-                            if let Some(instance) = instances.get_mut(index) {
+                            let instances = instances.borrow();
+                            if let Some(instance) = instances.get(index) {
                                 // If we actually clicked on the canvas, this will be reset to true
                                 // after the event bubbles down to the canvas.
-                                instance.has_focus = false;
+                                instance.borrow_mut().has_focus = false;
                             }
                         });
                     }) as Box<dyn FnMut(PointerEvent)>);
@@ -404,8 +405,8 @@ impl Ruffle {
                         true, // Use capture so this first *before* the canvas mouse down handler.
                     )
                     .unwrap();
-                let instance = instances.get_mut(index).unwrap();
-                instance.window_mouse_down_callback = Some(window_mouse_down_callback);
+                let instance = instances.get(index).unwrap();
+                instance.borrow_mut().window_mouse_down_callback = Some(window_mouse_down_callback);
             }
 
             // Create mouse up handler.
@@ -414,6 +415,7 @@ impl Ruffle {
                     INSTANCES.with(move |instances| {
                         let instances = instances.borrow();
                         if let Some(instance) = instances.get(index) {
+                            let instance = instance.borrow();
                             if let Some(target) = js_event.current_target() {
                                 let _ = target
                                     .unchecked_ref::<Element>()
@@ -438,8 +440,8 @@ impl Ruffle {
                         mouse_up_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
-                let instance = instances.get_mut(index).unwrap();
-                instance.mouse_up_callback = Some(mouse_up_callback);
+                let instance = instances.get(index).unwrap();
+                instance.borrow_mut().mouse_up_callback = Some(mouse_up_callback);
             }
 
             // Create mouse wheel handler.
@@ -457,9 +459,10 @@ impl Ruffle {
                                 }
                                 _ => return,
                             };
-                            let mut core = instance.core.lock().unwrap();
-                            core.handle_event(PlayerEvent::MouseWheel { delta });
-                            if core.should_prevent_scrolling() {
+                            let core = &instance.borrow().core;
+                            let mut core_lock = core.lock().unwrap();
+                            core_lock.handle_event(PlayerEvent::MouseWheel { delta });
+                            if core_lock.should_prevent_scrolling() {
                                 js_event.prevent_default();
                             }
                         }
@@ -476,8 +479,8 @@ impl Ruffle {
                         &options,
                     )
                     .unwrap();
-                let instance = instances.get_mut(index).unwrap();
-                instance.mouse_wheel_callback = Some(mouse_wheel_callback);
+                let instance = instances.get(index).unwrap();
+                instance.borrow_mut().mouse_wheel_callback = Some(mouse_wheel_callback);
             }
 
             // Create keydown event handler.
@@ -485,9 +488,10 @@ impl Ruffle {
                 let key_down_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
                     INSTANCES.with(|instances| {
                         if let Some(instance) = instances.borrow().get(index) {
-                            if instance.has_focus {
+                            if instance.borrow().has_focus {
                                 let code = js_event.code();
                                 instance
+                                    .borrow()
                                     .core
                                     .lock()
                                     .unwrap()
@@ -500,6 +504,7 @@ impl Ruffle {
                                     input::web_key_to_codepoint(&js_event.key())
                                 {
                                     instance
+                                        .borrow()
                                         .core
                                         .lock()
                                         .unwrap()
@@ -508,6 +513,7 @@ impl Ruffle {
 
                                 if let Some(key_code) = input::web_to_ruffle_key_code(&code) {
                                     instance
+                                        .borrow()
                                         .core
                                         .lock()
                                         .unwrap()
@@ -527,8 +533,8 @@ impl Ruffle {
                         key_down_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
-                let instance = instances.get_mut(index).unwrap();
-                instance.key_down_callback = Some(key_down_callback);
+                let instance = instances.get(index).unwrap();
+                instance.borrow_mut().key_down_callback = Some(key_down_callback);
             }
 
             {
@@ -536,9 +542,10 @@ impl Ruffle {
                     js_event.prevent_default();
                     INSTANCES.with(|instances| {
                         if let Some(instance) = instances.borrow().get(index) {
-                            if instance.has_focus {
+                            if instance.borrow().has_focus {
                                 let code = js_event.code();
                                 instance
+                                    .borrow()
                                     .core
                                     .lock()
                                     .unwrap()
@@ -549,6 +556,7 @@ impl Ruffle {
 
                                 if let Some(key_code) = input::web_to_ruffle_key_code(&code) {
                                     instance
+                                        .borrow()
                                         .core
                                         .lock()
                                         .unwrap()
@@ -567,7 +575,7 @@ impl Ruffle {
                         key_up_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
-                let instance = instances.get_mut(index).unwrap();
+                let mut instance = instances.get(index).unwrap().borrow_mut();
                 instance.key_up_callback = Some(key_up_callback);
             }
 
@@ -582,49 +590,54 @@ impl Ruffle {
 
     fn tick(&mut self, timestamp: f64) {
         INSTANCES.with(|instances| {
-            let mut instances = instances.borrow_mut();
-            if let Some(instance) = instances.get_mut(self.0) {
+            let instances = instances.borrow();
+            if let Some(instance) = instances.get(self.0) {
                 let window = web_sys::window().unwrap();
 
+                let mut mut_instance = instance.borrow_mut();
                 // Calculate the dt from last tick.
-                let dt = if let Some(prev_timestamp) = instance.timestamp {
-                    instance.timestamp = Some(timestamp);
+                let dt = if let Some(prev_timestamp) = mut_instance.timestamp {
+                    mut_instance.timestamp = Some(timestamp);
                     timestamp - prev_timestamp
                 } else {
                     // Store the timestamp from the initial tick.
                     // (I tried to use Performance.now() to get the initial timestamp,
                     // but this didn't seem to be accurate and caused negative dts on
                     // Chrome.)
-                    instance.timestamp = Some(timestamp);
+                    mut_instance.timestamp = Some(timestamp);
                     0.0
                 };
+                drop(mut_instance);
 
-                let mut core_lock = instance.core.lock().unwrap();
+                let core = instance.borrow().core.clone();
+                let mut core_lock = core.lock().unwrap();
                 core_lock.tick(dt);
                 let mut needs_render = core_lock.needs_render();
 
                 // Check for canvas resize.
-                let canvas_width = instance.canvas.client_width();
-                let canvas_height = instance.canvas.client_height();
+                let canvas = instance.borrow().canvas.to_owned();
+                let canvas_width = canvas.client_width();
+                let canvas_height = canvas.client_height();
                 let device_pixel_ratio = window.device_pixel_ratio(); // Changes via user zooming.
-                if instance.canvas_width != canvas_width
-                    || instance.canvas_height != canvas_height
-                    || (instance.device_pixel_ratio - device_pixel_ratio).abs() >= std::f64::EPSILON
+                if instance.borrow().canvas_width != canvas_width
+                    || instance.borrow().canvas_height != canvas_height
+                    || (instance.borrow().device_pixel_ratio - device_pixel_ratio).abs()
+                        >= std::f64::EPSILON
                 {
+                    let mut mut_instance = instance.borrow_mut();
                     // If a canvas resizes, it's drawing context will get scaled. You must reset
                     // the width and height attributes of the canvas element to recreate the context.
                     // (NOT the CSS width/height!)
-                    instance.canvas_width = canvas_width;
-                    instance.canvas_height = canvas_height;
-                    instance.device_pixel_ratio = device_pixel_ratio;
+                    mut_instance.canvas_width = canvas_width;
+                    mut_instance.canvas_height = canvas_height;
+                    mut_instance.device_pixel_ratio = device_pixel_ratio;
+                    drop(mut_instance);
 
                     // The actual viewport is scaled by DPI, bigger than CSS pixels.
-                    let viewport_width =
-                        (f64::from(canvas_width) * instance.device_pixel_ratio) as u32;
-                    let viewport_height =
-                        (f64::from(canvas_height) * instance.device_pixel_ratio) as u32;
-                    instance.canvas.set_width(viewport_width);
-                    instance.canvas.set_height(viewport_height);
+                    let viewport_width = (f64::from(canvas_width) * device_pixel_ratio) as u32;
+                    let viewport_height = (f64::from(canvas_height) * device_pixel_ratio) as u32;
+                    canvas.set_width(viewport_width);
+                    canvas.set_height(viewport_height);
 
                     core_lock.set_viewport_dimensions(viewport_width, viewport_height);
                     core_lock
@@ -640,6 +653,7 @@ impl Ruffle {
                 }
 
                 // Request next animation frame.
+                let mut instance = instance.borrow_mut();
                 if let Some(handler) = &instance.animation_handler {
                     let window = web_sys::window().unwrap();
                     let id = window
@@ -835,14 +849,16 @@ pub fn set_panic_handler() {
     HOOK_HAS_BEEN_SET.call_once(|| {
         std::panic::set_hook(Box::new(|info| {
             RUFFLE_GLOBAL_PANIC.call_once(|| {
+                console_error_panic_hook::hook(info);
                 let _ = INSTANCES.try_with(|instances| {
                     if let Ok(instances) = instances.try_borrow() {
                         for (_, instance) in instances.iter() {
-                            instance.js_player.panic();
+                            if let Ok(instance) = instance.try_borrow() {
+                                instance.js_player.panic();
+                            }
                         }
                     }
                 });
-                console_error_panic_hook::hook(info);
             });
         }));
     });
