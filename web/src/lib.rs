@@ -117,8 +117,8 @@ impl Ruffle {
     /// This method should only be called once per player.
     pub fn stream_from(&mut self, movie_url: &str) {
         INSTANCES.with(|instances| {
-            let mut instances = instances.borrow_mut();
-            let instance = instances.get_mut(self.0).unwrap();
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
             instance.core.lock().unwrap().fetch_root_movie(movie_url);
         });
     }
@@ -134,8 +134,8 @@ impl Ruffle {
         });
 
         INSTANCES.with(|instances| {
-            let mut instances = instances.borrow_mut();
-            let instance = instances.get_mut(self.0).unwrap();
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
             instance.core.lock().unwrap().set_root_movie(movie);
         });
 
@@ -145,8 +145,8 @@ impl Ruffle {
     pub fn play(&mut self) {
         // Remove instance from the active list.
         INSTANCES.with(|instances| {
-            let mut instances = instances.borrow_mut();
-            let instance = instances.get_mut(self.0).unwrap();
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
             instance.core.lock().unwrap().set_is_playing(true);
             log::info!("PLAY!");
         });
@@ -202,8 +202,8 @@ impl Ruffle {
         }
 
         INSTANCES.with(move |instances| {
-            if let Ok(mut instances) = instances.try_borrow_mut() {
-                if let Some(instance) = instances.get_mut(self.0) {
+            if let Ok(instances) = instances.try_borrow() {
+                if let Some(instance) = instances.get(self.0) {
                     if let Ok(mut player) = instance.core.try_lock() {
                         return external_to_js_value(player.call_internal_interface(name, args));
                     }
@@ -325,8 +325,8 @@ impl Ruffle {
             {
                 let mouse_move_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
                     INSTANCES.with(move |instances| {
-                        let mut instances = instances.borrow_mut();
-                        if let Some(instance) = instances.get_mut(index) {
+                        let instances = instances.borrow();
+                        if let Some(instance) = instances.get(index) {
                             let event = PlayerEvent::MouseMove {
                                 x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
                                 y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
@@ -412,8 +412,8 @@ impl Ruffle {
             {
                 let mouse_up_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
                     INSTANCES.with(move |instances| {
-                        let mut instances = instances.borrow_mut();
-                        if let Some(instance) = instances.get_mut(index) {
+                        let instances = instances.borrow();
+                        if let Some(instance) = instances.get(index) {
                             if let Some(target) = js_event.current_target() {
                                 let _ = target
                                     .unchecked_ref::<Element>()
@@ -446,8 +446,8 @@ impl Ruffle {
             {
                 let mouse_wheel_callback = Closure::wrap(Box::new(move |js_event: WheelEvent| {
                     INSTANCES.with(move |instances| {
-                        let mut instances = instances.borrow_mut();
-                        if let Some(instance) = instances.get_mut(index) {
+                        let instances = instances.borrow();
+                        if let Some(instance) = instances.get(index) {
                             let delta = match js_event.delta_mode() {
                                 WheelEvent::DOM_DELTA_LINE => {
                                     MouseWheelDelta::Lines(-js_event.delta_y())
@@ -484,7 +484,7 @@ impl Ruffle {
             {
                 let key_down_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
                     INSTANCES.with(|instances| {
-                        if let Some(instance) = instances.borrow_mut().get_mut(index) {
+                        if let Some(instance) = instances.borrow().get(index) {
                             if instance.has_focus {
                                 let code = js_event.code();
                                 instance
@@ -535,7 +535,7 @@ impl Ruffle {
                 let key_up_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
                     js_event.prevent_default();
                     INSTANCES.with(|instances| {
-                        if let Some(instance) = instances.borrow_mut().get_mut(index) {
+                        if let Some(instance) = instances.borrow().get(index) {
                             if instance.has_focus {
                                 let code = js_event.code();
                                 instance
