@@ -152,7 +152,7 @@ impl Ruffle {
         });
     }
 
-    pub fn destroy(&mut self) -> Result<(), JsValue> {
+    pub fn destroy(&mut self) {
         // Remove instance from the active list.
         if let Some(instance) = INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
@@ -175,13 +175,12 @@ impl Ruffle {
             // Cancel the animation handler, if it's still active.
             if let Some(id) = instance.animation_handler_id {
                 if let Some(window) = web_sys::window() {
-                    return window.cancel_animation_frame(id.into());
+                    let _ = window.cancel_animation_frame(id.into());
                 }
             }
         }
 
         // Player is dropped at this point.
-        Ok(())
     }
 
     #[allow(clippy::boxed_local)] // for js_bind
