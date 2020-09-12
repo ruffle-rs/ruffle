@@ -33,7 +33,7 @@ ruffle_web_common = { path = "common" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 url = "2.1.1"
 wasm-bindgen = "0.2.65"
-wasm-bindgen-futures = "0.4.17"
+wasm-bindgen-futures = "0.4.18"
 chrono = { version = "0.4", features = ["wasmbind"] }
 
 [dependencies.ruffle_core]
