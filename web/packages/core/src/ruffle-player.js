@@ -126,11 +126,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      */
     async ensure_fresh_instance() {
         if (this.instance) {
-            try {
-                this.instance.destroy();
-            } catch (e) {
-                console.warn("Error destroying old ruffle player:", e);
-            }
+            this.instance.destroy();
             this.instance = null;
             console.log("Ruffle instance destroyed.");
         }
@@ -313,14 +309,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      */
     panic() {
         if (this.instance) {
-            try {
-                this.instance.destroy();
-            } catch (e) {
-                console.error(
-                    "Whilst panicking ruffle, an additional error was encountered during destruction:",
-                    e
-                );
-            }
+            this.instance.destroy();
             this.instance = null;
         }
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
