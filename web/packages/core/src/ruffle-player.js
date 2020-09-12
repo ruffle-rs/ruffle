@@ -133,7 +133,6 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
 
         let Ruffle = await this.Ruffle.catch((e) => {
             console.error("Serious error loading Ruffle: " + e);
-            this.panic();
             throw e;
         });
 
@@ -173,7 +172,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             }
         } catch (err) {
             console.error("Serious error occurred loading SWF file: " + err);
-            this.panic();
+            this.panic(err);
             throw err;
         }
     }
@@ -217,7 +216,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             }
         } catch (err) {
             console.error("Serious error occurred loading SWF file: " + err);
-            this.panic();
+            this.panic(err);
             throw err;
         }
     }
@@ -307,11 +306,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * all players will panic and Ruffle will become "poisoned" - no more players will run on this page until it is
      * reloaded fresh.
      */
-    panic() {
-        if (this.instance) {
-            this.instance.destroy();
-            this.instance = null;
-        }
+    panic(error) {
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         this.container.innerHTML = `
             <div id="panic">
@@ -319,13 +314,56 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 <div id="panic-body">
                     <p>Ruffle has encountered a major issue whilst trying to display this Flash content.</p>
                     <p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>
+                </div>
+                <div id="panic-footer">
                     <ul>
                         <li><a href="https://github.com/ruffle-rs/ruffle/issues/new">report bug</a></li>
-                        <!--li><a href="#">view error details</a></li-->
+                        <li><a href="#" id="panic-view-details">view error details</a></li>
                     </ul>
                 </div>
             </div>
         `;
+        this.container.querySelector("#panic-view-details").onclick = () => {
+            let error_text = "# Error Info\n";
+
+            if (error instanceof Error) {
+                error_text += `Error name: ${error.name}\n`;
+                error_text += `Error message: ${error.message}\n`;
+                if (error.stack) {
+                    error_text += `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`;
+                }
+            } else {
+                error_text += `Error: ${error}\n`;
+            }
+
+            error_text += "\n# Player Info\n";
+            error_text += this.debug_player_info();
+
+            error_text += "\n# Page Info\n";
+            error_text += `Page URL: ${document.location.href}\n`;
+
+            error_text += "\n# Browser Info\n";
+            error_text += `Useragent: ${window.navigator.userAgent}\n`;
+            error_text += `OS: ${window.navigator.platform}\n`;
+
+            error_text += "\n# Ruffle Info\n";
+            error_text += `Ruffle version: ${window.RufflePlayer.version}\n`;
+            error_text += `Ruffle source: ${window.RufflePlayer.name}\n`;
+            this.container.querySelector(
+                "#panic-body"
+            ).innerHTML = `<textarea>${error_text}</textarea>`;
+            return false;
+        };
+
+        // Do this last, just in case it causes any cascading issues.
+        if (this.instance) {
+            this.instance.destroy();
+            this.instance = null;
+        }
+    }
+
+    debug_player_info() {
+        return `Allows script access: ${this.allow_script_access}\n`;
     }
 };
 

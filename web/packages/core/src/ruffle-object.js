@@ -25,7 +25,6 @@ module.exports = class RuffleObject extends RufflePlayer {
             "sameDomain"
         );
         let url = null;
-        console.log("AllowScriptAccess: " + allowScriptAccess);
 
         if (this.attributes.data) {
             url = this.attributes.data.value;
@@ -44,6 +43,30 @@ module.exports = class RuffleObject extends RufflePlayer {
             //Kick off the SWF download.
             this.stream_swf_url(url);
         }
+    }
+
+    debug_player_info() {
+        let error_text = super.debug_player_info();
+        error_text += "Player type: Object\n";
+
+        let url = null;
+
+        if (this.attributes.data) {
+            url = this.attributes.data.value;
+        } else if (this.params.movie) {
+            url = this.params.movie;
+        }
+        error_text += `SWF URL: ${url}\n`;
+
+        Object.keys(this.params).forEach((key) => {
+            error_text += `Param ${key}: ${this.params[key]}\n`;
+        });
+
+        Object.keys(this.attributes).forEach((key) => {
+            error_text += `Attribute ${key}: ${this.attributes[key]}\n`;
+        });
+
+        return error_text;
     }
 
     get data() {
