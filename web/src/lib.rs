@@ -72,6 +72,15 @@ struct RuffleInstance {
     trace_observer: Arc<RefCell<JsValue>>,
 }
 
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_name = Error)]
+    type JsError;
+
+    #[wasm_bindgen(constructor, js_class = "Error")]
+    fn new(message: &str) -> JsError;
+}
+
 #[wasm_bindgen(module = "/packages/core/src/ruffle-player.js")]
 extern "C" {
     #[derive(Clone)]
@@ -81,7 +90,7 @@ extern "C" {
     fn on_callback_available(this: &JavascriptPlayer, name: &str);
 
     #[wasm_bindgen(method)]
-    fn panic(this: &JavascriptPlayer);
+    fn panic(this: &JavascriptPlayer, error: &JsError);
 }
 
 struct JavascriptInterface {
@@ -155,8 +164,12 @@ impl Ruffle {
     pub fn destroy(&mut self) {
         // Remove instance from the active list.
         if let Some(instance) = INSTANCES.with(|instances| {
-            let mut instances = instances.borrow_mut();
-            instances.remove(self.0)
+            if let Ok(mut instances) = instances.try_borrow_mut() {
+                instances.remove(self.0)
+            } else {
+                // If we're being destroyed mid-panic, we won't mind not being able to remove this.
+                None
+            }
         }) {
             let mut instance = instance.borrow_mut();
             instance.canvas.remove();
@@ -849,13 +862,29 @@ pub fn set_panic_handler() {
         std::panic::set_hook(Box::new(|info| {
             RUFFLE_GLOBAL_PANIC.call_once(|| {
                 console_error_panic_hook::hook(info);
+
+                let error = JsError::new(
+                    info.payload()
+                        .downcast_ref::<&str>()
+                        .unwrap_or(&"Unknown panic"),
+                );
                 let _ = INSTANCES.try_with(|instances| {
+                    let mut players = Vec::new();
+
+                    // We have to be super cautious to not panic here, and not hold any borrows for
+                    // longer than we need to.
+                    // We grab all of the JsPlayers out from the list and release our hold, as they
+                    // may call back to destroy() - which will mutably borrow instances.
+
                     if let Ok(instances) = instances.try_borrow() {
                         for (_, instance) in instances.iter() {
-                            if let Ok(instance) = instance.try_borrow() {
-                                instance.js_player.panic();
+                            if let Ok(player) = instance.try_borrow().map(|i| i.js_player.clone()) {
+                                players.push(player);
                             }
                         }
+                    }
+                    for player in players {
+                        player.panic(&error);
                     }
                 });
             });

@@ -61,16 +61,33 @@ ruffle_shadow_tmpl.innerHTML = `
         }
     
         #panic-title {
-            margin-top: 5%;
+            margin-top: 30px;
             text-align: center;
             font-size: 42px;
             font-weight: bold;
         }
     
         #panic-body {
-            margin: 5%;
             text-align: center;
             font-size: 20px;
+            position: absolute;
+            top: 100px;
+            bottom: 80px;
+            left: 50px;
+            right: 50px;
+        }
+
+        #panic-body textarea {
+            width: 100%;
+            height: 100%;
+        }
+    
+        #panic-footer {
+            position: absolute;
+            bottom: 30px;
+            text-align: center;
+            font-size: 20px;
+            width: 100%;
         }
     
         #panic ul {
