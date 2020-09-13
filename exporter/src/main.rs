@@ -7,17 +7,26 @@ use ruffle_core::backend::input::NullInputBackend;
 use ruffle_core::backend::locale::NullLocaleBackend;
 use ruffle_core::backend::log::NullLogBackend;
 use ruffle_core::backend::navigator::NullNavigatorBackend;
+use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
+use ruffle_render_svg::SvgRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::{wgpu, Descriptors, WgpuRenderBackend};
 use std::error::Error;
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, File};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use walkdir::{DirEntry, WalkDir};
+
+#[derive(Clap, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+enum Format {
+    Png,
+    Svg,
+}
 
 #[derive(Clap, Debug, Copy, Clone)]
 struct SizeOpt {
@@ -61,6 +70,10 @@ struct Opt {
     #[clap(short, long)]
     silent: bool,
 
+    /// Export file format
+    #[clap(long, arg_enum, default_value = "png")]
+    format: Format,
+
     #[clap(flatten)]
     size: SizeOpt,
 
@@ -86,14 +99,24 @@ struct Opt {
     trace_path: Option<PathBuf>,
 }
 
+enum CaptureDescriptors {
+    Png { descriptors: Descriptors },
+    Svg,
+}
+
+enum FileData {
+    Png(RgbaImage),
+    Svg(String),
+}
+
 fn take_screenshot(
-    descriptors: Descriptors,
+    descriptors: CaptureDescriptors,
     swf_path: &Path,
     frames: u32,
     skipframes: u32,
     progress: &Option<ProgressBar>,
     size: SizeOpt,
-) -> Result<(Descriptors, Vec<RgbaImage>), Box<dyn std::error::Error>> {
+) -> Result<(CaptureDescriptors, Vec<FileData>), Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&swf_path)?;
 
     let width = size.width.unwrap_or_else(|| movie.width());
@@ -101,10 +124,16 @@ fn take_screenshot(
 
     let height = size.height.unwrap_or_else(|| movie.height());
     let height = (height as f32 * size.scale).round() as u32;
-
-    let target = TextureTarget::new(&descriptors.device, (width, height));
+    let is_png = matches!(descriptors, CaptureDescriptors::Png {..});
+    let backend: Box<dyn RenderBackend> = match descriptors {
+        CaptureDescriptors::Png { descriptors } => {
+            let target = TextureTarget::new(&descriptors.device, (width, height));
+            Box::new(WgpuRenderBackend::new(descriptors, target)?)
+        }
+        CaptureDescriptors::Svg => Box::new(SvgRenderBackend::new(width, height)),
+    };
     let player = Player::new(
-        Box::new(WgpuRenderBackend::new(descriptors, target)?),
+        backend,
         Box::new(NullAudioBackend::new()),
         Box::new(NullNavigatorBackend::new()),
         Box::new(NullInputBackend::new()),
@@ -134,15 +163,23 @@ fn take_screenshot(
         if i >= skipframes {
             player.lock().unwrap().render();
             let mut player = player.lock().unwrap();
-            let renderer = player
-                .renderer_mut()
-                .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-                .unwrap();
-            let target = renderer.target();
-            if let Some(image) = target.capture(renderer.device()) {
-                result.push(image);
+            if is_png {
+                let renderer = player
+                    .renderer_mut()
+                    .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
+                    .unwrap();
+                let target = renderer.target();
+                if let Some(image) = target.capture(renderer.device()) {
+                    result.push(FileData::Png(image));
+                } else {
+                    return Err(format!("Unable to capture frame {} of {:?}", i, swf_path).into());
+                }
             } else {
-                return Err(format!("Unable to capture frame {} of {:?}", i, swf_path).into());
+                let renderer = player
+                    .renderer_mut()
+                    .downcast_mut::<SvgRenderBackend>()
+                    .unwrap();
+                result.push(FileData::Svg(renderer.to_string()));
             }
         }
 
@@ -151,16 +188,25 @@ fn take_screenshot(
         }
     }
 
-    let descriptors = Arc::try_unwrap(player)
-        .ok()
-        .unwrap()
-        .into_inner()?
-        .destroy()
-        .downcast::<WgpuRenderBackend<TextureTarget>>()
-        .ok()
-        .unwrap()
-        .descriptors();
-    Ok((descriptors, result))
+    if is_png {
+        let descriptors = Arc::try_unwrap(player)
+            .ok()
+            .unwrap()
+            .into_inner()?
+            .destroy()
+            .downcast::<WgpuRenderBackend<TextureTarget>>()
+            .ok()
+            .unwrap()
+            .descriptors();
+        Ok((
+            CaptureDescriptors::Png {
+                descriptors: descriptors.into(),
+            },
+            result,
+        ))
+    } else {
+        Ok((CaptureDescriptors::Svg, result))
+    }
 }
 
 fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
@@ -193,12 +239,16 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
     results
 }
 
-fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn Error>> {
+fn capture_single_swf(descriptors: CaptureDescriptors, opt: &Opt) -> Result<(), Box<dyn Error>> {
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
         if opt.frames == 1 {
             result.set_file_name(opt.swf.file_stem().unwrap());
-            result.set_extension("png");
+            result.set_extension(if matches!(descriptors, CaptureDescriptors::Png {..}) {
+                "png"
+            } else {
+                "svg"
+            });
         } else {
             result.set_file_name(opt.swf.file_stem().unwrap());
         }
@@ -237,12 +287,17 @@ fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn
     }
 
     if frames.len() == 1 {
-        frames.get(0).unwrap().save(&output)?;
+        match &frames[0] {
+            FileData::Png(image) => image.save(&output)?,
+            FileData::Svg(data) => File::create(&output)?.write_all(data.as_bytes())?,
+        }
     } else {
         for (frame, image) in frames.iter().enumerate() {
-            let mut path = PathBuf::from(&output);
-            path.push(format!("{}.png", frame));
-            image.save(&path)?;
+            match image {
+                FileData::Png(image) => image.save(output.join(format!("{}.png", frame)))?,
+                FileData::Svg(data) => File::create(output.join(format!("{}.svg", frame)))?
+                    .write_all(data.as_bytes())?,
+            }
         }
     }
 
@@ -270,7 +325,10 @@ fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn
     Ok(())
 }
 
-fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn Error>> {
+fn capture_multiple_swfs(
+    mut descriptors: CaptureDescriptors,
+    opt: &Opt,
+) -> Result<(), Box<dyn Error>> {
     let output = opt.output_path.clone().unwrap();
     let files = find_files(&opt.swf, !opt.silent);
 
@@ -310,22 +368,29 @@ fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), 
             .to_path_buf();
 
         if frames.len() == 1 {
-            let mut destination = PathBuf::from(&output);
-            relative_path.set_extension("png");
-            destination.push(relative_path);
-            if let Some(parent) = destination.parent() {
-                let _ = create_dir_all(parent);
+            let _ = create_dir_all(&output);
+            let mut destination = output.join(relative_path);
+            match &frames[0] {
+                FileData::Png(image) => {
+                    destination.set_extension("png");
+                    image.save(&destination)?
+                }
+                FileData::Svg(data) => {
+                    destination.set_extension("svg");
+                    File::create(&destination)?.write_all(data.as_bytes())?
+                }
             }
-            frames.get(0).unwrap().save(&destination)?;
         } else {
             let mut parent = PathBuf::from(&output);
             relative_path.set_extension("");
             parent.push(&relative_path);
             let _ = create_dir_all(&parent);
             for (frame, image) in frames.iter().enumerate() {
-                let mut destination = parent.clone();
-                destination.push(format!("{}.png", frame));
-                image.save(&destination)?;
+                match image {
+                    FileData::Png(image) => image.save(parent.join(format!("{}.png", frame)))?,
+                    FileData::Svg(data) => File::create(parent.join(format!("{}.svg", frame)))?
+                        .write_all(data.as_bytes())?,
+                }
             }
         }
     }
@@ -371,24 +436,32 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let opt: Opt = Opt::parse();
-    let instance = wgpu::Instance::new(opt.graphics.into());
-    let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: opt.power.into(),
-        compatible_surface: None,
-    }))
-    .ok_or(
-        "This tool requires hardware acceleration, but no compatible graphics device was found.",
-    )?;
+    let descriptors = match opt.format {
+        Format::Png => {
+            let instance = wgpu::Instance::new(opt.graphics.into());
+            let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+                 power_preference: opt.power.into(),
+                 compatible_surface: None,
+             }))
+                 .ok_or(
+                     "This tool requires hardware acceleration, but no compatible graphics device was found."
+                 )?;
 
-    let (device, queue) = block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            features: Default::default(),
-            limits: wgpu::Limits::default(),
-            shader_validation: false,
-        },
-        trace_path(&opt),
-    ))?;
-    let descriptors = Descriptors::new(device, queue)?;
+            let (device, queue) = block_on(adapter.request_device(
+                &wgpu::DeviceDescriptor {
+                    features: Default::default(),
+                    limits: wgpu::Limits::default(),
+                    shader_validation: false,
+                },
+                trace_path(&opt),
+            ))?;
+            let descriptors = Descriptors::new(device, queue)?;
+            CaptureDescriptors::Png {
+                descriptors: descriptors.into(),
+            }
+        }
+        Format::Svg => CaptureDescriptors::Svg,
+    };
 
     if opt.swf.is_file() {
         capture_single_swf(descriptors, &opt)?;

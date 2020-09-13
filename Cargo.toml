@@ -9,6 +9,7 @@ members = [
     "exporter",
 
     "render/canvas",
+    "render/svg",
     "render/wgpu",
     "render/common_tess",
     "render/webgl",

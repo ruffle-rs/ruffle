@@ -1,0 +1,20 @@
+[package]
+name = "ruffle_render_svg"
+version = "0.1.0"
+authors = ["Mike Welsh <mwelsh@gmail.com>", "Ben Schattinger <developer@lights0123.com>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+base64 = "0.12.3"
+fnv = "1.0.7"
+svg = "0.8.0"
+png = "0.16.7"
+
+[dependencies.jpeg-decoder]
+version = "0.1.20"
+#default-features = false # can't use rayon on web
+
+[dependencies.ruffle_core]
+path = "../../core"
+#default-features = false
