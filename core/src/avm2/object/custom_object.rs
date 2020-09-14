@@ -77,6 +77,17 @@ macro_rules! impl_avm2_custom_object_properties {
         fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
             self.0.read().$field.has_own_property(name)
         }
+
+        fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
+            self.0.read().$field.resolve_any(local_name)
+        }
+
+        fn resolve_any_trait(
+            self,
+            local_name: AvmString<'gc>,
+        ) -> Result<Option<Namespace<'gc>>, Error> {
+            self.0.read().$field.resolve_any_trait(local_name)
+        }
     };
 }
 
@@ -123,17 +134,6 @@ macro_rules! impl_avm2_custom_object {
 
         fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
             self.0.read().$field.get_scope()
-        }
-
-        fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
-            self.0.read().$field.resolve_any(local_name)
-        }
-
-        fn resolve_any_trait(
-            self,
-            local_name: AvmString<'gc>,
-        ) -> Result<Option<Namespace<'gc>>, Error> {
-            self.0.read().$field.resolve_any_trait(local_name)
         }
 
         fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
