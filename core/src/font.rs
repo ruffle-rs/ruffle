@@ -106,8 +106,9 @@ impl<'gc> Font<'gc> {
         let mut code_point_to_glyph = fnv::FnvHashMap::default();
         for swf_glyph in &tag.glyphs {
             let glyph = Glyph {
-                shape: renderer.register_glyph_shape(swf_glyph),
+                shape_handle: renderer.register_glyph_shape(swf_glyph),
                 advance: swf_glyph.advance.unwrap_or(0),
+                shape: crate::shape_utils::swf_glyph_to_shape(swf_glyph),
             };
             let index = glyphs.len();
             glyphs.push(glyph);
@@ -358,7 +359,8 @@ impl<'gc> Font<'gc> {
 
 #[derive(Debug, Clone)]
 pub struct Glyph {
-    pub shape: ShapeHandle,
+    pub shape_handle: ShapeHandle,
+    pub shape: swf::Shape,
     pub advance: i16,
 }
 

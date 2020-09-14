@@ -101,7 +101,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                         context.transform_stack.push(&transform);
                         context
                             .renderer
-                            .render_shape(glyph.shape, context.transform_stack.transform());
+                            .render_shape(glyph.shape_handle, context.transform_stack.transform());
                         context.transform_stack.pop();
                         transform.matrix.tx += Twips::new(c.advance);
                     }
@@ -114,6 +114,68 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 
     fn self_bounds(&self) -> BoundingBox {
         self.0.read().static_data.bounds.clone()
+    }
+
+    fn hit_test_shape(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        mut point: (Twips, Twips),
+    ) -> bool {
+        if self.world_bounds().contains(point) {
+            // Transform the point into the text's local space.
+            let local_matrix = self.global_to_local_matrix();
+            let tf = self.0.read();
+            let mut text_matrix = tf.static_data.text_transform;
+            text_matrix.invert();
+            point = text_matrix * local_matrix * point;
+
+            let mut font_id = 0;
+            let mut height = Twips::new(0);
+            let mut glyph_matrix = Matrix::default();
+            for block in &tf.static_data.text_blocks {
+                if let Some(x) = block.x_offset {
+                    glyph_matrix.tx = x;
+                }
+                if let Some(y) = block.y_offset {
+                    glyph_matrix.ty = y;
+                }
+                font_id = block.font_id.unwrap_or(font_id);
+                height = block.height.unwrap_or(height);
+
+                if let Some(font) = context
+                    .library
+                    .library_for_movie(self.movie().unwrap())
+                    .unwrap()
+                    .get_font(font_id)
+                {
+                    let scale = (height.get() as f32) / font.scale();
+                    glyph_matrix.a = scale;
+                    glyph_matrix.d = scale;
+                    for c in &block.glyphs {
+                        if let Some(glyph) = font.get_glyph(c.index as usize) {
+                            // Transform the point into glyph space and test.
+                            let mut matrix = glyph_matrix;
+                            matrix.invert();
+                            let point = matrix * point;
+                            let glyph_bounds = BoundingBox::from(&glyph.shape.shape_bounds);
+                            if glyph_bounds.contains(point)
+                                && crate::shape_utils::shape_hit_test(
+                                    &glyph.shape,
+                                    point,
+                                    &local_matrix,
+                                )
+                            {
+                                return true;
+                            }
+
+                            glyph_matrix.tx += Twips::new(c.advance);
+                        }
+                    }
+                }
+            }
+        }
+
+        false
     }
 }
 

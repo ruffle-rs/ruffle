@@ -679,7 +679,7 @@ impl<'gc> EditText<'gc> {
                     context.transform_stack.push(transform);
                     context
                         .renderer
-                        .render_shape(glyph.shape, context.transform_stack.transform());
+                        .render_shape(glyph.shape_handle, context.transform_stack.transform());
                     context.transform_stack.pop();
                 },
             );
