@@ -1,0 +1,11 @@
+//var a = new Array(5);
+//Array.prototype[3] = "works";
+//a.hasOwnProperty("2")
+false
+//a.hasOwnProperty("3")
+false
+//a[3] = "nohole"
+//a.hasOwnProperty("2")
+false
+//a.hasOwnProperty("3")
+true

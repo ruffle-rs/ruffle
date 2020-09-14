@@ -188,6 +188,23 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().base.has_own_property(name)
     }
 
+    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
+        if let Ok(index) = local_name.parse::<usize>() {
+            if self.0.read().array.get(index).is_some() {
+                return Ok(Some(Namespace::public_namespace()));
+            }
+        }
+
+        self.0.read().base.resolve_any(local_name)
+    }
+
+    fn resolve_any_trait(
+        self,
+        local_name: AvmString<'gc>,
+    ) -> Result<Option<Namespace<'gc>>, Error> {
+        self.0.read().base.resolve_any_trait(local_name)
+    }
+
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }
