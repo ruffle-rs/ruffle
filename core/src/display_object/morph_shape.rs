@@ -61,7 +61,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
             context
                 .renderer
-                .render_shape(frame.shape, context.transform_stack.transform());
+                .render_shape(frame.shape_handle, context.transform_stack.transform());
         } else {
             log::warn!("Missing ratio for morph shape");
         }
@@ -77,6 +77,24 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             BoundingBox::default()
         }
     }
+
+    fn hit_test_shape(
+        &self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        point: (Twips, Twips),
+    ) -> bool {
+        if self.world_bounds().contains(point) {
+            if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
+                let local_matrix = self.global_to_local_matrix();
+                let point = local_matrix * point;
+                return crate::shape_utils::shape_hit_test(&frame.shape, point, &local_matrix);
+            } else {
+                log::warn!("Missing ratio for morph shape");
+            }
+        }
+
+        false
+    }
 }
 
 unsafe impl<'gc> gc_arena::Collect for MorphShapeData<'gc> {
@@ -89,7 +107,8 @@ unsafe impl<'gc> gc_arena::Collect for MorphShapeData<'gc> {
 
 /// A precalculated intermediate frame for a morph shape.
 struct Frame {
-    shape: ShapeHandle,
+    shape_handle: ShapeHandle,
+    shape: swf::Shape,
     bounds: BoundingBox,
 }
 
@@ -248,7 +267,8 @@ impl MorphShapeStatic {
         };
 
         let frame = Frame {
-            shape: renderer.register_shape((&shape).into()),
+            shape_handle: renderer.register_shape((&shape).into()),
+            shape,
             bounds: bounds.into(),
         };
         self.frames.insert(ratio, frame);
