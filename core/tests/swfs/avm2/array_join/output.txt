@@ -1,6 +1,7 @@
 //var a = new Array("a", "b", "c");
 //var b = new Array(1, 2, 3);
 //var c = new Array(a, b);
+//var d = new Array("str", 123, undefined, null, true, false);
 //a.join();
 a,b,c
 //b.join();
@@ -21,3 +22,5 @@ aNaNbNaNc
 a,b,c + 1,2,3
 //c.join(b);
 a,b,c1,2,31,2,3
+//d.join("!");
+str!123!!!true!false
