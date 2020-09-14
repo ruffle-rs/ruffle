@@ -832,8 +832,13 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Tests if a given stage position point intersects within this object, considering the art.
-    fn hit_test_shape(&self, _pos: (Twips, Twips)) -> bool {
-        false
+    fn hit_test_shape(
+        &self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        pos: (Twips, Twips),
+    ) -> bool {
+        // Default to using bounding box.
+        self.world_bounds().contains(pos)
     }
 
     fn mouse_pick(

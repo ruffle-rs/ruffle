@@ -130,7 +130,7 @@ pub fn hit_test<'gc>(
                 .root()
                 .local_to_global((Twips::from_pixels(x), Twips::from_pixels(y)));
             let ret = if shape {
-                movie_clip.hit_test_shape(point)
+                movie_clip.hit_test_shape(&mut activation.context, point)
             } else {
                 movie_clip.hit_test_bounds(point)
             };

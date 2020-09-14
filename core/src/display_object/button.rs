@@ -279,9 +279,13 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         BoundingBox::default()
     }
 
-    fn hit_test_shape(&self, point: (Twips, Twips)) -> bool {
+    fn hit_test_shape(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        point: (Twips, Twips),
+    ) -> bool {
         for child in self.children() {
-            if child.hit_test_shape(point) {
+            if child.hit_test_shape(context, point) {
                 return true;
             }
         }
@@ -291,14 +295,14 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
     fn mouse_pick(
         &self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
         if self.visible() {
             for child in self.0.read().hit_area.values() {
-                if child.hit_test_shape(point) {
+                if child.hit_test_shape(context, point) {
                     return Some(self_node);
                 }
             }
