@@ -122,7 +122,7 @@ fn resolve_array_hole<'gc>(
                     p,
                     &QName::new(
                         Namespace::public_namespace(),
-                        AvmString::new(activation.context.gc_context, format!("{}", i)),
+                        AvmString::new(activation.context.gc_context, i.to_string()),
                     ),
                     activation,
                 )
@@ -148,7 +148,7 @@ where
     if let Some(this) = this {
         if let Some(array) = this.as_array_storage() {
             let string_separator = separator.coerce_to_string(activation)?;
-            let mut accum = Vec::new();
+            let mut accum = Vec::with_capacity(array.length());
 
             for (i, item) in array.iter().enumerate() {
                 let item = resolve_array_hole(activation, this, i, item)?;
@@ -235,19 +235,19 @@ pub fn value_of<'gc>(
 /// necessary to only work with Arrays, you must first check for array storage
 /// before creating this iterator.
 ///
-/// The primary purpose of `ArrayIterator` is to maintain lock safety in the
+/// The primary purpose of `ArrayIter` is to maintain lock safety in the
 /// presence of arbitrary user code. It is legal for, say, a method callback to
 /// mutate the array under iteration. Normally, holding an `Iterator` on the
 /// array while this happens would cause a panic; this code exists to prevent
 /// that.
-struct ArrayIterator<'gc> {
+struct ArrayIter<'gc> {
     array_object: Object<'gc>,
     index: u32,
     length: u32,
 }
 
-impl<'gc> ArrayIterator<'gc> {
-    /// Construct a new `ArrayIterator`.
+impl<'gc> ArrayIter<'gc> {
+    /// Construct a new `ArrayIter`.
     pub fn new(
         activation: &mut Activation<'_, 'gc, '_>,
         mut array_object: Object<'gc>,
@@ -286,7 +286,7 @@ impl<'gc> ArrayIterator<'gc> {
                         self.array_object,
                         &QName::new(
                             Namespace::public_namespace(),
-                            AvmString::new(activation.context.gc_context, format!("{}", i)),
+                            AvmString::new(activation.context.gc_context, i.to_string()),
                         ),
                         activation,
                     )
@@ -316,7 +316,7 @@ pub fn for_each<'gc>(
             .unwrap_or(Value::Null)
             .coerce_to_object(activation)
             .ok();
-        let mut iter = ArrayIterator::new(activation, this)?;
+        let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
@@ -352,7 +352,7 @@ pub fn map<'gc>(
             .coerce_to_object(activation)
             .ok();
         let mut new_array = ArrayStorage::new(0);
-        let mut iter = ArrayIterator::new(activation, this)?;
+        let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
@@ -391,7 +391,7 @@ pub fn filter<'gc>(
             .coerce_to_object(activation)
             .ok();
         let mut new_array = ArrayStorage::new(0);
-        let mut iter = ArrayIterator::new(activation, this)?;
+        let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
@@ -434,7 +434,7 @@ pub fn every<'gc>(
             .coerce_to_object(activation)
             .ok();
         let mut is_every = true;
-        let mut iter = ArrayIterator::new(activation, this)?;
+        let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
@@ -474,7 +474,7 @@ pub fn some<'gc>(
             .coerce_to_object(activation)
             .ok();
         let mut is_some = false;
-        let mut iter = ArrayIterator::new(activation, this)?;
+        let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
