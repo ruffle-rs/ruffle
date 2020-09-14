@@ -1062,10 +1062,14 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.world_bounds().contains(point)
     }
 
-    fn hit_test_shape(&self, point: (Twips, Twips)) -> bool {
+    fn hit_test_shape(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        point: (Twips, Twips),
+    ) -> bool {
         if self.world_bounds().contains(point) {
             for child in self.children() {
-                if child.hit_test_shape(point) {
+                if child.hit_test_shape(context, point) {
                     return true;
                 }
             }
@@ -1105,7 +1109,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 }
             };
 
-            if is_button_mode && self.hit_test_shape(point) {
+            if is_button_mode && self.hit_test_shape(context, point) {
                 return Some(self_node);
             }
 

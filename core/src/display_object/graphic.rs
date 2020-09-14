@@ -74,7 +74,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         context.transform_stack.pop();
     }
 
-    fn hit_test_shape(&self, point: (Twips, Twips)) -> bool {
+    fn hit_test_shape(
+        &self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        point: (Twips, Twips),
+    ) -> bool {
         // Transform point to local coordinates and test.
         if self.world_bounds().contains(point) {
             let local_matrix = self.global_to_local_matrix();
