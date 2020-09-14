@@ -1313,3 +1313,35 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
 
     roots
 }
+
+/// Converts an SWF glyph into an SWF shape, for ease of use by rendering backends.
+pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
+    // Per SWF19 p.164, the FontBoundsTable can contain empty bounds for every glyph (reserved).
+    // SWF19 says this is true through SWFv7, but it seems like it might be generally true?
+    // In any case, we have to be sure to calculate the shape bounds ourselves to make a proper
+    // SVG.
+    let bounds = glyph
+        .bounds
+        .clone()
+        .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
+        .unwrap_or_else(|| calculate_shape_bounds(&glyph.shape_records[..]));
+    swf::Shape {
+        version: 2,
+        id: 0,
+        shape_bounds: bounds.clone(),
+        edge_bounds: bounds,
+        has_fill_winding_rule: false,
+        has_non_scaling_strokes: false,
+        has_scaling_strokes: true,
+        styles: swf::ShapeStyles {
+            fill_styles: vec![swf::FillStyle::Color(swf::Color {
+                r: 255,
+                g: 255,
+                b: 255,
+                a: 255,
+            })],
+            line_styles: vec![],
+        },
+        shape: glyph.shape_records.clone(),
+    }
+}
