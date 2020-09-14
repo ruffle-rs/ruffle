@@ -12,6 +12,9 @@ var b = new Array(1, 2, 3);
 trace("//var c = new Array(a, b);");
 var c = new Array(a, b);
 
+trace("//var d = new Array(\"str\", 123, undefined, null, true, false);");
+var d = new Array("str", 123, undefined, null, true, false);
+
 trace("//a.join();");
 trace(a.join());
 
@@ -41,3 +44,6 @@ trace(c.join(" + "));
 
 trace("//c.join(b);");
 trace(c.join(b));
+
+trace("//d.join(\"!\");");
+trace(d.join("!"));

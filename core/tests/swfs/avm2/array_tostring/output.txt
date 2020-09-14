@@ -1,9 +1,12 @@
 //var a = new Array("a", "b", "c");
 //var b = new Array(1, 2, 3);
 //var c = new Array(a, b);
+//var d = new Array("str", 123, undefined, null, true, false);
 //a.toString();
 a,b,c
 //b.toString();
 1,2,3
 //c.toString();
 a,b,c,1,2,3
+//d.toString();
+str,123,,,true,false

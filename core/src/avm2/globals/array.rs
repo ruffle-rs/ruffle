@@ -153,11 +153,15 @@ where
             for (i, item) in array.iter().enumerate() {
                 let item = resolve_array_hole(activation, this, i, item)?;
 
-                accum.push(
-                    conv(item, activation)?
-                        .coerce_to_string(activation)?
-                        .to_string(),
-                );
+                if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
+                    accum.push("".into());
+                } else {
+                    accum.push(
+                        conv(item, activation)?
+                            .coerce_to_string(activation)?
+                            .to_string(),
+                    );
+                }
             }
 
             return Ok(AvmString::new(
