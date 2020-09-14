@@ -28,6 +28,10 @@ pub fn instance_init<'gc>(
                     .get(0)
                     .and_then(|v| v.as_number(activation.context.gc_context).ok())
                 {
+                    if expected_len < 0.0 || expected_len.is_nan() {
+                        return Err("Length must be a positive integer".into());
+                    }
+
                     array.set_length(expected_len as usize);
 
                     return Ok(Value::Undefined);
