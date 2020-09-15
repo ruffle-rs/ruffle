@@ -986,16 +986,31 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let transform = self.transform().clone();
         context.transform_stack.push(&transform);
 
+        let edit_text = self.0.read();
         context.transform_stack.push(&Transform {
             matrix: Matrix {
-                tx: self.0.read().bounds.x_min,
-                ty: self.0.read().bounds.y_min,
+                tx: edit_text.bounds.x_min,
+                ty: edit_text.bounds.y_min,
                 ..Default::default()
             },
             ..Default::default()
         });
 
-        self.0.read().drawing.render(context);
+        edit_text.drawing.render(context);
+
+        context.renderer.push_mask();
+        let mask = Matrix::create_box(
+            edit_text.bounds.width().to_pixels() as f32,
+            edit_text.bounds.height().to_pixels() as f32,
+            0.0,
+            Twips::zero(),
+            Twips::zero(),
+        );
+        context.renderer.draw_rect(
+            Color::from_rgb(0, 0xff),
+            &(context.transform_stack.transform().matrix * mask),
+        );
+        context.renderer.activate_mask();
 
         // TODO: Where does this come from? How is this different than INTERNAL_PADDING? Does this apply to y as well?
         // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
@@ -1008,9 +1023,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ..Default::default()
         });
 
-        for layout_box in self.0.read().layout.iter() {
+        for layout_box in edit_text.layout.iter() {
             self.render_layout_box(context, layout_box);
         }
+
+        context.renderer.pop_mask();
 
         context.transform_stack.pop();
         context.transform_stack.pop();
