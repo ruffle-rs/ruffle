@@ -3,6 +3,7 @@ pub use crate::{transform::Transform, Color};
 use downcast_rs::Downcast;
 use std::io::Read;
 pub use swf;
+use swf::Matrix;
 
 pub trait RenderBackend: Downcast {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32);
@@ -34,6 +35,7 @@ pub trait RenderBackend: Downcast {
     fn begin_frame(&mut self, clear: Color);
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform);
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
+    fn draw_rect(&mut self, color: Color, matrix: &Matrix);
     fn end_frame(&mut self);
     fn draw_letterbox(&mut self, letterbox: Letterbox);
     fn push_mask(&mut self);
@@ -137,6 +139,7 @@ impl RenderBackend for NullRenderer {
     fn end_frame(&mut self) {}
     fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform) {}
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
+    fn draw_rect(&mut self, _color: Color, _matrix: &Matrix) {}
     fn draw_letterbox(&mut self, _letterbox: Letterbox) {}
     fn push_mask(&mut self) {}
     fn activate_mask(&mut self) {}
