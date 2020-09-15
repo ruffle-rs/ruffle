@@ -1112,14 +1112,14 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if is_button_mode && self.hit_test_shape(context, point) {
                 return Some(self_node);
             }
+        }
 
-            // Maybe we could skip recursing down at all if !world_bounds.contains(point),
-            // but a child button can have an invisible hit area outside the parent's bounds.
-            for child in self.0.read().children.values().rev() {
-                let result = child.mouse_pick(context, *child, point);
-                if result.is_some() {
-                    return result;
-                }
+        // Maybe we could skip recursing down at all if !world_bounds.contains(point),
+        // but a child button can have an invisible hit area outside the parent's bounds.
+        for child in self.0.read().children.values().rev() {
+            let result = child.mouse_pick(context, *child, point);
+            if result.is_some() {
+                return result;
             }
         }
 
