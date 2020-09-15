@@ -4,6 +4,7 @@ use ruffle_core::backend::render::{
     RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
+use ruffle_core::swf::Matrix;
 use ruffle_render_common_tess::{GradientSpread, GradientType, ShapeTessellator, Vertex};
 use ruffle_web_common::JsResult;
 use wasm_bindgen::{JsCast, JsValue};
@@ -899,7 +900,6 @@ impl RenderBackend for WebGlRenderBackend {
             }
 
             // Scale the quad to the bitmap's dimensions.
-            use ruffle_core::swf::Matrix;
             let scale_transform = Transform {
                 matrix: transform.matrix
                     * Matrix {
@@ -1072,6 +1072,76 @@ impl RenderBackend for WebGlRenderBackend {
             self.gl
                 .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_SHORT, 0);
         }
+    }
+
+    fn draw_rect(&mut self, color: Color, matrix: &Matrix) {
+        let world_matrix = [
+            [matrix.a, matrix.b, 0.0, 0.0],
+            [matrix.c, matrix.d, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [
+                matrix.tx.to_pixels() as f32,
+                matrix.ty.to_pixels() as f32,
+                0.0,
+                1.0,
+            ],
+        ];
+
+        let mult_color = [1.0, 1.0, 1.0, 1.0];
+
+        let add_color = [
+            color.r as f32 * 255.0,
+            color.g as f32 * 255.0,
+            color.b as f32 * 255.0,
+            color.a as f32 * 255.0,
+        ];
+
+        self.set_stencil_state();
+
+        let program = &self.color_program;
+        let src_blend = Gl::SRC_ALPHA;
+        let dst_blend = Gl::ONE_MINUS_SRC_ALPHA;
+
+        // Set common render state, while minimizing unnecessary state changes.
+        // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
+        // are in the same location between shaders, and avoid changing them unless necessary.
+        if program as *const ShaderProgram != self.active_program {
+            self.gl.use_program(Some(&program.program));
+            self.active_program = program as *const ShaderProgram;
+
+            program.uniform_matrix4fv(&self.gl, ShaderUniform::ViewMatrix, &self.view_matrix);
+
+            self.mult_color = None;
+            self.add_color = None;
+
+            if (src_blend, dst_blend) != self.blend_func {
+                self.gl.blend_func(src_blend, dst_blend);
+                self.blend_func = (src_blend, dst_blend);
+            }
+        };
+
+        self.color_program
+            .uniform_matrix4fv(&self.gl, ShaderUniform::WorldMatrix, &world_matrix);
+        if Some(mult_color) != self.mult_color {
+            self.color_program
+                .uniform4fv(&self.gl, ShaderUniform::MultColor, &mult_color);
+            self.mult_color = Some(mult_color);
+        }
+        if Some(add_color) != self.add_color {
+            self.color_program
+                .uniform4fv(&self.gl, ShaderUniform::AddColor, &add_color);
+            self.add_color = Some(add_color);
+        }
+
+        let quad = &self.meshes[self.quad_shape.0];
+        self.bind_vertex_array(Some(&quad.draws[0].vao));
+
+        self.gl.draw_elements_with_i32(
+            Gl::TRIANGLES,
+            quad.draws[0].num_indices,
+            Gl::UNSIGNED_SHORT,
+            0,
+        );
     }
 
     fn draw_letterbox(&mut self, letterbox: Letterbox) {
@@ -1345,3 +1415,5 @@ impl ShaderProgram {
         );
     }
 }
+
+impl WebGlRenderBackend {}

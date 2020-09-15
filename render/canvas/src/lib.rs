@@ -5,6 +5,7 @@ use ruffle_core::backend::render::{
 };
 use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand};
+use ruffle_core::swf::Matrix;
 use ruffle_web_common::JsResult;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -305,9 +306,7 @@ impl WebCanvasRenderBackend {
 
     #[allow(clippy::float_cmp)]
     #[inline]
-    fn set_transform(&mut self, transform: &Transform) {
-        let matrix = transform.matrix;
-
+    fn set_transform(&mut self, matrix: &Matrix) {
         self.context
             .set_transform(
                 matrix.a.into(),
@@ -559,7 +558,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
-        self.set_transform(transform);
+        self.set_transform(&transform.matrix);
         self.set_color_filter(transform);
         if let Some(bitmap) = self.bitmaps.get(bitmap.0) {
             let _ = self
@@ -570,7 +569,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
-        self.set_transform(transform);
+        self.set_transform(&transform.matrix);
         if let Some(shape) = self.shapes.get(shape.0) {
             for command in shape.0.iter() {
                 match command {
@@ -627,6 +626,25 @@ impl RenderBackend for WebCanvasRenderBackend {
                 }
             }
         }
+    }
+
+    fn draw_rect(&mut self, color: Color, matrix: &Matrix) {
+        self.set_transform(matrix);
+        self.clear_color_filter();
+
+        self.context.set_fill_style(
+            &format!(
+                "rgba({},{},{},{})",
+                color.r,
+                color.g,
+                color.b,
+                f32::from(color.a) / 255.0
+            )
+            .into(),
+        );
+        self.context.fill_rect(0.0, 0.0, 1.0, 1.0);
+
+        self.clear_color_filter();
     }
 
     fn draw_letterbox(&mut self, letterbox: Letterbox) {
@@ -717,7 +735,6 @@ fn swf_shape_to_svg(
 ) -> ShapeData {
     use fnv::FnvHashSet;
     use ruffle_core::shape_utils::DrawPath;
-    use ruffle_core::swf::Matrix;
     use svg::node::element::{
         path::Data, Definitions, Filter, Image, LinearGradient, Path as SvgPath, Pattern,
         RadialGradient, Stop,
