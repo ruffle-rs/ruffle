@@ -129,14 +129,14 @@ fn dynamic_class<'gc>(
 /// The `custom_derive` is used to select a particular `TObject` impl, or you
 /// can use `None` to indicate that this class does not change host object
 /// impls.
-fn class<'gc, DERIVE>(
+fn class<'gc, Deriver>(
     activation: &mut Activation<'_, 'gc, '_>,
     mut global: Object<'gc>,
     class_def: GcCell<'gc, Class<'gc>>,
-    custom_derive: DERIVE,
+    custom_derive: Deriver,
 ) -> Result<Object<'gc>, Error>
 where
-    DERIVE: FnOnce(
+    Deriver: FnOnce(
         Object<'gc>,
         &mut Activation<'_, 'gc, '_>,
         GcCell<'gc, Class<'gc>>,
