@@ -477,36 +477,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        // Per SWF19 p.164, the FontBoundsTable can contain empty bounds for every glyph (reserved).
-        // SWF19 says this is true through SWFv7, but it seems like it might be generally true?
-        // In any case, we have to be sure to calculate the shape bounds ourselves to make a proper
-        // SVG.
-        let bounds = glyph
-            .clone()
-            .bounds
-            .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
-            .unwrap_or_else(|| {
-                ruffle_core::shape_utils::calculate_shape_bounds(&glyph.shape_records[..])
-            });
-        let shape = swf::Shape {
-            version: 2,
-            id: 0,
-            shape_bounds: bounds.clone(),
-            edge_bounds: bounds,
-            has_fill_winding_rule: false,
-            has_non_scaling_strokes: false,
-            has_scaling_strokes: true,
-            styles: swf::ShapeStyles {
-                fill_styles: vec![swf::FillStyle::Color(Color {
-                    r: 255,
-                    g: 255,
-                    b: 255,
-                    a: 255,
-                })],
-                line_styles: vec![],
-            },
-            shape: glyph.shape_records.clone(),
-        };
+        let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
         self.register_shape((&shape).into())
     }
 
