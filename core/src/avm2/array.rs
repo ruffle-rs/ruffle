@@ -5,14 +5,6 @@ use gc_arena::Collect;
 use std::iter::ExactSizeIterator;
 use std::ops::RangeBounds;
 
-/// Trait which exists purely so that we can reverse the iterators that come
-/// out of `ArrayStorage.iter`.
-///
-/// Not to be confused with the `ArrayIterator` struct in `globals::array`.
-pub trait ArrayIterator: DoubleEndedIterator + ExactSizeIterator {}
-
-impl<T> ArrayIterator for T where T: DoubleEndedIterator + ExactSizeIterator {}
-
 /// The array storage portion of an array object.
 ///
 /// Array values may consist of either standard `Value`s or "holes": values
@@ -156,7 +148,11 @@ impl<'gc> ArrayStorage<'gc> {
     }
 
     /// Iterate over array values.
-    pub fn iter<'a>(&'a self) -> impl ArrayIterator<Item = Option<Value<'gc>>> + 'a {
+    pub fn iter<'a>(
+        &'a self,
+    ) -> impl DoubleEndedIterator<Item = Option<Value<'gc>>>
+           + ExactSizeIterator<Item = Option<Value<'gc>>>
+           + 'a {
         self.storage.iter().cloned()
     }
 
