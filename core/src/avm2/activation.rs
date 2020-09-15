@@ -405,6 +405,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         reader: &mut Reader<Cursor<&[u8]>>,
     ) -> Result<FrameControl<'gc>, Error> {
+        if self.context.update_start.elapsed() >= self.context.max_execution_duration {
+            return Err(
+                "A script in this movie has taken too long to execute and has been terminated."
+                    .into(),
+            );
+        }
+
         let op = reader.read_op();
         if let Ok(Some(op)) = op {
             avm_debug!(self.avm2(), "Opcode: {:?}", op);

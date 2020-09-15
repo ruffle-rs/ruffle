@@ -30,6 +30,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
+use std::time::{Duration, Instant};
 
 pub static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
@@ -186,6 +187,10 @@ pub struct Player {
     /// Time remaining until the next timer will fire.
     time_til_next_timer: Option<f64>,
 
+    /// The maximum amount of time that can be called before a `Error::ExecutionTimeout`
+    /// is raised. This defaults to 15 seconds but can be changed.
+    max_execution_duration: Duration,
+
     /// Self-reference to ourselves.
     ///
     /// This is a weak reference that is upgraded and handed out in various
@@ -273,6 +278,7 @@ impl Player {
             instance_counter: 0,
             time_til_next_timer: None,
             storage,
+            max_execution_duration: Duration::from_secs(15),
         };
 
         player.mutate_with_update_context(|context| {
@@ -1043,6 +1049,7 @@ impl Player {
             locale,
             logging,
             needs_render,
+            max_execution_duration,
         ) = (
             self.player_version,
             &self.swf,
@@ -1062,6 +1069,7 @@ impl Player {
             self.locale.deref_mut(),
             self.log.deref_mut(),
             &mut self.needs_render,
+            self.max_execution_duration,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -1113,6 +1121,8 @@ impl Player {
                 avm1,
                 avm2,
                 external_interface,
+                update_start: Instant::now(),
+                max_execution_duration,
             };
 
             let ret = f(&mut update_context);
@@ -1213,6 +1223,14 @@ impl Player {
 
     pub fn log_backend(&self) -> &Log {
         &self.log
+    }
+
+    pub fn max_execution_duration(&self) -> Duration {
+        self.max_execution_duration
+    }
+
+    pub fn set_max_execution_duration(&mut self, max_execution_duration: Duration) {
+        self.max_execution_duration = max_execution_duration
     }
 }
 
