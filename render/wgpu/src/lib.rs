@@ -877,25 +877,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn register_glyph_shape(&mut self, glyph: &Glyph) -> ShapeHandle {
-        let shape = swf::Shape {
-            version: 2,
-            id: 0,
-            shape_bounds: Default::default(),
-            edge_bounds: Default::default(),
-            has_fill_winding_rule: false,
-            has_non_scaling_strokes: false,
-            has_scaling_strokes: true,
-            styles: swf::ShapeStyles {
-                fill_styles: vec![FillStyle::Color(Color {
-                    r: 255,
-                    g: 255,
-                    b: 255,
-                    a: 255,
-                })],
-                line_styles: vec![],
-            },
-            shape: glyph.shape_records.clone(),
-        };
+        let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
         let mesh = self.register_shape_internal((&shape).into());
         self.meshes.push(mesh);
