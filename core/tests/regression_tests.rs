@@ -20,6 +20,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -474,6 +475,23 @@ fn external_interface_avm1() -> Result<(), Error> {
     )
 }
 
+#[test]
+fn timeout_avm1() -> Result<(), Error> {
+    test_swf(
+        "tests/swfs/avm1/timeout/test.swf",
+        1,
+        "tests/swfs/avm1/timeout/output.txt",
+        |player| {
+            player
+                .lock()
+                .unwrap()
+                .set_max_execution_duration(Duration::from_secs(5));
+            Ok(())
+        },
+        |_| Ok(()),
+    )
+}
+
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
 /// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
 /// test failures to show nice diffs.
@@ -593,6 +611,10 @@ fn run_swf(
         Box::new(TestLogBackend::new(trace_output.clone())),
     )?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
+    player
+        .lock()
+        .unwrap()
+        .set_max_execution_duration(Duration::from_secs(120));
 
     before_start(player.clone())?;
 

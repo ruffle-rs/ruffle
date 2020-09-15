@@ -22,6 +22,8 @@ use gc_arena::{Collect, CollectionContext, MutationContext};
 use rand::rngs::SmallRng;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
+use std::time::Duration;
+use std::time::Instant;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` crates this when it begins a tick and passes it through the call stack to
@@ -133,6 +135,13 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// External interface for (for example) Javascript <-> Actionscript interaction
     pub external_interface: &'a mut ExternalInterface<'gc>,
+
+    /// The instant at which the current update started.
+    pub update_start: Instant,
+
+    /// The maximum amount of time that can be called before a `Error::ExecutionTimeout`
+    /// is raised. This defaults to 15 seconds but can be changed.
+    pub max_execution_duration: Duration,
 }
 
 unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context> {
@@ -209,6 +218,8 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             avm1: self.avm1,
             avm2: self.avm2,
             external_interface: self.external_interface,
+            update_start: self.update_start,
+            max_execution_duration: self.max_execution_duration,
         }
     }
 }

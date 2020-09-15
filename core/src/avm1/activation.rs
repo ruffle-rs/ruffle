@@ -429,6 +429,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         data: &SwfSlice,
         reader: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        if self.context.update_start.elapsed() >= self.context.max_execution_duration {
+            return Err(Error::ExecutionTimeout);
+        }
+
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
