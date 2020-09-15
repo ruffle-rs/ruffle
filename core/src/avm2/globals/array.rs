@@ -1244,82 +1244,82 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "forEach"),
+        QName::new(Namespace::as3_namespace(), "forEach"),
         Method::from_builtin(for_each),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "map"),
+        QName::new(Namespace::as3_namespace(), "map"),
         Method::from_builtin(map),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "filter"),
+        QName::new(Namespace::as3_namespace(), "filter"),
         Method::from_builtin(filter),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "every"),
+        QName::new(Namespace::as3_namespace(), "every"),
         Method::from_builtin(every),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "some"),
+        QName::new(Namespace::as3_namespace(), "some"),
         Method::from_builtin(some),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "indexOf"),
+        QName::new(Namespace::as3_namespace(), "indexOf"),
         Method::from_builtin(index_of),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "lastIndexOf"),
+        QName::new(Namespace::as3_namespace(), "lastIndexOf"),
         Method::from_builtin(last_index_of),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "pop"),
+        QName::new(Namespace::as3_namespace(), "pop"),
         Method::from_builtin(pop),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "push"),
+        QName::new(Namespace::as3_namespace(), "push"),
         Method::from_builtin(push),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "reverse"),
+        QName::new(Namespace::as3_namespace(), "reverse"),
         Method::from_builtin(reverse),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "shift"),
+        QName::new(Namespace::as3_namespace(), "shift"),
         Method::from_builtin(shift),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "unshift"),
+        QName::new(Namespace::as3_namespace(), "unshift"),
         Method::from_builtin(unshift),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "slice"),
+        QName::new(Namespace::as3_namespace(), "slice"),
         Method::from_builtin(slice),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "splice"),
+        QName::new(Namespace::as3_namespace(), "splice"),
         Method::from_builtin(splice),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "sort"),
+        QName::new(Namespace::as3_namespace(), "sort"),
         Method::from_builtin(sort),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "sortOn"),
+        QName::new(Namespace::as3_namespace(), "sortOn"),
         Method::from_builtin(sort_on),
     ));
 
