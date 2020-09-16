@@ -160,6 +160,7 @@ swf_tests! {
     (slash_syntax, "avm1/slash_syntax", 2),
     (strictequals_swf6, "avm1/strictequals_swf6", 1),
     (string_methods, "avm1/string_methods", 1),
+    (string_ops_swf6, "avm1/string_ops_swf6", 1),
     (path_string, "avm1/path_string", 1),
     (global_is_bare, "avm1/global_is_bare", 1),
     (primitive_type_globals, "avm1/primitive_type_globals", 1),
