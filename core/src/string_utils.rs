@@ -1,5 +1,24 @@
 ///! Utilities for operating on strings in SWF files.
 
+/// Creates a `String` from an iterator of UTF-16 code units.
+/// TODO: Unpaired surrogates will get replaced with the Unicode replacement character.
+pub fn utf16_iter_to_string<I: Iterator<Item = u16>>(it: I) -> String {
+    use std::char;
+    char::decode_utf16(it)
+        .map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER))
+        .collect()
+}
+
+/// Maps a UTF-16 code unit into a `char`.
+/// TODO: Surrogate characters will get replaced with the Unicode replacement character.
+pub fn utf16_code_unit_to_char(c: u16) -> char {
+    use std::char;
+    char::decode_utf16(std::iter::once(c))
+        .next()
+        .unwrap()
+        .unwrap_or(char::REPLACEMENT_CHARACTER)
+}
+
 /// Maps a char to its lowercase variant according to the Flash Player.
 /// Note that this mapping is different that Rust's `to_lowercase`.
 pub fn swf_char_to_lowercase(c: char) -> char {
