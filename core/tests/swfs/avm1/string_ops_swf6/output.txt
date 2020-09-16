@@ -1,0 +1,95 @@
+// length
+// length("foo")
+3
+// mblength()
+3
+// length("")
+0
+// mblength("")
+0
+// length("😋")
+2
+// mblength("😋")
+2
+// length("😋Спасибо𝌆𝌆hello")
+18
+// mblength("😋Спасибо𝌆𝌆hello")
+18
+
+// ord("f")
+102
+// mbord("f")
+102
+// ord("bar")
+98
+// mbord("bar")
+98
+// ord(null)
+110
+// mbord(null)
+110
+// ord("愛")
+24859
+// mbord("愛")
+24859
+
+// ord("😋")
+65533
+// mbord("😋")
+65533
+// chr(80)
+P
+// mbchr(80)
+P
+// chr(12345)
+〹
+// chr(12345)
+〹
+// chr(65616)
+P
+// mbchr(65616)
+P
+// chr(-65456)
+P
+// mbchr(-65456)
+P
+// chr(0xd801)
+�
+// mbchr(0xd801)
+�
+// chr(0xabababab)
+ꮫ
+// mbchr(0xabababab)
+ꮫ
+// chr(null)
+
+// mbchr(null)
+
+// chr(true)
+
+// mbchr(true)
+
+// substring(s, 1, 2)
+😋
+// mbsubstring(s, 1, 2)
+😋
+// substring(s, 3, 1)
+航
+// mbsubstring(s, 3, 1)
+航
+// substring(s, 0, 2)
+😋
+// mbsubstring(s, 0, 2)
+😋
+// substring(s, -5, -100)
+😋航空母艦testing!
+// mbsubstring(s, -5, -100)
+😋航空母艦testing!
+// substring(s, 2, 0)
+
+// mbsubstring(s, 2, 0)
+
+// substring(s, 4294967303, -4294967294)
+te
+// mbsubstring(s, 4294967303, -4294967294)
+te
