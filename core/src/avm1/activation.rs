@@ -20,6 +20,7 @@ use rand::Rng;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cell::{Ref, RefMut};
+use std::convert::TryFrom;
 use std::fmt;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, CatchVar, Function, TryBlock};
@@ -623,20 +624,34 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_ascii_to_char(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Results on incorrect operands?
-        let val = (self.context.avm1.pop().coerce_to_f64(self)? as u8) as char;
+        // In SWF6+, this operates on UTF-16 code units.
+        // TODO: In SWF5 and below, this operates on bytes, regardless of the locale encoding.
+        let char_code = u32::from(self.context.avm1.pop().coerce_to_u16(self)?);
+        let result = if char_code != 0 {
+            // Unpaired surrogates turn into replacement char.
+            char::try_from(char_code)
+                .unwrap_or(std::char::REPLACEMENT_CHARACTER)
+                .to_string()
+        } else {
+            String::default()
+        };
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, val.to_string()));
+            .push(AvmString::new(self.context.gc_context, result));
         Ok(FrameControl::Continue)
     }
 
     fn action_char_to_ascii(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Results on incorrect operands?
+        // SWF4 ord function
+        // In SWF6+, this operates on UTF-16 code units.
+        // TODO: In SWF5 and below, this operates on bytes, regardless of the locale.
         let val = self.context.avm1.pop();
-        let string = val.coerce_to_string(self)?;
-        let result = string.bytes().next().unwrap_or(0);
-        self.context.avm1.push(result);
+        let s = val.coerce_to_string(self)?;
+        let char_code = s.encode_utf16().next().unwrap_or(0);
+        // Unpaired surrogate characters should return the code point for the replacement character.
+        // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
+        let c = crate::string_utils::utf16_code_unit_to_char(char_code);
+        self.context.avm1.push(u32::from(c));
         Ok(FrameControl::Continue)
     }
 
@@ -1483,39 +1498,56 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_mb_ascii_to_char(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Results on incorrect operands?
-        use std::convert::TryFrom;
-        let result = char::try_from(self.context.avm1.pop().coerce_to_f64(self)? as u32);
-        match result {
-            Ok(val) => self
-                .context
-                .avm1
-                .push(AvmString::new(self.context.gc_context, val.to_string())),
-            Err(e) => avm_warn!(
-                self,
-                "Couldn't parse char for action_mb_ascii_to_char: {}",
-                e
-            ),
-        }
+        // In SWF6+, this operates on UTF-16 code units.
+        // TODO: In SWF5 and below, this operates on locale-dependent characters.
+        let char_code = u32::from(self.context.avm1.pop().coerce_to_u16(self)?);
+        let result = if char_code != 0 {
+            // Unpaired surrogates turn into replacement char.
+            char::try_from(char_code)
+                .unwrap_or(std::char::REPLACEMENT_CHARACTER)
+                .to_string()
+        } else {
+            String::default()
+        };
+        self.context
+            .avm1
+            .push(AvmString::new(self.context.gc_context, result));
         Ok(FrameControl::Continue)
     }
 
     fn action_mb_char_to_ascii(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Results on incorrect operands?
+        // SWF4 mbord function
+        // In SWF6+, this operates on UTF-16 code units.
+        // TODO: In SWF5 and below, this operates on locale-dependent characters.
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
-        let result = s.chars().next().unwrap_or('\0') as u32;
-        self.context.avm1.push(result);
+        let char_code = s.encode_utf16().next().unwrap_or(0);
+        // Unpaired surrogate characters should return the code point for the replacement character.
+        // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
+        let c = crate::string_utils::utf16_code_unit_to_char(char_code);
+        self.context.avm1.push(u32::from(c));
         Ok(FrameControl::Continue)
     }
 
     fn action_mb_string_extract(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Result with incorrect operands?
-        let len = self.context.avm1.pop().coerce_to_f64(self)? as usize;
-        let start = self.context.avm1.pop().coerce_to_f64(self)? as usize;
+        // SWF4 mbsubstring
+        // In SWF6+, this operates on UTF-16 code units.
+        // TODO: In SWF5 and below, this operates on locale-dependent characters.
+        let len = self.context.avm1.pop().coerce_to_i32(self)?;
+        let len = if len >= 0 { len as usize } else { usize::MAX };
+
+        // Index is 1-based for this opcode.
+        let start = self.context.avm1.pop().coerce_to_i32(self)?;
+        let start = if start >= 1 { start as usize - 1 } else { 0 };
+
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
-        let result = s[len..len + start].to_string(); // TODO(Herschel): Flash uses UTF-16 internally.
+
+        let result = crate::string_utils::utf16_iter_to_string(
+            s.encode_utf16()
+                .skip(start) // - 1 safe because max(1) above
+                .take(len),
+        );
         self.context
             .avm1
             .push(AvmString::new(self.context.gc_context, result));
@@ -1523,9 +1555,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_mb_string_length(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Result with non-string operands?
+        // In SWF6+, this is the same as String.length (returns number of UTF-16 code units).
+        // TODO: In SWF5, this returns the number of characters using the locale encoding.
         let val = self.context.avm1.pop();
-        let len = val.coerce_to_string(self)?.len();
+        let len = val.coerce_to_string(self)?.encode_utf16().count();
         self.context.avm1.push(len as f64);
         Ok(FrameControl::Continue)
     }
@@ -1945,20 +1978,26 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_string_extract(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // SWFv4 substring
-        // TODO(Herschel): Result with incorrect operands?
-        let len = self.context.avm1.pop().coerce_to_f64(self)? as usize;
-        let start = self.context.avm1.pop().coerce_to_f64(self)? as usize;
+        // SWF4 substring function
+        // In SWF6+, this operates on UTF-16 code units.
+        // TODO: In SWF5 and below, this operates on bytes, regardless of the locale encoding.
+
+        // len < 0 returns to the end of the string.
+        let len = self.context.avm1.pop().coerce_to_i32(self)?;
+        let len = if len >= 0 { len as usize } else { usize::MAX };
+
+        // Index is 1-based for this opcode.
+        let start = self.context.avm1.pop().coerce_to_i32(self)?;
+        let start = if start >= 1 { start as usize - 1 } else { 0 };
+
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
-        // This is specifically a non-UTF8 aware substring.
-        // SWFv4 only used ANSI strings.
-        let result = s
-            .bytes()
-            .skip(start)
-            .take(len)
-            .map(|c| c as char)
-            .collect::<String>();
+
+        let result = crate::string_utils::utf16_iter_to_string(
+            s.encode_utf16()
+                .skip(start) // - 1 safe because max(1) above
+                .take(len),
+        );
         self.context
             .avm1
             .push(AvmString::new(self.context.gc_context, result));
@@ -1982,10 +2021,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_string_length(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 strlen
-        // Only returns byte length.
-        // TODO(Herschel): Result with non-string operands?
+        // In SWF6+, this is the same as String.length (returns number of UTF-16 code units).
+        // TODO: In SWF5, this returns the byte length, even though the encoding is locale dependent.
         let val = self.context.avm1.pop();
-        let len = val.coerce_to_string(self)?.bytes().len() as f64;
+        let len = val.coerce_to_string(self)?.encode_utf16().count();
         self.context.avm1.push(len);
         Ok(FrameControl::Continue)
     }
