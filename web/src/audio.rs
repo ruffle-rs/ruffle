@@ -757,6 +757,11 @@ impl AudioBackend for WebAudioBackend {
         let _ = self.context.resume();
     }
 
+    fn suspend_audio(&mut self) {
+        // Suspend audio to be resumed later.
+        let _ = self.context.suspend();
+    }
+
     fn stop_all_sounds(&mut self) {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
