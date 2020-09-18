@@ -681,6 +681,36 @@ impl<'gc> MovieClip<'gc> {
         best.map(|(s, fnum)| (s.to_string(), fnum))
     }
 
+    /// Yield a list of labels and frame-nubmers in the current scene.
+    ///
+    /// Labels are returned sorted by frame number.
+    pub fn current_labels(self) -> Vec<(String, FrameNumber)> {
+        let read = self.0.read();
+        let current_scene = self.current_scene();
+        let next_scene = self.next_scene();
+
+        let mut values: Vec<(String, FrameNumber)> = read
+            .static_data
+            .frame_labels
+            .iter()
+            .filter(|(_label, frame)| {
+                current_scene
+                    .as_ref()
+                    .map(|(_, scene_start)| **frame >= *scene_start)
+                    .unwrap_or(false)
+                    && next_scene
+                        .as_ref()
+                        .map(|(_, scene_start)| **frame < *scene_start)
+                        .unwrap_or(true)
+            })
+            .map(|(label, frame)| (label.clone(), *frame))
+            .collect();
+
+        values.sort_unstable_by(|(_, framea), (_, frameb)| framea.cmp(frameb));
+
+        values
+    }
+
     pub fn total_frames(self) -> FrameNumber {
         self.0.read().static_data.total_frames
     }

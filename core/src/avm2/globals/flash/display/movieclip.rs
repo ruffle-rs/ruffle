@@ -1,10 +1,12 @@
 //! `flash.display.MovieClip` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
+use crate::avm2::globals::flash::display::framelabel;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
@@ -115,6 +117,45 @@ pub fn current_label<'gc>(
                 AvmString::new(activation.context.gc_context, label).into()
             })
             .unwrap_or(Value::Null));
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `currentLabels`.
+pub fn current_labels<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        let mut frame_labels = Vec::new();
+        let frame_label_proto = activation.context.avm2.prototypes().framelabel;
+        let current_scene_start = mc
+            .current_scene()
+            .map(|(_, frame)| frame.saturating_sub(1))
+            .unwrap_or(0);
+
+        for (name, frame) in mc.current_labels() {
+            let name: Value<'gc> = AvmString::new(activation.context.gc_context, name).into();
+            let local_frame = frame - current_scene_start;
+            let frame_label =
+                frame_label_proto.construct(activation, &[name.clone(), local_frame.into()])?;
+
+            framelabel::instance_init(activation, Some(frame_label), &[name, local_frame.into()])?;
+
+            frame_labels.push(Some(frame_label.into()));
+        }
+
+        return Ok(ArrayObject::from_array(
+            ArrayStorage::from_storage(frame_labels),
+            activation.context.avm2.prototypes().array,
+            activation.context.gc_context,
+        )
+        .into());
     }
 
     Ok(Value::Undefined)
@@ -377,6 +418,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::package(""), "currentLabel"),
         Method::from_builtin(current_label),
+    ));
+
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "currentLabels"),
+        Method::from_builtin(current_labels),
     ));
 
     write.define_instance_trait(Trait::from_getter(
