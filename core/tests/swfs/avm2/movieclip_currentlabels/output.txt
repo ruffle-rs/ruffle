@@ -1,0 +1,8 @@
+//(contents of this.currentLabels)
+1
+frame1
+3
+frame3
+//(contents of this.currentLabels in scene 2)
+1
+frame4
