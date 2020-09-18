@@ -186,6 +186,15 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         }
     }
 
+    pause() {
+        if (this.instance) {
+            this.instance.pause();
+            if (this.play_button) {
+                this.play_button.style.display = "block";
+            }
+        }
+    }
+
     /**
      * Load a movie's data into this Ruffle Player instance.
      *

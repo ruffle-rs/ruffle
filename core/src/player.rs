@@ -436,6 +436,8 @@ impl Player {
         if v {
             // Allow auto-play after user gesture for web backends.
             self.audio.prime_audio();
+        } else {
+            self.audio.suspend_audio();
         }
         self.is_playing = v;
     }

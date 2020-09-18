@@ -161,6 +161,16 @@ impl Ruffle {
         });
     }
 
+    pub fn pause(&mut self) {
+        // Remove instance from the active list.
+        INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
+            instance.borrow().core.lock().unwrap().set_is_playing(false);
+            log::info!("PAUSE!");
+        });
+    }
+
     pub fn destroy(&mut self) {
         // Remove instance from the active list.
         if let Some(instance) = INSTANCES.with(|instances| {
