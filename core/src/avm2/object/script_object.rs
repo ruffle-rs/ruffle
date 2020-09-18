@@ -263,8 +263,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         ))
     }
 
-    fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok("[object Object]".into())
+    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        if let Some(class) = self.as_proto_class() {
+            Ok(AvmString::new(mc, format!("[object {}]", class.read().name().local_name())).into())
+        } else {
+            Ok("[object Object]".into())
+        }
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
