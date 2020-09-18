@@ -395,6 +395,7 @@ swf_tests! {
     (as3_movieclip_next_scene, "avm2/movieclip_next_scene", 5),
     (as3_framelabel_constr, "avm2/framelabel_constr", 5),
     (as3_movieclip_currentlabels, "avm2/movieclip_currentlabels", 5),
+    (as3_scene_constr, "avm2/scene_constr", 5),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
