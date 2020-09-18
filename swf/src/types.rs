@@ -182,6 +182,30 @@ impl Color {
     }
 }
 
+impl From<Color> for [f32; 4] {
+    fn from(color: Color) -> Self {
+        let to_f32 = |n: u8| f32::from(n) / 255.0;
+        [
+            to_f32(color.r),
+            to_f32(color.g),
+            to_f32(color.b),
+            to_f32(color.a),
+        ]
+    }
+}
+
+impl From<[f32; 4]> for Color {
+    fn from(color: [f32; 4]) -> Self {
+        let from_f32 = |n: f32| (n.max(0.0).min(1.0) * 255.0).round() as u8;
+        Color {
+            r: from_f32(color[0]),
+            g: from_f32(color[1]),
+            b: from_f32(color[2]),
+            a: from_f32(color[3]),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct ColorTransform {
     pub r_multiply: f32,

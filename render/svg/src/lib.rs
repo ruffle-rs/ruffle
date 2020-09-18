@@ -247,36 +247,7 @@ impl RenderBackend for SvgRenderBackend {
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        // Per SWF19 p.164, the FontBoundsTable can contain empty bounds for every glyph (reserved).
-        // SWF19 says this is true through SWFv7, but it seems like it might be generally true?
-        // In any case, we have to be sure to calculate the shape bounds ourselves to make a proper
-        // SVG.
-        let bounds = glyph
-            .clone()
-            .bounds
-            .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
-            .unwrap_or_else(|| {
-                ruffle_core::shape_utils::calculate_shape_bounds(&glyph.shape_records[..])
-            });
-        let shape = swf::Shape {
-            version: 2,
-            id: 0,
-            shape_bounds: bounds.clone(),
-            edge_bounds: bounds,
-            has_fill_winding_rule: false,
-            has_non_scaling_strokes: false,
-            has_scaling_strokes: true,
-            styles: swf::ShapeStyles {
-                fill_styles: vec![swf::FillStyle::Color(Color {
-                    r: 255,
-                    g: 255,
-                    b: 255,
-                    a: 255,
-                })],
-                line_styles: vec![],
-            },
-            shape: glyph.shape_records.clone(),
-        };
+        let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
         self.register_shape((&shape).into())
     }
 
@@ -373,6 +344,17 @@ impl RenderBackend for SvgRenderBackend {
             }
             self.document.append(shape);
         }
+    }
+
+    fn draw_rect(&mut self, Color { r, g, b, a }: Color, matrix: &Matrix) {
+        self.document.append(
+            Rectangle::new()
+                .set("width", 1)
+                .set("height", 1)
+                .set("transform", format!("matrix({})", matrix.get_transform()))
+                .set("fill", format!("rgb({},{},{})", r, g, b))
+                .set("fill-opacity", f32::from(a) / 255.0),
+        );
     }
 
     fn end_frame(&mut self) {}
@@ -854,18 +836,6 @@ fn swf_shape_to_svg(
 }
 
 /// Converts an SWF color from sRGB space to linear color space.
-pub fn srgb_to_linear(mut color: swf::Color) -> swf::Color {
-    fn to_linear_channel(n: u8) -> u8 {
-        let mut n = f32::from(n) / 255.0;
-        n = if n <= 0.04045 {
-            n / 12.92
-        } else {
-            f32::powf((n + 0.055) / 1.055, 2.4)
-        };
-        (n.max(0.0).min(1.0) * 255.0).round() as u8
-    }
-    color.r = to_linear_channel(color.r);
-    color.g = to_linear_channel(color.g);
-    color.b = to_linear_channel(color.b);
-    color
+pub fn srgb_to_linear(color: swf::Color) -> swf::Color {
+    ruffle_core::backend::render::srgb_to_linear(color.into()).into()
 }
