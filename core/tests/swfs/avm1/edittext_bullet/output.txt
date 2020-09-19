@@ -23,3 +23,8 @@
 96
 //field.textHeight
 179
+//Bullet-bearing HTML with right margin and explicit newlines
+//field.textWidth
+96
+//field.textHeight
+197

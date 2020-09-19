@@ -12,12 +12,12 @@
 //field.textWidth
 163
 //field.textHeight
-89
+126
 //Newline-having text without wordwrap
 //field.textWidth
 251
 //field.textHeight
-52
+89
 //Newline-having HTML with wordwrap
 //field.textWidth
 164

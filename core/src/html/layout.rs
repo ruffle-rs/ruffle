@@ -672,7 +672,7 @@ impl<'gc> LayoutBox<'gc> {
 
                 let params = EvalParameters::from_span(span);
 
-                for text in span_text.split(&['\n', '\t'][..]) {
+                for text in span_text.split(&['\n', '\r', '\t'][..]) {
                     let slice_start = text.as_ptr() as usize - span_text.as_ptr() as usize;
                     let delimiter = if slice_start > 0 {
                         span_text
@@ -683,7 +683,7 @@ impl<'gc> LayoutBox<'gc> {
                     };
 
                     match delimiter {
-                        Some('\n') => layout_context.explicit_newline(context),
+                        Some('\n') | Some('\r') => layout_context.explicit_newline(context),
                         Some('\t') => layout_context.tab(),
                         _ => {}
                     }
