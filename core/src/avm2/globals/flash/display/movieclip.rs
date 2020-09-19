@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::globals::flash::display::framelabel;
+use crate::avm2::globals::flash::display::{framelabel, scene};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ArrayObject, Object, TObject};
@@ -122,6 +122,37 @@ pub fn current_label<'gc>(
     Ok(Value::Undefined)
 }
 
+fn labels_for_scene<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    mc: MovieClip<'gc>,
+) -> Result<(String, u16, Object<'gc>), Error> {
+    let (scene_name, scene_start, scene_length) =
+        mc.current_scene().unwrap_or(("".to_string(), 0, u16::MAX));
+    let mut frame_labels = Vec::new();
+    let frame_label_proto = activation.context.avm2.prototypes().framelabel;
+
+    for (name, frame) in mc.labels_in_range(scene_start, scene_start + scene_length) {
+        let name: Value<'gc> = AvmString::new(activation.context.gc_context, name).into();
+        let local_frame = frame - scene_start + 1;
+        let args = [name, local_frame.into()];
+        let frame_label = frame_label_proto.construct(activation, &args)?;
+
+        framelabel::instance_init(activation, Some(frame_label), &args)?;
+
+        frame_labels.push(Some(frame_label.into()));
+    }
+
+    Ok((
+        scene_name,
+        scene_length,
+        ArrayObject::from_array(
+            ArrayStorage::from_storage(frame_labels),
+            activation.context.avm2.prototypes().array,
+            activation.context.gc_context,
+        ),
+    ))
+}
+
 /// Implements `currentLabels`.
 pub fn current_labels<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -132,34 +163,35 @@ pub fn current_labels<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        let mut frame_labels = Vec::new();
-        let frame_label_proto = activation.context.avm2.prototypes().framelabel;
-        let current_scene_start = mc
-            .current_scene()
-            .map(|(_, frame, _)| frame.saturating_sub(1))
-            .unwrap_or(0);
-        let (from, to) = mc
-            .current_scene()
-            .map(|(_, start, length)| (start, start + length))
-            .unwrap_or((0, u16::MAX));
+        return Ok(labels_for_scene(activation, mc)?.2.into());
+    }
 
-        for (name, frame) in mc.labels_in_range(from, to) {
-            let name: Value<'gc> = AvmString::new(activation.context.gc_context, name).into();
-            let local_frame = frame - current_scene_start;
-            let frame_label =
-                frame_label_proto.construct(activation, &[name.clone(), local_frame.into()])?;
+    Ok(Value::Undefined)
+}
 
-            framelabel::instance_init(activation, Some(frame_label), &[name, local_frame.into()])?;
+/// Implements `currentScene`.
+pub fn current_scene<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc)?;
+        let scene_proto = activation.context.avm2.prototypes().scene;
+        let args = [
+            AvmString::new(activation.context.gc_context, scene_name).into(),
+            scene_labels.into(),
+            scene_length.into(),
+        ];
 
-            frame_labels.push(Some(frame_label.into()));
-        }
+        let scene = scene_proto.construct(activation, &args)?;
 
-        return Ok(ArrayObject::from_array(
-            ArrayStorage::from_storage(frame_labels),
-            activation.context.avm2.prototypes().array,
-            activation.context.gc_context,
-        )
-        .into());
+        scene::instance_init(activation, Some(scene), &args)?;
+
+        return Ok(scene.into());
     }
 
     Ok(Value::Undefined)
@@ -427,6 +459,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::package(""), "currentLabels"),
         Method::from_builtin(current_labels),
+    ));
+
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "currentScene"),
+        Method::from_builtin(current_scene),
     ));
 
     write.define_instance_trait(Trait::from_getter(
