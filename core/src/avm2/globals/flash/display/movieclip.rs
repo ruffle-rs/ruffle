@@ -11,7 +11,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{MovieClip, TDisplayObject};
+use crate::display_object::{MovieClip, Scene, TDisplayObject};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.MovieClip`'s instance constructor.
@@ -66,8 +66,13 @@ pub fn current_frame<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        if let Some((_scene, scene_basis, _length)) = mc.current_scene() {
-            return Ok(((mc.current_frame() + 1) - scene_basis).into());
+        if let Some(Scene {
+            name: _,
+            start,
+            length: _,
+        }) = mc.current_scene()
+        {
+            return Ok(((mc.current_frame() + 1) - start).into());
         } else {
             return Ok(mc.current_frame().into());
         }
@@ -122,16 +127,24 @@ pub fn current_label<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Given a scene, produce it's name, length, and a list of frame labels.
+///
+/// The intended purpose of this output is to be sent directly into the
+/// constructor of `flash.display.Scene`.
 fn labels_for_scene<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     mc: MovieClip<'gc>,
+    scene: &Scene,
 ) -> Result<(String, u16, Object<'gc>), Error> {
-    let (scene_name, scene_start, scene_length) =
-        mc.current_scene().unwrap_or(("".to_string(), 0, u16::MAX));
+    let Scene {
+        name: scene_name,
+        start: scene_start,
+        length: scene_length,
+    } = scene;
     let mut frame_labels = Vec::new();
     let frame_label_proto = activation.context.avm2.prototypes().framelabel;
 
-    for (name, frame) in mc.labels_in_range(scene_start, scene_start + scene_length) {
+    for (name, frame) in mc.labels_in_range(*scene_start, scene_start + scene_length) {
         let name: Value<'gc> = AvmString::new(activation.context.gc_context, name).into();
         let local_frame = frame - scene_start + 1;
         let args = [name, local_frame.into()];
@@ -143,8 +156,8 @@ fn labels_for_scene<'gc>(
     }
 
     Ok((
-        scene_name,
-        scene_length,
+        scene_name.to_string(),
+        *scene_length,
         ArrayObject::from_array(
             ArrayStorage::from_storage(frame_labels),
             activation.context.avm2.prototypes().array,
@@ -163,7 +176,8 @@ pub fn current_labels<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        return Ok(labels_for_scene(activation, mc)?.2.into());
+        let scene = mc.current_scene().unwrap_or_else(Default::default);
+        return Ok(labels_for_scene(activation, mc, &scene)?.2.into());
     }
 
     Ok(Value::Undefined)
@@ -179,7 +193,8 @@ pub fn current_scene<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc)?;
+        let scene = mc.current_scene().unwrap_or_else(Default::default);
+        let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc, &scene)?;
         let scene_proto = activation.context.avm2.prototypes().scene;
         let args = [
             AvmString::new(activation.context.gc_context, scene_name).into(),
@@ -192,6 +207,46 @@ pub fn current_scene<'gc>(
         scene::instance_init(activation, Some(scene), &args)?;
 
         return Ok(scene.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `scenes`.
+pub fn scenes<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        let mut scene_objects = Vec::new();
+
+        for scene in mc.scenes() {
+            let (scene_name, scene_length, scene_labels) =
+                labels_for_scene(activation, mc, &scene)?;
+            let scene_proto = activation.context.avm2.prototypes().scene;
+            let args = [
+                AvmString::new(activation.context.gc_context, scene_name).into(),
+                scene_labels.into(),
+                scene_length.into(),
+            ];
+
+            let scene = scene_proto.construct(activation, &args)?;
+
+            scene::instance_init(activation, Some(scene), &args)?;
+
+            scene_objects.push(Some(scene.into()));
+        }
+
+        return Ok(ArrayObject::from_array(
+            ArrayStorage::from_storage(scene_objects),
+            activation.context.avm2.prototypes().array,
+            activation.context.gc_context,
+        )
+        .into());
     }
 
     Ok(Value::Undefined)
@@ -398,8 +453,13 @@ pub fn prev_scene<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        if let Some((_scene, target_frame, _length)) = mc.previous_scene() {
-            mc.goto_frame(&mut activation.context, target_frame, false);
+        if let Some(Scene {
+            name: _,
+            start,
+            length: _,
+        }) = mc.previous_scene()
+        {
+            mc.goto_frame(&mut activation.context, start, false);
         }
     }
 
@@ -416,8 +476,13 @@ pub fn next_scene<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        if let Some((_scene, target_frame, _length)) = mc.next_scene() {
-            mc.goto_frame(&mut activation.context, target_frame, false);
+        if let Some(Scene {
+            name: _,
+            start,
+            length: _,
+        }) = mc.next_scene()
+        {
+            mc.goto_frame(&mut activation.context, start, false);
         }
     }
 
@@ -464,6 +529,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::package(""), "currentScene"),
         Method::from_builtin(current_scene),
+    ));
+
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "scenes"),
+        Method::from_builtin(scenes),
     ));
 
     write.define_instance_trait(Trait::from_getter(

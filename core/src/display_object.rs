@@ -30,7 +30,7 @@ pub use button::Button;
 pub use edit_text::{AutoSizeMode, EditText};
 pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
-pub use movie_clip::MovieClip;
+pub use movie_clip::{MovieClip, Scene};
 pub use text::Text;
 
 #[derive(Clone, Debug)]

@@ -555,9 +555,6 @@ impl<'gc> MovieClip<'gc> {
     ) -> DecodeResult {
         let mut sfl_data = reader.read_define_scene_and_frame_label_data()?;
         sfl_data
-            .frame_labels
-            .sort_unstable_by(|s1, s2| s1.frame_num.cmp(&s2.frame_num));
-        sfl_data
             .scenes
             .sort_unstable_by(|s1, s2| s1.frame_num.cmp(&s2.frame_num));
 
@@ -640,60 +637,136 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().current_frame
     }
 
-    pub fn current_scene(self) -> Option<(String, FrameNumber, FrameNumber)> {
+    /// Return the current scene.
+    pub fn current_scene(self) -> Option<Scene> {
         let current_frame = self.0.read().current_frame();
 
-        self.filter_scenes(|best, (_scene, frame, _end)| {
-            frame <= current_frame && best.map(|v| frame >= v.1).unwrap_or(true)
-        })
+        self.filter_scenes(
+            |best,
+             Scene {
+                 name: _,
+                 start,
+                 length: _,
+             }| {
+                *start <= current_frame
+                    && best
+                        .map(
+                            |Scene {
+                                 name: _,
+                                 start: best_start,
+                                 length: _,
+                             }| start >= best_start,
+                        )
+                        .unwrap_or(true)
+            },
+        )
     }
 
-    pub fn previous_scene(self) -> Option<(String, FrameNumber, FrameNumber)> {
+    /// Return the previous scene.
+    pub fn previous_scene(self) -> Option<Scene> {
         let current_frame = self
             .current_scene()
-            .map(|v| v.1)
+            .map(
+                |Scene {
+                     name: _,
+                     start,
+                     length: _,
+                 }| start,
+            )
             .unwrap_or_else(|| self.current_frame());
 
-        self.filter_scenes(|best, (_scene, frame, _end)| {
-            frame < current_frame && best.map(|v| frame >= v.1).unwrap_or(true)
-        })
+        self.filter_scenes(
+            |best,
+             Scene {
+                 name: _,
+                 start,
+                 length: _,
+             }| {
+                *start < current_frame
+                    && best
+                        .map(
+                            |Scene {
+                                 name: _,
+                                 start: best_start,
+                                 length: _,
+                             }| start >= best_start,
+                        )
+                        .unwrap_or(true)
+            },
+        )
     }
 
-    pub fn next_scene(self) -> Option<(String, FrameNumber, FrameNumber)> {
+    /// Return the next scene.
+    pub fn next_scene(self) -> Option<Scene> {
         let current_frame = self.0.read().current_frame();
 
-        self.filter_scenes(|best, (_scene, frame, _end)| {
-            frame > current_frame && best.map(|v| frame <= v.1).unwrap_or(true)
-        })
+        self.filter_scenes(
+            |best,
+             Scene {
+                 name: _,
+                 start,
+                 length: _,
+             }| {
+                *start > current_frame
+                    && best
+                        .map(
+                            |Scene {
+                                 name: _,
+                                 start: best_start,
+                                 length: _,
+                             }| start <= best_start,
+                        )
+                        .unwrap_or(true)
+            },
+        )
     }
 
-    pub fn filter_scenes<F>(self, mut cond: F) -> Option<(String, FrameNumber, FrameNumber)>
+    /// Return all scenes in the movie.
+    ///
+    /// Scenes will be sorted in playback order.
+    pub fn scenes(self) -> Vec<Scene> {
+        let read = self.0.read();
+        let mut out = Vec::new();
+
+        for (_, scene) in read.static_data.scene_labels.iter() {
+            out.push(scene.clone());
+        }
+
+        out.sort_unstable_by(
+            |Scene {
+                 name: _,
+                 start: a,
+                 length: _,
+             },
+             Scene {
+                 name: _,
+                 start: b,
+                 length: _,
+             }| a.cmp(b),
+        );
+
+        out
+    }
+
+    /// Scan through the list of scenes and yield the best one, if available,
+    /// according to a given criterion function.
+    fn filter_scenes<F>(self, mut cond: F) -> Option<Scene>
     where
-        F: FnMut(
-            Option<(&str, FrameNumber, FrameNumber)>,
-            (&str, FrameNumber, FrameNumber),
-        ) -> bool,
+        F: FnMut(Option<&Scene>, &Scene) -> bool,
     {
         let read = self.0.read();
-        let mut best: Option<(&str, FrameNumber, FrameNumber)> = None;
+        let mut best: Option<&Scene> = None;
 
-        for (
-            _,
-            Scene {
-                name,
-                start,
-                length,
-            },
-        ) in read.static_data.scene_labels.iter()
-        {
-            if cond(best, (name, *start, *length)) {
-                best = Some((name, *start, *length));
+        for (_, scene) in read.static_data.scene_labels.iter() {
+            if cond(best, scene) {
+                best = Some(scene);
             }
         }
 
-        best.map(|(s, fnum, len)| (s.to_string(), fnum, len))
+        best.cloned()
     }
 
+    /// Yield the current frame label as a tuple of string and frame number.
     pub fn current_label(self) -> Option<(String, FrameNumber)> {
         let read = self.0.read();
         let current_frame = read.current_frame();
@@ -2863,10 +2936,20 @@ impl<'gc, 'a> MovieClip<'gc> {
 }
 
 #[derive(Clone)]
-struct Scene {
-    name: String,
-    start: FrameNumber,
-    length: FrameNumber,
+pub struct Scene {
+    pub name: String,
+    pub start: FrameNumber,
+    pub length: FrameNumber,
+}
+
+impl Default for Scene {
+    fn default() -> Self {
+        Scene {
+            name: "".to_string(),
+            start: 0,
+            length: u16::MAX,
+        }
+    }
 }
 
 /// Static data shared between all instances of a movie clip.
