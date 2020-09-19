@@ -276,7 +276,7 @@ pub enum Loader<'gc> {
         /// into a clip that has not yet fired it's Load event causes the
         /// loader to be prematurely removed. This flag is only set when either
         /// the movie has been replaced (and thus Load events can be trusted)
-        /// or an error has occured (in which case we don't care about the
+        /// or an error has occurred (in which case we don't care about the
         /// loader anymore).
         load_complete: bool,
     },

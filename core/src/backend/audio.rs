@@ -64,7 +64,7 @@ pub trait AudioBackend {
     /// Used by SWF `StartSound` tag with `SoundEvent::Stop`.
     fn stop_sounds_with_handle(&mut self, handle: SoundHandle);
 
-    /// Returns wheter a sound clip is playing.
+    /// Returns whether a sound clip is playing.
     /// Used by SWF `StartSouynd` tag with `SoundEvent:Start`,
     /// which only plays a sound if that sound is not already playing.
     fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool;

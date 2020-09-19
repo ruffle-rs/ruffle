@@ -966,7 +966,7 @@ pub fn xml_doc_type_decl<'gc>(
             return Ok(AvmString::new(
                 activation.context.gc_context,
                 result.unwrap_or_else(|e| {
-                    avm_warn!(activation, "Error occured when serializing DOCTYPE: {}", e);
+                    avm_warn!(activation, "Error occurred when serializing DOCTYPE: {}", e);
                     "".to_string()
                 }),
             )

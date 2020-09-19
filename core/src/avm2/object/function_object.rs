@@ -44,7 +44,7 @@ impl<'gc> FunctionObject<'gc> {
     ///
     /// This function returns both the class itself, and the static class
     /// initializer method that you should call before interacting with the
-    /// class. The latter should be called using the former as a reciever.
+    /// class. The latter should be called using the former as a receiver.
     ///
     /// `base_class` is allowed to be `None`, corresponding to a `null` value
     /// in the VM. This corresponds to no base class, and in practice appears
@@ -210,9 +210,9 @@ impl<'gc> FunctionObject<'gc> {
         method: Method<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         fn_proto: Object<'gc>,
-        reciever: Option<Object<'gc>>,
+        receiver: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        let exec = Some(Executable::from_method(method, scope, reciever, mc));
+        let exec = Some(Executable::from_method(method, scope, receiver, mc));
 
         FunctionObject(GcCell::allocate(
             mc,
@@ -302,13 +302,13 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn call(
         self,
-        reciever: Option<Object<'gc>>,
+        receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
-            exec.exec(reciever, arguments, activation, base_proto)
+            exec.exec(receiver, arguments, activation, base_proto)
         } else {
             Err("Not a callable function!".into())
         }

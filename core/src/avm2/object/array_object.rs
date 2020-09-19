@@ -84,7 +84,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn get_property_local(
         self,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
@@ -96,7 +96,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        let rv = read.base.get_property_local(reciever, name, activation)?;
+        let rv = read.base.get_property_local(receiver, name, activation)?;
 
         drop(read);
 
@@ -105,7 +105,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn set_property_local(
         self,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -122,7 +122,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
         let rv = write
             .base
-            .set_property_local(reciever, name, value, activation)?;
+            .set_property_local(receiver, name, value, activation)?;
 
         drop(write);
 
@@ -133,7 +133,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn init_property_local(
         self,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -150,7 +150,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
         let rv = write
             .base
-            .init_property_local(reciever, name, value, activation)?;
+            .init_property_local(receiver, name, value, activation)?;
 
         drop(write);
 

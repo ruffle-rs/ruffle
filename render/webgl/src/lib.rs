@@ -617,7 +617,7 @@ impl WebGlRenderBackend {
     }
 
     fn set_stencil_state(&mut self) {
-        // Set stencil state for masking, if neccessary.
+        // Set stencil state for masking, if necessary.
         if self.mask_state_dirty {
             if self.num_masks > 0 {
                 self.gl.enable(Gl::STENCIL_TEST);

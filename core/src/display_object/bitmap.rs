@@ -10,9 +10,9 @@ use gc_arena::{Collect, Gc, GcCell};
 /// This can only be instanitated on the display list in SWFv9 AVM2 files.
 /// In AVM1, this is only a library symbol that is referenced by `Graphic`.
 /// Normally bitmaps are drawn in Flash as part of a Shape tag (`Graphic`),
-/// but starting in AVM2, a raw `Bitmap` display object can be crated
+/// but starting in AVM2, a raw `Bitmap` display object can be created
 /// with the `PlaceObject3` tag.
-/// It can also be crated in ActionScript using the `Bitmap` class.
+/// It can also be created in ActionScript using the `Bitmap` class.
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);

@@ -83,7 +83,7 @@ jobs:
           profile: minimal
           toolchain: stable
 
-      - name: Install linux depencencies
+      - name: Install linux dependencies
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
 

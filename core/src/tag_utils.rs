@@ -258,7 +258,7 @@ impl SwfSlice {
 
     /// Construct a reader for this slice.
     ///
-    /// The `from` paramter is the offset to start reading the slice from.
+    /// The `from` parameter is the offset to start reading the slice from.
     pub fn read_from(&self, from: u64) -> swf::read::Reader<std::io::Cursor<&[u8]>> {
         let mut cursor = std::io::Cursor::new(self.data());
         cursor.set_position(from);

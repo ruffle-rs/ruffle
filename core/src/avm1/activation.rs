@@ -1835,7 +1835,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             // When SetTarget has an invalid target, subsequent GetVariables act
             // as if they are targeting root, but subsequent Play/Stop/etc.
-            // fail silenty.
+            // fail silently.
             new_target_clip = None;
         }
 
@@ -1869,7 +1869,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
             Value::Object(o) => {
                 if let Some(clip) = o.as_display_object() {
-                    // Movieclips can be targetted directly
+                    // Movieclips can be targeted directly
                     self.set_target_clip(Some(clip));
                 } else {
                     // Other objects get coerced to string

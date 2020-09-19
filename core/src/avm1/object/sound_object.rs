@@ -9,7 +9,7 @@ use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 
-/// A SounObject that is tied to a sound from the AudioBackend.
+/// A SoundObject that is tied to a sound from the AudioBackend.
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct SoundObject<'gc>(GcCell<'gc, SoundObjectData<'gc>>);
@@ -27,7 +27,7 @@ pub struct SoundObjectData<'gc> {
     /// The instance of the last played sound on this object.
     sound_instance: Option<SoundInstanceHandle>,
 
-    /// Sounds in AVM1 are tied to a speicifc movie clip.
+    /// Sounds in AVM1 are tied to a specific movie clip.
     owner: Option<DisplayObject<'gc>>,
 
     /// Position of the last playing sound in milliseconds.

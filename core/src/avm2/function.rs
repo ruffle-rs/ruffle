@@ -20,11 +20,11 @@ pub struct BytecodeExecutable<'gc> {
     /// The scope stack to pull variables from.
     scope: Option<GcCell<'gc, Scope<'gc>>>,
 
-    /// The reciever that this function is always called with.
+    /// The receiver that this function is always called with.
     ///
-    /// If `None`, then the reciever provided by the caller is used. A
+    /// If `None`, then the receiver provided by the caller is used. A
     /// `Some` value indicates a bound executable.
-    reciever: Option<Object<'gc>>,
+    receiver: Option<Object<'gc>>,
 }
 
 /// Represents code that can be executed by some means.
@@ -32,7 +32,7 @@ pub struct BytecodeExecutable<'gc> {
 pub enum Executable<'gc> {
     /// Code defined in Ruffle's binary.
     ///
-    /// The second parameter stores the bound reciever for this function.
+    /// The second parameter stores the bound receiver for this function.
     Native(NativeMethod<'gc>, Option<Object<'gc>>),
 
     /// Code defined in a loaded ABC file.
@@ -43,7 +43,7 @@ unsafe impl<'gc> Collect for Executable<'gc> {
     fn trace(&self, cc: CollectionContext) {
         match self {
             Self::Action(be) => be.trace(cc),
-            Self::Native(_nf, reciever) => reciever.trace(cc),
+            Self::Native(_nf, receiver) => receiver.trace(cc),
         }
     }
 }
@@ -53,17 +53,17 @@ impl<'gc> Executable<'gc> {
     pub fn from_method(
         method: Method<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
-        reciever: Option<Object<'gc>>,
+        receiver: Option<Object<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
         match method {
-            Method::Native(nf) => Self::Native(nf, reciever),
+            Method::Native(nf) => Self::Native(nf, receiver),
             Method::Entry(method) => Self::Action(Gc::allocate(
                 mc,
                 BytecodeExecutable {
                     method,
                     scope,
-                    reciever,
+                    receiver,
                 },
             )),
         }
@@ -75,7 +75,7 @@ impl<'gc> Executable<'gc> {
     /// executed on the same AVM2 instance as the activation passed in here.
     /// The value returned in either case will be provided here.
     ///
-    /// It is a panicing logic error to attempt to execute user code while any
+    /// It is a panicking logic error to attempt to execute user code while any
     /// reachable object is currently under a GcCell write lock.
     pub fn exec(
         &self,
@@ -85,16 +85,16 @@ impl<'gc> Executable<'gc> {
         base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         match self {
-            Executable::Native(nf, reciever) => {
-                nf(activation, reciever.or(unbound_reciever), arguments)
+            Executable::Native(nf, receiver) => {
+                nf(activation, receiver.or(unbound_reciever), arguments)
             }
             Executable::Action(bm) => {
-                let reciever = bm.reciever.or(unbound_reciever);
+                let receiver = bm.receiver.or(unbound_reciever);
                 let mut activation = Activation::from_method(
                     activation.context.reborrow(),
                     bm.method,
                     bm.scope,
-                    reciever,
+                    receiver,
                     arguments,
                     base_proto,
                 )?;
@@ -112,12 +112,12 @@ impl<'gc> fmt::Debug for Executable<'gc> {
                 .debug_struct("Executable::Action")
                 .field("method", &be.method)
                 .field("scope", &be.scope)
-                .field("reciever", &be.reciever)
+                .field("receiver", &be.receiver)
                 .finish(),
-            Self::Native(nf, reciever) => fmt
+            Self::Native(nf, receiver) => fmt
                 .debug_tuple("Executable::Native")
                 .field(&format!("{:p}", nf))
-                .field(reciever)
+                .field(receiver)
                 .finish(),
         }
     }

@@ -42,7 +42,7 @@ static RUFFLE_GLOBAL_PANIC: Once = Once::new();
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
     /// This gives us a clear boundary between the JS side and Rust side, avoiding
-    /// issues with lifetimes and type paramters (which cannot be exported with wasm-bindgen).
+    /// issues with lifetimes and type parameters (which cannot be exported with wasm-bindgen).
     static INSTANCES: RefCell<Arena<RefCell<RuffleInstance>>> = RefCell::new(Arena::new());
 
     static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static, 'static>>> = RefCell::new(None);
@@ -284,7 +284,7 @@ impl Ruffle {
             core,
             js_player,
             canvas: canvas.clone(),
-            canvas_width: 0, // Intiailize canvas width and height to 0 to force an initial canvas resize.
+            canvas_width: 0, // Initialize canvas width and height to 0 to force an initial canvas resize.
             canvas_height: 0,
             device_pixel_ratio: window.device_pixel_ratio(),
             animation_handler: None,

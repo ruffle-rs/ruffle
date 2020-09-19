@@ -102,7 +102,7 @@ pub struct Avm1<'gc> {
     /// `ActionDefineFunction2` defined functions do not use these slots.
     registers: [Value<'gc>; 4],
 
-    /// If a serious error has occured, or a user has requested it, the AVM may be halted.
+    /// If a serious error has occurred, or a user has requested it, the AVM may be halted.
     /// This will completely prevent any further actions from being executed.
     halted: bool,
 

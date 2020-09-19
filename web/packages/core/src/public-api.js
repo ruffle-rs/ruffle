@@ -21,7 +21,7 @@ exports.PublicAPI = class PublicAPI {
      * if it exists.
      *
      * Constructing a Public API will also trigger it to initialize Ruffle once
-     * the page loads, if the API has not already been superceded.
+     * the page loads, if the API has not already been superseded.
      *
      * @param {object} prev What used to be in the public API slot.
      *
@@ -43,7 +43,7 @@ exports.PublicAPI = class PublicAPI {
                 this.conflict = prev.conflict;
                 this.newest_name = prev.newest_name;
 
-                prev.superceded();
+                prev.superseded();
             } else if (
                 prev.constructor === Object &&
                 prev.config !== undefined
@@ -194,17 +194,17 @@ exports.PublicAPI = class PublicAPI {
     }
 
     /**
-     * Indicates that this version of the public API has been superceded by a
+     * Indicates that this version of the public API has been superseded by a
      * newer version.
      *
      * This should only be called by a newer version of the Public API.
-     * Identical versions of the Public API should not supercede older versions
+     * Identical versions of the Public API should not supersede older versions
      * of that same API.
      *
      * Unfortunately, we can't disable polyfills after-the-fact, so this
      * only lets you disable the init event...
      */
-    superceded() {
+    superseded() {
         this.invoked = true;
     }
 
