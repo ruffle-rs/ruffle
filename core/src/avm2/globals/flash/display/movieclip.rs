@@ -66,7 +66,7 @@ pub fn current_frame<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        if let Some((_scene, scene_basis)) = mc.current_scene() {
+        if let Some((_scene, scene_basis, _length)) = mc.current_scene() {
             return Ok(((mc.current_frame() + 1) - scene_basis).into());
         } else {
             return Ok(mc.current_frame().into());
@@ -136,10 +136,14 @@ pub fn current_labels<'gc>(
         let frame_label_proto = activation.context.avm2.prototypes().framelabel;
         let current_scene_start = mc
             .current_scene()
-            .map(|(_, frame)| frame.saturating_sub(1))
+            .map(|(_, frame, _)| frame.saturating_sub(1))
             .unwrap_or(0);
+        let (from, to) = mc
+            .current_scene()
+            .map(|(_, start, length)| (start, start + length))
+            .unwrap_or((0, u16::MAX));
 
-        for (name, frame) in mc.current_labels() {
+        for (name, frame) in mc.labels_in_range(from, to) {
             let name: Value<'gc> = AvmString::new(activation.context.gc_context, name).into();
             let local_frame = frame - current_scene_start;
             let frame_label =
@@ -362,7 +366,7 @@ pub fn prev_scene<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        if let Some((_scene, target_frame)) = mc.previous_scene() {
+        if let Some((_scene, target_frame, _length)) = mc.previous_scene() {
             mc.goto_frame(&mut activation.context, target_frame, false);
         }
     }
@@ -380,7 +384,7 @@ pub fn next_scene<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        if let Some((_scene, target_frame)) = mc.next_scene() {
+        if let Some((_scene, target_frame, _length)) = mc.next_scene() {
             mc.goto_frame(&mut activation.context, target_frame, false);
         }
     }
