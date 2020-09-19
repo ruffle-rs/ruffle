@@ -553,10 +553,30 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<&[u8]>,
         static_data: &mut MovieClipStatic,
     ) -> DecodeResult {
-        let sfl_data = reader.read_define_scene_and_frame_label_data()?;
+        let mut sfl_data = reader.read_define_scene_and_frame_label_data()?;
+        sfl_data
+            .frame_labels
+            .sort_unstable_by(|s1, s2| s1.frame_num.cmp(&s2.frame_num));
+        sfl_data
+            .scenes
+            .sort_unstable_by(|s1, s2| s1.frame_num.cmp(&s2.frame_num));
 
-        for FrameLabelData { frame_num, label } in sfl_data.scenes {
-            static_data.scene_labels.insert(label, frame_num as u16 + 1);
+        for (i, FrameLabelData { frame_num, label }) in sfl_data.scenes.iter().enumerate() {
+            let start = *frame_num as u16 + 1;
+            let end = sfl_data
+                .scenes
+                .get(i + 1)
+                .map(|fld| fld.frame_num + 1)
+                .unwrap_or_else(|| static_data.total_frames as u32 + 1);
+
+            static_data.scene_labels.insert(
+                label.to_string(),
+                Scene {
+                    name: label.to_string(),
+                    start,
+                    length: end as u16 - start as u16,
+                },
+            );
         }
 
         for FrameLabelData { frame_num, label } in sfl_data.frame_labels {
@@ -620,47 +640,58 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().current_frame
     }
 
-    pub fn current_scene(self) -> Option<(String, FrameNumber)> {
+    pub fn current_scene(self) -> Option<(String, FrameNumber, FrameNumber)> {
         let current_frame = self.0.read().current_frame();
 
-        self.filter_scenes(|best, (_scene, frame)| {
+        self.filter_scenes(|best, (_scene, frame, _end)| {
             frame <= current_frame && best.map(|v| frame >= v.1).unwrap_or(true)
         })
     }
 
-    pub fn previous_scene(self) -> Option<(String, FrameNumber)> {
+    pub fn previous_scene(self) -> Option<(String, FrameNumber, FrameNumber)> {
         let current_frame = self
             .current_scene()
             .map(|v| v.1)
             .unwrap_or_else(|| self.current_frame());
 
-        self.filter_scenes(|best, (_scene, frame)| {
+        self.filter_scenes(|best, (_scene, frame, _end)| {
             frame < current_frame && best.map(|v| frame >= v.1).unwrap_or(true)
         })
     }
 
-    pub fn next_scene(self) -> Option<(String, FrameNumber)> {
+    pub fn next_scene(self) -> Option<(String, FrameNumber, FrameNumber)> {
         let current_frame = self.0.read().current_frame();
 
-        self.filter_scenes(|best, (_scene, frame)| {
+        self.filter_scenes(|best, (_scene, frame, _end)| {
             frame > current_frame && best.map(|v| frame <= v.1).unwrap_or(true)
         })
     }
 
-    pub fn filter_scenes<F>(self, mut cond: F) -> Option<(String, FrameNumber)>
+    pub fn filter_scenes<F>(self, mut cond: F) -> Option<(String, FrameNumber, FrameNumber)>
     where
-        F: FnMut(Option<(&str, FrameNumber)>, (&str, FrameNumber)) -> bool,
+        F: FnMut(
+            Option<(&str, FrameNumber, FrameNumber)>,
+            (&str, FrameNumber, FrameNumber),
+        ) -> bool,
     {
         let read = self.0.read();
-        let mut best: Option<(&str, FrameNumber)> = None;
+        let mut best: Option<(&str, FrameNumber, FrameNumber)> = None;
 
-        for (label, frame) in read.static_data.scene_labels.iter() {
-            if cond(best, (label, *frame)) {
-                best = Some((label, *frame));
+        for (
+            _,
+            Scene {
+                name,
+                start,
+                length,
+            },
+        ) in read.static_data.scene_labels.iter()
+        {
+            if cond(best, (name, *start, *length)) {
+                best = Some((name, *start, *length));
             }
         }
 
-        best.map(|(s, fnum)| (s.to_string(), fnum))
+        best.map(|(s, fnum, len)| (s.to_string(), fnum, len))
     }
 
     pub fn current_label(self) -> Option<(String, FrameNumber)> {
@@ -684,25 +715,14 @@ impl<'gc> MovieClip<'gc> {
     /// Yield a list of labels and frame-nubmers in the current scene.
     ///
     /// Labels are returned sorted by frame number.
-    pub fn current_labels(self) -> Vec<(String, FrameNumber)> {
+    pub fn labels_in_range(self, from: FrameNumber, to: FrameNumber) -> Vec<(String, FrameNumber)> {
         let read = self.0.read();
-        let current_scene = self.current_scene();
-        let next_scene = self.next_scene();
 
         let mut values: Vec<(String, FrameNumber)> = read
             .static_data
             .frame_labels
             .iter()
-            .filter(|(_label, frame)| {
-                current_scene
-                    .as_ref()
-                    .map(|(_, scene_start)| **frame >= *scene_start)
-                    .unwrap_or(false)
-                    && next_scene
-                        .as_ref()
-                        .map(|(_, scene_start)| **frame < *scene_start)
-                        .unwrap_or(true)
-            })
+            .filter(|(_label, frame)| **frame >= from && **frame < to)
             .map(|(label, frame)| (label.clone(), *frame))
             .collect();
 
@@ -771,6 +791,7 @@ impl<'gc> MovieClip<'gc> {
             .static_data
             .scene_labels
             .get(scene_label)
+            .map(|Scene { start, .. }| start)
             .copied()
     }
 
@@ -2841,6 +2862,13 @@ impl<'gc, 'a> MovieClip<'gc> {
     }
 }
 
+#[derive(Clone)]
+struct Scene {
+    name: String,
+    start: FrameNumber,
+    length: FrameNumber,
+}
+
 /// Static data shared between all instances of a movie clip.
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -2848,7 +2876,7 @@ struct MovieClipStatic {
     id: CharacterId,
     swf: SwfSlice,
     frame_labels: HashMap<String, FrameNumber>,
-    scene_labels: HashMap<String, FrameNumber>,
+    scene_labels: HashMap<String, Scene>,
     audio_stream_info: Option<swf::SoundStreamHead>,
     total_frames: FrameNumber,
 }
