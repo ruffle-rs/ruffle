@@ -48,7 +48,7 @@ pub struct DisplayObjectBase<'gc> {
     skew: f64,
 
     /// The first child of this display object in order of execution.
-    /// This is differen than render order.
+    /// This is different than render order.
     first_child: Option<DisplayObject<'gc>>,
 
     /// The previous sibling of this display object in order of execution.

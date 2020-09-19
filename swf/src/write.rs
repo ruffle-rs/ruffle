@@ -69,7 +69,7 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
         Compression::Zlib => write_zlib_swf(&mut output, &swf_body)?,
 
         // LZMA header.
-        // SWF format has a mangled LZMA header, so we have to do some magic to conver the
+        // SWF format has a mangled LZMA header, so we have to do some magic to convert the
         // standard LZMA header to SWF format.
         // https://adobe.ly/2s8oYzn
         Compression::Lzma => write_lzma_swf(&mut output, &swf_body)?,

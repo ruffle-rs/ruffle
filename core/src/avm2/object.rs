@@ -46,7 +46,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// into account.
     fn get_property_local(
         self,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error>;
@@ -54,24 +54,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Retrieve a property by it's QName.
     fn get_property(
         &mut self,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, abc_trait, reciever)?;
+                self.install_trait(activation, abc_trait, receiver)?;
             }
         }
 
         let has_no_getter = self.has_own_virtual_setter(name) && !self.has_own_virtual_getter(name);
 
         if self.has_own_property(name)? && !has_no_getter {
-            return self.get_property_local(reciever, name, activation);
+            return self.get_property_local(receiver, name, activation);
         }
 
         if let Some(mut proto) = self.proto() {
-            return proto.get_property(reciever, name, activation);
+            return proto.get_property(receiver, name, activation);
         }
 
         Ok(Value::Undefined)
@@ -96,7 +96,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Set a property on this specific object.
     fn set_property_local(
         self,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -105,19 +105,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Set a property by it's QName.
     fn set_property(
         &mut self,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, abc_trait, reciever)?;
+                self.install_trait(activation, abc_trait, receiver)?;
             }
         }
 
         if self.has_own_virtual_setter(name) {
-            return self.set_property_local(reciever, name, value, activation);
+            return self.set_property_local(receiver, name, value, activation);
         }
 
         let mut proto = self.proto();
@@ -126,19 +126,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             //we're calling a virtual setter. If you call `set_property` on
             //a non-virtual you will actually alter the prototype.
             if my_proto.has_own_virtual_setter(name) {
-                return my_proto.set_property(reciever, name, value, activation);
+                return my_proto.set_property(receiver, name, value, activation);
             }
 
             proto = my_proto.proto();
         }
 
-        reciever.set_property_local(reciever, name, value, activation)
+        receiver.set_property_local(receiver, name, value, activation)
     }
 
     /// Init a property on this specific object.
     fn init_property_local(
         self,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -147,19 +147,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Init a property by it's QName.
     fn init_property(
         &mut self,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if !self.has_instantiated_property(name) {
             for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, abc_trait, reciever)?;
+                self.install_trait(activation, abc_trait, receiver)?;
             }
         }
 
         if self.has_own_virtual_setter(name) {
-            return self.init_property_local(reciever, name, value, activation);
+            return self.init_property_local(receiver, name, value, activation);
         }
 
         let mut proto = self.proto();
@@ -168,13 +168,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             //we're calling a virtual setter. If you call `set_property` on
             //a non-virtual you will actually alter the prototype.
             if my_proto.has_own_virtual_setter(name) {
-                return my_proto.init_property(reciever, name, value, activation);
+                return my_proto.init_property(receiver, name, value, activation);
             }
 
             proto = my_proto.proto();
         }
 
-        reciever.init_property_local(reciever, name, value, activation)
+        receiver.init_property_local(receiver, name, value, activation)
     }
 
     /// Retrieve a slot by it's index.
@@ -426,9 +426,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         trait_entry: Trait<'gc>,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
-        self.install_foreign_trait(activation, trait_entry, self.get_scope(), reciever)
+        self.install_foreign_trait(activation, trait_entry, self.get_scope(), receiver)
     }
 
     /// Install a trait from anywyere.
@@ -440,7 +440,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
         trait_entry: Trait<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
         let fn_proto = activation.avm2().prototypes().function;
         let trait_name = trait_entry.name().clone();
@@ -475,7 +475,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     method.clone(),
                     scope,
                     fn_proto,
-                    Some(reciever),
+                    Some(receiver),
                 );
                 self.install_method(
                     activation.context.gc_context,
@@ -494,7 +494,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     method.clone(),
                     scope,
                     fn_proto,
-                    Some(reciever),
+                    Some(receiver),
                 );
                 self.install_getter(
                     activation.context.gc_context,
@@ -513,7 +513,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     method.clone(),
                     scope,
                     fn_proto,
-                    Some(reciever),
+                    Some(receiver),
                 );
                 self.install_setter(
                     activation.context.gc_context,
@@ -532,7 +532,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         .unwrap_or_else(|| QName::dynamic_name("Object"));
 
                     let super_class: Result<Object<'gc>, Error> = self
-                        .get_property(reciever, &super_name, activation)?
+                        .get_property(receiver, &super_name, activation)?
                         .coerce_to_object(activation)
                         .map_err(|_e| {
                             format!("Could not resolve superclass {:?}", super_name.local_name())

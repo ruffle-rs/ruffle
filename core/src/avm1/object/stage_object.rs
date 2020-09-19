@@ -190,7 +190,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         }
 
         if obj.base.has_own_property(activation, name) {
-            // 1) Actual proeprties on the underlying object
+            // 1) Actual properties on the underlying object
             obj.base.internal_set(
                 name,
                 value,

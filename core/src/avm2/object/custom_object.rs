@@ -5,12 +5,12 @@ macro_rules! impl_avm2_custom_object_properties {
     ($field:ident) => {
         fn get_property_local(
             self,
-            reciever: Object<'gc>,
+            receiver: Object<'gc>,
             name: &QName<'gc>,
             activation: &mut Activation<'_, 'gc, '_>,
         ) -> Result<Value<'gc>, Error> {
             let read = self.0.read();
-            let rv = read.$field.get_property_local(reciever, name, activation)?;
+            let rv = read.$field.get_property_local(receiver, name, activation)?;
 
             drop(read);
 
@@ -19,7 +19,7 @@ macro_rules! impl_avm2_custom_object_properties {
 
         fn set_property_local(
             self,
-            reciever: Object<'gc>,
+            receiver: Object<'gc>,
             name: &QName<'gc>,
             value: Value<'gc>,
             activation: &mut Activation<'_, 'gc, '_>,
@@ -27,7 +27,7 @@ macro_rules! impl_avm2_custom_object_properties {
             let mut write = self.0.write(activation.context.gc_context);
             let rv = write
                 .$field
-                .set_property_local(reciever, name, value, activation)?;
+                .set_property_local(receiver, name, value, activation)?;
 
             drop(write);
 
@@ -38,7 +38,7 @@ macro_rules! impl_avm2_custom_object_properties {
 
         fn init_property_local(
             self,
-            reciever: Object<'gc>,
+            receiver: Object<'gc>,
             name: &QName<'gc>,
             value: Value<'gc>,
             activation: &mut Activation<'_, 'gc, '_>,
@@ -46,7 +46,7 @@ macro_rules! impl_avm2_custom_object_properties {
             let mut write = self.0.write(activation.context.gc_context);
             let rv = write
                 .$field
-                .init_property_local(reciever, name, value, activation)?;
+                .init_property_local(receiver, name, value, activation)?;
 
             drop(write);
 

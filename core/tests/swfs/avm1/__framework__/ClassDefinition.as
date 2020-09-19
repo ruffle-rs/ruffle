@@ -8,7 +8,7 @@ class ClassDefinition {
     var clazz : Object;
 
     /*
-    * Construct a new class defintion with the given name of the class,
+    * Construct a new class definition with the given name of the class,
     * a function that will always return a new constructed object of that class,
     * and a function that can be used to 'represent' the object (such as tracing its properties).
     */

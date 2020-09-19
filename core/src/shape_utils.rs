@@ -184,7 +184,7 @@ impl PathSegment {
         self.start() == self.end()
     }
 
-    /// Attemps to merge another path segment.
+    /// Attempts to merge another path segment.
     /// One path's start must meet the other path's end.
     /// Returns true if the merge is successful.
     fn try_merge(&mut self, other: &mut PathSegment, directed: bool) -> bool {
@@ -722,7 +722,7 @@ mod tests {
  *  if the edge cross the ray downward (+y), we add 1 to the winding number.
  *  if the edge cross the ray upward (-y), we add -1 to the winding number.
  *
- * We must also handle intersection with edge endpoints consistenly to avoid double counting:
+ * We must also handle intersection with edge endpoints consistently to avoid double counting:
  *  the initial point of an edge is considered for upwards rays.
  *  the final point of an edge is considered for downward rays.
  *
@@ -1206,7 +1206,7 @@ fn winding_number_curve(
         };
 
         // If curve point is to the right of the ray origin, the ray will hit it.
-        // We don't have to do the problematic 0 <= t <= 1 check because this vertical slice is guarnateed
+        // We don't have to do the problematic 0 <= t <= 1 check because this vertical slice is guaranteed
         // to contain the monotonic segment, and our roots are returned in order by `solve_quadratic`.
         // Adjust the winding as appropriate.
         if direction != 0 {

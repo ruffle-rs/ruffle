@@ -129,7 +129,7 @@ pub fn parse_int<'gc>(
         }
 
         // Auto-detect hexadecimal prefix and strip it.
-        // Emulate bug: the prefix is stripped irregardless of the radix.
+        // Emulate bug: the prefix is stripped regardless of the radix.
         //   parseInt('0x100', 10) == 100  // not 0
         //   parseInt('0x100', 36) == 1296 // not 1540944
         // Emulate bug: the prefix is expected before the sign or spaces.

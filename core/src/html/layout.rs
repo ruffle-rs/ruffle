@@ -78,7 +78,7 @@ pub struct LayoutContext<'a, 'gc> {
 
     /// The first box within the current line.
     ///
-    /// If equal to the length of the array, then no layout boxes currenly
+    /// If equal to the length of the array, then no layout boxes currently
     /// exist for this line.
     current_line: usize,
 
@@ -116,7 +116,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             .unwrap_or_else(|| Twips::new(0))
     }
 
-    /// Calculate the line-to-line leading present on ths line, including the
+    /// Calculate the line-to-line leading present on this line, including the
     /// font-leading above.
     fn line_leading_adjustment(&self) -> Twips {
         self.font

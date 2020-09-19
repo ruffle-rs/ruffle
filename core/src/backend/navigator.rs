@@ -192,7 +192,7 @@ pub trait NavigatorBackend {
     /// Resolve a relative URL.
     ///
     /// This function must not change URLs which are already protocol, domain,
-    /// and path absolute. For URLs that are relative, the implementator of
+    /// and path absolute. For URLs that are relative, the implementer of
     /// this function may opt to convert them to absolute using an implementor
     /// defined base. For a web browser, the most obvious base would be the
     /// current document's base URL, while the most obvious base for a desktop
@@ -254,7 +254,7 @@ impl NullExecutor {
     ///
     /// If any task in the executor yields an error, then this function will
     /// stop polling futures and return that error. Otherwise, it will yield
-    /// `Ok`, indicating that no errors occured. More work may still be
+    /// `Ok`, indicating that no errors occurred. More work may still be
     /// available,
     pub fn poll_all(&mut self) -> Result<(), Error> {
         self.flush_channel();

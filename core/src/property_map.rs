@@ -186,7 +186,7 @@ impl<'a> Equivalent<PropertyName> for CaseSensitiveStr<'a> {
 
 /// The property keys stored in the property map.
 /// This uses a case insensitive hash to ensure that properties can be found in
-/// SWFv6, which is case insensitve. The equality check is handled by the `Equivalent`
+/// SWFv6, which is case insensitive. The equality check is handled by the `Equivalent`
 /// impls above, which allow it to be either case-sensitive or insensitive.
 /// Note that the property of if key1 == key2 -> hash(key1) == hash(key2) still holds.
 #[derive(Debug, Clone, PartialEq, Eq, Collect)]

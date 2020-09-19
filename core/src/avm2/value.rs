@@ -460,7 +460,7 @@ impl<'gc> Value<'gc> {
         Ok(EnumSet::from_u32_truncated(self.coerce_to_u32(activation)?))
     }
 
-    /// Mininum number of digits after which numbers are formatted as
+    /// Minimum number of digits after which numbers are formatted as
     /// exponential strings.
     const MIN_DIGITS: f64 = -6.0;
 

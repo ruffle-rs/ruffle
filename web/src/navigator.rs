@@ -155,7 +155,7 @@ impl NavigatorBackend for WebNavigatorBackend {
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
         spawn_local(async move {
             if let Err(e) = future.await {
-                log::error!("Asynchronous error occured: {}", e);
+                log::error!("Asynchronous error occurred: {}", e);
             }
         })
     }

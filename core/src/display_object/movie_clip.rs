@@ -822,7 +822,7 @@ impl<'gc> MovieClip<'gc> {
             self.0.write(context.gc_context).tag_stream_pos = 0;
             self.0.write(context.gc_context).current_frame = 0;
 
-            // Remove all display objects that were created after the desination frame.
+            // Remove all display objects that were created after the destination frame.
             // TODO: We want to do something like self.children.retain here,
             // but BTreeMap::retain does not exist.
             let children: SmallVec<[_; 16]> = self

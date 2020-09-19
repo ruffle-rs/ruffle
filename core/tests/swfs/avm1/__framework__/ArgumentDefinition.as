@@ -6,7 +6,7 @@ class ArgumentDefinition {
     var values : Array;
 
     /*
-    * Construct a new argument defintion with the given name of the argument.
+    * Construct a new argument definition with the given name of the argument.
     *
     * If you include an 'inherit' argument, every value from that will be copied to this.
     */

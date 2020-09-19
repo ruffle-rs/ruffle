@@ -314,7 +314,7 @@ pub fn for_each<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_object(activation)?;
-        let reciever = args
+        let receiver = args
             .get(1)
             .cloned()
             .unwrap_or(Value::Null)
@@ -326,10 +326,10 @@ pub fn for_each<'gc>(
             let (i, item) = r?;
 
             callback.call(
-                reciever,
+                receiver,
                 &[item, i.into(), this.into()],
                 activation,
-                reciever.and_then(|r| r.proto()),
+                receiver.and_then(|r| r.proto()),
             )?;
         }
     }
@@ -349,7 +349,7 @@ pub fn map<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_object(activation)?;
-        let reciever = args
+        let receiver = args
             .get(1)
             .cloned()
             .unwrap_or(Value::Null)
@@ -361,10 +361,10 @@ pub fn map<'gc>(
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
             let new_item = callback.call(
-                reciever,
+                receiver,
                 &[item, i.into(), this.into()],
                 activation,
-                reciever.and_then(|r| r.proto()),
+                receiver.and_then(|r| r.proto()),
             )?;
 
             new_array.push(new_item);
@@ -388,7 +388,7 @@ pub fn filter<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_object(activation)?;
-        let reciever = args
+        let receiver = args
             .get(1)
             .cloned()
             .unwrap_or(Value::Null)
@@ -401,10 +401,10 @@ pub fn filter<'gc>(
             let (i, item) = r?;
             let is_allowed = callback
                 .call(
-                    reciever,
+                    receiver,
                     &[item.clone(), i.into(), this.into()],
                     activation,
-                    reciever.and_then(|r| r.proto()),
+                    receiver.and_then(|r| r.proto()),
                 )?
                 .coerce_to_boolean();
 
@@ -431,7 +431,7 @@ pub fn every<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_object(activation)?;
-        let reciever = args
+        let receiver = args
             .get(1)
             .cloned()
             .unwrap_or(Value::Null)
@@ -445,10 +445,10 @@ pub fn every<'gc>(
 
             is_every &= callback
                 .call(
-                    reciever,
+                    receiver,
                     &[item, i.into(), this.into()],
                     activation,
-                    reciever.and_then(|r| r.proto()),
+                    receiver.and_then(|r| r.proto()),
                 )?
                 .coerce_to_boolean();
         }
@@ -471,7 +471,7 @@ pub fn some<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_object(activation)?;
-        let reciever = args
+        let receiver = args
             .get(1)
             .cloned()
             .unwrap_or(Value::Null)
@@ -485,10 +485,10 @@ pub fn some<'gc>(
 
             is_some |= callback
                 .call(
-                    reciever,
+                    receiver,
                     &[item, i.into(), this.into()],
                     activation,
-                    reciever.and_then(|r| r.proto()),
+                    receiver.and_then(|r| r.proto()),
                 )?
                 .coerce_to_boolean();
         }
@@ -787,7 +787,7 @@ enum SortOptions {
     /// Reject sorting on arrays with multiple equivalent values.
     UniqueSort,
 
-    /// Yield a list of indicies rather than sorting the array in-place.
+    /// Yield a list of indices rather than sorting the array in-place.
     ReturnIndexedArray,
 
     /// Request numeric value sort.

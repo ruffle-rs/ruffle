@@ -15,7 +15,7 @@
         "message": "There is no active tab."
     },
     "status_tabs_error": {
-        "message": "An error occured when looking up the current tab."
+        "message": "An error occurred when looking up the current tab."
     },
     "status_message_init": {
         "message": "Checking Ruffle status on current tab..."
@@ -30,7 +30,7 @@
         "message": "Ruffle is not loaded because it was disabled by the user."
     },
     "status_result_error": {
-        "message": "An error occured when querying the current tab's instance of Ruffle."
+        "message": "An error occurred when querying the current tab's instance of Ruffle."
     },
     "status_result_protected": {
         "message": "Ruffle cannot load on protected browser pages."

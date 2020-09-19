@@ -4,7 +4,7 @@
 //!
 //! # Organization
 //!
-//! This library consits of a `read` module for decoding SWF data, and a `write` library for
+//! This library consists of a `read` module for decoding SWF data, and a `write` library for
 //! writing SWF data.
 
 extern crate byteorder;

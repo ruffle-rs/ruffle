@@ -69,7 +69,7 @@ impl<'gc> Timers<'gc> {
             let timer = activation.context.timers.peek().unwrap();
 
             // TODO: This is only really necessary because BinaryHeap lacks `remove` or `retain` on stable.
-            // We can remove the timers straightaway in `clearInterval` once this is stable.
+            // We can remove the timers straight away in `clearInterval` once this is stable.
             if !timer.is_alive.get() {
                 activation.context.timers.pop();
                 continue;

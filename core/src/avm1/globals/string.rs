@@ -540,7 +540,7 @@ fn to_upper_case<'gc>(
     .into())
 }
 
-/// Normalizes an  index paramter used in `String` functions such as `substring`.
+/// Normalizes an  index parameter used in `String` functions such as `substring`.
 /// The returned index will be within the range of `[0, len]`.
 fn string_index(i: i32, len: usize) -> usize {
     if i > 0 {
@@ -555,7 +555,7 @@ fn string_index(i: i32, len: usize) -> usize {
     }
 }
 
-/// Normalizes an wrapping index paramter used in `String` functions such as `slice`.
+/// Normalizes an wrapping index parameter used in `String` functions such as `slice`.
 /// Negative values will count backwards from `len`.
 /// The returned index will be within the range of `[0, len]`.
 fn string_wrapping_index(i: i32, len: usize) -> usize {

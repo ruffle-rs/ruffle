@@ -611,7 +611,7 @@ impl Player {
                 }
             }
 
-            // Fire event listener on appropraite object
+            // Fire event listener on appropriate object
             if let Some((listener_type, event_name, args)) = listener {
                 context.action_queue.queue_actions(
                     *context.levels.get(&0).expect("root level"),
@@ -720,7 +720,7 @@ impl Player {
                     }
                 }
 
-                // RollOver on new node.I stil
+                // RollOver on new node.I still
                 new_cursor = MouseCursor::Arrow;
                 if let Some(node) = new_hovered {
                     new_cursor = MouseCursor::Hand;

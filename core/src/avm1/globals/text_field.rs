@@ -292,7 +292,7 @@ fn variable<'gc>(
         }
     }
 
-    // Unset `variable` retuns null, not undefined
+    // Unset `variable` returns null, not undefined
     Ok(Value::Null)
 }
 

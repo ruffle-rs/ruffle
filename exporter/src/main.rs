@@ -25,11 +25,11 @@ struct SizeOpt {
     #[clap(long = "scale", default_value = "1.0")]
     scale: f32,
 
-    /// Optionaly override the output width
+    /// Optionally override the output width
     #[clap(long = "width")]
     width: Option<u32>,
 
-    /// Optionaly override the output height
+    /// Optionally override the output height
     #[clap(long = "height")]
     height: Option<u32>,
 }

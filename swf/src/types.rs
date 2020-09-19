@@ -1,6 +1,6 @@
 //! The data structures used in an Adobe SWF file.
 //!
-//! These structures are documented in the Adobe SWF File Foramt Specification
+//! These structures are documented in the Adobe SWF File Format Specification
 //! version 19 (henceforth SWF19):
 //! https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf
 use enumset::{EnumSet, EnumSetType};
@@ -40,7 +40,7 @@ pub struct Header {
     pub num_frames: u16,
 }
 
-/// The compression foramt used internally by the SWF file.
+/// The compression format used internally by the SWF file.
 ///
 /// The vast majority of SWFs will use zlib compression.
 /// [SWF19 p.27](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=27)
