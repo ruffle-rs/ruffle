@@ -1406,7 +1406,7 @@ impl FormatSpans {
             }
 
             let mut can_span_create_bullets = start == 0;
-            for line in text.split('\n') {
+            for line in text.split(|c| c == '\n' || c == '\r') {
                 if can_span_create_bullets && span.bullet
                     || !can_span_create_bullets && last_span.map(|ls| ls.bullet).unwrap_or(false)
                 {
