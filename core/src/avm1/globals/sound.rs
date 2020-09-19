@@ -96,7 +96,7 @@ pub fn create_proto<'gc>(
     );
 
     object.as_script_object().unwrap().force_set_function(
-        "get_transform",
+        "getTransform",
         get_transform,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
@@ -104,7 +104,7 @@ pub fn create_proto<'gc>(
     );
 
     object.as_script_object().unwrap().force_set_function(
-        "get_volume",
+        "getVolume",
         get_volume,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
@@ -112,7 +112,7 @@ pub fn create_proto<'gc>(
     );
 
     object.as_script_object().unwrap().force_set_function(
-        "load_sound",
+        "loadSound",
         load_sound,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
@@ -133,7 +133,7 @@ pub fn create_proto<'gc>(
     );
 
     object.as_script_object().unwrap().force_set_function(
-        "set_pan",
+        "setPan",
         set_pan,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
@@ -141,7 +141,7 @@ pub fn create_proto<'gc>(
     );
 
     object.as_script_object().unwrap().force_set_function(
-        "set_transform",
+        "setTransform",
         set_transform,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
@@ -149,7 +149,7 @@ pub fn create_proto<'gc>(
     );
 
     object.as_script_object().unwrap().force_set_function(
-        "set_volume",
+        "setVolume",
         set_volume,
         gc_context,
         DontDelete | ReadOnly | DontEnum,
