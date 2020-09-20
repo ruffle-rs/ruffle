@@ -1242,6 +1242,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "gif"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "color_quant 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "weezl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "glob"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2271,7 +2280,7 @@ dependencies = [
  "gc-arena 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gc-arena-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "generational-arena 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "gif 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gif 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "indexmap 1.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jpeg-decoder 0.1.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "json 0.12.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3079,6 +3088,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "weezl"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "wgpu"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3462,6 +3476,7 @@ dependencies = [
 "checksum gfx-memory 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "c2eed6cda674d9cd4d92229102dbd544292124533d236904f987e9afab456137"
 "checksum gfx-memory 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fe8d8855df07f438eb8a765e90356d5b821d644ea3b59b870091450b89576a9f"
 "checksum gif 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)" = "471d90201b3b223f3451cd4ad53e34295f16a1df17b1edf3736d47761c3981af"
+"checksum gif 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "045407b8337915cfe0a96a4ad5a0c376e75995f84bebdbb98b43d3365e00c39b"
 "checksum glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 "checksum hashbrown 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "00d63df3d41950fb462ed38308eea019113ad1508da725bbedcd0fa5a85ef5f7"
 "checksum heck 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "20564e78d53d2bb135c343b3f47714a56af2061f1c928fdb541dc7b9fdd94205"
@@ -3660,6 +3675,7 @@ dependencies = [
 "checksum weak-table 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9a8f3bf74f2d43500dea6a8291b6ac943e3465ea9936b94bd017e61b7b21dd01"
 "checksum web-sys 0.3.45 (registry+https://github.com/rust-lang/crates.io-index)" = "4bf6ef87ad7ae8008e15a355ce696bed26012b7caa21605188cfd8214ab51e2d"
 "checksum webbrowser 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)" = "ecad156490d6b620308ed411cfee90d280b3cbd13e189ea0d3fada8acc89158a"
+"checksum weezl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a3d2f24b6c3aa92fb33279566dbebf1cbe66b03a73f09aa69cf8cf14d2f9feb9"
 "checksum wgpu 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "549160f188eef412ac978499ddf0ceadad4c9159bb1160f9e6b9d4cc8ee977dc"
 "checksum wgpu-core 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)" = "f07fd0b6b3b340465bce96286350d34b7661fb623ef24c3c2b8902ea654cd4e0"
 "checksum wgpu-core 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3a5558a9607100816a033b0d06a2d6d06e8bf6fb294803d1dea871e9a479eec0"
