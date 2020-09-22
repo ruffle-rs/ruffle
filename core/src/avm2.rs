@@ -137,7 +137,7 @@ impl<'gc> Avm2<'gc> {
 
         for i in (0..abc_file.scripts.len()).rev() {
             let script = tunit.load_script(i as u32, context.avm2, context.gc_context)?;
-            let mut globals = context.avm2.globals();
+            let mut globals = script.read().globals();
             let scope = Scope::push_scope(None, globals, context.gc_context);
             let mut null_activation = Activation::from_nothing(context.reborrow());
 

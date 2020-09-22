@@ -20,6 +20,7 @@ mod boolean;
 mod class;
 mod flash;
 mod function;
+mod global_scope;
 mod int;
 mod namespace;
 mod number;
@@ -47,6 +48,7 @@ pub struct SystemPrototypes<'gc> {
     pub object: Object<'gc>,
     pub function: Object<'gc>,
     pub class: Object<'gc>,
+    pub global: Object<'gc>,
     pub string: Object<'gc>,
     pub boolean: Object<'gc>,
     pub number: Object<'gc>,
@@ -77,6 +79,7 @@ impl<'gc> SystemPrototypes<'gc> {
             object,
             function,
             class,
+            global: empty,
             string: empty,
             boolean: empty,
             number: empty,
@@ -277,6 +280,12 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
     // other from the activation they're handed.
     let mut sp = activation.context.avm2.system_prototypes.clone().unwrap();
 
+    sp.global = class(
+        activation,
+        gs,
+        global_scope::create_class(activation.context.gc_context),
+        implicit_deriver,
+    )?;
     sp.string = class(
         activation,
         gs,
