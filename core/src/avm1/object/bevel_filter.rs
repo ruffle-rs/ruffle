@@ -47,7 +47,6 @@ pub struct BevelFilterData<'gc> {
     /// The underlying script object.
     base: ScriptObject<'gc>,
 
-    //TODO: is this an int
     angle: f64,
     blur_x: f64,
     blur_y: f64,
@@ -104,7 +103,7 @@ impl<'gc> BevelFilterObject<'gc> {
         [set_shadow_alpha, get_shadow_alpha, shadow_alpha, f64],
         [set_shadow_color, get_shadow_color, shadow_color, i32],
         [set_strength, get_strength, strength, f64],
-        [set_type, get_type, type_, BevelFilterType], //TODO: type
+        [set_type, get_type, type_, BevelFilterType],
     );
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
@@ -112,17 +111,17 @@ impl<'gc> BevelFilterObject<'gc> {
             gc_context,
             BevelFilterData {
                 base: ScriptObject::object(gc_context, proto),
-                angle: 45.0,
+                angle: 44.9999999772279,
                 blur_x: 4.0,
                 blur_y: 4.0,
-                distance: 4.0, // TODO: check if int
+                distance: 4.0,
                 highlight_alpha: 1.0,
-                highlight_color: 0xFFFFFF.into(), //TODO: int?
+                highlight_color: 0xFFFFFF,
                 knockout: false,
-                quality: 1, //TODO: must be int!!
+                quality: 1,
                 shadow_alpha: 1.0,
-                shadow_color: 0x000000.into(), //TODO: is int?
-                strength: 1.0,                 // Int?
+                shadow_color: 0x000000,
+                strength: 1.0,
                 type_: BevelFilterType::Inner,
             },
         ))
