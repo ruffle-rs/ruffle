@@ -472,11 +472,9 @@ pub fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
 pub fn decode_gif(data: &[u8]) -> Result<Bitmap, Error> {
-    use gif::SetParameter;
-
-    let mut decoder = gif::Decoder::new(data);
-    decoder.set(gif::ColorOutput::RGBA);
-    let mut reader = decoder.read_info()?;
+    let mut decode_options = gif::DecodeOptions::new();
+    decode_options.set_color_output(gif::ColorOutput::RGBA);
+    let mut reader = decode_options.read_info(data)?;
     let frame = reader.read_next_frame()?.ok_or("No frames in GIF")?;
 
     Ok(Bitmap {
