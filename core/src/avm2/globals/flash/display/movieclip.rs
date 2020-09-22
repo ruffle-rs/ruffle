@@ -278,7 +278,7 @@ pub fn is_playing<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        return Ok(mc.playing().into());
+        return Ok((mc.programmatically_played() && mc.playing()).into());
     }
 
     Ok(Value::Undefined)
@@ -310,6 +310,7 @@ pub fn goto_and_play<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
+        mc.set_programmatically_played(activation.context.gc_context);
         goto_frame(activation, mc, args, false)?;
     }
 
@@ -396,6 +397,7 @@ pub fn play<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
+        mc.set_programmatically_played(activation.context.gc_context);
         mc.play(&mut activation.context);
     }
 

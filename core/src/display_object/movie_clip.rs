@@ -588,6 +588,14 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().playing()
     }
 
+    pub fn programmatically_played(self) -> bool {
+        self.0.read().programmatically_played()
+    }
+
+    pub fn set_programmatically_played(self, mc: MutationContext<'gc, '_>) {
+        self.0.write(mc).set_programmatically_played()
+    }
+
     pub fn next_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.current_frame() < self.total_frames() {
             self.goto_frame(context, self.current_frame() + 1, true);
@@ -1877,6 +1885,14 @@ impl<'gc> MovieClipData<'gc> {
         }
     }
 
+    fn programmatically_played(&self) -> bool {
+        self.flags.contains(MovieClipFlags::ProgrammaticallyPlayed)
+    }
+
+    fn set_programmatically_played(&mut self) {
+        self.flags.insert(MovieClipFlags::ProgrammaticallyPlayed);
+    }
+
     fn first_child(&self) -> Option<DisplayObject<'gc>> {
         self.base.first_child()
     }
@@ -3100,6 +3116,12 @@ enum MovieClipFlags {
 
     /// Whether this `MovieClip` is playing or stopped.
     Playing,
+
+    /// Whether this `MovieClip` has been played as a result of an AS3 command.
+    ///
+    /// The AS3 `isPlaying` property is broken and yields false until you first
+    /// call `play` to unbreak it. This flag tracks that bug.
+    ProgrammaticallyPlayed,
 }
 
 /// Actions that are attached to a `MovieClip` event in
