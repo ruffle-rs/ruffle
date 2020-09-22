@@ -810,6 +810,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         None
     }
+
+    /// Associate this object with a display object, if it can support such an
+    /// association.
+    ///
+    /// If not, then this function does nothing.
+    fn init_display_object(&self, _mc: MutationContext<'gc, '_>, _obj: DisplayObject<'gc>) {}
 }
 
 pub enum ObjectPtr {}
