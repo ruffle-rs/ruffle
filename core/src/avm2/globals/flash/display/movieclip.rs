@@ -12,14 +12,24 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{MovieClip, Scene, TDisplayObject};
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::{GcCell, MutationContext};
+use std::sync::Arc;
 
 /// Implements `flash.display.MovieClip`'s instance constructor.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if this.as_display_object().is_none() {
+            let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
+            let new_do = MovieClip::new(SwfSlice::empty(movie), activation.context.gc_context);
+
+            this.init_display_object(activation.context.gc_context, new_do.into());
+        }
+    }
     Ok(Value::Undefined)
 }
 

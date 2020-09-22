@@ -6,7 +6,7 @@ use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
     implicit_deriver, ArrayObject, FunctionObject, NamespaceObject, Object, PrimitiveObject,
-    ScriptObject, TObject,
+    ScriptObject, StageObject, TObject,
 };
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
@@ -220,6 +220,15 @@ fn array_deriver<'gc>(
     ArrayObject::derive(base_proto, activation.context.gc_context, class, scope)
 }
 
+fn stage_deriver<'gc>(
+    base_proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    StageObject::derive(base_proto, activation.context.gc_context, class, scope)
+}
+
 /// Add a builtin constant to the global scope.
 fn constant<'gc>(
     mc: MutationContext<'gc, '_>,
@@ -355,7 +364,7 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
         activation,
         gs,
         flash::display::displayobject::create_class(activation.context.gc_context),
-        implicit_deriver,
+        stage_deriver,
     )?;
     class(
         activation,

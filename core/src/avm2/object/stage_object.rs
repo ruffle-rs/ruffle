@@ -42,6 +42,28 @@ impl<'gc> StageObject<'gc> {
             },
         ))
     }
+
+    /// Construct a stage object subclass.
+    pub fn derive(
+        base_proto: Object<'gc>,
+        mc: MutationContext<'gc, '_>,
+        class: GcCell<'gc, Class<'gc>>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+    ) -> Result<Object<'gc>, Error> {
+        let base = ScriptObjectData::base_new(
+            Some(base_proto),
+            ScriptObjectClass::InstancePrototype(class, scope),
+        );
+
+        Ok(StageObject(GcCell::allocate(
+            mc,
+            StageObjectData {
+                base,
+                display_object: None,
+            },
+        ))
+        .into())
+    }
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
@@ -228,6 +250,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         self.0.read().display_object
+    }
+
+    fn init_display_object(&self, mc: MutationContext<'gc, '_>, obj: DisplayObject<'gc>) {
+        self.0.write(mc).display_object = Some(obj);
     }
 
     fn call(
