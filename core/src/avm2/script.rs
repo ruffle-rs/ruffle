@@ -2,6 +2,7 @@
 
 use crate::avm2::class::Class;
 use crate::avm2::method::{BytecodeMethod, Method};
+use crate::avm2::object::{Object, ScriptObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::{Avm2, Error};
@@ -128,7 +129,9 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let script = Script::from_abc_index(self, script_index, mc)?;
+        let global = ScriptObject::object(mc, avm2.prototypes().global);
+
+        let script = Script::from_abc_index(self, script_index, global, mc)?;
         self.0.write(mc).scripts.insert(script_index, script);
 
         script.write(mc).load_traits(self, script_index, avm2, mc)?;
@@ -192,6 +195,9 @@ impl<'gc> TranslationUnit<'gc> {
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct Script<'gc> {
+    /// The global scope for the script.
+    globals: Object<'gc>,
+
     /// The initializer method to run for the script.
     init: Method<'gc>,
 
@@ -209,9 +215,13 @@ impl<'gc> Script<'gc> {
     /// The caller is responsible for storing the class in the
     /// `TranslationUnit` and calling `load_traits` to complete the
     /// trait-loading process.
+    ///
+    /// The given `globals` should be an empty object of the `global` hidden
+    /// type. The initializer script will create and store traits on it.
     pub fn from_abc_index(
         unit: TranslationUnit<'gc>,
         script_index: u32,
+        globals: Object<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<GcCell<'gc, Self>, Error> {
         let abc = unit.abc();
@@ -226,6 +236,7 @@ impl<'gc> Script<'gc> {
         Ok(GcCell::allocate(
             mc,
             Self {
+                globals,
                 init,
                 traits: Vec::new(),
                 traits_loaded: false,
@@ -270,6 +281,11 @@ impl<'gc> Script<'gc> {
     /// Return the entrypoint for the script.
     pub fn init(&self) -> Method<'gc> {
         self.init.clone()
+    }
+
+    /// Return the global scope for the script.
+    pub fn globals(&self) -> Object<'gc> {
+        self.globals
     }
 
     /// Return traits for this script.
