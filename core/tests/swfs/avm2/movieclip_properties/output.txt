@@ -9,8 +9,6 @@ frame1
 [object FrameLabel],[object FrameLabel]
 //currentScene
 [object Scene]
-//enabled
-true
 //framesLoaded
 4
 //isPlaying
@@ -19,8 +17,7 @@ false
 [object Scene],[object Scene]
 //totalFrames
 4
-//trackAsMenu
-false
+undefined
 //Frame 2, Scene 1
 //currentFrame
 2
@@ -32,18 +29,14 @@ frame1
 [object FrameLabel],[object FrameLabel]
 //currentScene
 [object Scene]
-//enabled
-true
 //framesLoaded
 4
 //isPlaying
-false
+true
 //scenes
 [object Scene],[object Scene]
 //totalFrames
 4
-//trackAsMenu
-false
 //Frame 3, Scene 1
 //currentFrame
 3
@@ -55,18 +48,14 @@ frame3
 [object FrameLabel],[object FrameLabel]
 //currentScene
 [object Scene]
-//enabled
-true
 //framesLoaded
 4
 //isPlaying
-false
+true
 //scenes
 [object Scene],[object Scene]
 //totalFrames
 4
-//trackAsMenu
-false
 //Frame 1, Scene 2
 //currentFrame
 1
@@ -78,15 +67,13 @@ frame4
 [object FrameLabel]
 //currentScene
 [object Scene]
-//enabled
-true
 //framesLoaded
 4
 //isPlaying
-false
+true
 //scenes
 [object Scene],[object Scene]
 //totalFrames
 4
-//trackAsMenu
+//isPlaying
 false
