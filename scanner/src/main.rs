@@ -27,7 +27,7 @@ struct Opt {
     output_path: PathBuf,
 
     /// Filenames to ignore
-    #[clap(short = "i", long = "ignore")]
+    #[clap(short = 'i', long = "ignore")]
     ignore: Vec<String>,
 }
 

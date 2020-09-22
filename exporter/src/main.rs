@@ -50,7 +50,7 @@ struct Opt {
     output_path: Option<PathBuf>,
 
     /// Number of frames to capture per file
-    #[clap(short = "f", long = "frames", default_value = "1")]
+    #[clap(short = 'f', long = "frames", default_value = "1")]
     frames: u32,
 
     /// Number of frames to skip
