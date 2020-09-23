@@ -349,6 +349,7 @@ impl WebGlRenderBackend {
             self.viewport_width as i32,
             self.viewport_height as i32,
         );
+        gl.check_error("renderbuffer_storage_multisample (color)")?;
 
         let stencil_renderbuffer = gl
             .create_renderbuffer()
@@ -361,6 +362,7 @@ impl WebGlRenderBackend {
             self.viewport_width as i32,
             self.viewport_height as i32,
         );
+        gl.check_error("renderbuffer_storage_multisample (stencil)")?;
 
         gl.bind_framebuffer(Gl2::FRAMEBUFFER, Some(&render_framebuffer));
         gl.framebuffer_renderbuffer(
@@ -1419,3 +1421,27 @@ impl ShaderProgram {
 }
 
 impl WebGlRenderBackend {}
+
+trait GlExt {
+    fn check_error(&self, error_msg: &'static str) -> Result<(), Error>;
+}
+
+impl GlExt for Gl {
+    /// Check if GL returned an error for the previous operation.
+    fn check_error(&self, error_msg: &'static str) -> Result<(), Error> {
+        match self.get_error() {
+            Self::NO_ERROR => Ok(()),
+            error => Err(format!("WebGL: Error in {}: {}", error_msg, error).into()),
+        }
+    }
+}
+
+impl GlExt for Gl2 {
+    /// Check if GL returned an error for the previous operation.
+    fn check_error(&self, error_msg: &'static str) -> Result<(), Error> {
+        match self.get_error() {
+            Self::NO_ERROR => Ok(()),
+            error => Err(format!("WebGL: Error in {}: {}", error_msg, error).into()),
+        }
+    }
+}
