@@ -186,7 +186,11 @@ pub fn current_labels<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        let scene = mc.current_scene().unwrap_or_else(Default::default);
+        let scene = mc.current_scene().unwrap_or_else(|| Scene {
+            name: "".to_string(),
+            start: 0,
+            length: mc.total_frames(),
+        });
         return Ok(labels_for_scene(activation, mc, &scene)?.2.into());
     }
 
@@ -203,7 +207,11 @@ pub fn current_scene<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        let scene = mc.current_scene().unwrap_or_else(Default::default);
+        let scene = mc.current_scene().unwrap_or_else(|| Scene {
+            name: "".to_string(),
+            start: 0,
+            length: mc.total_frames(),
+        });
         let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc, &scene)?;
         let scene_proto = activation.context.avm2.prototypes().scene;
         let args = [
@@ -233,8 +241,17 @@ pub fn scenes<'gc>(
         .and_then(|dobj| dobj.as_movie_clip())
     {
         let mut scene_objects = Vec::new();
+        let mut mc_scenes = mc.scenes();
 
-        for scene in mc.scenes() {
+        if mc.scenes().is_empty() {
+            mc_scenes.push(Scene {
+                name: "".to_string(),
+                start: 0,
+                length: mc.total_frames(),
+            });
+        }
+
+        for scene in mc_scenes {
             let (scene_name, scene_length, scene_labels) =
                 labels_for_scene(activation, mc, &scene)?;
             let scene_proto = activation.context.avm2.prototypes().scene;
