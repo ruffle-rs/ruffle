@@ -435,9 +435,9 @@ impl Player {
     pub fn set_is_playing(&mut self, v: bool) {
         if v {
             // Allow auto-play after user gesture for web backends.
-            self.audio.prime_audio();
+            self.audio.play();
         } else {
-            self.audio.suspend_audio();
+            self.audio.pause();
         }
         self.is_playing = v;
     }

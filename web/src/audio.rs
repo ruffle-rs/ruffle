@@ -752,12 +752,12 @@ impl AudioBackend for WebAudioBackend {
         NUM_SOUNDS_LOADING.with(|n| n.get() == 0)
     }
 
-    fn prime_audio(&mut self) {
+    fn play(&mut self) {
         // Allow audio to start playing after a user gesture.
         let _ = self.context.resume();
     }
 
-    fn suspend_audio(&mut self) {
+    fn pause(&mut self) {
         // Suspend audio to be resumed later.
         let _ = self.context.suspend();
     }
