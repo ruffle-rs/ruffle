@@ -66,6 +66,8 @@ pub struct WebGlRenderBackend {
     view_matrix: [[f32; 4]; 4],
 }
 
+const MAX_GRADIENT_COLORS: usize = 15;
+
 impl WebGlRenderBackend {
     pub fn new(canvas: &HtmlCanvasElement) -> Result<Self, Error> {
         // Create WebGL context.
@@ -479,9 +481,9 @@ impl WebGlRenderBackend {
                     },
                 ),
                 TessDrawType::Gradient(gradient) => {
-                    let mut ratios = [0.0; 8];
-                    let mut colors = [[0.0; 4]; 8];
-                    let num_colors = gradient.num_colors as usize;
+                    let mut ratios = [0.0; MAX_GRADIENT_COLORS];
+                    let mut colors = [[0.0; 4]; MAX_GRADIENT_COLORS];
+                    let num_colors = (gradient.num_colors as usize).min(MAX_GRADIENT_COLORS);
                     ratios[..num_colors].copy_from_slice(&gradient.ratios[..num_colors]);
                     colors[..num_colors].copy_from_slice(&gradient.colors[..num_colors]);
                     // Convert to linear color space if this is a linear-interpolated gradient.
@@ -1244,8 +1246,8 @@ struct Texture {
 struct Gradient {
     matrix: [[f32; 3]; 3],
     gradient_type: i32,
-    ratios: [f32; 8],
-    colors: [[f32; 4]; 8],
+    ratios: [f32; MAX_GRADIENT_COLORS],
+    colors: [[f32; 4]; MAX_GRADIENT_COLORS],
     num_colors: u32,
     repeat_mode: i32,
     focal_point: f32,
