@@ -342,7 +342,7 @@ impl WebGlRenderBackend {
         gl.bind_renderbuffer(Gl2::RENDERBUFFER, Some(&color_renderbuffer));
         gl.renderbuffer_storage_multisample(
             Gl2::RENDERBUFFER,
-            4,
+            self.msaa_sample_count as i32,
             Gl2::RGB8,
             self.viewport_width as i32,
             self.viewport_height as i32,
@@ -354,7 +354,7 @@ impl WebGlRenderBackend {
         gl.bind_renderbuffer(Gl2::RENDERBUFFER, Some(&stencil_renderbuffer));
         gl.renderbuffer_storage_multisample(
             Gl2::RENDERBUFFER,
-            4,
+            self.msaa_sample_count as i32,
             Gl2::STENCIL_INDEX8,
             self.viewport_width as i32,
             self.viewport_height as i32,
