@@ -11,7 +11,7 @@ use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
     HtmlCanvasElement, OesVertexArrayObject, WebGl2RenderingContext as Gl2, WebGlBuffer,
     WebGlFramebuffer, WebGlProgram, WebGlRenderbuffer, WebGlRenderingContext as Gl, WebGlShader,
-    WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject,
+    WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject, WebglDebugRendererInfo,
 };
 
 type Error = Box<dyn std::error::Error>;
@@ -76,6 +76,7 @@ impl WebGlRenderBackend {
             ("alpha", JsValue::FALSE),
             ("antialias", JsValue::FALSE),
             ("depth", JsValue::FALSE),
+            ("failIfMajorPerformanceCaveat", JsValue::TRUE), // fail if no GPU available
         ];
         let context_options = js_sys::Object::new();
         for (name, value) in options.iter() {
@@ -140,6 +141,18 @@ impl WebGlRenderBackend {
                 return Err("Unable to create WebGL rendering context".into());
             }
         };
+
+        // Get WebGL driver info.
+        let driver_info = if gl.get_extension("WEBGL_debug_renderer_info").is_ok() {
+            gl.get_parameter(WebglDebugRendererInfo::UNMASKED_RENDERER_WEBGL)
+                .ok()
+                .and_then(|val| val.as_string())
+                .unwrap_or_else(|| "<unknown>".to_string())
+        } else {
+            "<unknown>".to_string()
+        };
+
+        log::info!("WebGL graphics driver: {}", driver_info);
 
         let color_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, COLOR_VERTEX_GLSL)?;
         let texture_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, TEXTURE_VERTEX_GLSL)?;
