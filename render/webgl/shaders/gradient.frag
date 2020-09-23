@@ -8,8 +8,8 @@ uniform vec4 add_color;
 uniform mat3 u_matrix;
 
 uniform int u_gradient_type;
-uniform float u_ratios[8];
-uniform vec4 u_colors[8];
+uniform float u_ratios[15];
+uniform vec4 u_colors[15];
 uniform int u_num_colors;
 uniform int u_repeat_mode;
 uniform float u_focal_point;
@@ -95,14 +95,35 @@ void main() {
     } else if( t <= u_ratios[7] ) {
         a = (t - u_ratios[6]) / (u_ratios[7] - u_ratios[6]);
         color = mix(u_colors[6], u_colors[7], a);
+    } else if( t <= u_ratios[8] ) {
+        a = (t - u_ratios[7]) / (u_ratios[8] - u_ratios[7]);
+        color = mix(u_colors[7], u_colors[8], a);
+    } else if( t <= u_ratios[9] ) {
+        a = (t - u_ratios[8]) / (u_ratios[9] - u_ratios[8]);
+        color = mix(u_colors[8], u_colors[9], a);
+    } else if( t <= u_ratios[10] ) {
+        a = (t - u_ratios[9]) / (u_ratios[10] - u_ratios[9]);
+        color = mix(u_colors[9], u_colors[10], a);
+    } else if( t <= u_ratios[11] ) {
+        a = (t - u_ratios[10]) / (u_ratios[11] - u_ratios[10]);
+        color = mix(u_colors[10], u_colors[11], a);
+    } else if( t <= u_ratios[12] ) {
+        a = (t - u_ratios[11]) / (u_ratios[12] - u_ratios[11]);
+        color = mix(u_colors[11], u_colors[12], a);
+    } else if( t <= u_ratios[13] ) {
+        a = (t - u_ratios[12]) / (u_ratios[13] - u_ratios[12]);
+        color = mix(u_colors[12], u_colors[13], a);
+    } else if( t <= u_ratios[14] ) {
+        a = (t - u_ratios[13]) / (u_ratios[14] - u_ratios[13]);
+        color = mix(u_colors[13], u_colors[14], a);
     } else {
-        color = u_colors[7];
+        color = u_colors[14];
     }
 
     if( u_interpolation != 0 ) {
         color = vec4(linear_to_srgb(vec3(color)), color.a);
     }
 
-    gl_FragColor = mult_color * color + add_color;;
+    gl_FragColor = mult_color * color + add_color;
 }
 
