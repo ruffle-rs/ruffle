@@ -835,8 +835,9 @@ fn create_renderer(
             .into_js_result()?
             .dyn_into()
             .map_err(|_| "Expected HtmlCanvasElement")?;
-        if let Ok(renderer) = ruffle_render_webgl::WebGlRenderBackend::new(&canvas) {
-            return Ok((canvas, Box::new(renderer)));
+        match ruffle_render_webgl::WebGlRenderBackend::new(&canvas) {
+            Ok(renderer) => return Ok((canvas, Box::new(renderer))),
+            Err(error) => log::error!("Error creating WebGL renderer: {}", error),
         }
     }
 
@@ -848,8 +849,9 @@ fn create_renderer(
             .into_js_result()?
             .dyn_into()
             .map_err(|_| "Expected HtmlCanvasElement")?;
-        if let Ok(renderer) = ruffle_render_canvas::WebCanvasRenderBackend::new(&canvas) {
-            return Ok((canvas, Box::new(renderer)));
+        match ruffle_render_canvas::WebCanvasRenderBackend::new(&canvas) {
+            Ok(renderer) => return Ok((canvas, Box::new(renderer))),
+            Err(error) => log::error!("Error creating canvas renderer: {}", error),
         }
     }
 
