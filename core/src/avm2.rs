@@ -1,10 +1,10 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
+use crate::avm2::domain::Domain;
 use crate::avm2::globals::SystemPrototypes;
 use crate::avm2::object::ScriptObject;
 use crate::avm2::scope::Scope;
-use crate::avm2::script::Script;
-use crate::avm2::script::TranslationUnit;
+use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -23,6 +23,7 @@ macro_rules! avm_debug {
 mod activation;
 mod array;
 mod class;
+mod domain;
 mod function;
 mod globals;
 mod method;
@@ -133,7 +134,8 @@ impl<'gc> Avm2<'gc> {
         let mut read = Reader::new(abc.as_ref());
 
         let abc_file = Rc::new(read.read()?);
-        let tunit = TranslationUnit::from_abc(abc_file.clone(), context.gc_context);
+        let domain = Domain::global_domain(context.gc_context);
+        let tunit = TranslationUnit::from_abc(abc_file.clone(), domain, context.gc_context);
 
         for i in (0..abc_file.scripts.len()).rev() {
             let script = tunit.load_script(i as u32, context.avm2, context.gc_context)?;

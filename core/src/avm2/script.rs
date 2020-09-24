@@ -1,6 +1,7 @@
 //! Whole script representation
 
 use crate::avm2::class::Class;
+use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::object::{Object, ScriptObject};
 use crate::avm2::string::AvmString;
@@ -32,6 +33,9 @@ pub struct TranslationUnit<'gc>(GcCell<'gc, TranslationUnitData<'gc>>);
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct TranslationUnitData<'gc> {
+    /// The domain that all scripts in the translation unit export defs to.
+    domain: GcCell<'gc, Domain<'gc>>,
+
     /// The ABC file that all of the following loaded data comes from.
     abc: CollectWrapper<Rc<AbcFile>>,
 
@@ -49,10 +53,17 @@ pub struct TranslationUnitData<'gc> {
 }
 
 impl<'gc> TranslationUnit<'gc> {
-    pub fn from_abc(abc: Rc<AbcFile>, mc: MutationContext<'gc, '_>) -> Self {
+    /// Construct a new `TranslationUnit` for a given ABC file intended to
+    /// execute within a particular domain.
+    pub fn from_abc(
+        abc: Rc<AbcFile>,
+        domain: GcCell<'gc, Domain<'gc>>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Self {
         Self(GcCell::allocate(
             mc,
             TranslationUnitData {
+                domain,
                 abc: CollectWrapper(abc),
                 classes: FnvHashMap::default(),
                 methods: FnvHashMap::default(),
@@ -135,6 +146,14 @@ impl<'gc> TranslationUnit<'gc> {
         self.0.write(mc).scripts.insert(script_index, script);
 
         script.write(mc).load_traits(self, script_index, avm2, mc)?;
+
+        for traitdef in script.read().traits()? {
+            self.0
+                .read()
+                .domain
+                .write(mc)
+                .export_definition(traitdef.name().clone(), script)?;
+        }
 
         Ok(script)
     }
