@@ -508,11 +508,14 @@ impl<'gc> MovieClip<'gc> {
             if let Some(name) =
                 Avm2QName::from_symbol_class(&class_name, activation.context.gc_context)
             {
-                let mut globals = activation.context.avm2.globals();
-                match globals
-                    .get_property(globals, &name, &mut activation)
-                    .and_then(|v| v.coerce_to_object(&mut activation))
-                {
+                //TODO: Store a domain per movie & grab symbols out of that
+                let globals = activation.context.avm2.global_domain();
+                let proto = globals
+                    .read()
+                    .get_defined_value(&mut activation, name.clone())
+                    .and_then(|v| v.coerce_to_object(&mut activation));
+
+                match proto {
                     Ok(proto) => {
                         let library = activation
                             .context

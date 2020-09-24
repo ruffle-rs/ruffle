@@ -160,6 +160,10 @@ macro_rules! impl_avm2_custom_object {
             self.0.read().$field.proto()
         }
 
+        fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>) {
+            self.0.write(mc).$field.set_proto(proto)
+        }
+
         fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {
             self.0.read().$field.get_enumerant_name(index)
         }
