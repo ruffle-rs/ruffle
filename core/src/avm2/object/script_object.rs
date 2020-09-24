@@ -216,6 +216,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().proto
     }
 
+    fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>) {
+        self.0.write(mc).set_proto(proto)
+    }
+
     fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {
         self.0.read().get_enumerant_name(index)
     }
@@ -721,6 +725,10 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn proto(&self) -> Option<Object<'gc>> {
         self.proto
+    }
+
+    pub fn set_proto(&mut self, proto: Object<'gc>) {
+        self.proto = Some(proto)
     }
 
     pub fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {

@@ -76,6 +76,17 @@ impl<'gc> Scope<'gc> {
         &self.values
     }
 
+    /// Returns a reference to the current global scope object.
+    ///
+    /// By convention, the global scope is at the bottom of the scope stack.
+    pub fn globals(&self) -> Object<'gc> {
+        if let Some(parent) = self.parent {
+            parent.read().globals()
+        } else {
+            self.values
+        }
+    }
+
     /// Returns a reference to the current local scope object for mutation.
     pub fn locals_mut(&mut self) -> &mut Object<'gc> {
         &mut self.values

@@ -1,7 +1,10 @@
 //! Application Domains
 
+use crate::avm2::activation::Activation;
 use crate::avm2::names::QName;
+use crate::avm2::object::TObject;
 use crate::avm2::script::Script;
+use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
@@ -71,6 +74,20 @@ impl<'gc> Domain<'gc> {
         }
 
         None
+    }
+
+    /// Retrieve a value from this domain.
+    pub fn get_defined_value(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: QName<'gc>,
+    ) -> Result<Value<'gc>, Error> {
+        let script = self
+            .get_defining_script(name.clone())
+            .ok_or_else(|| format!("MovieClip Symbol {} does not exist", name.local_name()))?;
+        let mut globals = script.read().globals();
+
+        globals.get_property(globals, &name, activation)
     }
 
     /// Export a definition from a script into the current application domain.

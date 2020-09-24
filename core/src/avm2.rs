@@ -2,7 +2,6 @@
 
 use crate::avm2::domain::Domain;
 use crate::avm2::globals::SystemPrototypes;
-use crate::avm2::object::ScriptObject;
 use crate::avm2::scope::Scope;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
@@ -58,7 +57,7 @@ pub struct Avm2<'gc> {
     stack: Vec<Value<'gc>>,
 
     /// Global scope object.
-    globals: Object<'gc>,
+    globals: GcCell<'gc, Domain<'gc>>,
 
     /// System prototypes.
     system_prototypes: Option<SystemPrototypes<'gc>>,
@@ -70,7 +69,7 @@ pub struct Avm2<'gc> {
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
     pub fn new(mc: MutationContext<'gc, '_>) -> Self {
-        let globals = ScriptObject::bare_object(mc);
+        let globals = Domain::global_domain(mc);
 
         Self {
             stack: Vec::new(),
@@ -83,8 +82,9 @@ impl<'gc> Avm2<'gc> {
     }
 
     pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let globals = context.avm2.globals;
         let mut activation = Activation::from_nothing(context.reborrow());
-        globals::load_player_globals(&mut activation)
+        globals::load_player_globals(&mut activation, globals)
     }
 
     /// Return the current set of system prototypes.
@@ -99,8 +99,7 @@ impl<'gc> Avm2<'gc> {
         script: GcCell<'gc, Script<'gc>>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let globals = context.avm2.globals;
-        let mut init_activation = Activation::from_script(context.reborrow(), script, globals)?;
+        let mut init_activation = Activation::from_script(context.reborrow(), script)?;
 
         init_activation.run_stack_frame_for_script(script)
     }
@@ -162,7 +161,7 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
-    pub fn globals(&self) -> Object<'gc> {
+    pub fn global_domain(&self) -> GcCell<'gc, Domain<'gc>> {
         self.globals
     }
 

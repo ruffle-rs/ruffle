@@ -134,10 +134,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn from_script(
         context: UpdateContext<'a, 'gc, 'gc_context>,
         script: GcCell<'gc, Script<'gc>>,
-        global: Object<'gc>,
     ) -> Result<Self, Error> {
+        let script_scope = script.read().globals();
         let method = script.read().init().into_bytecode()?;
-        let scope = Some(Scope::push_scope(None, global, context.gc_context));
+        let scope = Some(Scope::push_scope(None, script_scope, context.gc_context));
         let body: Result<_, Error> = method
             .body()
             .ok_or_else(|| "Cannot execute non-native method (for script) without body".into());
@@ -148,10 +148,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         *local_registers
             .write(context.gc_context)
             .get_mut(0)
-            .unwrap() = global.into();
+            .unwrap() = script_scope.into();
 
         Ok(Self {
-            this: Some(global),
+            this: Some(script_scope),
             arguments: None,
             is_executing: false,
             local_registers,
@@ -1224,7 +1224,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_get_global_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.globals().get_slot(index)?;
+        let value = self.scope.unwrap().read().globals().get_slot(index)?;
 
         self.context.avm2.push(value);
 
@@ -1234,8 +1234,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_set_global_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop();
 
-        self.context
-            .avm2
+        self.scope
+            .unwrap()
+            .read()
             .globals()
             .set_slot(index, value, self.context.gc_context)?;
 

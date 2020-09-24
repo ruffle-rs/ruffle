@@ -6,6 +6,7 @@ use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::object::{Object, ScriptObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
+use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::collect::CollectWrapper;
 use fnv::FnvHashMap;
@@ -228,6 +229,28 @@ pub struct Script<'gc> {
 }
 
 impl<'gc> Script<'gc> {
+    /// Create an empty script.
+    ///
+    /// This method is intended for builtin script initialization, such as our
+    /// implementation of player globals. The builtin script initializer will
+    /// be responsible for actually installing traits into both the script
+    /// globals as well as the domain that this script is supposed to be a part
+    /// of.
+    ///
+    /// The `globals` object should be constructed using the `global`
+    /// prototype.
+    pub fn empty_script(mc: MutationContext<'gc, '_>, globals: Object<'gc>) -> GcCell<'gc, Self> {
+        GcCell::allocate(
+            mc,
+            Self {
+                globals,
+                init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
+                traits: Vec::new(),
+                traits_loaded: true,
+            },
+        )
+    }
+
     /// Construct a script from a `TranslationUnit` and it's script index.
     ///
     /// The returned script will be allocated, but no traits will be loaded.

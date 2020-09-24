@@ -333,6 +333,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// `get`.
     fn proto(&self) -> Option<Object<'gc>>;
 
+    /// Change the `__proto__` on this object.
+    ///
+    /// This method primarily exists so that the global scope that player
+    /// globals loads into can be created before it's superclasses are. It
+    /// should be used sparingly, if at all.
+    fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>);
+
     /// Retrieve a given enumerable name by index.
     ///
     /// Enumerants are listed by index, starting from zero. A value of `None`
