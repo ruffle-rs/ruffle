@@ -2,6 +2,7 @@ use crate::avm1::{Object, StageObject, Value};
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
+use crate::percentage::Percent;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::{Collect, GcCell, MutationContext};

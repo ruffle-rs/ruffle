@@ -1,6 +1,7 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::percentage::Percent;
 use crate::prelude::*;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use swf::Twips;

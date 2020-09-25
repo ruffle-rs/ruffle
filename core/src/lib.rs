@@ -28,6 +28,7 @@ mod font;
 mod html;
 mod library;
 pub mod loader;
+mod percentage;
 mod player;
 mod prelude;
 mod property_map;

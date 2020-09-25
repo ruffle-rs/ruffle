@@ -625,7 +625,7 @@ fn x_scale<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let val = this.scale_x(activation.context.gc_context) * 100.0;
+    let val: f64 = this.scale_x(activation.context.gc_context).into();
     Ok(val.into())
 }
 
@@ -635,7 +635,7 @@ fn set_x_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_x(activation.context.gc_context, val / 100.0);
+        this.set_scale_x(activation.context.gc_context, val.into());
     }
     Ok(())
 }
@@ -644,7 +644,7 @@ fn y_scale<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let scale_y = this.scale_y(activation.context.gc_context) * 100.0;
+    let scale_y: f64 = this.scale_y(activation.context.gc_context).into();
     Ok(scale_y.into())
 }
 
@@ -654,7 +654,7 @@ fn set_y_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_y(activation.context.gc_context, val / 100.0);
+        this.set_scale_y(activation.context.gc_context, val.into());
     }
     Ok(())
 }
