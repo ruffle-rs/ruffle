@@ -91,7 +91,7 @@ pub fn constructor<'gc>(
 
     if args.len() == 1 {
         let arg = args.get(0).unwrap();
-        if let Ok(length) = arg.coerce_to_f64(activation) {
+        if let Value::Number(length) = *arg {
             if length >= 0.0 {
                 this.set_length(activation.context.gc_context, length as usize);
                 consumed = true;
@@ -124,7 +124,7 @@ pub fn array_function<'gc>(
 
     if args.len() == 1 {
         let arg = args.get(0).unwrap();
-        if let Ok(length) = arg.coerce_to_f64(activation) {
+        if let Value::Number(length) = *arg {
             if length >= 0.0 {
                 array_obj.set_length(activation.context.gc_context, length as usize);
                 consumed = true;
