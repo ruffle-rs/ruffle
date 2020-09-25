@@ -383,6 +383,7 @@ swf_tests! {
     (as3_array_sort, "avm2/array_sort", 1),
     (as3_array_sorton, "avm2/array_sorton", 1),
     (as3_array_hasownproperty, "avm2/array_hasownproperty", 1),
+    (stage_property_representation, "avm1/stage_property_representation", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
