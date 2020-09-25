@@ -3,7 +3,7 @@
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
-use crate::avm2::object::{Object, ScriptObject};
+use crate::avm2::object::{DomainObject, Object};
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
@@ -139,9 +139,11 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(*scripts);
         }
 
+        let domain = read.domain;
+
         drop(read);
 
-        let global = ScriptObject::object(mc, avm2.prototypes().global);
+        let global = DomainObject::from_domain(mc, Some(avm2.prototypes().global), domain);
 
         let script = Script::from_abc_index(self, script_index, global, mc)?;
         self.0.write(mc).scripts.insert(script_index, script);
@@ -149,9 +151,7 @@ impl<'gc> TranslationUnit<'gc> {
         script.write(mc).load_traits(self, script_index, avm2, mc)?;
 
         for traitdef in script.read().traits()? {
-            self.0
-                .read()
-                .domain
+            domain
                 .write(mc)
                 .export_definition(traitdef.name().clone(), script)?;
         }
