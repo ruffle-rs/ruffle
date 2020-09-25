@@ -1,9 +1,9 @@
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
-use crate::percentage::Percent;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
+use crate::types::{Degrees, Percent};
 use gc_arena::{Collect, GcCell};
 use std::sync::Arc;
 
