@@ -1,4 +1,24 @@
+// new Array()
 
-
+0
+// new Array(5)
+undefined,undefined,undefined,undefined,undefined
+5
+// new Array('3')
+3
+1
+// new Array(o)
+[object Object]
+1
+// new Array(undefined)
 undefined
-
+1
+// new Array(null)
+null
+1
+// new Array(1, 2, true, 4, 5)
+1,2,true,4,5
+5
+// new Array(undefined, false)
+undefined,false
+2
