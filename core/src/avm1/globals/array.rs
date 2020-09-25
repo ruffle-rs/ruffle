@@ -103,17 +103,9 @@ pub fn constructor<'gc>(
     }
 
     if !consumed {
-        let mut length = 0;
-        for arg in args {
-            this.define_value(
-                activation.context.gc_context,
-                &length.to_string(),
-                arg.to_owned(),
-                EnumSet::empty(),
-            );
-            length += 1;
+        for (i, arg) in args.iter().enumerate() {
+            this.set_array_element(i, arg.to_owned(), activation.context.gc_context);
         }
-        this.set_length(activation.context.gc_context, length);
     }
 
     Ok(Value::Undefined)
@@ -144,12 +136,9 @@ pub fn array_function<'gc>(
     }
 
     if !consumed {
-        let mut length = 0;
-        for arg in args {
-            array_obj.set_array_element(length, arg.to_owned(), activation.context.gc_context);
-            length += 1;
+        for (i, arg) in args.iter().enumerate() {
+            array_obj.set_array_element(i, arg.to_owned(), activation.context.gc_context);
         }
-        array_obj.set_length(activation.context.gc_context, length);
     }
 
     Ok(array_obj.into())
