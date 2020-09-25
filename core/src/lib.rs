@@ -28,7 +28,6 @@ mod font;
 mod html;
 mod library;
 pub mod loader;
-mod percentage;
 mod player;
 mod prelude;
 mod property_map;
@@ -36,6 +35,7 @@ pub mod shape_utils;
 pub mod string_utils;
 pub mod tag_utils;
 mod transform;
+mod types;
 mod xml;
 
 pub mod backend;

@@ -1,10 +1,10 @@
 use crate::avm1::{Object, TObject, Value};
 use crate::context::{RenderContext, UpdateContext};
-use crate::percentage::Percent;
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
+use crate::types::{Degrees, Percent};
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -47,7 +47,7 @@ pub struct DisplayObjectBase<'gc> {
     // `_xscale` and `_yscale` are stored in units of percentages to avoid
     // floating-point precision errors with movies that accumulate onto the
     // scale parameters.
-    rotation: f64,
+    rotation: Degrees,
     scale_x: Percent,
     scale_y: Percent,
     skew: f64,
@@ -75,7 +75,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             transform: Default::default(),
             name: Default::default(),
             clip_depth: Default::default(),
-            rotation: 0.0,
+            rotation: Degrees::from_radians(0.0),
             scale_x: Percent::from_unit(1.0),
             scale_y: Percent::from_unit(1.0),
             skew: 0.0,
@@ -191,7 +191,7 @@ impl<'gc> DisplayObjectBase<'gc> {
             let rotation_y = f32::atan2(-c, d);
             let scale_x = f32::sqrt(a * a + b * b);
             let scale_y = f32::sqrt(c * c + d * d);
-            self.rotation = rotation_x.into();
+            self.rotation = Degrees::from_radians(rotation_x.into());
             self.scale_x = Percent::from_unit(scale_x.into());
             self.scale_y = Percent::from_unit(scale_y.into());
             self.skew = (rotation_y - rotation_x).into();
@@ -207,25 +207,25 @@ impl<'gc> DisplayObjectBase<'gc> {
         let sin_x = f32::sin(rotation);
         self.scale_x = Percent::from_unit(scale_x.into());
         self.scale_y = Percent::from_unit(scale_y.into());
-        self.rotation = rotation.into();
+        self.rotation = Degrees::from_radians(rotation.into());
         matrix.a = (scale_x * cos_x) as f32;
         matrix.b = (scale_x * sin_x) as f32;
         matrix.c = (scale_y * -sin_x) as f32;
         matrix.d = (scale_y * cos_x) as f32;
     }
 
-    fn rotation(&mut self) -> f64 {
+    fn rotation(&mut self) -> Degrees {
         self.cache_scale_rotation();
         self.rotation
     }
-    fn set_rotation(&mut self, radians: f64) {
+    fn set_rotation(&mut self, degrees: Degrees) {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
-        self.rotation = radians;
-        let cos_x = f64::cos(radians);
-        let sin_x = f64::sin(radians);
-        let cos_y = f64::cos(radians + self.skew);
-        let sin_y = f64::sin(radians + self.skew);
+        self.rotation = degrees;
+        let cos_x = f64::cos(degrees.into_radians());
+        let sin_x = f64::sin(degrees.into_radians());
+        let cos_y = f64::cos(degrees.into_radians() + self.skew);
+        let sin_y = f64::sin(degrees.into_radians() + self.skew);
         let mut matrix = &mut self.transform.matrix;
         matrix.a = (self.scale_x.into_unit() * cos_x) as f32;
         matrix.b = (self.scale_x.into_unit() * sin_x) as f32;
@@ -240,8 +240,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_x = value;
-        let cos = f64::cos(self.rotation);
-        let sin = f64::sin(self.rotation);
+        let cos = f64::cos(self.rotation.into_radians());
+        let sin = f64::sin(self.rotation.into_radians());
         let mut matrix = &mut self.transform.matrix;
         matrix.a = (cos * value.into_unit()) as f32;
         matrix.b = (sin * value.into_unit()) as f32;
@@ -254,8 +254,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_y = value;
-        let cos = f64::cos(self.rotation + self.skew);
-        let sin = f64::sin(self.rotation + self.skew);
+        let cos = f64::cos(self.rotation.into_radians() + self.skew);
+        let sin = f64::sin(self.rotation.into_radians() + self.skew);
         let mut matrix = &mut self.transform.matrix;
         matrix.c = (-sin * value.into_unit()) as f32;
         matrix.d = (cos * value.into_unit()) as f32;
@@ -489,25 +489,21 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_y`/`y` ActionScript properties.
     fn set_y(&self, gc_context: MutationContext<'gc, '_>, value: f64);
 
-    /// The rotation in radians this display object in local space.
+    /// The rotation in degrees this display object in local space.
     /// Returned by the `_rotation`/`rotation` ActionScript properties.
-    /// Note that the ActionScript properties return the angle in degrees;
-    /// the conversion to degrees is done in the AVM.
-    fn rotation(&self, gc_context: MutationContext<'gc, '_>) -> f64;
+    fn rotation(&self, gc_context: MutationContext<'gc, '_>) -> Degrees;
 
-    /// Sets the rotation in radians this display object in local space.
+    /// Sets the rotation in degrees this display object in local space.
     /// Set by the `_rotation`/`rotation` ActionScript properties.
-    /// Note that the ActionScript properties set the angle in degrees;
-    /// the conversion to radians is done in the AVM.
-    fn set_rotation(&self, gc_context: MutationContext<'gc, '_>, radians: f64);
+    fn set_rotation(&self, gc_context: MutationContext<'gc, '_>, radians: Degrees);
 
     /// The X axis scale for this display object in local space.
-    /// The normal scale is 1.
+    /// The normal scale is 100.
     /// Returned by the `_xscale`/`scaleX` ActionScript properties.
     fn scale_x(&self, gc_context: MutationContext<'gc, '_>) -> Percent;
 
     /// Sets the scale of the X axis for this display object in local space.
-    /// The normal scale is 1.
+    /// The normal scale is 100.
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
     fn set_scale_x(&self, gc_context: MutationContext<'gc, '_>, value: Percent);
 
@@ -552,8 +548,8 @@ pub trait TDisplayObject<'gc>:
         let prev_scale_x = self.scale_x(gc_context).into_unit();
         let prev_scale_y = self.scale_y(gc_context).into_unit();
         let rotation = self.rotation(gc_context);
-        let cos = f64::abs(f64::cos(rotation));
-        let sin = f64::abs(f64::sin(rotation));
+        let cos = f64::abs(f64::cos(rotation.into_radians()));
+        let sin = f64::abs(f64::sin(rotation.into_radians()));
         let new_scale_x = aspect_ratio * (cos * target_scale_x + sin * target_scale_y)
             / ((cos + aspect_ratio * sin) * (aspect_ratio * cos + sin));
         let new_scale_y =
@@ -589,8 +585,8 @@ pub trait TDisplayObject<'gc>:
         let prev_scale_x = self.scale_x(gc_context).into_unit();
         let prev_scale_y = self.scale_y(gc_context).into_unit();
         let rotation = self.rotation(gc_context);
-        let cos = f64::abs(f64::cos(rotation));
-        let sin = f64::abs(f64::sin(rotation));
+        let cos = f64::abs(f64::cos(rotation.into_radians()));
+        let sin = f64::abs(f64::sin(rotation.into_radians()));
         let new_scale_x =
             (aspect_ratio * cos * prev_scale_x + sin * prev_scale_y) / (aspect_ratio * cos + sin);
         let new_scale_y = aspect_ratio * (sin * target_scale_x + cos * target_scale_y)
@@ -995,11 +991,11 @@ macro_rules! impl_display_object_sansbounds {
                 .$field
                 .set_color_transform(context, color_transform)
         }
-        fn rotation(&self, gc_context: gc_arena::MutationContext<'gc, '_>) -> f64 {
+        fn rotation(&self, gc_context: gc_arena::MutationContext<'gc, '_>) -> Degrees {
             self.0.write(gc_context).$field.rotation()
         }
-        fn set_rotation(&self, gc_context: gc_arena::MutationContext<'gc, '_>, radians: f64) {
-            self.0.write(gc_context).$field.set_rotation(radians)
+        fn set_rotation(&self, gc_context: gc_arena::MutationContext<'gc, '_>, degrees: Degrees) {
+            self.0.write(gc_context).$field.set_rotation(degrees)
         }
         fn scale_x(&self, gc_context: gc_arena::MutationContext<'gc, '_>) -> Percent {
             self.0.write(gc_context).$field.scale_x()

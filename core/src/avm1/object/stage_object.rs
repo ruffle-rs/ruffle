@@ -761,10 +761,8 @@ fn rotation<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this
-        .rotation(activation.context.gc_context)
-        .to_degrees()
-        .into())
+    let degrees: f64 = this.rotation(activation.context.gc_context).into();
+    Ok(degrees.into())
 }
 
 fn set_rotation<'gc>(
@@ -780,7 +778,7 @@ fn set_rotation<'gc>(
         } else if degrees > 180.0 {
             degrees -= 360.0
         }
-        this.set_rotation(activation.context.gc_context, degrees.to_radians());
+        this.set_rotation(activation.context.gc_context, degrees.into());
     }
     Ok(())
 }
