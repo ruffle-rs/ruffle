@@ -6,8 +6,8 @@ use crate::avm2::domain::Domain;
 use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
-    implicit_deriver, ArrayObject, FunctionObject, NamespaceObject, Object, PrimitiveObject,
-    ScriptObject, StageObject, TObject,
+    implicit_deriver, ArrayObject, DomainObject, FunctionObject, NamespaceObject, Object,
+    PrimitiveObject, ScriptObject, StageObject, TObject,
 };
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
@@ -270,7 +270,7 @@ pub fn load_player_globals<'gc>(
     domain: GcCell<'gc, Domain<'gc>>,
 ) -> Result<(), Error> {
     let mc = activation.context.gc_context;
-    let gs = ScriptObject::bare_object(mc);
+    let gs = DomainObject::from_domain(mc, None, domain);
     let script = Script::empty_script(mc, gs);
 
     // public / root package
