@@ -133,7 +133,7 @@ impl<'gc> Avm2<'gc> {
         let mut read = Reader::new(abc.as_ref());
 
         let abc_file = Rc::new(read.read()?);
-        let domain = Domain::global_domain(context.gc_context);
+        let domain = Domain::movie_domain(context.gc_context, context.avm2.globals);
         let tunit = TranslationUnit::from_abc(abc_file.clone(), domain, context.gc_context);
 
         for i in (0..abc_file.scripts.len()).rev() {
