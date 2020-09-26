@@ -122,6 +122,17 @@ impl<'gc> Scope<'gc> {
             return scope.find(name, activation);
         }
 
+        if let Some(domain) = self.locals().as_application_domain() {
+            let script_scope = domain
+                .read()
+                .get_defining_script(name)?
+                .map(|(n, s)| (n, s.read().globals()));
+
+            if let Some((_qname, script_scope)) = script_scope {
+                return Ok(Some(script_scope));
+            }
+        }
+
         Ok(None)
     }
 
@@ -148,6 +159,21 @@ impl<'gc> Scope<'gc> {
             return parent
                 .write(activation.context.gc_context)
                 .resolve(name, activation);
+        }
+
+        if let Some(domain) = self.locals().as_application_domain() {
+            let script_scope = domain
+                .read()
+                .get_defining_script(name)?
+                .map(|(n, s)| (n, s.read().globals()));
+
+            if let Some((qname, mut script_scope)) = script_scope {
+                return Ok(Some(script_scope.get_property(
+                    script_scope,
+                    &qname,
+                    activation,
+                )?));
+            }
         }
 
         //TODO: Should undefined variables halt execution?

@@ -1,7 +1,7 @@
 //! Application Domains
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::QName;
+use crate::avm2::names::{Multiname, QName};
 use crate::avm2::object::TObject;
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
@@ -63,17 +63,41 @@ impl<'gc> Domain<'gc> {
         false
     }
 
-    /// Return the script that has exported a given definition.
-    pub fn get_defining_script(&self, name: QName<'gc>) -> Option<GcCell<'gc, Script<'gc>>> {
-        if self.defs.contains_key(&name) {
-            return self.defs.get(&name).cloned();
+    /// Resolve a QName and return the script that provided it.
+    ///
+    /// If a name does not exist or cannot be resolved, no script or name will
+    /// be returned.
+    pub fn get_defining_script(
+        &self,
+        multiname: &Multiname<'gc>,
+    ) -> Result<Option<(QName<'gc>, GcCell<'gc, Script<'gc>>)>, Error> {
+        for ns in multiname.namespace_set() {
+            if ns.is_any() {
+                if let Some(local_name) = multiname.local_name() {
+                    for (qname, script) in self.defs.iter() {
+                        if qname.local_name() == local_name {
+                            return Ok(Some((qname.clone(), *script)));
+                        }
+                    }
+                } else {
+                    return Ok(None);
+                }
+            } else if let Some(name) = multiname.local_name() {
+                let qname = QName::new(ns.clone(), name);
+                if self.defs.contains_key(&qname) {
+                    let script = self.defs.get(&qname).cloned().unwrap();
+                    return Ok(Some((qname, script)));
+                }
+            } else {
+                return Ok(None);
+            }
         }
 
         if let Some(parent) = self.parent {
-            return parent.read().get_defining_script(name);
+            return parent.read().get_defining_script(multiname);
         }
 
-        None
+        Ok(None)
     }
 
     /// Retrieve a value from this domain.
@@ -82,8 +106,8 @@ impl<'gc> Domain<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         name: QName<'gc>,
     ) -> Result<Value<'gc>, Error> {
-        let script = self
-            .get_defining_script(name.clone())
+        let (name, script) = self
+            .get_defining_script(&name.clone().into())?
             .ok_or_else(|| format!("MovieClip Symbol {} does not exist", name.local_name()))?;
         let mut globals = script.read().globals();
 
