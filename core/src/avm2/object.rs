@@ -546,15 +546,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         .resolve_multiname(sc_name)?
                         .unwrap_or_else(|| QName::dynamic_name("Object"));
 
-                    let super_class: Result<Object<'gc>, Error> = self
-                        .get_property(receiver, &super_name, activation)?
-                        .coerce_to_object(activation)
-                        .map_err(|_e| {
-                            format!("Could not resolve superclass {:?}", super_name.local_name())
-                                .into()
-                        });
+                    let super_class = if let Some(scope) = scope {
+                        scope
+                            .write(activation.context.gc_context)
+                            .resolve(&super_name.clone().into(), activation)?
+                    } else {
+                        None
+                    };
 
-                    Some(super_class?)
+                    Some(
+                        super_class
+                            .ok_or_else(|| {
+                                format!(
+                                    "Could not resolve superclass {:?}",
+                                    super_name.local_name()
+                                )
+                            })?
+                            .coerce_to_object(activation)?,
+                    )
                 } else {
                     None
                 };
