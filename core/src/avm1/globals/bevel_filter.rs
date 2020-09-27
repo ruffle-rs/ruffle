@@ -13,105 +13,18 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let distance = args
-        .get(0)
-        .unwrap_or(&4.0.into())
-        .coerce_to_f64(activation)?;
-
-    let angle = args
-        .get(1)
-        .unwrap_or(&44.9999999772279.into())
-        .coerce_to_f64(activation)?;
-
-    let clamped_angle = if angle.is_sign_negative() {
-        -(angle.abs() % 360.0)
-    } else {
-        angle % 360.0
-    };
-
-    let highlight_color = args
-        .get(2)
-        .unwrap_or(&0xFFFFFF.into())
-        .coerce_to_i32(activation)?;
-
-    let highlight_color_clamped = if highlight_color.is_negative() {
-        0x1000000 - (highlight_color.abs() % 0x1000000)
-    } else {
-        highlight_color % (0x1000000)
-    };
-
-    let highlight_alpha = args
-        .get(3)
-        .unwrap_or(&1.into())
-        .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(1.0))?;
-
-    let shadow_color = args
-        .get(4)
-        .unwrap_or(&0x000000.into())
-        .coerce_to_i32(activation)?;
-
-    let shadow_color_clamped = if shadow_color.is_negative() {
-        0x1000000 - (shadow_color.abs() % 0x1000000)
-    } else {
-        shadow_color % (0x1000000)
-    };
-
-    let shadow_alpha = args
-        .get(5)
-        .unwrap_or(&1.into())
-        .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(1.0))?;
-
-    let blur_x = args
-        .get(6)
-        .unwrap_or(&4.into())
-        .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
-
-    let blur_y = args
-        .get(7)
-        .unwrap_or(&4.into())
-        .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
-
-    let strength = args
-        .get(8)
-        .unwrap_or(&1.into())
-        .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
-
-    let quality = args
-        .get(9)
-        .unwrap_or(&1.into())
-        .coerce_to_i32(activation)
-        .map(|x| x.max(0).min(15))?;
-
-    let type_: BevelFilterType = args
-        .get(10)
-        .unwrap_or(&"inner".into())
-        .coerce_to_string(activation)
-        .map(|v| v.as_str().into())?;
-
-    let knockout = args
-        .get(11)
-        .unwrap_or(&false.into())
-        .as_bool(activation.current_swf_version());
-
-    let bevel_filter = this.as_bevel_filter_object().unwrap();
-
-    bevel_filter.set_distance(activation.context.gc_context, distance);
-    bevel_filter.set_angle(activation.context.gc_context, clamped_angle);
-    bevel_filter.set_highlight_color(activation.context.gc_context, highlight_color_clamped);
-    bevel_filter.set_highlight_alpha(activation.context.gc_context, highlight_alpha);
-    bevel_filter.set_shadow_color(activation.context.gc_context, shadow_color_clamped);
-    bevel_filter.set_shadow_alpha(activation.context.gc_context, shadow_alpha);
-    bevel_filter.set_blur_x(activation.context.gc_context, blur_x);
-    bevel_filter.set_blur_y(activation.context.gc_context, blur_y);
-    bevel_filter.set_strength(activation.context.gc_context, strength);
-    bevel_filter.set_quality(activation.context.gc_context, quality);
-    bevel_filter.set_type(activation.context.gc_context, type_);
-    bevel_filter.set_knockout(activation.context.gc_context, knockout);
+    set_distance(activation, this, args.get(0..1).unwrap_or(&[]))?;
+    set_angle(activation, this, args.get(1..2).unwrap_or(&[]))?;
+    set_highlight_color(activation, this, args.get(2..3).unwrap_or(&[]))?;
+    set_highlight_alpha(activation, this, args.get(3..4).unwrap_or(&[]))?;
+    set_shadow_color(activation, this, args.get(4..5).unwrap_or(&[]))?;
+    set_shadow_alpha(activation, this, args.get(5..6).unwrap_or(&[]))?;
+    set_blur_x(activation, this, args.get(6..7).unwrap_or(&[]))?;
+    set_blur_y(activation, this, args.get(7..8).unwrap_or(&[]))?;
+    set_strength(activation, this, args.get(8..9).unwrap_or(&[]))?;
+    set_quality(activation, this, args.get(9..10).unwrap_or(&[]))?;
+    set_type(activation, this, args.get(10..11).unwrap_or(&[]))?;
+    set_knockout(activation, this, args.get(11..12).unwrap_or(&[]))?;
 
     Ok(Value::Undefined)
 }
@@ -191,18 +104,12 @@ pub fn set_highlight_color<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let color = args
         .get(0)
-        .unwrap_or(&0x000000.into())
-        .coerce_to_i32(activation)?;
-
-    let col = if color.is_negative() {
-        0x1000000 - (color.abs() % 0x1000000)
-    } else {
-        color % (0x1000000)
-    };
+        .unwrap_or(&0xFFFFFF.into())
+        .coerce_to_u32(activation)?;
 
     this.as_bevel_filter_object()
         .unwrap()
-        .set_highlight_color(activation.context.gc_context, col);
+        .set_highlight_color(activation.context.gc_context, color & 0xFFFFFF);
 
     Ok(Value::Undefined)
 }
@@ -257,17 +164,11 @@ pub fn set_shadow_color<'gc>(
     let color = args
         .get(0)
         .unwrap_or(&0x000000.into())
-        .coerce_to_i32(activation)?;
-
-    let col = if color.is_negative() {
-        0x1000000 - (color.abs() % 0x1000000)
-    } else {
-        color % (0x1000000)
-    };
+        .coerce_to_u32(activation)?;
 
     this.as_bevel_filter_object()
         .unwrap()
-        .set_shadow_color(activation.context.gc_context, col);
+        .set_shadow_color(activation.context.gc_context, color & 0xFFFFFF);
 
     Ok(Value::Undefined)
 }
@@ -317,7 +218,7 @@ pub fn set_quality<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let blur_y = args
         .get(0)
-        .unwrap_or(&Value::Undefined)
+        .unwrap_or(&1.into())
         .coerce_to_i32(activation)
         .map(|x| x.max(0).min(15))?;
 
@@ -394,7 +295,7 @@ pub fn set_blur_x<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let blur_x = args
         .get(0)
-        .unwrap_or(&Value::Undefined)
+        .unwrap_or(&4.into())
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 
@@ -420,7 +321,7 @@ pub fn set_blur_y<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let blur_y = args
         .get(0)
-        .unwrap_or(&Value::Undefined)
+        .unwrap_or(&4.into())
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 
@@ -449,7 +350,7 @@ pub fn set_type<'gc>(
         .get(0)
         .unwrap_or(&Value::String(AvmString::new(
             activation.context.gc_context,
-            "full".to_string(),
+            "inner".to_string(),
         )))
         .coerce_to_string(activation)
         .map(|s| s.as_str().into())?;
