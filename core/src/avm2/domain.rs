@@ -50,6 +50,11 @@ impl<'gc> Domain<'gc> {
         )
     }
 
+    /// Get the parent of this domain
+    pub fn parent_domain(&self) -> Option<GcCell<'gc, Domain<'gc>>> {
+        self.parent
+    }
+
     /// Determine if something has been defined within the current domain.
     pub fn has_definition(&self, name: QName<'gc>) -> bool {
         if self.defs.contains_key(&name) {

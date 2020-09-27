@@ -38,6 +38,22 @@ impl<'gc> DomainObject<'gc> {
 
         DomainObject(GcCell::allocate(mc, DomainObjectData { base, domain })).into()
     }
+
+    /// Construct a primitive subclass.
+    pub fn derive(
+        mc: MutationContext<'gc, '_>,
+        base_proto: Object<'gc>,
+        domain: GcCell<'gc, Domain<'gc>>,
+        class: GcCell<'gc, Class<'gc>>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+    ) -> Result<Object<'gc>, Error> {
+        let base = ScriptObjectData::base_new(
+            Some(base_proto),
+            ScriptObjectClass::InstancePrototype(class, scope),
+        );
+
+        Ok(DomainObject(GcCell::allocate(mc, DomainObjectData { base, domain })).into())
+    }
 }
 
 impl<'gc> TObject<'gc> for DomainObject<'gc> {
