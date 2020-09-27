@@ -15,8 +15,8 @@ pub type SoundInstanceHandle = Index;
 type Error = Box<dyn std::error::Error>;
 
 pub trait AudioBackend {
-    fn play(&mut self) {}
-    fn pause(&mut self) {}
+    fn play(&mut self);
+    fn pause(&mut self);
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error>;
     fn preload_sound_stream_head(
         &mut self,
@@ -104,6 +104,8 @@ impl NullAudioBackend {
 }
 
 impl AudioBackend for NullAudioBackend {
+    fn play(&mut self) {}
+    fn pause(&mut self) {}
     fn register_sound(&mut self, _sound: &swf::Sound) -> Result<SoundHandle, Error> {
         Ok(self.sounds.insert(()))
     }
