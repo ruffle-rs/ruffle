@@ -52,11 +52,11 @@ pub struct BevelFilterData<'gc> {
     blur_y: f64,
     distance: f64,
     highlight_alpha: f64,
-    highlight_color: i32,
+    highlight_color: u32,
     knockout: bool,
     quality: i32,
     shadow_alpha: f64,
-    shadow_color: i32,
+    shadow_color: u32,
     strength: f64,
     type_: BevelFilterType,
 }
@@ -96,12 +96,12 @@ impl<'gc> BevelFilterObject<'gc> {
             set_highlight_color,
             get_highlight_color,
             highlight_color,
-            i32
+            u32
         ],
         [set_knockout, get_knockout, knockout, bool],
         [set_quality, get_quality, quality, i32],
         [set_shadow_alpha, get_shadow_alpha, shadow_alpha, f64],
-        [set_shadow_color, get_shadow_color, shadow_color, i32],
+        [set_shadow_color, get_shadow_color, shadow_color, u32],
         [set_strength, get_strength, strength, f64],
         [set_type, get_type, type_, BevelFilterType],
     );
