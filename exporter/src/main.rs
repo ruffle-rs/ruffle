@@ -341,9 +341,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         power_preference: wgpu::PowerPreference::Default,
         compatible_surface: None,
     }))
-    .ok_or_else(|| {
-        "This tool requires hardware acceleration, but no compatible graphics device was found."
-    })?;
+    .ok_or(
+        "This tool requires hardware acceleration, but no compatible graphics device was found.",
+    )?;
 
     let (device, queue) = block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {

@@ -35,7 +35,7 @@ type Error = Box<dyn std::error::Error>;
 /// A `Sound` is defined by the `DefineSound` SWF tags.
 struct Sound {
     format: swf::SoundFormat,
-    data: Arc<Vec<u8>>,
+    data: Arc<[u8]>,
     /// Number of samples in this audio.
     /// This does not include the skip_sample_frames.
     num_sample_frames: u32,
@@ -147,7 +147,7 @@ impl CpalAudioBackend {
     /// Instantiate a seeabkle decoder for the compression that the sound data uses.
     fn make_seekable_decoder(
         format: &swf::SoundFormat,
-        data: Cursor<VecAsRef>,
+        data: Cursor<ArcAsRef>,
     ) -> Result<Box<dyn Send + SeekableDecoder>, Error> {
         let decoder: Box<dyn Send + SeekableDecoder> = match format.compression {
             AudioCompression::Uncompressed => Box::new(PcmDecoder::new(
@@ -201,7 +201,7 @@ impl CpalAudioBackend {
         &self,
         sound: &Sound,
         settings: &swf::SoundInfo,
-        data: Cursor<VecAsRef>,
+        data: Cursor<ArcAsRef>,
     ) -> Result<Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
         let decoder = Self::make_seekable_decoder(&sound.format, data)?;
@@ -308,7 +308,7 @@ impl AudioBackend for CpalAudioBackend {
 
         let sound = Sound {
             format: swf_sound.format.clone(),
-            data: Arc::new(data.to_vec()),
+            data: Arc::from(data),
             num_sample_frames: swf_sound.num_samples,
             skip_sample_frames,
         };
@@ -350,7 +350,7 @@ impl AudioBackend for CpalAudioBackend {
         settings: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error> {
         let sound = &self.sounds[sound_handle];
-        let data = Cursor::new(VecAsRef(Arc::clone(&sound.data)));
+        let data = Cursor::new(ArcAsRef(Arc::clone(&sound.data)));
         // Create a signal that decodes and resamples the sound.
         let signal = if sound.skip_sample_frames == 0
             && settings.in_sample.is_none()
@@ -416,18 +416,18 @@ impl AudioBackend for CpalAudioBackend {
 
 /// A dummy wrapper struct to implement `AsRef<[u8]>` for `Arc<Vec<u8>`.
 /// Not having this trait causes problems when trying to use `Cursor<Vec<u8>>`.
-struct VecAsRef(Arc<Vec<u8>>);
+struct ArcAsRef(Arc<[u8]>);
 
-impl AsRef<[u8]> for VecAsRef {
+impl AsRef<[u8]> for ArcAsRef {
     #[inline]
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl Default for VecAsRef {
+impl Default for ArcAsRef {
     fn default() -> Self {
-        VecAsRef(Arc::new(vec![]))
+        ArcAsRef(Arc::new([]))
     }
 }
 
@@ -546,7 +546,7 @@ impl EnvelopeSignal {
     fn new(envelope: swf::SoundEnvelope) -> Self {
         // TODO: This maybe can be done more clever using the `sample` crate.
         let mut envelope = envelope.into_iter();
-        let first_point = envelope.next().unwrap_or_else(|| swf::SoundEnvelopePoint {
+        let first_point = envelope.next().unwrap_or(swf::SoundEnvelopePoint {
             sample: 0,
             left_volume: 1.0,
             right_volume: 1.0,
@@ -587,15 +587,15 @@ impl sample::signal::Signal for EnvelopeSignal {
         self.cur_sample = self.cur_sample.saturating_add(1);
         while self.cur_sample > self.next_point.sample {
             self.prev_point = self.next_point.clone();
-            self.next_point =
-                self.envelope
-                    .next()
-                    .clone()
-                    .unwrap_or_else(|| swf::SoundEnvelopePoint {
-                        sample: std::u32::MAX,
-                        left_volume: self.prev_point.left_volume,
-                        right_volume: self.prev_point.right_volume,
-                    });
+            self.next_point = self
+                .envelope
+                .next()
+                .clone()
+                .unwrap_or(swf::SoundEnvelopePoint {
+                    sample: std::u32::MAX,
+                    left_volume: self.prev_point.left_volume,
+                    right_volume: self.prev_point.right_volume,
+                });
 
             if self.prev_point.sample > self.next_point.sample {
                 self.next_point.sample = self.prev_point.sample;
