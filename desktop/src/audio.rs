@@ -315,6 +315,14 @@ impl AudioBackend for CpalAudioBackend {
         Ok(self.sounds.insert(sound))
     }
 
+    fn play(&mut self) {
+        self.stream.0.play().expect("Error trying to resume CPAL audio stream. This feature may not be supported by your audio device.");
+    }
+
+    fn pause(&mut self) {
+        self.stream.0.pause().expect("Error trying to pause CPAL audio stream. This feature may not be supported by your audio device.");
+    }
+
     fn start_stream(
         &mut self,
         clip_id: swf::CharacterId,
