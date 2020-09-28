@@ -1261,15 +1261,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     Cow::Borrowed(&url),
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
-                let fetch = self.context.navigator.fetch(&url, opts);
-                let process = self.context.load_manager.load_movie_into_clip(
-                    self.context.player.clone().unwrap(),
-                    clip_target,
-                    fetch,
-                    url.to_string(),
-                    None,
-                );
-                self.context.navigator.spawn_future(process);
+
+                if url == "" {
+                    //Blank URL on movie loads = unload!
+                    if let Some(mut mc) = clip_target.as_movie_clip() {
+                        mc.replace_with_movie(self.context.gc_context, None)
+                    }
+                } else {
+                    let fetch = self.context.navigator.fetch(&url, opts);
+                    let process = self.context.load_manager.load_movie_into_clip(
+                        self.context.player.clone().unwrap(),
+                        clip_target,
+                        fetch,
+                        url.to_string(),
+                        None,
+                    );
+                    self.context.navigator.spawn_future(process);
+                }
             }
 
             return Ok(FrameControl::Continue);
