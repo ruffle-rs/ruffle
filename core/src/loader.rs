@@ -437,8 +437,6 @@ impl<'gc> Loader<'gc> {
                         .unwrap()
                         .replace_with_movie(uc.gc_context, None);
 
-                    dbg!("movie_loader 440");
-
                     if let Some(broadcaster) = broadcaster {
                         Avm1::run_stack_frame_for_method(
                             clip,
