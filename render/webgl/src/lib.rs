@@ -507,7 +507,7 @@ impl WebGlRenderBackend {
                             *color = srgb_to_linear(*color);
                         }
                     }
-                    for i in num_colors..8 {
+                    for i in num_colors..MAX_GRADIENT_COLORS {
                         ratios[i] = ratios[i - 1];
                         colors[i] = colors[i - 1];
                     }
@@ -1019,8 +1019,12 @@ impl RenderBackend for WebGlRenderBackend {
                         gradient.gradient_type,
                     );
                     program.uniform1fv(&self.gl, ShaderUniform::GradientRatios, &gradient.ratios);
-                    let colors =
-                        unsafe { std::slice::from_raw_parts(gradient.colors[0].as_ptr(), 32) };
+                    let colors = unsafe {
+                        std::slice::from_raw_parts(
+                            gradient.colors[0].as_ptr(),
+                            MAX_GRADIENT_COLORS * 4,
+                        )
+                    };
                     program.uniform4fv(&self.gl, ShaderUniform::GradientColors, &colors);
                     program.uniform1i(
                         &self.gl,

@@ -8,8 +8,8 @@ uniform vec4 add_color;
 uniform mat3 u_matrix;
 
 uniform int u_gradient_type;
-uniform float u_ratios[15];
-uniform vec4 u_colors[15];
+uniform float u_ratios[16];
+uniform vec4 u_colors[16];
 uniform int u_num_colors;
 uniform int u_repeat_mode;
 uniform float u_focal_point;
