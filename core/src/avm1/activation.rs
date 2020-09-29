@@ -1173,14 +1173,21 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
                     let level = self.resolve_level(level_id);
 
-                    let process = self.context.load_manager.load_movie_into_clip(
-                        self.context.player.clone().unwrap(),
-                        level,
-                        fetch,
-                        url,
-                        None,
-                    );
-                    self.context.navigator.spawn_future(process);
+                    if url == "" {
+                        //Blank URL on movie loads = unload!
+                        if let Some(mut mc) = level.as_movie_clip() {
+                            mc.replace_with_movie(self.context.gc_context, None)
+                        }
+                    } else {
+                        let process = self.context.load_manager.load_movie_into_clip(
+                            self.context.player.clone().unwrap(),
+                            level,
+                            fetch,
+                            url,
+                            None,
+                        );
+                        self.context.navigator.spawn_future(process);
+                    }
                 }
                 Err(e) => avm_warn!(
                     self,
