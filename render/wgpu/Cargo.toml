@@ -11,7 +11,7 @@ wgpu-native = "0.5"
 image = "0.23.10"
 jpeg-decoder = "0.1.20"
 log = "0.4"
-lyon = "0.16.0"
+lyon = "0.16.2"
 ruffle_core = { path = "../../core" }
 futures = "0.3.5"
 bytemuck = "1.4.1"
