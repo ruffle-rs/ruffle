@@ -311,6 +311,18 @@ impl<W: Write> Writer<W> {
                 self.write_u8(0x1c)?;
                 self.write_index(namespace_set)?;
             }
+            Multiname::TypeName {
+                ref base_type,
+                ref parameters,
+            } => {
+                self.write_u8(0x1d)?;
+                self.write_index(&base_type)?;
+                self.write_u30(parameters.len() as u32)?;
+
+                for param in parameters {
+                    self.write_index(&param)?;
+                }
+            }
         }
         Ok(())
     }
