@@ -171,6 +171,20 @@ impl<'a> Reader<'a> {
             0x1c => Multiname::MultinameLA {
                 namespace_set: self.read_index()?,
             },
+            0x1d => {
+                let base_type = self.read_index()?;
+                let count = self.read_u30()?;
+                let mut parameters = Vec::new();
+
+                for _ in 0..count {
+                    parameters.push(self.read_index()?);
+                }
+
+                Multiname::TypeName {
+                    base_type,
+                    parameters,
+                }
+            }
             _ => return Err(Error::invalid_data("Invalid multiname kind")),
         })
     }
