@@ -6,7 +6,6 @@ use crate::avm_warn;
 
 /// Parse an FSCommand URL.
 pub fn parse(url: &str) -> Option<&str> {
-    log::info!("Checking {}", url);
     if url.to_lowercase().starts_with("fscommand:") {
         Some(&url["fscommand:".len()..])
     } else {
