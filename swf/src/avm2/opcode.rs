@@ -2,6 +2,7 @@
 pub enum OpCode {
     Add = 0xA0,
     AddI = 0xC5,
+    ApplyType = 0x53,
     AsType = 0x86,
     AsTypeLate = 0x87,
     BitAnd = 0xA8,

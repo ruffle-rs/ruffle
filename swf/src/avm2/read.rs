@@ -519,6 +519,9 @@ impl<'a> Reader<'a> {
         let op = match opcode {
             OpCode::Add => Op::Add,
             OpCode::AddI => Op::AddI,
+            OpCode::ApplyType => Op::ApplyType {
+                num_types: self.read_u30()?,
+            },
             OpCode::AsType => Op::AsType {
                 type_name: self.read_index()?,
             },

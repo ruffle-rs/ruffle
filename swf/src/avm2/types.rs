@@ -233,6 +233,9 @@ pub struct Script {
 pub enum Op {
     Add,
     AddI,
+    ApplyType {
+        num_types: u32,
+    },
     AsType {
         type_name: Index<Multiname>,
     },
