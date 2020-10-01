@@ -603,6 +603,10 @@ impl<W: Write> Writer<W> {
         match *op {
             Op::Add => self.write_opcode(OpCode::Add)?,
             Op::AddI => self.write_opcode(OpCode::AddI)?,
+            Op::ApplyType { num_types } => {
+                self.write_opcode(OpCode::ApplyType)?;
+                self.write_u30(num_types)?;
+            }
             Op::AsType { ref type_name } => {
                 self.write_opcode(OpCode::AsType)?;
                 self.write_index(type_name)?;
