@@ -30,7 +30,10 @@ pub fn class_init<'gc>(
 /// Construct `AccessibilityProperties`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     Class::new(
-        QName::new(Namespace::package("flash.accessibility"), "AccessibilityProperties"),
+        QName::new(
+            Namespace::package("flash.accessibility"),
+            "AccessibilityProperties"
+        ),
         Some(QName::new(Namespace::public_namespace(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
