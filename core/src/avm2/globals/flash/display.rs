@@ -6,5 +6,6 @@ pub mod interactiveobject;
 pub mod loaderinfo;
 pub mod movieclip;
 pub mod shader;
+pub mod shaderdata;
 pub mod shape;
 pub mod sprite;
