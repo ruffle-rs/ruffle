@@ -3,6 +3,7 @@
 pub mod displayobject;
 pub mod displayobjectcontainer;
 pub mod interactiveobject;
+pub mod loader;
 pub mod loaderinfo;
 pub mod movieclip;
 pub mod shader;
