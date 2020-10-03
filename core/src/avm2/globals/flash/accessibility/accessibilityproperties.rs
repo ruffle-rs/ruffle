@@ -32,7 +32,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     Class::new(
         QName::new(
             Namespace::package("flash.accessibility"),
-            "AccessibilityProperties"
+            "AccessibilityProperties",
         ),
         Some(QName::new(Namespace::public_namespace(), "Object").into()),
         Method::from_builtin(instance_init),
