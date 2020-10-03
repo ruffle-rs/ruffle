@@ -404,6 +404,14 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
         implicit_deriver,
     )?;
 
+    // package `flash.geom`
+    class(
+        activation,
+        gs,
+        flash::geom::matrix::create_class(activation.context.gc_context),
+        implicit_deriver,
+    )?;
+
     // package `flash.utils`
     class(
         activation,
