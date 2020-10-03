@@ -29,6 +29,9 @@ bitflags! {
 
         /// Class is an interface.
         const INTERFACE = 1 << 2;
+
+        /// Class accepts type parameters.
+        const GENERIC = 1 << 3;
     }
 }
 
@@ -70,6 +73,9 @@ impl fmt::Debug for Allocator {
 pub struct Class<'gc> {
     /// The name of the class.
     name: QName<'gc>,
+
+    /// The type parameters for this class.
+    params: Vec<GcCell<'gc, Class<'gc>>>,
 
     /// The name of this class's superclass.
     super_class: Option<Multiname<'gc>>,
@@ -214,6 +220,7 @@ impl<'gc> Class<'gc> {
             mc,
             Self {
                 name,
+                params: Vec::new(),
                 super_class,
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
@@ -228,6 +235,23 @@ impl<'gc> Class<'gc> {
                 traits_loaded: true,
             },
         )
+    }
+
+    /// Apply type parameters to an existing class.
+    ///
+    /// This is used to parameterize a generic type. The returned class will no
+    /// longer be generic.
+    pub fn with_type_params(
+        &self,
+        params: &[GcCell<'gc, Class<'gc>>],
+        mc: MutationContext<'gc, '_>,
+    ) -> GcCell<'gc, Class<'gc>> {
+        let mut new_class = self.clone();
+
+        new_class.params = params.to_vec();
+        new_class.attributes.remove(ClassAttributes::GENERIC);
+
+        GcCell::allocate(mc, new_class)
     }
 
     /// Set the attributes of the class (sealed/final/interface status).
@@ -310,6 +334,7 @@ impl<'gc> Class<'gc> {
             activation.context.gc_context,
             Self {
                 name,
+                params: Vec::new(),
                 super_class,
                 attributes,
                 protected_namespace,
@@ -392,6 +417,7 @@ impl<'gc> Class<'gc> {
             activation.context.gc_context,
             Self {
                 name: QName::dynamic_name(name),
+                params: Vec::new(),
                 super_class: None,
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
@@ -757,5 +783,10 @@ impl<'gc> Class<'gc> {
     /// Determine if this class is an interface
     pub fn is_interface(&self) -> bool {
         self.attributes.contains(ClassAttributes::INTERFACE)
+    }
+
+    /// Determine if this class is generic (can be specialized)
+    pub fn is_generic(&self) -> bool {
+        self.attributes.contains(ClassAttributes::GENERIC)
     }
 }
