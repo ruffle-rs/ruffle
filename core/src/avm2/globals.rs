@@ -332,6 +332,14 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
         f64::INFINITY.into(),
     );
 
+    // package `flash.accessibility`
+    class(
+        activation,
+        gs,
+        flash::accessibility::accessibilityproperties::create_class(activation.context.gc_context),
+        implicit_deriver,
+    )?;
+
     // package `flash.events`
     class(
         activation,
