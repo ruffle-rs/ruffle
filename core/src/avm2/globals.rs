@@ -418,6 +418,14 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
         implicit_deriver,
     )?;
 
+    // package `flash.system`
+    class(
+        activation,
+        gs,
+        flash::system::applicationdomain::create_class(activation.context.gc_context),
+        implicit_deriver,
+    )?;
+
     // package `flash.utils`
     class(
         activation,
