@@ -863,6 +863,29 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// returned object should have no properties upon it.
     fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error>;
 
+    /// Construct a parameterization of this particular type and return it.
+    ///
+    /// This is called specifically to parameterize generic types, of which
+    /// only one exists: `Vector`. When `Vector` is applied with a given
+    /// parameter, a new type is returned which can be used to construct
+    /// `Vector`s of that type.
+    ///
+    /// If the object is not a parameterized type, this yields an error. In
+    /// practice, this means only `Vector` can use this method. Parameters must
+    /// be class objects.
+    ///
+    /// When a given type is parameterized with the same parameters multiple
+    /// times, each application must return the same object. This is because
+    /// each application has a separate prototype that accepts dynamic
+    /// parameters.
+    fn apply(
+        &self,
+        _activation: &mut Activation<'_, 'gc, '_>,
+        _params: &[Object<'gc>],
+    ) -> Result<Object<'gc>, Error> {
+        Err("Not a parameterized type".into())
+    }
+
     /// Determine the type of primitive coercion this object would prefer, in
     /// the case that there is no obvious reason to prefer one type over the
     /// other.
