@@ -7,6 +7,7 @@ pub mod httpstatusevent;
 pub mod ioerrorevent;
 pub mod keyboardevent;
 pub mod mouseevent;
+pub mod nativedragevent;
 pub mod progressevent;
 pub mod textevent;
 pub mod uncaughterrorevent;
