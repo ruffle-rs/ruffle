@@ -49,6 +49,7 @@ pub(crate) mod text_field;
 mod text_format;
 mod transform;
 mod xml;
+mod bitmap_data;
 
 pub fn random<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -346,6 +347,8 @@ pub struct SystemPrototypes<'gc> {
     pub bevel_filter: Object<'gc>,
     pub bevel_filter_constructor: Object<'gc>,
     pub date: Object<'gc>,
+    pub bitmap_data: Object<'gc>,
+    pub bitmap_data_constructor: Object<'gc>,
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
@@ -506,6 +509,8 @@ pub fn create_globals<'gc>(
 
     let geom = ScriptObject::object(gc_context, Some(object_proto));
     let filters = ScriptObject::object(gc_context, Some(object_proto));
+    let display = ScriptObject::object(gc_context, Some(object_proto));
+
 
     let matrix = matrix::create_matrix_object(gc_context, matrix_proto, Some(function_proto));
     let point = point::create_point_object(gc_context, point_proto, Some(function_proto));
@@ -526,6 +531,7 @@ pub fn create_globals<'gc>(
 
     flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
     flash.define_value(gc_context, "filters", filters.into(), EnumSet::empty());
+    flash.define_value(gc_context, "display", display.into(), EnumSet::empty());
     geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
     geom.define_value(gc_context, "Point", point.into(), EnumSet::empty());
     geom.define_value(gc_context, "Rectangle", rectangle.into(), EnumSet::empty());
@@ -581,6 +587,16 @@ pub fn create_globals<'gc>(
         "BevelFilter",
         bevel_filter.into(),
         EnumSet::empty(),
+    );
+
+    let bitmap_data_proto = bitmap_data::create_proto(gc_context, object_proto, Some(function_proto));
+    let bitmap_data = bitmap_data::create_bitmap_data_object(gc_context, bitmap_data_proto, Some(function_proto));
+
+    display.define_value(
+        gc_context,
+        "BitmapData",
+        bitmap_data.into(),
+        EnumSet::empty()
     );
 
     let external = ScriptObject::object(gc_context, Some(object_proto));
@@ -867,6 +883,8 @@ pub fn create_globals<'gc>(
             bevel_filter: bevel_filter_proto,
             bevel_filter_constructor: bevel_filter,
             date: date_proto,
+            bitmap_data: bitmap_data_proto,
+            bitmap_data_constructor: bitmap_data,
         },
         globals.into(),
         broadcaster_functions,
