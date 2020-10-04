@@ -10,5 +10,6 @@ pub mod mouseevent;
 pub mod nativedragevent;
 pub mod progressevent;
 pub mod textevent;
+pub mod touchevent;
 pub mod uncaughterrorevent;
 pub mod uncaughterrorevents;
