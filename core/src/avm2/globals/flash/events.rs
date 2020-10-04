@@ -3,6 +3,7 @@
 pub mod errorevent;
 pub mod event;
 pub mod eventdispatcher;
+pub mod httpstatusevent;
 pub mod textevent;
 pub mod uncaughterrorevent;
 pub mod uncaughterrorevents;
