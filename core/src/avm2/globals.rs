@@ -337,7 +337,7 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
         activation,
         gs,
         flash::accessibility::accessibilityimplementation::create_class(
-            activation.context.gc_context
+            activation.context.gc_context,
         ),
         implicit_deriver,
     )?;
