@@ -4,6 +4,7 @@ pub mod errorevent;
 pub mod event;
 pub mod eventdispatcher;
 pub mod focusevent;
+pub mod gestureevent;
 pub mod httpstatusevent;
 pub mod ioerrorevent;
 pub mod keyboardevent;
