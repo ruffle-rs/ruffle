@@ -16,6 +16,7 @@ use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::object::xml_object::XMLObject;
+use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::{ScriptObject, SoundObject, StageObject, Value};
 use crate::avm_warn;
 use crate::display_object::DisplayObject;
@@ -41,6 +42,7 @@ pub mod value_object;
 pub mod xml_attributes_object;
 pub mod xml_idmap_object;
 pub mod xml_object;
+pub mod bitmap_data;
 
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
@@ -63,6 +65,7 @@ pub mod xml_object;
         BlurFilterObject(BlurFilterObject<'gc>),
         BevelFilterObject(BevelFilterObject<'gc>),
         DateObject(DateObject<'gc>),
+        BitmapData(BitmapDataObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -446,6 +449,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `BevelFilterObject`, if it exists
     fn as_bevel_filter_object(&self) -> Option<BevelFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `BitmapDataObject`, if it exists
+    fn as_bitmap_data_object(&self) -> Option<BitmapDataObject<'gc>> {
         None
     }
 
