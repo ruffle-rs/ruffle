@@ -13,3 +13,4 @@ pub mod shaderdata;
 pub mod shape;
 pub mod sprite;
 pub mod stage;
+pub mod stage3d;
