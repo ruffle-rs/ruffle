@@ -14,5 +14,6 @@ pub mod progressevent;
 pub mod softkeyboardevent;
 pub mod textevent;
 pub mod touchevent;
+pub mod transformgestureevent;
 pub mod uncaughterrorevent;
 pub mod uncaughterrorevents;
