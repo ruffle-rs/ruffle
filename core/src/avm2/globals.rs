@@ -550,6 +550,14 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
         implicit_deriver,
     )?;
 
+    // package `flash.display3d`
+    class(
+        activation,
+        gs,
+        flash::display3d::context3d::create_class(activation.context.gc_context),
+        implicit_deriver,
+    )?;
+
     // package `flash.geom`
     class(
         activation,
