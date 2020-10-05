@@ -1,0 +1,63 @@
+// bitmap
+[object Object]
+// bitmap.width
+10
+// bitmap.height
+10
+// bitmap.rectangle
+(x=0, y=0, w=10, h=10)
+// bitmap.transparent
+false
+// bitmap.width (after set to 100)
+10
+// bitmap.height (after set to 100)
+10
+// get/set pixel with transparent = true
+// getPixel32(0, 0) after setPixel32(0, 0, 0xffffffff)
+-1
+// getPixel(0, 0)
+16777215
+// getPixel32(0, 0) after setPixel32(0, 0, 0x80ffffff)
+-2130706433
+// getPixel(0, 0)
+16777215
+// getPixel32(0, 0) after setPixel(0, 0, 0xBBBBBB)
+-2135180357
+// getPixel(0, 0)
+12303291
+// getPixel32(0, 0) after setPixel32(0, 0, 0x00ffffff)
+0
+// getPixel(0, 0)
+0
+// get/set pixel with transparent = false
+// getPixel32(0, 0) after setPixel32(0, 0, 0xffffffff)
+-1
+// getPixel(0, 0)
+16777215
+// getPixel32(0, 0) after setPixel32(0, 0, 0x80ffffff)
+-1
+// getPixel(0, 0)
+16777215
+// getPixel32(0, 0) after setPixel(0, 0, 0xBBBBBB)
+-4473925
+// getPixel(0, 0)
+12303291
+// getPixel32(0, 0) after setPixel32(0, 0, 0x00ffffff)
+-1
+// getPixel(0, 0)
+16777215
+// bitmap_clone
+[object Object]
+// bitmap_clone == bitmap
+false
+// clone2
+undefined
+// dest.copyChannel(src, src.rectangle, pnt, 1, 1)
+// dest.getPixel32(0, 0)
+ffffff
+// dest.getPixel32(1, 0)
+ffff
+// dest.getPixel32(0, 1)
+ffff
+// dest.getPixel32(1, 1)
+effff

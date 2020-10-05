@@ -589,7 +589,7 @@ pub fn create_globals<'gc>(
         EnumSet::empty(),
     );
 
-    let bitmap_data_proto = bitmap_data::create_proto(gc_context, object_proto, Some(function_proto));
+    let bitmap_data_proto = bitmap_data::create_proto(gc_context, object_proto, function_proto);
     let bitmap_data = bitmap_data::create_bitmap_data_object(gc_context, bitmap_data_proto, Some(function_proto));
 
     display.define_value(
