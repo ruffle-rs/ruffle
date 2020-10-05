@@ -11,4 +11,5 @@ pub mod nativemenuitem;
 pub mod shader;
 pub mod shaderdata;
 pub mod shape;
+pub mod stage;
 pub mod sprite;
