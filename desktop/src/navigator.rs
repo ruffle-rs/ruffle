@@ -1,14 +1,16 @@
 //! Navigator backend for web
 
 use crate::custom_event::RuffleEvent;
+use isahc::prelude::*;
 use ruffle_core::backend::navigator::{
-    url_from_relative_path, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
+    NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::io::Read;
+use std::rc::Rc;
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
 use url::Url;
@@ -23,41 +25,37 @@ pub struct ExternalNavigatorBackend {
     /// Event sink to trigger a new task poll.
     event_loop: EventLoopProxy<RuffleEvent>,
 
-    /// The base path for all relative fetches.
-    relative_base_path: PathBuf,
+    /// The url to use for all relative fetches.
+    movie_url: Url,
 
     /// The time that the SWF was launched.
     start_time: Instant,
+
+    // Client to use for network requests
+    client: Option<Rc<HttpClient>>,
 }
 
 impl ExternalNavigatorBackend {
     #[allow(dead_code)]
-    pub fn new(
-        channel: Sender<OwnedFuture<(), Error>>,
-        event_loop: EventLoopProxy<RuffleEvent>,
-    ) -> Self {
-        Self {
-            channel,
-            event_loop,
-            relative_base_path: PathBuf::new(),
-            start_time: Instant::now(),
-        }
-    }
-
     /// Construct a navigator backend with fetch and async capability.
-    pub fn with_base_path<P: AsRef<Path>>(
-        path: P,
+    pub fn new(
+        movie_url: Url,
         channel: Sender<OwnedFuture<(), Error>>,
         event_loop: EventLoopProxy<RuffleEvent>,
+        http_proxy: Option<Url>,
+        https_proxy: Option<Url>,
     ) -> Self {
-        let mut relative_base_path = PathBuf::new();
+        let http_proxy = http_proxy.and_then(|url| url.as_str().parse().ok());
+        let https_proxy = https_proxy.and_then(|url| url.as_str().parse().ok());
+        let builder = HttpClient::builder().proxy(http_proxy).proxy(https_proxy);
 
-        relative_base_path.push(path);
+        let client = builder.build().ok().map(Rc::new);
 
         Self {
             channel,
             event_loop,
-            relative_base_path,
+            client,
+            movie_url,
             start_time: Instant::now(),
         }
     }
@@ -112,13 +110,36 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         Instant::now().duration_since(self.start_time)
     }
 
-    fn fetch(&self, url: &str, _options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
-        // Load from local filesystem.
-        // TODO: Support network loads, honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
-        let mut path = self.relative_base_path.clone();
-        path.push(url);
+    fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
+        // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
+        let full_url = self.movie_url.clone().join(url).unwrap();
 
-        Box::pin(async move { fs::read(path).map_err(Error::NetworkError) })
+        let client = self.client.clone();
+        match full_url.scheme() {
+            "file" => Box::pin(async move {
+                fs::read(full_url.to_file_path().unwrap()).map_err(Error::NetworkError)
+            }),
+            _ => Box::pin(async move {
+                let client = client.ok_or(Error::NetworkUnavailable)?;
+
+                let request = match options.method() {
+                    NavigationMethod::GET => Request::get(full_url.to_string()),
+                    NavigationMethod::POST => Request::post(full_url.to_string()),
+                };
+
+                let (body_data, _) = options.body().clone().unwrap_or_default();
+                let body = request
+                    .body(body_data)
+                    .map_err(|e| Error::FetchError(e.to_string()))?;
+
+                let response = client
+                    .send_async(body)
+                    .await
+                    .map_err(|e| Error::FetchError(e.to_string()))?;
+
+                response_to_bytes(response).map_err(|e| Error::FetchError(e.to_string()))
+            }),
+        }
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
@@ -132,11 +153,17 @@ impl NavigatorBackend for ExternalNavigatorBackend {
     }
 
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
-        let relative = url_from_relative_path(&self.relative_base_path, url);
+        let relative = self.movie_url.join(url);
         if let Ok(relative) = relative {
             relative.into_string().into()
         } else {
             url.into()
         }
     }
+}
+
+fn response_to_bytes(res: Response<Body>) -> Result<Vec<u8>, std::io::Error> {
+    let mut buffer: Vec<u8> = Vec::new();
+    res.into_body().read_to_end(&mut buffer)?;
+    Ok(buffer)
 }
