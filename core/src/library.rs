@@ -23,7 +23,7 @@ pub struct MovieLibrary<'gc> {
     jpeg_tables: Option<Vec<u8>>,
     device_font: Option<Font<'gc>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
-    vm_tendency: Option<AvmType>,
+    avm_type: Option<AvmType>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
@@ -34,7 +34,7 @@ impl<'gc> MovieLibrary<'gc> {
             jpeg_tables: None,
             device_font: None,
             fonts: HashMap::new(),
-            vm_tendency: None,
+            avm_type: None,
         }
     }
 
@@ -200,33 +200,33 @@ impl<'gc> MovieLibrary<'gc> {
         self.device_font = font;
     }
 
-    /// Check if the current movie's VM tendency is compatible with running
-    /// code on a particular VM. If it is not, then this yields an error.
+    /// Check if the current movie's VM type is compatible with running code on
+    /// a particular VM. If it is not, then this yields an error.
     ///
-    /// Checking the VM tendency will also set the VM tendency for the entire
-    /// movie if it is not already set. This ensures that, say, a movie can't
-    /// claim it's AS3 in it's file attributes, but then start running AS2
-    /// code.
-    pub fn check_vm_tendency(&mut self, new_tendency: AvmType) -> Result<(), Error> {
-        if self.vm_tendency.map(|t| t != new_tendency).unwrap_or(false) {
+    /// Checking the VM type will also set the VM type for the entire movie if
+    /// it is not already set. This ensures that, say, a movie can't claim it's
+    /// AS3 in it's file attributes, but then start running AS2 code.
+    pub fn check_avm_type(&mut self, new_type: AvmType) -> Result<(), Error> {
+        if self.avm_type.map(|t| t != new_type).unwrap_or(false) {
             return Err(format!(
                 "Blocked attempt to run {:?} code on an {:?} movie.",
-                new_tendency,
-                self.vm_tendency.unwrap()
+                new_type,
+                self.avm_type.unwrap()
             )
             .into());
         }
 
-        self.vm_tendency = Some(new_tendency);
+        self.avm_type = Some(new_type);
 
         Ok(())
     }
 
-    /// Get the VM tendency.
+    /// Get the VM type.
     ///
-    /// This may be `None` if no tendency checks have run yet.
-    pub fn vm_tendency(&self) -> Option<AvmType> {
-        self.vm_tendency
+    /// This may be `None` if we haven't been locked to a particular VM type
+    /// yet.
+    pub fn avm_type(&self) -> Option<AvmType> {
+        self.avm_type
     }
 }
 
