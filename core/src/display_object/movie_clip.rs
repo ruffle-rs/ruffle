@@ -181,7 +181,7 @@ impl<'gc> MovieClip<'gc> {
             match tag_code {
                 TagCode::FileAttributes => {
                     let attributes = reader.read_file_attributes()?;
-                    let vm_tendency = if attributes.is_action_script_3 {
+                    let avm_type = if attributes.is_action_script_3 {
                         log::warn!("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
                         AvmType::Avm2
                     } else {
@@ -190,7 +190,7 @@ impl<'gc> MovieClip<'gc> {
 
                     let movie = self.movie().unwrap();
                     let library = context.library.library_for_movie_mut(movie);
-                    if let Err(e) = library.check_vm_tendency(vm_tendency) {
+                    if let Err(e) = library.check_avm_type(avm_type) {
                         log::warn!("{}", e);
                     }
 
@@ -408,7 +408,7 @@ impl<'gc> MovieClip<'gc> {
     ) -> DecodeResult {
         let movie = self.movie().unwrap();
         let library = context.library.library_for_movie_mut(movie);
-        if let Err(e) = library.check_vm_tendency(AvmType::Avm1) {
+        if let Err(e) = library.check_avm_type(AvmType::Avm1) {
             log::warn!("{}", e);
 
             return Ok(());
@@ -453,7 +453,7 @@ impl<'gc> MovieClip<'gc> {
     ) -> DecodeResult {
         let movie = self.movie().unwrap();
         let library = context.library.library_for_movie_mut(movie);
-        if let Err(e) = library.check_vm_tendency(AvmType::Avm2) {
+        if let Err(e) = library.check_avm_type(AvmType::Avm2) {
             log::warn!("{}", e);
 
             return Ok(());
@@ -1735,21 +1735,21 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // Attempt to divine the VM we should initialize this instance as.
         // If our movie doesn't already have that determined, then this is the
         // root movie clip and we need to scan the SWF for file attributes.
-        let tendency = library.vm_tendency().unwrap_or_else(|| {
+        let vm_type = library.avm_type().unwrap_or_else(|| {
             use swf::TagCode;
 
             let slice = SwfSlice::from(movie.clone());
             let mut reader = slice.read_from(0);
-            let mut tendency = None;
+            let mut vm_type = None;
             let result = tag_utils::decode_tags(
                 &mut reader,
                 |reader: &mut SwfStream<&[u8]>, tag_code, _tag_len| {
                     if matches!(tag_code, TagCode::FileAttributes) {
                         let attributes = reader.read_file_attributes()?;
                         if attributes.is_action_script_3 {
-                            tendency = Some(AvmType::Avm2);
+                            vm_type = Some(AvmType::Avm2);
                         } else {
-                            tendency = Some(AvmType::Avm1);
+                            vm_type = Some(AvmType::Avm1);
                         };
                     }
 
@@ -1762,12 +1762,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 log::error!("Got {} when looking for AS3 flag", e);
             }
 
-            tendency.unwrap_or(AvmType::Avm1)
+            vm_type.unwrap_or(AvmType::Avm1)
         });
 
-        if matches!(tendency, AvmType::Avm2) {
+        if matches!(vm_type, AvmType::Avm2) {
             self.construct_as_avm2_object(context, display_object);
-        } else if matches!(tendency, AvmType::Avm1) {
+        } else if matches!(vm_type, AvmType::Avm1) {
             self.construct_as_avm1_object(
                 context,
                 display_object,
@@ -2783,7 +2783,7 @@ impl<'gc, 'a> MovieClip<'gc> {
     ) -> DecodeResult {
         let movie = self.movie().unwrap();
         let library = context.library.library_for_movie_mut(movie);
-        if let Err(e) = library.check_vm_tendency(AvmType::Avm1) {
+        if let Err(e) = library.check_avm_type(AvmType::Avm1) {
             log::warn!("{}", e);
 
             return Ok(());
