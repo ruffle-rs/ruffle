@@ -30,7 +30,10 @@ pub fn class_init<'gc>(
 /// Construct `PressAndTapGestureEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     Class::new(
-        QName::new(Namespace::package("flash.events"), "PressAndTapGestureEvent"),
+        QName::new(
+            Namespace::package("flash.events"),
+            "PressAndTapGestureEvent",
+        ),
         Some(QName::new(Namespace::package("flash.events"), "GestureEvent").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
