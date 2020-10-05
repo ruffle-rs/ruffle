@@ -388,6 +388,12 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
     class(
         activation,
         gs,
+        flash::events::imeevent::create_class(activation.context.gc_context),
+        implicit_deriver,
+    )?;
+    class(
+        activation,
+        gs,
         flash::events::ioerrorevent::create_class(activation.context.gc_context),
         implicit_deriver,
     )?;

@@ -6,6 +6,7 @@ pub mod eventdispatcher;
 pub mod focusevent;
 pub mod gestureevent;
 pub mod httpstatusevent;
+pub mod imeevent;
 pub mod ioerrorevent;
 pub mod keyboardevent;
 pub mod mouseevent;
