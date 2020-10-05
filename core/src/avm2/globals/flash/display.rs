@@ -7,4 +7,5 @@ pub mod interactiveobject;
 pub mod movieclip;
 pub mod scene;
 pub mod shape;
+pub mod simplebutton;
 pub mod sprite;
