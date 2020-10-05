@@ -10,6 +10,7 @@ pub mod ioerrorevent;
 pub mod keyboardevent;
 pub mod mouseevent;
 pub mod nativedragevent;
+pub mod pressandtapgestureevent;
 pub mod progressevent;
 pub mod softkeyboardevent;
 pub mod textevent;
