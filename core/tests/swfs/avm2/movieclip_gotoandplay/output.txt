@@ -7,3 +7,7 @@
 //Scene 2, Frame 3
 //gotoAndPlay("frame2", "Scene 3");
 //Scene 3, Frame 2
+//gotoAndPlay(2.1, "Scene 4");
+//Scene 4, Frame 3
+//gotoAndPlay("2", "Scene 5");
+//Scene 5, Frame 2
