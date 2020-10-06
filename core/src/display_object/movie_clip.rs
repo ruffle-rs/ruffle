@@ -1744,7 +1744,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             let result = tag_utils::decode_tags(
                 &mut reader,
                 |reader: &mut SwfStream<&[u8]>, tag_code, _tag_len| {
-                    if matches!(tag_code, TagCode::FileAttributes) {
+                    if tag_code == TagCode::FileAttributes {
                         let attributes = reader.read_file_attributes()?;
                         if attributes.is_action_script_3 {
                             vm_type = Some(AvmType::Avm2);
@@ -1765,9 +1765,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             vm_type.unwrap_or(AvmType::Avm1)
         });
 
-        if matches!(vm_type, AvmType::Avm2) {
+        if vm_type == AvmType::Avm2 {
             self.construct_as_avm2_object(context, display_object);
-        } else if matches!(vm_type, AvmType::Avm1) {
+        } else if vm_type == AvmType::Avm1 {
             self.construct_as_avm1_object(
                 context,
                 display_object,
