@@ -54,6 +54,7 @@ pub struct SystemPrototypes<'gc> {
     pub uint: Object<'gc>,
     pub namespace: Object<'gc>,
     pub array: Object<'gc>,
+    pub movieclip: Object<'gc>,
     pub framelabel: Object<'gc>,
     pub scene: Object<'gc>,
 }
@@ -83,6 +84,7 @@ impl<'gc> SystemPrototypes<'gc> {
             uint: empty,
             namespace: empty,
             array: empty,
+            movieclip: empty,
             framelabel: empty,
             scene: empty,
         }
@@ -384,7 +386,13 @@ pub fn load_player_globals<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Res
         flash::display::sprite::create_class(activation.context.gc_context),
         implicit_deriver,
     )?;
-    class(
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
+        .movieclip = class(
         activation,
         gs,
         flash::display::movieclip::create_class(activation.context.gc_context),
