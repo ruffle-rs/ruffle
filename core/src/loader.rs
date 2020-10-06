@@ -461,6 +461,8 @@ impl<'gc> Loader<'gc> {
                     .lock()
                     .expect("Could not lock player!!")
                     .update(|uc| {
+                        uc.library.library_for_movie_mut(movie.clone());
+
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::Movie {
                                 target_clip,

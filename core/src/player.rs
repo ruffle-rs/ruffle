@@ -338,8 +338,11 @@ impl Player {
         self.instance_counter = 0;
 
         self.mutate_with_update_context(|context| {
+            context.library.library_for_movie_mut(context.swf.clone());
+
             let root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
+
             root.set_depth(context.gc_context, 0);
             root.post_instantiation(context, root, None, Instantiator::Movie, false);
             root.set_name(context.gc_context, "");
