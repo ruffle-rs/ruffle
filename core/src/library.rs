@@ -3,7 +3,7 @@ use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
-use crate::tag_utils::{decode_tags, SwfMovie, SwfSlice, SwfStream};
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::AvmType;
 use gc_arena::{Collect, MutationContext};
 use std::collections::HashMap;
@@ -246,32 +246,28 @@ impl<'gc> Library<'gc> {
         if !self.movie_libraries.contains_key(&movie) {
             let slice = SwfSlice::from(movie.clone());
             let mut reader = slice.read_from(0);
-            let mut vm_type = None;
-            let result = decode_tags(
-                &mut reader,
-                |reader: &mut SwfStream<&[u8]>, tag_code, _tag_len| {
-                    if tag_code == TagCode::FileAttributes {
-                        let attributes = reader.read_file_attributes()?;
-                        if attributes.is_action_script_3 {
-                            vm_type = Some(AvmType::Avm2);
-                        } else {
-                            vm_type = Some(AvmType::Avm1);
-                        };
+            let vm_type = match reader.read_tag_code_and_length() {
+                Ok((tag_code, _tag_len))
+                    if TagCode::from_u16(tag_code) == Some(TagCode::FileAttributes) =>
+                {
+                    match reader.read_file_attributes() {
+                        Ok(attributes) if attributes.is_action_script_3 => AvmType::Avm2,
+                        Ok(_) => AvmType::Avm1,
+                        Err(e) => {
+                            log::error!("Got {} when reading AS3 flag", e);
+                            AvmType::Avm1
+                        }
                     }
+                }
+                Err(e) => {
+                    log::error!("Got {} when looking for AS3 flag", e);
+                    AvmType::Avm1
+                }
+                _ => AvmType::Avm1,
+            };
 
-                    Ok(())
-                },
-                TagCode::FileAttributes,
-            );
-
-            if let Err(e) = result {
-                log::error!("Got {} when looking for AS3 flag", e);
-            }
-
-            self.movie_libraries.insert(
-                movie.clone(),
-                MovieLibrary::new(vm_type.unwrap_or(AvmType::Avm1)),
-            );
+            self.movie_libraries
+                .insert(movie.clone(), MovieLibrary::new(vm_type));
         };
 
         self.movie_libraries.get_mut(&movie).unwrap()
