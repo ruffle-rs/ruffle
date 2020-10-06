@@ -441,11 +441,7 @@ pub fn prev_frame<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        let target_frame = mc.current_frame().saturating_sub(1);
-
-        if target_frame > 0 {
-            mc.goto_frame(&mut activation.context, target_frame, true);
-        }
+        mc.prev_frame(&mut activation.context);
     }
 
     Ok(Value::Undefined)
@@ -461,12 +457,7 @@ pub fn next_frame<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        let target_frame = mc.current_frame().saturating_add(1);
-        let total_frames = mc.total_frames();
-
-        if target_frame <= total_frames {
-            mc.goto_frame(&mut activation.context, target_frame, true);
-        }
+        mc.next_frame(&mut activation.context);
     }
 
     Ok(Value::Undefined)
