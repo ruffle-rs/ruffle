@@ -876,6 +876,38 @@ impl<'gc> MovieClip<'gc> {
             .copied()
     }
 
+    pub fn frame_exists_within_scene(self, frame_label: &str, scene_label: &str) -> bool {
+        let scene = self.scene_label_to_number(scene_label);
+        let frame = self.frame_label_to_number(frame_label);
+
+        if scene.is_none() || frame.is_none() {
+            return false;
+        }
+
+        let scene = scene.unwrap();
+        let frame = frame.unwrap();
+
+        if scene <= frame {
+            let mut end = self.total_frames();
+            for (
+                _label,
+                Scene {
+                    start: new_scene_start,
+                    ..
+                },
+            ) in self.0.read().static_data.scene_labels.iter()
+            {
+                if *new_scene_start < end && *new_scene_start > scene {
+                    end = *new_scene_start;
+                }
+            }
+
+            frame < end
+        } else {
+            false
+        }
+    }
+
     /// Returns the highest depth in use by this movie clip, or `None` if there are no children.
     pub fn highest_depth(self) -> Option<Depth> {
         self.0.read().children.keys().copied().rev().next()
