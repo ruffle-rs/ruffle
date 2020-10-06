@@ -1734,40 +1734,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.set_default_instance_name(context);
 
         let movie = self.movie().unwrap();
-        let library = context.library.library_for_movie_mut(movie.clone());
+        let library = context.library.library_for_movie_mut(movie);
 
         // Attempt to divine the VM we should initialize this instance as.
         // If our movie doesn't already have that determined, then this is the
         // root movie clip and we need to scan the SWF for file attributes.
-        let vm_type = library.avm_type().unwrap_or_else(|| {
-            use swf::TagCode;
-
-            let slice = SwfSlice::from(movie.clone());
-            let mut reader = slice.read_from(0);
-            let mut vm_type = None;
-            let result = tag_utils::decode_tags(
-                &mut reader,
-                |reader: &mut SwfStream<&[u8]>, tag_code, _tag_len| {
-                    if tag_code == TagCode::FileAttributes {
-                        let attributes = reader.read_file_attributes()?;
-                        if attributes.is_action_script_3 {
-                            vm_type = Some(AvmType::Avm2);
-                        } else {
-                            vm_type = Some(AvmType::Avm1);
-                        };
-                    }
-
-                    Ok(())
-                },
-                TagCode::FileAttributes,
-            );
-
-            if let Err(e) = result {
-                log::error!("Got {} when looking for AS3 flag", e);
-            }
-
-            vm_type.unwrap_or(AvmType::Avm1)
-        });
+        let vm_type = library.avm_type();
 
         if vm_type == AvmType::Avm2 {
             self.construct_as_avm2_object(context, display_object);

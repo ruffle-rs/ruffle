@@ -3,12 +3,12 @@ use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::{decode_tags, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::AvmType;
 use gc_arena::{Collect, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-use swf::CharacterId;
+use swf::{CharacterId, TagCode};
 use weak_table::PtrWeakKeyHashMap;
 
 /// Boxed error alias.
@@ -23,18 +23,18 @@ pub struct MovieLibrary<'gc> {
     jpeg_tables: Option<Vec<u8>>,
     device_font: Option<Font<'gc>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
-    avm_type: Option<AvmType>,
+    avm_type: AvmType,
 }
 
 impl<'gc> MovieLibrary<'gc> {
-    pub fn new() -> Self {
+    pub fn new(avm_type: AvmType) -> Self {
         MovieLibrary {
             characters: HashMap::new(),
             export_characters: HashMap::new(),
             jpeg_tables: None,
             device_font: None,
             fonts: HashMap::new(),
-            avm_type: None,
+            avm_type,
         }
     }
 
@@ -202,37 +202,23 @@ impl<'gc> MovieLibrary<'gc> {
 
     /// Check if the current movie's VM type is compatible with running code on
     /// a particular VM. If it is not, then this yields an error.
-    ///
-    /// Checking the VM type will also set the VM type for the entire movie if
-    /// it is not already set. This ensures that, say, a movie can't claim it's
-    /// AS3 in it's file attributes, but then start running AS2 code.
     pub fn check_avm_type(&mut self, new_type: AvmType) -> Result<(), Error> {
-        if self.avm_type.map(|t| t != new_type).unwrap_or(false) {
+        if self.avm_type != new_type {
             return Err(format!(
                 "Blocked attempt to run {:?} code on an {:?} movie.",
-                new_type,
-                self.avm_type.unwrap()
+                new_type, self.avm_type
             )
             .into());
         }
 
-        self.avm_type = Some(new_type);
+        self.avm_type = new_type;
 
         Ok(())
     }
 
-    /// Get the VM type.
-    ///
-    /// This may be `None` if we haven't been locked to a particular VM type
-    /// yet.
-    pub fn avm_type(&self) -> Option<AvmType> {
+    /// Get the VM type of this movie.
+    pub fn avm_type(&self) -> AvmType {
         self.avm_type
-    }
-}
-
-impl Default for MovieLibrary<'_> {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -258,8 +244,34 @@ impl<'gc> Library<'gc> {
 
     pub fn library_for_movie_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
         if !self.movie_libraries.contains_key(&movie) {
-            self.movie_libraries
-                .insert(movie.clone(), MovieLibrary::default());
+            let slice = SwfSlice::from(movie.clone());
+            let mut reader = slice.read_from(0);
+            let mut vm_type = None;
+            let result = decode_tags(
+                &mut reader,
+                |reader: &mut SwfStream<&[u8]>, tag_code, _tag_len| {
+                    if tag_code == TagCode::FileAttributes {
+                        let attributes = reader.read_file_attributes()?;
+                        if attributes.is_action_script_3 {
+                            vm_type = Some(AvmType::Avm2);
+                        } else {
+                            vm_type = Some(AvmType::Avm1);
+                        };
+                    }
+
+                    Ok(())
+                },
+                TagCode::FileAttributes,
+            );
+
+            if let Err(e) = result {
+                log::error!("Got {} when looking for AS3 flag", e);
+            }
+
+            self.movie_libraries.insert(
+                movie.clone(),
+                MovieLibrary::new(vm_type.unwrap_or(AvmType::Avm1)),
+            );
         };
 
         self.movie_libraries.get_mut(&movie).unwrap()
