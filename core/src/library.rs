@@ -246,24 +246,28 @@ impl<'gc> Library<'gc> {
         if !self.movie_libraries.contains_key(&movie) {
             let slice = SwfSlice::from(movie.clone());
             let mut reader = slice.read_from(0);
-            let vm_type = match reader.read_tag_code_and_length() {
-                Ok((tag_code, _tag_len))
-                    if TagCode::from_u16(tag_code) == Some(TagCode::FileAttributes) =>
-                {
-                    match reader.read_file_attributes() {
-                        Ok(attributes) if attributes.is_action_script_3 => AvmType::Avm2,
-                        Ok(_) => AvmType::Avm1,
-                        Err(e) => {
-                            log::error!("Got {} when reading AS3 flag", e);
-                            AvmType::Avm1
+            let vm_type = if movie.header().version > 8 {
+                match reader.read_tag_code_and_length() {
+                    Ok((tag_code, _tag_len))
+                        if TagCode::from_u16(tag_code) == Some(TagCode::FileAttributes) =>
+                    {
+                        match reader.read_file_attributes() {
+                            Ok(attributes) if attributes.is_action_script_3 => AvmType::Avm2,
+                            Ok(_) => AvmType::Avm1,
+                            Err(e) => {
+                                log::error!("Got {} when reading AS3 flag", e);
+                                AvmType::Avm1
+                            }
                         }
                     }
+                    Err(e) => {
+                        log::error!("Got {} when looking for AS3 flag", e);
+                        AvmType::Avm1
+                    }
+                    _ => AvmType::Avm1,
                 }
-                Err(e) => {
-                    log::error!("Got {} when looking for AS3 flag", e);
-                    AvmType::Avm1
-                }
-                _ => AvmType::Avm1,
+            } else {
+                AvmType::Avm1
             };
 
             self.movie_libraries
