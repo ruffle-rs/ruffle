@@ -366,34 +366,34 @@ pub fn goto_frame<'gc>(
     args: &[Value<'gc>],
     stop: bool,
 ) -> Result<(), Error> {
-    let frame_or_label = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Null)
-        .coerce_to_object(activation)?;
+    let frame_or_label = args.get(0).cloned().unwrap_or(Value::Null);
 
-    if frame_or_label.has_prototype_in_chain(
-        activation.avm2().system_prototypes.as_ref().unwrap().string,
-        false,
-    )? {
-        let label = args.get(0).cloned().unwrap().coerce_to_string(activation)?;
-        let frame = mc
-            .frame_label_to_number(&label)
-            .ok_or_else(|| format!("ArgumentError: {} is not a valid frame label.", label))?;
-
-        mc.goto_frame(&mut activation.context, frame, stop);
-    } else {
-        let frame = args.get(0).cloned().unwrap().coerce_to_u32(activation)? as u16;
-        let scene = match args.get(1).cloned().unwrap_or(Value::Null) {
-            Value::Null => None,
-            v => mc
-                .scene_label_to_number(&v.coerce_to_string(activation)?)
-                .map(|v| v.saturating_sub(1)),
-        }
-        .unwrap_or(0);
-
-        mc.goto_frame(&mut activation.context, frame + scene, stop);
+    let scene = match args.get(1).cloned().unwrap_or(Value::Null) {
+        Value::Null => None,
+        v => mc
+            .scene_label_to_number(&v.coerce_to_string(activation)?)
+            .map(|v| v.saturating_sub(1)),
     }
+    .unwrap_or(0) as u32;
+    let frame = match frame_or_label {
+        Value::Integer(i) => i as u32 + scene,
+        Value::Unsigned(i) => i + scene,
+        frame_or_label => {
+            let frame_or_label = frame_or_label.coerce_to_string(activation)?;
+            if let Ok(frame) = frame_or_label.parse::<u32>() {
+                frame + scene
+            } else {
+                mc.frame_label_to_number(&frame_or_label).ok_or_else(|| {
+                    format!(
+                        "ArgumentError: {} is not a valid frame label.",
+                        frame_or_label
+                    )
+                })? as u32
+            }
+        }
+    };
+
+    mc.goto_frame(&mut activation.context, frame as u16, stop);
 
     Ok(())
 }
