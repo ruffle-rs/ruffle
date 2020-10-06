@@ -30,10 +30,7 @@ pub fn class_init<'gc>(
 /// Construct `SimpleButton`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     Class::new(
-        QName::new(
-            Namespace::package("flash.display"),
-            "SimpleButton",
-        ),
+        QName::new(Namespace::package("flash.display"), "SimpleButton"),
         Some(QName::new(Namespace::package("flash.display"), "InteractiveObject").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
