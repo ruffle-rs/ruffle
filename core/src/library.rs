@@ -1,3 +1,4 @@
+use crate::avm2::Domain as Avm2Domain;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
@@ -5,7 +6,7 @@ use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::AvmType;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use swf::{CharacterId, TagCode};
@@ -24,6 +25,7 @@ pub struct MovieLibrary<'gc> {
     device_font: Option<Font<'gc>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm_type: AvmType,
+    avm2_domain: Option<GcCell<'gc, Avm2Domain<'gc>>>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
@@ -35,6 +37,7 @@ impl<'gc> MovieLibrary<'gc> {
             device_font: None,
             fonts: HashMap::new(),
             avm_type,
+            avm2_domain: None,
         }
     }
 
@@ -219,6 +222,20 @@ impl<'gc> MovieLibrary<'gc> {
     /// Get the VM type of this movie.
     pub fn avm_type(&self) -> AvmType {
         self.avm_type
+    }
+
+    pub fn set_avm2_domain(&mut self, avm2_domain: GcCell<'gc, Avm2Domain<'gc>>) {
+        self.avm2_domain = Some(avm2_domain);
+    }
+
+    /// Get the AVM2 domain this movie runs under.
+    ///
+    /// Note that the presence of an AVM2 domain does *not* indicate that this
+    /// movie provides AVM2 code. For example, a movie may have been loaded by
+    /// AVM2 code into a particular domain, even though it turned out to be
+    /// an AVM1 movie, and thus this domain is unused.
+    pub fn avm2_domain(&self) -> GcCell<'gc, Avm2Domain<'gc>> {
+        self.avm2_domain.unwrap()
     }
 }
 

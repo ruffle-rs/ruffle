@@ -2,6 +2,7 @@
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::{Avm1, AvmString, Object, TObject, Value};
+use crate::avm2::Domain as Avm2Domain;
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
@@ -467,7 +468,11 @@ impl<'gc> Loader<'gc> {
                     .lock()
                     .expect("Could not lock player!!")
                     .update(|uc| {
-                        uc.library.library_for_movie_mut(movie.clone());
+                        let domain =
+                            Avm2Domain::movie_domain(uc.gc_context, uc.avm2.global_domain());
+                        uc.library
+                            .library_for_movie_mut(movie.clone())
+                            .set_avm2_domain(domain);
 
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::Movie {
