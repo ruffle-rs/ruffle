@@ -523,7 +523,7 @@ dependencies = [
  "nix 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "stdweb 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror 1.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.45 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1688,7 +1688,7 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "spirv_headers 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror 1.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1699,7 +1699,7 @@ dependencies = [
  "jni-sys 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ndk-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_enum 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror 1.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2338,7 +2338,7 @@ dependencies = [
  "ruffle_macros 0.1.0",
  "smallvec 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "swf 0.1.2",
- "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror 1.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "weak-table 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -2776,15 +2776,15 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.20"
+version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "thiserror-impl 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror-impl 1.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.20"
+version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "proc-macro2 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3189,7 +3189,7 @@ dependencies = [
  "parking_lot 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "raw-window-handle 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 1.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror 1.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "tracing 0.1.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "wgpu-types 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -3676,8 +3676,8 @@ dependencies = [
 "checksum terminal_size 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "8038f95fc7a6f351163f4b964af631bd26c9e828f7db085f2a84aca56f70d13b"
 "checksum termios 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6f0fcee7b24a25675de40d5bb4de6e41b0df07bc9856295e7e2b3a3600c400c2"
 "checksum textwrap 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)" = "203008d98caf094106cfaba70acfed15e18ed3ddb7d94e49baec153a2b462789"
-"checksum thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)" = "7dfdd070ccd8ccb78f4ad66bf1982dc37f620ef696c6b5028fe2ed83dd3d0d08"
-"checksum thiserror-impl 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)" = "bd80fc12f73063ac132ac92aceea36734f04a1d93c1240c6944e23a3b8841793"
+"checksum thiserror 1.0.21 (registry+https://github.com/rust-lang/crates.io-index)" = "318234ffa22e0920fe9a40d7b8369b5f649d490980cf7aadcf1eb91594869b42"
+"checksum thiserror-impl 1.0.21 (registry+https://github.com/rust-lang/crates.io-index)" = "cae2447b6282786c3493999f40a9be2a6ad20cb8bd268b0a0dbf5a065535c0ab"
 "checksum thread_local 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d40c6d1b69745a6ec6fb1ca717914848da4b44ae29d9b3080cbee91d72a69b14"
 "checksum tiff 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3f3b8a87c4da944c3f27e5943289171ac71a6150a79ff6bacfff06d159dfff2f"
 "checksum time 0.1.43 (registry+https://github.com/rust-lang/crates.io-index)" = "ca8a50ef2360fbd1eeb0ecd46795a87a19024eb4b53c5dc916ca1fd95fe62438"
