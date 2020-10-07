@@ -1,6 +1,5 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-use crate::avm2::domain::Domain;
 use crate::avm2::globals::SystemPrototypes;
 use crate::avm2::scope::Scope;
 use crate::avm2::script::{Script, TranslationUnit};
@@ -39,6 +38,7 @@ mod traits;
 mod value;
 
 pub use crate::avm2::activation::Activation;
+pub use crate::avm2::domain::Domain;
 pub use crate::avm2::names::{Namespace, QName};
 pub use crate::avm2::object::{Object, StageObject, TObject};
 pub use crate::avm2::value::Value;
@@ -129,11 +129,11 @@ impl<'gc> Avm2<'gc> {
         _abc_name: &str,
         _lazy_init: bool,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        domain: GcCell<'gc, Domain<'gc>>,
     ) -> Result<(), Error> {
         let mut read = Reader::new(abc.as_ref());
 
         let abc_file = Rc::new(read.read()?);
-        let domain = Domain::movie_domain(context.gc_context, context.avm2.globals);
         let tunit = TranslationUnit::from_abc(abc_file.clone(), domain, context.gc_context);
 
         for i in (0..abc_file.scripts.len()).rev() {
