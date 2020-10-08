@@ -12,7 +12,6 @@ ruffle_render_wgpu = { path = "../render/wgpu" }
 env_logger = "0.7.1"
 image = "0.23.10"
 log = "0.4"
-sample = "0.11.0"
 futures = "0.3.6"
 wgpu = "0.6"
 wgpu-native = "0.5"

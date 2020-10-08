@@ -27,7 +27,7 @@ pub struct CpalAudioBackend {
 struct Stream(cpal::Stream);
 unsafe impl Send for CpalAudioBackend {}
 
-type Signal = Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>>;
+type Signal = Box<dyn Send + dasp::signal::Signal<Frame = [i16; 2]>>;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -180,14 +180,18 @@ impl CpalAudioBackend {
 
     /// Resamples a stream.
     /// TODO: Allow interpolator to be user-configurable?
-    fn make_resampler<S: Send + sample::signal::Signal<Frame = [i16; 2]>>(
+    fn make_resampler<S: Send + dasp::signal::Signal<Frame = [i16; 2]>>(
         &self,
         format: &swf::SoundFormat,
         mut signal: S,
-    ) -> sample::interpolate::Converter<S, impl sample::interpolate::Interpolator<Frame = [i16; 2]>>
-    {
-        let interpolator = sample::interpolate::Linear::from_source(&mut signal);
-        sample::interpolate::Converter::from_hz_to_hz(
+    ) -> dasp::signal::interpolate::Converter<
+        S,
+        impl dasp::interpolate::Interpolator<Frame = [i16; 2]>,
+    > {
+        let left = signal.next();
+        let right = signal.next();
+        let interpolator = dasp::interpolate::linear::Linear::new(left, right);
+        dasp::signal::interpolate::Converter::from_hz_to_hz(
             signal,
             interpolator,
             format.sample_rate.into(),
@@ -195,14 +199,14 @@ impl CpalAudioBackend {
         )
     }
 
-    /// Creates a `sample::signal::Signal` that decodes and resamples the audio stream
+    /// Creates a `dasp::signal::Signal` that decodes and resamples the audio stream
     /// to the output format.
     fn make_signal_from_event_sound(
         &self,
         sound: &Sound,
         settings: &swf::SoundInfo,
         data: Cursor<ArcAsRef>,
-    ) -> Result<Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>>, Error> {
+    ) -> Result<Box<dyn Send + dasp::signal::Signal<Frame = [i16; 2]>>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
         let decoder = Self::make_seekable_decoder(&sound.format, data)?;
 
@@ -219,35 +223,35 @@ impl CpalAudioBackend {
         Ok(Box::new(signal))
     }
 
-    /// Creates a `sample::signal::Signal` that decodes and resamples a "stream" sound.
+    /// Creates a `dasp::signal::Signal` that decodes and resamples a "stream" sound.
     fn make_signal_from_stream<'a>(
         &self,
         format: &swf::SoundFormat,
         data_stream: SwfSlice,
-    ) -> Result<Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>>, Error> {
+    ) -> Result<Box<dyn 'a + Send + dasp::signal::Signal<Frame = [i16; 2]>>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
         let clip_stream_decoder = decoders::make_stream_decoder(format, data_stream)?;
 
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
-        let signal = sample::signal::from_iter(clip_stream_decoder);
+        let signal = dasp::signal::from_iter(clip_stream_decoder);
         let signal = Box::new(self.make_resampler(format, signal));
-        Ok(Box::new(signal))
+        Ok(signal)
     }
 
-    /// Creates a `sample::signal::Signal` that decodes and resamples the audio stream
+    /// Creates a `dasp::signal::Signal` that decodes and resamples the audio stream
     /// to the output format.
     fn make_signal_from_simple_event_sound<'a, R: 'a + std::io::Read + Send>(
         &self,
         format: &swf::SoundFormat,
         data_stream: R,
-    ) -> Result<Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>>, Error> {
+    ) -> Result<Box<dyn 'a + Send + dasp::signal::Signal<Frame = [i16; 2]>>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
         let decoder = decoders::make_decoder(format, data_stream)?;
 
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
-        let signal = sample::signal::from_iter(decoder);
+        let signal = dasp::signal::from_iter(decoder);
         let signal = self.make_resampler(format, signal);
         Ok(Box::new(signal))
     }
@@ -260,10 +264,10 @@ impl CpalAudioBackend {
         output_format: &cpal::StreamConfig,
         mut output_buffer: &mut [T],
     ) where
-        T: 'a + cpal::Sample + Default + sample::Sample,
-        T::Signed: sample::conv::FromSample<i16>,
+        T: 'a + cpal::Sample + Default + dasp::Sample,
+        T::Signed: dasp::sample::conv::FromSample<i16>,
     {
-        use sample::{
+        use dasp::{
             frame::{Frame, Stereo},
             Sample,
         };
@@ -274,7 +278,7 @@ impl CpalAudioBackend {
             .deref_mut()
             .chunks_exact_mut(output_format.channels.into())
         {
-            let mut output_frame = Stereo::<T::Signed>::equilibrium();
+            let mut output_frame = Stereo::<T::Signed>::EQUILIBRIUM;
             for (_, sound) in sound_instances.iter_mut() {
                 if sound.active && !sound.signal.is_exhausted() {
                     let sound_frame = sound.signal.next();
@@ -500,7 +504,7 @@ impl EventSoundSignal {
     }
 }
 
-impl sample::signal::Signal for EventSoundSignal {
+impl dasp::signal::Signal for EventSoundSignal {
     type Frame = [i16; 2];
 
     fn next(&mut self) -> Self::Frame {
@@ -519,7 +523,7 @@ impl sample::signal::Signal for EventSoundSignal {
                 self.next()
             };
             if let Some(envelope) = &mut self.envelope_signal {
-                use sample::frame::Frame;
+                use dasp::frame::Frame;
                 frame.mul_amp(envelope.next())
             } else {
                 frame
@@ -572,7 +576,7 @@ impl EnvelopeSignal {
         }
     }
 }
-impl sample::signal::Signal for EnvelopeSignal {
+impl dasp::signal::Signal for EnvelopeSignal {
     type Frame = [f32; 2];
 
     fn next(&mut self) -> Self::Frame {
@@ -581,11 +585,11 @@ impl sample::signal::Signal for EnvelopeSignal {
             let a = f64::from(self.cur_sample - self.prev_point.sample);
             let b = f64::from(self.next_point.sample - self.prev_point.sample);
             let lerp = a / b;
-            let interpolator = sample::interpolate::Linear::new(
+            let interpolator = dasp::interpolate::linear::Linear::new(
                 [self.prev_point.left_volume, self.prev_point.right_volume],
                 [self.next_point.left_volume, self.next_point.right_volume],
             );
-            use sample::interpolate::Interpolator;
+            use dasp::interpolate::Interpolator;
             interpolator.interpolate(lerp)
         } else {
             [self.next_point.left_volume, self.next_point.right_volume]
