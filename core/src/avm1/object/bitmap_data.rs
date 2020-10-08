@@ -5,8 +5,80 @@ use crate::impl_custom_object_without_set;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 use crate::avm1::activation::Activation;
+use downcast_rs::__std::fmt::Formatter;
 use std::fmt;
-use swf::Rectangle;
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Collect)]
+#[collect(no_drop)]
+pub struct Color(i32);
+
+impl Color {
+    pub fn get_blue(&self) -> u8 {
+        (self.0 & 0xFF) as u8
+    }
+
+    pub fn get_green(&self) -> u8 {
+        ((self.0 >> 8) & 0xFF) as u8
+    }
+
+    pub fn get_red(&self) -> u8 {
+        ((self.0 >> 16) & 0xFF) as u8
+    }
+
+    pub fn get_alpha(&self) -> u8 {
+        ((self.0 >> 24) & 0xFF) as u8
+    }
+
+    pub fn to_premultiplied_alpha(&self, transparency: bool) -> Color {
+        // This has some accuracy issues with some alpha values
+
+        let old_alpha = if transparency { self.get_alpha() } else { 255 };
+
+        let a = old_alpha as f64 / 255.0;
+
+        let r = (self.get_red() as f64 * a).round() as u8;
+        let g = (self.get_green() as f64 * a).round() as u8;
+        let b = (self.get_blue() as f64 * a).round() as u8;
+
+        Color::argb(old_alpha, r, g, b)
+    }
+
+    pub fn to_un_multiplied_alpha(&self) -> Color {
+        let a = self.get_alpha() as f64 / 255.0;
+
+        let r = (self.get_red() as f64 / a).round() as u8;
+        let g = (self.get_green() as f64 / a).round() as u8;
+        let b = (self.get_blue() as f64 / a).round() as u8;
+
+        Color::argb(self.get_alpha(), r, g, b)
+    }
+
+    pub fn argb(alpha: u8, red: u8, green: u8, blue: u8) -> Color {
+        Color(((alpha as i32) << 24) | (red as i32) << 16 | (green as i32) << 8 | (blue as i32))
+    }
+
+    pub fn with_alpha(&self, alpha: u8) -> Color {
+        Color::argb(alpha, self.get_red(), self.get_green(), self.get_blue())
+    }
+}
+
+impl std::fmt::Display for Color {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:#x}", self.0))
+    }
+}
+
+impl From<Color> for i32 {
+    fn from(c: Color) -> Self {
+        c.0
+    }
+}
+
+impl From<i32> for Color {
+    fn from(i: i32) -> Self {
+        Color(i)
+    }
+}
 
 /// A BitmapData
 #[derive(Clone, Copy, Collect)]
@@ -19,12 +91,14 @@ pub struct BitmapDataData<'gc> {
     /// The underlying script object.
     base: ScriptObject<'gc>,
 
-    /// The pixels in the bitmap, stored as a array of ARGB colour values
-    pixels: Vec<i32>,
+    /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
+    pixels: Vec<Color>,
 
     width: u32,
     height: u32,
     transparency: bool,
+
+    disposed: bool,
 }
 
 impl fmt::Debug for BitmapDataObject<'_> {
@@ -53,67 +127,144 @@ impl<'gc> BitmapDataObject<'gc> {
                 width: 0,
                 height: 0,
                 transparency: true,
+                disposed: false,
             },
         ))
     }
 
-    pub fn get_pixels(&self) -> Vec<i32> {
+    pub fn get_disposed(&self) -> bool {
+        self.0.read().disposed
+    }
+
+    pub fn get_pixels(&self) -> Vec<Color> {
         self.0.read().pixels.clone()
     }
 
-    pub fn init_pixels(&self, gc_context: MutationContext<'gc, '_>, width: u32, height: u32, fill_color: i32) {
+    pub fn set_pixels(&self, gc_context: MutationContext<'gc, '_>, new_pixels: Vec<Color>) {
+        self.0.write(gc_context).pixels = new_pixels
+    }
+
+    pub fn init_pixels(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        width: u32,
+        height: u32,
+        fill_color: i32,
+    ) {
         self.0.write(gc_context).width = width;
         self.0.write(gc_context).height = height;
-        self.0.write(gc_context).pixels = vec![fill_color; (width * height) as usize]
+        self.0.write(gc_context).pixels = vec![
+            Color(fill_color)
+                .to_premultiplied_alpha(self.get_transparency());
+            (width * height) as usize
+        ]
     }
 
-    pub fn get_pixel32(&self, x: u32, y: u32) -> Option<i32> {
-        //TODO: look into the effects of pre-multiplication
-        self.0.read().pixels.get((x * y) as usize).cloned()
-    }
-    pub fn get_pixel(&self, x: u32, y: u32) -> Option<i32> {
-        self.get_pixel32(x, y).map(|p| p & 0xFFFFFF)
+    fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {
+        x >= 0 && x < self.get_width() as i32 && y >= 0 && y < self.get_height() as i32
     }
 
-    pub fn set_pixel32(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: i32) {
-        let alpha = (color >> 24) & 0xFF;
+    fn get_pixel_raw(&self, x: u32, y: u32) -> Option<Color> {
+        if x > self.get_width() || y > self.get_height() {
+            return None;
+        }
 
-        // Internally flash uses pre-multiplied values however that will cause issues with accuracy (assuming they are using fixed point like with other color types)
-        // so we will just fake it for now, if the alpha is 0 then it will clear out the colors
-        //tODO: how well does this handle less edge case values eg 0x12345678?
-        let adjusted_color = if alpha == 0 && self.0.read().transparency {
-            // Alpha = 0 and transparency is on so clear out rest of color
+        self.0
+            .read()
+            .pixels
+            .get((x + y * self.get_width()) as usize)
+            .copied()
+    }
+
+    pub fn get_pixel32(&self, x: u32, y: u32) -> Option<Color> {
+        self.get_pixel_raw(x, y).map(|f| f.to_un_multiplied_alpha())
+    }
+
+    pub fn get_pixel(&self, x: i32, y: i32) -> i32 {
+        if !self.is_point_in_bounds(x, y) {
             0
         } else {
-            // If we don't have transparency then force the alpha to 0xFF
-            //TODO: could we do that earlier to make this cleaner
-            if self.0.read().transparency {
-                color
-            } else {
-                (color & 0xFFFFFF) | (0xFF << 24)
-            }
-        };
-
-        //TODO: bounds check
-        self.0.write(gc_context).pixels[(x * y) as usize] = adjusted_color;
+            self.get_pixel32(x as u32, y as u32).map(|p| p.with_alpha(0x0)).unwrap_or(0.into()).into()
+        }
     }
 
-    pub fn set_pixel(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: i32) {
-        let current_alpha = (self.get_pixel32(x, y).unwrap_or(0) >> 24) & 0xFF;
-        //todo: check this shift
-        self.set_pixel32(gc_context, x, y, color | (current_alpha << 24))
+    fn set_pixel32_raw(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: Color) {
+        let width = self.get_width();
+        //TODO: bounds check
+        self.0.write(gc_context).pixels[(x + y * width) as usize] = color;
+    }
+
+    pub fn set_pixel32(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: Color) {
+        self.set_pixel32_raw(
+            gc_context,
+            x,
+            y,
+            color.to_premultiplied_alpha(self.get_transparency()),
+        )
+    }
+
+    pub fn set_pixel(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: Color) {
+        let current_alpha = self.get_pixel_raw(x, y).map(|p| p.get_alpha()).unwrap_or(0);
+        self.set_pixel32_raw(
+            gc_context,
+            x,
+            y,
+            color
+                .with_alpha(current_alpha)
+                .to_premultiplied_alpha(self.get_transparency()),
+        )
     }
 
     pub fn dispose(&self, gc_context: MutationContext<'gc, '_>) {
         self.0.write(gc_context).pixels.clear();
         self.0.write(gc_context).width = 0;
         self.0.write(gc_context).height = 0;
+        self.0.write(gc_context).disposed = true;
     }
 
-    pub fn copy_channel(&self, gc_context: MutationContext<'gc, '_>, source: BitmapDataObject, /*rect: Rectangle, pnt: Point,*/ source_channel: u8, dest_channel: u8) {
-        let other_pixels = source.get_pixels();
+    pub fn flood_fill(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: Color) {
+        let mut pending = Vec::new();
+        pending.push((x, y));
 
-        let mut new_self_pixels = Vec::new();//(self.0.read().pixels.len());
+        let color = color.to_premultiplied_alpha(self.get_transparency());
+
+        let width = self.get_width();
+        let height = self.get_height();
+
+        let expected_color = self.get_pixel_raw(x, y).unwrap_or(0.into());
+
+        while !pending.is_empty() {
+            if let Some((x, y)) = pending.pop() {
+                if let Some(old_color) = self.get_pixel_raw(x, y) {
+                    if old_color == expected_color {
+                        println!("x: {}, y: {}, pending: {:?}", x, y, pending);
+                        if x > 0 {
+                            pending.push((x - 1, y));
+                        }
+                        if y > 0 {
+                            pending.push((x, y - 1));
+                        }
+                        if x < width - 1 {
+                            pending.push((x + 1, y))
+                        }
+                        if y < height - 1 {
+                            pending.push((x, y + 1));
+                        }
+                        self.set_pixel32_raw(gc_context, x, y, color);
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn copy_channel(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        source: BitmapDataObject,
+        /*rect: Rectangle, pnt: Point,*/ source_channel: u8,
+        dest_channel: u8,
+    ) {
+        let mut new_self_pixels = Vec::new(); //(self.0.read().pixels.len());
         let width = self.get_width();
         let height = self.get_height();
 
@@ -122,42 +273,56 @@ impl<'gc> BitmapDataObject<'gc> {
                 // TODO: if rect.contains((x, y)) and offset by pnt
 
                 //TODO: how does this handle out of bounds
-                let original_color = self.0.read().pixels[(y * width + x) as usize];
+                let original_color = self.get_pixel32(x as u32, y as u32).unwrap_or(0.into()).0 as u32;
 
-                //TODO: does this calculation work if they are different sizes
-                let source_color = other_pixels[(y * width + x) as usize];
+                //TODO: does this calculation work if they are different sizes (might be fixed now)
+                let source_color = source.get_pixel32(x, y).unwrap_or(0.into()).0 as u32;
 
                 //TODO: should this channel be an enum?
                 //TODO: need to support multiple (how does this work if you copy red -> blue and green or any other multi copy)
-                let channel_shift = match source_channel {
+
+                //ARGB
+                //0xFF
+
+                let channel_shift: u32 = match source_channel {
+                    // Alpha
                     8 => 24,
-                    4 => 16,
+                    // red
+                    1 => 16,
+                    // green
                     2 => 8,
-                    1 => 0,
+                    // blue
+                    4 => 0,
                     //TODO:
-                    _ => {panic!()}
+                    _ => panic!(),
                 };
 
                 let source_part = (source_color >> channel_shift) & 0xFF;
 
-                let dest_channel_shift = match dest_channel {
+                let dest_channel_shift: u32 = match dest_channel {
+                    // Alpha
                     8 => 24,
-                    4 => 16,
+                    // red
+                    1 => 16,
+                    // green
                     2 => 8,
-                    1 => 0,
+                    // blue
+                    4 => 0,
                     //TODO:
-                    _ => {panic!()}
+                    _ => panic!(),
                 };
-                let original_color = if dest_channel_shift == 0 {
-                    original_color & (4278255615_u32 as i32)//& 0xFF00FFFF
+                let original_color = if dest_channel_shift == 16 {
+                    original_color & (4278255615_u32 as u32) //& 0xFF00FFFF
                 } else {
                     original_color
                 };
 
-                let new_dest_color = original_color | ((source_part << dest_channel_shift) & 0xFF);
+                let new_dest_color = original_color | (source_part << dest_channel_shift);
+
+                println!("x: {}, y: {}, source_color: {}, source_part: {}, original_color: {}, new_color: {}", x, y, Color(source_color as i32), source_part, Color(original_color as i32), Color(new_dest_color as i32));
 
                 //new_self_pixels.insert((y * width + x) as usize, new_dest_color);
-                new_self_pixels.push(new_dest_color);
+                new_self_pixels.push(Color(new_dest_color as i32));
             }
         }
 
@@ -165,20 +330,37 @@ impl<'gc> BitmapDataObject<'gc> {
     }
 
     //TODO: probably wont handle the edge cases correctly, also may have differences if we dont use premultiplied alpha in our impl (wonder if premultipliing only for functions that need it would be benificial in any way)
-    pub fn threshold(&self, mask: i32, threshold: i32, new_color: i32, copy_source: bool) -> Vec<i32> {
-        self.0.read().pixels.iter().cloned().map(|p| {
-            //TODO: support other operations
-            if (p & mask) == (threshold & mask) {
-                new_color
-            } else {
-                if copy_source {
-                    p
-                } else {
-                    0 //TODO: is this correct
-                }
+    // pub fn threshold(&self, mask: i32, threshold: i32, new_color: i32, copy_source: bool) -> Vec<i32> {
+    //     self.0.read().pixels.iter().cloned().map(|p| {
+    //         //TODO: support other operations
+    //         if (p & mask) == (threshold & mask) {
+    //             new_color
+    //         } else {
+    //             if copy_source {
+    //                 p
+    //             } else {
+    //                 0 //TODO: is this correct
+    //             }
+    //         }
+    //     })
+    //         .collect()
+    // }
+
+    pub fn fill_rect(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        min_x: u32,
+        min_y: u32,
+        max_x: u32,
+        max_y: u32,
+        color: Color,
+    ) {
+        let color = color.to_premultiplied_alpha(self.get_transparency());
+        for x in min_x..max_x {
+            for y in min_y..max_y {
+                self.set_pixel32_raw(gc_context, x, y, color)
             }
-        })
-            .collect()
+        }
     }
 
     pub fn get_width(&self) -> u32 {
