@@ -50,14 +50,116 @@ false
 [object Object]
 // bitmap_clone == bitmap
 false
-// clone2
+// clone using bitmap filter
 undefined
+// clone a none bitmap data object
+// clone_obj
+-1
 // dest.copyChannel(src, src.rectangle, pnt, 1, 1)
 // dest.getPixel32(0, 0)
-ffffff
+-1
 // dest.getPixel32(1, 0)
-ffff
+-ff0001
 // dest.getPixel32(0, 1)
-ffff
+-ff0001
 // dest.getPixel32(1, 1)
-effff
+-f10001
+// fillRect(src.rectangle, 0xFF121212
+// src.getPixel32(0, 0)
+-ededee
+// src.getPixel32(1, 0)
+-ededee
+// src.getPixel32(0, 1)
+-ededee
+// src.getPixel32(1, 1)
+-ededee
+// src.getPixel32(0, 0) alpha = 0
+0
+// src.getPixel32(0, 0) alpha = 1
+1ffffff
+// src.getPixel32(0, 0) alpha = 2
+2ffffff
+// src.getPixel32(0, 0) alpha = 3
+3ffffff
+// src.getPixel32(0, 0) alpha = 4
+4ffffff
+// src.getPixel32(0, 0) alpha = 5
+5ffffff
+// src.getPixel32(0, 0) alpha = 6
+6ffffff
+// src.getPixel32(0, 0) alpha = 7
+7ffffff
+// src.getPixel32(0, 0) alpha = 8
+8ffffff
+// src.getPixel32(0, 0) alpha = 9
+9ffffff
+// src.getPixel32(0, 0) alpha = 10
+affffff
+// src.getPixel32(0, 0) alpha = 11
+bffffff
+// src.getPixel32(0, 0) alpha = 12
+cffffff
+// src.getPixel32(0, 0) alpha = 13
+dffffff
+// src.getPixel32(0, 0) alpha = 14
+effffff
+// src.getPixel32(0, 0) alpha = 15
+fffffff
+// src.getPixel32(0, 0) alpha = 16
+10ffffff
+// src.getPixel32(0, 0) alpha = 17
+11ffffff
+// src.getPixel32(0, 0) alpha = 18
+12ffffff
+// src.getPixel32(0, 0) alpha = 19
+13ffffff
+// src.getPixel32(0, 0) alpha = 20
+14ffffff
+// src.getPixel32(0, 0) alpha = 21
+15ffffff
+// src.getPixel32(0, 0) alpha = 22
+16ffffff
+// src.getPixel32(0, 0) alpha = 23
+17ffffff
+// src.getPixel32(0, 0) alpha = 24
+18ffffff
+// src.getPixel32(0, 0) alpha = 25
+19ffffff
+// src.getPixel32(0, 0) alpha = 26
+1affffff
+// src.getPixel32(0, 0) alpha = 27
+1bffffff
+// src.getPixel32(0, 0) alpha = 28
+1cffffff
+// src.getPixel32(0, 0) alpha = 29
+1dffffff
+// src.getPixel32(0, 0) alpha = 30
+1effffff
+// src.getPixel32(0, 0) alpha = 31
+1fffffff
+// disposed.width
+-1
+// disposed.height
+-1
+// disposed.transparent
+-1
+// disposed.rectangle
+-1
+// disposed.getPixel(0, 0)
+-1
+// flood_filled.getPixel32(0, 0)
+-545455
+// flood_filled.getPixel32(1, 0)
+-545455
+// flood_filled.getPixel32(0, 1)
+-545455
+// flood_filled.getPixel32(1, 1)
+-545455
+// getPixel (noargs)
+-1
+// getPixel (missing arg)
+-1
+// getPixel (-1, -1)
+0
+// getPixel (10, 10)
+0

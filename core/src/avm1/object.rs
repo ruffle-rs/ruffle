@@ -9,6 +9,7 @@ use crate::avm1::property::Attribute;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::object::bevel_filter::BevelFilterObject;
+use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::blur_filter::BlurFilterObject;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::avm1::object::date_object::DateObject;
@@ -16,7 +17,6 @@ use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
 use crate::avm1::object::xml_object::XMLObject;
-use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::{ScriptObject, SoundObject, StageObject, Value};
 use crate::avm_warn;
 use crate::display_object::DisplayObject;
@@ -28,6 +28,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 
 pub mod bevel_filter;
+pub mod bitmap_data;
 pub mod blur_filter;
 pub mod color_transform_object;
 mod custom_object;
@@ -42,7 +43,6 @@ pub mod value_object;
 pub mod xml_attributes_object;
 pub mod xml_idmap_object;
 pub mod xml_object;
-pub mod bitmap_data;
 
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.

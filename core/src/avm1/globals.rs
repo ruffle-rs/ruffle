@@ -12,6 +12,7 @@ use std::f64;
 mod array;
 pub(crate) mod as_broadcaster;
 mod bevel_filter;
+mod bitmap_data;
 mod bitmap_filter;
 mod blur_filter;
 pub(crate) mod boolean;
@@ -49,7 +50,6 @@ pub(crate) mod text_field;
 mod text_format;
 mod transform;
 mod xml;
-mod bitmap_data;
 
 pub fn random<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -511,7 +511,6 @@ pub fn create_globals<'gc>(
     let filters = ScriptObject::object(gc_context, Some(object_proto));
     let display = ScriptObject::object(gc_context, Some(object_proto));
 
-
     let matrix = matrix::create_matrix_object(gc_context, matrix_proto, Some(function_proto));
     let point = point::create_point_object(gc_context, point_proto, Some(function_proto));
     let rectangle =
@@ -590,13 +589,14 @@ pub fn create_globals<'gc>(
     );
 
     let bitmap_data_proto = bitmap_data::create_proto(gc_context, object_proto, function_proto);
-    let bitmap_data = bitmap_data::create_bitmap_data_object(gc_context, bitmap_data_proto, Some(function_proto));
+    let bitmap_data =
+        bitmap_data::create_bitmap_data_object(gc_context, bitmap_data_proto, Some(function_proto));
 
     display.define_value(
         gc_context,
         "BitmapData",
         bitmap_data.into(),
-        EnumSet::empty()
+        EnumSet::empty(),
     );
 
     let external = ScriptObject::object(gc_context, Some(object_proto));
