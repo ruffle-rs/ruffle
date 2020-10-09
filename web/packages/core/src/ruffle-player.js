@@ -383,7 +383,7 @@ exports.is_swf_filename = function is_swf_filename(filename) {
     return (
         filename &&
         typeof filename === "string" &&
-        (filename.search(/\.swf\s*$/i) >= 0 ||
-            filename.search(/\.spl\s*$/i) >= 0)
+        (filename.search(/\.swf(?:[?#]|$)/i) >= 0 ||
+            filename.search(/\.spl(?:[?#]|$)/i) >= 0)
     );
 };
