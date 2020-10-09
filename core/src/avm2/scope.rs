@@ -123,13 +123,10 @@ impl<'gc> Scope<'gc> {
         }
 
         if let Some(domain) = self.locals().as_application_domain() {
-            let script_scope = domain
-                .read()
-                .get_defining_script(name)?
-                .map(|(n, s)| (n, s.read().globals()));
+            let script = domain.get_defining_script(name)?;
 
-            if let Some((_qname, script_scope)) = script_scope {
-                return Ok(Some(script_scope));
+            if let Some((_qname, mut script)) = script {
+                return Ok(Some(script.globals(&mut activation.context)?));
             }
         }
 
@@ -162,12 +159,11 @@ impl<'gc> Scope<'gc> {
         }
 
         if let Some(domain) = self.locals().as_application_domain() {
-            let script_scope = domain
-                .read()
-                .get_defining_script(name)?
-                .map(|(n, s)| (n, s.read().globals()));
+            let script = domain.get_defining_script(name)?;
 
-            if let Some((qname, mut script_scope)) = script_scope {
+            if let Some((qname, mut script)) = script {
+                let mut script_scope = script.globals(&mut activation.context)?;
+
                 return Ok(Some(script_scope.get_property(
                     script_scope,
                     &qname,

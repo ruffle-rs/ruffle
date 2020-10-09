@@ -845,7 +845,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn init_display_object(&self, _mc: MutationContext<'gc, '_>, _obj: DisplayObject<'gc>) {}
 
     /// Unwrap this object as an ApplicationDomain.
-    fn as_application_domain(&self) -> Option<GcCell<'gc, Domain<'gc>>> {
+    fn as_application_domain(&self) -> Option<Domain<'gc>> {
         None
     }
 }

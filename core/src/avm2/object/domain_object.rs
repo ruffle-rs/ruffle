@@ -25,14 +25,14 @@ pub struct DomainObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// The domain this object holds
-    domain: GcCell<'gc, Domain<'gc>>,
+    domain: Domain<'gc>,
 }
 
 impl<'gc> DomainObject<'gc> {
     pub fn from_domain(
         mc: MutationContext<'gc, '_>,
         base_proto: Option<Object<'gc>>,
-        domain: GcCell<'gc, Domain<'gc>>,
+        domain: Domain<'gc>,
     ) -> Object<'gc> {
         let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::NoClass);
 
@@ -43,7 +43,7 @@ impl<'gc> DomainObject<'gc> {
     pub fn derive(
         mc: MutationContext<'gc, '_>,
         base_proto: Object<'gc>,
-        domain: GcCell<'gc, Domain<'gc>>,
+        domain: Domain<'gc>,
         class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
@@ -60,7 +60,7 @@ impl<'gc> TObject<'gc> for DomainObject<'gc> {
     impl_avm2_custom_object!(base);
     impl_avm2_custom_object_properties!(base);
 
-    fn as_application_domain(&self) -> Option<GcCell<'gc, Domain<'gc>>> {
+    fn as_application_domain(&self) -> Option<Domain<'gc>> {
         Some(self.0.read().domain)
     }
 
