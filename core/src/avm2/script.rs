@@ -347,10 +347,15 @@ impl<'gc> Script<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
-        if !self.0.read().initialized {
-            let mut globals = self.0.read().globals;
+        let mut write = self.0.write(context.gc_context);
+        if !write.initialized {
+            write.initialized = true;
+
+            let mut globals = write.globals;
             let scope = Scope::push_scope(None, globals, context.gc_context);
             let mut null_activation = Activation::from_nothing(context.reborrow());
+
+            drop(write);
 
             for trait_entry in self.traits()?.iter() {
                 globals.install_foreign_trait(
@@ -362,12 +367,11 @@ impl<'gc> Script<'gc> {
             }
 
             Avm2::run_script_initializer(*self, context)?;
+
+            Ok(globals)
+        } else {
+            Ok(write.globals)
         }
-
-        let mut write = self.0.write(context.gc_context);
-
-        write.initialized = true;
-        Ok(write.globals)
     }
 
     /// Return traits for this script.
