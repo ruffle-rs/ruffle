@@ -11,14 +11,18 @@ use std::collections::HashMap;
 
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
+#[derive(Copy, Clone, Debug, Collect)]
+#[collect(no_drop)]
+pub struct Domain<'gc>(GcCell<'gc, DomainData<'gc>>);
+
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
-pub struct Domain<'gc> {
+struct DomainData<'gc> {
     /// A list of all exported definitions and the script that exported them.
-    defs: HashMap<QName<'gc>, GcCell<'gc, Script<'gc>>>,
+    defs: HashMap<QName<'gc>, Script<'gc>>,
 
     /// The parent domain.
-    parent: Option<GcCell<'gc, Domain<'gc>>>,
+    parent: Option<Domain<'gc>>,
 }
 
 impl<'gc> Domain<'gc> {
@@ -26,43 +30,42 @@ impl<'gc> Domain<'gc> {
     ///
     /// This is intended exclusively for creating the player globals domain,
     /// hence the name.
-    pub fn global_domain(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Domain<'gc>> {
-        GcCell::allocate(
+    pub fn global_domain(mc: MutationContext<'gc, '_>) -> Domain<'gc> {
+        Self(GcCell::allocate(
             mc,
-            Domain {
+            DomainData {
                 defs: HashMap::new(),
                 parent: None,
             },
-        )
+        ))
     }
 
     /// Create a new domain with a given parent.
-    pub fn movie_domain(
-        mc: MutationContext<'gc, '_>,
-        parent: GcCell<'gc, Domain<'gc>>,
-    ) -> GcCell<'gc, Domain<'gc>> {
-        GcCell::allocate(
+    pub fn movie_domain(mc: MutationContext<'gc, '_>, parent: Domain<'gc>) -> Domain<'gc> {
+        Self(GcCell::allocate(
             mc,
-            Domain {
+            DomainData {
                 defs: HashMap::new(),
                 parent: Some(parent),
             },
-        )
+        ))
     }
 
     /// Get the parent of this domain
-    pub fn parent_domain(&self) -> Option<GcCell<'gc, Domain<'gc>>> {
-        self.parent
+    pub fn parent_domain(self) -> Option<Domain<'gc>> {
+        self.0.read().parent
     }
 
     /// Determine if something has been defined within the current domain.
-    pub fn has_definition(&self, name: QName<'gc>) -> bool {
-        if self.defs.contains_key(&name) {
+    pub fn has_definition(self, name: QName<'gc>) -> bool {
+        let read = self.0.read();
+
+        if read.defs.contains_key(&name) {
             return true;
         }
 
-        if let Some(parent) = self.parent {
-            return parent.read().has_definition(name);
+        if let Some(parent) = read.parent {
+            return parent.has_definition(name);
         }
 
         false
@@ -73,13 +76,15 @@ impl<'gc> Domain<'gc> {
     /// If a name does not exist or cannot be resolved, no script or name will
     /// be returned.
     pub fn get_defining_script(
-        &self,
+        self,
         multiname: &Multiname<'gc>,
-    ) -> Result<Option<(QName<'gc>, GcCell<'gc, Script<'gc>>)>, Error> {
+    ) -> Result<Option<(QName<'gc>, Script<'gc>)>, Error> {
+        let read = self.0.read();
+
         for ns in multiname.namespace_set() {
             if ns.is_any() {
                 if let Some(local_name) = multiname.local_name() {
-                    for (qname, script) in self.defs.iter() {
+                    for (qname, script) in read.defs.iter() {
                         if qname.local_name() == local_name {
                             return Ok(Some((qname.clone(), *script)));
                         }
@@ -89,8 +94,8 @@ impl<'gc> Domain<'gc> {
                 }
             } else if let Some(name) = multiname.local_name() {
                 let qname = QName::new(ns.clone(), name);
-                if self.defs.contains_key(&qname) {
-                    let script = self.defs.get(&qname).cloned().unwrap();
+                if read.defs.contains_key(&qname) {
+                    let script = read.defs.get(&qname).cloned().unwrap();
                     return Ok(Some((qname, script)));
                 }
             } else {
@@ -98,8 +103,8 @@ impl<'gc> Domain<'gc> {
             }
         }
 
-        if let Some(parent) = self.parent {
-            return parent.read().get_defining_script(multiname);
+        if let Some(parent) = read.parent {
+            return parent.get_defining_script(multiname);
         }
 
         Ok(None)
@@ -107,14 +112,14 @@ impl<'gc> Domain<'gc> {
 
     /// Retrieve a value from this domain.
     pub fn get_defined_value(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: QName<'gc>,
     ) -> Result<Value<'gc>, Error> {
-        let (name, script) = self
+        let (name, mut script) = self
             .get_defining_script(&name.clone().into())?
             .ok_or_else(|| format!("MovieClip Symbol {} does not exist", name.local_name()))?;
-        let mut globals = script.read().globals();
+        let mut globals = script.globals(&mut activation.context)?;
 
         globals.get_property(globals, &name, activation)
     }
@@ -126,7 +131,8 @@ impl<'gc> Domain<'gc> {
     pub fn export_definition(
         &mut self,
         name: QName<'gc>,
-        script: GcCell<'gc, Script<'gc>>,
+        script: Script<'gc>,
+        mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         if self.has_definition(name.clone()) {
             return Err(format!(
@@ -136,7 +142,7 @@ impl<'gc> Domain<'gc> {
             .into());
         }
 
-        self.defs.insert(name, script);
+        self.0.write(mc).defs.insert(name, script);
 
         Ok(())
     }

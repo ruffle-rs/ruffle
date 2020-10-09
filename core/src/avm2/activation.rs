@@ -3,6 +3,7 @@
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::method::BytecodeMethod;
+use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ArrayObject, FunctionObject, NamespaceObject, ScriptObject};
 use crate::avm2::object::{Object, TObject};
@@ -133,15 +134,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// initializer method.
     pub fn from_script(
         context: UpdateContext<'a, 'gc, 'gc_context>,
-        script: GcCell<'gc, Script<'gc>>,
+        script: Script<'gc>,
     ) -> Result<Self, Error> {
-        let script_scope = script.read().globals();
-        let method = script.read().init().into_bytecode()?;
+        let (method, script_scope) = script.init();
         let scope = Some(Scope::push_scope(None, script_scope, context.gc_context));
-        let body: Result<_, Error> = method
-            .body()
-            .ok_or_else(|| "Cannot execute non-native method (for script) without body".into());
-        let num_locals = body?.num_locals;
+
+        let num_locals = match method {
+            Method::Native(_nm) => 0,
+            Method::Entry(bytecode) => {
+                let body: Result<_, Error> = bytecode.body().ok_or_else(|| {
+                    "Cannot execute non-native method (for script) without body".into()
+                });
+                body?.num_locals
+            }
+        };
         let local_registers =
             GcCell::allocate(context.gc_context, RegisterSet::new(num_locals + 1));
 
@@ -209,11 +215,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Execute a script initializer.
-    pub fn run_stack_frame_for_script(
-        &mut self,
-        script: GcCell<'gc, Script<'gc>>,
-    ) -> Result<(), Error> {
-        let init = script.read().init().into_bytecode()?;
+    pub fn run_stack_frame_for_script(&mut self, script: Script<'gc>) -> Result<(), Error> {
+        let init = script.init().0.into_bytecode()?;
 
         self.run_actions(init)?;
 

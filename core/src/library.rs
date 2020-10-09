@@ -6,7 +6,7 @@ use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::AvmType;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use swf::{CharacterId, TagCode};
@@ -25,7 +25,7 @@ pub struct MovieLibrary<'gc> {
     device_font: Option<Font<'gc>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm_type: AvmType,
-    avm2_domain: Option<GcCell<'gc, Avm2Domain<'gc>>>,
+    avm2_domain: Option<Avm2Domain<'gc>>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
@@ -224,7 +224,7 @@ impl<'gc> MovieLibrary<'gc> {
         self.avm_type
     }
 
-    pub fn set_avm2_domain(&mut self, avm2_domain: GcCell<'gc, Avm2Domain<'gc>>) {
+    pub fn set_avm2_domain(&mut self, avm2_domain: Avm2Domain<'gc>) {
         self.avm2_domain = Some(avm2_domain);
     }
 
@@ -234,7 +234,7 @@ impl<'gc> MovieLibrary<'gc> {
     /// movie provides AVM2 code. For example, a movie may have been loaded by
     /// AVM2 code into a particular domain, even though it turned out to be
     /// an AVM1 movie, and thus this domain is unused.
-    pub fn avm2_domain(&self) -> GcCell<'gc, Avm2Domain<'gc>> {
+    pub fn avm2_domain(&self) -> Avm2Domain<'gc> {
         self.avm2_domain.unwrap()
     }
 }

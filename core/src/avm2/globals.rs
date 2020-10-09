@@ -105,15 +105,15 @@ fn function<'gc>(
     name: impl Into<AvmString<'gc>>,
     nf: NativeMethod<'gc>,
     fn_proto: Object<'gc>,
-    domain: GcCell<'gc, Domain<'gc>>,
-    script: GcCell<'gc, Script<'gc>>,
+    mut domain: Domain<'gc>,
+    script: Script<'gc>,
 ) -> Result<(), Error> {
     let name = QName::new(Namespace::package(package), name);
     let as3fn = FunctionObject::from_builtin(mc, nf, fn_proto).into();
-    domain.write(mc).export_definition(name.clone(), script)?;
+    domain.export_definition(name.clone(), script, mc)?;
     script
-        .read()
-        .globals()
+        .init()
+        .1
         .install_dynamic_property(mc, name, as3fn)
         .unwrap();
 
@@ -129,16 +129,16 @@ fn dynamic_class<'gc>(
     mc: MutationContext<'gc, '_>,
     constr: Object<'gc>,
     class: GcCell<'gc, Class<'gc>>,
-    domain: GcCell<'gc, Domain<'gc>>,
-    script: GcCell<'gc, Script<'gc>>,
+    mut domain: Domain<'gc>,
+    script: Script<'gc>,
 ) -> Result<(), Error> {
     let name = class.read().name().clone();
 
     script
-        .read()
-        .globals()
+        .init()
+        .1
         .install_const(mc, name.clone(), 0, constr.into());
-    domain.write(mc).export_definition(name, script)
+    domain.export_definition(name, script, mc)
 }
 
 /// Add a class builtin to the global scope.
@@ -151,8 +151,8 @@ fn class<'gc, Deriver>(
     activation: &mut Activation<'_, 'gc, '_>,
     class_def: GcCell<'gc, Class<'gc>>,
     custom_derive: Deriver,
-    domain: GcCell<'gc, Domain<'gc>>,
-    script: GcCell<'gc, Script<'gc>>,
+    mut domain: Domain<'gc>,
+    script: Script<'gc>,
 ) -> Result<Object<'gc>, Error>
 where
     Deriver: FnOnce(
@@ -162,7 +162,7 @@ where
         Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error>,
 {
-    let mut global = script.read().globals();
+    let mut global = script.init().1;
     let global_scope = Scope::push_scope(global.get_scope(), global, activation.context.gc_context);
 
     let class_read = class_def.read();
@@ -196,9 +196,11 @@ where
         0,
         constr.into(),
     );
-    domain
-        .write(activation.context.gc_context)
-        .export_definition(class_read.name().clone(), script)?;
+    domain.export_definition(
+        class_read.name().clone(),
+        script,
+        activation.context.gc_context,
+    )?;
 
     constr
         .get_property(
@@ -273,12 +275,12 @@ fn constant<'gc>(
     package: impl Into<AvmString<'gc>>,
     name: impl Into<AvmString<'gc>>,
     value: Value<'gc>,
-    domain: GcCell<'gc, Domain<'gc>>,
-    script: GcCell<'gc, Script<'gc>>,
+    mut domain: Domain<'gc>,
+    script: Script<'gc>,
 ) -> Result<(), Error> {
     let name = QName::new(Namespace::package(package), name);
-    domain.write(mc).export_definition(name.clone(), script)?;
-    script.read().globals().install_const(mc, name, 0, value);
+    domain.export_definition(name.clone(), script, mc)?;
+    script.init().1.install_const(mc, name, 0, value);
 
     Ok(())
 }
@@ -291,7 +293,7 @@ fn constant<'gc>(
 /// given domain.
 pub fn load_player_globals<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    domain: GcCell<'gc, Domain<'gc>>,
+    domain: Domain<'gc>,
 ) -> Result<(), Error> {
     let mc = activation.context.gc_context;
     let gs = DomainObject::from_domain(mc, None, domain);

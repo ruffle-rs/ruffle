@@ -55,7 +55,7 @@ pub fn parent_domain<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
-        if let Some(parent_domain) = appdomain.read().parent_domain() {
+        if let Some(parent_domain) = appdomain.parent_domain() {
             return Ok(DomainObject::from_domain(
                 activation.context.gc_context,
                 Some(activation.context.avm2.prototypes().application_domain),
@@ -82,11 +82,10 @@ pub fn get_definition<'gc>(
             .coerce_to_string(activation)?;
         let qname = QName::new(Namespace::public_namespace(), local_name);
 
-        let (qname, defined_script) = appdomain
-            .read()
+        let (qname, mut defined_script) = appdomain
             .get_defining_script(&qname.into())?
             .ok_or_else(|| format!("No definition called {} exists", local_name))?;
-        let mut globals = defined_script.read().globals();
+        let mut globals = defined_script.globals(&mut activation.context)?;
         let definition = globals.get_property(globals, &qname, activation)?;
 
         return Ok(definition);
@@ -109,7 +108,7 @@ pub fn has_definition<'gc>(
             .coerce_to_string(activation)?;
         let qname = QName::new(Namespace::public_namespace(), local_name);
 
-        return Ok(appdomain.read().has_definition(qname).into());
+        return Ok(appdomain.has_definition(qname).into());
     }
 
     Ok(Value::Undefined)
