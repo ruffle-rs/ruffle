@@ -440,6 +440,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         }
         self.set_removed(context.gc_context, true);
     }
+
+    fn get_child_by_id(&self, id: Depth) -> Option<DisplayObject<'gc>> {
+        self.0.read().children.get(&id).cloned()
+    }
 }
 
 impl<'gc> ButtonData<'gc> {
