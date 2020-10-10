@@ -848,6 +848,7 @@ impl<R: Read> Reader<R> {
         let num_bits = self.read_ubits(5)? as usize;
         m.tx = self.read_sbits_twips(num_bits)?;
         m.ty = self.read_sbits_twips(num_bits)?;
+        self.byte_align();
         Ok(m)
     }
 
