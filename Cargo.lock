@@ -2784,6 +2784,7 @@ name = "ruffle_render_wgpu"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "clap",
  "futures",
  "image",
  "jpeg-decoder",

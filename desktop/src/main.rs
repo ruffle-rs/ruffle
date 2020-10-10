@@ -24,49 +24,12 @@ use std::time::Instant;
 use crate::storage::DiskStorageBackend;
 use ruffle_core::backend::log::NullLogBackend;
 use ruffle_core::tag_utils::SwfMovie;
+use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Icon, WindowBuilder};
-
-#[derive(Clap, PartialEq, Debug)]
-pub enum GraphicsBackend {
-    Default,
-    Vulkan,
-    Metal,
-    Dx12,
-    Dx11,
-}
-
-impl From<GraphicsBackend> for ruffle_render_wgpu::wgpu::BackendBit {
-    fn from(backend: GraphicsBackend) -> Self {
-        match backend {
-            GraphicsBackend::Default => ruffle_render_wgpu::wgpu::BackendBit::PRIMARY,
-            GraphicsBackend::Vulkan => ruffle_render_wgpu::wgpu::BackendBit::VULKAN,
-            GraphicsBackend::Metal => ruffle_render_wgpu::wgpu::BackendBit::METAL,
-            GraphicsBackend::Dx12 => ruffle_render_wgpu::wgpu::BackendBit::DX12,
-            GraphicsBackend::Dx11 => ruffle_render_wgpu::wgpu::BackendBit::DX11,
-        }
-    }
-}
-
-#[derive(Clap, PartialEq, Debug)]
-pub enum PowerPreference {
-    Default = 0,
-    Low = 1,
-    High = 2,
-}
-
-impl From<PowerPreference> for ruffle_render_wgpu::wgpu::PowerPreference {
-    fn from(preference: PowerPreference) -> Self {
-        match preference {
-            PowerPreference::Default => ruffle_render_wgpu::wgpu::PowerPreference::Default,
-            PowerPreference::Low => ruffle_render_wgpu::wgpu::PowerPreference::LowPower,
-            PowerPreference::High => ruffle_render_wgpu::wgpu::PowerPreference::HighPerformance,
-        }
-    }
-}
 
 #[derive(Clap, Debug)]
 #[clap(

@@ -37,6 +37,9 @@ mod pipelines;
 mod shapes;
 pub mod target;
 
+#[cfg(feature = "clap")]
+pub mod clap;
+
 use ruffle_core::swf::{Matrix, Twips};
 pub use wgpu;
 
