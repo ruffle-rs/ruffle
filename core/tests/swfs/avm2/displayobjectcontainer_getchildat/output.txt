@@ -1,0 +1,4 @@
+//this.getChildAt(0)
+[object ChildClip_1]
+//this.getChildAt(0).child_method()
+//Child method called

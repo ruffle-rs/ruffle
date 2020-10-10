@@ -1950,6 +1950,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn on_focus_changed(&self, context: MutationContext<'gc, '_>, focused: bool) {
         self.0.write(context).has_focus = focused;
     }
+
+    fn get_child_by_id(&self, id: Depth) -> Option<DisplayObject<'gc>> {
+        self.0.read().children.get(&id).cloned()
+    }
 }
 
 impl<'gc> MovieClipData<'gc> {

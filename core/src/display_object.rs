@@ -675,6 +675,11 @@ pub trait TDisplayObject<'gc>:
         None
     }
 
+    /// Get a child display object by it's depth.
+    fn get_child_by_id(&self, _id: Depth) -> Option<DisplayObject<'gc>> {
+        None
+    }
+
     /// Get another level by level name.
     ///
     /// Since levels don't have instance names, this function instead parses
