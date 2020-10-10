@@ -11,6 +11,7 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
     var save_text = get_i18n_string("save_settings");
     var play_flash_label = document.getElementById("enablelabel");
     var ignore_optout_label = document.getElementById("ignorelabel");
+    var autoplay_label = document.getElementById("autoplaylabel");
     var play_flash_checkbox = document.getElementById("enable");
     var ignore_optout_checkbox = document.getElementById("ignoreoptout");
     var save_button = document.getElementById("save");
