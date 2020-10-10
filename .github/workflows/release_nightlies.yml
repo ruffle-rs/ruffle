@@ -197,3 +197,40 @@ jobs:
           asset_path: ./web/packages/extension/dist/ruffle_extension.zip
           asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_extension.zip
           asset_content_type: application/zip
+
+      - name: Clone web demo
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/checkout@v2
+        with:
+          repository: ruffle-rs/demo
+          path: demo
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
+
+      - name: Update web demo
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd demo
+
+          # Delete the old build.
+          rm -f *.js *.wasm *.html
+
+          # Copy the fresh build into this folder.
+          cp -f ../web/packages/demo/dist/* .
+
+          # Create git commit. Amend previous commit to avoid daily commit spam.
+          git config user.email "ruffle@ruffle.rs"
+          git config user.name "RuffleBuild"
+          git add *
+          git commit --amend -am "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
+          cd ..
+
+      - name: Push web demo
+        if: matrix.os == 'ubuntu-latest'
+        uses: ad-m/github-push-action@master
+        with:
+          repository: ruffle-rs/demo
+          github_token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
+          directory: demo
+          force: true
