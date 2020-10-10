@@ -10,6 +10,7 @@ use ruffle_core::backend::navigator::NullNavigatorBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
+use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::WgpuRenderBackend;
 use std::error::Error;
@@ -63,6 +64,30 @@ struct Opt {
 
     #[clap(flatten)]
     size: SizeOpt,
+
+    /// Type of graphics backend to use. Not all options may be supported by your current system.
+    /// Default will attempt to pick the most supported graphics backend.
+    #[clap(
+        long,
+        short,
+        case_insensitive = true,
+        default_value = "default",
+        arg_enum
+    )]
+    graphics: GraphicsBackend,
+
+    /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
+    /// whereas a low power usage tends prefer integrated GPUs.
+    /// Default will pick the best device depending on the status of your computer (ie, wall-power
+    /// may choose high, battery power may choose low)
+    #[clap(
+        long,
+        short,
+        case_insensitive = true,
+        default_value = "default",
+        arg_enum
+    )]
+    power: PowerPreference,
 }
 
 fn take_screenshot(
@@ -336,9 +361,9 @@ fn capture_multiple_swfs(
 
 fn main() -> Result<(), Box<dyn Error>> {
     let opt: Opt = Opt::parse();
-    let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+    let instance = wgpu::Instance::new(opt.graphics.into());
     let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::Default,
+        power_preference: opt.power.into(),
         compatible_surface: None,
     }))
     .ok_or(
