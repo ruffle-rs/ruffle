@@ -2585,6 +2585,73 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 0,
             ],
         ),
+        (
+            8,
+            Tag::DefineShape(Shape {
+                version: 4,
+                id: 2,
+                shape_bounds: Rectangle {
+                    x_min: Twips::from_pixels(-20.0),
+                    x_max: Twips::from_pixels(220.0),
+                    y_min: Twips::from_pixels(-20.0),
+                    y_max: Twips::from_pixels(20.0),
+                },
+                edge_bounds: Rectangle {
+                    x_min: Twips::from_pixels(0.0),
+                    x_max: Twips::from_pixels(200.0),
+                    y_min: Twips::from_pixels(0.0),
+                    y_max: Twips::from_pixels(0.0),
+                },
+                has_fill_winding_rule: false,
+                has_non_scaling_strokes: false,
+                has_scaling_strokes: true,
+                styles: ShapeStyles {
+                    fill_styles: vec![],
+                    line_styles: vec![LineStyle {
+                        width: Twips::from_pixels(40.0),
+                        color: Color {
+                            r: 0,
+                            g: 0,
+                            b: 0,
+                            a: 0,
+                        },
+                        start_cap: LineCapStyle::Round,
+                        end_cap: LineCapStyle::Round,
+                        join_style: LineJoinStyle::Round,
+                        fill_style: Some(FillStyle::Bitmap {
+                            id: 1,
+                            matrix: Matrix {
+                                a: 20.0,
+                                d: 20.0,
+                                tx: Twips::from_pixels(10.0),
+                                ty: Twips::from_pixels(10.0),
+                                ..Default::default()
+                            },
+                            is_smoothed: false,
+                            is_repeating: true,
+                        }),
+                        allow_scale_x: true,
+                        allow_scale_y: true,
+                        is_pixel_hinted: false,
+                        allow_close: true,
+                    }],
+                },
+                shape: vec![
+                    ShapeRecord::StyleChange(StyleChangeData {
+                        move_to: None,
+                        fill_style_0: None,
+                        fill_style_1: None,
+                        line_style: Some(1),
+                        new_styles: None,
+                    }),
+                    ShapeRecord::StraightEdge {
+                        delta_x: Twips::from_pixels(200.0),
+                        delta_y: Twips::from_pixels(0.0),
+                    },
+                ],
+            }),
+            read_tag_bytes_from_file("tests/swfs/BitmapLineStyle.swf", TagCode::DefineShape4),
+        ),
     ]
 }
 
