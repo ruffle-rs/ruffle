@@ -1585,6 +1585,11 @@ name = "instant"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b141fdc7836c525d4d594027d318c84161ca17aaf8113ab1f81ab93ae897485"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
+]
 
 [[package]]
 name = "iovec"
@@ -2682,6 +2687,7 @@ dependencies = [
  "generational-arena",
  "gif",
  "indexmap",
+ "instant",
  "jpeg-decoder",
  "json",
  "libflate",

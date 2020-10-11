@@ -19,11 +19,11 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::transform::TransformStack;
 use core::fmt;
 use gc_arena::{Collect, CollectionContext, MutationContext};
+use instant::Instant;
 use rand::rngs::SmallRng;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
-use std::time::Instant;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` crates this when it begins a tick and passes it through the call stack to

@@ -32,6 +32,7 @@ thiserror = "1.0"
 json = "0.12.4"
 chrono = "0.4"
 num-traits = "0.2"
+instant = "0.1"
 
 [dependencies.jpeg-decoder]
 version = "0.1.20"
@@ -48,4 +49,5 @@ pretty_assertions = "0.6.1"
 [features]
 default = ["minimp3"]
 lzma = ["swf/lzma"]
+wasm-bindgen = [ "instant/wasm-bindgen" ]
 avm_debug = []
