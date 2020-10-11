@@ -2,7 +2,7 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
-use crate::avm1::{Avm1, AvmString, TObject, Timers, Value};
+use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
 use crate::avm2::Avm2;
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::locale::LocaleBackend;
@@ -19,6 +19,7 @@ use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
+use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
 use crate::vminterface::Instantiator;
@@ -312,13 +313,14 @@ impl Player {
     ///
     /// This should not be called if a root movie fetch has already been kicked
     /// off.
-    pub fn fetch_root_movie(&mut self, movie_url: &str) {
+    pub fn fetch_root_movie(&mut self, movie_url: &str, parameters: PropertyMap<String>) {
         self.mutate_with_update_context(|context| {
             let fetch = context.navigator.fetch(movie_url, RequestOptions::get());
             let process = context.load_manager.load_root_movie(
                 context.player.clone().unwrap(),
                 fetch,
                 movie_url.to_string(),
+                parameters,
             );
 
             context.navigator.spawn_future(process);
@@ -351,7 +353,21 @@ impl Player {
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
 
             root.set_depth(context.gc_context, 0);
-            root.post_instantiation(context, root, None, Instantiator::Movie, false);
+            let flashvars = if !context.swf.parameters().is_empty() {
+                let object = ScriptObject::object(context.gc_context, None);
+                for (key, value) in context.swf.parameters().iter() {
+                    object.define_value(
+                        context.gc_context,
+                        key,
+                        AvmString::new(context.gc_context, value).into(),
+                        EnumSet::empty(),
+                    );
+                }
+                Some(object.into())
+            } else {
+                None
+            };
+            root.post_instantiation(context, root, flashvars, Instantiator::Movie, false);
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 

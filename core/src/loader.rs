@@ -6,6 +6,7 @@ use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
+use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use crate::xml::XMLNode;
@@ -121,6 +122,7 @@ impl<'gc> LoadManager<'gc> {
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
         url: String,
+        parameters: PropertyMap<String>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::RootMovie { self_handle: None };
         let handle = self.add_loader(loader);
@@ -128,7 +130,7 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.introduce_loader_handle(handle);
 
-        loader.root_movie_loader(player, fetch, url)
+        loader.root_movie_loader(player, fetch, url, parameters)
     }
 
     /// Kick off a movie clip load.
@@ -358,6 +360,7 @@ impl<'gc> Loader<'gc> {
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
         mut url: String,
+        parameters: PropertyMap<String>,
     ) -> OwnedFuture<(), Error> {
         let _handle = match self {
             Loader::RootMovie { self_handle, .. } => {
@@ -383,7 +386,10 @@ impl<'gc> Loader<'gc> {
             let data = (fetch.await)
                 .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
 
-            if let Ok((_length, movie)) = data {
+            if let Ok((_length, mut movie)) = data {
+                for (key, value) in parameters.iter() {
+                    movie.parameters_mut().insert(key, value.to_owned(), false);
+                }
                 player.lock().unwrap().set_root_movie(Arc::new(movie));
 
                 Ok(())
