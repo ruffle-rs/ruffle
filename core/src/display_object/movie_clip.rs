@@ -1699,36 +1699,38 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {
-        if self.visible() && self.world_bounds().contains(point) {
-            // This movieclip operates in "button mode" if it has a mouse handler,
-            // either via on(..) or via property mc.onRelease, etc.
-            let is_button_mode = {
-                if self.0.read().has_button_clip_event {
-                    true
-                } else {
-                    let mut activation = Avm1Activation::from_stub(
-                        context.reborrow(),
-                        ActivationIdentifier::root("[Mouse Pick]"),
-                    );
-                    let object = self.object().coerce_to_object(&mut activation);
+        if self.visible() {
+            if self.world_bounds().contains(point) {
+                // This movieclip operates in "button mode" if it has a mouse handler,
+                // either via on(..) or via property mc.onRelease, etc.
+                let is_button_mode = {
+                    if self.0.read().has_button_clip_event {
+                        true
+                    } else {
+                        let mut activation = Avm1Activation::from_stub(
+                            context.reborrow(),
+                            ActivationIdentifier::root("[Mouse Pick]"),
+                        );
+                        let object = self.object().coerce_to_object(&mut activation);
 
-                    ClipEvent::BUTTON_EVENT_METHODS
-                        .iter()
-                        .any(|handler| object.has_property(&mut activation, handler))
+                        ClipEvent::BUTTON_EVENT_METHODS
+                            .iter()
+                            .any(|handler| object.has_property(&mut activation, handler))
+                    }
+                };
+
+                if is_button_mode && self.hit_test_shape(context, point) {
+                    return Some(self_node);
                 }
-            };
-
-            if is_button_mode && self.hit_test_shape(context, point) {
-                return Some(self_node);
             }
-        }
 
-        // Maybe we could skip recursing down at all if !world_bounds.contains(point),
-        // but a child button can have an invisible hit area outside the parent's bounds.
-        for child in self.0.read().children.values().rev() {
-            let result = child.mouse_pick(context, *child, point);
-            if result.is_some() {
-                return result;
+            // Maybe we could skip recursing down at all if !world_bounds.contains(point),
+            // but a child button can have an invisible hit area outside the parent's bounds.
+            for child in self.0.read().children.values().rev() {
+                let result = child.mouse_pick(context, *child, point);
+                if result.is_some() {
+                    return result;
+                }
             }
         }
 
@@ -2149,6 +2151,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         version: u8,
     ) -> DecodeResult {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
+        log::info!("id: {}", define_bits_lossless.id);
+        if define_bits_lossless.id == 53 {
+            log::info!("53");
+        }
         let bitmap_info = context
             .renderer
             .register_bitmap_png(&define_bits_lossless)?;
