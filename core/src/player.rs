@@ -24,13 +24,14 @@ use crate::transform::TransformStack;
 use crate::vminterface::Instantiator;
 use enumset::EnumSet;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
+use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 pub static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 

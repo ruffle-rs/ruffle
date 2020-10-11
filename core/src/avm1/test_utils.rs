@@ -18,11 +18,11 @@ use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
 use gc_arena::{rootless_arena, MutationContext};
+use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 use std::time::Duration;
-use std::time::Instant;
 
 pub fn with_avm<F>(swf_version: u8, test: F)
 where

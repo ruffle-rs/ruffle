@@ -859,10 +859,11 @@ mod tests {
     use crate::tag_utils::{SwfMovie, SwfSlice};
     use crate::vminterface::Instantiator;
     use gc_arena::rootless_arena;
+    use instant::Instant;
     use rand::{rngs::SmallRng, SeedableRng};
     use std::collections::{BTreeMap, HashMap};
     use std::sync::Arc;
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     fn with_object<F, R>(swf_version: u8, test: F) -> R
     where

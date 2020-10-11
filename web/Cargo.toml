@@ -39,7 +39,7 @@ chrono = { version = "0.4", features = ["wasmbind"] }
 [dependencies.ruffle_core]
 path = "../core"
 default-features = false
-features = ["puremp3"]
+features = ["puremp3", "wasm-bindgen"]
 
 [dependencies.web-sys]
 version = "0.3.45"
