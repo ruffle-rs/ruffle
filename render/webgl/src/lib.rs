@@ -1048,12 +1048,14 @@ impl RenderBackend for WebGlRenderBackend {
                     );
                 }
                 DrawType::Bitmap(bitmap) => {
-                    let texture = &self
-                        .textures
-                        .iter()
-                        .find(|(id, _tex)| *id == bitmap.id)
-                        .unwrap()
-                        .1;
+                    let texture = if let Some(texture) =
+                        self.textures.iter().find(|(id, _tex)| *id == bitmap.id)
+                    {
+                        &texture.1
+                    } else {
+                        // Bitmap not registered
+                        continue;
+                    };
 
                     program.uniform_matrix3fv(
                         &self.gl,
