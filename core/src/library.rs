@@ -255,15 +255,12 @@ impl<'gc> Library<'gc> {
                             Ok(attributes) if attributes.is_action_script_3 => AvmType::Avm2,
                             Ok(_) => AvmType::Avm1,
                             Err(e) => {
-                                log::error!("Got {} when reading AS3 flag", e);
+                                log::error!("Got {} when reading FileAttributes", e);
                                 AvmType::Avm1
                             }
                         }
                     }
-                    Err(e) => {
-                        log::error!("Got {} when looking for AS3 flag", e);
-                        AvmType::Avm1
-                    }
+                    // SWF defaults to AVM1 if FileAttributes is not the first tag.
                     _ => AvmType::Avm1,
                 }
             } else {
