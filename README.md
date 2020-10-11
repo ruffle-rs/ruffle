@@ -6,9 +6,6 @@
   <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Rust?label=github%20actions%20rust%20build" alt="Rust Build Status" />
   <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Web?label=github%20actions%20web%20build" alt="Web Build Status" />
  </a>
- <a href="https://circleci.com/gh/ruffle-rs/ruffle">
-  <img src="https://img.shields.io/circleci/build/github/ruffle-rs/ruffle?label=circleci%20build" alt="Travis Build Status" />
- </a>
   <a href="https://discord.gg/J8hgCQN">
       <img src="https://img.shields.io/discord/610531541889581066" alt="Ruffle Discord">
   </a>
