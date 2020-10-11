@@ -3,7 +3,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::types::{Degrees, Percent};
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell};
 use swf::Twips;
 
 #[derive(Clone, Debug, Collect, Copy)]
@@ -14,7 +14,6 @@ pub struct MorphShape<'gc>(GcCell<'gc, MorphShapeData<'gc>>);
 pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, MorphShapeStatic>,
-    ratio: u16,
 }
 
 impl<'gc> MorphShape<'gc> {
@@ -27,17 +26,8 @@ impl<'gc> MorphShape<'gc> {
             MorphShapeData {
                 base: Default::default(),
                 static_data: Gc::allocate(gc_context, static_data),
-                ratio: 0,
             },
         ))
-    }
-
-    pub fn ratio(self) -> u16 {
-        self.0.read().ratio
-    }
-
-    pub fn set_ratio(&mut self, gc_context: MutationContext<'gc, '_>, ratio: u16) {
-        self.0.write(gc_context).ratio = ratio;
     }
 }
 

@@ -40,6 +40,7 @@ pub struct DisplayObjectBase<'gc> {
     depth: Depth,
     transform: Transform,
     name: String,
+    ratio: u16,
     clip_depth: Depth,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
@@ -77,6 +78,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             transform: Default::default(),
             name: Default::default(),
             clip_depth: Default::default(),
+            ratio: Default::default(),
             rotation: Degrees::from_radians(0.0),
             scale_x: Percent::from_unit(1.0),
             scale_y: Percent::from_unit(1.0),
@@ -282,6 +284,12 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn set_clip_depth(&mut self, _context: MutationContext<'gc, '_>, depth: Depth) {
         self.clip_depth = depth;
     }
+    fn ratio(&self) -> u16 {
+        self.ratio
+    }
+    fn set_ratio(&mut self, _context: MutationContext<'gc, '_>, ratio: u16) {
+        self.ratio = ratio;
+    }
     fn parent(&self) -> Option<DisplayObject<'gc>> {
         self.parent
     }
@@ -354,6 +362,18 @@ impl<'gc> DisplayObjectBase<'gc> {
             self.flags.insert(DisplayObjectFlags::TransformedByScript);
         } else {
             self.flags.remove(DisplayObjectFlags::TransformedByScript);
+        }
+    }
+
+    fn placed_during_goto(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::PlacedDuringGoto)
+    }
+
+    fn set_placed_during_goto(&mut self, value: bool) {
+        if value {
+            self.flags.insert(DisplayObjectFlags::PlacedDuringGoto);
+        } else {
+            self.flags.remove(DisplayObjectFlags::PlacedDuringGoto);
         }
     }
 
@@ -651,6 +671,8 @@ pub trait TDisplayObject<'gc>:
 
     fn clip_depth(&self) -> Depth;
     fn set_clip_depth(&self, context: MutationContext<'gc, '_>, depth: Depth);
+    fn ratio(&self) -> u16;
+    fn set_ratio(&self, context: MutationContext<'gc, '_>, ratio: u16);
     fn parent(&self) -> Option<DisplayObject<'gc>>;
     fn set_parent(&self, context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
     fn first_child(&self) -> Option<DisplayObject<'gc>>;
@@ -720,6 +742,9 @@ pub trait TDisplayObject<'gc>:
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
     fn set_transformed_by_script(&self, context: MutationContext<'gc, '_>, value: bool);
 
+    fn placed_during_goto(&self) -> bool;
+    fn set_placed_during_goto(&self, context: MutationContext<'gc, '_>, value: bool);
+
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and
     /// so forth.
@@ -782,9 +807,7 @@ pub trait TDisplayObject<'gc>:
                 self.set_clip_depth(gc_context, clip_depth.into());
             }
             if let Some(ratio) = place_object.ratio {
-                if let Some(mut morph_shape) = self.as_morph_shape() {
-                    morph_shape.set_ratio(gc_context, ratio);
-                }
+                self.set_ratio(gc_context, ratio);
             }
             // Clip events only apply to movie clips.
             if let (Some(clip_actions), Some(clip)) =
@@ -815,9 +838,7 @@ pub trait TDisplayObject<'gc>:
         self.set_color_transform(gc_context, &*other.color_transform());
         self.set_clip_depth(gc_context, other.clip_depth());
         self.set_name(gc_context, &*other.name());
-        if let (Some(mut me), Some(other)) = (self.as_morph_shape(), other.as_morph_shape()) {
-            me.set_ratio(gc_context, other.ratio());
-        }
+        self.set_ratio(gc_context, other.ratio());
         // onEnterFrame actions only apply to movie clips.
         if let (Some(me), Some(other)) = (self.as_movie_clip(), other.as_movie_clip()) {
             me.set_clip_actions(gc_context, other.clip_actions().iter().cloned().collect());
@@ -1037,6 +1058,12 @@ macro_rules! impl_display_object_sansbounds {
         ) {
             self.0.write(context).$field.set_clip_depth(context, depth)
         }
+        fn ratio(&self) -> u16 {
+            self.0.read().$field.ratio()
+        }
+        fn set_ratio(&self, context: gc_arena::MutationContext<'gc, '_>, depth: u16) {
+            self.0.write(context).$field.set_ratio(context, depth)
+        }
         fn parent(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
             self.0.read().$field.parent()
         }
@@ -1101,6 +1128,12 @@ macro_rules! impl_display_object_sansbounds {
                 .write(context)
                 .$field
                 .set_transformed_by_script(value)
+        }
+        fn placed_during_goto(&self) -> bool {
+            self.0.read().$field.placed_during_goto()
+        }
+        fn set_placed_during_goto(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+            self.0.write(context).$field.set_placed_during_goto(value)
         }
         fn instantiate(
             &self,
@@ -1222,6 +1255,9 @@ enum DisplayObjectFlags {
     /// Whether this object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
     TransformedByScript,
+
+    /// Used during a rewinding goto.
+    PlacedDuringGoto,
 }
 
 pub struct ChildIter<'gc> {

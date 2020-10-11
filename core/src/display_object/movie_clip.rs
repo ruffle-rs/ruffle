@@ -1212,7 +1212,11 @@ impl<'gc> MovieClip<'gc> {
         // 3) Objects that would persist over the goto conceptually should not be
         //    destroyed and recreated; they should keep their properties.
         //    Particularly for rewinds, the object should persist if it was created
-        //      *before* the frame we are going to. (DisplayObject::place_frame).
+        //      *before* the frame we are going to. This is handled by the `ratio`
+        //      field in PlaceObject; this field will indicate the frame on which the
+        //      object was placed (this is not documented in the SWF specs).
+        //      After a rewind, an object should be recreated if the place object ID
+        //      or ratio fields differ; otherwise it's the same clip, and should be reused.
         // 4) We want to avoid creating objects just to destroy them if they aren't on
         //    the goto frame, so we should instead aggregate the deltas into a final list
         //    of commands, and THEN modify the children as necessary.
@@ -1229,27 +1233,6 @@ impl<'gc> MovieClip<'gc> {
             self.0.write(context.gc_context).tag_stream_pos = 0;
             self.0.write(context.gc_context).current_frame = 0;
 
-            // Remove all display objects that were created after the destination frame.
-            // TODO: We want to do something like self.children.retain here,
-            // but BTreeMap::retain does not exist.
-            let children: SmallVec<[_; 16]> = self
-                .0
-                .read()
-                .children
-                .iter()
-                .filter_map(|(depth, clip)| {
-                    if clip.place_frame() > frame {
-                        Some((*depth, *clip))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-            for (depth, child) in children {
-                let mut mc = self.0.write(context.gc_context);
-                mc.children.remove(&depth);
-                mc.remove_child_from_exec_list(context, child);
-            }
             true
         } else {
             false
@@ -1353,10 +1336,17 @@ impl<'gc> MovieClip<'gc> {
                 // it will exist on the final frame as well. Re-use this object
                 // instead of recreating.
                 // If the ID is 0, we are modifying a previous child. Otherwise, we're replacing it.
-                // If it's a rewind, we removed any dead children above, so we always
-                // modify the previous child.
-                Some(prev_child) if params.id() == 0 || is_rewind => {
+                // If it's a rewind, we use the id and ratio field to determine if the object is the same instance.
+                // For non-morph shapes, the ratio field indicates the frame that the object was placed on.
+                // (See #1291)
+                Some(prev_child)
+                    if params.id() == 0
+                        || (is_rewind
+                            && params.id() == prev_child.id()
+                            && params.ratio() == prev_child.ratio()) =>
+                {
                     prev_child.apply_place_object(context.gc_context, &params.place_object);
+                    prev_child.set_placed_during_goto(context.gc_context, true);
                 }
                 _ => {
                     if let Some(child) = clip.instantiate_child(
@@ -1367,8 +1357,10 @@ impl<'gc> MovieClip<'gc> {
                         &params.place_object,
                         params.modifies_original_item(),
                     ) {
-                        // Set the place frame to the frame where the object *would* have been placed.
-                        child.set_place_frame(context.gc_context, params.frame);
+                        // Flag that this object was touched by a goto during a rewind.
+                        if is_rewind {
+                            child.set_placed_during_goto(context.gc_context, true);
+                        }
                     }
                 }
             }
@@ -1405,6 +1397,19 @@ impl<'gc> MovieClip<'gc> {
             .iter()
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
+
+        if is_rewind {
+            // Remove any objects that were not touched by this goto; they do not exist on this frame.
+            for child in self.children() {
+                if child.placed_during_goto() {
+                    child.set_placed_during_goto(context.gc_context, false);
+                } else {
+                    let mut mc = self.0.write(context.gc_context);
+                    mc.children.remove(&child.depth());
+                    mc.remove_child_from_exec_list(context, child);
+                }
+            }
+        }
     }
 
     fn construct_as_avm1_object(
@@ -2017,17 +2022,18 @@ impl<'gc> MovieClipData<'gc> {
         if let Some(i) = goto_commands.iter().position(|o| o.depth() == depth) {
             goto_commands.swap_remove(i);
         }
+        // For fast-forwards, if this tag were to remove an object
+        // that existed before the goto, then we can remove that child right away.
+        // Don't do this for rewinds, because they conceptually
+        // start from an empty display list, so we need to examine the ratio field
+        // to determine if they get removed/re-created later on.
         if !is_rewind {
-            // For fast-forwards, if this tag were to remove an object
-            // that existed before the goto, then we can remove that child right away.
-            // Don't do this for rewinds, because they conceptually
-            // start from an empty display list, and we also want to examine
-            // the old children to decide if they persist (place_frame <= goto_frame).
             let child = self.children.remove(&depth);
             if let Some(child) = child {
                 self.remove_child_from_exec_list(context, child);
             }
         }
+
         Ok(())
     }
 
@@ -3078,6 +3084,11 @@ impl GotoPlaceObject {
     #[inline]
     fn depth(&self) -> Depth {
         self.place_object.depth.into()
+    }
+
+    #[inline]
+    fn ratio(&self) -> u16 {
+        self.place_object.ratio.unwrap_or(0)
     }
 
     fn merge(&mut self, next: &mut GotoPlaceObject) {
