@@ -875,11 +875,7 @@ pub fn set_panic_handler() {
             RUFFLE_GLOBAL_PANIC.call_once(|| {
                 console_error_panic_hook::hook(info);
 
-                let error = JsError::new(
-                    info.payload()
-                        .downcast_ref::<&str>()
-                        .unwrap_or(&"Unknown panic"),
-                );
+                let error = JsError::new(&info.to_string());
                 let _ = INSTANCES.try_with(|instances| {
                     let mut players = Vec::new();
 
