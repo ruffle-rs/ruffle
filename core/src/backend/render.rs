@@ -265,12 +265,7 @@ pub fn decode_jpeg(
 
     // Decompress the alpha data (DEFLATE compression).
     if let Some(alpha_data) = alpha_data {
-        let alpha_data = {
-            let mut data = vec![];
-            let mut decoder = libflate::zlib::Decoder::new(alpha_data)?;
-            decoder.read_to_end(&mut data)?;
-            data
-        };
+        let alpha_data = decompress_zlib(alpha_data)?;
 
         if alpha_data.len() == decoded_data.len() / 3 {
             let mut rgba = Vec::with_capacity((decoded_data.len() / 3) * 4);
@@ -315,12 +310,7 @@ pub fn decode_define_bits_lossless(
     swf_tag: &swf::DefineBitsLossless,
 ) -> Result<Bitmap, Box<dyn std::error::Error>> {
     // Decompress the image data (DEFLATE compression).
-    let mut decoded_data = {
-        let mut data = vec![];
-        let mut decoder = libflate::zlib::Decoder::new(&swf_tag.data[..])?;
-        decoder.read_to_end(&mut data)?;
-        data
-    };
+    let mut decoded_data = decompress_zlib(&swf_tag.data[..])?;
 
     // Swizzle/de-palettize the bitmap.
     let out_data = match (swf_tag.version, swf_tag.format) {
@@ -512,4 +502,13 @@ pub fn srgb_to_linear(color: [f32; 4]) -> [f32; 4] {
         to_linear_channel(color[2]),
         color[3],
     ]
+}
+
+/// Decodes zlib-compressed data.
+fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>, std::io::Error> {
+    let mut out_data = Vec::new();
+    let mut decoder = flate2::bufread::ZlibDecoder::new(data);
+    decoder.read_to_end(&mut out_data)?;
+    out_data.shrink_to_fit();
+    Ok(out_data)
 }
