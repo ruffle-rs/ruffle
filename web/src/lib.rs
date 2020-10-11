@@ -24,6 +24,7 @@ use ruffle_core::events::MouseWheelDelta;
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
+use ruffle_core::property_map::PropertyMap;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerEvent;
 use ruffle_web_common::JsResult;
@@ -124,22 +125,32 @@ impl Ruffle {
     /// Stream an arbitrary movie file from (presumably) the Internet.
     ///
     /// This method should only be called once per player.
-    pub fn stream_from(&mut self, movie_url: &str) {
+    pub fn stream_from(&mut self, movie_url: &str, parameters: &JsValue) -> Result<(), JsValue> {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap().borrow();
-            instance.core.lock().unwrap().fetch_root_movie(movie_url);
-        });
+            let mut parameters_to_load = PropertyMap::new();
+            populate_movie_parameters(&parameters, &mut parameters_to_load)?;
+            instance
+                .core
+                .lock()
+                .unwrap()
+                .fetch_root_movie(movie_url, parameters_to_load);
+            Ok(())
+        })
     }
 
     /// Play an arbitrary movie on this instance.
     ///
     /// This method should only be called once per player.
-    pub fn load_data(&mut self, swf_data: Uint8Array) -> Result<(), JsValue> {
+    pub fn load_data(&mut self, swf_data: Uint8Array, parameters: &JsValue) -> Result<(), JsValue> {
         let movie = Arc::new({
             let mut data = vec![0; swf_data.length() as usize];
             swf_data.copy_to(&mut data[..]);
-            SwfMovie::from_data(&data, None).map_err(|e| format!("Error loading movie: {}", e))?
+            let mut movie = SwfMovie::from_data(&data, None)
+                .map_err(|e| format!("Error loading movie: {}", e))?;
+            populate_movie_parameters(&parameters, movie.parameters_mut())?;
+            movie
         });
 
         INSTANCES.with(|instances| {
@@ -898,4 +909,19 @@ pub fn set_panic_handler() {
             });
         }));
     });
+}
+
+fn populate_movie_parameters(
+    input: &JsValue,
+    output: &mut PropertyMap<String>,
+) -> Result<(), JsValue> {
+    let keys = js_sys::Reflect::own_keys(input)?;
+    for key in keys.values() {
+        let key = key?;
+        let value = js_sys::Reflect::get(input, &key)?;
+        if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
+            output.insert(&key, value, false);
+        }
+    }
+    Ok(())
 }

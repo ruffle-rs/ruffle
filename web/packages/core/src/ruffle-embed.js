@@ -17,7 +17,11 @@ module.exports = class RuffleEmbed extends RufflePlayer {
 
     connectedCallback() {
         super.connectedCallback();
-        this.stream_swf_url(this.attributes.src.value);
+        let parameters = null;
+        if (this.attributes.flashvars) {
+            parameters = this.attributes.flashvars.value;
+        }
+        this.stream_swf_url(this.attributes.src.value, parameters);
     }
 
     get src() {
@@ -34,9 +38,12 @@ module.exports = class RuffleEmbed extends RufflePlayer {
 
     attributeChangedCallback(name, oldValue, newValue) {
         super.attributeChangedCallback(name, oldValue, newValue);
-        console.log(name + " " + oldValue + " " + newValue);
         if (this.isConnected && name === "src") {
-            this.stream_swf_url(this.attributes.src.value);
+            let parameters = null;
+            if (this.attributes.flashvars) {
+                parameters = this.attributes.flashvars.value;
+            }
+            this.stream_swf_url(this.attributes.src.value, parameters);
         }
     }
 
