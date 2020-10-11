@@ -61,15 +61,6 @@ if (localFileInput) {
     localFileInput.addEventListener("change", localFileSelected, false);
 }
 
-if (window.location.search && window.location.search != "") {
-    let urlParams = new URLSearchParams(window.location.search);
-    let url = urlParams.get("file");
-    if (url && url != "") {
-        console.info(url);
-        loadRemoteFile(url);
-    }
-}
-
 function sampleFileSelected() {
     let swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
     if (swfData) {
