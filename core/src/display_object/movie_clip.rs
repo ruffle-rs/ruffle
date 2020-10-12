@@ -2151,10 +2151,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
         version: u8,
     ) -> DecodeResult {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
-        log::info!("id: {}", define_bits_lossless.id);
-        if define_bits_lossless.id == 53 {
-            log::info!("53");
-        }
         let bitmap_info = context
             .renderer
             .register_bitmap_png(&define_bits_lossless)?;
