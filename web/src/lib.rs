@@ -130,7 +130,7 @@ impl Ruffle {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap().borrow();
             let mut parameters_to_load = PropertyMap::new();
-            populate_movie_parameters(&parameters, &mut parameters_to_load)?;
+            populate_movie_parameters(&parameters, &mut parameters_to_load);
             instance
                 .core
                 .lock()
@@ -149,7 +149,7 @@ impl Ruffle {
             swf_data.copy_to(&mut data[..]);
             let mut movie = SwfMovie::from_data(&data, None)
                 .map_err(|e| format!("Error loading movie: {}", e))?;
-            populate_movie_parameters(&parameters, movie.parameters_mut())?;
+            populate_movie_parameters(&parameters, movie.parameters_mut());
             movie
         });
 
@@ -911,17 +911,16 @@ pub fn set_panic_handler() {
     });
 }
 
-fn populate_movie_parameters(
-    input: &JsValue,
-    output: &mut PropertyMap<String>,
-) -> Result<(), JsValue> {
-    let keys = js_sys::Reflect::own_keys(input)?;
-    for key in keys.values() {
-        let key = key?;
-        let value = js_sys::Reflect::get(input, &key)?;
-        if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
-            output.insert(&key, value, false);
+fn populate_movie_parameters(input: &JsValue, output: &mut PropertyMap<String>) {
+    if let Ok(keys) = js_sys::Reflect::own_keys(input) {
+        for key in keys.values() {
+            if let Ok(key) = key {
+                if let Ok(value) = js_sys::Reflect::get(input, &key) {
+                    if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
+                        output.insert(&key, value, false);
+                    }
+                }
+            }
         }
     }
-    Ok(())
 }
