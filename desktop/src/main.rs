@@ -42,6 +42,11 @@ struct Opt {
     #[clap(name = "FILE", parse(from_os_str))]
     input_path: PathBuf,
 
+    /// A "flashvars" parameter to provide to the movie.
+    /// This can be repeated multiple times, for example -Pkey=value -Pfoo=bar
+    #[clap(short = 'P', number_of_values = 1)]
+    parameters: Vec<String>,
+
     /// Type of graphics backend to use. Not all options may be supported by your current system.
     /// Default will attempt to pick the most supported graphics backend.
     #[clap(
@@ -74,7 +79,7 @@ fn main() {
 
     let opt = Opt::parse();
 
-    let ret = run_player(opt.input_path, opt.graphics, opt.power);
+    let ret = run_player(opt.input_path, opt.graphics, opt.power, opt.parameters);
 
     if let Err(e) = ret {
         eprintln!("Fatal error:\n{}", e);
@@ -86,9 +91,21 @@ fn run_player(
     input_path: PathBuf,
     graphics: GraphicsBackend,
     power_preference: PowerPreference,
+    parameters: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let movie = SwfMovie::from_path(&input_path)?;
+    let mut movie = SwfMovie::from_path(&input_path)?;
     let movie_size = LogicalSize::new(movie.width(), movie.height());
+
+    for parameter in parameters {
+        let mut split = parameter.splitn(2, '=');
+        if let (Some(key), Some(value)) = (split.next(), split.next()) {
+            movie.parameters_mut().insert(key, value.to_string(), true);
+        } else {
+            movie
+                .parameters_mut()
+                .insert(&parameter, "".to_string(), true);
+        }
+    }
 
     let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
     let icon = Icon::from_rgba(icon_bytes.to_vec(), 32, 32)?;
