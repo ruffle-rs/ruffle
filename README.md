@@ -23,7 +23,7 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 
 ## Nightly builds
 
-[Nightly builds](http://ruffle-rs.s3-website-us-west-1.amazonaws.com/) of Ruffle are available for desktop and web platforms including the browser extension.
+[Nightly builds](https://github.com/ruffle-rs/ruffle/releases) of Ruffle are available for desktop and web platforms including the browser extension.
 
 ## Building from source
 
