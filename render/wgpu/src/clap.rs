@@ -31,7 +31,7 @@ pub enum PowerPreference {
 impl From<PowerPreference> for wgpu::PowerPreference {
     fn from(preference: PowerPreference) -> Self {
         match preference {
-            PowerPreference::Default => wgpu::PowerPreference::Default,
+            PowerPreference::Default => wgpu::PowerPreference::default(),
             PowerPreference::Low => wgpu::PowerPreference::LowPower,
             PowerPreference::High => wgpu::PowerPreference::HighPerformance,
         }

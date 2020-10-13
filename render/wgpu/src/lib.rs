@@ -930,6 +930,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 lod_max_clamp: 100.0,
                 compare: None,
                 anisotropy_clamp: None,
+                border_color: None,
             });
 
             let bind_group_label = create_debug_label!("Bitmap {} bind group", bitmap.0);
@@ -938,22 +939,31 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::Buffer(
-                            transforms_ubo.slice(0..std::mem::size_of::<Transforms>() as u64),
-                        ),
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &transforms_ubo,
+                            offset: 0,
+                            size: wgpu::BufferSize::new(std::mem::size_of::<Transforms>() as u64),
+                        },
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
-                        resource: wgpu::BindingResource::Buffer(
-                            self.quad_tex_transforms
-                                .slice(0..std::mem::size_of::<TextureTransforms>() as u64),
-                        ),
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &self.quad_tex_transforms,
+                            offset: 0,
+                            size: wgpu::BufferSize::new(
+                                std::mem::size_of::<TextureTransforms>() as u64
+                            ),
+                        },
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
-                        resource: wgpu::BindingResource::Buffer(
-                            colors_ubo.slice(0..std::mem::size_of::<ColorAdjustments>() as u64),
-                        ),
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &colors_ubo,
+                            offset: 0,
+                            size: wgpu::BufferSize::new(
+                                std::mem::size_of::<ColorAdjustments>() as u64
+                            ),
+                        },
                     },
                     wgpu::BindGroupEntry {
                         binding: 3,
@@ -1197,15 +1207,19 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(
-                        transforms_ubo.slice(0..std::mem::size_of::<Transforms>() as u64),
-                    ),
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &transforms_ubo,
+                        offset: 0,
+                        size: wgpu::BufferSize::new(std::mem::size_of::<Transforms>() as u64),
+                    },
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Buffer(
-                        colors_ubo.slice(0..std::mem::size_of::<ColorAdjustments>() as u64),
-                    ),
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &colors_ubo,
+                        offset: 0,
+                        size: wgpu::BufferSize::new(std::mem::size_of::<ColorAdjustments>() as u64),
+                    },
                 },
             ],
             label: bind_group_label.as_deref(),

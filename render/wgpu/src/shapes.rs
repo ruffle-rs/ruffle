@@ -4,6 +4,7 @@ use crate::{ColorAdjustments, TextureTransforms, Transforms};
 use bytemuck::{Pod, Zeroable};
 use ruffle_core::backend::audio::swf::CharacterId;
 use ruffle_core::color_transform::ColorTransform;
+use wgpu::BufferSize;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -100,15 +101,21 @@ impl IncompleteDrawType {
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: 0,
-                            resource: wgpu::BindingResource::Buffer(
-                                transforms_ubo.slice(0..std::mem::size_of::<Transforms>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &transforms_ubo,
+                                offset: 0,
+                                size: BufferSize::new(std::mem::size_of::<Transforms>() as u64),
+                            },
                         },
                         wgpu::BindGroupEntry {
                             binding: 1,
-                            resource: wgpu::BindingResource::Buffer(
-                                colors_ubo.slice(0..std::mem::size_of::<ColorAdjustments>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &colors_ubo,
+                                offset: 0,
+                                size: BufferSize::new(
+                                    std::mem::size_of::<ColorAdjustments>() as u64
+                                ),
+                            },
                         },
                     ],
                     label: bind_group_label.as_deref(),
@@ -155,29 +162,41 @@ impl IncompleteDrawType {
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: 0,
-                            resource: wgpu::BindingResource::Buffer(
-                                transforms_ubo.slice(0..std::mem::size_of::<Transforms>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &transforms_ubo,
+                                offset: 0,
+                                size: BufferSize::new(std::mem::size_of::<Transforms>() as u64),
+                            },
                         },
                         wgpu::BindGroupEntry {
                             binding: 1,
-                            resource: wgpu::BindingResource::Buffer(
-                                tex_transforms_ubo
-                                    .slice(0..std::mem::size_of::<TextureTransforms>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &tex_transforms_ubo,
+                                offset: 0,
+                                size: BufferSize::new(
+                                    std::mem::size_of::<TextureTransforms>() as u64
+                                ),
+                            },
                         },
                         wgpu::BindGroupEntry {
                             binding: 2,
-                            resource: wgpu::BindingResource::Buffer(
-                                colors_ubo.slice(0..std::mem::size_of::<ColorAdjustments>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &colors_ubo,
+                                offset: 0,
+                                size: BufferSize::new(
+                                    std::mem::size_of::<ColorAdjustments>() as u64
+                                ),
+                            },
                         },
                         wgpu::BindGroupEntry {
                             binding: 3,
-                            resource: wgpu::BindingResource::Buffer(
-                                gradient_ubo
-                                    .slice(0..std::mem::size_of::<GradientUniforms>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &gradient_ubo,
+                                offset: 0,
+                                size: BufferSize::new(
+                                    std::mem::size_of::<GradientUniforms>() as u64
+                                ),
+                            },
                         },
                     ],
                     label: bind_group_label.as_deref(),
@@ -238,6 +257,7 @@ impl IncompleteDrawType {
                     lod_max_clamp: 100.0,
                     compare: None,
                     anisotropy_clamp: None,
+                    border_color: None,
                 });
 
                 let bind_group_label =
@@ -247,22 +267,31 @@ impl IncompleteDrawType {
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: 0,
-                            resource: wgpu::BindingResource::Buffer(
-                                transforms_ubo.slice(0..std::mem::size_of::<Transforms>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &transforms_ubo,
+                                offset: 0,
+                                size: BufferSize::new(std::mem::size_of::<Transforms>() as u64),
+                            },
                         },
                         wgpu::BindGroupEntry {
                             binding: 1,
-                            resource: wgpu::BindingResource::Buffer(
-                                tex_transforms_ubo
-                                    .slice(0..std::mem::size_of::<TextureTransforms>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &tex_transforms_ubo,
+                                offset: 0,
+                                size: BufferSize::new(
+                                    std::mem::size_of::<TextureTransforms>() as u64
+                                ),
+                            },
                         },
                         wgpu::BindGroupEntry {
                             binding: 2,
-                            resource: wgpu::BindingResource::Buffer(
-                                colors_ubo.slice(0..std::mem::size_of::<ColorAdjustments>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &colors_ubo,
+                                offset: 0,
+                                size: BufferSize::new(
+                                    std::mem::size_of::<ColorAdjustments>() as u64
+                                ),
+                            },
                         },
                         wgpu::BindGroupEntry {
                             binding: 3,
