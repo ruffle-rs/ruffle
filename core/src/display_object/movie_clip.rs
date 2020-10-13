@@ -942,7 +942,6 @@ impl<'gc> MovieClip<'gc> {
         }
         parent.add_child_to_exec_list(context.gc_context, child);
         child.set_parent(context.gc_context, Some((*self).into()));
-        child.set_place_frame(context.gc_context, 0);
         child.set_depth(context.gc_context, depth);
     }
 
@@ -1180,7 +1179,6 @@ impl<'gc> MovieClip<'gc> {
                 // Set initial properties for child.
                 child.set_depth(context.gc_context, depth);
                 child.set_parent(context.gc_context, Some(self_display_object));
-                child.set_place_frame(context.gc_context, self.current_frame());
                 if copy_previous_properties {
                     if let Some(prev_child) = prev_child {
                         child.copy_display_properties_from(context.gc_context, prev_child);

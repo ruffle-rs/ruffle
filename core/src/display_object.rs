@@ -36,7 +36,6 @@ pub use text::Text;
 #[derive(Clone, Debug)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayObject<'gc>>,
-    place_frame: u16,
     depth: Depth,
     transform: Transform,
     name: String,
@@ -73,7 +72,6 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
     fn default() -> Self {
         Self {
             parent: Default::default(),
-            place_frame: Default::default(),
             depth: Default::default(),
             transform: Default::default(),
             name: Default::default(),
@@ -118,12 +116,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn set_depth(&mut self, depth: Depth) {
         self.depth = depth;
     }
-    fn place_frame(&self) -> u16 {
-        self.place_frame
-    }
-    fn set_place_frame(&mut self, _context: MutationContext<'gc, '_>, frame: u16) {
-        self.place_frame = frame;
-    }
+
     fn transform(&self) -> &Transform {
         &self.transform
     }
@@ -444,9 +437,6 @@ pub trait TDisplayObject<'gc>:
         }
         bounds
     }
-
-    fn place_frame(&self) -> u16;
-    fn set_place_frame(&self, context: MutationContext<'gc, '_>, frame: u16);
 
     fn transform(&self) -> Ref<Transform>;
     fn matrix(&self) -> Ref<Matrix>;
@@ -980,12 +970,6 @@ macro_rules! impl_display_object_sansbounds {
         }
         fn set_depth(&self, gc_context: gc_arena::MutationContext<'gc, '_>, depth: Depth) {
             self.0.write(gc_context).$field.set_depth(depth)
-        }
-        fn place_frame(&self) -> u16 {
-            self.0.read().$field.place_frame()
-        }
-        fn set_place_frame(&self, context: gc_arena::MutationContext<'gc, '_>, frame: u16) {
-            self.0.write(context).$field.set_place_frame(context, frame)
         }
         fn transform(&self) -> std::cell::Ref<crate::transform::Transform> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.transform())
