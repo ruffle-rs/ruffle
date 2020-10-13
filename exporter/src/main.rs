@@ -12,7 +12,7 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::target::TextureTarget;
-use ruffle_render_wgpu::WgpuRenderBackend;
+use ruffle_render_wgpu::{wgpu, WgpuRenderBackend};
 use std::error::Error;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
