@@ -133,6 +133,12 @@ checksum = "b41b7ea54a0c9d92199de89e20e58d49f02f8e699814ef3fdf266f6f748d15c7"
 
 [[package]]
 name = "base64"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
+
+[[package]]
+name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
@@ -2469,6 +2475,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cabe4fa914dec5870285fa7f71f602645da47c486e68486d2b4ceb4a343e90ac"
 
 [[package]]
+name = "ron"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8a58080b7bb83b2ea28c3b7a9a994fd5e310330b7c8ca5258d99b98128ecfe4"
+dependencies = [
+ "base64 0.12.3",
+ "bitflags",
+ "serde",
+]
+
+[[package]]
 name = "ruffle_core"
 version = "0.1.0"
 dependencies = [
@@ -3346,6 +3363,7 @@ dependencies = [
  "objc",
  "parking_lot 0.11.0",
  "raw-window-handle",
+ "serde",
  "smallvec 1.4.2",
  "tracing",
  "typed-arena",
@@ -3377,6 +3395,8 @@ dependencies = [
  "naga",
  "parking_lot 0.11.0",
  "raw-window-handle",
+ "ron",
+ "serde",
  "smallvec 1.4.2",
  "thiserror",
  "tracing",
@@ -3389,6 +3409,7 @@ version = "0.6.0"
 source = "git+https://github.com/gfx-rs/wgpu?rev=7ac706f0a9d90ebdcffeae48e3c530b9921bff2c#7ac706f0a9d90ebdcffeae48e3c530b9921bff2c"
 dependencies = [
  "bitflags",
+ "serde",
 ]
 
 [[package]]

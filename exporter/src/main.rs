@@ -88,6 +88,11 @@ struct Opt {
         arg_enum
     )]
     power: PowerPreference,
+
+    /// Location to store a wgpu trace output
+    #[clap(long, parse(from_os_str))]
+    #[cfg(feature = "render_trace")]
+    trace_path: Option<PathBuf>,
 }
 
 fn take_screenshot(
@@ -359,6 +364,21 @@ fn capture_multiple_swfs(
     Ok(())
 }
 
+#[cfg(feature = "render_trace")]
+fn trace_path(opt: &Opt) -> Option<&Path> {
+    if let Some(path) = &opt.trace_path {
+        let _ = std::fs::create_dir_all(path);
+        Some(path)
+    } else {
+        None
+    }
+}
+
+#[cfg(not(feature = "render_trace"))]
+fn trace_path(_opt: &Opt) -> Option<&Path> {
+    None
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let opt: Opt = Opt::parse();
     let instance = wgpu::Instance::new(opt.graphics.into());
@@ -376,7 +396,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             limits: wgpu::Limits::default(),
             shader_validation: false,
         },
-        None,
+        trace_path(&opt),
     ))?;
 
     if opt.swf.is_file() {
