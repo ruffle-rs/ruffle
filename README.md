@@ -3,8 +3,8 @@
 </p>
 <p align="center">
  <a href="https://github.com/ruffle-rs/ruffle/actions">
-  <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Rust?label=github%20actions%20rust%20build" alt="Rust Build Status" />
-  <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Web?label=github%20actions%20web%20build" alt="Web Build Status" />
+  <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Rust?label=rust%20build" alt="Rust Build Status" />
+  <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Web?label=web%20build" alt="Web Build Status" />
  </a>
   <a href="https://discord.gg/J8hgCQN">
       <img src="https://img.shields.io/discord/610531541889581066" alt="Ruffle Discord">
