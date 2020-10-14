@@ -41,6 +41,7 @@ pub mod target;
 pub mod clap;
 
 use ruffle_core::swf::{Matrix, Twips};
+use std::path::Path;
 pub use wgpu;
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
@@ -133,6 +134,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         size: (u32, u32),
         backend: wgpu::BackendBit,
         power_preference: wgpu::PowerPreference,
+        trace_path: Option<&Path>,
     ) -> Result<Self, Error> {
         if wgpu::BackendBit::SECONDARY.contains(backend) {
             log::warn!(
@@ -164,7 +166,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 limits: wgpu::Limits::default(),
                 shader_validation: false,
             },
-            None,
+            trace_path,
         ))?;
 
         let target = SwapChainTarget::new(surface, size, &device);
