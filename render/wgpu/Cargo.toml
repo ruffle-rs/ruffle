@@ -16,6 +16,7 @@ futures = "0.3.6"
 bytemuck = "1.4.1"
 raw-window-handle = "0.3.3"
 clap = { version = "3.0.0-beta.2", optional = true }
+enum-map = "0.6.3"
 
 [features]
 render_debug_labels = []

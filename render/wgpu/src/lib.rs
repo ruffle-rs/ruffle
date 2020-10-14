@@ -24,6 +24,7 @@ use crate::utils::{
     gradient_spread_mode_index, ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix,
     swf_to_gl_matrix,
 };
+use enum_map::Enum;
 use ruffle_core::color_transform::ColorTransform;
 use std::mem::replace;
 use std::rc::Rc;
@@ -59,15 +60,19 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     viewport_height: f32,
     view_matrix: [[f32; 4]; 4],
     textures: Vec<(swf::CharacterId, Texture)>,
+    mask_state: MaskState,
     num_masks: u32,
-    num_masks_active: u32,
-    write_stencil_mask: u32,
-    test_stencil_mask: u32,
-    next_stencil_mask: u32,
-    mask_stack: Vec<(u32, u32)>,
     quad_vbo: wgpu::Buffer,
     quad_ibo: wgpu::Buffer,
     quad_tex_transforms: wgpu::Buffer,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
+pub enum MaskState {
+    NoMask,
+    DrawMaskStencil,
+    DrawMaskedContent,
+    ClearMaskStencil,
 }
 
 #[repr(C)]
@@ -238,12 +243,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             viewport_height,
             view_matrix,
             textures: Vec::new(),
+
             num_masks: 0,
-            num_masks_active: 0,
-            write_stencil_mask: 0,
-            test_stencil_mask: 0,
-            next_stencil_mask: 1,
-            mask_stack: Vec::new(),
+            mask_state: MaskState::NoMask,
+
             quad_vbo,
             quad_ibo,
             quad_tex_transforms,
@@ -829,11 +832,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 None
             }
         };
+
+        self.mask_state = MaskState::NoMask;
         self.num_masks = 0;
-        self.num_masks_active = 0;
-        self.write_stencil_mask = 0;
-        self.test_stencil_mask = 0;
-        self.next_stencil_mask = 1;
 
         if let Some((frame_output, encoder)) = &mut self.current_frame {
             let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
@@ -1006,21 +1007,22 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 }),
             });
 
-            render_pass.set_pipeline(&self.pipelines.bitmap.pipeline_for(
-                self.num_masks,
-                self.num_masks_active,
-                self.test_stencil_mask,
-                self.write_stencil_mask,
-            ));
+            render_pass.set_pipeline(&self.pipelines.bitmap.pipeline_for(self.mask_state));
             render_pass.set_bind_group(0, &bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.quad_vbo.slice(..));
             render_pass.set_index_buffer(self.quad_ibo.slice(..));
 
-            if self.num_masks_active < self.num_masks {
-                render_pass.set_stencil_reference(self.write_stencil_mask);
-            } else {
-                render_pass.set_stencil_reference(self.test_stencil_mask);
-            }
+            match self.mask_state {
+                MaskState::NoMask => (),
+                MaskState::DrawMaskStencil => {
+                    debug_assert!(self.num_masks > 0);
+                    render_pass.set_stencil_reference(self.num_masks - 1);
+                }
+                MaskState::DrawMaskedContent | MaskState::ClearMaskStencil => {
+                    debug_assert!(self.num_masks > 0);
+                    render_pass.set_stencil_reference(self.num_masks);
+                }
+            };
 
             render_pass.draw_indexed(0..6, 0, 0..1);
         }
@@ -1115,28 +1117,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         for draw in &mesh.draws {
             match &draw.draw_type {
                 DrawType::Color => {
-                    render_pass.set_pipeline(&self.pipelines.color.pipeline_for(
-                        self.num_masks,
-                        self.num_masks_active,
-                        self.test_stencil_mask,
-                        self.write_stencil_mask,
-                    ));
+                    render_pass.set_pipeline(&self.pipelines.color.pipeline_for(self.mask_state));
                 }
                 DrawType::Gradient { .. } => {
-                    render_pass.set_pipeline(&self.pipelines.gradient.pipeline_for(
-                        self.num_masks,
-                        self.num_masks_active,
-                        self.test_stencil_mask,
-                        self.write_stencil_mask,
-                    ));
+                    render_pass
+                        .set_pipeline(&self.pipelines.gradient.pipeline_for(self.mask_state));
                 }
                 DrawType::Bitmap { .. } => {
-                    render_pass.set_pipeline(&self.pipelines.bitmap.pipeline_for(
-                        self.num_masks,
-                        self.num_masks_active,
-                        self.test_stencil_mask,
-                        self.write_stencil_mask,
-                    ));
+                    render_pass.set_pipeline(&self.pipelines.bitmap.pipeline_for(self.mask_state));
                 }
             }
 
@@ -1144,11 +1132,17 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             render_pass.set_vertex_buffer(0, draw.vertex_buffer.slice(..));
             render_pass.set_index_buffer(draw.index_buffer.slice(..));
 
-            if self.num_masks_active < self.num_masks {
-                render_pass.set_stencil_reference(self.write_stencil_mask);
-            } else {
-                render_pass.set_stencil_reference(self.test_stencil_mask);
-            }
+            match self.mask_state {
+                MaskState::NoMask => (),
+                MaskState::DrawMaskStencil => {
+                    debug_assert!(self.num_masks > 0);
+                    render_pass.set_stencil_reference(self.num_masks - 1);
+                }
+                MaskState::DrawMaskedContent | MaskState::ClearMaskStencil => {
+                    debug_assert!(self.num_masks > 0);
+                    render_pass.set_stencil_reference(self.num_masks);
+                }
+            };
 
             render_pass.draw_indexed(0..draw.index_count, 0, 0..1);
         }
@@ -1254,21 +1248,22 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }),
         });
 
-        render_pass.set_pipeline(&self.pipelines.color.pipeline_for(
-            self.num_masks,
-            self.num_masks_active,
-            self.test_stencil_mask,
-            self.write_stencil_mask,
-        ));
+        render_pass.set_pipeline(&self.pipelines.color.pipeline_for(self.mask_state));
         render_pass.set_bind_group(0, &bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.quad_vbo.slice(..));
         render_pass.set_index_buffer(self.quad_ibo.slice(..));
 
-        if self.num_masks_active < self.num_masks {
-            render_pass.set_stencil_reference(self.write_stencil_mask);
-        } else {
-            render_pass.set_stencil_reference(self.test_stencil_mask);
-        }
+        match self.mask_state {
+            MaskState::NoMask => (),
+            MaskState::DrawMaskStencil => {
+                debug_assert!(self.num_masks > 0);
+                render_pass.set_stencil_reference(self.num_masks - 1);
+            }
+            MaskState::DrawMaskedContent | MaskState::ClearMaskStencil => {
+                debug_assert!(self.num_masks > 0);
+                render_pass.set_stencil_reference(self.num_masks);
+            }
+        };
 
         render_pass.draw_indexed(0..6, 0, 0..1);
     }
@@ -1362,69 +1357,31 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn push_mask(&mut self) {
-        // Desktop draws the masker to the stencil buffer, one bit per mask.
-        // Masks-within-masks are handled as a bitmask.
-        // This does unfortunately mean we are limited in the number of masks at once (8 bits).
-        if self.next_stencil_mask >= 0x100 {
-            // If we've reached the limit of masks, clear the stencil buffer and start over.
-            // But this may not be correct if there is still a mask active (mask-within-mask).
-            if self.test_stencil_mask != 0 {
-                log::warn!(
-                    "Too many masks active for stencil buffer; possibly incorrect rendering"
-                );
-            }
-            self.next_stencil_mask = 1;
-            if let Some((frame_output, encoder)) = &mut self.current_frame {
-                let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
-                    (&self.frame_buffer_view, Some(frame_output.view()))
-                } else {
-                    (frame_output.view(), None)
-                };
-                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                        attachment: color_attachment,
-                        resolve_target,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
-                            store: true,
-                        },
-                    }],
-                    depth_stencil_attachment: Some(
-                        wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                            attachment: &self.depth_texture_view,
-                            depth_ops: Some(wgpu::Operations {
-                                load: wgpu::LoadOp::Load,
-                                store: true,
-                            }),
-                            stencil_ops: Some(wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(self.test_stencil_mask),
-                                store: true,
-                            }),
-                        },
-                    ),
-                });
-            }
-        }
+        assert!(
+            self.mask_state == MaskState::NoMask || self.mask_state == MaskState::DrawMaskedContent
+        );
         self.num_masks += 1;
-        self.mask_stack
-            .push((self.write_stencil_mask, self.test_stencil_mask));
-        self.write_stencil_mask = self.next_stencil_mask;
-        self.test_stencil_mask |= self.next_stencil_mask;
-        self.next_stencil_mask <<= 1;
+        self.mask_state = MaskState::DrawMaskStencil;
     }
 
     fn activate_mask(&mut self) {
-        self.num_masks_active += 1;
+        assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskStencil);
+        self.mask_state = MaskState::DrawMaskedContent;
+    }
+
+    fn deactivate_mask(&mut self) {
+        assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskedContent);
+        self.mask_state = MaskState::ClearMaskStencil;
     }
 
     fn pop_mask(&mut self) {
-        if !self.mask_stack.is_empty() {
-            self.num_masks -= 1;
-            self.num_masks_active -= 1;
-            let (write, test) = self.mask_stack.pop().unwrap();
-            self.write_stencil_mask = write;
-            self.test_stencil_mask = test;
-        }
+        assert!(self.num_masks > 0 && self.mask_state == MaskState::ClearMaskStencil);
+        self.num_masks -= 1;
+        self.mask_state = if self.num_masks == 0 {
+            MaskState::NoMask
+        } else {
+            MaskState::DrawMaskedContent
+        };
     }
 }
 

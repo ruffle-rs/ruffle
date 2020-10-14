@@ -31,6 +31,7 @@ pub struct WebCanvasRenderBackend {
     viewport_height: u32,
     use_color_transform_hack: bool,
     pixelated_property_value: &'static str,
+    deactivating_mask: bool,
 }
 
 /// Canvas-drawable shape data extracted from an SWF file.
@@ -213,6 +214,7 @@ impl WebCanvasRenderBackend {
             viewport_width: 0,
             viewport_height: 0,
             use_color_transform_hack: is_firefox,
+            deactivating_mask: false,
 
             // For rendering non-smoothed bitmaps.
             // crisp-edges works in Firefox, pixelated works in Chrome (and others)?
@@ -551,6 +553,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.context.set_fill_style(&color.into());
         self.context
             .fill_rect(0.0, 0.0, width.into(), height.into());
+
+        self.deactivating_mask = false;
     }
 
     fn end_frame(&mut self) {
@@ -558,6 +562,10 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
+        if self.deactivating_mask {
+            return;
+        }
+
         self.set_transform(&transform.matrix);
         self.set_color_filter(transform);
         if let Some(bitmap) = self.bitmaps.get(bitmap.0) {
@@ -569,6 +577,10 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
+        if self.deactivating_mask {
+            return;
+        }
+
         self.set_transform(&transform.matrix);
         if let Some(shape) = self.shapes.get(shape.0) {
             for command in shape.0.iter() {
@@ -629,6 +641,10 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn draw_rect(&mut self, color: Color, matrix: &Matrix) {
+        if self.deactivating_mask {
+            return;
+        }
+
         self.set_transform(matrix);
         self.clear_color_filter();
 
@@ -685,7 +701,12 @@ impl RenderBackend for WebCanvasRenderBackend {
         // We render the maskee clips to the second render target.
         self.push_render_target();
     }
+    fn deactivate_mask(&mut self) {
+        self.deactivating_mask = true;
+    }
     fn pop_mask(&mut self) {
+        self.deactivating_mask = false;
+
         let (maskee_canvas, maskee_context) = self.pop_render_target();
         let (masker_canvas, _masker_context) = self.pop_render_target();
 
