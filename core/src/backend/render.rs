@@ -40,6 +40,7 @@ pub trait RenderBackend: Downcast {
     fn draw_letterbox(&mut self, letterbox: Letterbox);
     fn push_mask(&mut self);
     fn activate_mask(&mut self);
+    fn deactivate_mask(&mut self);
     fn pop_mask(&mut self);
 }
 impl_downcast!(RenderBackend);
@@ -143,6 +144,7 @@ impl RenderBackend for NullRenderer {
     fn draw_letterbox(&mut self, _letterbox: Letterbox) {}
     fn push_mask(&mut self) {}
     fn activate_mask(&mut self) {}
+    fn deactivate_mask(&mut self) {}
     fn pop_mask(&mut self) {}
 }
 

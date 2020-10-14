@@ -23,6 +23,14 @@ const GRADIENT_FRAGMENT_GLSL: &str = include_str!("../shaders/gradient.frag");
 const BITMAP_FRAGMENT_GLSL: &str = include_str!("../shaders/bitmap.frag");
 const NUM_VERTEX_ATTRIBUTES: u32 = 2;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MaskState {
+    NoMask,
+    DrawMaskStencil,
+    DrawMaskedContent,
+    ClearMaskStencil,
+}
+
 pub struct WebGlRenderBackend {
     /// WebGL1 context
     gl: Gl,
@@ -48,15 +56,11 @@ pub struct WebGlRenderBackend {
 
     quad_shape: ShapeHandle,
 
+    mask_state: MaskState,
     num_masks: u32,
-    num_masks_active: u32,
-    write_stencil_mask: u32,
-    test_stencil_mask: u32,
-    next_stencil_mask: u32,
-    mask_stack: Vec<(u32, u32)>,
+    mask_state_dirty: bool,
 
     active_program: *const ShaderProgram,
-    mask_state_dirty: bool,
     blend_func: (u32, u32),
     mult_color: Option<[f32; 4]>,
     add_color: Option<[f32; 4]>,
@@ -191,15 +195,12 @@ impl WebGlRenderBackend {
             viewport_width: 500.0,
             viewport_height: 500.0,
             view_matrix: [[0.0; 4]; 4],
+
+            mask_state: MaskState::NoMask,
             num_masks: 0,
-            num_masks_active: 0,
-            write_stencil_mask: 0,
-            test_stencil_mask: 0,
-            next_stencil_mask: 1,
-            mask_stack: vec![],
+            mask_state_dirty: true,
 
             active_program: std::ptr::null(),
-            mask_state_dirty: true,
             blend_func: (Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA),
             mult_color: None,
             add_color: None,
@@ -636,29 +637,31 @@ impl WebGlRenderBackend {
     fn set_stencil_state(&mut self) {
         // Set stencil state for masking, if necessary.
         if self.mask_state_dirty {
-            if self.num_masks > 0 {
-                self.gl.enable(Gl::STENCIL_TEST);
-                if self.num_masks_active < self.num_masks {
-                    self.gl.stencil_mask(self.write_stencil_mask);
+            match self.mask_state {
+                MaskState::NoMask => {
+                    self.gl.disable(Gl::STENCIL_TEST);
+                    self.gl.color_mask(true, true, true, true);
+                }
+                MaskState::DrawMaskStencil => {
+                    self.gl.enable(Gl::STENCIL_TEST);
                     self.gl
-                        .stencil_func(Gl::ALWAYS, self.write_stencil_mask as i32, 0xff);
-                    self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::REPLACE);
+                        .stencil_func(Gl::EQUAL, (self.num_masks - 1) as i32, 0xff);
+                    self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::INCR);
                     self.gl.color_mask(false, false, false, false);
-                } else {
-                    self.gl.stencil_mask(0xff);
-                    self.gl.stencil_func(
-                        Gl::EQUAL,
-                        self.test_stencil_mask as i32,
-                        self.test_stencil_mask,
-                    );
+                }
+                MaskState::DrawMaskedContent => {
+                    self.gl.enable(Gl::STENCIL_TEST);
+                    self.gl.stencil_func(Gl::EQUAL, self.num_masks as i32, 0xff);
                     self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::KEEP);
                     self.gl.color_mask(true, true, true, true);
                 }
-            } else {
-                self.gl.disable(Gl::STENCIL_TEST);
-                self.gl.color_mask(true, true, true, true);
+                MaskState::ClearMaskStencil => {
+                    self.gl.enable(Gl::STENCIL_TEST);
+                    self.gl.stencil_func(Gl::EQUAL, self.num_masks as i32, 0xff);
+                    self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::DECR);
+                    self.gl.color_mask(false, false, false, false);
+                }
             }
-            self.mask_state_dirty = false;
         }
     }
 
@@ -796,13 +799,9 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn begin_frame(&mut self, clear: Color) {
-        self.num_masks = 0;
-        self.num_masks_active = 0;
-        self.write_stencil_mask = 0;
-        self.test_stencil_mask = 0;
-        self.next_stencil_mask = 1;
-
         self.active_program = std::ptr::null();
+        self.mask_state = MaskState::NoMask;
+        self.num_masks = 0;
         self.mask_state_dirty = true;
 
         self.mult_color = None;
@@ -1212,48 +1211,35 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn push_mask(&mut self) {
-        // Desktop draws the masker to the stencil buffer, one bit per mask.
-        // Masks-within-masks are handled as a bitmask.
-        // This does unfortunately mean we are limited in the number of masks at once (usually 8 bits).
-        if self.next_stencil_mask >= 0x100 {
-            // If we've reached the limit of masks, clear the stencil buffer and start over.
-            // But this may not be correct if there is still a mask active (mask-within-mask).
-            if self.test_stencil_mask != 0 {
-                log::warn!(
-                    "Too many masks active for stencil buffer; possibly incorrect rendering"
-                );
-            }
-            self.next_stencil_mask = 1;
-            self.gl.stencil_mask(0xff);
-            self.gl.clear_stencil(self.test_stencil_mask as i32);
-            self.gl.clear(Gl::STENCIL_BUFFER_BIT);
-            self.gl.clear_stencil(0);
-        }
+        assert!(
+            self.mask_state == MaskState::NoMask || self.mask_state == MaskState::DrawMaskedContent
+        );
         self.num_masks += 1;
-        self.mask_stack
-            .push((self.write_stencil_mask, self.test_stencil_mask));
-        self.write_stencil_mask = self.next_stencil_mask;
-        self.test_stencil_mask |= self.next_stencil_mask;
-        self.next_stencil_mask <<= 1;
+        self.mask_state = MaskState::DrawMaskStencil;
         self.mask_state_dirty = true;
     }
 
     fn activate_mask(&mut self) {
-        self.num_masks_active += 1;
+        assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskStencil);
+        self.mask_state = MaskState::DrawMaskedContent;
+        self.mask_state_dirty = true;
+    }
+
+    fn deactivate_mask(&mut self) {
+        assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskedContent);
+        self.mask_state = MaskState::ClearMaskStencil;
         self.mask_state_dirty = true;
     }
 
     fn pop_mask(&mut self) {
-        if !self.mask_stack.is_empty() {
-            self.num_masks -= 1;
-            self.num_masks_active -= 1;
-            let (write, test) = self.mask_stack.pop().unwrap();
-            self.write_stencil_mask = write;
-            self.test_stencil_mask = test;
-            self.mask_state_dirty = true;
+        assert!(self.num_masks > 0 && self.mask_state == MaskState::ClearMaskStencil);
+        self.num_masks -= 1;
+        self.mask_state = if self.num_masks == 0 {
+            MaskState::NoMask
         } else {
-            log::warn!("Mask stack underflow\n");
-        }
+            MaskState::DrawMaskedContent
+        };
+        self.mask_state_dirty = true;
     }
 }
 

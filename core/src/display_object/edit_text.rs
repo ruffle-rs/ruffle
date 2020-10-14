@@ -1029,6 +1029,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             self.render_layout_box(context, layout_box);
         }
 
+        context.renderer.deactivate_mask();
+        context.renderer.draw_rect(
+            Color::from_rgb(0, 0xff),
+            &(context.transform_stack.transform().matrix * mask),
+        );
         context.renderer.pop_mask();
 
         context.transform_stack.pop();
