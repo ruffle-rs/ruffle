@@ -23,7 +23,6 @@ impl From<GraphicsBackend> for wgpu::BackendBit {
 
 #[derive(Copy, Clone, Clap, PartialEq, Debug)]
 pub enum PowerPreference {
-    Default = 0,
     Low = 1,
     High = 2,
 }
@@ -31,7 +30,6 @@ pub enum PowerPreference {
 impl From<PowerPreference> for wgpu::PowerPreference {
     fn from(preference: PowerPreference) -> Self {
         match preference {
-            PowerPreference::Default => wgpu::PowerPreference::default(),
             PowerPreference::Low => wgpu::PowerPreference::LowPower,
             PowerPreference::High => wgpu::PowerPreference::HighPerformance,
         }

@@ -78,15 +78,7 @@ struct Opt {
 
     /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
     /// whereas a low power usage tends prefer integrated GPUs.
-    /// Default will pick the best device depending on the status of your computer (ie, wall-power
-    /// may choose high, battery power may choose low)
-    #[clap(
-        long,
-        short,
-        case_insensitive = true,
-        default_value = "default",
-        arg_enum
-    )]
+    #[clap(long, short, case_insensitive = true, default_value = "high", arg_enum)]
     power: PowerPreference,
 
     /// Location to store a wgpu trace output
