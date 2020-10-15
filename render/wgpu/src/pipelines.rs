@@ -369,7 +369,7 @@ fn create_bitmap_pipeline(
                 &[wgpu::ColorStateDescriptor {
                     format: wgpu::TextureFormat::Bgra8Unorm,
                     color_blend: wgpu::BlendDescriptor {
-                        src_factor: wgpu::BlendFactor::SrcAlpha,
+                        src_factor: wgpu::BlendFactor::One,
                         dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                         operation: wgpu::BlendOperation::Add,
                     },
@@ -433,7 +433,7 @@ fn create_bitmap_pipeline(
                 &[wgpu::ColorStateDescriptor {
                     format: wgpu::TextureFormat::Bgra8Unorm,
                     color_blend: wgpu::BlendDescriptor {
-                        src_factor: wgpu::BlendFactor::SrcAlpha,
+                        src_factor: wgpu::BlendFactor::One,
                         dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                         operation: wgpu::BlendOperation::Add,
                     },
