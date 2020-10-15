@@ -10,6 +10,7 @@ use crate::backend::navigator::NullNavigatorBackend;
 use crate::backend::render::NullRenderer;
 use crate::backend::storage::MemoryStorageBackend;
 use crate::backend::ui::NullUiBackend;
+use crate::backend::video::NullVideoBackend;
 use crate::context::ActionQueue;
 use crate::display_object::{MovieClip, TDisplayObject};
 use crate::focus_tracker::FocusTracker;
@@ -59,6 +60,7 @@ where
             renderer: &mut NullRenderer::new(),
             locale: &mut NullLocaleBackend::new(),
             log: &mut NullLogBackend::new(),
+            video: &mut NullVideoBackend::new(),
             mouse_hovered_object: None,
             mouse_position: &(Twips::new(0), Twips::new(0)),
             drag_object: &mut None,
