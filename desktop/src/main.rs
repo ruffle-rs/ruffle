@@ -18,7 +18,9 @@ use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use clap::Clap;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
-use ruffle_core::{backend::audio::AudioBackend, config::Letterbox, Player};
+use ruffle_core::{
+    backend::audio::AudioBackend, backend::video::NullVideoBackend, config::Letterbox, Player,
+};
 use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -241,9 +243,10 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     )); //TODO: actually implement this backend type
     let storage = Box::new(storage::DiskStorageBackend::new());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
+    let video = Box::new(NullVideoBackend::new());
     let log = Box::new(ruffle_core::backend::log::NullLogBackend::new());
     let ui = Box::new(ui::DesktopUiBackend::new(window.clone()));
-    let player = Player::new(renderer, audio, navigator, storage, locale, log, ui)?;
+    let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
     {
         let mut player = player.lock().unwrap();
         player.set_root_movie(Arc::new(movie));
@@ -462,9 +465,10 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let navigator = Box::new(ruffle_core::backend::navigator::NullNavigatorBackend::new());
     let storage = Box::new(ruffle_core::backend::storage::MemoryStorageBackend::default());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
+    let video = Box::new(NullVideoBackend::new());
     let log = Box::new(ruffle_core::backend::log::NullLogBackend::new());
     let ui = Box::new(ruffle_core::backend::ui::NullUiBackend::new());
-    let player = Player::new(renderer, audio, navigator, storage, locale, log, ui)?;
+    let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
     player.lock().unwrap().set_is_playing(true);
 

@@ -13,6 +13,7 @@ use crate::backend::{
     render::RenderBackend,
     storage::StorageBackend,
     ui::{MouseCursor, UiBackend},
+    video::VideoBackend,
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
@@ -142,6 +143,7 @@ type Storage = Box<dyn StorageBackend>;
 type Locale = Box<dyn LocaleBackend>;
 type Log = Box<dyn LogBackend>;
 type Ui = Box<dyn UiBackend>;
+type Video = Box<dyn VideoBackend>;
 
 pub struct Player {
     /// The version of the player we're emulating.
@@ -170,6 +172,7 @@ pub struct Player {
     locale: Locale,
     log: Log,
     ui: Ui,
+    video: Video,
 
     transform_stack: TransformStack,
     view_matrix: Matrix,
@@ -231,12 +234,14 @@ pub struct Player {
 
 #[allow(clippy::too_many_arguments)]
 impl Player {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         renderer: Renderer,
         audio: Audio,
         navigator: Navigator,
         storage: Storage,
         locale: Locale,
+        video: Video,
         log: Log,
         ui: Ui,
     ) -> Result<Arc<Mutex<Self>>, Error> {
@@ -306,6 +311,7 @@ impl Player {
             locale,
             log,
             ui,
+            video,
             self_reference: None,
             system: SystemProperties::default(),
             instance_counter: 0,
@@ -1224,6 +1230,7 @@ impl Player {
             storage,
             locale,
             logging,
+            video,
             needs_render,
             max_execution_duration,
             current_frame,
@@ -1246,6 +1253,7 @@ impl Player {
             self.storage.deref_mut(),
             self.locale.deref_mut(),
             self.log.deref_mut(),
+            self.video.deref_mut(),
             &mut self.needs_render,
             self.max_execution_duration,
             &mut self.current_frame,
@@ -1295,6 +1303,7 @@ impl Player {
                 storage,
                 locale,
                 log: logging,
+                video,
                 shared_objects,
                 unbound_text_fields,
                 timers,

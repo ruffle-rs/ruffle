@@ -11,6 +11,7 @@ use ruffle_core::backend::{
     render::NullRenderer,
     storage::{MemoryStorageBackend, StorageBackend},
     ui::NullUiBackend,
+    video::NullVideoBackend,
 };
 use ruffle_core::context::UpdateContext;
 use ruffle_core::external::Value as ExternalValue;
@@ -780,6 +781,7 @@ fn run_swf(
         Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
         Box::new(MemoryStorageBackend::default()),
         Box::new(NullLocaleBackend::new()),
+        Box::new(NullVideoBackend::new()),
         Box::new(TestLogBackend::new(trace_output.clone())),
         Box::new(NullUiBackend::new()),
     )?;

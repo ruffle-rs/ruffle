@@ -7,6 +7,7 @@ use ruffle_core::backend::log::NullLogBackend;
 use ruffle_core::backend::navigator::NullNavigatorBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::ui::NullUiBackend;
+use ruffle_core::backend::video::NullVideoBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
@@ -108,6 +109,7 @@ fn take_screenshot(
         Box::new(NullNavigatorBackend::new()),
         Box::new(MemoryStorageBackend::default()),
         Box::new(NullLocaleBackend::new()),
+        Box::new(NullVideoBackend::new()),
         Box::new(NullLogBackend::new()),
         Box::new(NullUiBackend::new()),
     )?;
