@@ -26,7 +26,6 @@ use crate::utils::{
 };
 use enum_map::Enum;
 use ruffle_core::color_transform::ColorTransform;
-use std::mem::replace;
 use std::rc::Rc;
 
 type Error = Box<dyn std::error::Error>;
@@ -54,7 +53,6 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     frame_buffer_view: wgpu::TextureView,
     depth_texture_view: wgpu::TextureView,
     current_frame: Option<(T::Frame, wgpu::CommandEncoder)>,
-    register_encoder: wgpu::CommandEncoder,
     meshes: Vec<Mesh>,
     viewport_width: f32,
     viewport_height: f32,
@@ -215,11 +213,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
         });
 
-        let register_encoder_label = create_debug_label!("Register encoder");
-        let register_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: register_encoder_label.as_deref(),
-        });
-
         let depth_texture_view = depth_texture.create_view(&Default::default());
 
         let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&device);
@@ -237,7 +230,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             frame_buffer_view,
             depth_texture_view,
             current_frame: None,
-            register_encoder,
             meshes: Vec::new(),
             viewport_width,
             viewport_height,
@@ -1270,19 +1262,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn end_frame(&mut self) {
         if let Some((_frame, encoder)) = self.current_frame.take() {
-            let register_encoder_label = create_debug_label!("Register encoder");
-            let new_register_encoder =
-                self.device
-                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: register_encoder_label.as_deref(),
-                    });
-            let register_buffer =
-                replace(&mut self.register_encoder, new_register_encoder).finish();
-            self.target.submit(
-                &self.device,
-                &self.queue,
-                vec![register_buffer, encoder.finish()],
-            );
+            self.target
+                .submit(&self.device, &self.queue, vec![encoder.finish()]);
         }
     }
 
