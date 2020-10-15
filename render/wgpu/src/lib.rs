@@ -33,6 +33,7 @@ type Error = Box<dyn std::error::Error>;
 #[macro_use]
 mod utils;
 
+mod bitmaps;
 mod pipelines;
 mod shapes;
 pub mod target;
@@ -40,6 +41,7 @@ pub mod target;
 #[cfg(feature = "clap")]
 pub mod clap;
 
+use crate::bitmaps::BitmapSamplers;
 use ruffle_core::swf::{Matrix, Twips};
 use std::path::Path;
 pub use wgpu;
@@ -63,6 +65,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     quad_vbo: wgpu::Buffer,
     quad_ibo: wgpu::Buffer,
     quad_tex_transforms: wgpu::Buffer,
+    bitmap_samplers: BitmapSamplers,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
@@ -182,7 +185,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         // TODO: Allow this to be set from command line/settings file.
         let msaa_sample_count = 4;
 
-        let pipelines = Pipelines::new(&device, msaa_sample_count)?;
+        let bitmap_samplers = BitmapSamplers::new(&device);
+        let pipelines = Pipelines::new(&device, msaa_sample_count, bitmap_samplers.layout())?;
 
         let extent = wgpu::Extent3d {
             width: target.width(),
@@ -242,6 +246,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             quad_vbo,
             quad_ibo,
             quad_tex_transforms,
+            bitmap_samplers,
         })
     }
 
@@ -912,21 +917,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             );
 
             let texture_view = texture.texture.create_view(&Default::default());
-            let sampler_label = create_debug_label!("Bitmap {} sampler", bitmap.0);
-            let sampler = self.device.create_sampler(&wgpu::SamplerDescriptor {
-                label: sampler_label.as_deref(),
-                address_mode_u: wgpu::AddressMode::ClampToEdge,
-                address_mode_v: wgpu::AddressMode::ClampToEdge,
-                address_mode_w: wgpu::AddressMode::ClampToEdge,
-                mag_filter: wgpu::FilterMode::Linear,
-                min_filter: wgpu::FilterMode::Linear,
-                mipmap_filter: wgpu::FilterMode::Linear,
-                lod_min_clamp: 0.0,
-                lod_max_clamp: 100.0,
-                compare: None,
-                anisotropy_clamp: None,
-                border_color: None,
-            });
 
             let bind_group_label = create_debug_label!("Bitmap {} bind group", bitmap.0);
             let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -964,10 +954,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         binding: 3,
                         resource: wgpu::BindingResource::TextureView(&texture_view),
                     },
-                    wgpu::BindGroupEntry {
-                        binding: 4,
-                        resource: wgpu::BindingResource::Sampler(&sampler),
-                    },
                 ],
                 label: bind_group_label.as_deref(),
             });
@@ -1001,6 +987,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
             render_pass.set_pipeline(&self.pipelines.bitmap.pipeline_for(self.mask_state));
             render_pass.set_bind_group(0, &bind_group, &[]);
+            render_pass.set_bind_group(1, self.bitmap_samplers.get_bind_group(false, true), &[]);
             render_pass.set_vertex_buffer(0, self.quad_vbo.slice(..));
             render_pass.set_index_buffer(self.quad_ibo.slice(..));
 
@@ -1115,8 +1102,18 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     render_pass
                         .set_pipeline(&self.pipelines.gradient.pipeline_for(self.mask_state));
                 }
-                DrawType::Bitmap { .. } => {
+                DrawType::Bitmap {
+                    is_repeating,
+                    is_smoothed,
+                    ..
+                } => {
                     render_pass.set_pipeline(&self.pipelines.bitmap.pipeline_for(self.mask_state));
+                    render_pass.set_bind_group(
+                        1,
+                        self.bitmap_samplers
+                            .get_bind_group(*is_repeating, *is_smoothed),
+                        &[],
+                    );
                 }
             }
 

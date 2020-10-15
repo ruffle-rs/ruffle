@@ -22,7 +22,11 @@ impl ShapePipeline {
 }
 
 impl Pipelines {
-    pub fn new(device: &wgpu::Device, msaa_sample_count: u32) -> Result<Self, Error> {
+    pub fn new(
+        device: &wgpu::Device,
+        msaa_sample_count: u32,
+        sampler_layout: &wgpu::BindGroupLayout,
+    ) -> Result<Self, Error> {
         let color_vs =
             device.create_shader_module(wgpu::include_spirv!("../shaders/color.vert.spv"));
         let color_fs =
@@ -57,6 +61,7 @@ impl Pipelines {
                 &bitmap_fs,
                 msaa_sample_count,
                 &vertex_buffers_description,
+                sampler_layout,
             ),
             gradient: create_gradient_pipeline(
                 &device,
@@ -294,6 +299,7 @@ fn create_bitmap_pipeline(
     fragment_shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
+    sampler_layout: &wgpu::BindGroupLayout,
 ) -> ShapePipeline {
     let bind_layout_label = create_debug_label!("Bitmap shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -335,12 +341,6 @@ fn create_bitmap_pipeline(
                 },
                 count: None,
             },
-            wgpu::BindGroupLayoutEntry {
-                binding: 4,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::Sampler { comparison: false },
-                count: None,
-            },
         ],
         label: bind_layout_label.as_deref(),
     });
@@ -348,7 +348,7 @@ fn create_bitmap_pipeline(
     let pipeline_layout_label = create_debug_label!("Bitmap shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[&bind_layout],
+        bind_group_layouts: &[&bind_layout, sampler_layout],
         push_constant_ranges: &[],
     });
 

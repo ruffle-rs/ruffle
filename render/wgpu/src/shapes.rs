@@ -50,6 +50,8 @@ pub enum DrawType {
         texture_transforms: wgpu::Buffer,
         texture_view: wgpu::TextureView,
         id: CharacterId,
+        is_smoothed: bool,
+        is_repeating: bool,
     },
 }
 
@@ -231,35 +233,6 @@ impl IncompleteDrawType {
                     ),
                 );
 
-                let address_mode = if is_repeating {
-                    wgpu::AddressMode::Repeat
-                } else {
-                    wgpu::AddressMode::ClampToEdge
-                };
-
-                let filter = if is_smoothed {
-                    wgpu::FilterMode::Linear
-                } else {
-                    wgpu::FilterMode::Nearest
-                };
-
-                let sampler_label =
-                    create_debug_label!("Shape {} (bitmap) draw {} sampler", shape_id, draw_id);
-                let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-                    label: sampler_label.as_deref(),
-                    address_mode_u: address_mode,
-                    address_mode_v: address_mode,
-                    address_mode_w: address_mode,
-                    mag_filter: filter,
-                    min_filter: filter,
-                    mipmap_filter: filter,
-                    lod_min_clamp: 0.0,
-                    lod_max_clamp: 100.0,
-                    compare: None,
-                    anisotropy_clamp: None,
-                    border_color: None,
-                });
-
                 let bind_group_label =
                     create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -297,10 +270,6 @@ impl IncompleteDrawType {
                             binding: 3,
                             resource: wgpu::BindingResource::TextureView(&texture_view),
                         },
-                        wgpu::BindGroupEntry {
-                            binding: 4,
-                            resource: wgpu::BindingResource::Sampler(&sampler),
-                        },
                     ],
                     label: bind_group_label.as_deref(),
                 });
@@ -310,6 +279,8 @@ impl IncompleteDrawType {
                         texture_transforms: tex_transforms_ubo,
                         texture_view,
                         id,
+                        is_smoothed,
+                        is_repeating,
                     },
                     vertex_buffer,
                     index_buffer,
