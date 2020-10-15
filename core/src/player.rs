@@ -877,6 +877,10 @@ impl Player {
         &mut self.renderer
     }
 
+    pub fn destroy(self) -> Renderer {
+        self.renderer
+    }
+
     pub fn input(&self) -> &Input {
         &self.input
     }

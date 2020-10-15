@@ -26,7 +26,6 @@ use crate::utils::{
 };
 use enum_map::Enum;
 use ruffle_core::color_transform::ColorTransform;
-use std::rc::Rc;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -46,12 +45,35 @@ use ruffle_core::swf::{Matrix, Twips};
 use std::path::Path;
 pub use wgpu;
 
-pub struct WgpuRenderBackend<T: RenderTarget> {
-    device: Rc<wgpu::Device>,
-    queue: Rc<wgpu::Queue>,
-    target: T,
-    msaa_sample_count: u32,
+pub struct Descriptors {
+    pub device: wgpu::Device,
+    queue: wgpu::Queue,
     pipelines: Pipelines,
+    bitmap_samplers: BitmapSamplers,
+    msaa_sample_count: u32,
+}
+
+impl Descriptors {
+    pub fn new(device: wgpu::Device, queue: wgpu::Queue) -> Result<Self, Error> {
+        // TODO: Allow this to be set from command line/settings file.
+        let msaa_sample_count = 4;
+
+        let bitmap_samplers = BitmapSamplers::new(&device);
+        let pipelines = Pipelines::new(&device, msaa_sample_count, bitmap_samplers.layout())?;
+
+        Ok(Self {
+            device,
+            queue,
+            pipelines,
+            bitmap_samplers,
+            msaa_sample_count,
+        })
+    }
+}
+
+pub struct WgpuRenderBackend<T: RenderTarget> {
+    descriptors: Descriptors,
+    target: T,
     frame_buffer_view: wgpu::TextureView,
     depth_texture_view: wgpu::TextureView,
     current_frame: Option<(T::Frame, wgpu::CommandEncoder)>,
@@ -65,7 +87,6 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     quad_vbo: wgpu::Buffer,
     quad_ibo: wgpu::Buffer,
     quad_tex_transforms: wgpu::Buffer,
-    bitmap_samplers: BitmapSamplers,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
@@ -174,20 +195,15 @@ impl WgpuRenderBackend<SwapChainTarget> {
             },
             trace_path,
         ))?;
+        let descriptors = Descriptors::new(device, queue)?;
 
-        let target = SwapChainTarget::new(surface, size, &device);
-        Self::new(Rc::new(device), Rc::new(queue), target)
+        let target = SwapChainTarget::new(surface, size, &descriptors.device);
+        Self::new(descriptors, target)
     }
 }
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
-    pub fn new(device: Rc<wgpu::Device>, queue: Rc<wgpu::Queue>, target: T) -> Result<Self, Error> {
-        // TODO: Allow this to be set from command line/settings file.
-        let msaa_sample_count = 4;
-
-        let bitmap_samplers = BitmapSamplers::new(&device);
-        let pipelines = Pipelines::new(&device, msaa_sample_count, bitmap_samplers.layout())?;
-
+    pub fn new(descriptors: Descriptors, target: T) -> Result<Self, Error> {
         let extent = wgpu::Extent3d {
             width: target.width(),
             height: target.height(),
@@ -195,11 +211,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         };
 
         let frame_buffer_label = create_debug_label!("Framebuffer texture");
-        let frame_buffer = device.create_texture(&wgpu::TextureDescriptor {
+        let frame_buffer = descriptors.device.create_texture(&wgpu::TextureDescriptor {
             label: frame_buffer_label.as_deref(),
             size: extent,
             mip_level_count: 1,
-            sample_count: msaa_sample_count,
+            sample_count: descriptors.msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
             format: target.format(),
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
@@ -207,11 +223,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let frame_buffer_view = frame_buffer.create_view(&Default::default());
 
         let depth_label = create_debug_label!("Depth texture");
-        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+        let depth_texture = descriptors.device.create_texture(&wgpu::TextureDescriptor {
             label: depth_label.as_deref(),
             size: extent,
             mip_level_count: 1,
-            sample_count: msaa_sample_count,
+            sample_count: descriptors.msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Depth24PlusStencil8,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
@@ -219,18 +235,15 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let depth_texture_view = depth_texture.create_view(&Default::default());
 
-        let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&device);
+        let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&descriptors.device);
 
         let viewport_width = target.width() as f32;
         let viewport_height = target.height() as f32;
         let view_matrix = build_view_matrix(target.width(), target.height());
 
         Ok(Self {
-            device,
-            queue,
+            descriptors,
             target,
-            msaa_sample_count,
-            pipelines,
             frame_buffer_view,
             depth_texture_view,
             current_frame: None,
@@ -246,8 +259,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             quad_vbo,
             quad_ibo,
             quad_tex_transforms,
-            bitmap_samplers,
         })
+    }
+
+    pub fn descriptors(self) -> Descriptors {
+        self.descriptors
     }
 
     #[allow(clippy::cognitive_complexity)]
@@ -255,15 +271,18 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         use lyon::tessellation::{FillOptions, StrokeOptions};
 
         let transforms_label = create_debug_label!("Shape {} transforms ubo", shape.id);
-        let transforms_ubo = self.device.create_buffer(&wgpu::BufferDescriptor {
-            label: transforms_label.as_deref(),
-            size: std::mem::size_of::<Transforms>() as u64,
-            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-            mapped_at_creation: false,
-        });
+        let transforms_ubo = self
+            .descriptors
+            .device
+            .create_buffer(&wgpu::BufferDescriptor {
+                label: transforms_label.as_deref(),
+                size: std::mem::size_of::<Transforms>() as u64,
+                usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+                mapped_at_creation: false,
+            });
 
         let colors_ubo = create_buffer_with_data(
-            &self.device,
+            &self.descriptors.device,
             bytemuck::cast_slice(&[ColorAdjustments {
                 mult_color: [1.0, 1.0, 1.0, 1.0],
                 add_color: [0.0, 0.0, 0.0, 0.0],
@@ -354,10 +373,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             IncompleteDrawType::Color,
                             &mut draws,
                             &mut lyon_mesh,
-                            &self.device,
+                            &self.descriptors.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.pipelines,
+                            &self.descriptors.pipelines,
                         );
 
                         let mut buffers_builder = BuffersBuilder::new(
@@ -388,10 +407,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             },
                             &mut draws,
                             &mut lyon_mesh,
-                            &self.device,
+                            &self.descriptors.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.pipelines,
+                            &self.descriptors.pipelines,
                         );
                     }
                     FillStyle::RadialGradient(gradient) => {
@@ -400,10 +419,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             IncompleteDrawType::Color,
                             &mut draws,
                             &mut lyon_mesh,
-                            &self.device,
+                            &self.descriptors.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.pipelines,
+                            &self.descriptors.pipelines,
                         );
 
                         let mut buffers_builder = BuffersBuilder::new(
@@ -434,10 +453,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             },
                             &mut draws,
                             &mut lyon_mesh,
-                            &self.device,
+                            &self.descriptors.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.pipelines,
+                            &self.descriptors.pipelines,
                         );
                     }
                     FillStyle::FocalGradient {
@@ -449,10 +468,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             IncompleteDrawType::Color,
                             &mut draws,
                             &mut lyon_mesh,
-                            &self.device,
+                            &self.descriptors.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.pipelines,
+                            &self.descriptors.pipelines,
                         );
 
                         let mut buffers_builder = BuffersBuilder::new(
@@ -483,10 +502,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             },
                             &mut draws,
                             &mut lyon_mesh,
-                            &self.device,
+                            &self.descriptors.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.pipelines,
+                            &self.descriptors.pipelines,
                         );
                     }
                     FillStyle::Bitmap {
@@ -500,10 +519,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             IncompleteDrawType::Color,
                             &mut draws,
                             &mut lyon_mesh,
-                            &self.device,
+                            &self.descriptors.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.pipelines,
+                            &self.descriptors.pipelines,
                         );
 
                         let mut buffers_builder = BuffersBuilder::new(
@@ -551,10 +570,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             },
                             &mut draws,
                             &mut lyon_mesh,
-                            &self.device,
+                            &self.descriptors.device,
                             &transforms_ubo,
                             &colors_ubo,
-                            &self.pipelines,
+                            &self.descriptors.pipelines,
                         );
                     }
                 },
@@ -620,10 +639,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             IncompleteDrawType::Color,
             &mut draws,
             &mut lyon_mesh,
-            &self.device,
+            &self.descriptors.device,
             &transforms_ubo,
             &colors_ubo,
-            &self.pipelines,
+            &self.descriptors.pipelines,
         );
 
         Mesh {
@@ -664,17 +683,20 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         };
 
         let texture_label = create_debug_label!("{} Texture {}", debug_str, id);
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: texture_label.as_deref(),
-            size: extent,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
-        });
+        let texture = self
+            .descriptors
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: texture_label.as_deref(),
+                size: extent,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8Unorm,
+                usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+            });
 
-        self.queue.write_texture(
+        self.descriptors.queue.write_texture(
             wgpu::TextureCopyView {
                 texture: &texture,
                 mip_level: 0,
@@ -711,7 +733,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     }
 
     pub fn device(&self) -> &wgpu::Device {
-        &self.device
+        &self.descriptors.device
     }
 }
 
@@ -721,38 +743,44 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let width = std::cmp::max(width, 1);
         let height = std::cmp::max(height, 1);
 
-        self.target.resize(&self.device, width, height);
+        self.target.resize(&self.descriptors.device, width, height);
 
         let label = create_debug_label!("Framebuffer texture");
-        let frame_buffer = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: label.as_deref(),
-            size: wgpu::Extent3d {
-                width,
-                height,
-                depth: 1,
-            },
-            mip_level_count: 1,
-            sample_count: self.msaa_sample_count,
-            dimension: wgpu::TextureDimension::D2,
-            format: self.target.format(),
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-        });
+        let frame_buffer = self
+            .descriptors
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: label.as_deref(),
+                size: wgpu::Extent3d {
+                    width,
+                    height,
+                    depth: 1,
+                },
+                mip_level_count: 1,
+                sample_count: self.descriptors.msaa_sample_count,
+                dimension: wgpu::TextureDimension::D2,
+                format: self.target.format(),
+                usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            });
         self.frame_buffer_view = frame_buffer.create_view(&Default::default());
 
         let label = create_debug_label!("Depth texture");
-        let depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: label.as_deref(),
-            size: wgpu::Extent3d {
-                width,
-                height,
-                depth: 1,
-            },
-            mip_level_count: 1,
-            sample_count: self.msaa_sample_count,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth24PlusStencil8,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-        });
+        let depth_texture = self
+            .descriptors
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: label.as_deref(),
+                size: wgpu::Extent3d {
+                    width,
+                    height,
+                    depth: 1,
+                },
+                mip_level_count: 1,
+                sample_count: self.descriptors.msaa_sample_count,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Depth24PlusStencil8,
+                usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            });
         self.depth_texture_view = depth_texture.create_view(&Default::default());
 
         self.viewport_width = width as f32;
@@ -818,10 +846,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 let label = create_debug_label!("Frame encoder");
                 Some((
                     frame,
-                    self.device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    self.descriptors.device.create_command_encoder(
+                        &wgpu::CommandEncoderDescriptor {
                             label: label.as_deref(),
-                        }),
+                        },
+                    ),
                 ))
             }
             Err(e) => {
@@ -834,7 +863,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.num_masks = 0;
 
         if let Some((frame_output, encoder)) = &mut self.current_frame {
-            let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
+            let (color_attachment, resolve_target) = if self.descriptors.msaa_sample_count >= 2 {
                 (&self.frame_buffer_view, Some(frame_output.view()))
             } else {
                 (frame_output.view(), None)
@@ -900,7 +929,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             ];
 
             let transforms_ubo = create_buffer_with_data(
-                &self.device,
+                &self.descriptors.device,
                 bytemuck::cast_slice(&[Transforms {
                     view_matrix: self.view_matrix,
                     world_matrix,
@@ -910,7 +939,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             );
 
             let colors_ubo = create_buffer_with_data(
-                &self.device,
+                &self.descriptors.device,
                 bytemuck::cast_slice(&[ColorAdjustments::from(transform.color_transform)]),
                 wgpu::BufferUsage::UNIFORM,
                 create_debug_label!("Bitmap {} colors transfer buffer", bitmap.0),
@@ -919,46 +948,51 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             let texture_view = texture.texture.create_view(&Default::default());
 
             let bind_group_label = create_debug_label!("Bitmap {} bind group", bitmap.0);
-            let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &self.pipelines.bitmap.bind_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::Buffer {
-                            buffer: &transforms_ubo,
-                            offset: 0,
-                            size: wgpu::BufferSize::new(std::mem::size_of::<Transforms>() as u64),
-                        },
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Buffer {
-                            buffer: &self.quad_tex_transforms,
-                            offset: 0,
-                            size: wgpu::BufferSize::new(
-                                std::mem::size_of::<TextureTransforms>() as u64
-                            ),
-                        },
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::Buffer {
-                            buffer: &colors_ubo,
-                            offset: 0,
-                            size: wgpu::BufferSize::new(
-                                std::mem::size_of::<ColorAdjustments>() as u64
-                            ),
-                        },
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 3,
-                        resource: wgpu::BindingResource::TextureView(&texture_view),
-                    },
-                ],
-                label: bind_group_label.as_deref(),
-            });
+            let bind_group =
+                self.descriptors
+                    .device
+                    .create_bind_group(&wgpu::BindGroupDescriptor {
+                        layout: &self.descriptors.pipelines.bitmap.bind_layout,
+                        entries: &[
+                            wgpu::BindGroupEntry {
+                                binding: 0,
+                                resource: wgpu::BindingResource::Buffer {
+                                    buffer: &transforms_ubo,
+                                    offset: 0,
+                                    size: wgpu::BufferSize::new(
+                                        std::mem::size_of::<Transforms>() as u64
+                                    ),
+                                },
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 1,
+                                resource: wgpu::BindingResource::Buffer {
+                                    buffer: &self.quad_tex_transforms,
+                                    offset: 0,
+                                    size: wgpu::BufferSize::new(
+                                        std::mem::size_of::<TextureTransforms>() as u64,
+                                    ),
+                                },
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 2,
+                                resource: wgpu::BindingResource::Buffer {
+                                    buffer: &colors_ubo,
+                                    offset: 0,
+                                    size: wgpu::BufferSize::new(
+                                        std::mem::size_of::<ColorAdjustments>() as u64,
+                                    ),
+                                },
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 3,
+                                resource: wgpu::BindingResource::TextureView(&texture_view),
+                            },
+                        ],
+                        label: bind_group_label.as_deref(),
+                    });
 
-            let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
+            let (color_attachment, resolve_target) = if self.descriptors.msaa_sample_count >= 2 {
                 (&self.frame_buffer_view, Some(frame_output.view()))
             } else {
                 (frame_output.view(), None)
@@ -985,9 +1019,19 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 }),
             });
 
-            render_pass.set_pipeline(&self.pipelines.bitmap.pipeline_for(self.mask_state));
+            render_pass.set_pipeline(
+                &self
+                    .descriptors
+                    .pipelines
+                    .bitmap
+                    .pipeline_for(self.mask_state),
+            );
             render_pass.set_bind_group(0, &bind_group, &[]);
-            render_pass.set_bind_group(1, self.bitmap_samplers.get_bind_group(false, true), &[]);
+            render_pass.set_bind_group(
+                1,
+                self.descriptors.bitmap_samplers.get_bind_group(false, true),
+                &[],
+            );
             render_pass.set_vertex_buffer(0, self.quad_vbo.slice(..));
             render_pass.set_index_buffer(self.quad_ibo.slice(..));
 
@@ -1031,7 +1075,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         if transform.color_transform != mesh.colors_last {
             let colors_temp = create_buffer_with_data(
-                &self.device,
+                &self.descriptors.device,
                 bytemuck::cast_slice(&[ColorAdjustments::from(transform.color_transform)]),
                 wgpu::BufferUsage::COPY_SRC,
                 create_debug_label!("Shape {} colors transfer buffer", mesh.shape_id),
@@ -1049,7 +1093,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         }
 
         let transforms_temp = create_buffer_with_data(
-            &self.device,
+            &self.descriptors.device,
             bytemuck::cast_slice(&[Transforms {
                 view_matrix: self.view_matrix,
                 world_matrix,
@@ -1066,7 +1110,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             std::mem::size_of::<Transforms>() as u64,
         );
 
-        let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
+        let (color_attachment, resolve_target) = if self.descriptors.msaa_sample_count >= 2 {
             (&self.frame_buffer_view, Some(frame_output.view()))
         } else {
             (frame_output.view(), None)
@@ -1096,21 +1140,39 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         for draw in &mesh.draws {
             match &draw.draw_type {
                 DrawType::Color => {
-                    render_pass.set_pipeline(&self.pipelines.color.pipeline_for(self.mask_state));
+                    render_pass.set_pipeline(
+                        &self
+                            .descriptors
+                            .pipelines
+                            .color
+                            .pipeline_for(self.mask_state),
+                    );
                 }
                 DrawType::Gradient { .. } => {
-                    render_pass
-                        .set_pipeline(&self.pipelines.gradient.pipeline_for(self.mask_state));
+                    render_pass.set_pipeline(
+                        &self
+                            .descriptors
+                            .pipelines
+                            .gradient
+                            .pipeline_for(self.mask_state),
+                    );
                 }
                 DrawType::Bitmap {
                     is_repeating,
                     is_smoothed,
                     ..
                 } => {
-                    render_pass.set_pipeline(&self.pipelines.bitmap.pipeline_for(self.mask_state));
+                    render_pass.set_pipeline(
+                        &self
+                            .descriptors
+                            .pipelines
+                            .bitmap
+                            .pipeline_for(self.mask_state),
+                    );
                     render_pass.set_bind_group(
                         1,
-                        self.bitmap_samplers
+                        self.descriptors
+                            .bitmap_samplers
                             .get_bind_group(*is_repeating, *is_smoothed),
                         &[],
                     );
@@ -1167,7 +1229,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let add_color = [0.0, 0.0, 0.0, 0.0];
 
         let transforms_ubo = create_buffer_with_data(
-            &self.device,
+            &self.descriptors.device,
             bytemuck::cast_slice(&[Transforms {
                 view_matrix: self.view_matrix,
                 world_matrix,
@@ -1177,7 +1239,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         let colors_ubo = create_buffer_with_data(
-            &self.device,
+            &self.descriptors.device,
             bytemuck::cast_slice(&[ColorAdjustments {
                 mult_color,
                 add_color,
@@ -1187,30 +1249,35 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         let bind_group_label = create_debug_label!("Rectangle bind group");
-        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &self.pipelines.color.bind_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &transforms_ubo,
-                        offset: 0,
-                        size: wgpu::BufferSize::new(std::mem::size_of::<Transforms>() as u64),
+        let bind_group = self
+            .descriptors
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &self.descriptors.pipelines.color.bind_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &transforms_ubo,
+                            offset: 0,
+                            size: wgpu::BufferSize::new(std::mem::size_of::<Transforms>() as u64),
+                        },
                     },
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &colors_ubo,
-                        offset: 0,
-                        size: wgpu::BufferSize::new(std::mem::size_of::<ColorAdjustments>() as u64),
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &colors_ubo,
+                            offset: 0,
+                            size: wgpu::BufferSize::new(
+                                std::mem::size_of::<ColorAdjustments>() as u64
+                            ),
+                        },
                     },
-                },
-            ],
-            label: bind_group_label.as_deref(),
-        });
+                ],
+                label: bind_group_label.as_deref(),
+            });
 
-        let (color_attachment, resolve_target) = if self.msaa_sample_count >= 2 {
+        let (color_attachment, resolve_target) = if self.descriptors.msaa_sample_count >= 2 {
             (&self.frame_buffer_view, Some(frame_output.view()))
         } else {
             (frame_output.view(), None)
@@ -1237,7 +1304,13 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }),
         });
 
-        render_pass.set_pipeline(&self.pipelines.color.pipeline_for(self.mask_state));
+        render_pass.set_pipeline(
+            &self
+                .descriptors
+                .pipelines
+                .color
+                .pipeline_for(self.mask_state),
+        );
         render_pass.set_bind_group(0, &bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.quad_vbo.slice(..));
         render_pass.set_index_buffer(self.quad_ibo.slice(..));
@@ -1259,8 +1332,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn end_frame(&mut self) {
         if let Some((_frame, encoder)) = self.current_frame.take() {
-            self.target
-                .submit(&self.device, &self.queue, vec![encoder.finish()]);
+            self.target.submit(
+                &self.descriptors.device,
+                &self.descriptors.queue,
+                vec![encoder.finish()],
+            );
         }
     }
 
