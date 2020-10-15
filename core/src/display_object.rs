@@ -25,6 +25,7 @@ mod graphic;
 mod morph_shape;
 mod movie_clip;
 mod text;
+mod video;
 
 use crate::avm1::activation::Activation;
 use crate::backend::ui::MouseCursor;
@@ -39,6 +40,7 @@ pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
 pub use text::Text;
+use video::Video;
 
 #[derive(Clone, Debug)]
 pub struct DisplayObjectBase<'gc> {
@@ -479,6 +481,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         MorphShape(MorphShape<'gc>),
         MovieClip(MovieClip<'gc>),
         Text(Text<'gc>),
+        Video(Video<'gc>),
     }
 )]
 pub trait TDisplayObject<'gc>:
