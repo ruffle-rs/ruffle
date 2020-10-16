@@ -2615,7 +2615,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_define_video_stream(&mut self) -> Result<Tag<'a>> {
+    pub fn read_define_video_stream(&mut self) -> Result<Tag<'a>> {
         let id = self.read_character_id()?;
         let num_frames = self.read_u16()?;
         let width = self.read_u16()?;
@@ -2649,7 +2649,7 @@ impl<'a> Reader<'a> {
         }))
     }
 
-    fn read_video_frame(&mut self) -> Result<Tag<'a>> {
+    pub fn read_video_frame(&mut self) -> Result<Tag<'a>> {
         let stream_id = self.read_character_id()?;
         let frame_num = self.read_u16()?;
         let data = self.read_slice_to_end();
