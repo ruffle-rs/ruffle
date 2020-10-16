@@ -16,6 +16,7 @@ use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{ChildContainer, TDisplayObjectContainer};
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
+    Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -32,7 +33,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::read::SwfReadExt;
-use swf::{FillStyle, FrameLabelData, LineStyle};
+use swf::{FillStyle, FrameLabelData, LineStyle, Tag};
 
 type FrameNumber = u16;
 
@@ -288,6 +289,10 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .write(context.gc_context)
                 .define_sound(context, reader),
+            TagCode::DefineVideoStream => self
+                .0
+                .write(context.gc_context)
+                .define_video_stream(context, reader),
             TagCode::DefineSprite => self.0.write(context.gc_context).define_sprite(
                 context,
                 reader,
@@ -2606,6 +2611,27 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 sound.id
             );
         }
+        Ok(())
+    }
+
+    #[inline]
+    fn define_video_stream(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream,
+    ) -> DecodeResult {
+        match reader.read_define_video_stream()? {
+            Tag::DefineVideoStream(streamdef) => {
+                let id = streamdef.id;
+                let video = Video::from_swf_tag(self.movie(), streamdef, context.gc_context);
+                context
+                    .library
+                    .library_for_movie_mut(self.movie())
+                    .register_character(id, Character::Video(video));
+            }
+            _ => unreachable!(),
+        };
+
         Ok(())
     }
 
