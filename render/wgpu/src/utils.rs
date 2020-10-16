@@ -169,15 +169,6 @@ pub fn swf_bitmap_to_gl_matrix(
     ]
 }
 
-pub fn build_view_matrix(viewport_width: u32, viewport_height: u32) -> [[f32; 4]; 4] {
-    [
-        [1.0 / (viewport_width as f32 / 2.0), 0.0, 0.0, 0.0],
-        [0.0, -1.0 / (viewport_height as f32 / 2.0), 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [-1.0, 1.0, 0.0, 1.0],
-    ]
-}
-
 /// Map for SWF gradient spread mode to the uniform value used by the gradient shader.
 pub fn gradient_spread_mode_index(spread: GradientSpread) -> i32 {
     match spread {

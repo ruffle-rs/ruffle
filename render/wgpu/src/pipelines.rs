@@ -26,6 +26,7 @@ impl Pipelines {
         device: &wgpu::Device,
         msaa_sample_count: u32,
         sampler_layout: &wgpu::BindGroupLayout,
+        globals_layout: &wgpu::BindGroupLayout,
     ) -> Result<Self, Error> {
         let color_vs =
             device.create_shader_module(wgpu::include_spirv!("../shaders/color.vert.spv"));
@@ -54,6 +55,7 @@ impl Pipelines {
                 &color_fs,
                 msaa_sample_count,
                 &vertex_buffers_description,
+                globals_layout,
             ),
             bitmap: create_bitmap_pipeline(
                 &device,
@@ -62,6 +64,7 @@ impl Pipelines {
                 msaa_sample_count,
                 &vertex_buffers_description,
                 sampler_layout,
+                globals_layout,
             ),
             gradient: create_gradient_pipeline(
                 &device,
@@ -69,6 +72,7 @@ impl Pipelines {
                 &gradient_fs,
                 msaa_sample_count,
                 &vertex_buffers_description,
+                globals_layout,
             ),
         })
     }
@@ -124,6 +128,7 @@ fn create_color_pipelines(
     fragment_shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
+    globals_layout: &wgpu::BindGroupLayout,
 ) -> ShapePipeline {
     let bind_layout_label = create_debug_label!("Color shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -153,7 +158,7 @@ fn create_color_pipelines(
     let pipeline_layout_label = create_debug_label!("Color shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[&bind_layout],
+        bind_group_layouts: &[globals_layout, &bind_layout],
         push_constant_ranges: &[],
     });
 
@@ -300,6 +305,7 @@ fn create_bitmap_pipeline(
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
     sampler_layout: &wgpu::BindGroupLayout,
+    globals_layout: &wgpu::BindGroupLayout,
 ) -> ShapePipeline {
     let bind_layout_label = create_debug_label!("Bitmap shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -348,7 +354,7 @@ fn create_bitmap_pipeline(
     let pipeline_layout_label = create_debug_label!("Bitmap shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[&bind_layout, sampler_layout],
+        bind_group_layouts: &[globals_layout, &bind_layout, sampler_layout],
         push_constant_ranges: &[],
     });
 
@@ -494,6 +500,7 @@ fn create_gradient_pipeline(
     fragment_shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
+    globals_layout: &wgpu::BindGroupLayout,
 ) -> ShapePipeline {
     let bind_layout_label = create_debug_label!("Gradient shape bind group");
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -542,7 +549,7 @@ fn create_gradient_pipeline(
     let pipeline_layout_label = create_debug_label!("Gradient shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[&bind_layout],
+        bind_group_layouts: &[globals_layout, &bind_layout],
         push_constant_ranges: &[],
     });
 

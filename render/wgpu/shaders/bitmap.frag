@@ -1,12 +1,12 @@
 #version 450
 
-layout(set = 0, binding = 2) uniform Colors {
+layout(set = 1, binding = 2) uniform Colors {
     vec4 mult_color;
     vec4 add_color;
 };
 
-layout(set = 0, binding = 3) uniform texture2D t_color;
-layout(set = 1, binding = 0) uniform sampler s_color;
+layout(set = 1, binding = 3) uniform texture2D t_color;
+layout(set = 2, binding = 0) uniform sampler s_color;
 
 layout(location=0) in vec2 frag_uv;
 

@@ -1,11 +1,14 @@
 #version 450
 
-layout(set = 0, binding = 0) uniform Transforms {
+layout(set = 0, binding = 0) uniform Globals {
     mat4 view_matrix;
+};
+
+layout(set = 1, binding = 0) uniform Transforms {
     mat4 world_matrix;
 };
 
-layout(set = 0, binding = 1) uniform Colors {
+layout(set = 1, binding = 1) uniform Colors {
     vec4 mult_color;
     vec4 add_color;
 };
