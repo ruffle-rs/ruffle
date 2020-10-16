@@ -5,8 +5,10 @@ use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
-use gc_arena::{Collect, Gc, GcCell};
-use swf::CharacterId;
+use gc_arena::{Collect, GcCell, MutationContext};
+use std::borrow::Borrow;
+use std::sync::Arc;
+use swf::{CharacterId, DefineVideoStream};
 
 /// A Video display object is a high-level interface to a video player.
 ///
@@ -22,30 +24,55 @@ pub struct Video<'gc>(GcCell<'gc, VideoData<'gc>>);
 #[collect(no_drop)]
 pub struct VideoData<'gc> {
     base: DisplayObjectBase<'gc>,
-    static_data: Gc<'gc, VideoStatic>,
+    source_stream: GcCell<'gc, VideoSource>,
 }
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
-pub struct VideoStatic {
-    movie: SwfMovie,
-    id: CharacterId,
-    width: Twips,
-    height: Twips,
+pub enum VideoSource {
+    SWF {
+        movie: Arc<SwfMovie>,
+        streamdef: DefineVideoStream,
+    },
+}
+
+impl<'gc> Video<'gc> {
+    /// Construct a Video object that is tied to a SWF file's video stream.
+    pub fn from_swf_tag(
+        movie: Arc<SwfMovie>,
+        streamdef: DefineVideoStream,
+        mc: MutationContext<'gc, '_>,
+    ) -> Self {
+        let source_stream = GcCell::allocate(mc, VideoSource::SWF { movie, streamdef });
+
+        Video(GcCell::allocate(
+            mc,
+            VideoData {
+                base: Default::default(),
+                source_stream,
+            },
+        ))
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     impl_display_object!(base);
 
     fn id(&self) -> CharacterId {
-        self.0.read().static_data.id
+        match (*self.0.read().source_stream.read()).borrow() {
+            VideoSource::SWF { streamdef, .. } => streamdef.id,
+        }
     }
 
     fn self_bounds(&self) -> BoundingBox {
         let mut bounding_box = BoundingBox::default();
 
-        bounding_box.set_width(self.0.read().static_data.width);
-        bounding_box.set_height(self.0.read().static_data.height);
+        match (*self.0.read().source_stream.read()).borrow() {
+            VideoSource::SWF { streamdef, .. } => {
+                bounding_box.set_width(Twips::from_pixels(streamdef.width as f64));
+                bounding_box.set_height(Twips::from_pixels(streamdef.height as f64));
+            }
+        }
 
         bounding_box
     }

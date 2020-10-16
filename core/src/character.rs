@@ -1,5 +1,7 @@
 use crate::backend::audio::SoundHandle;
-use crate::display_object::{Bitmap, Button, EditText, Graphic, MorphShape, MovieClip, Text};
+use crate::display_object::{
+    Bitmap, Button, EditText, Graphic, MorphShape, MovieClip, Text, Video,
+};
 use crate::font::Font;
 
 #[derive(Clone)]
@@ -13,6 +15,7 @@ pub enum Character<'gc> {
     MorphShape(MorphShape<'gc>),
     Text(Text<'gc>),
     Sound(SoundHandle),
+    Video(Video<'gc>),
 }
 
 unsafe impl<'gc> gc_arena::Collect for Character<'gc> {
@@ -28,6 +31,7 @@ unsafe impl<'gc> gc_arena::Collect for Character<'gc> {
             Character::MorphShape(c) => c.trace(cc),
             Character::Text(c) => c.trace(cc),
             Character::Sound(c) => c.trace(cc),
+            Character::Video(c) => c.trace(cc),
         }
     }
 }

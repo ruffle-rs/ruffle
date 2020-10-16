@@ -40,7 +40,7 @@ pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
 pub use text::Text;
-use video::Video;
+pub use video::Video;
 
 #[derive(Clone, Debug)]
 pub struct DisplayObjectBase<'gc> {
