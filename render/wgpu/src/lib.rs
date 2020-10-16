@@ -20,9 +20,8 @@ use crate::pipelines::Pipelines;
 use crate::shapes::{Draw, DrawType, GradientUniforms, IncompleteDrawType, Mesh};
 use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
 use crate::utils::{
-    build_view_matrix, create_buffer_with_data, format_list, get_backend_names,
-    gradient_spread_mode_index, ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix,
-    swf_to_gl_matrix,
+    create_buffer_with_data, format_list, get_backend_names, gradient_spread_mode_index,
+    ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix, swf_to_gl_matrix,
 };
 use enum_map::Enum;
 use ruffle_core::color_transform::ColorTransform;
@@ -33,6 +32,7 @@ type Error = Box<dyn std::error::Error>;
 mod utils;
 
 mod bitmaps;
+mod globals;
 mod pipelines;
 mod shapes;
 pub mod target;
@@ -41,6 +41,7 @@ pub mod target;
 pub mod clap;
 
 use crate::bitmaps::BitmapSamplers;
+use crate::globals::Globals;
 use ruffle_core::swf::{Matrix, Twips};
 use std::path::Path;
 pub use wgpu;
@@ -48,6 +49,7 @@ pub use wgpu;
 pub struct Descriptors {
     pub device: wgpu::Device,
     queue: wgpu::Queue,
+    globals: Globals,
     pipelines: Pipelines,
     bitmap_samplers: BitmapSamplers,
     msaa_sample_count: u32,
@@ -59,11 +61,18 @@ impl Descriptors {
         let msaa_sample_count = 4;
 
         let bitmap_samplers = BitmapSamplers::new(&device);
-        let pipelines = Pipelines::new(&device, msaa_sample_count, bitmap_samplers.layout())?;
+        let globals = Globals::new(&device);
+        let pipelines = Pipelines::new(
+            &device,
+            msaa_sample_count,
+            bitmap_samplers.layout(),
+            globals.layout(),
+        )?;
 
         Ok(Self {
             device,
             queue,
+            globals,
             pipelines,
             bitmap_samplers,
             msaa_sample_count,
@@ -80,7 +89,6 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     meshes: Vec<Mesh>,
     viewport_width: f32,
     viewport_height: f32,
-    view_matrix: [[f32; 4]; 4],
     textures: Vec<(swf::CharacterId, Texture)>,
     mask_state: MaskState,
     num_masks: u32,
@@ -100,7 +108,6 @@ pub enum MaskState {
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 struct Transforms {
-    view_matrix: [[f32; 4]; 4],
     world_matrix: [[f32; 4]; 4],
 }
 
@@ -203,7 +210,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
 }
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
-    pub fn new(descriptors: Descriptors, target: T) -> Result<Self, Error> {
+    pub fn new(mut descriptors: Descriptors, target: T) -> Result<Self, Error> {
         let extent = wgpu::Extent3d {
             width: target.width(),
             height: target.height(),
@@ -239,7 +246,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let viewport_width = target.width() as f32;
         let viewport_height = target.height() as f32;
-        let view_matrix = build_view_matrix(target.width(), target.height());
+
+        descriptors
+            .globals
+            .set_resolution(target.width(), target.height());
 
         Ok(Self {
             descriptors,
@@ -250,7 +260,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             meshes: Vec::new(),
             viewport_width,
             viewport_height,
-            view_matrix,
             textures: Vec::new(),
 
             num_masks: 0,
@@ -785,7 +794,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         self.viewport_width = width as f32;
         self.viewport_height = height as f32;
-        self.view_matrix = build_view_matrix(width, height);
+        self.descriptors.globals.set_resolution(width, height);
     }
 
     fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
@@ -894,6 +903,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     }),
                 }),
             });
+            self.descriptors
+                .globals
+                .update_uniform(&self.descriptors.device, encoder);
         }
     }
 
@@ -930,10 +942,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
             let transforms_ubo = create_buffer_with_data(
                 &self.descriptors.device,
-                bytemuck::cast_slice(&[Transforms {
-                    view_matrix: self.view_matrix,
-                    world_matrix,
-                }]),
+                bytemuck::cast_slice(&[Transforms { world_matrix }]),
                 wgpu::BufferUsage::UNIFORM,
                 create_debug_label!("Bitmap {} transforms transfer buffer", bitmap.0),
             );
@@ -1026,9 +1035,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     .bitmap
                     .pipeline_for(self.mask_state),
             );
-            render_pass.set_bind_group(0, &bind_group, &[]);
+            render_pass.set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+            render_pass.set_bind_group(1, &bind_group, &[]);
             render_pass.set_bind_group(
-                1,
+                2,
                 self.descriptors.bitmap_samplers.get_bind_group(false, true),
                 &[],
             );
@@ -1094,10 +1104,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let transforms_temp = create_buffer_with_data(
             &self.descriptors.device,
-            bytemuck::cast_slice(&[Transforms {
-                view_matrix: self.view_matrix,
-                world_matrix,
-            }]),
+            bytemuck::cast_slice(&[Transforms { world_matrix }]),
             wgpu::BufferUsage::COPY_SRC,
             create_debug_label!("Shape {} transforms transfer buffer", mesh.shape_id),
         );
@@ -1170,7 +1177,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             .pipeline_for(self.mask_state),
                     );
                     render_pass.set_bind_group(
-                        1,
+                        2,
                         self.descriptors
                             .bitmap_samplers
                             .get_bind_group(*is_repeating, *is_smoothed),
@@ -1179,7 +1186,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 }
             }
 
-            render_pass.set_bind_group(0, &draw.bind_group, &[]);
+            render_pass.set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+            render_pass.set_bind_group(1, &draw.bind_group, &[]);
             render_pass.set_vertex_buffer(0, draw.vertex_buffer.slice(..));
             render_pass.set_index_buffer(draw.index_buffer.slice(..));
 
@@ -1230,10 +1238,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let transforms_ubo = create_buffer_with_data(
             &self.descriptors.device,
-            bytemuck::cast_slice(&[Transforms {
-                view_matrix: self.view_matrix,
-                world_matrix,
-            }]),
+            bytemuck::cast_slice(&[Transforms { world_matrix }]),
             wgpu::BufferUsage::UNIFORM,
             create_debug_label!("Rectangle transfer buffer"),
         );
@@ -1311,7 +1316,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 .color
                 .pipeline_for(self.mask_state),
         );
-        render_pass.set_bind_group(0, &bind_group, &[]);
+        render_pass.set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+        render_pass.set_bind_group(1, &bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.quad_vbo.slice(..));
         render_pass.set_index_buffer(self.quad_ibo.slice(..));
 
