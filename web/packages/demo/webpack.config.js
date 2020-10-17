@@ -19,6 +19,9 @@ module.exports = (env, argv) => {
             filename: "index.js",
         },
         mode: mode,
+        experiments: {
+            syncWebAssembly: true,
+        },
         plugins: [
             new CleanWebpackPlugin(),
             new CopyWebpackPlugin({
