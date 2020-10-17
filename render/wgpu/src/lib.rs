@@ -961,7 +961,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 self.descriptors
                     .device
                     .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.descriptors.pipelines.bitmap.bind_layout,
+                        layout: &self.descriptors.pipelines.bitmap_layout,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -1032,7 +1032,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 &self
                     .descriptors
                     .pipelines
-                    .bitmap
+                    .bitmap_pipelines
                     .pipeline_for(self.mask_state),
             );
             render_pass.set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
@@ -1151,7 +1151,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         &self
                             .descriptors
                             .pipelines
-                            .color
+                            .color_pipelines
                             .pipeline_for(self.mask_state),
                     );
                 }
@@ -1160,7 +1160,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         &self
                             .descriptors
                             .pipelines
-                            .gradient
+                            .gradient_pipelines
                             .pipeline_for(self.mask_state),
                     );
                 }
@@ -1173,7 +1173,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         &self
                             .descriptors
                             .pipelines
-                            .bitmap
+                            .bitmap_pipelines
                             .pipeline_for(self.mask_state),
                     );
                     render_pass.set_bind_group(
@@ -1258,7 +1258,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &self.descriptors.pipelines.color.bind_layout,
+                layout: &self.descriptors.pipelines.color_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
@@ -1313,7 +1313,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self
                 .descriptors
                 .pipelines
-                .color
+                .color_pipelines
                 .pipeline_for(self.mask_state),
         );
         render_pass.set_bind_group(0, self.descriptors.globals.bind_group(), &[]);

@@ -99,7 +99,7 @@ impl IncompleteDrawType {
                 let bind_group_label =
                     create_debug_label!("Shape {} (color) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &pipelines.color.bind_layout,
+                    layout: &pipelines.color_layout,
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: 0,
@@ -160,7 +160,7 @@ impl IncompleteDrawType {
                 let bind_group_label =
                     create_debug_label!("Shape {} (gradient) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &pipelines.gradient.bind_layout,
+                    layout: &pipelines.gradient_layout,
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: 0,
@@ -236,7 +236,7 @@ impl IncompleteDrawType {
                 let bind_group_label =
                     create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &pipelines.bitmap.bind_layout,
+                    layout: &pipelines.bitmap_layout,
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: 0,
