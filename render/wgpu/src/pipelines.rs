@@ -5,14 +5,16 @@ use wgpu::vertex_attr_array;
 #[derive(Debug)]
 pub struct ShapePipeline {
     pub mask_pipelines: EnumMap<MaskState, wgpu::RenderPipeline>,
-    pub bind_layout: wgpu::BindGroupLayout,
 }
 
 #[derive(Debug)]
 pub struct Pipelines {
-    pub color: ShapePipeline,
-    pub bitmap: ShapePipeline,
-    pub gradient: ShapePipeline,
+    pub color_pipelines: ShapePipeline,
+    pub color_layout: wgpu::BindGroupLayout,
+    pub bitmap_pipelines: ShapePipeline,
+    pub bitmap_layout: wgpu::BindGroupLayout,
+    pub gradient_pipelines: ShapePipeline,
+    pub gradient_layout: wgpu::BindGroupLayout,
 }
 
 impl ShapePipeline {
@@ -48,32 +50,159 @@ impl Pipelines {
             ],
         }];
 
+        let color_bind_layout_label = create_debug_label!("Color shape bind group");
+        let color_bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::UniformBuffer {
+                        dynamic: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::UniformBuffer {
+                        dynamic: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
+            label: color_bind_layout_label.as_deref(),
+        });
+
+        let color_pipelines = create_color_pipelines(
+            &device,
+            &color_vs,
+            &color_fs,
+            msaa_sample_count,
+            &vertex_buffers_description,
+            globals_layout,
+            &color_bind_layout,
+        );
+
+        let bitmap_bind_layout_label = create_debug_label!("Bitmap shape bind group");
+        let bitmap_bind_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::UniformBuffer {
+                            dynamic: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::UniformBuffer {
+                            dynamic: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::UniformBuffer {
+                            dynamic: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::D2,
+                        },
+                        count: None,
+                    },
+                ],
+                label: bitmap_bind_layout_label.as_deref(),
+            });
+
+        let bitmap_pipelines = create_bitmap_pipeline(
+            &device,
+            &texture_vs,
+            &bitmap_fs,
+            msaa_sample_count,
+            &vertex_buffers_description,
+            sampler_layout,
+            globals_layout,
+            &bitmap_bind_layout,
+        );
+
+        let gradient_bind_layout_label = create_debug_label!("Gradient shape bind group");
+        let gradient_bind_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::UniformBuffer {
+                            dynamic: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::UniformBuffer {
+                            dynamic: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::UniformBuffer {
+                            dynamic: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::StorageBuffer {
+                            dynamic: false,
+                            min_binding_size: None,
+                            readonly: true,
+                        },
+                        count: None,
+                    },
+                ],
+                label: gradient_bind_layout_label.as_deref(),
+            });
+
+        let gradient_pipelines = create_gradient_pipeline(
+            &device,
+            &texture_vs,
+            &gradient_fs,
+            msaa_sample_count,
+            &vertex_buffers_description,
+            globals_layout,
+            &gradient_bind_layout,
+        );
+
         Ok(Self {
-            color: create_color_pipelines(
-                &device,
-                &color_vs,
-                &color_fs,
-                msaa_sample_count,
-                &vertex_buffers_description,
-                globals_layout,
-            ),
-            bitmap: create_bitmap_pipeline(
-                &device,
-                &texture_vs,
-                &bitmap_fs,
-                msaa_sample_count,
-                &vertex_buffers_description,
-                sampler_layout,
-                globals_layout,
-            ),
-            gradient: create_gradient_pipeline(
-                &device,
-                &texture_vs,
-                &gradient_fs,
-                msaa_sample_count,
-                &vertex_buffers_description,
-                globals_layout,
-            ),
+            color_pipelines,
+            color_layout: color_bind_layout,
+            bitmap_pipelines,
+            bitmap_layout: bitmap_bind_layout,
+            gradient_pipelines,
+            gradient_layout: gradient_bind_layout,
         })
     }
 }
@@ -129,36 +258,12 @@ fn create_color_pipelines(
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
     globals_layout: &wgpu::BindGroupLayout,
+    color_bind_layout: &wgpu::BindGroupLayout,
 ) -> ShapePipeline {
-    let bind_layout_label = create_debug_label!("Color shape bind group");
-    let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer {
-                    dynamic: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer {
-                    dynamic: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-        ],
-        label: bind_layout_label.as_deref(),
-    });
-
     let pipeline_layout_label = create_debug_label!("Color shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[globals_layout, &bind_layout],
+        bind_group_layouts: &[globals_layout, &color_bind_layout],
         push_constant_ranges: &[],
     });
 
@@ -292,12 +397,10 @@ fn create_color_pipelines(
         },
     };
 
-    ShapePipeline {
-        mask_pipelines,
-        bind_layout,
-    }
+    ShapePipeline { mask_pipelines }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn create_bitmap_pipeline(
     device: &wgpu::Device,
     vertex_shader: &wgpu::ShaderModule,
@@ -306,55 +409,12 @@ fn create_bitmap_pipeline(
     vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
     sampler_layout: &wgpu::BindGroupLayout,
     globals_layout: &wgpu::BindGroupLayout,
+    bitmap_bind_layout: &wgpu::BindGroupLayout,
 ) -> ShapePipeline {
-    let bind_layout_label = create_debug_label!("Bitmap shape bind group");
-    let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer {
-                    dynamic: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer {
-                    dynamic: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 2,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::UniformBuffer {
-                    dynamic: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 3,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::SampledTexture {
-                    multisampled: false,
-                    component_type: wgpu::TextureComponentType::Float,
-                    dimension: wgpu::TextureViewDimension::D2,
-                },
-                count: None,
-            },
-        ],
-        label: bind_layout_label.as_deref(),
-    });
-
     let pipeline_layout_label = create_debug_label!("Bitmap shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[globals_layout, &bind_layout, sampler_layout],
+        bind_group_layouts: &[globals_layout, &bitmap_bind_layout, sampler_layout],
         push_constant_ranges: &[],
     });
 
@@ -488,10 +548,7 @@ fn create_bitmap_pipeline(
         }
     };
 
-    ShapePipeline {
-        mask_pipelines,
-        bind_layout,
-    }
+    ShapePipeline { mask_pipelines }
 }
 
 fn create_gradient_pipeline(
@@ -501,55 +558,12 @@ fn create_gradient_pipeline(
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferDescriptor<'_>],
     globals_layout: &wgpu::BindGroupLayout,
+    gradient_bind_layout: &wgpu::BindGroupLayout,
 ) -> ShapePipeline {
-    let bind_layout_label = create_debug_label!("Gradient shape bind group");
-    let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer {
-                    dynamic: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer {
-                    dynamic: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 2,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::UniformBuffer {
-                    dynamic: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 3,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::StorageBuffer {
-                    dynamic: false,
-                    min_binding_size: None,
-                    readonly: true,
-                },
-                count: None,
-            },
-        ],
-        label: bind_layout_label.as_deref(),
-    });
-
     let pipeline_layout_label = create_debug_label!("Gradient shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[globals_layout, &bind_layout],
+        bind_group_layouts: &[globals_layout, &gradient_bind_layout],
         push_constant_ranges: &[],
     });
 
@@ -684,10 +698,7 @@ fn create_gradient_pipeline(
         }
     };
 
-    ShapePipeline {
-        mask_pipelines,
-        bind_layout,
-    }
+    ShapePipeline { mask_pipelines }
 }
 
 fn mask_render_state(state: MaskState) -> (wgpu::StencilStateDescriptor, wgpu::ColorWrite) {
