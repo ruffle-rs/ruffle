@@ -1,14 +1,16 @@
 //! Video player display object
 
 use crate::bounding_box::BoundingBox;
+use crate::context::UpdateContext;
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::types::{Degrees, Percent};
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
+use std::collections::BTreeMap;
 use std::sync::Arc;
-use swf::{CharacterId, DefineVideoStream};
+use swf::{CharacterId, DefineVideoStream, VideoFrame};
 
 /// A Video display object is a high-level interface to a video player.
 ///
@@ -31,8 +33,17 @@ pub struct VideoData<'gc> {
 #[collect(require_static)]
 pub enum VideoSource {
     SWF {
+        /// The movie that defined this video stream.
         movie: Arc<SwfMovie>,
+
+        /// The video stream definition.
         streamdef: DefineVideoStream,
+
+        /// The H.263 bitstream indexed by video frame ID.
+        ///
+        /// Each frame consists of a start and end parameter which can be used
+        /// to reconstruct a reference to the embedded bitstream.
+        frames: BTreeMap<u16, (usize, usize)>,
     },
 }
 
@@ -43,7 +54,14 @@ impl<'gc> Video<'gc> {
         streamdef: DefineVideoStream,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        let source_stream = GcCell::allocate(mc, VideoSource::SWF { movie, streamdef });
+        let source_stream = GcCell::allocate(
+            mc,
+            VideoSource::SWF {
+                movie,
+                streamdef,
+                frames: BTreeMap::new(),
+            },
+        );
 
         Video(GcCell::allocate(
             mc,
@@ -52,6 +70,34 @@ impl<'gc> Video<'gc> {
                 source_stream,
             },
         ))
+    }
+
+    /// Preload frame data from an SWF.
+    ///
+    /// This function yields an error if this video player is not playing an
+    /// embedded SWF video.
+    pub fn preload_swf_frame(&mut self, tag: VideoFrame, context: &mut UpdateContext<'_, 'gc, '_>) {
+        match (*self
+            .0
+            .write(context.gc_context)
+            .source_stream
+            .write(context.gc_context))
+        .borrow_mut()
+        {
+            VideoSource::SWF {
+                movie,
+                streamdef: _streamdef,
+                frames,
+            } => {
+                let subslice = SwfSlice::from(movie.clone()).to_unbounded_subslice(tag.data);
+
+                if let Some(subslice) = subslice {
+                    frames.insert(tag.frame_num, (subslice.start, subslice.end));
+                } else {
+                    log::warn!("Invalid bitstream subslice on frame {}", tag.frame_num);
+                }
+            }
+        }
     }
 }
 
