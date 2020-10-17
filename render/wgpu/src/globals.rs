@@ -69,7 +69,7 @@ impl Globals {
     }
 
     pub fn set_resolution(&mut self, viewport_width: u32, viewport_height: u32) {
-        if viewport_width != self.viewport_width && viewport_height != self.viewport_height {
+        if viewport_width != self.viewport_width || viewport_height != self.viewport_height {
             self.viewport_width = viewport_width;
             self.viewport_height = viewport_height;
             self.dirty = true;
