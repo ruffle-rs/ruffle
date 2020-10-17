@@ -24,9 +24,11 @@ module.exports = (env, argv) => {
             path: path.resolve(__dirname, "dist"),
             filename: "ruffle.js",
             chunkFilename: "core.ruffle.[contenthash].js",
-            jsonpFunction: "RufflePlayerLoader",
         },
         mode: mode,
+        experiments: {
+            syncWebAssembly: true,
+        },
         plugins: [
             new CleanWebpackPlugin(),
             new WasmPackPlugin({

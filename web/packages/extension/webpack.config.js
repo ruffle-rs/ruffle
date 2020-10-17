@@ -23,9 +23,11 @@ module.exports = (env, argv) => {
             path: path.resolve(__dirname, "build/dist"),
             filename: "[name].js",
             chunkFilename: "core.ruffle.js",
-            jsonpFunction: "RufflePlayerExtensionLoader",
         },
         mode: mode,
+        experiments: {
+            syncWebAssembly: true,
+        },
         plugins: [
             new CleanWebpackPlugin(),
             new CopyPlugin({
