@@ -1,11 +1,13 @@
 #version 450
 
-layout(set = 1, binding = 2) uniform Colors {
+// Set 1: shape
+layout(set = 1, binding = 1) uniform Colors {
     vec4 mult_color;
     vec4 add_color;
 };
 
-layout(std430, set = 1, binding = 3) buffer Gradient {
+// Set 2: gradient
+layout(std430, set = 2, binding = 1) buffer Gradient {
     vec4 u_colors[16];
     float u_ratios[16];
     int u_gradient_type;

@@ -313,8 +313,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             draws: &mut Vec<Draw>,
             lyon_mesh: &mut VertexBuffers<GPUVertex, u16>,
             device: &wgpu::Device,
-            transforms_ubo: &wgpu::Buffer,
-            colors_ubo: &wgpu::Buffer,
             pipelines: &Pipelines,
         ) {
             if lyon_mesh.vertices.is_empty() || lyon_mesh.indices.len() < 3 {
@@ -339,8 +337,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
             draws.push(draw.build(
                 device,
-                transforms_ubo,
-                colors_ubo,
                 vbo,
                 ibo,
                 lyon_mesh.indices.len() as u32,
@@ -383,8 +379,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             &mut draws,
                             &mut lyon_mesh,
                             &self.descriptors.device,
-                            &transforms_ubo,
-                            &colors_ubo,
                             &self.descriptors.pipelines,
                         );
 
@@ -417,8 +411,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             &mut draws,
                             &mut lyon_mesh,
                             &self.descriptors.device,
-                            &transforms_ubo,
-                            &colors_ubo,
                             &self.descriptors.pipelines,
                         );
                     }
@@ -429,8 +421,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             &mut draws,
                             &mut lyon_mesh,
                             &self.descriptors.device,
-                            &transforms_ubo,
-                            &colors_ubo,
                             &self.descriptors.pipelines,
                         );
 
@@ -463,8 +453,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             &mut draws,
                             &mut lyon_mesh,
                             &self.descriptors.device,
-                            &transforms_ubo,
-                            &colors_ubo,
                             &self.descriptors.pipelines,
                         );
                     }
@@ -478,8 +466,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             &mut draws,
                             &mut lyon_mesh,
                             &self.descriptors.device,
-                            &transforms_ubo,
-                            &colors_ubo,
                             &self.descriptors.pipelines,
                         );
 
@@ -512,8 +498,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             &mut draws,
                             &mut lyon_mesh,
                             &self.descriptors.device,
-                            &transforms_ubo,
-                            &colors_ubo,
                             &self.descriptors.pipelines,
                         );
                     }
@@ -529,8 +513,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             &mut draws,
                             &mut lyon_mesh,
                             &self.descriptors.device,
-                            &transforms_ubo,
-                            &colors_ubo,
                             &self.descriptors.pipelines,
                         );
 
@@ -580,8 +562,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             &mut draws,
                             &mut lyon_mesh,
                             &self.descriptors.device,
-                            &transforms_ubo,
-                            &colors_ubo,
                             &self.descriptors.pipelines,
                         );
                     }
@@ -649,10 +629,37 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             &mut draws,
             &mut lyon_mesh,
             &self.descriptors.device,
-            &transforms_ubo,
-            &colors_ubo,
             &self.descriptors.pipelines,
         );
+
+        let bind_group_label = create_debug_label!("Shape {} bindgroup", shape.id);
+        let bind_group = self
+            .descriptors
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &self.descriptors.pipelines.mesh_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &transforms_ubo,
+                            offset: 0,
+                            size: wgpu::BufferSize::new(std::mem::size_of::<Transforms>() as u64),
+                        },
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &colors_ubo,
+                            offset: 0,
+                            size: wgpu::BufferSize::new(
+                                std::mem::size_of::<ColorAdjustments>() as u64
+                            ),
+                        },
+                    },
+                ],
+                label: bind_group_label.as_deref(),
+            });
 
         Mesh {
             draws,
@@ -660,6 +667,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             colors_buffer: colors_ubo,
             colors_last: ColorTransform::default(),
             shape_id: shape.id,
+            bind_group,
         }
     }
 
@@ -956,12 +964,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
             let texture_view = texture.texture.create_view(&Default::default());
 
-            let bind_group_label = create_debug_label!("Bitmap {} bind group", bitmap.0);
-            let bind_group =
+            let mesh_bind_group_label = create_debug_label!("Bitmap {} mesh bind group", bitmap.0);
+            let mesh_bind_group =
                 self.descriptors
                     .device
                     .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.descriptors.pipelines.bitmap_layout,
+                        layout: &self.descriptors.pipelines.mesh_layout,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -976,6 +984,27 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             wgpu::BindGroupEntry {
                                 binding: 1,
                                 resource: wgpu::BindingResource::Buffer {
+                                    buffer: &colors_ubo,
+                                    offset: 0,
+                                    size: wgpu::BufferSize::new(
+                                        std::mem::size_of::<ColorAdjustments>() as u64,
+                                    ),
+                                },
+                            },
+                        ],
+                        label: mesh_bind_group_label.as_deref(),
+                    });
+
+            let bitmap_bind_group_label = create_debug_label!("Bitmap {} bind group", bitmap.0);
+            let bitmap_bind_group =
+                self.descriptors
+                    .device
+                    .create_bind_group(&wgpu::BindGroupDescriptor {
+                        layout: &self.descriptors.pipelines.bitmap_layout,
+                        entries: &[
+                            wgpu::BindGroupEntry {
+                                binding: 0,
+                                resource: wgpu::BindingResource::Buffer {
                                     buffer: &self.quad_tex_transforms,
                                     offset: 0,
                                     size: wgpu::BufferSize::new(
@@ -984,21 +1013,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                                 },
                             },
                             wgpu::BindGroupEntry {
-                                binding: 2,
-                                resource: wgpu::BindingResource::Buffer {
-                                    buffer: &colors_ubo,
-                                    offset: 0,
-                                    size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<ColorAdjustments>() as u64,
-                                    ),
-                                },
-                            },
-                            wgpu::BindGroupEntry {
-                                binding: 3,
+                                binding: 1,
                                 resource: wgpu::BindingResource::TextureView(&texture_view),
                             },
                         ],
-                        label: bind_group_label.as_deref(),
+                        label: bitmap_bind_group_label.as_deref(),
                     });
 
             let (color_attachment, resolve_target) = if self.descriptors.msaa_sample_count >= 2 {
@@ -1036,9 +1055,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     .pipeline_for(self.mask_state),
             );
             render_pass.set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
-            render_pass.set_bind_group(1, &bind_group, &[]);
+            render_pass.set_bind_group(1, &mesh_bind_group, &[]);
+            render_pass.set_bind_group(2, &bitmap_bind_group, &[]);
             render_pass.set_bind_group(
-                2,
+                3,
                 self.descriptors.bitmap_samplers.get_bind_group(false, true),
                 &[],
             );
@@ -1144,6 +1164,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }),
         });
 
+        render_pass.set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+        render_pass.set_bind_group(1, &mesh.bind_group, &[]);
+
         for draw in &mesh.draws {
             match &draw.draw_type {
                 DrawType::Color => {
@@ -1155,7 +1178,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             .pipeline_for(self.mask_state),
                     );
                 }
-                DrawType::Gradient { .. } => {
+                DrawType::Gradient { bind_group, .. } => {
                     render_pass.set_pipeline(
                         &self
                             .descriptors
@@ -1163,10 +1186,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             .gradient_pipelines
                             .pipeline_for(self.mask_state),
                     );
+                    render_pass.set_bind_group(2, bind_group, &[]);
                 }
                 DrawType::Bitmap {
                     is_repeating,
                     is_smoothed,
+                    bind_group,
                     ..
                 } => {
                     render_pass.set_pipeline(
@@ -1176,8 +1201,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             .bitmap_pipelines
                             .pipeline_for(self.mask_state),
                     );
+                    render_pass.set_bind_group(2, bind_group, &[]);
                     render_pass.set_bind_group(
-                        2,
+                        3,
                         self.descriptors
                             .bitmap_samplers
                             .get_bind_group(*is_repeating, *is_smoothed),
@@ -1186,8 +1212,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 }
             }
 
-            render_pass.set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
-            render_pass.set_bind_group(1, &draw.bind_group, &[]);
             render_pass.set_vertex_buffer(0, draw.vertex_buffer.slice(..));
             render_pass.set_index_buffer(draw.index_buffer.slice(..));
 
@@ -1258,7 +1282,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &self.descriptors.pipelines.color_layout,
+                layout: &self.descriptors.pipelines.mesh_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
