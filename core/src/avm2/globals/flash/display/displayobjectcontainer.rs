@@ -54,6 +54,31 @@ pub fn get_child_at<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObjectContainer.getChildByName`
+pub fn get_child_by_name<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let name = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+        let child = dobj.get_child_by_name(&name, false).ok_or_else(|| {
+            format!(
+                "RangeError: Display object container has no child with name {}",
+                name
+            )
+        })?;
+
+        return Ok(child.object2());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -72,6 +97,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "getChildAt"),
         Method::from_builtin(get_child_at),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "getChildByName"),
+        Method::from_builtin(get_child_by_name),
     ));
 
     class
