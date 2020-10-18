@@ -41,7 +41,7 @@ pub fn get_child_at<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        let child = dobj.get_child_by_id(id).ok_or_else(|| {
+        let child = dobj.get_child_by_id(id + 1).ok_or_else(|| {
             format!(
                 "RangeError: Display object container has no child with id {}",
                 id
