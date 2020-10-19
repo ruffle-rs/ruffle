@@ -1,3 +1,4 @@
+use downcast_rs::Downcast;
 use generational_arena::{Arena, Index};
 
 pub mod decoders;
@@ -14,7 +15,7 @@ pub type SoundInstanceHandle = Index;
 
 type Error = Box<dyn std::error::Error>;
 
-pub trait AudioBackend {
+pub trait AudioBackend: Downcast {
     fn play(&mut self);
     fn pause(&mut self);
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error>;
@@ -87,6 +88,8 @@ pub trait AudioBackend {
     /// implementing it.
     fn set_frame_rate(&mut self, _frame_rate: f64) {}
 }
+
+impl_downcast!(AudioBackend);
 
 /// Audio backend that ignores all audio.
 pub struct NullAudioBackend {
