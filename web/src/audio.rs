@@ -146,6 +146,11 @@ impl WebAudioBackend {
         })
     }
 
+    /// Returns the JavaScript AudioContext.
+    pub fn audio_context(&self) -> &AudioContext {
+        &self.context
+    }
+
     fn start_sound_internal(
         &mut self,
         handle: SoundHandle,

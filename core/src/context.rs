@@ -59,7 +59,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub swf: &'a Arc<SwfMovie>,
 
     /// The audio backend, used by display objects and AVM to play audio.
-    pub audio: &'a mut (dyn AudioBackend + 'a),
+    pub audio: &'a mut dyn AudioBackend,
 
     /// The navigator backend, used by the AVM to make HTTP requests and visit webpages.
     pub navigator: &'a mut (dyn NavigatorBackend + 'a),
