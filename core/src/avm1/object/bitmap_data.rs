@@ -114,9 +114,7 @@ impl fmt::Debug for BitmapDataObject<'_> {
 }
 
 impl<'gc> BitmapDataObject<'gc> {
-    add_field_accessors!(
-        [set_transparency, get_transparency, transparency, bool],
-    );
+    add_field_accessors!([set_transparency, get_transparency, transparency, bool],);
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
         BitmapDataObject(GcCell::allocate(
@@ -130,6 +128,12 @@ impl<'gc> BitmapDataObject<'gc> {
                 disposed: false,
             },
         ))
+    }
+
+    pub fn get_pixels_rgba(&self) -> Vec<u8> {
+        self.0.read().pixels.iter().flat_map(|p| {
+            vec![p.get_red(), p.get_green(), p.get_blue(), p.get_alpha()]
+        }).collect()
     }
 
     pub fn get_disposed(&self) -> bool {
@@ -176,43 +180,57 @@ impl<'gc> BitmapDataObject<'gc> {
             .copied()
     }
 
-    pub fn get_pixel32(&self, x: u32, y: u32) -> Option<Color> {
-        self.get_pixel_raw(x, y).map(|f| f.to_un_multiplied_alpha())
+    pub fn get_pixel32(&self, x: i32, y: i32) -> Color {
+        self.get_pixel_raw(x as u32, y as u32)
+            .map(|f| f.to_un_multiplied_alpha())
+            .unwrap_or(0.into())
     }
 
     pub fn get_pixel(&self, x: i32, y: i32) -> i32 {
         if !self.is_point_in_bounds(x, y) {
             0
         } else {
-            self.get_pixel32(x as u32, y as u32).map(|p| p.with_alpha(0x0)).unwrap_or(0.into()).into()
+            self.get_pixel32(x, y).with_alpha(0x0).into()
         }
     }
 
-    fn set_pixel32_raw(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: Color) {
+    //TODO: private?
+    pub fn set_pixel32_raw(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        x: u32,
+        y: u32,
+        color: Color,
+    ) {
         let width = self.get_width();
         //TODO: bounds check
         self.0.write(gc_context).pixels[(x + y * width) as usize] = color;
     }
 
-    pub fn set_pixel32(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: Color) {
-        self.set_pixel32_raw(
-            gc_context,
-            x,
-            y,
-            color.to_premultiplied_alpha(self.get_transparency()),
-        )
+    pub fn set_pixel32(&self, gc_context: MutationContext<'gc, '_>, x: i32, y: i32, color: Color) {
+        //TODO: what does flash do on set out of bounds
+        if self.is_point_in_bounds(x, y) {
+            self.set_pixel32_raw(
+                gc_context,
+                x as u32,
+                y as u32,
+                color.to_premultiplied_alpha(self.get_transparency()),
+            )
+        }
     }
 
     pub fn set_pixel(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: Color) {
         let current_alpha = self.get_pixel_raw(x, y).map(|p| p.get_alpha()).unwrap_or(0);
-        self.set_pixel32_raw(
-            gc_context,
-            x,
-            y,
-            color
-                .with_alpha(current_alpha)
-                .to_premultiplied_alpha(self.get_transparency()),
-        )
+        self.set_pixel32(gc_context, x as i32, y as i32, color.with_alpha(current_alpha))
+
+        // self.set_pixel32_raw(
+        //     gc_context,
+        //     x,
+        //     y,
+        //     color
+        //         .with_alpha(current_alpha)
+        //         .to_premultiplied_alpha(self.get_transparency()),
+        // )
     }
 
     pub fn dispose(&self, gc_context: MutationContext<'gc, '_>) {
@@ -273,10 +291,11 @@ impl<'gc> BitmapDataObject<'gc> {
                 // TODO: if rect.contains((x, y)) and offset by pnt
 
                 //TODO: how does this handle out of bounds
-                let original_color = self.get_pixel32(x as u32, y as u32).unwrap_or(0.into()).0 as u32;
+                let original_color =
+                    self.get_pixel_raw(x as u32, y as u32).unwrap_or(0.into()).0 as u32;
 
                 //TODO: does this calculation work if they are different sizes (might be fixed now)
-                let source_color = source.get_pixel32(x, y).unwrap_or(0.into()).0 as u32;
+                let source_color = source.get_pixel_raw(x, y).unwrap_or(0.into()).0 as u32;
 
                 //TODO: should this channel be an enum?
                 //TODO: need to support multiple (how does this work if you copy red -> blue and green or any other multi copy)
@@ -361,6 +380,87 @@ impl<'gc> BitmapDataObject<'gc> {
                 self.set_pixel32_raw(gc_context, x, y, color)
             }
         }
+    }
+
+    pub fn color_transform(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        min_x: u32,
+        min_y: u32,
+        max_x: u32,
+        max_y: u32,
+        a_mult: f32,
+        a_add: f32,
+        r_mult: f32,
+        r_add: f32,
+        g_mult: f32,
+        g_add: f32,
+        b_mult: f32,
+        b_add: f32,
+    ) {
+        for x in min_x..max_x {
+            for y in min_y..max_y {
+                let color = self.get_pixel_raw(x, y).unwrap_or(0.into());
+                let a = ((color.get_alpha() as f32 * a_mult) + a_add) as u8;
+                let r = ((color.get_red() as f32 * r_mult) + r_add) as u8;
+                let g = ((color.get_green() as f32 * g_mult) + g_add) as u8;
+                let b = ((color.get_blue() as f32 * b_mult) + b_add) as u8;
+
+                self.set_pixel32_raw(gc_context, x, y, Color::argb(a, r, g, b))
+            }
+        }
+    }
+
+    pub fn get_color_bounds_rect(
+        &self,
+        mask: i32,
+        color: i32,
+        find_color: bool,
+    ) -> (u32, u32, u32, u32) {
+        //TODO: option, if none take image bounds
+        let mut min_x = Option::<i32>::None;
+        let mut max_x = Option::<i32>::None;
+        let mut min_y = Option::<i32>::None;
+        let mut max_y = Option::<i32>::None;
+
+        for x in 0..self.get_width() {
+            for y in 0..self.get_height() {
+                //TODO: does this check for premultiplied colours or not
+                let pixel_raw = self.get_pixel_raw(x, y).unwrap_or(0.into()).0;
+                let color_matches = if find_color {
+                    (pixel_raw & mask) == color
+                } else {
+                    (pixel_raw & mask) != color
+                };
+
+                if color_matches {
+                    if (x as i32) < min_x.unwrap_or(self.get_width() as i32) {
+                        min_x = Some(x as i32)
+                    }
+                    if (x as i32) > max_x.unwrap_or(-1) {
+                        max_x = Some(x as i32)
+                    }
+
+                    if (y as i32) < min_y.unwrap_or(self.get_height() as i32) {
+                        min_y = Some(y as i32)
+                    }
+                    if (y as i32) > max_y.unwrap_or(-1) {
+                        max_y = Some(y as i32)
+                    }
+                }
+            }
+        }
+        let min_x = min_x.unwrap_or(0);
+        let min_y = min_y.unwrap_or(0);
+        let max_x = max_x.unwrap_or(self.get_width() as i32);
+        let max_y = max_y.unwrap_or(self.get_height() as i32);
+
+        (
+            min_x as u32,
+            min_y as u32,
+            (min_x + max_x) as u32,
+            (min_y + max_y) as u32,
+        )
     }
 
     pub fn get_width(&self) -> u32 {

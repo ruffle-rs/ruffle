@@ -45,6 +45,7 @@ use crate::globals::Globals;
 use ruffle_core::swf::{Matrix, Twips};
 use std::path::Path;
 pub use wgpu;
+use std::collections::HashMap;
 
 pub struct Descriptors {
     pub device: wgpu::Device,
@@ -95,6 +96,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     quad_vbo: wgpu::Buffer,
     quad_ibo: wgpu::Buffer,
     quad_tex_transforms: wgpu::Buffer,
+    bitmap_registry: HashMap<CharacterId, Bitmap>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
@@ -269,6 +271,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             quad_vbo,
             quad_ibo,
             quad_tex_transforms,
+            bitmap_registry: HashMap::new(),
         })
     }
 
@@ -684,6 +687,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         bitmap: Bitmap,
         debug_str: &str,
     ) -> BitmapInfo {
+        self.bitmap_registry.insert(id, bitmap.clone());
+
         let extent = wgpu::Extent3d {
             width: bitmap.width,
             height: bitmap.height,
@@ -1488,6 +1493,38 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         } else {
             MaskState::DrawMaskedContent
         };
+    }
+
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>) {
+        if let Some((id, _texture)) = self.textures.get(bitmap.0) {
+            if let Some(bitmap) = self.bitmap_registry.get(id) {
+                let data = match &bitmap.data {
+                    BitmapFormat::Rgb(x) => {
+                        x.chunks_exact(3).map(|chunk| {
+                            let r = chunk[0];
+                            let g = chunk[1];
+                            let b = chunk[2];
+                            (0xFF << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
+                        }).collect()
+                    }
+                    BitmapFormat::Rgba(x) => {
+                        x.chunks_exact(4).map(|chunk| {
+                            let r = chunk[0];
+                            let g = chunk[1];
+                            let b = chunk[2];
+                            //TODO: check this order, assuming because rgb_a
+                            let a = chunk[3];
+                            ((a as u32) << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
+                        }).collect()
+                    }
+                };
+                (bitmap.width, bitmap.height, data)
+            } else {
+                (0, 0, vec![])
+            }
+        } else {
+            (0, 0, vec![])
+        }
     }
 }
 
