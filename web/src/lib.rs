@@ -258,6 +258,24 @@ impl Ruffle {
             }
         })
     }
+
+    /// Returns the web AudioContext used by this player.
+    /// Returns `None` if the audio backend does not use Web Audio.
+    pub fn audio_context(&self) -> Option<web_sys::AudioContext> {
+        INSTANCES.with(move |instances| {
+            if let Ok(instances) = instances.try_borrow() {
+                if let Some(instance) = instances.get(self.0) {
+                    let instance = instance.borrow_mut();
+                    let player = instance.core.lock().unwrap();
+                    return player
+                        .audio()
+                        .downcast_ref::<WebAudioBackend>()
+                        .map(|audio| audio.audio_context().clone());
+                }
+            }
+            None
+        })
+    }
 }
 
 impl Ruffle {
