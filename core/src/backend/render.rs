@@ -42,6 +42,9 @@ pub trait RenderBackend: Downcast {
     fn activate_mask(&mut self);
     fn deactivate_mask(&mut self);
     fn pop_mask(&mut self);
+
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>);
+    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle;
 }
 impl_downcast!(RenderBackend);
 
@@ -146,6 +149,14 @@ impl RenderBackend for NullRenderer {
     fn activate_mask(&mut self) {}
     fn deactivate_mask(&mut self) {}
     fn pop_mask(&mut self) {}
+
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>) {
+        (0, 0, vec![])
+    }
+    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle
+    {
+        BitmapHandle(0)
+    }
 }
 
 /// The format of image data in a DefineBitsJpeg2/3 tag.
@@ -160,7 +171,7 @@ pub enum JpegTagFormat {
 }
 
 /// Decoded bitmap data from an SWF tag.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Bitmap {
     pub width: u32,
     pub height: u32,
@@ -169,7 +180,7 @@ pub struct Bitmap {
 
 /// Decoded bitmap data from an SWF tag.
 /// The image data will have pre-multiplied alpha.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BitmapFormat {
     Rgb(Vec<u8>),
     Rgba(Vec<u8>),

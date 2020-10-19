@@ -13,6 +13,7 @@ use web_sys::{
     WebGlFramebuffer, WebGlProgram, WebGlRenderbuffer, WebGlRenderingContext as Gl, WebGlShader,
     WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject, WebglDebugRendererInfo,
 };
+use std::collections::HashMap;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -70,6 +71,8 @@ pub struct WebGlRenderBackend {
     view_width: i32,
     view_height: i32,
     view_matrix: [[f32; 4]; 4],
+
+    bitmap_registry: HashMap<swf::CharacterId, Bitmap>,
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;
@@ -208,6 +211,7 @@ impl WebGlRenderBackend {
             blend_func: (Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA),
             mult_color: None,
             add_color: None,
+            bitmap_registry: HashMap::new(),
         };
 
         let quad_mesh = renderer.build_quad_mesh()?;
@@ -675,6 +679,8 @@ impl WebGlRenderBackend {
         id: swf::CharacterId,
         bitmap: Bitmap,
     ) -> Result<BitmapInfo, Error> {
+        self.bitmap_registry.insert(id, bitmap.clone());
+
         let texture = self.gl.create_texture().unwrap();
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
         match bitmap.data {
@@ -1265,6 +1271,46 @@ impl RenderBackend for WebGlRenderBackend {
             MaskState::DrawMaskedContent
         };
         self.mask_state_dirty = true;
+    }
+
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>) {
+        println!("Get bitmap pixels webgl {:?}", bitmap);
+        if let Some((id, _texture)) = self.textures.get(bitmap.0) {
+            if let Some(bitmap) = self.bitmap_registry.get(id) {
+                let data = match &bitmap.data {
+                    BitmapFormat::Rgb(x) => {
+                        x.chunks_exact(3).map(|chunk| {
+                            let r = chunk[0];
+                            let g = chunk[1];
+                            let b = chunk[2];
+                            (0xFF << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
+                        }).collect()
+                    }
+                    BitmapFormat::Rgba(x) => {
+                        x.chunks_exact(4).map(|chunk| {
+                            let r = chunk[0];
+                            let g = chunk[1];
+                            let b = chunk[2];
+                            //TODO: check this order, assuming because rgb_a
+                            let a = chunk[3];
+                            ((a as u32) << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
+                        }).collect()
+                    }
+                };
+                (bitmap.width, bitmap.height, data)
+            } else {
+                println!("Failed 1");
+                (0, 0, vec![])
+            }
+        } else {
+            println!("Failed 2");
+            (0, 0, vec![])
+        }
+    }
+
+    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
+        //TODO:
+        unimplemented!()
     }
 }
 
