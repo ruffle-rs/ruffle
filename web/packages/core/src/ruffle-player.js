@@ -149,12 +149,11 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 }
                 let audio_context = this.instance.audio_context();
                 if (audio_context) {
-                    let self = this;
                     audio_context.onstatechange = () => {
-                        if (this.state === "running") {
-                            self.unmute_overlay_clicked();
+                        if (audio_context.state === "running") {
+                            this.unmute_overlay_clicked();
                         }
-                        this.onstatechange = null;
+                        audio_context.onstatechange = null;
                     };
                 }
             }
