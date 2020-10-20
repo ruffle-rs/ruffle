@@ -62,7 +62,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         return self;
     }
 
-    set_user_config() {
+    set_instance_config() {
         // Set the default config.
         let config = (this._applied_config = {
             autoplay: "auto",
@@ -83,7 +83,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             }
         }
 
-        // Get the user config for the current file if specified, this is only possible using the JS API.
+        // Get the user config for the current instance if specified, this is only possible using the JS API.
         if (this.user_config !== null) {
             let user_config = this.user_config;
             for (let option in config) {
@@ -96,7 +96,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             }
         }
 
-        // Apply the config to the different options.
+        // Finally check the settings for the retrieved config data.
         this.set_autoplay_config(config.autoplay);
         this.set_unmuteoverlay_config(config.displayUnmuteOverlay);
     }
@@ -125,26 +125,43 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         switch (behavior) {
             case "on":
             default:
-                if (
-                    this.unmute_overlay &&
-                    applied_config.autoplay &&
-                    this.audio_state() !== "running"
-                ) {
-                    this.unmute_overlay.style.display = "block";
-                    let self = this;
-                    let audio_context = this.instance && this.instance.audio_context();
-                    if (audio_context) {
-                        audio_context.onstatechange = function () {
-                            if (this.state === "running") {
-                                self.unmute_overlay_clicked();
-                            }
-                            this.onstatechange = null;
-                        };
-                    }
-                }
+                applied_config.displayUnmuteOverlay = true;
                 break;
             case "off":
                 break;
+        }
+    }
+
+    apply_instance_config() {
+        if (this._applied_config.autoplay) {
+            this.play_button_clicked(this);
+            if (this.audio_state() !== "running") {
+                if (this.unmute_overlay) {
+                    this.unmute_overlay.style.display = "block";
+                    if (!this._applied_config.displayUnmuteOverlay) {
+                        // Overlay is disabled but we still need to allow the user to resume audio.
+                        this.unmute_overlay.childNodes.forEach((node) => {
+                            if (node && node.style) {
+                                node.style.visibility = "hidden";
+                            }
+                        });
+                    }
+                }
+                let audio_context = this.instance.audio_context();
+                if (audio_context) {
+                    let self = this;
+                    audio_context.onstatechange = () => {
+                        if (this.state === "running") {
+                            self.unmute_overlay_clicked();
+                        }
+                        this.onstatechange = null;
+                    };
+                }
+            }
+        } else {
+            if (this.play_button) {
+                this.play_button.style.display = "block";
+            }
         }
     }
 
@@ -253,13 +270,23 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             this,
             this.allow_script_access
         );
-        if (this._applied_config.autoplay) {
-            this.play_button_clicked(this);
-        } else {
-            if (this.play_button) {
-                this.play_button.style.display = "block";
-            }
+
+        // In Firefox, AudioContext.state is always "suspended" when the object has just been created.
+        // It may change by itself to "running" some milliseconds later. So we need to wait a little
+        // bit before checking if autoplay is supported and applying the instance config.
+        if (this.audio_state() !== "running") {
+            this.container.style.visibility = "hidden";
+            await new Promise((resolve) => {
+                window.setTimeout(() => {
+                    resolve();
+                }, 200);
+            });
+            this.container.style.visibility = "visible";
         }
+
+        this.set_instance_config();
+        this.apply_instance_config();
+
         console.log("New Ruffle instance created.");
     }
 
@@ -282,7 +309,6 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             if (this.isConnected && !this.is_unused_fallback_object()) {
                 console.log("Loading SWF file " + url);
 
-                this.set_user_config();
                 await this.ensure_fresh_instance();
                 parameters = {
                     ...sanitize_parameters(url.substring(url.indexOf("?"))),
@@ -360,7 +386,6 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             if (this.isConnected && !this.is_unused_fallback_object()) {
                 console.log("Got SWF data");
 
-                this.set_user_config();
                 await this.ensure_fresh_instance();
                 this.instance.load_data(
                     new Uint8Array(data),
