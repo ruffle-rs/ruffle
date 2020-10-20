@@ -40,6 +40,11 @@ impl Task {
         self.state == TaskState::Ready
     }
 
+    /// Marks this task to as ready to make progress.
+    pub fn set_ready(&mut self) {
+        self.state = TaskState::Ready
+    }
+
     /// Returns `true` if the task is awaiting further progress.
     #[allow(dead_code)]
     pub fn is_blocked(&self) -> bool {
