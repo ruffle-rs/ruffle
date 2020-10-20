@@ -1,6 +1,7 @@
 //! Navigator backend for web
 
 use crate::custom_event::RuffleEvent;
+use isahc::config::RedirectPolicy;
 use isahc::prelude::*;
 use ruffle_core::backend::navigator::{
     NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
@@ -45,7 +46,9 @@ impl ExternalNavigatorBackend {
         proxy: Option<Url>,
     ) -> Self {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
-        let builder = HttpClient::builder().proxy(proxy);
+        let builder = HttpClient::builder()
+            .proxy(proxy)
+            .redirect_policy(RedirectPolicy::Follow);
 
         let client = builder.build().ok().map(Rc::new);
 
