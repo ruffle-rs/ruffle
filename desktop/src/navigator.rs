@@ -42,12 +42,10 @@ impl ExternalNavigatorBackend {
         movie_url: Url,
         channel: Sender<OwnedFuture<(), Error>>,
         event_loop: EventLoopProxy<RuffleEvent>,
-        http_proxy: Option<Url>,
-        https_proxy: Option<Url>,
+        proxy: Option<Url>,
     ) -> Self {
-        let http_proxy = http_proxy.and_then(|url| url.as_str().parse().ok());
-        let https_proxy = https_proxy.and_then(|url| url.as_str().parse().ok());
-        let builder = HttpClient::builder().proxy(http_proxy).proxy(https_proxy);
+        let proxy = proxy.and_then(|url| url.as_str().parse().ok());
+        let builder = HttpClient::builder().proxy(proxy);
 
         let client = builder.build().ok().map(Rc::new);
 
