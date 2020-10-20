@@ -71,13 +71,9 @@ struct Opt {
     #[cfg(feature = "render_trace")]
     trace_path: Option<PathBuf>,
 
-    /// (Optional) HTTP Proxy to use when loading movies via URL
+    /// (Optional) Proxy to use when loading movies via URL
     #[clap(long, case_insensitive = true)]
-    http_proxy: Option<Url>,
-
-    /// (Optional) HTTPS Proxy to use when loading movies via URL
-    #[clap(long, case_insensitive = true)]
-    https_proxy: Option<Url>,
+    proxy: Option<Url>,
 }
 
 #[cfg(feature = "render_trace")]
@@ -110,13 +106,18 @@ fn main() {
     }
 }
 
-fn load_movie_from_path(movie_url: Url) -> Result<SwfMovie, Box<dyn std::error::Error>> {
+fn load_movie_from_path(
+    movie_url: Url,
+    proxy: Option<Url>,
+) -> Result<SwfMovie, Box<dyn std::error::Error>> {
     if movie_url.scheme() == "file" {
         if let Ok(path) = movie_url.to_file_path() {
             return SwfMovie::from_path(path);
         }
     }
-    let client = HttpClient::new()?;
+    let proxy = proxy.and_then(|url| url.as_str().parse().ok());
+    let builder = HttpClient::builder().proxy(proxy);
+    let client = builder.build()?;
     let res = client.get(movie_url.to_string())?;
     let mut buffer: Vec<u8> = Vec::new();
     res.into_body().read_to_end(&mut buffer)?;
@@ -125,13 +126,13 @@ fn load_movie_from_path(movie_url: Url) -> Result<SwfMovie, Box<dyn std::error::
 
 fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let movie_url = if opt.input_path.exists() {
-        let absolute_path = opt.input_path.to_owned().canonicalize()?;
+        let absolute_path = opt.input_path.canonicalize()?;
         Url::from_file_path(absolute_path).map_err(|_| "Path cannot be a URL")?
     } else {
         Url::parse(opt.input_path.to_str().unwrap_or_default())
             .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
     };
-    let mut movie = load_movie_from_path(movie_url.to_owned())?;
+    let mut movie = load_movie_from_path(movie_url.to_owned(), opt.proxy.to_owned())?;
     let movie_size = LogicalSize::new(movie.width(), movie.height());
 
     for parameter in &opt.parameters {
@@ -181,8 +182,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         movie_url,
         chan,
         event_loop.create_proxy(),
-        opt.http_proxy,
-        opt.https_proxy,
+        opt.proxy,
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let storage = Box::new(DiskStorageBackend::new(
