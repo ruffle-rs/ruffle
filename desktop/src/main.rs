@@ -12,6 +12,7 @@ mod task;
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use clap::Clap;
+use isahc::config::RedirectPolicy;
 use isahc::prelude::*;
 use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
@@ -116,7 +117,9 @@ fn load_movie_from_path(
         }
     }
     let proxy = proxy.and_then(|url| url.as_str().parse().ok());
-    let builder = HttpClient::builder().proxy(proxy);
+    let builder = HttpClient::builder()
+        .proxy(proxy)
+        .redirect_policy(RedirectPolicy::Follow);
     let client = builder.build()?;
     let res = client.get(movie_url.to_string())?;
     let mut buffer: Vec<u8> = Vec::new();
