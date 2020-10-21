@@ -15,6 +15,7 @@ module.exports = (env, argv) => {
     return {
         entry: path.resolve(__dirname, "www/index.js"),
         output: {
+            publicPath: "",
             path: path.resolve(__dirname, "dist"),
             filename: "index.js",
         },
