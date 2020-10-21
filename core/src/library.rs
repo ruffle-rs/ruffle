@@ -4,6 +4,7 @@ use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
+use crate::property_map::{Entry, PropertyMap};
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::AvmType;
 use gc_arena::{Collect, MutationContext};
@@ -20,7 +21,7 @@ type Error = Box<dyn std::error::Error>;
 #[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
-    export_characters: HashMap<String, Character<'gc>>,
+    export_characters: PropertyMap<Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
     device_font: Option<Font<'gc>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
@@ -32,7 +33,7 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn new(avm_type: AvmType) -> Self {
         MovieLibrary {
             characters: HashMap::new(),
-            export_characters: HashMap::new(),
+            export_characters: PropertyMap::new(),
             jpeg_tables: None,
             device_font: None,
             fonts: HashMap::new(),
@@ -57,9 +58,8 @@ impl<'gc> MovieLibrary<'gc> {
     /// Registers an export name for a given character ID.
     /// This character will then be instantiable from AVM1.
     pub fn register_export(&mut self, id: CharacterId, export_name: &str) {
-        use std::collections::hash_map::Entry;
         if let Some(character) = self.characters.get(&id) {
-            match self.export_characters.entry(export_name.to_string()) {
+            match self.export_characters.entry(export_name, false) {
                 Entry::Vacant(e) => {
                     e.insert(character.clone());
                 }
@@ -90,7 +90,7 @@ impl<'gc> MovieLibrary<'gc> {
 
     #[allow(dead_code)]
     pub fn get_character_by_export_name(&self, name: &str) -> Option<&Character<'gc>> {
-        self.export_characters.get(name)
+        self.export_characters.get(name, false)
     }
 
     /// Instantiates the library item with the given character ID into a display object.
@@ -115,7 +115,7 @@ impl<'gc> MovieLibrary<'gc> {
         export_name: &str,
         gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
-        if let Some(character) = self.export_characters.get(export_name) {
+        if let Some(character) = self.export_characters.get(export_name, false) {
             self.instantiate_display_object(character, gc_context)
         } else {
             log::error!(
