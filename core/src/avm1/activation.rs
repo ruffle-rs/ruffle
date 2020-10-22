@@ -1837,7 +1837,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
-            .resolve_target_path(root, start, target)?
+            .resolve_target_path(root, start, target, false)?
             .and_then(|o| o.as_display_object())
         {
             new_target_clip = Some(clip);
@@ -2394,7 +2394,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let root = start.root();
         let start = start.object().coerce_to_object(self);
         Ok(self
-            .resolve_target_path(root, start, &path)?
+            .resolve_target_path(root, start, &path, false)?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -2412,6 +2412,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         root: DisplayObject<'gc>,
         start: Object<'gc>,
         path: &str,
+        mut allow_this: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // Empty path resolves immediately to start clip.
         if path.is_empty() {
@@ -2478,18 +2479,25 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 // Guaranteed to be valid UTF-8.
                 let name = unsafe { std::str::from_utf8_unchecked(ident) };
 
-                // Get the value from the object.
-                // Resolves display object instances first, then local variables.
-                // This is the opposite of general GetMember property access!
-                if let Some(child) = object
-                    .as_display_object()
-                    .and_then(|o| o.get_child_by_name(name, case_sensitive))
-                {
-                    child.object()
+                if allow_this && name == "this" {
+                    self.this_cell().into()
                 } else {
-                    object.get(&name, self).unwrap()
+                    // Get the value from the object.
+                    // Resolves display object instances first, then local variables.
+                    // This is the opposite of general GetMember property access!
+                    if let Some(child) = object
+                        .as_display_object()
+                        .and_then(|o| o.get_child_by_name(name, case_sensitive))
+                    {
+                        child.object()
+                    } else {
+                        object.get(&name, self).unwrap()
+                    }
                 }
             };
+
+            // `this` can only be the first element in the path.
+            allow_this = false;
 
             // Resolve the value to an object while traversing the path.
             object = if let Value::Object(o) = val {
@@ -2535,7 +2543,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path, false)?
                 {
                     return Ok(Some((object, var_name)));
                 }
@@ -2603,7 +2611,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path, true)?
                 {
                     if object.has_property(self, var_name) {
                         return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
@@ -2621,7 +2629,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path, false)?
                 {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
@@ -2680,7 +2688,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path, true)?
                 {
                     object.set(var_name, value, self)?;
                     return Ok(());
