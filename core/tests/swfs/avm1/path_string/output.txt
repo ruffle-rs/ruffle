@@ -254,6 +254,24 @@ undefined
 Target not found: Target="_root:clip1:clip2...clip2" Base="_level0"
 undefined
 
+// get('this.clip1.clip2')
+clip2 var
+// tellTarget('this.clip1.clip2') { trace(_name); }
+Target not found: Target="this.clip1.clip2" Base="_level0"
+undefined
+
+// get('this/clip1:clip2:clip3')
+_level0.clip1.clip2.clip3
+// tellTarget('this/clip1:clip2:clip3') { trace(_name); }
+Target not found: Target="this/clip1:clip2:clip3" Base="_level0"
+undefined
+
+// get('this/clip1')
+fake
+// tellTarget('this/clip1') { trace(_name); }
+Target not found: Target="this/clip1" Base="_level0"
+undefined
+
 // get(_root.clip1)
 undefined
 // tellTarget(undefined) { trace(_name); }
@@ -293,4 +311,13 @@ undefined
 
 // set('clip5/...foo', 7)
 7
+
+// set('this:bar', 10)
+10
+
+// set('this/clip5:foo', 8)
+8
+
+// set('this/clip5', 11)
+11
 
