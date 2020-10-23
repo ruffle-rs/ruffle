@@ -22,6 +22,7 @@ pub struct Swf {
 /// stream as well as the uncompressed data length.
 pub struct SwfStream<'a> {
     pub header: Header,
+    pub uncompressed_length: usize,
     pub reader: crate::read::Reader<Box<dyn std::io::Read + 'a>>,
 }
 
@@ -32,9 +33,8 @@ pub struct SwfStream<'a> {
 /// [SWF19 p.27](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=27)
 #[derive(Debug, PartialEq, Clone)]
 pub struct Header {
-    pub compression: Compression,
     pub version: u8,
-    pub uncompressed_length: u32,
+    pub compression: Compression,
     pub stage_size: Rectangle,
     pub frame_rate: f32,
     pub num_frames: u16,
