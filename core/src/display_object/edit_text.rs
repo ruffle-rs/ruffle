@@ -552,6 +552,14 @@ impl<'gc> EditText<'gc> {
                 Twips::new(1),
                 swf::Color::from_rgb(0, 0xFF),
             )));
+            write
+                .drawing
+                .set_fill_style(Some(swf::FillStyle::Color(Color {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 255,
+                })));
             write.drawing.draw_command(DrawCommand::MoveTo {
                 x: Twips::new(0),
                 y: Twips::new(0),
