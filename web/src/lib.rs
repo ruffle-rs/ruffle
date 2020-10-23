@@ -390,17 +390,22 @@ impl Ruffle {
                         let instances = instances.borrow();
                         if let Some(instance) = instances.get(index) {
                             instance.borrow_mut().has_focus = true;
-                            if let Some(target) = js_event.current_target() {
-                                let _ = target
-                                    .unchecked_ref::<Element>()
-                                    .set_pointer_capture(js_event.pointer_id());
+
+                            // Only fire player mouse event for left clicks.
+                            if js_event.button() == 0 {
+                                if let Some(target) = js_event.current_target() {
+                                    let _ = target
+                                        .unchecked_ref::<Element>()
+                                        .set_pointer_capture(js_event.pointer_id());
+                                }
+                                let device_pixel_ratio = instance.borrow().device_pixel_ratio;
+                                let event = PlayerEvent::MouseDown {
+                                    x: f64::from(js_event.offset_x()) * device_pixel_ratio,
+                                    y: f64::from(js_event.offset_y()) * device_pixel_ratio,
+                                };
+                                instance.borrow().core.lock().unwrap().handle_event(event);
                             }
-                            let device_pixel_ratio = instance.borrow().device_pixel_ratio;
-                            let event = PlayerEvent::MouseDown {
-                                x: f64::from(js_event.offset_x()) * device_pixel_ratio,
-                                y: f64::from(js_event.offset_y()) * device_pixel_ratio,
-                            };
-                            instance.borrow().core.lock().unwrap().handle_event(event);
+
                             js_event.prevent_default();
                         }
                     });
@@ -449,16 +454,21 @@ impl Ruffle {
                         let instances = instances.borrow();
                         if let Some(instance) = instances.get(index) {
                             let instance = instance.borrow();
-                            if let Some(target) = js_event.current_target() {
-                                let _ = target
-                                    .unchecked_ref::<Element>()
-                                    .release_pointer_capture(js_event.pointer_id());
+
+                            // Only fire player mouse event for left clicks.
+                            if js_event.button() == 0 {
+                                if let Some(target) = js_event.current_target() {
+                                    let _ = target
+                                        .unchecked_ref::<Element>()
+                                        .release_pointer_capture(js_event.pointer_id());
+                                }
+                                let event = PlayerEvent::MouseUp {
+                                    x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
+                                    y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
+                                };
+                                instance.core.lock().unwrap().handle_event(event);
                             }
-                            let event = PlayerEvent::MouseUp {
-                                x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
-                                y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
-                            };
-                            instance.core.lock().unwrap().handle_event(event);
+
                             if instance.has_focus {
                                 js_event.prevent_default();
                             }
