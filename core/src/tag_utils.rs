@@ -1,6 +1,7 @@
 use crate::backend::navigator::url_from_relative_path;
 use crate::property_map::PropertyMap;
 use gc_arena::Collect;
+use std::convert::TryInto;
 use std::path::Path;
 use std::sync::Arc;
 use swf::{Header, TagCode};
@@ -32,8 +33,9 @@ impl SwfMovie {
     pub fn empty(swf_version: u8) -> Self {
         Self {
             header: Header {
-                version: swf_version,
                 compression: swf::Compression::None,
+                version: swf_version,
+                uncompressed_length: 0,
                 stage_size: swf::Rectangle::default(),
                 frame_rate: 1.0,
                 num_frames: 0,
@@ -85,11 +87,11 @@ impl SwfMovie {
             // It always errors, and doesn't return all the data if you use read_to_end,
             // but read_exact at least returns the data... why?
             // Does the decoder need to be flushed somehow?
-            let mut data = vec![0u8; swf_stream.uncompressed_length];
+            let mut data = vec![0u8; header.uncompressed_length.try_into().unwrap()];
             let _ = reader.get_mut().read_exact(&mut data);
             data
         } else {
-            let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
+            let mut data = Vec::with_capacity(header.uncompressed_length.try_into().unwrap());
             if let Err(e) = reader.get_mut().read_to_end(&mut data) {
                 return Err(format!("Error decompressing SWF, may be corrupt: {}", e).into());
             }
