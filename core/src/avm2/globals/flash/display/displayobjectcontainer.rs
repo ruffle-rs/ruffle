@@ -79,6 +79,19 @@ pub fn get_child_by_name<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObjectContainer.numChildren`
+pub fn num_children<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        return Ok(parent.children().count().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -101,6 +114,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "getChildByName"),
         Method::from_builtin(get_child_by_name),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public_namespace(), "numChildren"),
+        Method::from_builtin(num_children),
     ));
 
     class
