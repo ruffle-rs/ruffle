@@ -722,20 +722,18 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
 
 fn get_bytes_loaded<'gc>(
     _movie_clip: MovieClip<'gc>,
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO find a correct value
-    Ok(1.0.into())
+    Ok(activation.context.swf.header().uncompressed_length.into())
 }
 
 fn get_bytes_total<'gc>(
     _movie_clip: MovieClip<'gc>,
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO find a correct value
-    Ok(1.0.into())
+    Ok(activation.context.swf.header().uncompressed_length.into())
 }
 
 fn get_next_highest_depth<'gc>(
