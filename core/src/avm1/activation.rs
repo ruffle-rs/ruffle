@@ -222,6 +222,9 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// This can be changed with `tellTarget` (via `ActionSetTarget` and `ActionSetTarget2`).
     target_clip: Option<DisplayObject<'gc>>,
 
+    /// Amount of actions performed since the last timeout check
+    actions_since_timeout_check: u8,
+
     pub context: UpdateContext<'a, 'gc, 'gc_context>,
 
     /// An identifier to refer to this activation by, when debugging.
@@ -260,6 +263,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this,
             arguments,
             local_registers: None,
+            actions_since_timeout_check: 0,
         }
     }
 
@@ -282,6 +286,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this: self.this,
             arguments: self.arguments,
             local_registers: self.local_registers,
+            actions_since_timeout_check: 0,
         }
     }
 
@@ -315,6 +320,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this: globals,
             arguments: None,
             local_registers: None,
+            actions_since_timeout_check: 0,
         }
     }
 
@@ -429,8 +435,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         data: &SwfSlice,
         reader: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        if self.context.update_start.elapsed() >= self.context.max_execution_duration {
-            return Err(Error::ExecutionTimeout);
+        self.actions_since_timeout_check += 1;
+        if self.actions_since_timeout_check >= 200 {
+            self.actions_since_timeout_check = 0;
+            if self.context.update_start.elapsed() >= self.context.max_execution_duration {
+                return Err(Error::ExecutionTimeout);
+            }
         }
 
         if reader.pos() >= (data.end - data.start) {
