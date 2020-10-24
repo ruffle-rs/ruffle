@@ -1574,11 +1574,21 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
-        let constructor = self
-            .0
-            .read()
-            .avm_constructor
-            .unwrap_or_else(|| context.avm2.prototypes().movieclip.into());
+        let constructor = self.0.read().avm_constructor.unwrap_or_else(|| {
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut mc_proto = activation.context.avm2.prototypes().movieclip;
+            mc_proto
+                .get_property(
+                    mc_proto,
+                    &Avm2QName::new(Avm2Namespace::public_namespace(), "constructor"),
+                    &mut activation,
+                )
+                .unwrap()
+                .coerce_to_object(&mut activation)
+                .unwrap()
+                .into()
+        });
+
         if let AvmObject::Avm2(mut constr) = constructor {
             let mut constr_thing = || {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
