@@ -688,7 +688,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             avm_warn!(self, "CloneSprite: Source is not a movie clip");
         }
 
-        self.continue_if_base_clip_exists()
+        Ok(FrameControl::Continue)
     }
 
     fn action_bit_and(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -806,24 +806,34 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         self.context.avm1.push(result);
 
+        // After any function call, execution of this frame stops if the base clip doesn't exist.
+        // For example, a _root.gotoAndStop moves the timeline to a frame where the clip was removed.
         self.continue_if_base_clip_exists()
     }
 
     fn action_call_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let method_name = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
-        let object = value_object::ValueObject::boxed(self, object_val);
         let num_args = self.context.avm1.pop().coerce_to_f64(self)? as i64; // TODO(Herschel): max arg count?
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
         }
 
+        // Can not call method on undefined/null.
+        if matches!(object_val, Value::Undefined | Value::Null) {
+            self.context.avm1.push(Value::Undefined);
+            return Ok(FrameControl::Continue);
+        }
+
+        let object = value_object::ValueObject::boxed(self, object_val);
+
         match method_name {
             Value::Undefined | Value::Null => {
                 let this = self.target_clip_or_root().object().coerce_to_object(self);
                 let result = object.call("[Anonymous]", self, this, None, &args)?;
                 self.context.avm1.push(result);
+                self.continue_if_base_clip_exists()
             }
             Value::String(name) => {
                 if name.is_empty() {
@@ -833,6 +843,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     let result = object.call_method(&name, &args, self)?;
                     self.context.avm1.push(result);
                 }
+                self.continue_if_base_clip_exists()
             }
             _ => {
                 self.context.avm1.push(Value::Undefined);
@@ -841,10 +852,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     "Invalid method name, expected string but found {:?}",
                     method_name
                 );
+                Ok(FrameControl::Continue)
             }
         }
-
-        self.continue_if_base_clip_exists()
     }
 
     fn action_cast_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1211,7 +1221,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     e
                 ),
             }
-            return self.continue_if_base_clip_exists();
+            return Ok(FrameControl::Continue);
         }
 
         if let Some(fscommand) = fscommand::parse(url) {
@@ -1300,7 +1310,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     self.context.navigator.spawn_future(process);
                 }
             }
-            return self.continue_if_base_clip_exists();
+            return Ok(FrameControl::Continue);
         } else if window_target.starts_with("_level") && url.len() > 6 {
             // target of `_level#` indicates a `loadMovieNum` call.
             match window_target[6..].parse::<u32>() {
@@ -1352,7 +1362,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_error!(self, "GotoFrame failed: Invalid target");
         }
-        self.continue_if_base_clip_exists()
+        Ok(FrameControl::Continue)
     }
 
     fn action_goto_frame_2(
@@ -1378,7 +1388,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_warn!(self, "GotoFrame2: Invalid target");
         }
-        self.continue_if_base_clip_exists()
+        Ok(FrameControl::Continue)
     }
 
     fn action_goto_label(&mut self, label: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1395,7 +1405,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_warn!(self, "GoToLabel: Invalid target");
         }
-        self.continue_if_base_clip_exists()
+        Ok(FrameControl::Continue)
     }
 
     fn action_if(
@@ -1623,7 +1633,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_warn!(self, "NextFrame: Invalid target");
         }
-        self.continue_if_base_clip_exists()
+        Ok(FrameControl::Continue)
     }
 
     fn action_new_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1635,12 +1645,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             args.push(self.context.avm1.pop());
         }
 
+        // Can not call method on undefined/null.
+        if matches!(object_val, Value::Undefined | Value::Null) {
+            self.context.avm1.push(Value::Undefined);
+            return Ok(FrameControl::Continue);
+        }
+
         let object = value_object::ValueObject::boxed(self, object_val);
         let constructor = object.get(&method_name.coerce_to_string(self)?, self)?;
         if let Value::Object(constructor) = constructor {
             //TODO: What happens if you `ActionNewMethod` without a method name?
             let this = constructor.construct(self, &args)?;
-
             self.context.avm1.push(this);
         } else {
             avm_warn!(
@@ -1706,7 +1721,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_warn!(self, "PrevFrame: Invalid target");
         }
-        self.continue_if_base_clip_exists()
+        Ok(FrameControl::Continue)
     }
 
     fn action_pop(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1780,7 +1795,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_warn!(self, "RemoveSprite: Source is not a movie clip");
         }
-        self.continue_if_base_clip_exists()
+        Ok(FrameControl::Continue)
     }
 
     fn action_return(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
