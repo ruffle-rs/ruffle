@@ -358,6 +358,18 @@ impl<'gc> DisplayObjectBase<'gc> {
         }
     }
 
+    fn placed_by_script(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::PlacedByScript)
+    }
+
+    fn set_placed_by_script(&mut self, value: bool) {
+        if value {
+            self.flags.insert(DisplayObjectFlags::PlacedByScript);
+        } else {
+            self.flags.remove(DisplayObjectFlags::PlacedByScript);
+        }
+    }
+
     fn swf_version(&self) -> u8 {
         self.parent
             .map(|p| p.swf_version())
@@ -735,6 +747,16 @@ pub trait TDisplayObject<'gc>:
     fn is_focusable(&self) -> bool {
         false
     }
+
+    /// Whether this display object has been created by ActionScript 3.
+    /// When this flag is set, changes from SWF `RemoveObject` tags are
+    /// ignored.
+    fn placed_by_script(&self) -> bool;
+
+    /// Sets whether this display object has been created by ActionScript 3.
+    /// When this flag is set, changes from SWF `RemoveObject` tags are
+    /// ignored.
+    fn set_placed_by_script(&self, context: MutationContext<'gc, '_>, value: bool);
 
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and
@@ -1123,6 +1145,12 @@ macro_rules! impl_display_object_sansbounds {
                 .$field
                 .set_transformed_by_script(value)
         }
+        fn placed_by_script(&self) -> bool {
+            self.0.read().$field.placed_by_script()
+        }
+        fn set_placed_by_script(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+            self.0.write(context).$field.set_placed_by_script(value)
+        }
         fn instantiate(
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
@@ -1255,6 +1283,10 @@ enum DisplayObjectFlags {
     /// Whether this object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
     TransformedByScript,
+
+    /// Whether this object has been placed on the timeline by ActionScript 3.
+    /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
+    PlacedByScript,
 }
 
 pub struct ChildIter<'gc> {

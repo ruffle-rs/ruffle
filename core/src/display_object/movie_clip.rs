@@ -1198,7 +1198,9 @@ impl<'gc> MovieClip<'gc> {
                     .children
                     .insert(depth, child);
                 if let Some(prev_child) = prev_child {
-                    self.remove_child_from_exec_list(context, prev_child);
+                    if !prev_child.placed_by_script() {
+                        self.remove_child_from_exec_list(context, prev_child);
+                    }
                 }
                 self.0
                     .write(context.gc_context)
@@ -1275,8 +1277,10 @@ impl<'gc> MovieClip<'gc> {
                 })
                 .collect();
             for (depth, child) in children {
-                self.0.write(context.gc_context).children.remove(&depth);
-                self.remove_child_from_exec_list(context, child);
+                if !child.placed_by_script() {
+                    self.0.write(context.gc_context).children.remove(&depth);
+                    self.remove_child_from_exec_list(context, child);
+                }
             }
             true
         } else {
@@ -1704,9 +1708,11 @@ impl<'gc> MovieClip<'gc> {
             // Don't do this for rewinds, because they conceptually
             // start from an empty display list, and we also want to examine
             // the old children to decide if they persist (place_frame <= goto_frame).
-            let child = self.0.write(context.gc_context).children.remove(&depth);
-            if let Some(child) = child {
-                self.remove_child_from_exec_list(context, child);
+            if let Some(child) = self.0.read().children.get(&depth).cloned() {
+                if !child.placed_by_script() {
+                    self.0.write(context.gc_context).children.remove(&depth);
+                    self.remove_child_from_exec_list(context, child);
+                }
             }
         }
         Ok(())
@@ -2944,14 +2950,14 @@ impl<'gc, 'a> MovieClip<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        let child = self
-            .0
-            .write(context.gc_context)
-            .children
-            .remove(&remove_object.depth.into());
-        if let Some(child) = child {
-            self.remove_child_from_exec_list(context, child);
+
+        if let Some(child) = self.0.read().children.get(&remove_object.depth.into()).cloned() {
+            if !child.placed_by_script() {
+                self.0.write(context.gc_context).children.remove(&remove_object.depth.into());
+                self.remove_child_from_exec_list(context, child);
+            }
         }
+        
         Ok(())
     }
 
