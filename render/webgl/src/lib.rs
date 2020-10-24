@@ -1274,7 +1274,7 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>) {
-        println!("Get bitmap pixels webgl {:?}", bitmap);
+        //TODO: return option?
         if let Some((id, _texture)) = self.textures.get(bitmap.0) {
             if let Some(bitmap) = self.bitmap_registry.get(id) {
                 let data = match &bitmap.data {
@@ -1299,11 +1299,9 @@ impl RenderBackend for WebGlRenderBackend {
                 };
                 (bitmap.width, bitmap.height, data)
             } else {
-                println!("Failed 1");
                 (0, 0, vec![])
             }
         } else {
-            println!("Failed 2");
             (0, 0, vec![])
         }
     }

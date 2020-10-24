@@ -56,14 +56,14 @@ undefined
 // clone_obj
 -1
 // dest.copyChannel(src, src.rectangle, pnt, 1, 1)
-// dest.getPixel32(0, 0)
--1
-// dest.getPixel32(1, 0)
--ff0001
-// dest.getPixel32(0, 1)
--ff0001
-// dest.getPixel32(1, 1)
--f10001
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+302910990
 // fillRect(src.rectangle, 0xFF121212
 // src.getPixel32(0, 0)
 -15592942
@@ -83,59 +83,11 @@ undefined
 // src.getPixel32(1, 1)
 -15592942
 // fillRect({x: 1, y: 1, width: 1, height: 1}, 0xFF242424
-// src.getPixel32(0, 0)
--14408668
-// src.getPixel32(0, 1)
--14408668
-// src.getPixel32(1, 0)
--14408668
-// src.getPixel32(1, 1)
--14408668
 // fillRect(src.rectangle
-// src.getPixel32(0, 0)
--14408668
-// src.getPixel32(0, 1)
--14408668
-// src.getPixel32(1, 0)
--14408668
-// src.getPixel32(1, 1)
--14408668
 // fillRect()
-// src.getPixel32(0, 0)
--14408668
-// src.getPixel32(0, 1)
--14408668
-// src.getPixel32(1, 0)
--14408668
-// src.getPixel32(1, 1)
--14408668
 // fillRect(undefined, 0xFF121212
-// src.getPixel32(0, 0)
--14408668
-// src.getPixel32(0, 1)
--14408668
-// src.getPixel32(1, 0)
--14408668
-// src.getPixel32(1, 1)
--14408668
 // fillRect({x: -10, y: 1, width: 1, height: 1}, 0xF3243434
-// src.getPixel32(0, 0)
--215731148
-// src.getPixel32(0, 1)
--215731148
-// src.getPixel32(1, 0)
--215731148
-// src.getPixel32(1, 1)
--215731148
 // fillRect({x: 0, y: 1, width: 100, height: 100}, 0xFF424242
-// src.getPixel32(0, 0)
--12434878
-// src.getPixel32(0, 1)
--12434878
-// src.getPixel32(1, 0)
--12434878
-// src.getPixel32(1, 1)
--12434878
 // src.getPixel32(0, 0) alpha = 0
 0
 // src.getPixel32(0, 0) alpha = 1
@@ -256,14 +208,14 @@ undefined
 -1
 // disposed.threshold()
 -1
-// flood_filled.getPixel32(0, 0)
--545455
-// flood_filled.getPixel32(1, 0)
--545455
-// flood_filled.getPixel32(0, 1)
--545455
-// flood_filled.getPixel32(1, 1)
--545455
+// src.getPixel32(0, 0)
+-1
+// src.getPixel32(0, 1)
+-1
+// src.getPixel32(1, 0)
+-1
+// src.getPixel32(1, 1)
+-1
 // getPixel (noargs)
 -1
 // getPixel (missing arg)
@@ -281,6 +233,9 @@ undefined
 // setPixel32 (0, 0)
 // getPixel32(0, 0)
 -1
+// setPixel32 (-1, -1, 0xFFFF00FF)
+// getPixel32(0, 0)
+-1
 // setPixel32 (0, 0, 0xFF00FF00)
 // getPixel32(0, 0)
 -16711936
@@ -296,6 +251,9 @@ undefined
 // setPixel (0, 0, 0xFF00FF00)
 // getPixel32(0, 0)
 -16711936
+// setPixel (-1, -1, 0xFFFF00FF)
+// getPixel32(0, 0)
+-16711936
 // src.getPixel32(0, 0)
 -16711936
 // src.getPixel32(0, 1)
@@ -796,3 +754,82 @@ undefined
 0
 // src.getPixel32(4, 4)
 0
+// floodFill (noargs)
+// src.getPixel32(0, 0)
+-1
+// floodFill (0)
+// src.getPixel32(0, 0)
+-1
+// floodFill (0, 0)
+// src.getPixel32(0, 0)
+-1
+// floodFill (-1, -1, 0xFFFF00FF)
+// src.getPixel32(0, 0)
+-1
+// floodFill (0, 0, 0xFF00FF00)
+// src.getPixel32(0, 0)
+-16711936
+// noise (noargs)
+// src.getPixel32(0, 0)
+-1
+// noise with channelOptions 1|4
+a: false, r: true, g:false, b:true
+// noise with channelOptions 2
+a: false, r: false, g:true, b:false
+// noise with channelOptions 8
+a: true, r: false, g:false, b:false
+// noise with channelOptions 8, grayScale true
+a: true, r: true, g:true, b:true
+// noise with channelOptions 1, grayScale true
+a: false, r: true, g:true, b:true
+// src.colorTransform(src.rectangle, ColorTransform(0, 0, 0, 0, 0, 0, 0, 0))
+// src.getPixel32(0, 0)
+0
+// src.colorTransform({x: -1, y: -1, width: 1, height: 1}, ColorTransform(0, 0, 0, 0, 0, 0, 0, 0))
+// src.getPixel32(0, 0)
+-1
+// src.getPixel32(0, 1)
+-1
+// src.getPixel32(1, 0)
+-1
+// src.getPixel32(1, 1)
+-1
+// src.colorTransform({x: 0, y: 0, width: 3, height: 3}, ColorTransform(0, 0, 0, 0, 0, 0, 0, 0))
+// src.getPixel32(0, 0)
+0
+// src.getPixel32(0, 1)
+0
+// src.getPixel32(1, 0)
+0
+// src.getPixel32(1, 1)
+0
+// src.colorTransform(src.rectangle)
+// src.getPixel32(0, 0)
+-1
+// src.getPixel32(0, 1)
+-1
+// src.getPixel32(1, 0)
+-1
+// src.getPixel32(1, 1)
+-1
+// src.colorTransform(noargs)
+// src.getPixel32(0, 0)
+-1
+// src.getPixel32(0, 1)
+-1
+// src.getPixel32(1, 0)
+-1
+// src.getPixel32(1, 1)
+-1
+// src.colorTransform({x: 0, y: 0, width: 2, height: 2}, ColorTransform(0, 0, 0, 0, 0, 0, 0, 0))
+// src.getPixel32(0, 0)
+0
+// src.getPixel32(0, 1)
+0
+// src.getPixel32(1, 0)
+0
+// src.getPixel32(1, 1)
+0
+// src.colorTransform(src.rectangle, {redMultiplier: 1})
+// src.getPixel32(0, 0)
+-1

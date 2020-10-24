@@ -3,13 +3,12 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::bitmap_data::BitmapDataObject;
+use crate::avm1::object::bitmap_data::{BitmapDataObject, Color};
 use crate::avm1::{Object, TObject, Value};
 use crate::character::Character;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 use rand::Rng;
-use swf::CharacterId;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -39,7 +38,6 @@ pub fn constructor<'gc>(
         .get(2)
         .unwrap_or(&Value::Bool(true))
         .as_bool(activation.current_swf_version());
-
 
     let fill_color = args
         .get(3)
@@ -350,7 +348,6 @@ pub fn dispose<'gc>(
     Ok(Value::Undefined)
 }
 
-// todo: bad args
 pub fn flood_fill<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -362,26 +359,19 @@ pub fn flood_fill<'gc>(
         return Ok((-1).into());
     }
 
-    let x = args
-        .get(0)
-        .unwrap_or(&Value::Number(0_f64))
-        .coerce_to_u32(activation)?;
+    let x = args.get(0).and_then(|v| v.coerce_to_u32(activation).ok());
 
-    let y = args
-        .get(1)
-        .unwrap_or(&Value::Number(0_f64))
-        .coerce_to_u32(activation)?;
+    let y = args.get(1).and_then(|v| v.coerce_to_u32(activation).ok());
 
-    let color = args
-        .get(2)
-        .unwrap_or(&Value::Number(0_f64))
-        .coerce_to_i32(activation)?;
+    let color = args.get(2).and_then(|v| v.coerce_to_i32(activation).ok());
 
-    bitmap_data.flood_fill(activation.context.gc_context, x, y, color.into());
+    if let Some(((x, y), color)) = x.zip(y).zip(color) {
+        bitmap_data.flood_fill(activation.context.gc_context, x, y, color.into());
+    }
+
     Ok(Value::Undefined)
 }
 
-// todo: bad args
 pub fn noise<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -393,53 +383,75 @@ pub fn noise<'gc>(
         return Ok((-1).into());
     }
 
-    log::warn!("noise not implemented");
-    //todo: default
-    let random_seed = args
-        .get(0)
-        .unwrap_or(&Value::Number(0.0))
-        .coerce_to_u32(activation)?;
+    let random_seed = args.get(0).and_then(|v| v.coerce_to_u32(activation).ok());
 
-    // 0 - 255
-    let low = args
-        .get(1)
-        .unwrap_or(&Value::Number(0.0))
-        .coerce_to_u32(activation)?;
+    if let Some(_random_seed) = random_seed {
+        let low = args
+            .get(1)
+            .unwrap_or(&Value::Number(0.0))
+            .coerce_to_u32(activation)? as u8;
 
-    // 0 - 255
-    let height = args
-        .get(2)
-        .unwrap_or(&Value::Number(255.0))
-        .coerce_to_u32(activation)?;
+        let high = args
+            .get(2)
+            .unwrap_or(&Value::Number(255.0))
+            .coerce_to_u32(activation)? as u8;
 
-    // what is the range here
-    let channel_options = args
-        .get(3)
-        .unwrap_or(&Value::Number((1 | 2 | 4) as f64))
-        .coerce_to_u32(activation)?;
+        let channel_options = args
+            .get(3)
+            .unwrap_or(&Value::Number((1 | 2 | 4) as f64))
+            .coerce_to_u32(activation)?;
 
-    // 0 - 255
-    let gray_scale = args
-        .get(4)
-        .unwrap_or(&Value::Bool(false))
-        .as_bool(activation.current_swf_version());
+        let gray_scale = args
+            .get(4)
+            .unwrap_or(&Value::Bool(false))
+            .as_bool(activation.current_swf_version());
 
+        let width = bitmap_data.get_width();
+        let height = bitmap_data.get_height();
+        for x in 0..width {
+            for y in 0..height {
+                let pixel_color = if gray_scale {
+                    let gray = activation.context.rng.gen_range(low, high);
+                    Color::argb(
+                        if channel_options & 8 == 8 {
+                            activation.context.rng.gen_range(low, high)
+                        } else {
+                            255
+                        },
+                        gray,
+                        gray,
+                        gray,
+                    )
+                } else {
+                    Color::argb(
+                        if channel_options & 8 == 8 {
+                            activation.context.rng.gen_range(low, high)
+                        } else {
+                            255
+                        },
+                        if channel_options & 1 == 1 {
+                            activation.context.rng.gen_range(low, high)
+                        } else {
+                            0
+                        },
+                        if channel_options & 2 == 2 {
+                            activation.context.rng.gen_range(low, high)
+                        } else {
+                            0
+                        },
+                        if channel_options & 4 == 4 {
+                            activation.context.rng.gen_range(low, high)
+                        } else {
+                            0
+                        },
+                    )
+                };
 
-    let width = bitmap_data.get_width();
-    let height = bitmap_data.get_height();
-    for x in 0..width {
-        for y in 0..height {
-            let pixel_color = activation.context.rng.gen_range(low, height);
-            bitmap_data.set_pixel32_raw(
-                activation.context.gc_context,
-                x,
-                y,
-                (pixel_color as i32).into(),
-            );
+                bitmap_data.set_pixel32_raw(activation.context.gc_context, x, y, pixel_color);
+            }
         }
     }
 
-    bitmap_data.dispose(activation.context.gc_context);
     Ok(Value::Undefined)
 }
 
@@ -452,7 +464,6 @@ pub fn apply_filter<'gc>(
     Ok((-1).into())
 }
 
-//TODO:
 pub fn draw<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -463,15 +474,6 @@ pub fn draw<'gc>(
     if bitmap_data.get_disposed() {
         return Ok((-1).into());
     }
-
-    let swf_movie = _activation.context.swf.clone();
-    let character = _activation
-        .context
-        .library
-        .library_for_movie(swf_movie)
-        .unwrap()
-        .get_character_by_id(191 as CharacterId);
-    log::warn!("draw character {:?}", character);
 
     log::warn!("BitmapData.draw - not yet implemented");
     Ok(Value::Undefined)
@@ -492,7 +494,6 @@ pub fn generate_filter_rect<'gc>(
     Ok(Value::Undefined)
 }
 
-// TODO: args tests
 pub fn color_transform<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -514,15 +515,14 @@ pub fn color_transform<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation);
 
-    //TODO: does this only work on actual rectangles or does it work on anything with x/y/w/h
-    let x = rectangle.get("x", activation)?.coerce_to_u32(activation)?;
-    let y = rectangle.get("y", activation)?.coerce_to_u32(activation)?;
+    let x = rectangle.get("x", activation)?.coerce_to_i32(activation)?;
+    let y = rectangle.get("y", activation)?.coerce_to_i32(activation)?;
     let width = rectangle
         .get("width", activation)?
-        .coerce_to_u32(activation)?;
+        .coerce_to_i32(activation)?;
     let height = rectangle
         .get("height", activation)?
-        .coerce_to_u32(activation)?;
+        .coerce_to_i32(activation)?;
 
     //TODO: does this only work on actual cts or does it work on anything with x/y/w/h
     let red_multiplier = color_transform
@@ -556,10 +556,10 @@ pub fn color_transform<'gc>(
 
     bitmap_data.color_transform(
         activation.context.gc_context,
-        x,
-        y,
-        x + width,
-        y + height,
+        x as u32,
+        y as u32,
+        (x + width) as u32,
+        (y + height) as u32,
         alpha_multiplier,
         alpha_offset,
         red_multiplier,
@@ -725,7 +725,6 @@ pub fn threshold<'gc>(
     log::warn!("BitmapData.threshold - not yet implemented");
     Ok(Value::Undefined)
 }
-
 
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
@@ -895,13 +894,7 @@ pub fn create_proto<'gc>(
         EnumSet::empty(),
         Some(fn_proto),
     );
-    object.force_set_function(
-        "merge",
-        merge,
-        gc_context,
-        EnumSet::empty(),
-        Some(fn_proto),
-    );
+    object.force_set_function("merge", merge, gc_context, EnumSet::empty(), Some(fn_proto));
     object.force_set_function(
         "paletteMap",
         palette_map,
@@ -949,7 +942,10 @@ pub fn load_bitmap<'gc>(
 
     log::warn!("BitmapData.loadBitmap({:?}), not yet implemented", name);
 
-    let swf = activation.target_clip_or_root().movie().expect("No movie ?");
+    let swf = activation
+        .target_clip_or_root()
+        .movie()
+        .expect("No movie ?");
 
     let bh = activation
         .context

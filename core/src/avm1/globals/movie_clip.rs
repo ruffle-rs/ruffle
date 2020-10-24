@@ -224,20 +224,33 @@ fn attach_bitmap<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-
     if let Some(bitmap) = args.get(0) {
         if let Some(bitmap_data) = bitmap.coerce_to_object(activation).as_bitmap_data_object() {
             if let Some(depth) = args.get(1) {
-
                 let depth = depth
                     .coerce_to_i32(activation)?
                     .wrapping_add(AVM_DEPTH_BIAS);
 
                 let rgba = bitmap_data.get_pixels_rgba();
-                let bitmap_handle = activation.context.renderer.register_bitmap_raw(bitmap_data.get_width(), bitmap_data.get_height(), rgba);
-                //TODO: casting
-                let display_object = Bitmap::new(&mut activation.context, 0, bitmap_handle, bitmap_data.get_width() as u16, bitmap_data.get_height() as u16);
-                movie_clip.replace_at_depth(&mut activation.context, display_object.into(), depth.into());
+
+                let bitmap_handle = activation.context.renderer.register_bitmap_raw(
+                    bitmap_data.get_width(),
+                    bitmap_data.get_height(),
+                    rgba,
+                );
+                //TODO: casting and character id
+                let display_object = Bitmap::new(
+                    &mut activation.context,
+                    0,
+                    bitmap_handle,
+                    bitmap_data.get_width() as u16,
+                    bitmap_data.get_height() as u16,
+                );
+                movie_clip.replace_at_depth(
+                    &mut activation.context,
+                    display_object.into(),
+                    depth.into(),
+                );
             }
         }
     }

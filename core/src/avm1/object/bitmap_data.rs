@@ -131,9 +131,12 @@ impl<'gc> BitmapDataObject<'gc> {
     }
 
     pub fn get_pixels_rgba(&self) -> Vec<u8> {
-        self.0.read().pixels.iter().flat_map(|p| {
-            vec![p.get_red(), p.get_green(), p.get_blue(), p.get_alpha()]
-        }).collect()
+        self.0
+            .read()
+            .pixels
+            .iter()
+            .flat_map(|p| vec![p.get_red(), p.get_green(), p.get_blue(), p.get_alpha()])
+            .collect()
     }
 
     pub fn get_disposed(&self) -> bool {
@@ -221,7 +224,12 @@ impl<'gc> BitmapDataObject<'gc> {
 
     pub fn set_pixel(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: Color) {
         let current_alpha = self.get_pixel_raw(x, y).map(|p| p.get_alpha()).unwrap_or(0);
-        self.set_pixel32(gc_context, x as i32, y as i32, color.with_alpha(current_alpha))
+        self.set_pixel32(
+            gc_context,
+            x as i32,
+            y as i32,
+            color.with_alpha(current_alpha),
+        )
 
         // self.set_pixel32_raw(
         //     gc_context,
@@ -398,8 +406,8 @@ impl<'gc> BitmapDataObject<'gc> {
         b_mult: f32,
         b_add: f32,
     ) {
-        for x in min_x..max_x {
-            for y in min_y..max_y {
+        for x in min_x.max(0)..max_x.min(self.get_width()) {
+            for y in min_y.max(0)..max_y.min(self.get_height()) {
                 let color = self.get_pixel_raw(x, y).unwrap_or(0.into());
                 let a = ((color.get_alpha() as f32 * a_mult) + a_add) as u8;
                 let r = ((color.get_red() as f32 * r_mult) + r_add) as u8;

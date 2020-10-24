@@ -153,8 +153,7 @@ impl RenderBackend for NullRenderer {
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>) {
         (0, 0, vec![])
     }
-    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle
-    {
+    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
         BitmapHandle(0)
     }
 }
