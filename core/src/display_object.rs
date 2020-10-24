@@ -673,11 +673,22 @@ pub trait TDisplayObject<'gc>:
     fn next_sibling(&self) -> Option<DisplayObject<'gc>>;
     fn set_next_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
 
+    fn last_child(&self) -> Option<DisplayObject<'gc>> {
+        let mut last = self.first_child()?;
+        while let Some(l) = last.next_sibling() {
+            log::error!("Searching for last child, got child at {}", l.depth());
+            last = l;
+        }
+
+        Some(last)
+    }
+
     /// Iterates over the children of this display object in execution order.
     /// This is different than render order.
     fn children(&self) -> ChildIter<'gc> {
         ChildIter {
             cur_child: self.first_child(),
+            rev_child: self.last_child(),
         }
     }
 
@@ -687,8 +698,11 @@ pub trait TDisplayObject<'gc>:
         None
     }
 
-    /// Get a child display object by it's depth.
-    fn get_child_by_id(&self, _id: Depth) -> Option<DisplayObject<'gc>> {
+    /// Get a child display object by it's relative position in the child list.
+    ///
+    /// The ID of a display object is not it's Depth, but the index it has in
+    /// the sibling list.
+    fn get_child_by_id(&self, _id: usize) -> Option<DisplayObject<'gc>> {
         None
     }
 
@@ -1291,15 +1305,50 @@ enum DisplayObjectFlags {
 
 pub struct ChildIter<'gc> {
     cur_child: Option<DisplayObject<'gc>>,
+    rev_child: Option<DisplayObject<'gc>>,
 }
 
 impl<'gc> Iterator for ChildIter<'gc> {
     type Item = DisplayObject<'gc>;
     fn next(&mut self) -> Option<Self::Item> {
         let cur = self.cur_child;
+
         self.cur_child = self
             .cur_child
             .and_then(|display_cell| display_cell.next_sibling());
+
+        if cur.is_none()
+            || self
+                .rev_child
+                .map(|r| DisplayObject::ptr_eq(r, cur.unwrap()))
+                .unwrap_or(false)
+        {
+            self.cur_child = None;
+            self.rev_child = None;
+        }
+
         cur
+    }
+}
+
+impl<'gc> DoubleEndedIterator for ChildIter<'gc> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let rev = self.rev_child;
+
+        self.rev_child = self
+            .rev_child
+            .and_then(|display_cell| display_cell.prev_sibling());
+
+        if rev.is_none()
+            || self
+                .cur_child
+                .map(|c| DisplayObject::ptr_eq(c, rev.unwrap()))
+                .unwrap_or(false)
+        {
+            self.cur_child = None;
+            self.rev_child = None;
+        }
+
+        rev
     }
 }
