@@ -366,7 +366,38 @@ pub fn flood_fill<'gc>(
     let color = args.get(2).and_then(|v| v.coerce_to_i32(activation).ok());
 
     if let Some(((x, y), color)) = x.zip(y).zip(color) {
-        bitmap_data.flood_fill(activation.context.gc_context, x, y, color.into());
+        let mut pending = Vec::new();
+        pending.push((x, y));
+
+        let color: Color = color.into();
+        let color: Color = color.to_premultiplied_alpha(bitmap_data.get_transparency());
+
+        let width = bitmap_data.get_width();
+        let height = bitmap_data.get_height();
+
+        let expected_color = bitmap_data.get_pixel_raw(x, y).unwrap_or(0.into());
+
+        while !pending.is_empty() {
+            if let Some((x, y)) = pending.pop() {
+                if let Some(old_color) = bitmap_data.get_pixel_raw(x, y) {
+                    if old_color == expected_color {
+                        if x > 0 {
+                            pending.push((x - 1, y));
+                        }
+                        if y > 0 {
+                            pending.push((x, y - 1));
+                        }
+                        if x < width - 1 {
+                            pending.push((x + 1, y))
+                        }
+                        if y < height - 1 {
+                            pending.push((x, y + 1));
+                        }
+                        bitmap_data.set_pixel32_raw(activation.context.gc_context, x, y, color);
+                    }
+                }
+            }
+        }
     }
 
     Ok(Value::Undefined)
