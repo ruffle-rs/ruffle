@@ -964,6 +964,44 @@ impl<'gc> MovieClip<'gc> {
         child.set_depth(context.gc_context, depth);
     }
 
+    /// Adds a script-created display object as a child to this clip at a
+    /// particular position in the child list.
+    ///
+    /// The depth of `child` will be selected to maintain the invariant that
+    /// clips with a higher AS3 `id` also have a higher SWF depth than those
+    /// with a lower `id`. In cases where this is not numerically possible, the
+    /// depths of all clips above this one will be adjusted to maintain said
+    /// invariant.
+    pub fn add_child_from_avm_by_id(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        child: DisplayObject<'gc>,
+        index: usize,
+    ) {
+        let parent = self.0.read();
+        let slot_depth = parent.children.keys().nth(index).copied();
+        if slot_depth.is_none() {
+            //Off-the-end child additions don't need depth adjustments
+            drop(parent);
+            return self.add_child_from_avm(context, child, self.highest_depth().unwrap_or(0) + 1);
+        }
+
+        let slot_depth = slot_depth.unwrap();
+        let shifted_children: Vec<(Depth, DisplayObject<'gc>)> = parent
+            .children
+            .range(slot_depth..)
+            .rev()
+            .map(|(k, v)| (*k, *v))
+            .collect();
+        drop(parent);
+
+        for (old_depth, old_child_at_slot) in shifted_children {
+            self.swap_child_to_depth(context, old_child_at_slot, old_depth + 1);
+        }
+
+        self.add_child_from_avm(context, child, slot_depth);
+    }
+
     /// Remove a child from this clip.
     pub fn remove_child_from_avm(
         &mut self,
