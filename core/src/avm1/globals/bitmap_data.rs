@@ -681,6 +681,7 @@ pub fn scroll<'gc>(
     log::warn!("BitmapData.scroll - not yet implemented");
     Ok(Value::Undefined)
 }
+
 pub fn threshold<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
