@@ -497,6 +497,7 @@ impl<W: Write> Writer<W> {
         self.write_ubits(5, num_bits.into())?;
         self.write_sbits_twips(num_bits, m.tx)?;
         self.write_sbits_twips(num_bits, m.ty)?;
+        self.flush_bits()?;
         Ok(())
     }
 

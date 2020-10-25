@@ -86,6 +86,10 @@ impl<'gc> Namespace<'gc> {
         matches!(self, Self::Private(_))
     }
 
+    pub fn is_dynamic(&self) -> bool {
+        self.eq(&Self::Package("".into())) || self.is_any()
+    }
+
     /// Get the string value of this namespace, ignoring it's type.
     ///
     /// TODO: Is this *actually* the namespace URI?
@@ -162,6 +166,24 @@ impl<'gc> QName<'gc> {
             },
             _ => return Err("Attempted to pull QName from non-QName multiname".into()),
         })
+    }
+
+    /// Given a symbol class name, parse it as a `QName`.
+    ///
+    /// Symbol class names consist of one or more package strings, followed by
+    /// the local name of the class, all separated by dots.
+    pub fn from_symbol_class(class_name: &str, mc: MutationContext<'gc, '_>) -> Option<Self> {
+        match &class_name.rsplitn(2, '.').collect::<Vec<&str>>()[..] {
+            [local_name, package_name] => Some(Self {
+                ns: Namespace::Package(AvmString::new(mc, package_name.to_string())),
+                name: AvmString::new(mc, local_name.to_string()),
+            }),
+            [local_name] => Some(Self {
+                ns: Namespace::public_namespace(),
+                name: AvmString::new(mc, local_name.to_string()),
+            }),
+            _ => None,
+        }
     }
 
     pub fn local_name(&self) -> AvmString<'gc> {
@@ -359,6 +381,16 @@ impl<'gc> Multiname<'gc> {
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
         self.name
+    }
+
+    pub fn includes_dynamic_namespace(&self) -> bool {
+        for ns in self.ns.iter() {
+            if ns.is_dynamic() {
+                return true;
+            }
+        }
+
+        false
     }
 }
 

@@ -13,26 +13,58 @@ function wait_for_ruffle(browser) {
     browser.waitUntil(() => is_ruffle_loaded(browser), {
         timeoutMsg: "Expected Ruffle to load",
     });
+    throw_if_error(browser);
+}
+
+function setup_error_handler(browser) {
+    browser.execute(() => {
+        window.ruffleErrors = [];
+        window.addEventListener("error", (error) => {
+            window.ruffleErrors.push(error);
+        });
+    });
+}
+
+function has_error(browser) {
+    return browser.execute(
+        () => window.ruffleErrors && window.ruffleErrors.length > 0
+    );
+}
+
+function throw_if_error(browser) {
+    return browser.execute(() => {
+        if (window.ruffleErrors && window.ruffleErrors.length > 0) {
+            throw window.ruffleErrors[0];
+        }
+    });
 }
 
 function inject_ruffle(browser) {
+    setup_error_handler(browser);
     browser.execute(() => {
         const script = document.createElement("script");
         script.type = "text/javascript";
         script.src = "/dist/ruffle.js";
         document.head.appendChild(script);
     });
+    throw_if_error(browser);
 }
 
-function play_and_monitor(browser, player) {
+function play_and_monitor(browser, player, expected_output) {
+    throw_if_error(browser);
+
     // TODO: better way to test for this in the API
     browser.waitUntil(
         () => {
-            return browser.execute((player) => {
-                return (
-                    player.play_button_clicked !== undefined && player.instance
-                );
-            }, player);
+            return (
+                has_error(browser) ||
+                browser.execute((player) => {
+                    return (
+                        player.play_button_clicked !== undefined &&
+                        player.instance
+                    );
+                }, player)
+            );
         },
         {
             timeoutMsg: "Expected player to have initialized",
@@ -49,12 +81,16 @@ function play_and_monitor(browser, player) {
         player.play_button_clicked();
     }, player);
 
+    if (expected_output === undefined) {
+        expected_output = "Hello from Flash!\n";
+    }
+
     browser.waitUntil(
         () => {
             return (
                 browser.execute((player) => {
                     return player.__ruffle_log__;
-                }, player) === "Hello from Flash!\n"
+                }, player) === expected_output
             );
         },
         {

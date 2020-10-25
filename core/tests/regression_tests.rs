@@ -20,6 +20,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -259,6 +260,7 @@ swf_tests! {
     (bitmap_filter, "avm1/bitmap_filter", 1),
     (blur_filter, "avm1/blur_filter", 1),
     (date_constructor, "avm1/date/constructor", 1),
+    (removed_clip_halts_script, "avm1/removed_clip_halts_script", 13),
     (date_utc, "avm1/date/UTC", 1),
     (date_set_date, "avm1/date/setDate", 1),
     (date_set_full_year, "avm1/date/setFullYear", 1),
@@ -277,6 +279,7 @@ swf_tests! {
     (date_set_utc_seconds, "avm1/date/setUTCSeconds", 1),
     (date_set_year, "avm1/date/setYear", 1),
     (this_scoping, "avm1/this_scoping", 1),
+    (bevel_filter, "avm1/bevel_filter", 1),
     (as3_hello_world, "avm2/hello_world", 1),
     (as3_function_call, "avm2/function_call", 1),
     (as3_function_call_via_call, "avm2/function_call_via_call", 1),
@@ -383,6 +386,24 @@ swf_tests! {
     (as3_array_sort, "avm2/array_sort", 1),
     (as3_array_sorton, "avm2/array_sorton", 1),
     (as3_array_hasownproperty, "avm2/array_hasownproperty", 1),
+    (stage_property_representation, "avm1/stage_property_representation", 1),
+    (as3_timeline_scripts, "avm2/timeline_scripts", 3),
+    (as3_movieclip_properties, "avm2/movieclip_properties", 4),
+    (as3_movieclip_gotoandplay, "avm2/movieclip_gotoandplay", 5),
+    (as3_movieclip_gotoandstop, "avm2/movieclip_gotoandstop", 5),
+    (as3_movieclip_stop, "avm2/movieclip_stop", 5),
+    (as3_movieclip_prev_frame, "avm2/movieclip_prev_frame", 5),
+    (as3_movieclip_next_frame, "avm2/movieclip_next_frame", 5),
+    (as3_movieclip_prev_scene, "avm2/movieclip_prev_scene", 5),
+    (as3_movieclip_next_scene, "avm2/movieclip_next_scene", 5),
+    (as3_framelabel_constr, "avm2/framelabel_constr", 5),
+    (as3_movieclip_currentlabels, "avm2/movieclip_currentlabels", 5),
+    (as3_scene_constr, "avm2/scene_constr", 5),
+    (as3_movieclip_currentscene, "avm2/movieclip_currentscene", 5),
+    (as3_movieclip_scenes, "avm2/movieclip_scenes", 5),
+    (as3_movieclip_play, "avm2/movieclip_play", 5),
+    (as3_movieclip_constr, "avm2/movieclip_constr", 1),
+    (as3_lazyinit, "avm2/lazyinit", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -453,6 +474,23 @@ fn external_interface_avm1() -> Result<(), Error> {
             ));
             Ok(())
         },
+    )
+}
+
+#[test]
+fn timeout_avm1() -> Result<(), Error> {
+    test_swf(
+        "tests/swfs/avm1/timeout/test.swf",
+        1,
+        "tests/swfs/avm1/timeout/output.txt",
+        |player| {
+            player
+                .lock()
+                .unwrap()
+                .set_max_execution_duration(Duration::from_secs(5));
+            Ok(())
+        },
+        |_| Ok(()),
     )
 }
 
@@ -575,6 +613,10 @@ fn run_swf(
         Box::new(TestLogBackend::new(trace_output.clone())),
     )?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
+    player
+        .lock()
+        .unwrap()
+        .set_max_execution_duration(Duration::from_secs(120));
 
     before_start(player.clone())?;
 

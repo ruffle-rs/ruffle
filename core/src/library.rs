@@ -1,34 +1,44 @@
+use crate::avm2::Domain as Avm2Domain;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
-use crate::tag_utils::SwfMovie;
+use crate::property_map::{Entry, PropertyMap};
+use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::vminterface::AvmType;
 use gc_arena::{Collect, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-use swf::CharacterId;
+use swf::{CharacterId, TagCode};
 use weak_table::PtrWeakKeyHashMap;
+
+/// Boxed error alias.
+type Error = Box<dyn std::error::Error>;
 
 /// Symbol library for a single given SWF.
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
-    export_characters: HashMap<String, Character<'gc>>,
+    export_characters: PropertyMap<Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
     device_font: Option<Font<'gc>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
+    avm_type: AvmType,
+    avm2_domain: Option<Avm2Domain<'gc>>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
-    pub fn new() -> Self {
+    pub fn new(avm_type: AvmType) -> Self {
         MovieLibrary {
             characters: HashMap::new(),
-            export_characters: HashMap::new(),
+            export_characters: PropertyMap::new(),
             jpeg_tables: None,
             device_font: None,
             fonts: HashMap::new(),
+            avm_type,
+            avm2_domain: None,
         }
     }
 
@@ -48,9 +58,8 @@ impl<'gc> MovieLibrary<'gc> {
     /// Registers an export name for a given character ID.
     /// This character will then be instantiable from AVM1.
     pub fn register_export(&mut self, id: CharacterId, export_name: &str) {
-        use std::collections::hash_map::Entry;
         if let Some(character) = self.characters.get(&id) {
-            match self.export_characters.entry(export_name.to_string()) {
+            match self.export_characters.entry(export_name, false) {
                 Entry::Vacant(e) => {
                     e.insert(character.clone());
                 }
@@ -81,7 +90,7 @@ impl<'gc> MovieLibrary<'gc> {
 
     #[allow(dead_code)]
     pub fn get_character_by_export_name(&self, name: &str) -> Option<&Character<'gc>> {
-        self.export_characters.get(name)
+        self.export_characters.get(name, false)
     }
 
     /// Instantiates the library item with the given character ID into a display object.
@@ -106,7 +115,7 @@ impl<'gc> MovieLibrary<'gc> {
         export_name: &str,
         gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
-        if let Some(character) = self.export_characters.get(export_name) {
+        if let Some(character) = self.export_characters.get(export_name, false) {
             self.instantiate_display_object(character, gc_context)
         } else {
             log::error!(
@@ -193,11 +202,40 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn set_device_font(&mut self, font: Option<Font<'gc>>) {
         self.device_font = font;
     }
-}
 
-impl Default for MovieLibrary<'_> {
-    fn default() -> Self {
-        Self::new()
+    /// Check if the current movie's VM type is compatible with running code on
+    /// a particular VM. If it is not, then this yields an error.
+    pub fn check_avm_type(&mut self, new_type: AvmType) -> Result<(), Error> {
+        if self.avm_type != new_type {
+            return Err(format!(
+                "Blocked attempt to run {:?} code on an {:?} movie.",
+                new_type, self.avm_type
+            )
+            .into());
+        }
+
+        self.avm_type = new_type;
+
+        Ok(())
+    }
+
+    /// Get the VM type of this movie.
+    pub fn avm_type(&self) -> AvmType {
+        self.avm_type
+    }
+
+    pub fn set_avm2_domain(&mut self, avm2_domain: Avm2Domain<'gc>) {
+        self.avm2_domain = Some(avm2_domain);
+    }
+
+    /// Get the AVM2 domain this movie runs under.
+    ///
+    /// Note that the presence of an AVM2 domain does *not* indicate that this
+    /// movie provides AVM2 code. For example, a movie may have been loaded by
+    /// AVM2 code into a particular domain, even though it turned out to be
+    /// an AVM1 movie, and thus this domain is unused.
+    pub fn avm2_domain(&self) -> Avm2Domain<'gc> {
+        self.avm2_domain.unwrap()
     }
 }
 
@@ -223,8 +261,31 @@ impl<'gc> Library<'gc> {
 
     pub fn library_for_movie_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
         if !self.movie_libraries.contains_key(&movie) {
+            let slice = SwfSlice::from(movie.clone());
+            let mut reader = slice.read_from(0);
+            let vm_type = if movie.header().version > 8 {
+                match reader.read_tag_code_and_length() {
+                    Ok((tag_code, _tag_len))
+                        if TagCode::from_u16(tag_code) == Some(TagCode::FileAttributes) =>
+                    {
+                        match reader.read_file_attributes() {
+                            Ok(attributes) if attributes.is_action_script_3 => AvmType::Avm2,
+                            Ok(_) => AvmType::Avm1,
+                            Err(e) => {
+                                log::error!("Got {} when reading FileAttributes", e);
+                                AvmType::Avm1
+                            }
+                        }
+                    }
+                    // SWF defaults to AVM1 if FileAttributes is not the first tag.
+                    _ => AvmType::Avm1,
+                }
+            } else {
+                AvmType::Avm1
+            };
+
             self.movie_libraries
-                .insert(movie.clone(), MovieLibrary::default());
+                .insert(movie.clone(), MovieLibrary::new(vm_type));
         };
 
         self.movie_libraries.get_mut(&movie).unwrap()

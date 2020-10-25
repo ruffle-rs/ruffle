@@ -11,6 +11,8 @@ use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
+use crate::types::{Degrees, Percent};
+use crate::vminterface::Instantiator;
 use crate::xml::XMLDocument;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::{cell::Ref, sync::Arc};
@@ -550,6 +552,14 @@ impl<'gc> EditText<'gc> {
                 Twips::new(1),
                 swf::Color::from_rgb(0, 0xFF),
             )));
+            write
+                .drawing
+                .set_fill_style(Some(swf::FillStyle::Color(Color {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 255,
+                })));
             write.drawing.draw_command(DrawCommand::MoveTo {
                 x: Twips::new(0),
                 y: Twips::new(0),
@@ -847,7 +857,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
-        _instantiated_from_avm: bool,
+        _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
         self.set_default_instance_name(context);
@@ -1027,6 +1037,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             self.render_layout_box(context, layout_box);
         }
 
+        context.renderer.deactivate_mask();
+        context.renderer.draw_rect(
+            Color::from_rgb(0, 0xff),
+            &(context.transform_stack.transform().matrix * mask),
+        );
         context.renderer.pop_mask();
 
         context.transform_stack.pop();

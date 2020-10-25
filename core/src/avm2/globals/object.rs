@@ -8,7 +8,7 @@ use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::MutationContext;
+use gc_arena::{GcCell, MutationContext};
 
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -157,7 +157,10 @@ pub fn set_property_is_enumerable<'gc>(
 /// This function creates a suitable class and object prototype attached to it,
 /// but does not actually fill it with methods. That requires a valid function
 /// prototype, and is thus done by `fill_proto` below.
-pub fn create_proto<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+pub fn create_proto<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    globals: Object<'gc>,
+) -> (Object<'gc>, GcCell<'gc, Class<'gc>>) {
     let object_class = Class::new(
         QName::new(Namespace::public_namespace(), "Object"),
         None,
@@ -166,9 +169,11 @@ pub fn create_proto<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc
         activation.context.gc_context,
     );
 
-    let globals = activation.avm2().globals();
     let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
-    ScriptObject::bare_prototype(activation.context.gc_context, object_class, Some(scope))
+    let proto =
+        ScriptObject::bare_prototype(activation.context.gc_context, object_class, Some(scope));
+
+    (proto, object_class)
 }
 
 /// Finish constructing `Object.prototype`, and also construct `Object`.

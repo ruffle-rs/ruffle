@@ -135,6 +135,8 @@ impl WebAudioBackend {
                 let node = self.context.create_buffer_source().unwrap();
                 node.set_buffer(Some(&*audio_buffer));
 
+                let buffer_source_node = node.clone();
+
                 let sound_sample_rate = f64::from(sound.format.sample_rate);
                 let node: web_sys::AudioNode = match settings {
                     Some(settings)
@@ -202,10 +204,23 @@ impl WebAudioBackend {
                     format: sound.format.clone(),
                     instance_type: SoundInstanceType::AudioBuffer(node),
                 };
-                SOUND_INSTANCES.with(|instances| {
+                let handle = SOUND_INSTANCES.with(|instances| {
                     let mut instances = instances.borrow_mut();
                     instances.insert(instance)
-                })
+                });
+
+                let ended_handler = move || {
+                    SOUND_INSTANCES.with(|instances| {
+                        let mut instances = instances.borrow_mut();
+                        instances.remove(handle)
+                    });
+                };
+                let closure = Closure::once_into_js(Box::new(ended_handler) as Box<dyn FnMut()>);
+                // Note that we add the ended event to the AudioBufferSourceNode; an audio envelope adds more nodes
+                // in the graph, but these nodes don't fire the ended event.
+                let _ = buffer_source_node
+                    .add_event_listener_with_callback("ended", closure.as_ref().unchecked_ref());
+                handle
             }
             SoundSource::Decoder(audio_data) => {
                 let decoder: Decoder = match sound.format.compression {
@@ -752,9 +767,14 @@ impl AudioBackend for WebAudioBackend {
         NUM_SOUNDS_LOADING.with(|n| n.get() == 0)
     }
 
-    fn prime_audio(&mut self) {
+    fn play(&mut self) {
         // Allow audio to start playing after a user gesture.
         let _ = self.context.resume();
+    }
+
+    fn pause(&mut self) {
+        // Suspend audio to be resumed later.
+        let _ = self.context.suspend();
     }
 
     fn stop_all_sounds(&mut self) {

@@ -116,22 +116,39 @@ function handleFrames(frameList) {
          * Also, this way we should be able to handle frame       *
          * frame navigation, which is good.                       */
         setTimeout(function () {
-            if (
-                current_frame.contentDocument.readyState &&
-                current_frame.contentDocument.readyState == "complete"
-            ) {
-                loadFrame(current_frame.contentWindow);
+            try {
+                if (
+                    current_frame.contentDocument &&
+                    current_frame.contentDocument.readyState &&
+                    current_frame.contentDocument.readyState == "complete"
+                ) {
+                    loadFrame(current_frame.contentWindow);
+                }
+            } catch (e) {
+                console.log(
+                    "error loading ruffle player into frame: " + e.message
+                );
             }
         }, 500);
-        if ((originalOnLoad = current_frame.onload)) {
-            current_frame.onload = function (event) {
-                originalOnLoad(event);
-                load_ruffle_player_into_frame(event);
-            };
-        } else {
-            current_frame.onload = load_ruffle_player_into_frame;
+        try {
+            if ((originalOnLoad = current_frame.onload)) {
+                current_frame.onload = function (event) {
+                    try {
+                        originalOnLoad(event);
+                    } catch (e) {
+                        console.log(
+                            "Error calling original onload: " + e.message
+                        );
+                    }
+                    load_ruffle_player_into_frame(event);
+                };
+            } else {
+                current_frame.onload = load_ruffle_player_into_frame;
+            }
+            polyfill_frames_common(current_frame.contentWindow);
+        } catch (e) {
+            console.log("error loading ruffle player into frame: " + e.message);
         }
-        polyfill_frames_common(current_frame.contentWindow);
     }
 }
 

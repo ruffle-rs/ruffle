@@ -24,8 +24,11 @@ pub fn constructor<'gc>(
         .map(|o| o.coerce_to_object(activation))
         .and_then(|o| o.as_display_object());
 
-    let sound = this.as_sound_object().unwrap();
-    sound.set_owner(activation.context.gc_context, owner);
+    if let Some(sound) = this.as_sound_object() {
+        sound.set_owner(activation.context.gc_context, owner);
+    } else {
+        log::error!("Tried to construct a Sound on a non-SoundObject");
+    }
 
     Ok(this.into())
 }

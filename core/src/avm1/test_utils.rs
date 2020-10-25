@@ -16,10 +16,13 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::vminterface::Instantiator;
 use gc_arena::{rootless_arena, MutationContext};
+use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
+use std::time::Duration;
 
 pub fn with_avm<F>(swf_version: u8, test: F)
 where
@@ -77,8 +80,10 @@ where
             avm1: &mut avm1,
             avm2: &mut avm2,
             external_interface: &mut Default::default(),
+            update_start: Instant::now(),
+            max_execution_duration: Duration::from_secs(15),
         };
-        root.post_instantiation(&mut context, root, None, false, false);
+        root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
         root.set_name(context.gc_context, "");
 
         fn run_test<'a, 'gc: 'a, F>(

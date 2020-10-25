@@ -1,0 +1,5 @@
+//var val = new FrameLabel("test", 123);
+//val.frame
+123
+//val.name
+test

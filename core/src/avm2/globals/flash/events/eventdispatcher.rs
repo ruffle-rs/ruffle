@@ -29,11 +29,17 @@ pub fn class_init<'gc>(
 
 /// Construct `EventDispatcher`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
-    Class::new(
+    let class = Class::new(
         QName::new(Namespace::package("flash.events"), "EventDispatcher"),
         Some(QName::new(Namespace::public_namespace(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
-    )
+    );
+
+    class
+        .write(mc)
+        .implements(QName::new(Namespace::package("flash.events"), "IEventDispatcher").into());
+
+    class
 }

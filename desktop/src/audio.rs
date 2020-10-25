@@ -27,7 +27,7 @@ pub struct CpalAudioBackend {
 struct Stream(cpal::Stream);
 unsafe impl Send for CpalAudioBackend {}
 
-type Signal = Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>>;
+type Signal = Box<dyn Send + dasp::signal::Signal<Frame = [i16; 2]>>;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -35,7 +35,7 @@ type Error = Box<dyn std::error::Error>;
 /// A `Sound` is defined by the `DefineSound` SWF tags.
 struct Sound {
     format: swf::SoundFormat,
-    data: Arc<Vec<u8>>,
+    data: Arc<[u8]>,
     /// Number of samples in this audio.
     /// This does not include the skip_sample_frames.
     num_sample_frames: u32,
@@ -147,7 +147,7 @@ impl CpalAudioBackend {
     /// Instantiate a seeabkle decoder for the compression that the sound data uses.
     fn make_seekable_decoder(
         format: &swf::SoundFormat,
-        data: Cursor<VecAsRef>,
+        data: Cursor<ArcAsRef>,
     ) -> Result<Box<dyn Send + SeekableDecoder>, Error> {
         let decoder: Box<dyn Send + SeekableDecoder> = match format.compression {
             AudioCompression::Uncompressed => Box::new(PcmDecoder::new(
@@ -180,14 +180,18 @@ impl CpalAudioBackend {
 
     /// Resamples a stream.
     /// TODO: Allow interpolator to be user-configurable?
-    fn make_resampler<S: Send + sample::signal::Signal<Frame = [i16; 2]>>(
+    fn make_resampler<S: Send + dasp::signal::Signal<Frame = [i16; 2]>>(
         &self,
         format: &swf::SoundFormat,
         mut signal: S,
-    ) -> sample::interpolate::Converter<S, impl sample::interpolate::Interpolator<Frame = [i16; 2]>>
-    {
-        let interpolator = sample::interpolate::Linear::from_source(&mut signal);
-        sample::interpolate::Converter::from_hz_to_hz(
+    ) -> dasp::signal::interpolate::Converter<
+        S,
+        impl dasp::interpolate::Interpolator<Frame = [i16; 2]>,
+    > {
+        let left = signal.next();
+        let right = signal.next();
+        let interpolator = dasp::interpolate::linear::Linear::new(left, right);
+        dasp::signal::interpolate::Converter::from_hz_to_hz(
             signal,
             interpolator,
             format.sample_rate.into(),
@@ -195,14 +199,14 @@ impl CpalAudioBackend {
         )
     }
 
-    /// Creates a `sample::signal::Signal` that decodes and resamples the audio stream
+    /// Creates a `dasp::signal::Signal` that decodes and resamples the audio stream
     /// to the output format.
     fn make_signal_from_event_sound(
         &self,
         sound: &Sound,
         settings: &swf::SoundInfo,
-        data: Cursor<VecAsRef>,
-    ) -> Result<Box<dyn Send + sample::signal::Signal<Frame = [i16; 2]>>, Error> {
+        data: Cursor<ArcAsRef>,
+    ) -> Result<Box<dyn Send + dasp::signal::Signal<Frame = [i16; 2]>>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
         let decoder = Self::make_seekable_decoder(&sound.format, data)?;
 
@@ -219,35 +223,35 @@ impl CpalAudioBackend {
         Ok(Box::new(signal))
     }
 
-    /// Creates a `sample::signal::Signal` that decodes and resamples a "stream" sound.
+    /// Creates a `dasp::signal::Signal` that decodes and resamples a "stream" sound.
     fn make_signal_from_stream<'a>(
         &self,
         format: &swf::SoundFormat,
         data_stream: SwfSlice,
-    ) -> Result<Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>>, Error> {
+    ) -> Result<Box<dyn 'a + Send + dasp::signal::Signal<Frame = [i16; 2]>>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
         let clip_stream_decoder = decoders::make_stream_decoder(format, data_stream)?;
 
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
-        let signal = sample::signal::from_iter(clip_stream_decoder);
+        let signal = dasp::signal::from_iter(clip_stream_decoder);
         let signal = Box::new(self.make_resampler(format, signal));
-        Ok(Box::new(signal))
+        Ok(signal)
     }
 
-    /// Creates a `sample::signal::Signal` that decodes and resamples the audio stream
+    /// Creates a `dasp::signal::Signal` that decodes and resamples the audio stream
     /// to the output format.
     fn make_signal_from_simple_event_sound<'a, R: 'a + std::io::Read + Send>(
         &self,
         format: &swf::SoundFormat,
         data_stream: R,
-    ) -> Result<Box<dyn 'a + Send + sample::signal::Signal<Frame = [i16; 2]>>, Error> {
+    ) -> Result<Box<dyn 'a + Send + dasp::signal::Signal<Frame = [i16; 2]>>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
         let decoder = decoders::make_decoder(format, data_stream)?;
 
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
-        let signal = sample::signal::from_iter(decoder);
+        let signal = dasp::signal::from_iter(decoder);
         let signal = self.make_resampler(format, signal);
         Ok(Box::new(signal))
     }
@@ -260,10 +264,10 @@ impl CpalAudioBackend {
         output_format: &cpal::StreamConfig,
         mut output_buffer: &mut [T],
     ) where
-        T: 'a + cpal::Sample + Default + sample::Sample,
-        T::Signed: sample::conv::FromSample<i16>,
+        T: 'a + cpal::Sample + Default + dasp::Sample,
+        T::Signed: dasp::sample::conv::FromSample<i16>,
     {
-        use sample::{
+        use dasp::{
             frame::{Frame, Stereo},
             Sample,
         };
@@ -274,7 +278,7 @@ impl CpalAudioBackend {
             .deref_mut()
             .chunks_exact_mut(output_format.channels.into())
         {
-            let mut output_frame = Stereo::<T::Signed>::equilibrium();
+            let mut output_frame = Stereo::<T::Signed>::EQUILIBRIUM;
             for (_, sound) in sound_instances.iter_mut() {
                 if sound.active && !sound.signal.is_exhausted() {
                     let sound_frame = sound.signal.next();
@@ -308,11 +312,19 @@ impl AudioBackend for CpalAudioBackend {
 
         let sound = Sound {
             format: swf_sound.format.clone(),
-            data: Arc::new(data.to_vec()),
+            data: Arc::from(data),
             num_sample_frames: swf_sound.num_samples,
             skip_sample_frames,
         };
         Ok(self.sounds.insert(sound))
+    }
+
+    fn play(&mut self) {
+        self.stream.0.play().expect("Error trying to resume CPAL audio stream. This feature may not be supported by your audio device.");
+    }
+
+    fn pause(&mut self) {
+        self.stream.0.pause().expect("Error trying to pause CPAL audio stream. This feature may not be supported by your audio device.");
     }
 
     fn start_stream(
@@ -350,7 +362,7 @@ impl AudioBackend for CpalAudioBackend {
         settings: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error> {
         let sound = &self.sounds[sound_handle];
-        let data = Cursor::new(VecAsRef(Arc::clone(&sound.data)));
+        let data = Cursor::new(ArcAsRef(Arc::clone(&sound.data)));
         // Create a signal that decodes and resamples the sound.
         let signal = if sound.skip_sample_frames == 0
             && settings.in_sample.is_none()
@@ -416,18 +428,18 @@ impl AudioBackend for CpalAudioBackend {
 
 /// A dummy wrapper struct to implement `AsRef<[u8]>` for `Arc<Vec<u8>`.
 /// Not having this trait causes problems when trying to use `Cursor<Vec<u8>>`.
-struct VecAsRef(Arc<Vec<u8>>);
+struct ArcAsRef(Arc<[u8]>);
 
-impl AsRef<[u8]> for VecAsRef {
+impl AsRef<[u8]> for ArcAsRef {
     #[inline]
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl Default for VecAsRef {
+impl Default for ArcAsRef {
     fn default() -> Self {
-        VecAsRef(Arc::new(vec![]))
+        ArcAsRef(Arc::new([]))
     }
 }
 
@@ -492,7 +504,7 @@ impl EventSoundSignal {
     }
 }
 
-impl sample::signal::Signal for EventSoundSignal {
+impl dasp::signal::Signal for EventSoundSignal {
     type Frame = [i16; 2];
 
     fn next(&mut self) -> Self::Frame {
@@ -511,7 +523,7 @@ impl sample::signal::Signal for EventSoundSignal {
                 self.next()
             };
             if let Some(envelope) = &mut self.envelope_signal {
-                use sample::frame::Frame;
+                use dasp::frame::Frame;
                 frame.mul_amp(envelope.next())
             } else {
                 frame
@@ -546,7 +558,7 @@ impl EnvelopeSignal {
     fn new(envelope: swf::SoundEnvelope) -> Self {
         // TODO: This maybe can be done more clever using the `sample` crate.
         let mut envelope = envelope.into_iter();
-        let first_point = envelope.next().unwrap_or_else(|| swf::SoundEnvelopePoint {
+        let first_point = envelope.next().unwrap_or(swf::SoundEnvelopePoint {
             sample: 0,
             left_volume: 1.0,
             right_volume: 1.0,
@@ -564,7 +576,7 @@ impl EnvelopeSignal {
         }
     }
 }
-impl sample::signal::Signal for EnvelopeSignal {
+impl dasp::signal::Signal for EnvelopeSignal {
     type Frame = [f32; 2];
 
     fn next(&mut self) -> Self::Frame {
@@ -573,11 +585,11 @@ impl sample::signal::Signal for EnvelopeSignal {
             let a = f64::from(self.cur_sample - self.prev_point.sample);
             let b = f64::from(self.next_point.sample - self.prev_point.sample);
             let lerp = a / b;
-            let interpolator = sample::interpolate::Linear::new(
+            let interpolator = dasp::interpolate::linear::Linear::new(
                 [self.prev_point.left_volume, self.prev_point.right_volume],
                 [self.next_point.left_volume, self.next_point.right_volume],
             );
-            use sample::interpolate::Interpolator;
+            use dasp::interpolate::Interpolator;
             interpolator.interpolate(lerp)
         } else {
             [self.next_point.left_volume, self.next_point.right_volume]
@@ -587,15 +599,15 @@ impl sample::signal::Signal for EnvelopeSignal {
         self.cur_sample = self.cur_sample.saturating_add(1);
         while self.cur_sample > self.next_point.sample {
             self.prev_point = self.next_point.clone();
-            self.next_point =
-                self.envelope
-                    .next()
-                    .clone()
-                    .unwrap_or_else(|| swf::SoundEnvelopePoint {
-                        sample: std::u32::MAX,
-                        left_volume: self.prev_point.left_volume,
-                        right_volume: self.prev_point.right_volume,
-                    });
+            self.next_point = self
+                .envelope
+                .next()
+                .clone()
+                .unwrap_or(swf::SoundEnvelopePoint {
+                    sample: std::u32::MAX,
+                    left_volume: self.prev_point.left_volume,
+                    right_volume: self.prev_point.right_volume,
+                });
 
             if self.prev_point.sample > self.next_point.sample {
                 self.next_point.sample = self.prev_point.sample;

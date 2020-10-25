@@ -400,10 +400,10 @@ impl<'gc> Value<'gc> {
 
                     n
                 } else {
-                    let (sign, digits) = if strim.starts_with('+') {
-                        (1.0, &strim[1..])
-                    } else if strim.starts_with('-') {
-                        (-1.0, &strim[1..])
+                    let (sign, digits) = if let Some(stripped) = strim.strip_prefix('+') {
+                        (1.0, stripped)
+                    } else if let Some(stripped) = strim.strip_prefix('-') {
+                        (-1.0, stripped)
                     } else {
                         (1.0, strim)
                     };

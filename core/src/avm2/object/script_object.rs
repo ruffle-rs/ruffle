@@ -216,6 +216,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().proto
     }
 
+    fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>) {
+        self.0.write(mc).set_proto(proto)
+    }
+
     fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {
         self.0.read().get_enumerant_name(index)
     }
@@ -263,8 +267,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         ))
     }
 
-    fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok("[object Object]".into())
+    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        if let Some(class) = self.as_proto_class() {
+            Ok(AvmString::new(mc, format!("[object {}]", class.read().name().local_name())).into())
+        } else {
+            Ok("[object Object]".into())
+        }
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
@@ -717,6 +725,10 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn proto(&self) -> Option<Object<'gc>> {
         self.proto
+    }
+
+    pub fn set_proto(&mut self, proto: Object<'gc>) {
+        self.proto = Some(proto)
     }
 
     pub fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {

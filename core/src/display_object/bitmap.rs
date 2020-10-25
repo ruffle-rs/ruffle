@@ -4,6 +4,7 @@ use crate::backend::render::BitmapHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
+use crate::types::{Degrees, Percent};
 use gc_arena::{Collect, Gc, GcCell};
 
 /// A Bitmap display object is a raw bitamp on the stage.

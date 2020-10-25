@@ -1,0 +1,79 @@
+//Frame 1, Scene 1
+//currentFrame
+1
+//currentFrameLabel
+frame1
+//currentLabel
+frame1
+//currentLabels
+[object FrameLabel],[object FrameLabel]
+//currentScene
+[object Scene]
+//framesLoaded
+4
+//isPlaying
+false
+//scenes
+[object Scene],[object Scene]
+//totalFrames
+4
+undefined
+//Frame 2, Scene 1
+//currentFrame
+2
+//currentFrameLabel
+null
+//currentLabel
+frame1
+//currentLabels
+[object FrameLabel],[object FrameLabel]
+//currentScene
+[object Scene]
+//framesLoaded
+4
+//isPlaying
+true
+//scenes
+[object Scene],[object Scene]
+//totalFrames
+4
+//Frame 3, Scene 1
+//currentFrame
+3
+//currentFrameLabel
+frame3
+//currentLabel
+frame3
+//currentLabels
+[object FrameLabel],[object FrameLabel]
+//currentScene
+[object Scene]
+//framesLoaded
+4
+//isPlaying
+true
+//scenes
+[object Scene],[object Scene]
+//totalFrames
+4
+//Frame 1, Scene 2
+//currentFrame
+1
+//currentFrameLabel
+frame4
+//currentLabel
+frame4
+//currentLabels
+[object FrameLabel]
+//currentScene
+[object Scene]
+//framesLoaded
+4
+//isPlaying
+true
+//scenes
+[object Scene],[object Scene]
+//totalFrames
+4
+//isPlaying
+false

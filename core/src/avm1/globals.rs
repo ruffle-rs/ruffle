@@ -11,6 +11,7 @@ use std::f64;
 
 mod array;
 pub(crate) mod as_broadcaster;
+mod bevel_filter;
 mod bitmap_filter;
 mod blur_filter;
 pub(crate) mod boolean;
@@ -341,6 +342,8 @@ pub struct SystemPrototypes<'gc> {
     pub bitmap_filter_constructor: Object<'gc>,
     pub blur_filter: Object<'gc>,
     pub blur_filter_constructor: Object<'gc>,
+    pub bevel_filter: Object<'gc>,
+    pub bevel_filter_constructor: Object<'gc>,
     pub date: Object<'gc>,
 }
 
@@ -550,6 +553,15 @@ pub fn create_globals<'gc>(
         blur_filter_proto,
     );
 
+    let bevel_filter_proto =
+        bevel_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
+    let bevel_filter = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(bevel_filter::constructor),
+        Some(function_proto),
+        bevel_filter_proto,
+    );
+
     filters.define_value(
         gc_context,
         "BitmapFilter",
@@ -560,6 +572,12 @@ pub fn create_globals<'gc>(
         gc_context,
         "BlurFilter",
         blur_filter.into(),
+        EnumSet::empty(),
+    );
+    filters.define_value(
+        gc_context,
+        "BevelFilter",
+        bevel_filter.into(),
         EnumSet::empty(),
     );
 
@@ -835,6 +853,8 @@ pub fn create_globals<'gc>(
             bitmap_filter_constructor: bitmap_filter,
             blur_filter: blur_filter_proto,
             blur_filter_constructor: blur_filter,
+            bevel_filter: bevel_filter_proto,
+            bevel_filter_constructor: bevel_filter,
             date: date_proto,
         },
         globals.into(),

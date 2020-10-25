@@ -1,0 +1,21 @@
+//var that = new MovieClip()
+//currentFrame
+0
+//currentFrameLabel
+null
+//currentLabel
+null
+//currentLabels
+
+//(contents of currentScene)
+
+1
+//framesLoaded
+1
+//isPlaying
+false
+//(contents of scenes)
+
+1
+//totalFrames
+1

@@ -30,11 +30,13 @@ mod library;
 pub mod loader;
 mod player;
 mod prelude;
-mod property_map;
+pub mod property_map;
 pub mod shape_utils;
 pub mod string_utils;
 pub mod tag_utils;
 mod transform;
+mod types;
+mod vminterface;
 mod xml;
 
 pub mod backend;

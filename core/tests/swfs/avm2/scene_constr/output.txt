@@ -1,0 +1,8 @@
+//var label1 = new FrameLabel("test", 123);
+//var val = new Scene("test", [label1], 456);
+//val.labels
+[object FrameLabel]
+//val.name
+test
+//val.numFrames
+456

@@ -12,6 +12,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::tag_utils::SwfSlice;
+use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
 use enumset::EnumSet;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -221,6 +222,9 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// This can be changed with `tellTarget` (via `ActionSetTarget` and `ActionSetTarget2`).
     target_clip: Option<DisplayObject<'gc>>,
 
+    /// Amount of actions performed since the last timeout check
+    actions_since_timeout_check: u8,
+
     pub context: UpdateContext<'a, 'gc, 'gc_context>,
 
     /// An identifier to refer to this activation by, when debugging.
@@ -259,6 +263,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this,
             arguments,
             local_registers: None,
+            actions_since_timeout_check: 0,
         }
     }
 
@@ -281,6 +286,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this: self.this,
             arguments: self.arguments,
             local_registers: self.local_registers,
+            actions_since_timeout_check: 0,
         }
     }
 
@@ -314,6 +320,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this: globals,
             arguments: None,
             local_registers: None,
+            actions_since_timeout_check: 0,
         }
     }
 
@@ -428,6 +435,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         data: &SwfSlice,
         reader: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.actions_since_timeout_check += 1;
+        if self.actions_since_timeout_check >= 200 {
+            self.actions_since_timeout_check = 0;
+            if self.context.update_start.elapsed() >= self.context.max_execution_duration {
+                return Err(Error::ExecutionTimeout);
+            }
+        }
+
         if reader.pos() >= (data.end - data.start) {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
@@ -791,24 +806,34 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         self.context.avm1.push(result);
 
-        Ok(FrameControl::Continue)
+        // After any function call, execution of this frame stops if the base clip doesn't exist.
+        // For example, a _root.gotoAndStop moves the timeline to a frame where the clip was removed.
+        self.continue_if_base_clip_exists()
     }
 
     fn action_call_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let method_name = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
-        let object = value_object::ValueObject::boxed(self, object_val);
         let num_args = self.context.avm1.pop().coerce_to_f64(self)? as i64; // TODO(Herschel): max arg count?
         let mut args = Vec::new();
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
         }
 
+        // Can not call method on undefined/null.
+        if matches!(object_val, Value::Undefined | Value::Null) {
+            self.context.avm1.push(Value::Undefined);
+            return Ok(FrameControl::Continue);
+        }
+
+        let object = value_object::ValueObject::boxed(self, object_val);
+
         match method_name {
             Value::Undefined | Value::Null => {
                 let this = self.target_clip_or_root().object().coerce_to_object(self);
                 let result = object.call("[Anonymous]", self, this, None, &args)?;
                 self.context.avm1.push(result);
+                self.continue_if_base_clip_exists()
             }
             Value::String(name) => {
                 if name.is_empty() {
@@ -818,6 +843,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     let result = object.call_method(&name, &args, self)?;
                     self.context.avm1.push(result);
                 }
+                self.continue_if_base_clip_exists()
             }
             _ => {
                 self.context.avm1.push(Value::Undefined);
@@ -826,10 +852,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     "Invalid method name, expected string but found {:?}",
                     method_name
                 );
+                Ok(FrameControl::Continue)
             }
         }
-
-        Ok(FrameControl::Continue)
     }
 
     fn action_cast_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1173,14 +1198,21 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
                     let level = self.resolve_level(level_id);
 
-                    let process = self.context.load_manager.load_movie_into_clip(
-                        self.context.player.clone().unwrap(),
-                        level,
-                        fetch,
-                        url,
-                        None,
-                    );
-                    self.context.navigator.spawn_future(process);
+                    if url == "" {
+                        //Blank URL on movie loads = unload!
+                        if let Some(mut mc) = level.as_movie_clip() {
+                            mc.replace_with_movie(self.context.gc_context, None)
+                        }
+                    } else {
+                        let process = self.context.load_manager.load_movie_into_clip(
+                            self.context.player.clone().unwrap(),
+                            level,
+                            fetch,
+                            url,
+                            None,
+                        );
+                        self.context.navigator.spawn_future(process);
+                    }
                 }
                 Err(e) => avm_warn!(
                     self,
@@ -1189,7 +1221,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     e
                 ),
             }
-
             return Ok(FrameControl::Continue);
         }
 
@@ -1261,17 +1292,24 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     Cow::Borrowed(&url),
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
-                let fetch = self.context.navigator.fetch(&url, opts);
-                let process = self.context.load_manager.load_movie_into_clip(
-                    self.context.player.clone().unwrap(),
-                    clip_target,
-                    fetch,
-                    url.to_string(),
-                    None,
-                );
-                self.context.navigator.spawn_future(process);
-            }
 
+                if url == "" {
+                    //Blank URL on movie loads = unload!
+                    if let Some(mut mc) = clip_target.as_movie_clip() {
+                        mc.replace_with_movie(self.context.gc_context, None)
+                    }
+                } else {
+                    let fetch = self.context.navigator.fetch(&url, opts);
+                    let process = self.context.load_manager.load_movie_into_clip(
+                        self.context.player.clone().unwrap(),
+                        clip_target,
+                        fetch,
+                        url.to_string(),
+                        None,
+                    );
+                    self.context.navigator.spawn_future(process);
+                }
+            }
             return Ok(FrameControl::Continue);
         } else if window_target.starts_with("_level") && url.len() > 6 {
             // target of `_level#` indicates a `loadMovieNum` call.
@@ -1607,12 +1645,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             args.push(self.context.avm1.pop());
         }
 
+        // Can not call method on undefined/null.
+        if matches!(object_val, Value::Undefined | Value::Null) {
+            self.context.avm1.push(Value::Undefined);
+            return Ok(FrameControl::Continue);
+        }
+
         let object = value_object::ValueObject::boxed(self, object_val);
         let constructor = object.get(&method_name.coerce_to_string(self)?, self)?;
         if let Value::Object(constructor) = constructor {
             //TODO: What happens if you `ActionNewMethod` without a method name?
             let this = constructor.construct(self, &args)?;
-
             self.context.avm1.push(this);
         } else {
             avm_warn!(
@@ -1623,7 +1666,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             self.context.avm1.push(Value::Undefined);
         }
 
-        Ok(FrameControl::Continue)
+        self.continue_if_base_clip_exists()
     }
 
     fn action_new_object(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1642,7 +1685,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         self.context.avm1.push(this);
 
-        Ok(FrameControl::Continue)
+        self.continue_if_base_clip_exists()
     }
 
     fn action_or(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1819,7 +1862,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
-            .resolve_target_path(root, start, target)?
+            .resolve_target_path(root, start, target, false)?
             .and_then(|o| o.as_display_object())
         {
             new_target_clip = Some(clip);
@@ -2376,7 +2419,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let root = start.root();
         let start = start.object().coerce_to_object(self);
         Ok(self
-            .resolve_target_path(root, start, &path)?
+            .resolve_target_path(root, start, &path, false)?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -2394,6 +2437,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         root: DisplayObject<'gc>,
         start: Object<'gc>,
         path: &str,
+        mut allow_this: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // Empty path resolves immediately to start clip.
         if path.is_empty() {
@@ -2460,18 +2504,25 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 // Guaranteed to be valid UTF-8.
                 let name = unsafe { std::str::from_utf8_unchecked(ident) };
 
-                // Get the value from the object.
-                // Resolves display object instances first, then local variables.
-                // This is the opposite of general GetMember property access!
-                if let Some(child) = object
-                    .as_display_object()
-                    .and_then(|o| o.get_child_by_name(name, case_sensitive))
-                {
-                    child.object()
+                if allow_this && name == "this" {
+                    self.this_cell().into()
                 } else {
-                    object.get(&name, self).unwrap()
+                    // Get the value from the object.
+                    // Resolves display object instances first, then local variables.
+                    // This is the opposite of general GetMember property access!
+                    if let Some(child) = object
+                        .as_display_object()
+                        .and_then(|o| o.get_child_by_name(name, case_sensitive))
+                    {
+                        child.object()
+                    } else {
+                        object.get(&name, self).unwrap()
+                    }
                 }
             };
+
+            // `this` can only be the first element in the path.
+            allow_this = false;
 
             // Resolve the value to an object while traversing the path.
             object = if let Value::Object(o) = val {
@@ -2517,7 +2568,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path, false)?
                 {
                     return Ok(Some((object, var_name)));
                 }
@@ -2585,7 +2636,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path, true)?
                 {
                     if object.has_property(self, var_name) {
                         return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
@@ -2603,7 +2654,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path, false)?
                 {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
@@ -2662,7 +2713,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path, true)?
                 {
                     object.set(var_name, value, self)?;
                     return Ok(());
@@ -2699,7 +2750,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             level.set_depth(self.context.gc_context, level_id as i32);
             self.context.levels.insert(level_id, level);
-            level.post_instantiation(&mut self.context, level, None, false, false);
+            level.post_instantiation(&mut self.context, level, None, Instantiator::Movie, false);
 
             level
         }
@@ -2854,5 +2905,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<String>>) {
         self.constant_pool = constant_pool;
+    }
+
+    /// Checks that the clip executing a script still exists.
+    /// If the clip executing a script is removed during exectuion, return from this activation.
+    /// Should be called after any action that could potentially destroy a clip (gotos, etc.)
+    fn continue_if_base_clip_exists(&self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        if self.base_clip.removed() {
+            Ok(FrameControl::Return(ReturnType::Explicit(Value::Undefined)))
+        } else {
+            Ok(FrameControl::Continue)
+        }
     }
 }

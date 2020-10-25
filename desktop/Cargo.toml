@@ -7,22 +7,23 @@ default-run = "ruffle_desktop"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-clap = "3.0.0-beta.1"
+clap = "3.0.0-beta.2"
 cpal = "0.12.1"
 ruffle_core = { path = "../core" }
-ruffle_render_wgpu = { path = "../render/wgpu" }
-env_logger = "0.7.1"
+ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
+env_logger = "0.8.1"
 generational-arena = "0.2.8"
-image = "0.23.9"
+image = "0.23.10"
 jpeg-decoder = "0.1.20"
 log = "0.4"
-lyon = "0.16.0"
-sample = "0.11.0"
-winit = "0.22.1"
+lyon = "0.16.2"
+dasp = {version = "0.11.0", git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = ["interpolate", "interpolate-linear", "signal"]}
+winit = "0.23.0"
 webbrowser = "0.5.5"
 url = "2.1.1"
 clipboard = "0.5.0"
 dirs = "3.0"
+isahc = "0.9.10"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
@@ -33,4 +34,5 @@ embed-resource = "1"
 [features]
 avm_debug = ["ruffle_core/avm_debug"]
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
+render_trace = ["ruffle_render_wgpu/render_trace"]
 lzma = ["ruffle_core/lzma"]

@@ -1,4 +1,5 @@
 use crate::backend::navigator::url_from_relative_path;
+use crate::property_map::PropertyMap;
 use gc_arena::Collect;
 use std::path::Path;
 use std::sync::Arc;
@@ -21,6 +22,9 @@ pub struct SwfMovie {
 
     /// The URL the SWF was downloaded from.
     url: Option<String>,
+
+    /// Any parameters provided when loading this movie (also known as 'flashvars')
+    parameters: PropertyMap<String>,
 }
 
 impl SwfMovie {
@@ -36,6 +40,7 @@ impl SwfMovie {
             },
             data: vec![],
             url: None,
+            parameters: PropertyMap::new(),
         }
     }
 
@@ -49,6 +54,7 @@ impl SwfMovie {
             header: self.header.clone(),
             data,
             url: source.url.clone(),
+            parameters: source.parameters.clone(),
         }
     }
 
@@ -90,7 +96,12 @@ impl SwfMovie {
             data
         };
 
-        Ok(Self { header, data, url })
+        Ok(Self {
+            header,
+            data,
+            url,
+            parameters: PropertyMap::new(),
+        })
     }
 
     pub fn header(&self) -> &Header {
@@ -117,6 +128,14 @@ impl SwfMovie {
     /// Get the URL this SWF was fetched from.
     pub fn url(&self) -> Option<&str> {
         self.url.as_deref()
+    }
+
+    pub fn parameters(&self) -> &PropertyMap<String> {
+        &self.parameters
+    }
+
+    pub fn parameters_mut(&mut self) -> &mut PropertyMap<String> {
+        &mut self.parameters
     }
 }
 

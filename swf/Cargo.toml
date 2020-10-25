@@ -23,5 +23,5 @@ xz2 = {version = "0.1.6", optional = true}
 approx = "0.3.2"
 
 [features]
-default = ["libflate"]
+default = ["flate2"]
 lzma = ["xz2"]

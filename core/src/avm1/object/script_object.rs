@@ -857,10 +857,13 @@ mod tests {
     use crate::loader::LoadManager;
     use crate::prelude::*;
     use crate::tag_utils::{SwfMovie, SwfSlice};
+    use crate::vminterface::Instantiator;
     use gc_arena::rootless_arena;
+    use instant::Instant;
     use rand::{rngs::SmallRng, SeedableRng};
     use std::collections::{BTreeMap, HashMap};
     use std::sync::Arc;
+    use std::time::Duration;
 
     fn with_object<F, R>(swf_version: u8, test: F) -> R
     where
@@ -916,9 +919,11 @@ mod tests {
                 avm1: &mut avm1,
                 avm2: &mut avm2,
                 external_interface: &mut Default::default(),
+                update_start: Instant::now(),
+                max_execution_duration: Duration::from_secs(15),
             };
 
-            root.post_instantiation(&mut context, root, None, false, false);
+            root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
             root.set_name(context.gc_context, "");
 
             let base_clip = *context.levels.get(&0).unwrap();

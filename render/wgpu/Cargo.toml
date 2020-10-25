@@ -6,16 +6,18 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-wgpu = "0.6"
-wgpu-native = "0.5"
-image = "0.23.9"
+wgpu = {git = "https://github.com/gfx-rs/wgpu-rs", rev = "e3eadca8c626beb9a1c25c359b0e20f6fdef00c4"}
+image = "0.23.10"
 jpeg-decoder = "0.1.20"
 log = "0.4"
-lyon = "0.16.0"
+lyon = "0.16.2"
 ruffle_core = { path = "../../core" }
-futures = "0.3.5"
+futures = "0.3.7"
 bytemuck = "1.4.1"
 raw-window-handle = "0.3.3"
+clap = { version = "3.0.0-beta.2", optional = true }
+enum-map = "0.6.3"
 
 [features]
 render_debug_labels = []
+render_trace = ["wgpu/trace"]

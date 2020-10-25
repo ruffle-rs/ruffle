@@ -11,7 +11,7 @@ use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
     HtmlCanvasElement, OesVertexArrayObject, WebGl2RenderingContext as Gl2, WebGlBuffer,
     WebGlFramebuffer, WebGlProgram, WebGlRenderbuffer, WebGlRenderingContext as Gl, WebGlShader,
-    WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject,
+    WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject, WebglDebugRendererInfo,
 };
 
 type Error = Box<dyn std::error::Error>;
@@ -22,6 +22,14 @@ const TEXTURE_VERTEX_GLSL: &str = include_str!("../shaders/texture.vert");
 const GRADIENT_FRAGMENT_GLSL: &str = include_str!("../shaders/gradient.frag");
 const BITMAP_FRAGMENT_GLSL: &str = include_str!("../shaders/bitmap.frag");
 const NUM_VERTEX_ATTRIBUTES: u32 = 2;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MaskState {
+    NoMask,
+    DrawMaskStencil,
+    DrawMaskedContent,
+    ClearMaskStencil,
+}
 
 pub struct WebGlRenderBackend {
     /// WebGL1 context
@@ -48,15 +56,11 @@ pub struct WebGlRenderBackend {
 
     quad_shape: ShapeHandle,
 
+    mask_state: MaskState,
     num_masks: u32,
-    num_masks_active: u32,
-    write_stencil_mask: u32,
-    test_stencil_mask: u32,
-    next_stencil_mask: u32,
-    mask_stack: Vec<(u32, u32)>,
+    mask_state_dirty: bool,
 
     active_program: *const ShaderProgram,
-    mask_state_dirty: bool,
     blend_func: (u32, u32),
     mult_color: Option<[f32; 4]>,
     add_color: Option<[f32; 4]>,
@@ -66,6 +70,8 @@ pub struct WebGlRenderBackend {
     view_matrix: [[f32; 4]; 4],
 }
 
+const MAX_GRADIENT_COLORS: usize = 15;
+
 impl WebGlRenderBackend {
     pub fn new(canvas: &HtmlCanvasElement) -> Result<Self, Error> {
         // Create WebGL context.
@@ -74,6 +80,7 @@ impl WebGlRenderBackend {
             ("alpha", JsValue::FALSE),
             ("antialias", JsValue::FALSE),
             ("depth", JsValue::FALSE),
+            ("failIfMajorPerformanceCaveat", JsValue::TRUE), // fail if no GPU available
         ];
         let context_options = js_sys::Object::new();
         for (name, value) in options.iter() {
@@ -139,6 +146,18 @@ impl WebGlRenderBackend {
             }
         };
 
+        // Get WebGL driver info.
+        let driver_info = if gl.get_extension("WEBGL_debug_renderer_info").is_ok() {
+            gl.get_parameter(WebglDebugRendererInfo::UNMASKED_RENDERER_WEBGL)
+                .ok()
+                .and_then(|val| val.as_string())
+                .unwrap_or_else(|| "<unknown>".to_string())
+        } else {
+            "<unknown>".to_string()
+        };
+
+        log::info!("WebGL graphics driver: {}", driver_info);
+
         let color_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, COLOR_VERTEX_GLSL)?;
         let texture_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, TEXTURE_VERTEX_GLSL)?;
         let color_fragment = Self::compile_shader(&gl, Gl::FRAGMENT_SHADER, COLOR_FRAGMENT_GLSL)?;
@@ -176,15 +195,12 @@ impl WebGlRenderBackend {
             viewport_width: 500.0,
             viewport_height: 500.0,
             view_matrix: [[0.0; 4]; 4],
+
+            mask_state: MaskState::NoMask,
             num_masks: 0,
-            num_masks_active: 0,
-            write_stencil_mask: 0,
-            test_stencil_mask: 0,
-            next_stencil_mask: 1,
-            mask_stack: vec![],
+            mask_state_dirty: true,
 
             active_program: std::ptr::null(),
-            mask_state_dirty: true,
             blend_func: (Gl::SRC_ALPHA, Gl::ONE_MINUS_SRC_ALPHA),
             mult_color: None,
             add_color: None,
@@ -342,11 +358,12 @@ impl WebGlRenderBackend {
         gl.bind_renderbuffer(Gl2::RENDERBUFFER, Some(&color_renderbuffer));
         gl.renderbuffer_storage_multisample(
             Gl2::RENDERBUFFER,
-            4,
+            self.msaa_sample_count as i32,
             Gl2::RGB8,
             self.viewport_width as i32,
             self.viewport_height as i32,
         );
+        gl.check_error("renderbuffer_storage_multisample (color)")?;
 
         let stencil_renderbuffer = gl
             .create_renderbuffer()
@@ -354,11 +371,12 @@ impl WebGlRenderBackend {
         gl.bind_renderbuffer(Gl2::RENDERBUFFER, Some(&stencil_renderbuffer));
         gl.renderbuffer_storage_multisample(
             Gl2::RENDERBUFFER,
-            4,
+            self.msaa_sample_count as i32,
             Gl2::STENCIL_INDEX8,
             self.viewport_width as i32,
             self.viewport_height as i32,
         );
+        gl.check_error("renderbuffer_storage_multisample (stencil)")?;
 
         gl.bind_framebuffer(Gl2::FRAMEBUFFER, Some(&render_framebuffer));
         gl.framebuffer_renderbuffer(
@@ -479,9 +497,9 @@ impl WebGlRenderBackend {
                     },
                 ),
                 TessDrawType::Gradient(gradient) => {
-                    let mut ratios = [0.0; 8];
-                    let mut colors = [[0.0; 4]; 8];
-                    let num_colors = gradient.num_colors as usize;
+                    let mut ratios = [0.0; MAX_GRADIENT_COLORS];
+                    let mut colors = [[0.0; 4]; MAX_GRADIENT_COLORS];
+                    let num_colors = (gradient.num_colors as usize).min(MAX_GRADIENT_COLORS);
                     ratios[..num_colors].copy_from_slice(&gradient.ratios[..num_colors]);
                     colors[..num_colors].copy_from_slice(&gradient.colors[..num_colors]);
                     // Convert to linear color space if this is a linear-interpolated gradient.
@@ -490,7 +508,7 @@ impl WebGlRenderBackend {
                             *color = srgb_to_linear(*color);
                         }
                     }
-                    for i in num_colors..8 {
+                    for i in num_colors..MAX_GRADIENT_COLORS {
                         ratios[i] = ratios[i - 1];
                         colors[i] = colors[i - 1];
                     }
@@ -619,29 +637,31 @@ impl WebGlRenderBackend {
     fn set_stencil_state(&mut self) {
         // Set stencil state for masking, if necessary.
         if self.mask_state_dirty {
-            if self.num_masks > 0 {
-                self.gl.enable(Gl::STENCIL_TEST);
-                if self.num_masks_active < self.num_masks {
-                    self.gl.stencil_mask(self.write_stencil_mask);
+            match self.mask_state {
+                MaskState::NoMask => {
+                    self.gl.disable(Gl::STENCIL_TEST);
+                    self.gl.color_mask(true, true, true, true);
+                }
+                MaskState::DrawMaskStencil => {
+                    self.gl.enable(Gl::STENCIL_TEST);
                     self.gl
-                        .stencil_func(Gl::ALWAYS, self.write_stencil_mask as i32, 0xff);
-                    self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::REPLACE);
+                        .stencil_func(Gl::EQUAL, (self.num_masks - 1) as i32, 0xff);
+                    self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::INCR);
                     self.gl.color_mask(false, false, false, false);
-                } else {
-                    self.gl.stencil_mask(0xff);
-                    self.gl.stencil_func(
-                        Gl::EQUAL,
-                        self.test_stencil_mask as i32,
-                        self.test_stencil_mask,
-                    );
+                }
+                MaskState::DrawMaskedContent => {
+                    self.gl.enable(Gl::STENCIL_TEST);
+                    self.gl.stencil_func(Gl::EQUAL, self.num_masks as i32, 0xff);
                     self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::KEEP);
                     self.gl.color_mask(true, true, true, true);
                 }
-            } else {
-                self.gl.disable(Gl::STENCIL_TEST);
-                self.gl.color_mask(true, true, true, true);
+                MaskState::ClearMaskStencil => {
+                    self.gl.enable(Gl::STENCIL_TEST);
+                    self.gl.stencil_func(Gl::EQUAL, self.num_masks as i32, 0xff);
+                    self.gl.stencil_op(Gl::KEEP, Gl::KEEP, Gl::DECR);
+                    self.gl.color_mask(false, false, false, false);
+                }
             }
-            self.mask_state_dirty = false;
         }
     }
 
@@ -779,13 +799,9 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn begin_frame(&mut self, clear: Color) {
-        self.num_masks = 0;
-        self.num_masks_active = 0;
-        self.write_stencil_mask = 0;
-        self.test_stencil_mask = 0;
-        self.next_stencil_mask = 1;
-
         self.active_program = std::ptr::null();
+        self.mask_state = MaskState::NoMask;
+        self.num_masks = 0;
         self.mask_state_dirty = true;
 
         self.mult_color = None;
@@ -1002,8 +1018,12 @@ impl RenderBackend for WebGlRenderBackend {
                         gradient.gradient_type,
                     );
                     program.uniform1fv(&self.gl, ShaderUniform::GradientRatios, &gradient.ratios);
-                    let colors =
-                        unsafe { std::slice::from_raw_parts(gradient.colors[0].as_ptr(), 32) };
+                    let colors = unsafe {
+                        std::slice::from_raw_parts(
+                            gradient.colors[0].as_ptr(),
+                            MAX_GRADIENT_COLORS * 4,
+                        )
+                    };
                     program.uniform4fv(&self.gl, ShaderUniform::GradientColors, &colors);
                     program.uniform1i(
                         &self.gl,
@@ -1027,12 +1047,14 @@ impl RenderBackend for WebGlRenderBackend {
                     );
                 }
                 DrawType::Bitmap(bitmap) => {
-                    let texture = &self
-                        .textures
-                        .iter()
-                        .find(|(id, _tex)| *id == bitmap.id)
-                        .unwrap()
-                        .1;
+                    let texture = if let Some(texture) =
+                        self.textures.iter().find(|(id, _tex)| *id == bitmap.id)
+                    {
+                        &texture.1
+                    } else {
+                        // Bitmap not registered
+                        continue;
+                    };
 
                     program.uniform_matrix3fv(
                         &self.gl,
@@ -1189,48 +1211,35 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn push_mask(&mut self) {
-        // Desktop draws the masker to the stencil buffer, one bit per mask.
-        // Masks-within-masks are handled as a bitmask.
-        // This does unfortunately mean we are limited in the number of masks at once (usually 8 bits).
-        if self.next_stencil_mask >= 0x100 {
-            // If we've reached the limit of masks, clear the stencil buffer and start over.
-            // But this may not be correct if there is still a mask active (mask-within-mask).
-            if self.test_stencil_mask != 0 {
-                log::warn!(
-                    "Too many masks active for stencil buffer; possibly incorrect rendering"
-                );
-            }
-            self.next_stencil_mask = 1;
-            self.gl.stencil_mask(0xff);
-            self.gl.clear_stencil(self.test_stencil_mask as i32);
-            self.gl.clear(Gl::STENCIL_BUFFER_BIT);
-            self.gl.clear_stencil(0);
-        }
+        assert!(
+            self.mask_state == MaskState::NoMask || self.mask_state == MaskState::DrawMaskedContent
+        );
         self.num_masks += 1;
-        self.mask_stack
-            .push((self.write_stencil_mask, self.test_stencil_mask));
-        self.write_stencil_mask = self.next_stencil_mask;
-        self.test_stencil_mask |= self.next_stencil_mask;
-        self.next_stencil_mask <<= 1;
+        self.mask_state = MaskState::DrawMaskStencil;
         self.mask_state_dirty = true;
     }
 
     fn activate_mask(&mut self) {
-        self.num_masks_active += 1;
+        assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskStencil);
+        self.mask_state = MaskState::DrawMaskedContent;
+        self.mask_state_dirty = true;
+    }
+
+    fn deactivate_mask(&mut self) {
+        assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskedContent);
+        self.mask_state = MaskState::ClearMaskStencil;
         self.mask_state_dirty = true;
     }
 
     fn pop_mask(&mut self) {
-        if !self.mask_stack.is_empty() {
-            self.num_masks -= 1;
-            self.num_masks_active -= 1;
-            let (write, test) = self.mask_stack.pop().unwrap();
-            self.write_stencil_mask = write;
-            self.test_stencil_mask = test;
-            self.mask_state_dirty = true;
+        assert!(self.num_masks > 0 && self.mask_state == MaskState::ClearMaskStencil);
+        self.num_masks -= 1;
+        self.mask_state = if self.num_masks == 0 {
+            MaskState::NoMask
         } else {
-            log::warn!("Mask stack underflow\n");
-        }
+            MaskState::DrawMaskedContent
+        };
+        self.mask_state_dirty = true;
     }
 }
 
@@ -1244,8 +1253,8 @@ struct Texture {
 struct Gradient {
     matrix: [[f32; 3]; 3],
     gradient_type: i32,
-    ratios: [f32; 8],
-    colors: [[f32; 4]; 8],
+    ratios: [f32; MAX_GRADIENT_COLORS],
+    colors: [[f32; 4]; MAX_GRADIENT_COLORS],
     num_colors: u32,
     repeat_mode: i32,
     focal_point: f32,
@@ -1417,3 +1426,27 @@ impl ShaderProgram {
 }
 
 impl WebGlRenderBackend {}
+
+trait GlExt {
+    fn check_error(&self, error_msg: &'static str) -> Result<(), Error>;
+}
+
+impl GlExt for Gl {
+    /// Check if GL returned an error for the previous operation.
+    fn check_error(&self, error_msg: &'static str) -> Result<(), Error> {
+        match self.get_error() {
+            Self::NO_ERROR => Ok(()),
+            error => Err(format!("WebGL: Error in {}: {}", error_msg, error).into()),
+        }
+    }
+}
+
+impl GlExt for Gl2 {
+    /// Check if GL returned an error for the previous operation.
+    fn check_error(&self, error_msg: &'static str) -> Result<(), Error> {
+        match self.get_error() {
+            Self::NO_ERROR => Ok(()),
+            error => Err(format!("WebGL: Error in {}: {}", error_msg, error).into()),
+        }
+    }
+}

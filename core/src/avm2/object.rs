@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
+use crate::avm2::domain::Domain;
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::scope::Scope;
@@ -10,6 +11,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
+use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
@@ -17,16 +19,20 @@ use std::fmt::Debug;
 
 mod array_object;
 mod custom_object;
+mod domain_object;
 mod function_object;
 mod namespace_object;
 mod primitive_object;
 mod script_object;
+mod stage_object;
 
 pub use crate::avm2::object::array_object::ArrayObject;
+pub use crate::avm2::object::domain_object::DomainObject;
 pub use crate::avm2::object::function_object::{implicit_deriver, FunctionObject};
 pub use crate::avm2::object::namespace_object::NamespaceObject;
 pub use crate::avm2::object::primitive_object::PrimitiveObject;
 pub use crate::avm2::object::script_object::ScriptObject;
+pub use crate::avm2::object::stage_object::StageObject;
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -39,6 +45,8 @@ pub use crate::avm2::object::script_object::ScriptObject;
         PrimitiveObject(PrimitiveObject<'gc>),
         NamespaceObject(NamespaceObject<'gc>),
         ArrayObject(ArrayObject<'gc>),
+        StageObject(StageObject<'gc>),
+        DomainObject(DomainObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -329,6 +337,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// `get`.
     fn proto(&self) -> Option<Object<'gc>>;
 
+    /// Change the `__proto__` on this object.
+    ///
+    /// This method primarily exists so that the global scope that player
+    /// globals loads into can be created before it's superclasses are. It
+    /// should be used sparingly, if at all.
+    fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>);
+
     /// Retrieve a given enumerable name by index.
     ///
     /// Enumerants are listed by index, starting from zero. A value of `None`
@@ -531,15 +546,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         .resolve_multiname(sc_name)?
                         .unwrap_or_else(|| QName::dynamic_name("Object"));
 
-                    let super_class: Result<Object<'gc>, Error> = self
-                        .get_property(receiver, &super_name, activation)?
-                        .coerce_to_object(activation)
-                        .map_err(|_e| {
-                            format!("Could not resolve superclass {:?}", super_name.local_name())
-                                .into()
-                        });
+                    let super_class = if let Some(scope) = scope {
+                        scope
+                            .write(activation.context.gc_context)
+                            .resolve(&super_name.clone().into(), activation)?
+                    } else {
+                        None
+                    };
 
-                    Some(super_class?)
+                    Some(
+                        super_class
+                            .ok_or_else(|| {
+                                format!(
+                                    "Could not resolve superclass {:?}",
+                                    super_name.local_name()
+                                )
+                            })?
+                            .coerce_to_object(activation)?,
+                    )
                 } else {
                     None
                 };
@@ -671,7 +695,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions happen by defining `toString` in a downstream class or
     /// prototype; this is then picked up by the VM runtime when doing
     /// coercions.
-    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error>;
+    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        let class_name = self
+            .as_proto_class()
+            .map(|c| c.read().name().local_name())
+            .unwrap_or_else(|| "Object".into());
+
+        Ok(AvmString::new(mc, format!("[object {}]", class_name)).into())
+    }
 
     /// Implement the result of calling `Object.prototype.toLocaleString` on this
     /// object class.
@@ -719,6 +750,21 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let type_proto = constructor
             .get_property(constructor, &QName::dynamic_name("prototype"), activation)?
             .coerce_to_object(activation)?;
+
+        self.has_prototype_in_chain(type_proto, check_interfaces)
+    }
+
+    /// Determine if this object has a given prototype in it's prototype chain.
+    ///
+    /// The given object should be the prototype we are checking against this
+    /// object. It's prototype will be searched in the
+    /// prototype chain of this object. If `check_interfaces` is enabled, then
+    /// the interfaces listed on each prototype will also be checked.
+    fn has_prototype_in_chain(
+        &self,
+        type_proto: Object<'gc>,
+        check_interfaces: bool,
+    ) -> Result<bool, Error> {
         let mut my_proto = self.proto();
 
         //TODO: Is it a verification error to do `obj instanceof bare_object`?
@@ -784,6 +830,22 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         _mc: MutationContext<'gc, '_>,
     ) -> Option<RefMut<ArrayStorage<'gc>>> {
+        None
+    }
+
+    /// Get this object's `DisplayObject`, if it has one.
+    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
+        None
+    }
+
+    /// Associate this object with a display object, if it can support such an
+    /// association.
+    ///
+    /// If not, then this function does nothing.
+    fn init_display_object(&self, _mc: MutationContext<'gc, '_>, _obj: DisplayObject<'gc>) {}
+
+    /// Unwrap this object as an ApplicationDomain.
+    fn as_application_domain(&self) -> Option<Domain<'gc>> {
         None
     }
 }

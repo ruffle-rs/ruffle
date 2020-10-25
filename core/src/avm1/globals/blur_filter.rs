@@ -40,21 +40,6 @@ pub fn constructor<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn clone<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let proto = activation.context.avm1.prototypes.blur_filter_constructor;
-
-    let blur_x = this.get("blurX", activation)?;
-    let blur_y = this.get("blurY", activation)?;
-    let quality = this.get("quality", activation)?;
-
-    let cloned = proto.construct(activation, &[blur_x, blur_y, quality])?;
-    Ok(cloned.into())
-}
-
 pub fn get_blur_x<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -139,9 +124,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let blur_filter = BlurFilterObject::empty_object(gc_context, Some(proto));
-    let mut object = blur_filter.as_script_object().unwrap();
-
-    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), Some(fn_proto));
+    let object = blur_filter.as_script_object().unwrap();
 
     object.add_property(
         gc_context,

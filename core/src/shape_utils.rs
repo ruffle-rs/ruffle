@@ -377,6 +377,9 @@ impl<'a> ShapeConverter<'a> {
     }
 
     fn into_commands(mut self) -> Vec<DrawPath<'a>> {
+        // as u32 is okay because SWF has a max of 65536 fills (TODO: should be u16?)
+        let mut num_fill_styles = self.fill_styles.len() as u32;
+        let mut num_line_styles = self.line_styles.len() as u32;
         while let Some(record) = self.iter.next() {
             match record {
                 ShapeRecord::StyleChange(style_change) => {
@@ -393,6 +396,8 @@ impl<'a> ShapeConverter<'a> {
                         self.flush_layer();
                         self.fill_styles = &styles.fill_styles[..];
                         self.line_styles = &styles.line_styles[..];
+                        num_fill_styles = self.fill_styles.len() as u32;
+                        num_line_styles = self.line_styles.len() as u32;
                     }
 
                     if let Some(fs) = style_change.fill_style_1 {
@@ -400,8 +405,10 @@ impl<'a> ShapeConverter<'a> {
                             self.fills.merge_path(path, true);
                         }
 
-                        self.fill_style1 = if fs != 0 {
-                            let id = NonZeroU32::new(fs).unwrap();
+                        // <= because fill ID 0 (no fill) is not included in fill style array
+                        self.fill_style1 = if fs > 0 && fs <= num_fill_styles {
+                            // unsafe is okay because the above condition guarantees non-zero
+                            let id = unsafe { NonZeroU32::new_unchecked(fs) };
                             Some(ActivePath::new(id, (self.x, self.y)))
                         } else {
                             None
@@ -416,8 +423,8 @@ impl<'a> ShapeConverter<'a> {
                             }
                         }
 
-                        self.fill_style0 = if fs != 0 {
-                            let id = NonZeroU32::new(fs).unwrap();
+                        self.fill_style0 = if fs > 0 && fs <= num_fill_styles {
+                            let id = unsafe { NonZeroU32::new_unchecked(fs) };
                             Some(ActivePath::new(id, (self.x, self.y)))
                         } else {
                             None
@@ -429,8 +436,8 @@ impl<'a> ShapeConverter<'a> {
                             self.strokes.merge_path(path, false);
                         }
 
-                        self.line_style = if ls != 0 {
-                            let id = NonZeroU32::new(ls).unwrap();
+                        self.line_style = if ls > 0 && ls <= num_line_styles {
+                            let id = unsafe { NonZeroU32::new_unchecked(ls) };
                             Some(ActivePath::new(id, (self.x, self.y)))
                         } else {
                             None
@@ -533,8 +540,9 @@ impl<'a> ShapeConverter<'a> {
 
         // Draw fills, and then strokes.
         for (style_id, path) in self.fills.0.drain() {
-            assert!(style_id.get() > 0);
-            let style = &self.fill_styles[style_id.get() as usize - 1];
+            // These invariants are checked above (any invalid/empty fill ID should not have been added).
+            assert!(style_id.get() > 0 && style_id.get() as usize <= self.fill_styles.len());
+            let style = unsafe { self.fill_styles.get_unchecked(style_id.get() as usize - 1) };
             self.commands.push(DrawPath::Fill {
                 style,
                 commands: path.into_draw_commands().collect(),
@@ -546,8 +554,8 @@ impl<'a> ShapeConverter<'a> {
         // a separate draw command.
         // TODO(Herschel): Open strokes could be grouped together into a single path.
         for (style_id, path) in self.strokes.0.drain() {
-            assert!(style_id.get() > 0);
-            let style = &self.line_styles[style_id.get() as usize - 1];
+            assert!(style_id.get() > 0 && style_id.get() as usize <= self.line_styles.len());
+            let style = unsafe { self.line_styles.get_unchecked(style_id.get() as usize - 1) };
             for segment in path.segments {
                 self.commands.push(DrawPath::Stroke {
                     style,

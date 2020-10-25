@@ -2,11 +2,14 @@
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::{Avm1, AvmString, Object, TObject, Value};
+use crate::avm2::Domain as Avm2Domain;
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
+use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
+use crate::vminterface::Instantiator;
 use crate::xml::XMLNode;
 use gc_arena::{Collect, CollectionContext, MutationContext};
 use generational_arena::{Arena, Index};
@@ -48,6 +51,9 @@ pub enum Error {
 
     #[error("Network error")]
     NetworkError(#[from] std::io::Error),
+
+    #[error("Network unavailable.")]
+    NetworkUnavailable,
 
     // TODO: We can't support lifetimes on this error object yet (or we'll need some backends inside
     // the GC arena). We're losing info here. How do we fix that?
@@ -120,6 +126,7 @@ impl<'gc> LoadManager<'gc> {
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
         url: String,
+        parameters: PropertyMap<String>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::RootMovie { self_handle: None };
         let handle = self.add_loader(loader);
@@ -127,7 +134,7 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.introduce_loader_handle(handle);
 
-        loader.root_movie_loader(player, fetch, url)
+        loader.root_movie_loader(player, fetch, url, parameters)
     }
 
     /// Kick off a movie clip load.
@@ -357,6 +364,7 @@ impl<'gc> Loader<'gc> {
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
         mut url: String,
+        parameters: PropertyMap<String>,
     ) -> OwnedFuture<(), Error> {
         let _handle = match self {
             Loader::RootMovie { self_handle, .. } => {
@@ -382,7 +390,10 @@ impl<'gc> Loader<'gc> {
             let data = (fetch.await)
                 .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
 
-            if let Ok((_length, movie)) = data {
+            if let Ok((_length, mut movie)) = data {
+                for (key, value) in parameters.iter() {
+                    movie.parameters_mut().insert(key, value.to_owned(), false);
+                }
                 player.lock().unwrap().set_root_movie(Arc::new(movie));
 
                 Ok(())
@@ -437,8 +448,6 @@ impl<'gc> Loader<'gc> {
                         .unwrap()
                         .replace_with_movie(uc.gc_context, None);
 
-                    dbg!("movie_loader 440");
-
                     if let Some(broadcaster) = broadcaster {
                         Avm1::run_stack_frame_for_method(
                             clip,
@@ -462,6 +471,12 @@ impl<'gc> Loader<'gc> {
                     .lock()
                     .expect("Could not lock player!!")
                     .update(|uc| {
+                        let domain =
+                            Avm2Domain::movie_domain(uc.gc_context, uc.avm2.global_domain());
+                        uc.library
+                            .library_for_movie_mut(movie.clone())
+                            .set_avm2_domain(domain);
+
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::Movie {
                                 target_clip,
@@ -493,7 +508,7 @@ impl<'gc> Loader<'gc> {
                             .expect("Attempted to load movie into not movie clip");
 
                         mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
-                        mc.post_instantiation(uc, clip, None, false, false);
+                        mc.post_instantiation(uc, clip, None, Instantiator::Movie, false);
 
                         let mut morph_shapes = fnv::FnvHashMap::default();
                         mc.preload(uc, &mut morph_shapes);

@@ -32,6 +32,16 @@ module.exports = class RuffleObject extends RufflePlayer {
             url = this.params.movie;
         }
 
+        let parameters = RuffleObject.find_case_insensitive(
+            this.params,
+            "flashvars",
+            RuffleObject.find_case_insensitive(
+                this.attributes,
+                "flashvars",
+                null
+            )
+        );
+
         if (url) {
             this.allow_script_access =
                 allowScriptAccess &&
@@ -41,7 +51,7 @@ module.exports = class RuffleObject extends RufflePlayer {
                             new URL(url, window.location.href).origin));
 
             //Kick off the SWF download.
-            this.stream_swf_url(url);
+            this.stream_swf_url(url, parameters);
         }
     }
 

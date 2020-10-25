@@ -12,61 +12,28 @@ mod task;
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use clap::Clap;
+use isahc::config::RedirectPolicy;
+use isahc::prelude::*;
 use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
     Player,
 };
 use ruffle_render_wgpu::WgpuRenderBackend;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
+use url::Url;
 
 use crate::storage::DiskStorageBackend;
 use ruffle_core::backend::log::NullLogBackend;
 use ruffle_core::tag_utils::SwfMovie;
+use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
+use std::io::Read;
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Icon, WindowBuilder};
-
-#[derive(Clap, PartialEq, Debug)]
-pub enum GraphicsBackend {
-    Default,
-    Vulkan,
-    Metal,
-    Dx12,
-    Dx11,
-}
-
-impl From<GraphicsBackend> for ruffle_render_wgpu::wgpu::BackendBit {
-    fn from(backend: GraphicsBackend) -> Self {
-        match backend {
-            GraphicsBackend::Default => ruffle_render_wgpu::wgpu::BackendBit::PRIMARY,
-            GraphicsBackend::Vulkan => ruffle_render_wgpu::wgpu::BackendBit::VULKAN,
-            GraphicsBackend::Metal => ruffle_render_wgpu::wgpu::BackendBit::METAL,
-            GraphicsBackend::Dx12 => ruffle_render_wgpu::wgpu::BackendBit::DX12,
-            GraphicsBackend::Dx11 => ruffle_render_wgpu::wgpu::BackendBit::DX11,
-        }
-    }
-}
-
-#[derive(Clap, PartialEq, Debug)]
-pub enum PowerPreference {
-    Default = 0,
-    Low = 1,
-    High = 2,
-}
-
-impl From<PowerPreference> for ruffle_render_wgpu::wgpu::PowerPreference {
-    fn from(preference: PowerPreference) -> Self {
-        match preference {
-            PowerPreference::Default => ruffle_render_wgpu::wgpu::PowerPreference::Default,
-            PowerPreference::Low => ruffle_render_wgpu::wgpu::PowerPreference::LowPower,
-            PowerPreference::High => ruffle_render_wgpu::wgpu::PowerPreference::HighPerformance,
-        }
-    }
-}
 
 #[derive(Clap, Debug)]
 #[clap(
@@ -78,6 +45,11 @@ struct Opt {
     /// Path to a flash movie (swf) to play
     #[clap(name = "FILE", parse(from_os_str))]
     input_path: PathBuf,
+
+    /// A "flashvars" parameter to provide to the movie.
+    /// This can be repeated multiple times, for example -Pkey=value -Pfoo=bar
+    #[clap(short = 'P', number_of_values = 1)]
+    parameters: Vec<String>,
 
     /// Type of graphics backend to use. Not all options may be supported by your current system.
     /// Default will attempt to pick the most supported graphics backend.
@@ -92,16 +64,32 @@ struct Opt {
 
     /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
     /// whereas a low power usage tends prefer integrated GPUs.
-    /// Default will pick the best device depending on the status of your computer (ie, wall-power
-    /// may choose high, battery power may choose low)
-    #[clap(
-        long,
-        short,
-        case_insensitive = true,
-        default_value = "default",
-        arg_enum
-    )]
+    #[clap(long, short, case_insensitive = true, default_value = "high", arg_enum)]
     power: PowerPreference,
+
+    /// Location to store a wgpu trace output
+    #[clap(long, parse(from_os_str))]
+    #[cfg(feature = "render_trace")]
+    trace_path: Option<PathBuf>,
+
+    /// (Optional) Proxy to use when loading movies via URL
+    #[clap(long, case_insensitive = true)]
+    proxy: Option<Url>,
+}
+
+#[cfg(feature = "render_trace")]
+fn trace_path(opt: &Opt) -> Option<&Path> {
+    if let Some(path) = &opt.trace_path {
+        let _ = std::fs::create_dir_all(path);
+        Some(path)
+    } else {
+        None
+    }
+}
+
+#[cfg(not(feature = "render_trace"))]
+fn trace_path(_opt: &Opt) -> Option<&Path> {
+    None
 }
 
 fn main() {
@@ -111,7 +99,7 @@ fn main() {
 
     let opt = Opt::parse();
 
-    let ret = run_player(opt.input_path, opt.graphics, opt.power);
+    let ret = run_player(opt);
 
     if let Err(e) = ret {
         eprintln!("Fatal error:\n{}", e);
@@ -119,24 +107,59 @@ fn main() {
     }
 }
 
-fn run_player(
-    input_path: PathBuf,
-    graphics: GraphicsBackend,
-    power_preference: PowerPreference,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let movie = SwfMovie::from_path(&input_path)?;
+fn load_movie_from_path(
+    movie_url: Url,
+    proxy: Option<Url>,
+) -> Result<SwfMovie, Box<dyn std::error::Error>> {
+    if movie_url.scheme() == "file" {
+        if let Ok(path) = movie_url.to_file_path() {
+            return SwfMovie::from_path(path);
+        }
+    }
+    let proxy = proxy.and_then(|url| url.as_str().parse().ok());
+    let builder = HttpClient::builder()
+        .proxy(proxy)
+        .redirect_policy(RedirectPolicy::Follow);
+    let client = builder.build()?;
+    let res = client.get(movie_url.to_string())?;
+    let mut buffer: Vec<u8> = Vec::new();
+    res.into_body().read_to_end(&mut buffer)?;
+    SwfMovie::from_data(&buffer, Some(movie_url.to_string()))
+}
+
+fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
+    let movie_url = if opt.input_path.exists() {
+        let absolute_path = opt.input_path.canonicalize()?;
+        Url::from_file_path(absolute_path).map_err(|_| "Path cannot be a URL")?
+    } else {
+        Url::parse(opt.input_path.to_str().unwrap_or_default())
+            .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
+    };
+    let mut movie = load_movie_from_path(movie_url.to_owned(), opt.proxy.to_owned())?;
     let movie_size = LogicalSize::new(movie.width(), movie.height());
+
+    for parameter in &opt.parameters {
+        let mut split = parameter.splitn(2, '=');
+        if let (Some(key), Some(value)) = (split.next(), split.next()) {
+            movie.parameters_mut().insert(key, value.to_string(), true);
+        } else {
+            movie
+                .parameters_mut()
+                .insert(&parameter, "".to_string(), true);
+        }
+    }
 
     let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
     let icon = Icon::from_rgba(icon_bytes.to_vec(), 32, 32)?;
 
     let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
+    let window_title = movie_url
+        .path_segments()
+        .and_then(|segments| segments.last())
+        .unwrap_or_else(|| movie_url.as_str());
     let window = Rc::new(
         WindowBuilder::new()
-            .with_title(format!(
-                "Ruffle - {}",
-                input_path.file_name().unwrap_or_default().to_string_lossy()
-            ))
+            .with_title(format!("Ruffle - {}", window_title))
             .with_window_icon(Some(icon))
             .with_inner_size(movie_size)
             .build(&event_loop)?,
@@ -153,20 +176,20 @@ fn run_player(
     let renderer = Box::new(WgpuRenderBackend::for_window(
         window.as_ref(),
         (viewport_size.width, viewport_size.height),
-        graphics.into(),
-        power_preference.into(),
+        opt.graphics.into(),
+        opt.power.into(),
+        trace_path(&opt),
     )?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
-    let navigator = Box::new(navigator::ExternalNavigatorBackend::with_base_path(
-        input_path
-            .parent()
-            .unwrap_or_else(|| std::path::Path::new("")),
+    let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
+        movie_url,
         chan,
         event_loop.create_proxy(),
+        opt.proxy,
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let storage = Box::new(DiskStorageBackend::new(
-        input_path.file_name().unwrap_or_default().as_ref(),
+        opt.input_path.file_name().unwrap_or_default().as_ref(),
     ));
     let locale = Box::new(locale::DesktopLocaleBackend::new());
     let player = Player::new(

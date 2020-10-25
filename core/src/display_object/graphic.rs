@@ -2,6 +2,7 @@ use crate::backend::render::ShapeHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
+use crate::types::{Degrees, Percent};
 use gc_arena::{Collect, GcCell};
 
 #[derive(Clone, Debug, Collect, Copy)]

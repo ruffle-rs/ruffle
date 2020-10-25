@@ -1,0 +1,13 @@
+//Scene 1, Frame 1
+//gotoAndPlay(4, "Scene 1");
+//Scene 1, Frame 4
+//gotoAndPlay(6);
+//Scene 2, Frame 1
+//gotoAndPlay("frame3");
+//Scene 2, Frame 3
+//gotoAndPlay("frame2", "Scene 3");
+//Scene 3, Frame 2
+//gotoAndPlay(2.1, "Scene 4");
+//Scene 4, Frame 3
+//gotoAndPlay("2", "Scene 5");
+//Scene 5, Frame 2

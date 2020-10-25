@@ -1,0 +1,104 @@
+// new BevelFilter
+[object Object]
+// x.clone()
+[object Object]
+// x.clone() == x
+false
+// x.angle
+44.9999999772279
+// x.blurX
+4
+// x.blurY
+4
+// x.distance
+4
+// x.highlightAlpha
+1
+// x.highlightColor
+16777215
+// x.knockout
+false
+// x.quality
+1
+// x.shadowAlpha
+1
+// x.shadowColor
+0
+// x.strength
+1
+// x.type
+inner
+// x.angle (after set to 360)
+0
+// x.angle (after set to 361)
+1
+// x.blurX(after set to 100)
+100
+// x.blurY(after set to 100)
+100
+// x.distance (after set to 1000)
+1000
+// x.distance (after set to 2.5)
+2.5
+// x.highlightAlpha (after set to 1.5)
+1
+// x.highlightColor (after set to 0x1000000)
+0
+// x.quality(after set to 100)
+15
+// x.shadowAlpha (after set to 1.5)
+1
+// x.shadowColor (after set to 1.5)
+1
+// x.shadowColor (after set to 0x1000000)
+0
+// x.strength (after set to 256)
+255
+// x.strength (after set to 1.5)
+1.5
+// x.angle (after set to -1)
+-1
+// x.angle (after set to -366)
+-6
+// x.blurX(after set to -1)
+0
+// x.blurY(after set to -1)
+0
+// x.distance (after set to -1)
+-1
+// x.highlightAlpha (after set to -1)
+0
+// x.highlightColor (after set to -1)
+16777215
+// x.highlightColor (after set to -10)
+16777206
+// x.quality(after set to 2.5)
+2
+// x.quality(after set to -1)
+0
+// x.shadowAlpha (after set to -1)
+0
+// x.shadowColor (after set to -1)
+16777215
+// x.shadowColor (after set to -0x11234567)
+14465689
+// x.strength (after set to -1)
+0
+// x.type (after set to "invalid")
+full
+// x.type (after set to "INNER")
+full
+// x.type (after set to 0)
+full
+// oob_under.blurX
+4
+// oob_under.blurY
+4
+// oob_under.quality
+1
+// oob_over.blurX
+4
+// oob_over.blurY
+4
+// oob_over.quality
+1

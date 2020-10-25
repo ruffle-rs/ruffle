@@ -1,15 +1,11 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-use crate::avm2::activation::Activation;
 use crate::avm2::globals::SystemPrototypes;
-use crate::avm2::object::{Object, ScriptObject, TObject};
-use crate::avm2::scope::Scope;
-use crate::avm2::script::Script;
-use crate::avm2::script::TranslationUnit;
-use crate::avm2::value::Value;
+use crate::avm2::method::Method;
+use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, MutationContext};
 use std::rc::Rc;
 use swf::avm2::read::Reader;
 
@@ -25,6 +21,7 @@ macro_rules! avm_debug {
 mod activation;
 mod array;
 mod class;
+mod domain;
 mod function;
 mod globals;
 mod method;
@@ -40,11 +37,17 @@ mod string;
 mod traits;
 mod value;
 
+pub use crate::avm2::activation::Activation;
+pub use crate::avm2::domain::Domain;
+pub use crate::avm2::names::{Namespace, QName};
+pub use crate::avm2::object::{Object, StageObject, TObject};
+pub use crate::avm2::value::Value;
+
 /// Boxed error alias.
 ///
 /// As AVM2 is a far stricter VM than AVM1, this may eventually be replaced
 /// with a proper Avm2Error enum.
-type Error = Box<dyn std::error::Error>;
+pub type Error = Box<dyn std::error::Error>;
 
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
@@ -54,7 +57,7 @@ pub struct Avm2<'gc> {
     stack: Vec<Value<'gc>>,
 
     /// Global scope object.
-    globals: Object<'gc>,
+    globals: Domain<'gc>,
 
     /// System prototypes.
     system_prototypes: Option<SystemPrototypes<'gc>>,
@@ -66,7 +69,7 @@ pub struct Avm2<'gc> {
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
     pub fn new(mc: MutationContext<'gc, '_>) -> Self {
-        let globals = ScriptObject::bare_object(mc);
+        let globals = Domain::global_domain(mc);
 
         Self {
             stack: Vec::new(),
@@ -79,8 +82,9 @@ impl<'gc> Avm2<'gc> {
     }
 
     pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let globals = context.avm2.globals;
         let mut activation = Activation::from_nothing(context.reborrow());
-        globals::load_player_globals(&mut activation)
+        globals::load_player_globals(&mut activation, globals)
     }
 
     /// Return the current set of system prototypes.
@@ -92,13 +96,39 @@ impl<'gc> Avm2<'gc> {
 
     /// Run a script's initializer method.
     pub fn run_script_initializer(
-        script: GcCell<'gc, Script<'gc>>,
+        script: Script<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let globals = context.avm2.globals;
-        let mut init_activation = Activation::from_script(context.reborrow(), script, globals)?;
+        let mut init_activation = Activation::from_script(context.reborrow(), script)?;
 
-        init_activation.run_stack_frame_for_script(script)
+        let (method, scope) = script.init();
+        match method {
+            Method::Native(nf) => {
+                nf(&mut init_activation, Some(scope), &[])?;
+            }
+            Method::Entry(_) => {
+                init_activation.run_stack_frame_for_script(script)?;
+            }
+        };
+
+        Ok(())
+    }
+
+    pub fn run_stack_frame_for_callable(
+        callable: Object<'gc>,
+        reciever: Option<Object<'gc>>,
+        args: &[Value<'gc>],
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let mut evt_activation = Activation::from_nothing(context.reborrow());
+        callable.call(
+            reciever,
+            args,
+            &mut evt_activation,
+            reciever.and_then(|r| r.proto()),
+        )?;
+
+        Ok(())
     }
 
     /// Load an ABC file embedded in a `SwfSlice`.
@@ -107,40 +137,27 @@ impl<'gc> Avm2<'gc> {
     pub fn load_abc(
         abc: SwfSlice,
         _abc_name: &str,
-        _lazy_init: bool,
+        lazy_init: bool,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        domain: Domain<'gc>,
     ) -> Result<(), Error> {
         let mut read = Reader::new(abc.as_ref());
 
         let abc_file = Rc::new(read.read()?);
-        let tunit = TranslationUnit::from_abc(abc_file.clone(), context.gc_context);
+        let tunit = TranslationUnit::from_abc(abc_file.clone(), domain, context.gc_context);
 
         for i in (0..abc_file.scripts.len()).rev() {
-            let script = tunit.load_script(i as u32, context.avm2, context.gc_context)?;
-            let mut globals = context.avm2.globals();
-            let scope = Scope::push_scope(None, globals, context.gc_context);
-            let mut null_activation = Activation::from_nothing(context.reborrow());
+            let mut script = tunit.load_script(i as u32, context.avm2, context.gc_context)?;
 
-            // TODO: Lazyinit means we shouldn't do this until traits are
-            // actually mentioned...
-            for trait_entry in script.read().traits()?.iter() {
-                globals.install_foreign_trait(
-                    &mut null_activation,
-                    trait_entry.clone(),
-                    Some(scope),
-                    globals,
-                )?;
+            if !lazy_init {
+                script.globals(context)?;
             }
-
-            drop(null_activation);
-
-            Self::run_script_initializer(script, context)?;
         }
 
         Ok(())
     }
 
-    pub fn globals(&self) -> Object<'gc> {
+    pub fn global_domain(&self) -> Domain<'gc> {
         self.globals
     }
 
