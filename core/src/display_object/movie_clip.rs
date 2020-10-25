@@ -1968,7 +1968,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn get_child_by_id(&self, id: usize) -> Option<DisplayObject<'gc>> {
-        self.children().rev().nth(id)
+        self.0.read().children.iter().nth(id).map(|(_, v)| *v)
     }
 }
 
