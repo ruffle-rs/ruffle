@@ -524,56 +524,28 @@ pub fn color_transform<'gc>(
         .get("height", activation)?
         .coerce_to_i32(activation)?;
 
-    //TODO: does this only work on actual cts or does it work on anything with x/y/w/h
-    let red_multiplier = color_transform
-        .get("redMultiplier", activation)?
-        .coerce_to_f64(activation)? as f32;
-    let green_multiplier = color_transform
-        .get("greenMultiplier", activation)?
-        .coerce_to_f64(activation)? as f32;
-    let blue_multiplier = color_transform
-        .get("blueMultiplier", activation)?
-        .coerce_to_f64(activation)? as f32;
-    let alpha_multiplier = color_transform
-        .get("alphaMultiplier", activation)?
-        .coerce_to_f64(activation)? as f32;
-    let red_offset = color_transform
-        .get("redOffset", activation)?
-        .coerce_to_f64(activation)? as f32
-        / 255.0;
-    let green_offset = color_transform
-        .get("greenOffset", activation)?
-        .coerce_to_f64(activation)? as f32
-        / 255.0;
-    let blue_offset = color_transform
-        .get("blueOffset", activation)?
-        .coerce_to_f64(activation)? as f32
-        / 255.0;
-    let alpha_offset = color_transform
-        .get("alphaOffset", activation)?
-        .coerce_to_f64(activation)? as f32
-        / 255.0;
-
-    bitmap_data.color_transform(
-        activation.context.gc_context,
-        x as u32,
-        y as u32,
-        (x + width) as u32,
-        (y + height) as u32,
-        alpha_multiplier,
-        alpha_offset,
-        red_multiplier,
-        red_offset,
-        green_multiplier,
-        green_offset,
-        blue_multiplier,
-        blue_offset,
-    );
+    //TODO: casting
+    if let Some(color_transform) = color_transform.as_color_transform_object() {
+        bitmap_data.color_transform(
+            activation.context.gc_context,
+            x as u32,
+            y as u32,
+            (x + width) as u32,
+            (y + height) as u32,
+            color_transform.get_alpha_multiplier() as f32,
+            color_transform.get_alpha_offset() as f32,
+            color_transform.get_red_multiplier() as f32,
+            color_transform.get_red_offset() as f32,
+            color_transform.get_green_multiplier() as f32,
+            color_transform.get_green_offset() as f32,
+            color_transform.get_blue_multiplier() as f32,
+            color_transform.get_blue_offset() as f32,
+        );
+    }
 
     Ok(Value::Undefined)
 }
 
-// TODO: args tests
 pub fn get_color_bounds_rect<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -585,26 +557,24 @@ pub fn get_color_bounds_rect<'gc>(
         return Ok((-1).into());
     }
 
-    let mask = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
+    let mask = args.get(0).and_then(|v| v.coerce_to_i32(activation).ok());
 
-    let color = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
+    let color = args.get(1).and_then(|v| v.coerce_to_i32(activation).ok());
 
     let find_color = args
         .get(2)
         .unwrap_or(&Value::Bool(true))
         .as_bool(activation.current_swf_version());
 
-    let (x, y, w, h) = bitmap_data.get_color_bounds_rect(mask, color, find_color);
+    if let Some((mask, color)) = mask.zip(color) {
+        let (x, y, w, h) = bitmap_data.get_color_bounds_rect(mask, color, find_color);
 
-    let proto = activation.context.system_prototypes.rectangle_constructor;
-    let rect = proto.construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
-    Ok(rect.into())
+        let proto = activation.context.system_prototypes.rectangle_constructor;
+        let rect = proto.construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
+        Ok(rect.into())
+    } else {
+        Ok((-1).into())
+    }
 }
 
 pub fn perlin_noise<'gc>(
