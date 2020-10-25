@@ -1684,6 +1684,10 @@ impl<'gc> MovieClip<'gc> {
         if let Some(next) = next {
             next.set_prev_sibling(context.gc_context, prev);
         }
+
+        child.set_prev_sibling(context.gc_context, None);
+        child.set_next_sibling(context.gc_context, None);
+
         if let Some(head) = self.first_child() {
             if DisplayObject::ptr_eq(head, child) {
                 self.set_first_child(context.gc_context, next);
@@ -1718,8 +1722,10 @@ impl<'gc> MovieClip<'gc> {
             // Don't do this for rewinds, because they conceptually
             // start from an empty display list, and we also want to examine
             // the old children to decide if they persist (place_frame <= goto_frame).
-            if let Some(child) = self.0.read().children.get(&depth).cloned() {
+            let read = self.0.read();
+            if let Some(child) = read.children.get(&depth).cloned() {
                 if !child.placed_by_script() {
+                    drop(read);
                     self.0.write(context.gc_context).children.remove(&depth);
                     self.remove_child_from_exec_list(context, child);
                 }
@@ -2961,13 +2967,15 @@ impl<'gc, 'a> MovieClip<'gc> {
             reader.read_remove_object_2()
         }?;
 
-        if let Some(child) = self.0.read().children.get(&remove_object.depth.into()).cloned() {
+        let read = self.0.read();
+        if let Some(child) = read.children.get(&remove_object.depth.into()).cloned() {
             if !child.placed_by_script() {
+                drop(read);
                 self.0.write(context.gc_context).children.remove(&remove_object.depth.into());
                 self.remove_child_from_exec_list(context, child);
             }
         }
-        
+
         Ok(())
     }
 
