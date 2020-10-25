@@ -785,6 +785,14 @@ a: false, r: true, g:true, b:true
 // src.colorTransform(src.rectangle, ColorTransform(0, 0, 0, 0, 0, 0, 0, 0))
 // src.getPixel32(0, 0)
 0
+// src.colorTransform(src.rectangle, ColorTransform(0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0))
+a: 127, r: 126, g:126, b:126
+// src.getPixel32(0, 0)
+2138996350
+// src.colorTransform(src.rectangle, ColorTransform(0, 0, 0, 0, 32, 32, 32, 32))
+a: 32, r: 32, g:32, b:32
+// src.getPixel32(0, 0)
+538976288
 // src.colorTransform({x: -1, y: -1, width: 1, height: 1}, ColorTransform(0, 0, 0, 0, 0, 0, 0, 0))
 // src.getPixel32(0, 0)
 -1
@@ -833,3 +841,41 @@ a: false, r: true, g:true, b:true
 // src.colorTransform(src.rectangle, {redMultiplier: 1})
 // src.getPixel32(0, 0)
 -1
+// src.colorTransform(src.rectangle, {greenMultiplier: 1})
+// src.getPixel32(0, 0)
+-1
+// src.colorTransform(src.rectangle, {blueMultiplier: 1})
+// src.getPixel32(0, 0)
+-1
+// src.colorTransform(src.rectangle, {alphaMultiplier: 1})
+// src.getPixel32(0, 0)
+-1
+// src.colorTransform(src.rectangle, {redMultiplier: 0, greenMultiplier: 0, blueMultiplier: 0, alphaMultiplier: 0})
+// src.getPixel32(0, 0)
+-1
+// src.colorTransform(src.rectangle, {redMultiplier: 0, greenMultiplier: 0, blueMultiplier: 0, alphaMultiplier: 0, redOffset: 0})
+// src.getPixel32(0, 0)
+-1
+// src.colorTransform(src.rectangle, {redMultiplier: 0, greenMultiplier: 0, blueMultiplier: 0, alphaMultiplier: 0, redOffset: 0, greenOffset: 0})
+// src.getPixel32(0, 0)
+-1
+// src.colorTransform(src.rectangle, {redMultiplier: 0, greenMultiplier: 0, blueMultiplier: 0, alphaMultiplier: 0, redOffset: 0, greenOffset: 0, blueOffset: 0})
+// src.getPixel32(0, 0)
+-1
+// src.colorTransform(src.rectangle, {redMultiplier: 0, greenMultiplier: 0, blueMultiplier: 0, alphaMultiplier: 0, redOffset: 0, greenOffset: 0, blueOffset: 0, alphaOffset: 0})
+// src.getPixel32(0, 0)
+-1
+// src.getColorBoundsRect(0xFFFFFFFF, 0xFFFFFFFF, true)
+(x=0, y=0, w=3, h=3)
+// src.getColorBoundsRect(0xFFFFFFFF, 0xFFFFFFFF, false)
+(x=1, y=1, w=1, h=1)
+// src.getColorBoundsRect(0xFF000000, 0x00000000, false)
+(x=0, y=0, w=3, h=3)
+// src.getColorBoundsRect(0xFF000000, 0x00000000, true)
+(x=0, y=0, w=0, h=0)
+// src.getColorBoundsRect() (noargs)
+-1
+// src.getColorBoundsRect(0)
+-1
+// src.getColorBoundsRect(0, 0)
+(x=0, y=0, w=3, h=3)

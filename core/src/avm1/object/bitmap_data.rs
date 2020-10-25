@@ -263,7 +263,6 @@ impl<'gc> BitmapDataObject<'gc> {
             if let Some((x, y)) = pending.pop() {
                 if let Some(old_color) = self.get_pixel_raw(x, y) {
                     if old_color == expected_color {
-                        println!("x: {}, y: {}, pending: {:?}", x, y, pending);
                         if x > 0 {
                             pending.push((x - 1, y));
                         }
@@ -346,7 +345,7 @@ impl<'gc> BitmapDataObject<'gc> {
 
                 let new_dest_color = original_color | (source_part << dest_channel_shift);
 
-                println!("x: {}, y: {}, source_color: {}, source_part: {}, original_color: {}, new_color: {}", x, y, Color(source_color as i32), source_part, Color(original_color as i32), Color(new_dest_color as i32));
+                // println!("x: {}, y: {}, source_color: {}, source_part: {}, original_color: {}, new_color: {}", x, y, Color(source_color as i32), source_part, Color(original_color as i32), Color(new_dest_color as i32));
 
                 //new_self_pixels.insert((y * width + x) as usize, new_dest_color);
                 new_self_pixels.push(Color(new_dest_color as i32));
@@ -408,13 +407,21 @@ impl<'gc> BitmapDataObject<'gc> {
     ) {
         for x in min_x.max(0)..max_x.min(self.get_width()) {
             for y in min_y.max(0)..max_y.min(self.get_height()) {
-                let color = self.get_pixel_raw(x, y).unwrap_or(0.into());
+                let color = self
+                    .get_pixel_raw(x, y)
+                    .unwrap_or(0.into())
+                    .to_un_multiplied_alpha();
                 let a = ((color.get_alpha() as f32 * a_mult) + a_add) as u8;
                 let r = ((color.get_red() as f32 * r_mult) + r_add) as u8;
                 let g = ((color.get_green() as f32 * g_mult) + g_add) as u8;
                 let b = ((color.get_blue() as f32 * b_mult) + b_add) as u8;
 
-                self.set_pixel32_raw(gc_context, x, y, Color::argb(a, r, g, b))
+                self.set_pixel32_raw(
+                    gc_context,
+                    x,
+                    y,
+                    Color::argb(a, r, g, b).to_premultiplied_alpha(self.get_transparency()),
+                )
             }
         }
     }
@@ -425,7 +432,6 @@ impl<'gc> BitmapDataObject<'gc> {
         color: i32,
         find_color: bool,
     ) -> (u32, u32, u32, u32) {
-        //TODO: option, if none take image bounds
         let mut min_x = Option::<i32>::None;
         let mut max_x = Option::<i32>::None;
         let mut min_y = Option::<i32>::None;
@@ -433,7 +439,6 @@ impl<'gc> BitmapDataObject<'gc> {
 
         for x in 0..self.get_width() {
             for y in 0..self.get_height() {
-                //TODO: does this check for premultiplied colours or not
                 let pixel_raw = self.get_pixel_raw(x, y).unwrap_or(0.into()).0;
                 let color_matches = if find_color {
                     (pixel_raw & mask) == color
@@ -446,28 +451,29 @@ impl<'gc> BitmapDataObject<'gc> {
                         min_x = Some(x as i32)
                     }
                     if (x as i32) > max_x.unwrap_or(-1) {
-                        max_x = Some(x as i32)
+                        max_x = Some(x as i32 + 1)
                     }
 
                     if (y as i32) < min_y.unwrap_or(self.get_height() as i32) {
                         min_y = Some(y as i32)
                     }
                     if (y as i32) > max_y.unwrap_or(-1) {
-                        max_y = Some(y as i32)
+                        max_y = Some(y as i32 + 1)
                     }
                 }
             }
         }
+
         let min_x = min_x.unwrap_or(0);
         let min_y = min_y.unwrap_or(0);
-        let max_x = max_x.unwrap_or(self.get_width() as i32);
-        let max_y = max_y.unwrap_or(self.get_height() as i32);
+        let max_x = max_x.unwrap_or(0);
+        let max_y = max_y.unwrap_or(0);
 
         (
             min_x as u32,
             min_y as u32,
-            (min_x + max_x) as u32,
-            (min_y + max_y) as u32,
+            (max_x - min_x) as u32,
+            (max_y - min_y) as u32,
         )
     }
 
