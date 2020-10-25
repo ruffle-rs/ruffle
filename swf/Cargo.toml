@@ -20,7 +20,7 @@ flate2 = {version = "1.0", optional = true}
 xz2 = {version = "0.1.6", optional = true}
 
 [dev-dependencies]
-approx = "0.3.2"
+approx = "0.4.0"
 
 [features]
 default = ["flate2"]
