@@ -7,7 +7,7 @@ layout(set = 1, binding = 1) uniform Colors {
 };
 
 // Set 2: gradient
-layout(std430, set = 2, binding = 1) buffer Gradient {
+layout(std430, set = 2, binding = 1) readonly buffer Gradient {
     vec4 u_colors[16];
     float u_ratios[16];
     int u_gradient_type;
