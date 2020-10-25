@@ -171,7 +171,7 @@ impl<'gc> BitmapDataObject<'gc> {
         x >= 0 && x < self.get_width() as i32 && y >= 0 && y < self.get_height() as i32
     }
 
-    fn get_pixel_raw(&self, x: u32, y: u32) -> Option<Color> {
+    pub fn get_pixel_raw(&self, x: u32, y: u32) -> Option<Color> {
         if x > self.get_width() || y > self.get_height() {
             return None;
         }
@@ -246,40 +246,6 @@ impl<'gc> BitmapDataObject<'gc> {
         self.0.write(gc_context).width = 0;
         self.0.write(gc_context).height = 0;
         self.0.write(gc_context).disposed = true;
-    }
-
-    pub fn flood_fill(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: Color) {
-        let mut pending = Vec::new();
-        pending.push((x, y));
-
-        let color = color.to_premultiplied_alpha(self.get_transparency());
-
-        let width = self.get_width();
-        let height = self.get_height();
-
-        let expected_color = self.get_pixel_raw(x, y).unwrap_or(0.into());
-
-        while !pending.is_empty() {
-            if let Some((x, y)) = pending.pop() {
-                if let Some(old_color) = self.get_pixel_raw(x, y) {
-                    if old_color == expected_color {
-                        if x > 0 {
-                            pending.push((x - 1, y));
-                        }
-                        if y > 0 {
-                            pending.push((x, y - 1));
-                        }
-                        if x < width - 1 {
-                            pending.push((x + 1, y))
-                        }
-                        if y < height - 1 {
-                            pending.push((x, y + 1));
-                        }
-                        self.set_pixel32_raw(gc_context, x, y, color);
-                    }
-                }
-            }
-        }
     }
 
     pub fn copy_channel(
