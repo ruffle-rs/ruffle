@@ -1,9 +1,10 @@
 use crate::pipelines::Pipelines;
 use crate::utils::create_buffer_with_data;
-use crate::{ColorAdjustments, TextureTransforms, Transforms};
+use crate::TextureTransforms;
 use bytemuck::{Pod, Zeroable};
 use ruffle_core::backend::audio::swf::CharacterId;
 use ruffle_core::color_transform::ColorTransform;
+use wgpu::BufferSize;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -27,6 +28,7 @@ pub struct Mesh {
     pub colors_buffer: wgpu::Buffer,
     pub colors_last: ColorTransform,
     pub shape_id: CharacterId,
+    pub bind_group: wgpu::BindGroup,
 }
 
 #[derive(Debug)]
@@ -34,7 +36,6 @@ pub struct Draw {
     pub draw_type: DrawType,
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
-    pub bind_group: wgpu::BindGroup,
     pub index_count: u32,
 }
 
@@ -44,11 +45,15 @@ pub enum DrawType {
     Gradient {
         texture_transforms: wgpu::Buffer,
         gradient: wgpu::Buffer,
+        bind_group: wgpu::BindGroup,
     },
     Bitmap {
         texture_transforms: wgpu::Buffer,
         texture_view: wgpu::TextureView,
         id: CharacterId,
+        is_smoothed: bool,
+        is_repeating: bool,
+        bind_group: wgpu::BindGroup,
     },
 }
 
@@ -82,8 +87,6 @@ impl IncompleteDrawType {
     pub fn build(
         self,
         device: &wgpu::Device,
-        transforms_ubo: &wgpu::Buffer,
-        colors_ubo: &wgpu::Buffer,
         vertex_buffer: wgpu::Buffer,
         index_buffer: wgpu::Buffer,
         index_count: u32,
@@ -92,36 +95,12 @@ impl IncompleteDrawType {
         draw_id: usize,
     ) -> Draw {
         match self {
-            IncompleteDrawType::Color => {
-                let bind_group_label =
-                    create_debug_label!("Shape {} (color) draw {} bindgroup", shape_id, draw_id);
-                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &pipelines.color.bind_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::Buffer(
-                                transforms_ubo.slice(0..std::mem::size_of::<Transforms>() as u64),
-                            ),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Buffer(
-                                colors_ubo.slice(0..std::mem::size_of::<ColorAdjustments>() as u64),
-                            ),
-                        },
-                    ],
-                    label: bind_group_label.as_deref(),
-                });
-
-                Draw {
-                    draw_type: DrawType::Color,
-                    vertex_buffer,
-                    index_buffer,
-                    bind_group,
-                    index_count,
-                }
-            }
+            IncompleteDrawType::Color => Draw {
+                draw_type: DrawType::Color,
+                vertex_buffer,
+                index_buffer,
+                index_count,
+            },
             IncompleteDrawType::Gradient {
                 texture_transform,
                 gradient,
@@ -151,33 +130,27 @@ impl IncompleteDrawType {
                 let bind_group_label =
                     create_debug_label!("Shape {} (gradient) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &pipelines.gradient.bind_layout,
+                    layout: &pipelines.gradient_layout,
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: 0,
-                            resource: wgpu::BindingResource::Buffer(
-                                transforms_ubo.slice(0..std::mem::size_of::<Transforms>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &tex_transforms_ubo,
+                                offset: 0,
+                                size: BufferSize::new(
+                                    std::mem::size_of::<TextureTransforms>() as u64
+                                ),
+                            },
                         },
                         wgpu::BindGroupEntry {
                             binding: 1,
-                            resource: wgpu::BindingResource::Buffer(
-                                tex_transforms_ubo
-                                    .slice(0..std::mem::size_of::<TextureTransforms>() as u64),
-                            ),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
-                            resource: wgpu::BindingResource::Buffer(
-                                colors_ubo.slice(0..std::mem::size_of::<ColorAdjustments>() as u64),
-                            ),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 3,
-                            resource: wgpu::BindingResource::Buffer(
-                                gradient_ubo
-                                    .slice(0..std::mem::size_of::<GradientUniforms>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &gradient_ubo,
+                                offset: 0,
+                                size: BufferSize::new(
+                                    std::mem::size_of::<GradientUniforms>() as u64
+                                ),
+                            },
                         },
                     ],
                     label: bind_group_label.as_deref(),
@@ -187,10 +160,10 @@ impl IncompleteDrawType {
                     draw_type: DrawType::Gradient {
                         texture_transforms: tex_transforms_ubo,
                         gradient: gradient_ubo,
+                        bind_group,
                     },
                     vertex_buffer,
                     index_buffer,
-                    bind_group,
                     index_count,
                 }
             }
@@ -212,65 +185,24 @@ impl IncompleteDrawType {
                     ),
                 );
 
-                let address_mode = if is_repeating {
-                    wgpu::AddressMode::Repeat
-                } else {
-                    wgpu::AddressMode::ClampToEdge
-                };
-
-                let filter = if is_smoothed {
-                    wgpu::FilterMode::Linear
-                } else {
-                    wgpu::FilterMode::Nearest
-                };
-
-                let sampler_label =
-                    create_debug_label!("Shape {} (bitmap) draw {} sampler", shape_id, draw_id);
-                let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-                    label: sampler_label.as_deref(),
-                    address_mode_u: address_mode,
-                    address_mode_v: address_mode,
-                    address_mode_w: address_mode,
-                    mag_filter: filter,
-                    min_filter: filter,
-                    mipmap_filter: filter,
-                    lod_min_clamp: 0.0,
-                    lod_max_clamp: 100.0,
-                    compare: None,
-                    anisotropy_clamp: None,
-                });
-
                 let bind_group_label =
                     create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &pipelines.bitmap.bind_layout,
+                    layout: &pipelines.bitmap_layout,
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: 0,
-                            resource: wgpu::BindingResource::Buffer(
-                                transforms_ubo.slice(0..std::mem::size_of::<Transforms>() as u64),
-                            ),
+                            resource: wgpu::BindingResource::Buffer {
+                                buffer: &tex_transforms_ubo,
+                                offset: 0,
+                                size: BufferSize::new(
+                                    std::mem::size_of::<TextureTransforms>() as u64
+                                ),
+                            },
                         },
                         wgpu::BindGroupEntry {
                             binding: 1,
-                            resource: wgpu::BindingResource::Buffer(
-                                tex_transforms_ubo
-                                    .slice(0..std::mem::size_of::<TextureTransforms>() as u64),
-                            ),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
-                            resource: wgpu::BindingResource::Buffer(
-                                colors_ubo.slice(0..std::mem::size_of::<ColorAdjustments>() as u64),
-                            ),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 3,
                             resource: wgpu::BindingResource::TextureView(&texture_view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 4,
-                            resource: wgpu::BindingResource::Sampler(&sampler),
                         },
                     ],
                     label: bind_group_label.as_deref(),
@@ -281,10 +213,12 @@ impl IncompleteDrawType {
                         texture_transforms: tex_transforms_ubo,
                         texture_view,
                         id,
+                        is_smoothed,
+                        is_repeating,
+                        bind_group,
                     },
                     vertex_buffer,
                     index_buffer,
-                    bind_group,
                     index_count,
                 }
             }

@@ -19,7 +19,7 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "webpack-cli": "^3.3.11",
+        "webpack-cli": "^4.0.0",
         "webpack-dev-server": "^3.11.0",
         "@wdio/cli": "^6.1.12"
     }

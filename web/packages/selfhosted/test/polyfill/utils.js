@@ -50,7 +50,7 @@ function inject_ruffle(browser) {
     throw_if_error(browser);
 }
 
-function play_and_monitor(browser, player) {
+function play_and_monitor(browser, player, expected_output) {
     throw_if_error(browser);
 
     // TODO: better way to test for this in the API
@@ -81,12 +81,16 @@ function play_and_monitor(browser, player) {
         player.play_button_clicked();
     }, player);
 
+    if (expected_output === undefined) {
+        expected_output = "Hello from Flash!\n";
+    }
+
     browser.waitUntil(
         () => {
             return (
                 browser.execute((player) => {
                     return player.__ruffle_log__;
-                }, player) === "Hello from Flash!\n"
+                }, player) === expected_output
             );
         },
         {

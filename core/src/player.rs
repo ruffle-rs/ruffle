@@ -2,8 +2,8 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
-use crate::avm1::{Avm1, AvmString, TObject, Timers, Value};
-use crate::avm2::Avm2;
+use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
+use crate::avm2::{Avm2, Domain as Avm2Domain};
 use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::locale::LocaleBackend;
 use crate::backend::navigator::{NavigatorBackend, RequestOptions};
@@ -19,17 +19,20 @@ use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
+use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
 use crate::vminterface::Instantiator;
 use enumset::EnumSet;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
+use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
+use std::time::Duration;
 
 pub static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
@@ -186,6 +189,10 @@ pub struct Player {
     /// Time remaining until the next timer will fire.
     time_til_next_timer: Option<f64>,
 
+    /// The maximum amount of time that can be called before a `Error::ExecutionTimeout`
+    /// is raised. This defaults to 15 seconds but can be changed.
+    max_execution_duration: Duration,
+
     /// Self-reference to ourselves.
     ///
     /// This is a weak reference that is upgraded and handed out in various
@@ -273,6 +280,7 @@ impl Player {
             instance_counter: 0,
             time_til_next_timer: None,
             storage,
+            max_execution_duration: Duration::from_secs(15),
         };
 
         player.mutate_with_update_context(|context| {
@@ -305,13 +313,14 @@ impl Player {
     ///
     /// This should not be called if a root movie fetch has already been kicked
     /// off.
-    pub fn fetch_root_movie(&mut self, movie_url: &str) {
+    pub fn fetch_root_movie(&mut self, movie_url: &str, parameters: PropertyMap<String>) {
         self.mutate_with_update_context(|context| {
             let fetch = context.navigator.fetch(movie_url, RequestOptions::get());
             let process = context.load_manager.load_root_movie(
                 context.player.clone().unwrap(),
                 fetch,
                 movie_url.to_string(),
+                parameters,
             );
 
             context.navigator.spawn_future(process);
@@ -338,13 +347,31 @@ impl Player {
         self.instance_counter = 0;
 
         self.mutate_with_update_context(|context| {
-            context.library.library_for_movie_mut(context.swf.clone());
+            let domain = Avm2Domain::movie_domain(context.gc_context, context.avm2.global_domain());
+            context
+                .library
+                .library_for_movie_mut(context.swf.clone())
+                .set_avm2_domain(domain);
 
             let root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
 
             root.set_depth(context.gc_context, 0);
-            root.post_instantiation(context, root, None, Instantiator::Movie, false);
+            let flashvars = if !context.swf.parameters().is_empty() {
+                let object = ScriptObject::object(context.gc_context, None);
+                for (key, value) in context.swf.parameters().iter() {
+                    object.define_value(
+                        context.gc_context,
+                        key,
+                        AvmString::new(context.gc_context, value).into(),
+                        EnumSet::empty(),
+                    );
+                }
+                Some(object.into())
+            } else {
+                None
+            };
+            root.post_instantiation(context, root, flashvars, Instantiator::Movie, false);
             root.set_name(context.gc_context, "");
             context.levels.insert(0, root);
 
@@ -854,6 +881,10 @@ impl Player {
         &mut self.renderer
     }
 
+    pub fn destroy(self) -> Renderer {
+        self.renderer
+    }
+
     pub fn input(&self) -> &Input {
         &self.input
     }
@@ -1043,6 +1074,7 @@ impl Player {
             locale,
             logging,
             needs_render,
+            max_execution_duration,
         ) = (
             self.player_version,
             &self.swf,
@@ -1062,6 +1094,7 @@ impl Player {
             self.locale.deref_mut(),
             self.log.deref_mut(),
             &mut self.needs_render,
+            self.max_execution_duration,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -1113,6 +1146,8 @@ impl Player {
                 avm1,
                 avm2,
                 external_interface,
+                update_start: Instant::now(),
+                max_execution_duration,
             };
 
             let ret = f(&mut update_context);
@@ -1213,6 +1248,14 @@ impl Player {
 
     pub fn log_backend(&self) -> &Log {
         &self.log
+    }
+
+    pub fn max_execution_duration(&self) -> Duration {
+        self.max_execution_duration
+    }
+
+    pub fn set_max_execution_duration(&mut self, max_execution_duration: Duration) {
+        self.max_execution_duration = max_execution_duration
     }
 }
 

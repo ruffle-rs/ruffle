@@ -3,17 +3,14 @@
 </p>
 <p align="center">
  <a href="https://github.com/ruffle-rs/ruffle/actions">
-  <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Rust?label=github%20actions%20rust%20build" alt="Rust Build Status" />
-  <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Web?label=github%20actions%20web%20build" alt="Web Build Status" />
- </a>
- <a href="https://circleci.com/gh/ruffle-rs/ruffle">
-  <img src="https://img.shields.io/circleci/build/github/ruffle-rs/ruffle?label=circleci%20build" alt="Travis Build Status" />
+  <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Rust?label=rust%20build" alt="Rust Build Status" />
+  <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Web?label=web%20build" alt="Web Build Status" />
  </a>
   <a href="https://discord.gg/J8hgCQN">
       <img src="https://img.shields.io/discord/610531541889581066" alt="Ruffle Discord">
   </a>
   <br>
-  <strong><a href="https://ruffle.rs">website</a> | <a href="http://ruffle-rs.s3-website-us-west-1.amazonaws.com/builds/web-demo/index.html">demo</a> | <a href="http://ruffle-rs.s3-website-us-west-1.amazonaws.com/">nightly builds</a> | <a href="https://github.com/ruffle-rs/ruffle/wiki">wiki</a></strong>
+  <strong><a href="https://ruffle.rs">website</a> | <a href="https://ruffle.rs/demo">demo</a> | <a href="https://github.com/ruffle-rs/ruffle/releases">nightly builds</a> | <a href="https://github.com/ruffle-rs/ruffle/wiki">wiki</a></strong>
 </p>
 
 # Ruffle
@@ -26,7 +23,7 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 
 ## Nightly builds
 
-[Nightly builds](http://ruffle-rs.s3-website-us-west-1.amazonaws.com/) of Ruffle are available for desktop and web platforms including the browser extension.
+[Nightly builds](https://github.com/ruffle-rs/ruffle/releases) of Ruffle are available for desktop and web platforms including the browser extension.
 
 ## Building from source
 

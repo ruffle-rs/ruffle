@@ -1,13 +1,20 @@
 //! Whole script representation
 
+use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
+use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
+use crate::avm2::object::{DomainObject, Object, TObject};
+use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
+use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::collect::CollectWrapper;
+use crate::context::UpdateContext;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use std::cell::Ref;
 use std::mem::drop;
 use std::rc::Rc;
 use swf::avm2::types::{AbcFile, Index, Script as AbcScript};
@@ -31,6 +38,9 @@ pub struct TranslationUnit<'gc>(GcCell<'gc, TranslationUnitData<'gc>>);
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct TranslationUnitData<'gc> {
+    /// The domain that all scripts in the translation unit export defs to.
+    domain: Domain<'gc>,
+
     /// The ABC file that all of the following loaded data comes from.
     abc: CollectWrapper<Rc<AbcFile>>,
 
@@ -41,17 +51,20 @@ pub struct TranslationUnitData<'gc> {
     methods: FnvHashMap<u32, Method<'gc>>,
 
     /// All scripts loaded from the ABC's scripts list.
-    scripts: FnvHashMap<u32, GcCell<'gc, Script<'gc>>>,
+    scripts: FnvHashMap<u32, Script<'gc>>,
 
     /// All strings loaded from the ABC's strings list.
     strings: FnvHashMap<u32, AvmString<'gc>>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
-    pub fn from_abc(abc: Rc<AbcFile>, mc: MutationContext<'gc, '_>) -> Self {
+    /// Construct a new `TranslationUnit` for a given ABC file intended to
+    /// execute within a particular domain.
+    pub fn from_abc(abc: Rc<AbcFile>, domain: Domain<'gc>, mc: MutationContext<'gc, '_>) -> Self {
         Self(GcCell::allocate(
             mc,
             TranslationUnitData {
+                domain,
                 abc: CollectWrapper(abc),
                 classes: FnvHashMap::default(),
                 methods: FnvHashMap::default(),
@@ -120,18 +133,26 @@ impl<'gc> TranslationUnit<'gc> {
         script_index: u32,
         avm2: &mut Avm2<'gc>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<GcCell<'gc, Script<'gc>>, Error> {
+    ) -> Result<Script<'gc>, Error> {
         let read = self.0.read();
         if let Some(scripts) = read.scripts.get(&script_index) {
             return Ok(*scripts);
         }
 
+        let mut domain = read.domain;
+
         drop(read);
 
-        let script = Script::from_abc_index(self, script_index, mc)?;
+        let global = DomainObject::from_domain(mc, Some(avm2.prototypes().global), domain);
+
+        let mut script = Script::from_abc_index(self, script_index, global, mc)?;
         self.0.write(mc).scripts.insert(script_index, script);
 
-        script.write(mc).load_traits(self, script_index, avm2, mc)?;
+        script.load_traits(self, script_index, avm2, mc)?;
+
+        for traitdef in script.traits()?.iter() {
+            domain.export_definition(traitdef.name().clone(), script, mc)?;
+        }
 
         Ok(script)
     }
@@ -189,9 +210,16 @@ impl<'gc> TranslationUnit<'gc> {
 }
 
 /// A loaded Script from an ABC file.
+#[derive(Copy, Clone, Debug, Collect)]
+#[collect(no_drop)]
+pub struct Script<'gc>(GcCell<'gc, ScriptData<'gc>>);
+
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
-pub struct Script<'gc> {
+struct ScriptData<'gc> {
+    /// The global scope for the script.
+    globals: Object<'gc>,
+
     /// The initializer method to run for the script.
     init: Method<'gc>,
 
@@ -200,20 +228,50 @@ pub struct Script<'gc> {
 
     /// Whether or not we loaded our traits.
     traits_loaded: bool,
+
+    /// Whether or not script initialization occurred.
+    initialized: bool,
 }
 
 impl<'gc> Script<'gc> {
+    /// Create an empty script.
+    ///
+    /// This method is intended for builtin script initialization, such as our
+    /// implementation of player globals. The builtin script initializer will
+    /// be responsible for actually installing traits into both the script
+    /// globals as well as the domain that this script is supposed to be a part
+    /// of.
+    ///
+    /// The `globals` object should be constructed using the `global`
+    /// prototype.
+    pub fn empty_script(mc: MutationContext<'gc, '_>, globals: Object<'gc>) -> Self {
+        Self(GcCell::allocate(
+            mc,
+            ScriptData {
+                globals,
+                init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
+                traits: Vec::new(),
+                traits_loaded: true,
+                initialized: false,
+            },
+        ))
+    }
+
     /// Construct a script from a `TranslationUnit` and it's script index.
     ///
     /// The returned script will be allocated, but no traits will be loaded.
     /// The caller is responsible for storing the class in the
     /// `TranslationUnit` and calling `load_traits` to complete the
     /// trait-loading process.
+    ///
+    /// The given `globals` should be an empty object of the `global` hidden
+    /// type. The initializer script will create and store traits on it.
     pub fn from_abc_index(
         unit: TranslationUnit<'gc>,
         script_index: u32,
+        globals: Object<'gc>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<GcCell<'gc, Self>, Error> {
+    ) -> Result<Self, Error> {
         let abc = unit.abc();
         let script: Result<&AbcScript, Error> = abc
             .scripts
@@ -223,14 +281,16 @@ impl<'gc> Script<'gc> {
 
         let init = unit.load_method(script.init_method.0, mc)?;
 
-        Ok(GcCell::allocate(
+        Ok(Self(GcCell::allocate(
             mc,
-            Self {
+            ScriptData {
+                globals,
                 init,
                 traits: Vec::new(),
                 traits_loaded: false,
+                initialized: false,
             },
-        ))
+        )))
     }
 
     /// Finish the class-loading process by loading traits.
@@ -246,11 +306,13 @@ impl<'gc> Script<'gc> {
         avm2: &mut Avm2<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        if self.traits_loaded {
+        let mut write = self.0.write(mc);
+
+        if write.traits_loaded {
             return Ok(());
         }
 
-        self.traits_loaded = true;
+        write.traits_loaded = true;
 
         let abc = unit.abc();
         let script: Result<_, Error> = abc
@@ -260,27 +322,69 @@ impl<'gc> Script<'gc> {
         let script = script?;
 
         for abc_trait in script.traits.iter() {
-            self.traits
-                .push(Trait::from_abc_trait(unit, &abc_trait, avm2, mc)?);
+            drop(write);
+
+            let newtrait = Trait::from_abc_trait(unit, &abc_trait, avm2, mc)?;
+
+            write = self.0.write(mc);
+            write.traits.push(newtrait);
         }
 
         Ok(())
     }
 
-    /// Return the entrypoint for the script.
-    pub fn init(&self) -> Method<'gc> {
-        self.init.clone()
+    /// Return the entrypoint for the script and the scope it should run in.
+    pub fn init(self) -> (Method<'gc>, Object<'gc>) {
+        let read = self.0.read();
+        (read.init.clone(), read.globals)
+    }
+
+    /// Return the global scope for the script.
+    ///
+    /// If the script has not yet been initialized, this will initialize it on
+    /// the same stack.
+    pub fn globals(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<Object<'gc>, Error> {
+        let mut write = self.0.write(context.gc_context);
+        if !write.initialized {
+            write.initialized = true;
+
+            let mut globals = write.globals;
+            let scope = Scope::push_scope(None, globals, context.gc_context);
+            let mut null_activation = Activation::from_nothing(context.reborrow());
+
+            drop(write);
+
+            for trait_entry in self.traits()?.iter() {
+                globals.install_foreign_trait(
+                    &mut null_activation,
+                    trait_entry.clone(),
+                    Some(scope),
+                    globals,
+                )?;
+            }
+
+            Avm2::run_script_initializer(*self, context)?;
+
+            Ok(globals)
+        } else {
+            Ok(write.globals)
+        }
     }
 
     /// Return traits for this script.
     ///
     /// This function will return an error if it is incorrectly called before
     /// traits are loaded.
-    pub fn traits(&self) -> Result<&[Trait<'gc>], Error> {
-        if !self.traits_loaded {
+    pub fn traits<'a>(&'a self) -> Result<Ref<'a, [Trait<'gc>]>, Error> {
+        let read = self.0.read();
+
+        if !read.traits_loaded {
             return Err("LoadError: Script traits accessed before they were loaded!".into());
         }
 
-        Ok(&self.traits)
+        Ok(Ref::map(read, |read| &read.traits[..]))
     }
 }

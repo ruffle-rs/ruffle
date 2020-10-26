@@ -15,12 +15,15 @@ module.exports = (env, argv) => {
     return {
         entry: path.resolve(__dirname, "js/ruffle.js"),
         output: {
+            publicPath: "",
             path: path.resolve(__dirname, "dist"),
             filename: "ruffle.js",
             chunkFilename: "core.ruffle.[contenthash].js",
-            jsonpFunction: "RufflePlayerLoader",
         },
         mode: mode,
+        experiments: {
+            syncWebAssembly: true,
+        },
         plugins: [
             new CleanWebpackPlugin(),
             new CopyPlugin({

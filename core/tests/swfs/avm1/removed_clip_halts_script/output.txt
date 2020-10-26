@@ -1,0 +1,15 @@
+clip 1
+clip 2
+clip 3
+clip 4
+done
+clip 5
+clip 5 OK
+clip 6
+clip 6 OK
+clip 6 OK2
+clip 7
+clip 7 OK
+clip 8
+clip 8 OK
+clip 8 OK2

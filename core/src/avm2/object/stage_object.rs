@@ -216,6 +216,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.proto()
     }
 
+    fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>) {
+        self.0.write(mc).base.set_proto(proto)
+    }
+
     fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {
         self.0.read().base.get_enumerant_name(index)
     }

@@ -10,12 +10,12 @@ use ruffle_core::backend::navigator::NullNavigatorBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
+use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::target::TextureTarget;
-use ruffle_render_wgpu::WgpuRenderBackend;
+use ruffle_render_wgpu::{wgpu, Descriptors, WgpuRenderBackend};
 use std::error::Error;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 use std::sync::Arc;
 use walkdir::{DirEntry, WalkDir};
 
@@ -63,17 +63,37 @@ struct Opt {
 
     #[clap(flatten)]
     size: SizeOpt,
+
+    /// Type of graphics backend to use. Not all options may be supported by your current system.
+    /// Default will attempt to pick the most supported graphics backend.
+    #[clap(
+        long,
+        short,
+        case_insensitive = true,
+        default_value = "default",
+        arg_enum
+    )]
+    graphics: GraphicsBackend,
+
+    /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
+    /// whereas a low power usage tends prefer integrated GPUs.
+    #[clap(long, short, case_insensitive = true, default_value = "high", arg_enum)]
+    power: PowerPreference,
+
+    /// Location to store a wgpu trace output
+    #[clap(long, parse(from_os_str))]
+    #[cfg(feature = "render_trace")]
+    trace_path: Option<PathBuf>,
 }
 
 fn take_screenshot(
-    device: Rc<wgpu::Device>,
-    queue: Rc<wgpu::Queue>,
+    descriptors: Descriptors,
     swf_path: &Path,
     frames: u32,
     skipframes: u32,
     progress: &Option<ProgressBar>,
     size: SizeOpt,
-) -> Result<Vec<RgbaImage>, Box<dyn std::error::Error>> {
+) -> Result<(Descriptors, Vec<RgbaImage>), Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&swf_path)?;
 
     let width = size.width.unwrap_or_else(|| movie.width());
@@ -82,9 +102,9 @@ fn take_screenshot(
     let height = size.height.unwrap_or_else(|| movie.height());
     let height = (height as f32 * size.scale).round() as u32;
 
-    let target = TextureTarget::new(&device, (width, height));
+    let target = TextureTarget::new(&descriptors.device, (width, height));
     let player = Player::new(
-        Box::new(WgpuRenderBackend::new(device, queue, target)?),
+        Box::new(WgpuRenderBackend::new(descriptors, target)?),
         Box::new(NullAudioBackend::new()),
         Box::new(NullNavigatorBackend::new()),
         Box::new(NullInputBackend::new()),
@@ -131,7 +151,16 @@ fn take_screenshot(
         }
     }
 
-    Ok(result)
+    let descriptors = Arc::try_unwrap(player)
+        .ok()
+        .unwrap()
+        .into_inner()?
+        .destroy()
+        .downcast::<WgpuRenderBackend<TextureTarget>>()
+        .ok()
+        .unwrap()
+        .descriptors();
+    Ok((descriptors, result))
 }
 
 fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
@@ -164,11 +193,7 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
     results
 }
 
-fn capture_single_swf(
-    device: Rc<wgpu::Device>,
-    queue: Rc<wgpu::Queue>,
-    opt: &Opt,
-) -> Result<(), Box<dyn Error>> {
+fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn Error>> {
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
         if opt.frames == 1 {
@@ -198,9 +223,8 @@ fn capture_single_swf(
         None
     };
 
-    let frames = take_screenshot(
-        device,
-        queue,
+    let (_, frames) = take_screenshot(
+        descriptors,
         &opt.swf,
         opt.frames,
         opt.skipframes,
@@ -246,11 +270,7 @@ fn capture_single_swf(
     Ok(())
 }
 
-fn capture_multiple_swfs(
-    device: Rc<wgpu::Device>,
-    queue: Rc<wgpu::Queue>,
-    opt: &Opt,
-) -> Result<(), Box<dyn Error>> {
+fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn Error>> {
     let output = opt.output_path.clone().unwrap();
     let files = find_files(&opt.swf, !opt.silent);
 
@@ -269,15 +289,15 @@ fn capture_multiple_swfs(
     };
 
     for file in &files {
-        let frames = take_screenshot(
-            device.clone(),
-            queue.clone(),
+        let (new_descriptors, frames) = take_screenshot(
+            descriptors,
             &file.path(),
             opt.frames,
             opt.skipframes,
             &progress,
             opt.size,
         )?;
+        descriptors = new_descriptors;
 
         if let Some(progress) = &progress {
             progress.set_message(&file.path().file_stem().unwrap().to_string_lossy());
@@ -334,11 +354,26 @@ fn capture_multiple_swfs(
     Ok(())
 }
 
+#[cfg(feature = "render_trace")]
+fn trace_path(opt: &Opt) -> Option<&Path> {
+    if let Some(path) = &opt.trace_path {
+        let _ = std::fs::create_dir_all(path);
+        Some(path)
+    } else {
+        None
+    }
+}
+
+#[cfg(not(feature = "render_trace"))]
+fn trace_path(_opt: &Opt) -> Option<&Path> {
+    None
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let opt: Opt = Opt::parse();
-    let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+    let instance = wgpu::Instance::new(opt.graphics.into());
     let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::Default,
+        power_preference: opt.power.into(),
         compatible_surface: None,
     }))
     .ok_or(
@@ -351,13 +386,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             limits: wgpu::Limits::default(),
             shader_validation: false,
         },
-        None,
+        trace_path(&opt),
     ))?;
+    let descriptors = Descriptors::new(device, queue)?;
 
     if opt.swf.is_file() {
-        capture_single_swf(Rc::new(device), Rc::new(queue), &opt)?;
+        capture_single_swf(descriptors, &opt)?;
     } else if opt.output_path.is_some() {
-        capture_multiple_swfs(Rc::new(device), Rc::new(queue), &opt)?;
+        capture_multiple_swfs(descriptors, &opt)?;
     } else {
         return Err("Output directory is required when exporting multiple files.".into());
     }

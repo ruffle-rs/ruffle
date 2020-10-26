@@ -13,7 +13,7 @@ use std::hash::{Hash, Hasher};
 type FnvIndexMap<K, V> = IndexMap<K, V, FnvBuildHasher>;
 
 /// A map from property names to values.
-#[derive(Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct PropertyMap<V>(FnvIndexMap<PropertyName, V>);
 
 impl<V> PropertyMap<V> {
@@ -106,6 +106,10 @@ impl<V> PropertyMap<V> {
         } else {
             self.0.shift_remove(&CaseInsensitiveStr(key))
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
 

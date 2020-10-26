@@ -76,6 +76,17 @@ impl<'gc> Scope<'gc> {
         &self.values
     }
 
+    /// Returns a reference to the current global scope object.
+    ///
+    /// By convention, the global scope is at the bottom of the scope stack.
+    pub fn globals(&self) -> Object<'gc> {
+        if let Some(parent) = self.parent {
+            parent.read().globals()
+        } else {
+            self.values
+        }
+    }
+
     /// Returns a reference to the current local scope object for mutation.
     pub fn locals_mut(&mut self) -> &mut Object<'gc> {
         &mut self.values
@@ -111,6 +122,14 @@ impl<'gc> Scope<'gc> {
             return scope.find(name, activation);
         }
 
+        if let Some(domain) = self.locals().as_application_domain() {
+            let script = domain.get_defining_script(name)?;
+
+            if let Some((_qname, mut script)) = script {
+                return Ok(Some(script.globals(&mut activation.context)?));
+            }
+        }
+
         Ok(None)
     }
 
@@ -137,6 +156,20 @@ impl<'gc> Scope<'gc> {
             return parent
                 .write(activation.context.gc_context)
                 .resolve(name, activation);
+        }
+
+        if let Some(domain) = self.locals().as_application_domain() {
+            let script = domain.get_defining_script(name)?;
+
+            if let Some((qname, mut script)) = script {
+                let mut script_scope = script.globals(&mut activation.context)?;
+
+                return Ok(Some(script_scope.get_property(
+                    script_scope,
+                    &qname,
+                    activation,
+                )?));
+            }
         }
 
         //TODO: Should undefined variables halt execution?

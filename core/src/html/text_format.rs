@@ -1230,7 +1230,7 @@ impl FormatSpans {
     /// a handful of presentational attributes in the HTML tree to generate
     /// styling. There's also a `lower_from_css` that respects both
     /// presentational markup and CSS stylesheets.
-    pub fn lower_from_html<'gc>(&mut self, tree: XMLDocument<'gc>) {
+    pub fn lower_from_html(&mut self, tree: XMLDocument<'_>) {
         let mut format_stack = vec![self.default_format.clone()];
         let mut last_successful_format = None;
 

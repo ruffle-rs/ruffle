@@ -466,6 +466,7 @@ impl<'gc> MovieClip<'gc> {
         let flags = reader.read_u32()?;
         let name = reader.read_c_string()?;
         let is_lazy_initialize = flags & 1 != 0;
+        let domain = library.avm2_domain();
 
         // The rest of the tag is an ABC file so we can take our SwfSlice now.
         let slice = self
@@ -481,7 +482,7 @@ impl<'gc> MovieClip<'gc> {
                 )
             })?;
 
-        if let Err(e) = Avm2::load_abc(slice, &name, is_lazy_initialize, context) {
+        if let Err(e) = Avm2::load_abc(slice, &name, is_lazy_initialize, context, domain) {
             log::warn!("Error loading ABC file: {}", e);
         }
 
@@ -508,11 +509,16 @@ impl<'gc> MovieClip<'gc> {
             if let Some(name) =
                 Avm2QName::from_symbol_class(&class_name, activation.context.gc_context)
             {
-                let mut globals = activation.context.avm2.globals();
-                match globals
-                    .get_property(globals, &name, &mut activation)
-                    .and_then(|v| v.coerce_to_object(&mut activation))
-                {
+                let library = activation
+                    .context
+                    .library
+                    .library_for_movie_mut(movie.clone());
+                let domain = library.avm2_domain();
+                let proto = domain
+                    .get_defined_value(&mut activation, name.clone())
+                    .and_then(|v| v.coerce_to_object(&mut activation));
+
+                match proto {
                     Ok(proto) => {
                         let library = activation
                             .context
@@ -1699,36 +1705,38 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {
-        if self.visible() && self.world_bounds().contains(point) {
-            // This movieclip operates in "button mode" if it has a mouse handler,
-            // either via on(..) or via property mc.onRelease, etc.
-            let is_button_mode = {
-                if self.0.read().has_button_clip_event {
-                    true
-                } else {
-                    let mut activation = Avm1Activation::from_stub(
-                        context.reborrow(),
-                        ActivationIdentifier::root("[Mouse Pick]"),
-                    );
-                    let object = self.object().coerce_to_object(&mut activation);
+        if self.visible() {
+            if self.world_bounds().contains(point) {
+                // This movieclip operates in "button mode" if it has a mouse handler,
+                // either via on(..) or via property mc.onRelease, etc.
+                let is_button_mode = {
+                    if self.0.read().has_button_clip_event {
+                        true
+                    } else {
+                        let mut activation = Avm1Activation::from_stub(
+                            context.reborrow(),
+                            ActivationIdentifier::root("[Mouse Pick]"),
+                        );
+                        let object = self.object().coerce_to_object(&mut activation);
 
-                    ClipEvent::BUTTON_EVENT_METHODS
-                        .iter()
-                        .any(|handler| object.has_property(&mut activation, handler))
+                        ClipEvent::BUTTON_EVENT_METHODS
+                            .iter()
+                            .any(|handler| object.has_property(&mut activation, handler))
+                    }
+                };
+
+                if is_button_mode && self.hit_test_shape(context, point) {
+                    return Some(self_node);
                 }
-            };
-
-            if is_button_mode && self.hit_test_shape(context, point) {
-                return Some(self_node);
             }
-        }
 
-        // Maybe we could skip recursing down at all if !world_bounds.contains(point),
-        // but a child button can have an invisible hit area outside the parent's bounds.
-        for child in self.0.read().children.values().rev() {
-            let result = child.mouse_pick(context, *child, point);
-            if result.is_some() {
-                return result;
+            // Maybe we could skip recursing down at all if !world_bounds.contains(point),
+            // but a child button can have an invisible hit area outside the parent's bounds.
+            for child in self.0.read().children.values().rev() {
+                let result = child.mouse_pick(context, *child, point);
+                if result.is_some() {
+                    return result;
+                }
             }
         }
 

@@ -8,6 +8,7 @@ use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use gc_arena::GcCell;
 
 /// Implements `Function`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -52,8 +53,9 @@ fn call<'gc>(
 /// Construct `Function` and `Function.prototype`, respectively.
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
+    globals: Object<'gc>,
     proto: Object<'gc>,
-) -> (Object<'gc>, Object<'gc>) {
+) -> (Object<'gc>, Object<'gc>, GcCell<'gc, Class<'gc>>) {
     let function_class = Class::new(
         QName::new(Namespace::public_namespace(), "Function"),
         Some(QName::new(Namespace::public_namespace(), "Object").into()),
@@ -62,7 +64,6 @@ pub fn create_class<'gc>(
         activation.context.gc_context,
     );
 
-    let globals = activation.avm2().globals();
     let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
     let mut function_proto = ScriptObject::prototype(
         activation.context.gc_context,
@@ -86,5 +87,5 @@ pub fn create_class<'gc>(
     )
     .unwrap();
 
-    (constr, function_proto)
+    (constr, function_proto, function_class)
 }

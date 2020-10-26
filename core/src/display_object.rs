@@ -1150,18 +1150,22 @@ pub fn render_children<'gc>(
     children: &std::collections::BTreeMap<Depth, DisplayObject<'gc>>,
 ) {
     let mut clip_depth = 0;
-    let mut clip_depth_stack = vec![];
+    let mut clip_depth_stack: Vec<(Depth, DisplayObject<'_>)> = vec![];
     for (&depth, &child) in children {
         // Check if we need to pop off a mask.
         // This must be a while loop because multiple masks can be popped
         // at the same dpeth.
         while clip_depth > 0 && depth >= clip_depth {
+            // Clear the mask stencil and pop the mask.
+            let (prev_clip_depth, clip_child) = clip_depth_stack.pop().unwrap();
+            clip_depth = prev_clip_depth;
+            context.renderer.deactivate_mask();
+            clip_child.render(context);
             context.renderer.pop_mask();
-            clip_depth = clip_depth_stack.pop().unwrap();
         }
         if child.clip_depth() > 0 && child.allow_as_mask() {
             // Push and render the mask.
-            clip_depth_stack.push(clip_depth);
+            clip_depth_stack.push((clip_depth, child));
             clip_depth = child.clip_depth();
             context.renderer.push_mask();
             child.render(context);
@@ -1172,9 +1176,11 @@ pub fn render_children<'gc>(
         }
     }
 
-    while !clip_depth_stack.is_empty() {
+    // Pop any remaining masks.
+    for (_, clip_child) in clip_depth_stack.into_iter().rev() {
+        context.renderer.deactivate_mask();
+        clip_child.render(context);
         context.renderer.pop_mask();
-        clip_depth_stack.pop();
     }
 }
 

@@ -7,7 +7,7 @@ It also serves as a nice local test to run Ruffle in the web locally, for develo
 
 ### Hosted demo
 
-To view this demo online right now, [check out the hosted demo](http://ruffle-rs.s3-website-us-west-1.amazonaws.com/builds/web-demo/index.html).
+To view this demo online right now, [check out the hosted demo](https://ruffle.rs/demo).
 
 It's exactly the same code as this directory, updated nightly.
 

@@ -1,8 +1,10 @@
+use crate::avm2::Domain as Avm2Domain;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
+use crate::property_map::{Entry, PropertyMap};
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::AvmType;
 use gc_arena::{Collect, MutationContext};
@@ -19,22 +21,24 @@ type Error = Box<dyn std::error::Error>;
 #[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
-    export_characters: HashMap<String, Character<'gc>>,
+    export_characters: PropertyMap<Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
     device_font: Option<Font<'gc>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm_type: AvmType,
+    avm2_domain: Option<Avm2Domain<'gc>>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
     pub fn new(avm_type: AvmType) -> Self {
         MovieLibrary {
             characters: HashMap::new(),
-            export_characters: HashMap::new(),
+            export_characters: PropertyMap::new(),
             jpeg_tables: None,
             device_font: None,
             fonts: HashMap::new(),
             avm_type,
+            avm2_domain: None,
         }
     }
 
@@ -54,9 +58,8 @@ impl<'gc> MovieLibrary<'gc> {
     /// Registers an export name for a given character ID.
     /// This character will then be instantiable from AVM1.
     pub fn register_export(&mut self, id: CharacterId, export_name: &str) {
-        use std::collections::hash_map::Entry;
         if let Some(character) = self.characters.get(&id) {
-            match self.export_characters.entry(export_name.to_string()) {
+            match self.export_characters.entry(export_name, false) {
                 Entry::Vacant(e) => {
                     e.insert(character.clone());
                 }
@@ -87,7 +90,7 @@ impl<'gc> MovieLibrary<'gc> {
 
     #[allow(dead_code)]
     pub fn get_character_by_export_name(&self, name: &str) -> Option<&Character<'gc>> {
-        self.export_characters.get(name)
+        self.export_characters.get(name, false)
     }
 
     /// Instantiates the library item with the given character ID into a display object.
@@ -112,7 +115,7 @@ impl<'gc> MovieLibrary<'gc> {
         export_name: &str,
         gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
-        if let Some(character) = self.export_characters.get(export_name) {
+        if let Some(character) = self.export_characters.get(export_name, false) {
             self.instantiate_display_object(character, gc_context)
         } else {
             log::error!(
@@ -220,6 +223,20 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn avm_type(&self) -> AvmType {
         self.avm_type
     }
+
+    pub fn set_avm2_domain(&mut self, avm2_domain: Avm2Domain<'gc>) {
+        self.avm2_domain = Some(avm2_domain);
+    }
+
+    /// Get the AVM2 domain this movie runs under.
+    ///
+    /// Note that the presence of an AVM2 domain does *not* indicate that this
+    /// movie provides AVM2 code. For example, a movie may have been loaded by
+    /// AVM2 code into a particular domain, even though it turned out to be
+    /// an AVM1 movie, and thus this domain is unused.
+    pub fn avm2_domain(&self) -> Avm2Domain<'gc> {
+        self.avm2_domain.unwrap()
+    }
 }
 
 /// Symbol library for multiple movies.
@@ -255,15 +272,12 @@ impl<'gc> Library<'gc> {
                             Ok(attributes) if attributes.is_action_script_3 => AvmType::Avm2,
                             Ok(_) => AvmType::Avm1,
                             Err(e) => {
-                                log::error!("Got {} when reading AS3 flag", e);
+                                log::error!("Got {} when reading FileAttributes", e);
                                 AvmType::Avm1
                             }
                         }
                     }
-                    Err(e) => {
-                        log::error!("Got {} when looking for AS3 flag", e);
-                        AvmType::Avm1
-                    }
+                    // SWF defaults to AVM1 if FileAttributes is not the first tag.
                     _ => AvmType::Avm1,
                 }
             } else {

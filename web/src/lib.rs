@@ -24,6 +24,7 @@ use ruffle_core::events::MouseWheelDelta;
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
+use ruffle_core::property_map::PropertyMap;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerEvent;
 use ruffle_web_common::JsResult;
@@ -124,22 +125,32 @@ impl Ruffle {
     /// Stream an arbitrary movie file from (presumably) the Internet.
     ///
     /// This method should only be called once per player.
-    pub fn stream_from(&mut self, movie_url: &str) {
+    pub fn stream_from(&mut self, movie_url: &str, parameters: &JsValue) -> Result<(), JsValue> {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap().borrow();
-            instance.core.lock().unwrap().fetch_root_movie(movie_url);
-        });
+            let mut parameters_to_load = PropertyMap::new();
+            populate_movie_parameters(&parameters, &mut parameters_to_load);
+            instance
+                .core
+                .lock()
+                .unwrap()
+                .fetch_root_movie(movie_url, parameters_to_load);
+            Ok(())
+        })
     }
 
     /// Play an arbitrary movie on this instance.
     ///
     /// This method should only be called once per player.
-    pub fn load_data(&mut self, swf_data: Uint8Array) -> Result<(), JsValue> {
+    pub fn load_data(&mut self, swf_data: Uint8Array, parameters: &JsValue) -> Result<(), JsValue> {
         let movie = Arc::new({
             let mut data = vec![0; swf_data.length() as usize];
             swf_data.copy_to(&mut data[..]);
-            SwfMovie::from_data(&data, None).map_err(|e| format!("Error loading movie: {}", e))?
+            let mut movie = SwfMovie::from_data(&data, None)
+                .map_err(|e| format!("Error loading movie: {}", e))?;
+            populate_movie_parameters(&parameters, movie.parameters_mut());
+            movie
         });
 
         INSTANCES.with(|instances| {
@@ -379,17 +390,22 @@ impl Ruffle {
                         let instances = instances.borrow();
                         if let Some(instance) = instances.get(index) {
                             instance.borrow_mut().has_focus = true;
-                            if let Some(target) = js_event.current_target() {
-                                let _ = target
-                                    .unchecked_ref::<Element>()
-                                    .set_pointer_capture(js_event.pointer_id());
+
+                            // Only fire player mouse event for left clicks.
+                            if js_event.button() == 0 {
+                                if let Some(target) = js_event.current_target() {
+                                    let _ = target
+                                        .unchecked_ref::<Element>()
+                                        .set_pointer_capture(js_event.pointer_id());
+                                }
+                                let device_pixel_ratio = instance.borrow().device_pixel_ratio;
+                                let event = PlayerEvent::MouseDown {
+                                    x: f64::from(js_event.offset_x()) * device_pixel_ratio,
+                                    y: f64::from(js_event.offset_y()) * device_pixel_ratio,
+                                };
+                                instance.borrow().core.lock().unwrap().handle_event(event);
                             }
-                            let device_pixel_ratio = instance.borrow().device_pixel_ratio;
-                            let event = PlayerEvent::MouseDown {
-                                x: f64::from(js_event.offset_x()) * device_pixel_ratio,
-                                y: f64::from(js_event.offset_y()) * device_pixel_ratio,
-                            };
-                            instance.borrow().core.lock().unwrap().handle_event(event);
+
                             js_event.prevent_default();
                         }
                     });
@@ -438,16 +454,21 @@ impl Ruffle {
                         let instances = instances.borrow();
                         if let Some(instance) = instances.get(index) {
                             let instance = instance.borrow();
-                            if let Some(target) = js_event.current_target() {
-                                let _ = target
-                                    .unchecked_ref::<Element>()
-                                    .release_pointer_capture(js_event.pointer_id());
+
+                            // Only fire player mouse event for left clicks.
+                            if js_event.button() == 0 {
+                                if let Some(target) = js_event.current_target() {
+                                    let _ = target
+                                        .unchecked_ref::<Element>()
+                                        .release_pointer_capture(js_event.pointer_id());
+                                }
+                                let event = PlayerEvent::MouseUp {
+                                    x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
+                                    y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
+                                };
+                                instance.core.lock().unwrap().handle_event(event);
                             }
-                            let event = PlayerEvent::MouseUp {
-                                x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
-                                y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
-                            };
-                            instance.core.lock().unwrap().handle_event(event);
+
                             if instance.has_focus {
                                 js_event.prevent_default();
                             }
@@ -875,11 +896,7 @@ pub fn set_panic_handler() {
             RUFFLE_GLOBAL_PANIC.call_once(|| {
                 console_error_panic_hook::hook(info);
 
-                let error = JsError::new(
-                    info.payload()
-                        .downcast_ref::<&str>()
-                        .unwrap_or(&"Unknown panic"),
-                );
+                let error = JsError::new(&info.to_string());
                 let _ = INSTANCES.try_with(|instances| {
                     let mut players = Vec::new();
 
@@ -902,4 +919,18 @@ pub fn set_panic_handler() {
             });
         }));
     });
+}
+
+fn populate_movie_parameters(input: &JsValue, output: &mut PropertyMap<String>) {
+    if let Ok(keys) = js_sys::Reflect::own_keys(input) {
+        for key in keys.values() {
+            if let Ok(key) = key {
+                if let Ok(value) = js_sys::Reflect::get(input, &key) {
+                    if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
+                        output.insert(&key, value, false);
+                    }
+                }
+            }
+        }
+    }
 }

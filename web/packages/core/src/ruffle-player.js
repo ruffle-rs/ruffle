@@ -10,6 +10,23 @@ exports.FLASH_ACTIVEX_CLASSID = "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
+function sanitize_parameters(parameters) {
+    if (parameters === null || parameters === undefined) {
+        return {};
+    }
+    if (!(parameters instanceof URLSearchParams)) {
+        parameters = new URLSearchParams(parameters);
+    }
+    const output = {};
+
+    for (const [key, value] of parameters) {
+        // Every value must be type of string
+        output[key] = value.toString();
+    }
+
+    return output;
+}
+
 exports.RufflePlayer = class RufflePlayer extends HTMLElement {
     constructor(...args) {
         let self = super(...args);
@@ -152,15 +169,23 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * being loaded, or any errors that happen loading it.
      *
      * @param {String} url The URL to stream.
+     * @param {URLSearchParams|String|Object} [parameters] The parameters (also known as "flashvars") to load the movie with.
+     * If it's a string, it will be decoded into an object.
+     * If it's an object, every key and value must be a String.
+     * These parameters will be merged onto any found in the query portion of the swf URL.
      */
-    async stream_swf_url(url) {
+    async stream_swf_url(url, parameters) {
         //TODO: Actually stream files...
         try {
             if (this.isConnected && !this.is_unused_fallback_object()) {
                 console.log("Loading SWF file " + url);
 
                 await this.ensure_fresh_instance();
-                this.instance.stream_from(url);
+                parameters = {
+                    ...sanitize_parameters(url.substring(url.indexOf("?"))),
+                    ...sanitize_parameters(parameters),
+                };
+                this.instance.stream_from(url, parameters);
 
                 if (this.play_button) {
                     this.play_button.style.display = "block";
@@ -205,14 +230,20 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * the movie being loaded.
      *
      * @param {String} url The URL to stream.
+     * @param {URLSearchParams|String|Object} [parameters] The parameters (also known as "flashvars") to load the movie with.
+     * If it's a string, it will be decoded into an object.
+     * If it's an object, every key and value must be a String.
      */
-    async play_swf_data(data) {
+    async play_swf_data(data, parameters) {
         try {
             if (this.isConnected && !this.is_unused_fallback_object()) {
                 console.log("Got SWF data");
 
                 await this.ensure_fresh_instance();
-                this.instance.load_data(new Uint8Array(data));
+                this.instance.load_data(
+                    new Uint8Array(data),
+                    sanitize_parameters(parameters)
+                );
                 console.log("New Ruffle instance created.");
 
                 if (this.play_button) {
@@ -383,7 +414,7 @@ exports.is_swf_filename = function is_swf_filename(filename) {
     return (
         filename &&
         typeof filename === "string" &&
-        (filename.search(/\.swf\s*$/i) >= 0 ||
-            filename.search(/\.spl\s*$/i) >= 0)
+        (filename.search(/\.swf(?:[?#]|$)/i) >= 0 ||
+            filename.search(/\.spl(?:[?#]|$)/i) >= 0)
     );
 };

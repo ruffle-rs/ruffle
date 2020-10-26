@@ -3,6 +3,7 @@
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::method::BytecodeMethod;
+use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ArrayObject, FunctionObject, NamespaceObject, ScriptObject};
 use crate::avm2::object::{Object, TObject};
@@ -133,25 +134,30 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// initializer method.
     pub fn from_script(
         context: UpdateContext<'a, 'gc, 'gc_context>,
-        script: GcCell<'gc, Script<'gc>>,
-        global: Object<'gc>,
+        script: Script<'gc>,
     ) -> Result<Self, Error> {
-        let method = script.read().init().into_bytecode()?;
-        let scope = Some(Scope::push_scope(None, global, context.gc_context));
-        let body: Result<_, Error> = method
-            .body()
-            .ok_or_else(|| "Cannot execute non-native method (for script) without body".into());
-        let num_locals = body?.num_locals;
+        let (method, script_scope) = script.init();
+        let scope = Some(Scope::push_scope(None, script_scope, context.gc_context));
+
+        let num_locals = match method {
+            Method::Native(_nm) => 0,
+            Method::Entry(bytecode) => {
+                let body: Result<_, Error> = bytecode.body().ok_or_else(|| {
+                    "Cannot execute non-native method (for script) without body".into()
+                });
+                body?.num_locals
+            }
+        };
         let local_registers =
             GcCell::allocate(context.gc_context, RegisterSet::new(num_locals + 1));
 
         *local_registers
             .write(context.gc_context)
             .get_mut(0)
-            .unwrap() = global.into();
+            .unwrap() = script_scope.into();
 
         Ok(Self {
-            this: Some(global),
+            this: Some(script_scope),
             arguments: None,
             is_executing: false,
             local_registers,
@@ -209,11 +215,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Execute a script initializer.
-    pub fn run_stack_frame_for_script(
-        &mut self,
-        script: GcCell<'gc, Script<'gc>>,
-    ) -> Result<(), Error> {
-        let init = script.read().init().into_bytecode()?;
+    pub fn run_stack_frame_for_script(&mut self, script: Script<'gc>) -> Result<(), Error> {
+        let init = script.init().0.into_bytecode()?;
 
         self.run_actions(init)?;
 
@@ -405,6 +408,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         reader: &mut Reader<Cursor<&[u8]>>,
     ) -> Result<FrameControl<'gc>, Error> {
+        if self.context.update_start.elapsed() >= self.context.max_execution_duration {
+            return Err(
+                "A script in this movie has taken too long to execute and has been terminated."
+                    .into(),
+            );
+        }
+
         let op = reader.read_op();
         if let Ok(Some(op)) = op {
             avm_debug!(self.avm2(), "Opcode: {:?}", op);
@@ -1217,7 +1227,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_get_global_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.globals().get_slot(index)?;
+        let value = self.scope.unwrap().read().globals().get_slot(index)?;
 
         self.context.avm2.push(value);
 
@@ -1227,8 +1237,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_set_global_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop();
 
-        self.context
-            .avm2
+        self.scope
+            .unwrap()
+            .read()
             .globals()
             .set_slot(index, value, self.context.gc_context)?;
 

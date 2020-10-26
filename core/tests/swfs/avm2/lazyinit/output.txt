@@ -1,0 +1,17 @@
+//frame 1 start
+//TestOne class init
+//TestOne.as start
+//TestTwo class init
+//TestTwo.as start
+//TestOne constructor
+//TestTwo.as end
+//TestTwo constructor
+//TestOne.as end
+//TestOne constructor
+//frame 1: TestOne created
+//TestThree class init
+//TestThree.as start/end
+//TestThree constructor
+//frame 1: TestThree created
+//TestTwo constructor
+//frame 1: TestTwo created, frame end
