@@ -88,10 +88,33 @@ struct SoundInstance {
     instance_type: SoundInstanceType,
 }
 
+/// The Drop impl ensures that the sound is stopped and remove from the audio context,
+/// and any event listeners are removed.
+impl Drop for SoundInstance {
+    fn drop(&mut self) {
+        if let SoundInstanceType::AudioBuffer {
+            node,
+            buffer_source_node,
+        } = &self.instance_type
+        {
+            let _ = buffer_source_node.set_onended(None);
+            let _ = node.disconnect();
+        }
+    }
+}
+
 #[allow(dead_code)]
 enum SoundInstanceType {
     Decoder(Decoder),
-    AudioBuffer(web_sys::AudioNode),
+    AudioBuffer {
+        /// The node that is connected to the output.
+        node: web_sys::AudioNode,
+
+        /// The buffer node containing the audio data.
+        /// This is often the same as `node`, but will be different
+        /// if there is a custom envelope on this sound.
+        buffer_source_node: web_sys::AudioBufferSourceNode,
+    },
 }
 
 type Error = Box<dyn std::error::Error>;
@@ -199,16 +222,6 @@ impl WebAudioBackend {
                 node.connect_with_audio_node(&self.context.destination())
                     .warn_on_error();
 
-                let instance = SoundInstance {
-                    handle: Some(handle),
-                    format: sound.format.clone(),
-                    instance_type: SoundInstanceType::AudioBuffer(node),
-                };
-                let handle = SOUND_INSTANCES.with(|instances| {
-                    let mut instances = instances.borrow_mut();
-                    instances.insert(instance)
-                });
-
                 let ended_handler = move || {
                     SOUND_INSTANCES.with(|instances| {
                         let mut instances = instances.borrow_mut();
@@ -218,9 +231,20 @@ impl WebAudioBackend {
                 let closure = Closure::once_into_js(Box::new(ended_handler) as Box<dyn FnMut()>);
                 // Note that we add the ended event to the AudioBufferSourceNode; an audio envelope adds more nodes
                 // in the graph, but these nodes don't fire the ended event.
-                let _ = buffer_source_node
-                    .add_event_listener_with_callback("ended", closure.as_ref().unchecked_ref());
-                handle
+                let _ = buffer_source_node.set_onended(Some(closure.as_ref().unchecked_ref()));
+
+                let instance = SoundInstance {
+                    handle: Some(handle),
+                    format: sound.format.clone(),
+                    instance_type: SoundInstanceType::AudioBuffer {
+                        node,
+                        buffer_source_node,
+                    },
+                };
+                SOUND_INSTANCES.with(|instances| {
+                    let mut instances = instances.borrow_mut();
+                    instances.insert(instance)
+                })
             }
             SoundSource::Decoder(audio_data) => {
                 let decoder: Decoder = match sound.format.compression {
@@ -744,22 +768,14 @@ impl AudioBackend for WebAudioBackend {
     fn stop_sound(&mut self, sound: SoundInstanceHandle) {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
-            if let Some(mut instance) = instances.remove(sound) {
-                if let SoundInstanceType::AudioBuffer(ref mut node) = instance.instance_type {
-                    let _ = node.disconnect();
-                }
-            }
+            instances.remove(sound);
         })
     }
 
     fn stop_stream(&mut self, stream: AudioStreamHandle) {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
-            if let Some(mut instance) = instances.remove(stream) {
-                if let SoundInstanceType::AudioBuffer(ref mut node) = instance.instance_type {
-                    let _ = node.disconnect();
-                }
-            }
+            instances.remove(stream);
         })
     }
 
@@ -780,12 +796,6 @@ impl AudioBackend for WebAudioBackend {
     fn stop_all_sounds(&mut self) {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
-            instances.iter_mut().for_each(|(_, instance)| {
-                if let SoundInstanceType::AudioBuffer(ref node) = instance.instance_type {
-                    let _ = node.disconnect();
-                }
-                // TODO: Have to handle Decoder nodes. (These may just go into a different backend.)
-            });
             // This is a workaround for a bug in generational-arena:
             // Arena::clear does not properly bump the generational index, allowing for stale references
             // to continue to work (this caused #1315). Arena::remove will force a generation bump.
@@ -801,16 +811,7 @@ impl AudioBackend for WebAudioBackend {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
             let handle = Some(handle);
-            instances.retain(|_, instance| {
-                if instance.handle == handle {
-                    if let SoundInstanceType::AudioBuffer(ref node) = instance.instance_type {
-                        let _ = node.disconnect();
-                    }
-                    false
-                } else {
-                    true
-                }
-            });
+            instances.retain(|_, instance| instance.handle != handle);
         })
     }
 
