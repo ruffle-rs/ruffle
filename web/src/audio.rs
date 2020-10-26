@@ -786,6 +786,13 @@ impl AudioBackend for WebAudioBackend {
                 }
                 // TODO: Have to handle Decoder nodes. (These may just go into a different backend.)
             });
+            // This is a workaround for a bug in generational-arena:
+            // Arena::clear does not properly bump the generational index, allowing for stale references
+            // to continue to work (this caused #1315). Arena::remove will force a generation bump.
+            // See https://github.com/fitzgen/generational-arena/issues/30
+            if let Some((i, _)) = instances.iter().next() {
+                instances.remove(i);
+            }
             instances.clear();
         })
     }
