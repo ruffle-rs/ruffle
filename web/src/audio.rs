@@ -222,10 +222,25 @@ impl WebAudioBackend {
                 node.connect_with_audio_node(&self.context.destination())
                     .warn_on_error();
 
+                // Create the sound instance and add it to the active instances list.
+                let instance = SoundInstance {
+                    handle: Some(handle),
+                    format: sound.format.clone(),
+                    instance_type: SoundInstanceType::AudioBuffer {
+                        node,
+                        buffer_source_node: buffer_source_node.clone(),
+                    },
+                };
+                let instance_handle = SOUND_INSTANCES.with(|instances| {
+                    let mut instances = instances.borrow_mut();
+                    instances.insert(instance)
+                });
+
+                // Create the listener to remove the sound when it ends.
                 let ended_handler = move || {
                     SOUND_INSTANCES.with(|instances| {
                         let mut instances = instances.borrow_mut();
-                        instances.remove(handle)
+                        instances.remove(instance_handle)
                     });
                 };
                 let closure = Closure::once_into_js(Box::new(ended_handler) as Box<dyn FnMut()>);
@@ -233,18 +248,7 @@ impl WebAudioBackend {
                 // in the graph, but these nodes don't fire the ended event.
                 let _ = buffer_source_node.set_onended(Some(closure.as_ref().unchecked_ref()));
 
-                let instance = SoundInstance {
-                    handle: Some(handle),
-                    format: sound.format.clone(),
-                    instance_type: SoundInstanceType::AudioBuffer {
-                        node,
-                        buffer_source_node,
-                    },
-                };
-                SOUND_INSTANCES.with(|instances| {
-                    let mut instances = instances.borrow_mut();
-                    instances.insert(instance)
-                })
+                instance_handle
             }
             SoundSource::Decoder(audio_data) => {
                 let decoder: Decoder = match sound.format.compression {
