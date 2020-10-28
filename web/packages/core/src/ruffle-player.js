@@ -43,6 +43,14 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 self.play_button_clicked.bind(self)
             );
         }
+        self.right_click_menu = self.shadow.getElementById("right_click_menu");
+
+        self.addEventListener(
+            "contextmenu",
+            self.open_right_click_menu.bind(self)
+        );
+
+        self.addEventListener("click", self.hide_right_click_menu.bind(self));
 
         self.instance = null;
         self.allow_script_access = false;
@@ -209,6 +217,29 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 this.play_button.style.display = "none";
             }
         }
+    }
+
+    open_right_click_menu(e) {
+        this.right_click_menu.style.display = "block";
+        this.right_click_menu.style.left = e.pageX + "px";
+        this.right_click_menu.style.top = e.pageY + "px";
+        e.preventDefault();
+
+        this.right_click_menu.innerHTML = "";
+
+        // TODO: Loop through each item and create an appropriate element with appropriate callback here
+
+        const element = document.createElement("li");
+        element.className = "menu_item active";
+        element.innerText = `About Ruffle ${window.RufflePlayer.version}`;
+        element.addEventListener("click", () => {
+            window.open("https://ruffle.rs", "_blank");
+        });
+        this.right_click_menu.appendChild(element);
+    }
+
+    hide_right_click_menu() {
+        this.right_click_menu.style.display = "none";
     }
 
     pause() {
