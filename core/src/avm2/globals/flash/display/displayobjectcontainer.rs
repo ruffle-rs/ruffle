@@ -8,7 +8,8 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::TDisplayObject;
+use crate::context::UpdateContext;
+use crate::display_object::{DisplayObject, TDisplayObject};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.DisplayObjectContainer`'s instance constructor.
@@ -27,6 +28,82 @@ pub fn class_init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     Ok(Value::Undefined)
+}
+
+/// Validate if we can add a child to a parent at a given index.
+///
+/// There are several conditions which should cause an add operation to fail:
+///
+///  * The index is off the end of the child list of the proposed parent.
+///  * The child is already a transitive child of the proposed parent.
+fn validate_add_operation<'gc>(
+    new_parent: DisplayObject<'gc>,
+    proposed_child: DisplayObject<'gc>,
+    proposed_index: usize,
+) -> Result<(), Error> {
+    let mc = new_parent
+        .as_movie_clip()
+        .ok_or("ArgumentError: Parent is not a movieclip")?;
+
+    let mut checking_parent = Some(new_parent);
+
+    while let Some(tp) = checking_parent {
+        if DisplayObject::ptr_eq(tp, proposed_child) {
+            return Err(
+                "ArgumentError: Proposed child is an ancestor of the proposed parent, you cannot add the child to the parent"
+                    .into(),
+            );
+        }
+
+        checking_parent = tp.parent();
+    }
+
+    if proposed_index > mc.children().count() {
+        return Err("RangeError: Index position does not exist in the child list".into());
+    }
+
+    Ok(())
+}
+
+/// Remove an element from it's parent display list.
+///
+/// ActionScript 3 works in child indexes, even though the underlying display
+/// list tracks children by depth. We attempt to maintain the same depth
+/// numbers used previously, shifting each object down so that, for example,
+/// object B has the depth that object A used to have, object C has the depth
+/// object B used to have, etc.
+fn remove_child_from_displaylist<'gc>(
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    child: DisplayObject<'gc>,
+) {
+    if let Some(parent) = child.parent() {
+        if let Some(mut mc) = parent.as_movie_clip() {
+            mc.remove_child_from_avm(context, child);
+            mc.children();
+        }
+    }
+}
+
+/// Add the `child` to `parent`'s display list.
+///
+/// ActionScript 3 works in child indexes, even though the underlying display
+/// list tracks children by depth. We attempt to maintain the same depth
+/// numbers used previously, shifting each object down so that, for example,
+/// object A has the depth that object B used to have, object B has the depth
+/// that object C used to have, etc. If we run out of depths to reuse then we
+/// start incrementing by one.
+fn add_child_to_displaylist<'gc>(
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    parent: DisplayObject<'gc>,
+    child: DisplayObject<'gc>,
+    index: usize,
+) {
+    //TODO: Non-MC objects can be containers in AS3!
+    if let Some(mut mc) = parent.as_movie_clip() {
+        mc.add_child_from_avm_by_id(context, child, index);
+        child.set_placed_by_script(context.gc_context, true);
+        mc.children();
+    }
 }
 
 /// Implements `DisplayObjectContainer.getChildAt`
@@ -79,6 +156,62 @@ pub fn get_child_by_name<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObjectContainer.addChild`
+pub fn add_child<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        let child = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?
+            .as_display_object()
+            .ok_or("ArgumentError: Child not a valid display object")?;
+        let target_index = parent.children().count();
+
+        validate_add_operation(parent, child, target_index)?;
+        remove_child_from_displaylist(&mut activation.context, child);
+        add_child_to_displaylist(&mut activation.context, parent, child, target_index);
+
+        return Ok(child.object2());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `DisplayObjectContainer.addChildAt`
+pub fn add_child_at<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        let child = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?
+            .as_display_object()
+            .ok_or("ArgumentError: Child not a valid display object")?;
+        let target_index = args
+            .get(1)
+            .cloned()
+            .ok_or("ArgumentError: Index to add child at not specified")?
+            .coerce_to_u32(activation)? as usize;
+
+        validate_add_operation(parent, child, target_index)?;
+        remove_child_from_displaylist(&mut activation.context, child);
+        add_child_to_displaylist(&mut activation.context, parent, child, target_index);
+
+        return Ok(child.object2());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `DisplayObjectContainer.numChildren`
 pub fn num_children<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -118,6 +251,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public_namespace(), "numChildren"),
         Method::from_builtin(num_children),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "addChild"),
+        Method::from_builtin(add_child),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "addChildAt"),
+        Method::from_builtin(add_child_at),
     ));
 
     class
