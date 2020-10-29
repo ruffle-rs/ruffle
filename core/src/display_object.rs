@@ -24,6 +24,7 @@ mod movie_clip;
 mod text;
 
 use crate::avm1::activation::Activation;
+use crate::backend::input::MouseCursor;
 use crate::events::{ClipEvent, ClipEventResult};
 pub use bitmap::Bitmap;
 pub use button::Button;
@@ -890,6 +891,11 @@ pub trait TDisplayObject<'gc>:
     /// This is used by movie clips to disable the mask when there are no children, for example.
     fn allow_as_mask(&self) -> bool {
         true
+    }
+
+    /// The cursor to use when this object is the hovered element under a mouse
+    fn mouse_cursor(&self) -> MouseCursor {
+        MouseCursor::Hand
     }
 
     /// Obtain the top-most parent of the display tree hierarchy.
