@@ -2121,9 +2121,9 @@ dependencies = [
 
 [[package]]
 name = "num-traits"
-version = "0.2.12"
+version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac267bcc07f48ee5f8935ab0d24f316fb722d7a1292e2913f0cc196b29ffd611"
+checksum = "8321eb8d2d94fcb1c55a7920cecd987c62e3763af52c5aadcead3c351847deba"
 dependencies = [
  "autocfg",
 ]
