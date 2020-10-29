@@ -74,6 +74,9 @@ pub struct EditTextData<'gc> {
     /// If the text is in multi-line mode or single-line mode.
     is_multiline: bool,
 
+    /// If the text can be selected by the user.
+    is_selectable: bool,
+
     /// If the text is word-wrapped.
     is_word_wrap: bool,
 
@@ -125,6 +128,7 @@ impl<'gc> EditText<'gc> {
     ) -> Self {
         let is_multiline = swf_tag.is_multiline;
         let is_word_wrap = swf_tag.is_word_wrap;
+        let is_selectable = swf_tag.is_selectable;
         let is_html = swf_tag.is_html;
         let document = XMLDocument::new(context.gc_context);
         let text = swf_tag.initial_text.clone().unwrap_or_default();
@@ -182,6 +186,7 @@ impl<'gc> EditText<'gc> {
                     },
                 ),
                 is_multiline,
+                is_selectable,
                 is_word_wrap,
                 has_border,
                 is_device_font,
@@ -392,6 +397,14 @@ impl<'gc> EditText<'gc> {
     pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).is_multiline = is_multiline;
         self.relayout(context);
+    }
+
+    pub fn is_selectable(self) -> bool {
+        self.0.read().is_selectable
+    }
+
+    pub fn set_selectable(self, is_selectable: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).is_selectable = is_selectable;
     }
 
     pub fn is_word_wrap(self) -> bool {
@@ -1072,6 +1085,20 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         self.set_removed(context.gc_context, true);
+    }
+
+    fn mouse_pick(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        self_node: DisplayObject<'gc>,
+        point: (Twips, Twips),
+    ) -> Option<DisplayObject<'gc>> {
+        // The button is hovered if the mouse is over any child nodes.
+        if self.visible() && self.is_selectable() && self.hit_test_shape(context, point) {
+            Some(self_node)
+        } else {
+            None
+        }
     }
 }
 
