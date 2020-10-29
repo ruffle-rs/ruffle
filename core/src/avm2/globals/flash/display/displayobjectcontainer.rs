@@ -65,6 +65,28 @@ fn validate_add_operation<'gc>(
     Ok(())
 }
 
+/// Validate if we can add remove a child from a given parent.
+///
+/// There are several conditions which should cause an add operation to fail:
+///
+///  * The child is not a child of the parent
+fn validate_remove_operation<'gc>(
+    old_parent: DisplayObject<'gc>,
+    proposed_child: DisplayObject<'gc>,
+) -> Result<(), Error> {
+    let _ = old_parent
+        .as_movie_clip()
+        .ok_or("ArgumentError: Parent is not a movieclip")?;
+
+    for child in old_parent.children() {
+        if DisplayObject::ptr_eq(child, proposed_child) {
+            return Ok(());
+        }
+    }
+
+    Err("ArgumentError: Cannot remove object from display list it is not a child of.".into())
+}
+
 /// Remove an element from it's parent display list.
 ///
 /// ActionScript 3 works in child indexes, even though the underlying display
@@ -212,6 +234,30 @@ pub fn add_child_at<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObjectContainer.removeChild`
+pub fn remove_child<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        let child = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?
+            .as_display_object()
+            .ok_or("ArgumentError: Child not a valid display object")?;
+        
+        validate_remove_operation(parent, child)?;
+        remove_child_from_displaylist(&mut activation.context, child);
+
+        return Ok(child.object2());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `DisplayObjectContainer.numChildren`
 pub fn num_children<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -259,6 +305,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "addChildAt"),
         Method::from_builtin(add_child_at),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "removeChild"),
+        Method::from_builtin(remove_child),
     ));
 
     class
