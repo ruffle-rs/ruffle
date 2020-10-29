@@ -853,6 +853,7 @@ mod tests {
     use crate::backend::storage::MemoryStorageBackend;
     use crate::context::UpdateContext;
     use crate::display_object::MovieClip;
+    use crate::focus_tracker::FocusTracker;
     use crate::library::Library;
     use crate::loader::LoadManager;
     use crate::prelude::*;
@@ -921,6 +922,7 @@ mod tests {
                 external_interface: &mut Default::default(),
                 update_start: Instant::now(),
                 max_execution_duration: Duration::from_secs(15),
+                focus_tracker: FocusTracker::new(gc_context),
             };
 
             root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);

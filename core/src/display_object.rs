@@ -721,6 +721,11 @@ pub trait TDisplayObject<'gc>:
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
     fn set_transformed_by_script(&self, context: MutationContext<'gc, '_>, value: bool);
 
+    /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
+    /// of being the currently focused object.
+    /// This should only be called by the focus manager. To change a focus, go through that.
+    fn on_focus_changed(&self, _focused: bool) {}
+
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and
     /// so forth.

@@ -16,6 +16,7 @@ use crate::display_object::{EditText, MorphShape, MovieClip};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
+use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
@@ -83,6 +84,9 @@ struct GcRootData<'gc> {
 
     /// External interface for (for example) Javascript <-> Actionscript interaction
     external_interface: ExternalInterface<'gc>,
+
+    /// A tracker for the current keyboard focused element
+    focus_tracker: FocusTracker<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -252,6 +256,7 @@ impl Player {
                         unbound_text_fields: Vec::new(),
                         timers: Timers::new(),
                         external_interface: ExternalInterface::new(),
+                        focus_tracker: FocusTracker::new(gc_context),
                     },
                 ))
             }),
@@ -1101,6 +1106,7 @@ impl Player {
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
+            let focus_tracker = root_data.focus_tracker;
             let (
                 levels,
                 library,
@@ -1149,6 +1155,7 @@ impl Player {
                 external_interface,
                 update_start: Instant::now(),
                 max_execution_duration,
+                focus_tracker,
             };
 
             let ret = f(&mut update_context);
