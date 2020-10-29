@@ -278,6 +278,42 @@ pub fn set_multiline<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn selectable<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        return Ok(etext.is_selectable().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_selectable<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let set_selectable = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .as_bool(activation.current_swf_version());
+
+    if let Some(etext) = this
+        .as_display_object()
+        .and_then(|dobj| dobj.as_edit_text())
+    {
+        etext.set_selectable(set_selectable, &mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
 fn variable<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -523,6 +559,23 @@ pub fn attach_virtual_properties<'gc>(
         Some(FunctionObject::function(
             gc_context,
             Executable::Native(set_multiline),
+            Some(fn_proto),
+            fn_proto,
+        )),
+        ReadOnly.into(),
+    );
+    object.add_property(
+        gc_context,
+        "selectable",
+        FunctionObject::function(
+            gc_context,
+            Executable::Native(selectable),
+            Some(fn_proto),
+            fn_proto,
+        ),
+        Some(FunctionObject::function(
+            gc_context,
+            Executable::Native(set_selectable),
             Some(fn_proto),
             fn_proto,
         )),
