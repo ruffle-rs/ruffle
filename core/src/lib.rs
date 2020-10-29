@@ -24,6 +24,7 @@ pub mod context;
 mod drawing;
 mod ecma_conversions;
 pub mod events;
+pub mod focus_tracker;
 mod font;
 mod html;
 mod library;

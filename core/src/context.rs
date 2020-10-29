@@ -11,6 +11,7 @@ use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
 use crate::display_object::EditText;
 use crate::external::ExternalInterface;
+use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
@@ -142,6 +143,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The maximum amount of time that can be called before a `Error::ExecutionTimeout`
     /// is raised. This defaults to 15 seconds but can be changed.
     pub max_execution_duration: Duration,
+
+    /// A tracker for the current keyboard focused element
+    pub focus_tracker: FocusTracker<'gc>,
 }
 
 unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context> {
@@ -171,6 +175,7 @@ unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context
         self.timers.trace(cc);
         self.avm1.trace(cc);
         self.avm2.trace(cc);
+        self.focus_tracker.trace(cc);
     }
 }
 
@@ -220,6 +225,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             external_interface: self.external_interface,
             update_start: self.update_start,
             max_execution_duration: self.max_execution_duration,
+            focus_tracker: self.focus_tracker,
         }
     }
 }
