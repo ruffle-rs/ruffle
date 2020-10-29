@@ -36,6 +36,7 @@ pub(crate) mod number;
 mod object;
 mod point;
 mod rectangle;
+mod selection;
 pub(crate) mod shared_object;
 mod sound;
 mod stage;
@@ -399,6 +400,7 @@ pub fn create_globals<'gc>(
         transform::create_proto(gc_context, object_proto, function_proto);
     let external_interface_proto: Object<'gc> =
         external_interface::create_proto(gc_context, object_proto);
+    let selection_proto: Object<'gc> = selection::create_proto(gc_context, object_proto);
 
     let (broadcaster_functions, as_broadcaster) =
         as_broadcaster::create(gc_context, Some(object_proto), function_proto);
@@ -659,6 +661,15 @@ pub fn create_globals<'gc>(
         context_menu.into(),
         DontEnum.into(),
     );
+
+    let selection = selection::create_selection_object(
+        gc_context,
+        selection_proto,
+        function_proto,
+        broadcaster_functions,
+        array_proto,
+    );
+    globals.define_value(gc_context, "Selection", selection.into(), DontEnum.into());
 
     let context_menu_item = FunctionObject::constructor(
         gc_context,
