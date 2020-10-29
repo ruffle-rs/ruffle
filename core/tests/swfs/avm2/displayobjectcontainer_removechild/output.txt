@@ -1,0 +1,10 @@
+//var chx = this.getChildAt(0)
+//var chy = this.getChildAt(1)
+//var chz = this.getChildAt(2)
+//this.removeChild(chy)
+//chx === this.getChildAt(0)
+true
+//chz === this.getChildAt(1)
+true
+//this.numChildren
+2
