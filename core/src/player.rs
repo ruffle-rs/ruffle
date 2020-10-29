@@ -762,7 +762,7 @@ impl Player {
                 // RollOver on new node.I still
                 new_cursor = MouseCursor::Arrow;
                 if let Some(node) = new_hovered {
-                    new_cursor = MouseCursor::Hand;
+                    new_cursor = node.mouse_cursor();
                     node.handle_clip_event(context, ClipEvent::RollOver);
                 }
 

@@ -2,6 +2,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::globals::text_field::attach_virtual_properties;
 use crate::avm1::{Avm1, AvmString, Object, StageObject, TObject, Value};
+use crate::backend::input::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
@@ -1099,6 +1100,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         } else {
             None
         }
+    }
+
+    fn mouse_cursor(&self) -> MouseCursor {
+        MouseCursor::IBeam
     }
 }
 
