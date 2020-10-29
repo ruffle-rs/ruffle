@@ -880,10 +880,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.num_masks = 0;
 
         if let Some((frame_output, encoder)) = &mut self.current_frame {
-            let (color_attachment, resolve_target) = if self.descriptors.msaa_sample_count >= 2 {
-                (&self.frame_buffer_view, Some(frame_output.view()))
+            let color_attachment = if self.descriptors.msaa_sample_count >= 2 {
+                &self.frame_buffer_view
             } else {
-                (frame_output.view(), None)
+                frame_output.view()
             };
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -897,7 +897,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         }),
                         store: true,
                     },
-                    resolve_target,
+                    resolve_target: None,
                 }],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                     attachment: &self.depth_texture_view,
@@ -1020,15 +1020,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         label: bitmap_bind_group_label.as_deref(),
                     });
 
-            let (color_attachment, resolve_target) = if self.descriptors.msaa_sample_count >= 2 {
-                (&self.frame_buffer_view, Some(frame_output.view()))
+            let color_attachment = if self.descriptors.msaa_sample_count >= 2 {
+                &self.frame_buffer_view
             } else {
-                (frame_output.view(), None)
+                frame_output.view()
             };
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: color_attachment,
-                    resolve_target,
+                    resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: true,
@@ -1137,15 +1137,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             std::mem::size_of::<Transforms>() as u64,
         );
 
-        let (color_attachment, resolve_target) = if self.descriptors.msaa_sample_count >= 2 {
-            (&self.frame_buffer_view, Some(frame_output.view()))
+        let color_attachment = if self.descriptors.msaa_sample_count >= 2 {
+            &self.frame_buffer_view
         } else {
-            (frame_output.view(), None)
+            frame_output.view()
         };
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: color_attachment,
-                resolve_target,
+                resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
                     store: true,
@@ -1306,15 +1306,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 label: bind_group_label.as_deref(),
             });
 
-        let (color_attachment, resolve_target) = if self.descriptors.msaa_sample_count >= 2 {
-            (&self.frame_buffer_view, Some(frame_output.view()))
+        let color_attachment = if self.descriptors.msaa_sample_count >= 2 {
+            &self.frame_buffer_view
         } else {
-            (frame_output.view(), None)
+            frame_output.view()
         };
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: color_attachment,
-                resolve_target,
+                resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
                     store: true,
@@ -1361,7 +1361,22 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn end_frame(&mut self) {
-        if let Some((_frame, encoder)) = self.current_frame.take() {
+        if let Some((frame_output, mut encoder)) = self.current_frame.take() {
+            // Resolve MSAA.
+            if self.descriptors.msaa_sample_count >= 2 {
+                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                        attachment: &self.frame_buffer_view,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: false,
+                        },
+                        resolve_target: Some(frame_output.view()),
+                    }],
+                    depth_stencil_attachment: None,
+                });
+            }
+
             self.target.submit(
                 &self.descriptors.device,
                 &self.descriptors.queue,
