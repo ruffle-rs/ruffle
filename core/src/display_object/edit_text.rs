@@ -118,6 +118,9 @@ pub struct EditTextData<'gc> {
 
     /// Whether this text field is firing is variable binding (to prevent infinite loops).
     firing_variable_binding: bool,
+
+    /// The selected portion of the text, or None if the text is not selected.
+    selection: Option<TextSelection>,
 }
 
 impl<'gc> EditText<'gc> {
@@ -201,6 +204,7 @@ impl<'gc> EditText<'gc> {
                 variable,
                 bound_stage_object: None,
                 firing_variable_binding: false,
+                selection: None,
             },
         ));
 
@@ -845,6 +849,24 @@ impl<'gc> EditText<'gc> {
                 .firing_variable_binding = false;
         }
     }
+
+    pub fn get_selection(self) -> Option<TextSelection> {
+        self.0.read().selection.clone()
+    }
+
+    pub fn set_selection(
+        self,
+        selection: Option<TextSelection>,
+        gc_context: MutationContext<'gc, '_>,
+    ) {
+        let mut text = self.0.write(gc_context);
+        if let Some(mut selection) = selection {
+            selection.clamp(text.text_spans.text().len());
+            text.selection = Some(selection);
+        } else {
+            text.selection = None;
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
@@ -1124,5 +1146,68 @@ unsafe impl<'gc> gc_arena::Collect for EditTextStatic {
     #[inline]
     fn needs_trace() -> bool {
         false
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TextSelection {
+    from: usize,
+    to: usize,
+}
+
+unsafe impl Collect for TextSelection {
+    #[inline]
+    fn needs_trace() -> bool {
+        false
+    }
+}
+
+impl TextSelection {
+    pub fn for_position(position: usize) -> Self {
+        Self {
+            from: position,
+            to: position,
+        }
+    }
+
+    pub fn for_range(from: usize, to: usize) -> Self {
+        Self { from, to }
+    }
+
+    /// The "from" part of the range is where the user started the selection.
+    /// It may be greater than "to", for example if the user dragged a selection box from right to
+    /// left.
+    pub fn from(&self) -> usize {
+        self.from
+    }
+
+    /// The "to" part of the range is where the user ended the selection.
+    /// This also may be called the caret position - it is the last place the user placed the
+    /// caret and any text or changes to the range will be done by this position.
+    /// It may be less than "from", for example if the user dragged a selection box from right to
+    /// left.
+    pub fn to(&self) -> usize {
+        self.to
+    }
+
+    /// The "start" part of the range is the smallest (closest to 0) part of this selection range.
+    pub fn start(&self) -> usize {
+        self.from.min(self.to)
+    }
+
+    /// The "end" part of the range is the smallest (closest to 0) part of this selection range.
+    pub fn end(&self) -> usize {
+        self.from.max(self.to)
+    }
+
+    /// Clamps this selection to the maximum length provided.
+    /// Neither from nor to will be greater than this length.
+    pub fn clamp(&mut self, length: usize) {
+        if self.from > length {
+            self.from = length;
+        }
+        if self.to > length {
+            self.to = length;
+        }
     }
 }

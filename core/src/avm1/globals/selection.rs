@@ -3,33 +3,94 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TDisplayObject, TObject, Value};
+use crate::display_object::{EditText, TextSelection};
 use gc_arena::MutationContext;
 
 pub fn get_begin_index<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Implement
-    Ok(Value::Number(-1.0))
+    if let Some(selection) = activation
+        .context
+        .focus_tracker
+        .get()
+        .and_then(|o| o.as_edit_text())
+        .and_then(EditText::get_selection)
+    {
+        Ok(Value::Number(selection.start() as f64))
+    } else {
+        Ok(Value::Number(-1.0))
+    }
 }
 
 pub fn get_end_index<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Implement
-    Ok(Value::Number(-1.0))
+    if let Some(selection) = activation
+        .context
+        .focus_tracker
+        .get()
+        .and_then(|o| o.as_edit_text())
+        .and_then(EditText::get_selection)
+    {
+        Ok(Value::Number(selection.end() as f64))
+    } else {
+        Ok(Value::Number(-1.0))
+    }
 }
 
 pub fn get_caret_index<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Implement
-    Ok(Value::Number(-1.0))
+    if let Some(selection) = activation
+        .context
+        .focus_tracker
+        .get()
+        .and_then(|o| o.as_edit_text())
+        .and_then(EditText::get_selection)
+    {
+        Ok(Value::Number(selection.to() as f64))
+    } else {
+        Ok(Value::Number(-1.0))
+    }
+}
+
+pub fn set_selection<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if args.is_empty() {
+        return Ok(Value::Undefined);
+    }
+
+    if let Some(edit_box) = activation
+        .context
+        .focus_tracker
+        .get()
+        .and_then(|o| o.as_edit_text())
+    {
+        let start = args
+            .get(0)
+            .map(|v| v.coerce_to_i32(activation))
+            .transpose()?
+            .unwrap_or(0);
+        let end = args
+            .get(1)
+            .map(|v| v.coerce_to_i32(activation))
+            .transpose()?
+            .unwrap_or(i32::max_value());
+        let start = if start < 0 { 0 } else { start as usize };
+        let end = if end < 0 { 0 } else { end as usize };
+        let selection = TextSelection::for_range(start, end);
+        edit_box.set_selection(Some(selection), activation.context.gc_context);
+    }
+    Ok(Value::Undefined)
 }
 
 pub fn get_focus<'gc>(
@@ -101,6 +162,14 @@ pub fn create_selection_object<'gc>(
     object.force_set_function(
         "getCaretIndex",
         get_caret_index,
+        gc_context,
+        Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "setSelection",
+        set_selection,
         gc_context,
         Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
         Some(fn_proto),
