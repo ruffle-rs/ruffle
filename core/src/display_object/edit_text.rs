@@ -6,6 +6,7 @@ use crate::backend::input::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
+use crate::events::{ClipEvent, ClipEventResult};
 use crate::font::{round_down_to_pixel, Glyph};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, TextFormat};
 use crate::prelude::*;
@@ -1139,12 +1140,32 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn on_focus_changed(&self, context: MutationContext<'gc, '_>, focused: bool) {
-        self.0.write(context).has_focus = focused;
+        let mut text = self.0.write(context);
+        text.has_focus = focused;
+        if !focused {
+            text.selection = None;
+        }
     }
 
     fn is_focusable(&self) -> bool {
         // Even if this isn't selectable or editable, a script can focus on it manually
         true
+    }
+
+    fn handle_clip_event(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        match event {
+            ClipEvent::Press => {
+                let tracker = context.focus_tracker;
+                tracker.set(Some((*self).into()), context);
+                self.0.write(context.gc_context).selection = Some(TextSelection::for_position(0));
+                ClipEventResult::Handled
+            }
+            _ => ClipEventResult::NotHandled,
+        }
     }
 }
 
