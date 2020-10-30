@@ -1107,7 +1107,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn is_focusable(&self) -> bool {
-        self.0.read().is_selectable
+        // Even if this isn't selectable or editable, a script can focus on it manually
+        true
     }
 }
 
