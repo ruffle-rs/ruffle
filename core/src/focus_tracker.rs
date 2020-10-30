@@ -1,4 +1,4 @@
-use crate::avm1::Value;
+use crate::avm1::{Avm1, Value};
 use crate::context::UpdateContext;
 pub use crate::display_object::{DisplayObject, TDisplayObject};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -40,5 +40,18 @@ impl<'gc> FocusTracker<'gc> {
         if let Some(new) = focused_element {
             new.on_focus_changed(true);
         }
+
+        let level0 = context.levels.get(&0).copied().unwrap();
+        Avm1::notify_system_listeners(
+            level0,
+            context.swf.version(),
+            context,
+            "Selection",
+            "onSetFocus",
+            &[
+                old.map(|v| v.object()).unwrap_or(Value::Null),
+                focused_element.map(|v| v.object()).unwrap_or(Value::Null),
+            ],
+        );
     }
 }
