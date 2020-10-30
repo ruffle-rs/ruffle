@@ -35,10 +35,10 @@ impl<'gc> FocusTracker<'gc> {
         }
 
         if let Some(old) = old {
-            old.on_focus_changed(false);
+            old.on_focus_changed(context.gc_context, false);
         }
         if let Some(new) = focused_element {
-            new.on_focus_changed(true);
+            new.on_focus_changed(context.gc_context, true);
         }
 
         let level0 = context.levels.get(&0).copied().unwrap();
