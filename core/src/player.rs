@@ -847,6 +847,7 @@ impl Player {
                 transform_stack,
                 view_bounds,
                 clip_depth_stack: vec![],
+                allow_mask: true,
             };
 
             for (_depth, level) in root_data.levels.iter() {

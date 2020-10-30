@@ -49,6 +49,11 @@ _level0.clip2
 // mc3
 undefined
 
+// mc4 = _root.attachMovie("cLiP", "clip2", 33)
+// mc4
+_level0.clip4
+
 /// Frame 1 of clip
 /// Frame 1 of clip
 /// Frame 1 of clip2
+/// Frame 1 of clip4

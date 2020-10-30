@@ -12,6 +12,8 @@ mod task;
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use clap::Clap;
+use isahc::config::RedirectPolicy;
+use isahc::prelude::*;
 use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
     Player,
@@ -20,11 +22,13 @@ use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
+use url::Url;
 
 use crate::storage::DiskStorageBackend;
 use ruffle_core::backend::log::NullLogBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
+use std::io::Read;
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
@@ -67,6 +71,10 @@ struct Opt {
     #[clap(long, parse(from_os_str))]
     #[cfg(feature = "render_trace")]
     trace_path: Option<PathBuf>,
+
+    /// (Optional) Proxy to use when loading movies via URL
+    #[clap(long, case_insensitive = true)]
+    proxy: Option<Url>,
 }
 
 #[cfg(feature = "render_trace")]
@@ -99,8 +107,35 @@ fn main() {
     }
 }
 
+fn load_movie_from_path(
+    movie_url: Url,
+    proxy: Option<Url>,
+) -> Result<SwfMovie, Box<dyn std::error::Error>> {
+    if movie_url.scheme() == "file" {
+        if let Ok(path) = movie_url.to_file_path() {
+            return SwfMovie::from_path(path);
+        }
+    }
+    let proxy = proxy.and_then(|url| url.as_str().parse().ok());
+    let builder = HttpClient::builder()
+        .proxy(proxy)
+        .redirect_policy(RedirectPolicy::Follow);
+    let client = builder.build()?;
+    let res = client.get(movie_url.to_string())?;
+    let mut buffer: Vec<u8> = Vec::new();
+    res.into_body().read_to_end(&mut buffer)?;
+    SwfMovie::from_data(&buffer, Some(movie_url.to_string()))
+}
+
 fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
-    let mut movie = SwfMovie::from_path(&opt.input_path)?;
+    let movie_url = if opt.input_path.exists() {
+        let absolute_path = opt.input_path.canonicalize()?;
+        Url::from_file_path(absolute_path).map_err(|_| "Path cannot be a URL")?
+    } else {
+        Url::parse(opt.input_path.to_str().unwrap_or_default())
+            .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
+    };
+    let mut movie = load_movie_from_path(movie_url.to_owned(), opt.proxy.to_owned())?;
     let movie_size = LogicalSize::new(movie.width(), movie.height());
 
     for parameter in &opt.parameters {
@@ -118,15 +153,13 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let icon = Icon::from_rgba(icon_bytes.to_vec(), 32, 32)?;
 
     let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
+    let window_title = movie_url
+        .path_segments()
+        .and_then(|segments| segments.last())
+        .unwrap_or_else(|| movie_url.as_str());
     let window = Rc::new(
         WindowBuilder::new()
-            .with_title(format!(
-                "Ruffle - {}",
-                opt.input_path
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-            ))
+            .with_title(format!("Ruffle - {}", window_title))
             .with_window_icon(Some(icon))
             .with_inner_size(movie_size)
             .build(&event_loop)?,
@@ -148,12 +181,11 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         trace_path(&opt),
     )?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
-    let navigator = Box::new(navigator::ExternalNavigatorBackend::with_base_path(
-        opt.input_path
-            .parent()
-            .unwrap_or_else(|| std::path::Path::new("")),
+    let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
+        movie_url,
         chan,
         event_loop.create_proxy(),
+        opt.proxy,
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let storage = Box::new(DiskStorageBackend::new(
