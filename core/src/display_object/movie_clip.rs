@@ -59,6 +59,7 @@ pub struct MovieClipData<'gc> {
     flags: EnumSet<MovieClipFlags>,
     avm_constructor: Option<AvmObject<'gc>>,
     drawing: Drawing,
+    is_focusable: bool,
 }
 
 unsafe impl<'gc> Collect for MovieClipData<'gc> {
@@ -94,6 +95,7 @@ impl<'gc> MovieClip<'gc> {
                 flags: EnumSet::empty(),
                 avm_constructor: None,
                 drawing: Drawing::new(),
+                is_focusable: false,
             },
         ))
     }
@@ -130,6 +132,7 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::Playing.into(),
                 avm_constructor: None,
                 drawing: Drawing::new(),
+                is_focusable: false,
             },
         ))
     }
@@ -1614,6 +1617,10 @@ impl<'gc> MovieClip<'gc> {
             log::error!("Attempted to run AVM2 frame scripts on an AVM1 MovieClip.");
         }
     }
+
+    pub fn set_focusable(self, focusable: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).is_focusable = focusable;
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -1838,6 +1845,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
         crate::display_object::get_child_by_name(&self.0.read().children, name, case_sensitive)
+    }
+
+    fn is_focusable(&self) -> bool {
+        self.0.read().is_focusable
     }
 }
 
