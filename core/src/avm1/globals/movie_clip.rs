@@ -206,6 +206,7 @@ pub fn create_proto<'gc>(
     with_movie_clip_props!(
         proto, gc_context, fn_proto,
         "transform" => [transform, set_transform],
+        "focusEnabled" => [focus_enabled, set_focus_enabled],
     );
 
     object.into()
@@ -1182,5 +1183,24 @@ fn set_transform<'gc>(
 ) -> Result<(), Error<'gc>> {
     let transform = value.coerce_to_object(activation);
     crate::avm1::globals::transform::apply_to_display_object(activation, transform, this.into())?;
+    Ok(())
+}
+
+fn focus_enabled<'gc>(
+    this: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.is_focusable().into())
+}
+
+fn set_focus_enabled<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    this.set_focusable(
+        value.as_bool(activation.current_swf_version()),
+        &mut activation.context,
+    );
     Ok(())
 }

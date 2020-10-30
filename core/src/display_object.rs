@@ -726,6 +726,11 @@ pub trait TDisplayObject<'gc>:
     /// This should only be called by the focus manager. To change a focus, go through that.
     fn on_focus_changed(&self, _focused: bool) {}
 
+    /// Whether or not this clip may be focusable for keyboard input.
+    fn is_focusable(&self) -> bool {
+        false
+    }
+
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and
     /// so forth.

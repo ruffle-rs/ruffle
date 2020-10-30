@@ -1105,6 +1105,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn mouse_cursor(&self) -> MouseCursor {
         MouseCursor::IBeam
     }
+
+    fn is_focusable(&self) -> bool {
+        self.0.read().is_selectable
+    }
 }
 
 /// Static data shared between all instances of a text object.

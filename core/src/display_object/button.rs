@@ -419,6 +419,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
         crate::display_object::get_child_by_name(&self.0.read().children, name, case_sensitive)
     }
+
+    fn is_focusable(&self) -> bool {
+        true
+    }
 }
 
 impl<'gc> ButtonData<'gc> {
