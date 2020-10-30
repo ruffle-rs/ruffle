@@ -378,11 +378,8 @@ fn start<'gc>(
         .unwrap_or(&Value::Number(1.0))
         .coerce_to_f64(activation)?;
 
-    let loops = if loops >= 1.0 && loops <= f64::from(std::i16::MAX) {
-        loops as u16
-    } else {
-        1
-    };
+    // TODO: Handle loops > std::u16::MAX.
+    let loops = (loops as u16).max(1);
 
     use swf::{SoundEvent, SoundInfo};
     if let Some(sound_object) = this.as_sound_object() {
