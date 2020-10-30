@@ -121,6 +121,9 @@ pub struct EditTextData<'gc> {
 
     /// The selected portion of the text, or None if the text is not selected.
     selection: Option<TextSelection>,
+
+    /// Whether or not this EditText has the current keyboard focus
+    has_focus: bool,
 }
 
 impl<'gc> EditText<'gc> {
@@ -205,6 +208,7 @@ impl<'gc> EditText<'gc> {
                 bound_stage_object: None,
                 firing_variable_binding: false,
                 selection: None,
+                has_focus: false,
             },
         ));
 
@@ -1090,6 +1094,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let had_focus = self.0.read().has_focus;
+        if had_focus {
+            let tracker = context.focus_tracker;
+            tracker.set(None, context);
+        }
+
         // Unbind any display objects bound to this text.
         if let Some(stage_object) = self.0.write(context.gc_context).bound_stage_object.take() {
             stage_object.clear_text_field_binding(context.gc_context, *self);
@@ -1126,6 +1136,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn mouse_cursor(&self) -> MouseCursor {
         MouseCursor::IBeam
+    }
+
+    fn on_focus_changed(&self, context: MutationContext<'gc, '_>, focused: bool) {
+        self.0.write(context).has_focus = focused;
     }
 
     fn is_focusable(&self) -> bool {

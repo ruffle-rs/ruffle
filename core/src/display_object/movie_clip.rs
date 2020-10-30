@@ -60,6 +60,7 @@ pub struct MovieClipData<'gc> {
     avm_constructor: Option<AvmObject<'gc>>,
     drawing: Drawing,
     is_focusable: bool,
+    has_focus: bool,
 }
 
 unsafe impl<'gc> Collect for MovieClipData<'gc> {
@@ -96,6 +97,7 @@ impl<'gc> MovieClip<'gc> {
                 avm_constructor: None,
                 drawing: Drawing::new(),
                 is_focusable: false,
+                has_focus: false,
             },
         ))
     }
@@ -133,6 +135,7 @@ impl<'gc> MovieClip<'gc> {
                 avm_constructor: None,
                 drawing: Drawing::new(),
                 is_focusable: false,
+                has_focus: false,
             },
         ))
     }
@@ -1831,6 +1834,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
         }
 
+        let had_focus = self.0.read().has_focus;
+        if had_focus {
+            let tracker = context.focus_tracker;
+            tracker.set(None, context);
+        }
+
         {
             let mut mc = self.0.write(context.gc_context);
             mc.stop_audio_stream(context);
@@ -1849,6 +1858,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn is_focusable(&self) -> bool {
         self.0.read().is_focusable
+    }
+
+    fn on_focus_changed(&self, context: MutationContext<'gc, '_>, focused: bool) {
+        self.0.write(context).has_focus = focused;
     }
 }
 

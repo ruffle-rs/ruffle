@@ -25,6 +25,7 @@ pub struct ButtonData<'gc> {
     tracking: ButtonTracking,
     object: Option<Object<'gc>>,
     initialized: bool,
+    has_focus: bool,
 }
 
 impl<'gc> Button<'gc> {
@@ -76,6 +77,7 @@ impl<'gc> Button<'gc> {
                 } else {
                     ButtonTracking::Push
                 },
+                has_focus: false,
             },
         ))
     }
@@ -422,6 +424,18 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
     fn is_focusable(&self) -> bool {
         true
+    }
+
+    fn on_focus_changed(&self, context: MutationContext<'gc, '_>, focused: bool) {
+        self.0.write(context).has_focus = focused;
+    }
+
+    fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let had_focus = self.0.read().has_focus;
+        if had_focus {
+            let tracker = context.focus_tracker;
+            tracker.set(None, context);
+        }
     }
 }
 

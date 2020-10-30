@@ -724,7 +724,7 @@ pub trait TDisplayObject<'gc>:
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
     /// of being the currently focused object.
     /// This should only be called by the focus manager. To change a focus, go through that.
-    fn on_focus_changed(&self, _focused: bool) {}
+    fn on_focus_changed(&self, _context: MutationContext<'gc, '_>, _focused: bool) {}
 
     /// Whether or not this clip may be focusable for keyboard input.
     fn is_focusable(&self) -> bool {
