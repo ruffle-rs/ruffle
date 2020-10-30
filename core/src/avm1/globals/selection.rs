@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{Object, ScriptObject, TDisplayObject, TObject, Value};
 use gc_arena::MutationContext;
 
 pub fn get_begin_index<'gc>(
@@ -33,21 +33,42 @@ pub fn get_caret_index<'gc>(
 }
 
 pub fn get_focus<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Implement
-    Ok(Value::Null)
+    let focus = activation.context.focus_tracker.get();
+    match focus {
+        Some(focus) => Ok(focus.object()),
+        None => Ok(Value::Null),
+    }
 }
 
 pub fn set_focus<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Implement
-    Ok(false.into())
+    let tracker = activation.context.focus_tracker;
+    match args.get(0) {
+        Some(Value::Null) | Some(Value::Undefined) => {
+            tracker.set(None, &mut activation.context);
+            Ok(true.into())
+        }
+        Some(Value::Object(obj)) => {
+            if let Some(display_object) = obj.as_display_object() {
+                if display_object.is_focusable() {
+                    tracker.set(Some(display_object), &mut activation.context);
+                }
+                // [NA] Note: The documentation says true is success and false is failure,
+                // but from testing this seems to be opposite.
+                Ok(false.into())
+            } else {
+                Ok(true.into())
+            }
+        }
+        _ => Ok(false.into()),
+    }
 }
 
 pub fn create_selection_object<'gc>(
