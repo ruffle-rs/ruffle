@@ -35,10 +35,11 @@ impl<R: Read> Iterator for PcmDecoder<R> {
                 let right = i16::from_le_bytes(right);
                 Some([left, right])
             } else {
-                let mut bytes = [0u8];
+                let mut bytes = [0u8; 2];
                 self.inner.read_exact(&mut bytes).ok()?;
-                let sample = (i16::from(bytes[0]) - 127) * 128;
-                Some([sample, sample])
+                let left = (i16::from(bytes[0]) - 127) * 128;
+                let right = (i16::from(bytes[1]) - 127) * 128;
+                Some([left, right])
             }
         } else if self.is_16_bit {
             let mut bytes = [0u8; 2];
@@ -46,11 +47,10 @@ impl<R: Read> Iterator for PcmDecoder<R> {
             let sample = i16::from_le_bytes(bytes);
             Some([sample, sample])
         } else {
-            let mut bytes = [0u8; 2];
+            let mut bytes = [0u8];
             self.inner.read_exact(&mut bytes).ok()?;
-            let left = (i16::from(bytes[0]) - 127) * 128;
-            let right = (i16::from(bytes[1]) - 127) * 128;
-            Some([left, right])
+            let sample = (i16::from(bytes[0]) - 127) * 128;
+            Some([sample, sample])
         }
     }
 }
