@@ -994,7 +994,32 @@ impl<'gc> EditText<'gc> {
 
     pub fn text_input(self, character: char, context: &mut UpdateContext<'_, 'gc, '_>) {
         if let Some(selection) = self.get_selection() {
-            if character as u32 >= 32 && character as u32 <= 126 {
+            if (character as u8 == 8 || character as u8 == 127) && !selection.is_caret() {
+                // Backspace or delete with multiple characters selected
+                self.replace_text(selection.start(), selection.end(), "", context);
+                self.set_selection(
+                    Some(TextSelection::for_position(selection.start())),
+                    context.gc_context,
+                );
+            } else if character as u8 == 8 {
+                // Backspace with caret
+                if selection.start() > 0 {
+                    // Delete previous character
+                    self.replace_text(selection.start() - 1, selection.start(), "", context);
+                    self.set_selection(
+                        Some(TextSelection::for_position(selection.start() - 1)),
+                        context.gc_context,
+                    );
+                }
+            } else if character as u8 == 127 {
+                // Delete with caret
+                if selection.end() < self.text_length() {
+                    // Delete next character
+                    self.replace_text(selection.start(), selection.start() + 1, "", context);
+                    // No need to change selection
+                }
+            } else if character as u8 >= 32 && character as u8 <= 126 {
+                // ASCII
                 // TODO: Make this actually good and not basic ASCII :)
                 self.replace_text(
                     selection.start(),
