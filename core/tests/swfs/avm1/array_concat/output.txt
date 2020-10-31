@@ -1,3 +1,6 @@
+// a
+a,b
+
 // a[0]
 a
 
@@ -16,6 +19,9 @@ undefined
 // a.length
 2
 
+
+// b
+c,d
 
 // b[0]
 c
@@ -36,6 +42,9 @@ undefined
 2
 
 
+// c
+a,b,c,d
+
 // c[0]
 a
 
@@ -54,6 +63,9 @@ undefined
 // c.length
 4
 
+
+// d
+a,b,e,c,d,a,b,c,d
 
 // d[0]
 a
