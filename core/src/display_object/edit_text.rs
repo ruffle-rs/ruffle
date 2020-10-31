@@ -693,6 +693,7 @@ impl<'gc> EditText<'gc> {
         context.transform_stack.push(&box_transform);
 
         let edit_text = self.0.read();
+        let selection = edit_text.selection;
 
         // If the font can't be found or has no glyph information, use the "device font" instead.
         // We're cheating a bit and not actually rendering text using the OS/web.
@@ -707,9 +708,33 @@ impl<'gc> EditText<'gc> {
                 text,
                 self.text_transform(color, baseline_adjustmnet),
                 params,
-                |transform, glyph: &Glyph, _advance| {
+                |pos, transform, glyph: &Glyph, _advance| {
+                    // If it's highlighted, override the color.
+                    // TODO: We should draw a black background and change the color to white,
+                    //  but for now let's just change it to be slightly different colour.
+                    match selection {
+                        Some(selection) if selection.contains(pos) => {
+                            context.transform_stack.push(&Transform {
+                                matrix: transform.matrix,
+                                color_transform: transform.color_transform
+                                    * ColorTransform {
+                                        r_mult: 0.75,
+                                        g_mult: 0.75,
+                                        b_mult: 0.75,
+                                        a_mult: 1.0,
+                                        r_add: 0.0,
+                                        g_add: 0.0,
+                                        b_add: 1.0,
+                                        a_add: 0.0,
+                                    },
+                            });
+                        }
+                        _ => {
+                            context.transform_stack.push(&transform);
+                        }
+                    }
+
                     // Render glyph.
-                    context.transform_stack.push(transform);
                     context
                         .renderer
                         .render_shape(glyph.shape_handle, context.transform_stack.transform());
@@ -856,7 +881,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn get_selection(self) -> Option<TextSelection> {
-        self.0.read().selection.clone()
+        self.0.read().selection
     }
 
     pub fn set_selection(
@@ -1184,7 +1209,7 @@ unsafe impl<'gc> gc_arena::Collect for EditTextStatic {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct TextSelection {
     from: usize,
     to: usize,
@@ -1244,5 +1269,10 @@ impl TextSelection {
         if self.to > length {
             self.to = length;
         }
+    }
+
+    /// Checks whether the given position falls within the range of this selection
+    pub fn contains(&self, pos: usize) -> bool {
+        pos >= self.start() && pos < self.end()
     }
 }
