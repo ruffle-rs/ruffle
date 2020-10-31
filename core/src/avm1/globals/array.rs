@@ -6,7 +6,6 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object;
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::cmp::Ordering;
 
@@ -427,12 +426,7 @@ pub fn concat<'gc>(
         let old = this
             .get(&i.to_string(), activation)
             .unwrap_or(Value::Undefined);
-        array.define_value(
-            activation.context.gc_context,
-            &length.to_string(),
-            old,
-            EnumSet::empty(),
-        );
+        array.set_array_element(length, old, activation.context.gc_context);
         length += 1;
     }
 
@@ -453,29 +447,17 @@ pub fn concat<'gc>(
                     let old = object
                         .get(&i.to_string(), activation)
                         .unwrap_or(Value::Undefined);
-                    array.define_value(
-                        activation.context.gc_context,
-                        &length.to_string(),
-                        old,
-                        EnumSet::empty(),
-                    );
+                    array.set_array_element(length, old, activation.context.gc_context);
                     length += 1;
                 }
             }
         }
 
         if !added {
-            array.define_value(
-                activation.context.gc_context,
-                &length.to_string(),
-                arg.clone(),
-                EnumSet::empty(),
-            );
+            array.set_array_element(length, arg.clone(), activation.context.gc_context);
             length += 1;
         }
     }
-
-    array.set_length(activation.context.gc_context, length);
 
     Ok(array.into())
 }
