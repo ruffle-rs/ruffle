@@ -932,6 +932,53 @@ impl<'gc> EditText<'gc> {
             text.selection = None;
         }
     }
+
+    pub fn screen_position_to_index(self, position: (Twips, Twips)) -> Option<usize> {
+        let text = self.0.read();
+        let position = self.global_to_local(position);
+        let position = (
+            position.0 + Twips::from_pixels(Self::INTERNAL_PADDING),
+            position.1 + Twips::from_pixels(Self::INTERNAL_PADDING),
+        );
+
+        for layout_box in text.layout.iter() {
+            let transform: Transform = layout_box.bounds().origin().into();
+            let mut matrix = transform.matrix;
+            matrix.invert();
+            let local_position = matrix * position;
+
+            if let Some((text, _tf, font, params, color)) =
+                layout_box.as_renderable_text(text.text_spans.text())
+            {
+                let mut result = None;
+                let baseline_adjustment =
+                    font.get_baseline_for_height(params.height()) - params.height();
+                font.evaluate(
+                    text,
+                    self.text_transform(color, baseline_adjustment),
+                    params,
+                    |pos, _transform, _glyph: &Glyph, advance, x| {
+                        if local_position.0 >= x
+                            && local_position.0 < x + advance
+                            && local_position.1 >= Twips::zero()
+                            && local_position.1 < params.height()
+                        {
+                            if local_position.0 >= x + (advance / 2) {
+                                result = Some(pos + 1);
+                            } else {
+                                result = Some(pos);
+                            }
+                        }
+                    },
+                );
+                if result.is_some() {
+                    return result;
+                }
+            }
+        }
+
+        None
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
@@ -1221,7 +1268,15 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ClipEvent::Press => {
                 let tracker = context.focus_tracker;
                 tracker.set(Some((*self).into()), context);
-                self.0.write(context.gc_context).selection = Some(TextSelection::for_position(0));
+                if let Some(position) = self
+                    .screen_position_to_index(*context.mouse_position)
+                    .map(TextSelection::for_position)
+                {
+                    self.0.write(context.gc_context).selection = Some(position);
+                } else {
+                    self.0.write(context.gc_context).selection =
+                        Some(TextSelection::for_position(self.text_length()));
+                }
                 ClipEventResult::Handled
             }
             _ => ClipEventResult::NotHandled,
