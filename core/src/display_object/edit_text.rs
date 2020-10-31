@@ -80,6 +80,9 @@ pub struct EditTextData<'gc> {
     /// If the text can be selected by the user.
     is_selectable: bool,
 
+    /// If the text can be edited by the user.
+    is_editable: bool,
+
     /// If the text is word-wrapped.
     is_word_wrap: bool,
 
@@ -138,6 +141,7 @@ impl<'gc> EditText<'gc> {
         let is_multiline = swf_tag.is_multiline;
         let is_word_wrap = swf_tag.is_word_wrap;
         let is_selectable = swf_tag.is_selectable;
+        let is_editable = !swf_tag.is_read_only;
         let is_html = swf_tag.is_html;
         let document = XMLDocument::new(context.gc_context);
         let text = swf_tag.initial_text.clone().unwrap_or_default();
@@ -196,6 +200,7 @@ impl<'gc> EditText<'gc> {
                 ),
                 is_multiline,
                 is_selectable,
+                is_editable,
                 is_word_wrap,
                 has_border,
                 is_device_font,
@@ -993,6 +998,10 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text_input(self, character: char, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if !self.0.read().is_editable {
+            return;
+        }
+
         if let Some(selection) = self.get_selection() {
             if (character as u8 == 8 || character as u8 == 127) && !selection.is_caret() {
                 // Backspace or delete with multiple characters selected
