@@ -6,7 +6,7 @@ use crate::backend::input::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
-use crate::events::{ClipEvent, ClipEventResult};
+use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
 use crate::font::{round_down_to_pixel, Glyph};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
@@ -1333,6 +1333,37 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                         Some(TextSelection::for_position(self.text_length()));
                 }
                 ClipEventResult::Handled
+            }
+            ClipEvent::KeyPress { key_code } => {
+                let mut text = self.0.write(context.gc_context);
+                let selection = text.selection;
+                if let Some(mut selection) = selection {
+                    let length = text.text_spans.text().len();
+                    match key_code {
+                        ButtonKeyCode::Left if selection.to > 0 => {
+                            if context.input.is_key_down(KeyCode::Shift) {
+                                selection.to -= 1;
+                            } else {
+                                selection.to -= 1;
+                                selection.from = selection.to;
+                            }
+                        }
+                        ButtonKeyCode::Right if selection.to < length => {
+                            if context.input.is_key_down(KeyCode::Shift) {
+                                selection.to += 1;
+                            } else {
+                                selection.to += 1;
+                                selection.from = selection.to;
+                            }
+                        }
+                        _ => {}
+                    }
+                    selection.clamp(length);
+                    text.selection = Some(selection);
+                    ClipEventResult::Handled
+                } else {
+                    ClipEventResult::NotHandled
+                }
             }
             _ => ClipEventResult::NotHandled,
         }
