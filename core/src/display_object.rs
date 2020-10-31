@@ -1,5 +1,6 @@
 use crate::avm1::{Object as Avm1Object, TObject, Value as Avm1Value};
 use crate::avm2::Value as Avm2Value;
+use crate::backend::audio::SoundInstanceHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
@@ -67,6 +68,9 @@ pub struct DisplayObjectBase<'gc> {
 
     /// Bit flags for various display object properites.
     flags: EnumSet<DisplayObjectFlags>,
+
+    /// The instances of the played sounds on this object.
+    sound_instances: Vec<SoundInstanceHandle>,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -85,6 +89,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             prev_sibling: None,
             next_sibling: None,
             flags: DisplayObjectFlags::Visible.into(),
+            sound_instances: Vec::new(),
         }
     }
 }
@@ -965,6 +970,13 @@ pub trait TDisplayObject<'gc>:
             }
         }
     }
+
+    fn sound_instances(&self) -> Vec<SoundInstanceHandle>;
+    fn add_sound_instance(
+        &mut self,
+        context: MutationContext<'gc, '_>,
+        sound_instance: SoundInstanceHandle,
+    );
 }
 
 pub enum DisplayObjectPtr {}
@@ -1129,6 +1141,20 @@ macro_rules! impl_display_object_sansbounds {
         }
         fn as_ptr(&self) -> *const crate::display_object::DisplayObjectPtr {
             self.0.as_ptr() as *const crate::display_object::DisplayObjectPtr
+        }
+        fn sound_instances(&self) -> Vec<SoundInstanceHandle> {
+            self.0.read().$field.sound_instances.clone()
+        }
+        fn add_sound_instance(
+            &mut self,
+            gc_context: gc_arena::MutationContext<'gc, '_>,
+            sound_instance: SoundInstanceHandle,
+        ) {
+            self.0
+                .write(gc_context)
+                .$field
+                .sound_instances
+                .push(sound_instance);
         }
     };
 }

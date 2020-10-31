@@ -1,4 +1,5 @@
 use crate::avm1::{Object, StageObject, Value};
+use crate::backend::audio::SoundInstanceHandle;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::ChildContainer;
 use crate::display_object::{DisplayObjectBase, TDisplayObject};

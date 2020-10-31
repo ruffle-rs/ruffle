@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject};
-use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
+use crate::backend::audio::SoundHandle;
 use crate::display_object::DisplayObject;
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -23,9 +23,6 @@ pub struct SoundObjectData<'gc> {
 
     /// The sound that is attached to this object.
     sound: Option<SoundHandle>,
-
-    /// The instance of the last played sound on this object.
-    sound_instance: Option<SoundInstanceHandle>,
 
     /// Sounds in AVM1 are tied to a specific movie clip.
     owner: Option<DisplayObject<'gc>>,
@@ -49,7 +46,6 @@ impl fmt::Debug for SoundObject<'_> {
         let this = self.0.read();
         f.debug_struct("SoundObject")
             .field("sound", &this.sound)
-            .field("sound_instance", &this.sound_instance)
             .field("owner", &this.owner)
             .finish()
     }
@@ -65,7 +61,6 @@ impl<'gc> SoundObject<'gc> {
             SoundObjectData {
                 base: ScriptObject::object(gc_context, proto),
                 sound: None,
-                sound_instance: None,
                 owner: None,
                 position: 0,
                 duration: 0,
@@ -87,18 +82,6 @@ impl<'gc> SoundObject<'gc> {
 
     pub fn set_sound(self, gc_context: MutationContext<'gc, '_>, sound: Option<SoundHandle>) {
         self.0.write(gc_context).sound = sound;
-    }
-
-    pub fn sound_instance(self) -> Option<SoundInstanceHandle> {
-        self.0.read().sound_instance
-    }
-
-    pub fn set_sound_instance(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        sound_instance: Option<SoundInstanceHandle>,
-    ) {
-        self.0.write(gc_context).sound_instance = sound_instance;
     }
 
     pub fn owner(self) -> Option<DisplayObject<'gc>> {

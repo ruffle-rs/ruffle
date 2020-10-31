@@ -10,6 +10,7 @@ use crate::avm2::{
 use crate::backend::audio::AudioStreamHandle;
 
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
+use crate::backend::audio::SoundInstanceHandle;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{ChildContainer, TDisplayObjectContainer};

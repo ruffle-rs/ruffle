@@ -325,9 +325,9 @@ fn position<'gc>(
             // the previous valid position.
             // Needs some audio backend work for this.
             if sound_object.sound().is_some() {
-                if let Some(_sound_instance) = sound_object.sound_instance() {
+                /*if let Some(_sound_instance) = sound_object.sound_instance() {
                     avm_warn!(activation, "Sound.position: Unimplemented");
-                }
+                }*/
                 return Ok(sound_object.position().into());
             }
         } else {
@@ -401,9 +401,8 @@ fn start<'gc>(
                     envelope: None,
                 },
             );
-            if let Ok(sound_instance) = sound_instance {
-                sound_object
-                    .set_sound_instance(activation.context.gc_context, Some(sound_instance));
+            if let (Ok(sound_instance), Some(mut owner)) = (sound_instance, sound_object.owner()) {
+                owner.add_sound_instance(activation.context.gc_context, sound_instance);
             }
         } else {
             avm_warn!(activation, "Sound.start: No sound is attached");
@@ -447,10 +446,9 @@ fn stop<'gc>(
                     name
                 )
             }
-        } else if let Some(_owner) = sound.owner() {
+        } else if let Some(owner) = sound.owner() {
             // Usage 2: Stop all sound running within a given clip.
-            // TODO: We just stop the last played sound for now.
-            if let Some(sound_instance) = sound.sound_instance() {
+            for &sound_instance in owner.sound_instances().iter() {
                 activation.context.audio.stop_sound(sound_instance);
             }
         } else {

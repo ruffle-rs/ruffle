@@ -1,5 +1,6 @@
 //! Bitmap display object
 
+use crate::backend::audio::SoundInstanceHandle;
 use crate::backend::render::BitmapHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
