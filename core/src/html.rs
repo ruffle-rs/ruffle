@@ -8,7 +8,7 @@ mod text_format;
 pub use dimensions::BoxBounds;
 pub use dimensions::Position;
 pub use dimensions::Size;
-pub use layout::LayoutBox;
+pub use layout::{LayoutBox, LayoutContent};
 pub use text_format::{FormatSpans, TextFormat, TextSpan};
 
 #[cfg(test)]

@@ -762,6 +762,10 @@ impl<'gc> LayoutBox<'gc> {
         self.bounds
     }
 
+    pub fn content(&self) -> &LayoutContent<'gc> {
+        &self.content
+    }
+
     /// Returns a reference to the text this box contains, as well as font
     /// rendering parameters, if the layout box has any.
     pub fn as_renderable_text<'a>(

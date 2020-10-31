@@ -8,7 +8,7 @@ use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::font::{round_down_to_pixel, Glyph};
-use crate::html::{BoxBounds, FormatSpans, LayoutBox, TextFormat};
+use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfMovie;
@@ -695,22 +695,32 @@ impl<'gc> EditText<'gc> {
 
         let edit_text = self.0.read();
         let selection = edit_text.selection;
-        let caret_pos = match &selection {
-            Some(selection)
-                if selection.is_caret() && Utc::now().timestamp_subsec_millis() / 500 == 0 =>
-            {
-                Some(selection.from)
+
+        let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content() {
+            if let Some(selection) = selection {
+                if selection.is_caret()
+                    && selection.start() >= *start
+                    && selection.end() <= *end
+                    && Utc::now().timestamp_subsec_millis() / 500 == 0
+                {
+                    Some((selection.start() - start, end - start))
+                } else {
+                    None
+                }
+            } else {
+                None
             }
-            _ => None,
+        } else {
+            None
         };
-        let text = edit_text.text_spans.text();
-        let length = text.len();
 
         // If the font can't be found or has no glyph information, use the "device font" instead.
         // We're cheating a bit and not actually rendering text using the OS/web.
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
-        if let Some((text, _tf, font, params, color)) = lbox.as_renderable_text(text) {
+        if let Some((text, _tf, font, params, color)) =
+            lbox.as_renderable_text(edit_text.text_spans.text())
+        {
             let baseline_adjustmnet =
                 font.get_baseline_for_height(params.height()) - params.height();
             font.evaluate(
@@ -749,30 +759,32 @@ impl<'gc> EditText<'gc> {
                         .render_shape(glyph.shape_handle, context.transform_stack.transform());
                     context.transform_stack.pop();
 
-                    if caret_pos == Some(pos) {
-                        let caret = context.transform_stack.transform().matrix
-                            * Matrix::create_box(
-                                1.0,
-                                params.height().to_pixels() as f32,
-                                0.0,
-                                x + Twips::from_pixels(-1.0),
-                                Twips::from_pixels(2.0),
-                            );
-                        context
-                            .renderer
-                            .draw_rect(Color::from_rgb(0x000000, 0xFF), &caret);
-                    } else if pos == length - 1 && caret_pos == Some(length) {
-                        let caret = context.transform_stack.transform().matrix
-                            * Matrix::create_box(
-                                1.0,
-                                params.height().to_pixels() as f32,
-                                0.0,
-                                x + advance,
-                                Twips::from_pixels(2.0),
-                            );
-                        context
-                            .renderer
-                            .draw_rect(Color::from_rgb(0x000000, 0xFF), &caret);
+                    if let Some((caret_pos, length)) = caret {
+                        if caret_pos == pos {
+                            let caret = context.transform_stack.transform().matrix
+                                * Matrix::create_box(
+                                    1.0,
+                                    params.height().to_pixels() as f32,
+                                    0.0,
+                                    x + Twips::from_pixels(-1.0),
+                                    Twips::from_pixels(2.0),
+                                );
+                            context
+                                .renderer
+                                .draw_rect(Color::from_rgb(0x000000, 0xFF), &caret);
+                        } else if pos == length - 1 && caret_pos == length {
+                            let caret = context.transform_stack.transform().matrix
+                                * Matrix::create_box(
+                                    1.0,
+                                    params.height().to_pixels() as f32,
+                                    0.0,
+                                    x + advance,
+                                    Twips::from_pixels(2.0),
+                                );
+                            context
+                                .renderer
+                                .draw_rect(Color::from_rgb(0x000000, 0xFF), &caret);
+                        }
                     }
                 },
             );
@@ -959,9 +971,9 @@ impl<'gc> EditText<'gc> {
                     params,
                     |pos, _transform, _glyph: &Glyph, advance, x| {
                         if local_position.0 >= x
-                            && local_position.0 < x + advance
+                            && local_position.0 <= x + advance
                             && local_position.1 >= Twips::zero()
-                            && local_position.1 < params.height()
+                            && local_position.1 <= params.height()
                         {
                             if local_position.0 >= x + (advance / 2) {
                                 result = Some(pos + 1);
