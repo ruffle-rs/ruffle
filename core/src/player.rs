@@ -618,8 +618,16 @@ impl Player {
                 }
             });
         }
-        // Propagte clip events.
 
+        if let PlayerEvent::TextInput { codepoint } = event {
+            self.mutate_with_update_context(|context| {
+                if let Some(text) = context.focus_tracker.get().and_then(|o| o.as_edit_text()) {
+                    text.text_input(codepoint, context);
+                }
+            });
+        }
+
+        // Propagte clip events.
         self.mutate_with_update_context(|context| {
             let (clip_event, listener) = match event {
                 PlayerEvent::KeyDown { .. } => {

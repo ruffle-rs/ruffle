@@ -979,6 +979,24 @@ impl<'gc> EditText<'gc> {
 
         None
     }
+
+    pub fn text_input(self, character: char, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(selection) = self.get_selection() {
+            if character as u32 >= 32 && character as u32 <= 126 {
+                // TODO: Make this actually good and not basic ASCII :)
+                self.replace_text(
+                    selection.start(),
+                    selection.end(),
+                    &character.to_string(),
+                    context,
+                );
+                self.set_selection(
+                    Some(TextSelection::for_position(selection.start() + 1)),
+                    context.gc_context,
+                );
+            }
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
