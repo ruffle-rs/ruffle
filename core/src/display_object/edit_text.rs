@@ -16,6 +16,7 @@ use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use crate::xml::XMLDocument;
+use chrono::Utc;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::{cell::Ref, sync::Arc};
 use swf::Twips;
@@ -694,21 +695,29 @@ impl<'gc> EditText<'gc> {
 
         let edit_text = self.0.read();
         let selection = edit_text.selection;
+        let caret_pos = match &selection {
+            Some(selection)
+                if selection.is_caret() && Utc::now().timestamp_subsec_millis() / 500 == 0 =>
+            {
+                Some(selection.from)
+            }
+            _ => None,
+        };
+        let text = edit_text.text_spans.text();
+        let length = text.len();
 
         // If the font can't be found or has no glyph information, use the "device font" instead.
         // We're cheating a bit and not actually rendering text using the OS/web.
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
-        if let Some((text, _tf, font, params, color)) =
-            lbox.as_renderable_text(edit_text.text_spans.text())
-        {
+        if let Some((text, _tf, font, params, color)) = lbox.as_renderable_text(text) {
             let baseline_adjustmnet =
                 font.get_baseline_for_height(params.height()) - params.height();
             font.evaluate(
                 text,
                 self.text_transform(color, baseline_adjustmnet),
                 params,
-                |pos, transform, glyph: &Glyph, _advance| {
+                |pos, transform, glyph: &Glyph, advance, x| {
                     // If it's highlighted, override the color.
                     // TODO: We should draw a black background and change the color to white,
                     //  but for now let's just change it to be slightly different colour.
@@ -739,6 +748,32 @@ impl<'gc> EditText<'gc> {
                         .renderer
                         .render_shape(glyph.shape_handle, context.transform_stack.transform());
                     context.transform_stack.pop();
+
+                    if caret_pos == Some(pos) {
+                        let caret = context.transform_stack.transform().matrix
+                            * Matrix::create_box(
+                                1.0,
+                                params.height().to_pixels() as f32,
+                                0.0,
+                                x + Twips::from_pixels(-1.0),
+                                Twips::from_pixels(2.0),
+                            );
+                        context
+                            .renderer
+                            .draw_rect(Color::from_rgb(0x000000, 0xFF), &caret);
+                    } else if pos == length - 1 && caret_pos == Some(length) {
+                        let caret = context.transform_stack.transform().matrix
+                            * Matrix::create_box(
+                                1.0,
+                                params.height().to_pixels() as f32,
+                                0.0,
+                                x + advance,
+                                Twips::from_pixels(2.0),
+                            );
+                        context
+                            .renderer
+                            .draw_rect(Color::from_rgb(0x000000, 0xFF), &caret);
+                    }
                 },
             );
         }
@@ -1274,5 +1309,13 @@ impl TextSelection {
     /// Checks whether the given position falls within the range of this selection
     pub fn contains(&self, pos: usize) -> bool {
         pos >= self.start() && pos < self.end()
+    }
+
+    /// Returns true if this selection is a singular caret within the text,
+    /// as opposed to multiple characters.
+    /// If this is true, text is inserted at the position.
+    /// If this is false, text is replaced at the positions.
+    pub fn is_caret(&self) -> bool {
+        self.to == self.from
     }
 }
