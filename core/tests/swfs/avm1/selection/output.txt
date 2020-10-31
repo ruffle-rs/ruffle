@@ -1,0 +1,418 @@
+// Selection.setFocus(false)
+false
+
+// Selection.setFocus(null)
+true
+
+// Selection.setFocus(a)
+! - onSetFocus
+// oldFocus
+null
+
+// newFocus
+_level0.a
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.a
+
+
+
+false
+
+// Selection.setFocus(b)
+! - onSetFocus
+// oldFocus
+_level0.a
+
+// newFocus
+_level0.b
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.b
+
+
+
+false
+
+// Selection.setSelection(0)
+undefined
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.b
+
+
+// Selection.setSelection()
+undefined
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.b
+
+
+// Selection.setSelection(0, 1)
+undefined
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.b
+
+
+// Selection.setSelection(-1, 1)
+undefined
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.b
+
+
+// Selection.setSelection(0, 5)
+undefined
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.b
+
+
+// Selection.setFocus(b)
+false
+
+// b.focusEnabled = false;
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.b
+
+
+// Selection.setFocus(undefined)
+! - onSetFocus
+// oldFocus
+_level0.b
+
+// newFocus
+null
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+null
+
+
+
+true
+
+// Selection.setFocus(c)
+! - onSetFocus
+// oldFocus
+null
+
+// newFocus
+_level0.c
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.c
+
+
+
+false
+
+// Selection.setFocus(d)
+false
+
+// Selection.setFocus(e)
+! - onSetFocus
+// oldFocus
+_level0.c
+
+// newFocus
+null
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+null
+
+
+
+true
+
+// Selection.setFocus(button)
+! - onSetFocus
+// oldFocus
+null
+
+// newFocus
+_level0.button
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.button
+
+
+
+false
+
+// Selection.setFocus(text_input
+! - onSetFocus
+// oldFocus
+_level0.button
+
+// newFocus
+_level0.text_input
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.text_input
+
+
+
+false
+
+// Selection.setFocus(text_selectable)
+! - onSetFocus
+// oldFocus
+_level0.text_input
+
+// newFocus
+_level0.text_selectable
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.text_selectable
+
+
+
+false
+
+// Selection.setSelection(0)
+undefined
+
+// Selection.getBeginIndex()
+0
+
+// Selection.getCaretIndex()
+15
+
+// Selection.getEndIndex()
+15
+
+// Selection.getFocus()
+_level0.text_selectable
+
+
+// Selection.setSelection(2, 2)
+undefined
+
+// Selection.getBeginIndex()
+2
+
+// Selection.getCaretIndex()
+2
+
+// Selection.getEndIndex()
+2
+
+// Selection.getFocus()
+_level0.text_selectable
+
+
+// Selection.setSelection()
+undefined
+
+// Selection.getBeginIndex()
+2
+
+// Selection.getCaretIndex()
+2
+
+// Selection.getEndIndex()
+2
+
+// Selection.getFocus()
+_level0.text_selectable
+
+
+// Selection.setSelection(-1, 1)
+undefined
+
+// Selection.getBeginIndex()
+0
+
+// Selection.getCaretIndex()
+1
+
+// Selection.getEndIndex()
+1
+
+// Selection.getFocus()
+_level0.text_selectable
+
+
+// Selection.setSelection(0, 5)
+undefined
+
+// Selection.getBeginIndex()
+0
+
+// Selection.getCaretIndex()
+5
+
+// Selection.getEndIndex()
+5
+
+// Selection.getFocus()
+_level0.text_selectable
+
+
+// Selection.setSelection(5, 2)
+undefined
+
+// Selection.getBeginIndex()
+2
+
+// Selection.getCaretIndex()
+2
+
+// Selection.getEndIndex()
+5
+
+// Selection.getFocus()
+_level0.text_selectable
+
+
+// Selection.setFocus(text_non_selectable)
+! - onSetFocus
+// oldFocus
+_level0.text_selectable
+
+// newFocus
+_level0.text_non_selectable
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.text_non_selectable
+
+
+
+false
+
