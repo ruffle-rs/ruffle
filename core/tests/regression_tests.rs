@@ -241,6 +241,7 @@ swf_tests! {
     #[ignore] (edittext_newlines, "avm1/edittext_newlines", 1),
     (edittext_html_entity, "avm1/edittext_html_entity", 1),
     #[ignore] (edittext_html_roundtrip, "avm1/edittext_html_roundtrip", 1),
+    (edittext_newline_stripping, "avm1/edittext_newline_stripping", 1),
     (define_local, "avm1/define_local", 1),
     (textfield_variable, "avm1/textfield_variable", 8),
     (error, "avm1/error", 1),
