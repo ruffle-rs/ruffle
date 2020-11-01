@@ -238,7 +238,7 @@ fn attach_bitmap<'gc>(
                     bitmap_data.get_height(),
                     rgba,
                 );
-                //TODO: casting and character id
+                //TODO: do attached BitmapDatas have character ids?
                 let display_object = Bitmap::new(
                     &mut activation.context,
                     0,
@@ -249,7 +249,7 @@ fn attach_bitmap<'gc>(
                 movie_clip.replace_at_depth(
                     &mut activation.context,
                     display_object.into(),
-                    depth.into(),
+                    depth,
                 );
             }
         }

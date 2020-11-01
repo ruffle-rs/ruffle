@@ -124,6 +124,8 @@ impl<'gc> BitmapDataObject<'gc> {
         [transparency, bool, set => set_transparency, get => get_transparency],
         [disposed, bool, get => get_disposed],
         [pixels, Vec<Color>, set => set_pixels],
+        [width, u32, get => get_width],
+        [height, u32, get => get_height],
     );
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
@@ -188,7 +190,7 @@ impl<'gc> BitmapDataObject<'gc> {
     pub fn get_pixel32(&self, x: i32, y: i32) -> Color {
         self.get_pixel_raw(x as u32, y as u32)
             .map(|f| f.to_un_multiplied_alpha())
-            .unwrap_or(0.into())
+            .unwrap_or_else(|| 0.into())
     }
 
     pub fn get_pixel(&self, x: i32, y: i32) -> i32 {
@@ -236,13 +238,6 @@ impl<'gc> BitmapDataObject<'gc> {
         self.0.write(gc_context).width = 0;
         self.0.write(gc_context).height = 0;
         self.0.write(gc_context).disposed = true;
-    }
-
-    pub fn get_width(&self) -> u32 {
-        self.0.read().width
-    }
-    pub fn get_height(&self) -> u32 {
-        self.0.read().height
     }
 }
 

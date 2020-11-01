@@ -43,9 +43,9 @@ pub mod clap;
 use crate::bitmaps::BitmapSamplers;
 use crate::globals::Globals;
 use ruffle_core::swf::{Matrix, Twips};
+use std::collections::HashMap;
 use std::path::Path;
 pub use wgpu;
-use std::collections::HashMap;
 
 pub struct Descriptors {
     pub device: wgpu::Device,
@@ -1501,11 +1501,17 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
-        self.register_bitmap(None, Bitmap {
-            height,
-            width,
-            data: BitmapFormat::Rgba(rgba)
-        }, "RAW").unwrap().handle
+        self.register_bitmap(
+            None,
+            Bitmap {
+                height,
+                width,
+                data: BitmapFormat::Rgba(rgba),
+            },
+            "RAW",
+        )
+        .unwrap()
+        .handle
     }
 }
 

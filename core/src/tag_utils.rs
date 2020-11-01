@@ -127,8 +127,7 @@ impl SwfMovie {
 
     /// Get the URL this SWF was fetched from.
     pub fn url(&self) -> Option<&str> {
-        // self.url.as_deref()
-        Some("ww.king.com")
+        self.url.as_deref()
     }
 
     pub fn parameters(&self) -> &PropertyMap<String> {

@@ -4,16 +4,16 @@ use ruffle_core::backend::render::{
     RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
-use ruffle_core::swf::{Matrix, CharacterId};
+use ruffle_core::swf::Matrix;
 use ruffle_render_common_tess::{GradientSpread, GradientType, ShapeTessellator, Vertex};
 use ruffle_web_common::JsResult;
+use std::collections::HashMap;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
     HtmlCanvasElement, OesVertexArrayObject, WebGl2RenderingContext as Gl2, WebGlBuffer,
     WebGlFramebuffer, WebGlProgram, WebGlRenderbuffer, WebGlRenderingContext as Gl, WebGlShader,
     WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject, WebglDebugRendererInfo,
 };
-use std::collections::HashMap;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -457,7 +457,7 @@ impl WebGlRenderBackend {
         let lyon_mesh = self.shape_tessellator.tessellate_shape(shape, |id| {
             textures
                 .iter()
-                .find(|(other_id, _tex)| *other_id == id)
+                .find(|(other_id, _tex)| *other_id == Some(id))
                 .map(|tex| (tex.1.width, tex.1.height))
         });
 
@@ -681,7 +681,7 @@ impl WebGlRenderBackend {
     ) -> Result<BitmapInfo, Error> {
         let texture = self.gl.create_texture().unwrap();
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
-        match bitmap.data {
+        match bitmap.clone().data {
             BitmapFormat::Rgb(data) => self
                 .gl
                 .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
@@ -1078,8 +1078,10 @@ impl RenderBackend for WebGlRenderBackend {
                     );
                 }
                 DrawType::Bitmap(bitmap) => {
-                    let texture = if let Some(texture) =
-                        self.textures.iter().find(|(id, _tex)| *id == bitmap.id)
+                    let texture = if let Some(texture) = self
+                        .textures
+                        .iter()
+                        .find(|(id, _tex)| *id == Some(bitmap.id))
                     {
                         &texture.1
                     } else {
@@ -1278,11 +1280,16 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
-        self.register_bitmap(None, Bitmap {
-            data: BitmapFormat::Rgba(rgba),
-            width,
-            height
-        }).unwrap().handle
+        self.register_bitmap(
+            None,
+            Bitmap {
+                data: BitmapFormat::Rgba(rgba),
+                width,
+                height,
+            },
+        )
+        .unwrap()
+        .handle
     }
 }
 
