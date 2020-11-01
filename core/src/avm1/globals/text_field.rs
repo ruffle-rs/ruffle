@@ -579,7 +579,7 @@ pub fn attach_virtual_properties<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        ReadOnly.into(),
+        DontDelete | ReadOnly | DontEnum,
     );
     object.add_property(
         gc_context,

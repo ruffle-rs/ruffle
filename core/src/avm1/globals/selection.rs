@@ -16,7 +16,7 @@ pub fn get_begin_index<'gc>(
         .focus_tracker
         .get()
         .and_then(|o| o.as_edit_text())
-        .and_then(EditText::get_selection)
+        .and_then(EditText::selection)
     {
         Ok(Value::Number(selection.start() as f64))
     } else {
@@ -34,7 +34,7 @@ pub fn get_end_index<'gc>(
         .focus_tracker
         .get()
         .and_then(|o| o.as_edit_text())
-        .and_then(EditText::get_selection)
+        .and_then(EditText::selection)
     {
         Ok(Value::Number(selection.end() as f64))
     } else {
@@ -52,7 +52,7 @@ pub fn get_caret_index<'gc>(
         .focus_tracker
         .get()
         .and_then(|o| o.as_edit_text())
-        .and_then(EditText::get_selection)
+        .and_then(EditText::selection)
     {
         Ok(Value::Number(selection.to() as f64))
     } else {

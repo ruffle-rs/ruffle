@@ -933,7 +933,7 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub fn get_selection(self) -> Option<TextSelection> {
+    pub fn selection(self) -> Option<TextSelection> {
         self.0.read().selection
     }
 
@@ -1003,7 +1003,7 @@ impl<'gc> EditText<'gc> {
             return;
         }
 
-        if let Some(selection) = self.get_selection() {
+        if let Some(selection) = self.selection() {
             match character as u8 {
                 8 | 127 if !selection.is_caret() => {
                     // Backspace or delete with multiple characters selected
