@@ -43,7 +43,7 @@ pub trait RenderBackend: Downcast {
     fn deactivate_mask(&mut self);
     fn pop_mask(&mut self);
 
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>);
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap>;
     fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle;
 }
 impl_downcast!(RenderBackend);
@@ -53,7 +53,7 @@ type Error = Box<dyn std::error::Error>;
 #[derive(Copy, Clone, Debug)]
 pub struct ShapeHandle(pub usize);
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct BitmapHandle(pub usize);
 
 /// Info returned by the `register_bitmap` methods.
@@ -150,10 +150,10 @@ impl RenderBackend for NullRenderer {
     fn deactivate_mask(&mut self) {}
     fn pop_mask(&mut self) {}
 
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>) {
-        (0, 0, vec![])
+    fn get_bitmap_pixels(&mut self, _bitmap: BitmapHandle) -> Option<Bitmap> {
+        None
     }
-    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
+    fn register_bitmap_raw(&mut self, _width: u32, _height: u32, _rgba: Vec<u8>) -> BitmapHandle {
         BitmapHandle(0)
     }
 }
@@ -183,6 +183,32 @@ pub struct Bitmap {
 pub enum BitmapFormat {
     Rgb(Vec<u8>),
     Rgba(Vec<u8>),
+}
+
+impl From<BitmapFormat> for Vec<u32> {
+    fn from(format: BitmapFormat) -> Self {
+        match format {
+            BitmapFormat::Rgb(x) => x
+                .chunks_exact(3)
+                .map(|chunk| {
+                    let r = chunk[0];
+                    let g = chunk[1];
+                    let b = chunk[2];
+                    (0xFF << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
+                })
+                .collect(),
+            BitmapFormat::Rgba(x) => x
+                .chunks_exact(4)
+                .map(|chunk| {
+                    let r = chunk[0];
+                    let g = chunk[1];
+                    let b = chunk[2];
+                    let a = chunk[3];
+                    ((a as u32) << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
+                })
+                .collect(),
+        }
+    }
 }
 
 /// Determines the format of the image data in `data` from a DefineBitsJPEG2/3 tag.
