@@ -90,13 +90,13 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     meshes: Vec<Mesh>,
     viewport_width: f32,
     viewport_height: f32,
-    textures: Vec<(swf::CharacterId, Texture)>,
     mask_state: MaskState,
+    textures: Vec<(Option<swf::CharacterId>, Texture)>,
     num_masks: u32,
     quad_vbo: wgpu::Buffer,
     quad_ibo: wgpu::Buffer,
     quad_tex_transforms: wgpu::Buffer,
-    bitmap_registry: HashMap<CharacterId, Bitmap>,
+    bitmap_registry: HashMap<BitmapHandle, Bitmap>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
@@ -540,7 +540,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         let texture = match self
                             .textures
                             .iter()
-                            .find(|(other_id, _tex)| *other_id == *id)
+                            .find(|(other_id, _tex)| *other_id == Some(*id))
                         {
                             None => {
                                 log::error!("Couldn't fill shape with unknown bitmap {}", id);
@@ -683,7 +683,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
     fn register_bitmap(
         &mut self,
-        id: swf::CharacterId,
+        id: Option<swf::CharacterId>,
         bitmap: Bitmap,
         debug_str: &str,
     ) -> BitmapInfo {
@@ -695,7 +695,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             depth: 1,
         };
 
-        let data = match bitmap.data {
+        let data = match bitmap.data.clone() {
             BitmapFormat::Rgba(data) => data,
             BitmapFormat::Rgb(data) => {
                 // Expand to RGBA.
@@ -711,7 +711,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             }
         };
 
-        let texture_label = create_debug_label!("{} Texture {}", debug_str, id);
+        let texture_label = create_debug_label!("{} Texture {:?}", debug_str, id);
         let texture = self
             .descriptors
             .device
@@ -741,6 +741,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         );
 
         let handle = BitmapHandle(self.textures.len());
+        self.bitmap_registry.insert(handle, bitmap.clone());
         self.textures.push((
             id,
             Texture {
@@ -849,7 +850,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn register_bitmap_jpeg_2(&mut self, id: u16, data: &[u8]) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
-        Ok(self.register_bitmap(id, bitmap, "JPEG2"))
+        Ok(self.register_bitmap(Some(id), bitmap, "JPEG2"))
     }
 
     fn register_bitmap_jpeg_3(
@@ -860,12 +861,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     ) -> Result<BitmapInfo, Error> {
         let bitmap =
             ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        Ok(self.register_bitmap(id, bitmap, "JPEG3"))
+        Ok(self.register_bitmap(Some(id), bitmap, "JPEG3"))
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &DefineBitsLossless) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
-        Ok(self.register_bitmap(swf_tag.id, bitmap, "PNG"))
+        Ok(self.register_bitmap(Some(swf_tag.id), bitmap, "PNG"))
     }
 
     fn begin_frame(&mut self, clear: Color) {
@@ -1495,36 +1496,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         };
     }
 
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>) {
-        if let Some((id, _texture)) = self.textures.get(bitmap.0) {
-            if let Some(bitmap) = self.bitmap_registry.get(id) {
-                let data = match &bitmap.data {
-                    BitmapFormat::Rgb(x) => {
-                        x.chunks_exact(3).map(|chunk| {
-                            let r = chunk[0];
-                            let g = chunk[1];
-                            let b = chunk[2];
-                            (0xFF << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
-                        }).collect()
-                    }
-                    BitmapFormat::Rgba(x) => {
-                        x.chunks_exact(4).map(|chunk| {
-                            let r = chunk[0];
-                            let g = chunk[1];
-                            let b = chunk[2];
-                            //TODO: check this order, assuming because rgb_a
-                            let a = chunk[3];
-                            ((a as u32) << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
-                        }).collect()
-                    }
-                };
-                (bitmap.width, bitmap.height, data)
-            } else {
-                (0, 0, vec![])
-            }
-        } else {
-            (0, 0, vec![])
-        }
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
+        self.bitmap_registry.get(&bitmap).cloned()
+    }
+
+    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
+        self.register_bitmap(None, Bitmap {
+            height,
+            width,
+            data: BitmapFormat::Rgba(rgba)
+        }, "RAW").unwrap().handle
     }
 }
 

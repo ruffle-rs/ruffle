@@ -4,7 +4,7 @@ use ruffle_core::backend::render::{
     RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
-use ruffle_core::swf::Matrix;
+use ruffle_core::swf::{Matrix, CharacterId};
 use ruffle_render_common_tess::{GradientSpread, GradientType, ShapeTessellator, Vertex};
 use ruffle_web_common::JsResult;
 use wasm_bindgen::{JsCast, JsValue};
@@ -52,7 +52,7 @@ pub struct WebGlRenderBackend {
 
     shape_tessellator: ShapeTessellator,
 
-    textures: Vec<(swf::CharacterId, Texture)>,
+    textures: Vec<(Option<swf::CharacterId>, Texture)>,
     meshes: Vec<Mesh>,
 
     quad_shape: ShapeHandle,
@@ -72,7 +72,7 @@ pub struct WebGlRenderBackend {
     view_height: i32,
     view_matrix: [[f32; 4]; 4],
 
-    bitmap_registry: HashMap<swf::CharacterId, Bitmap>,
+    bitmap_registry: HashMap<BitmapHandle, Bitmap>,
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;
@@ -676,11 +676,9 @@ impl WebGlRenderBackend {
 
     fn register_bitmap(
         &mut self,
-        id: swf::CharacterId,
+        id: Option<swf::CharacterId>,
         bitmap: Bitmap,
     ) -> Result<BitmapInfo, Error> {
-        self.bitmap_registry.insert(id, bitmap.clone());
-
         let texture = self.gl.create_texture().unwrap();
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
         match bitmap.data {
@@ -725,6 +723,8 @@ impl WebGlRenderBackend {
             .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
 
         let handle = BitmapHandle(self.textures.len());
+        self.bitmap_registry.insert(handle, bitmap.clone());
+
         self.textures.push((
             id,
             Texture {
@@ -796,7 +796,7 @@ impl RenderBackend for WebGlRenderBackend {
         data: &[u8],
     ) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
-        self.register_bitmap(id, bitmap)
+        self.register_bitmap(Some(id), bitmap)
     }
 
     fn register_bitmap_jpeg_3(
@@ -807,7 +807,7 @@ impl RenderBackend for WebGlRenderBackend {
     ) -> Result<BitmapInfo, Error> {
         let bitmap =
             ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        self.register_bitmap(id, bitmap)
+        self.register_bitmap(Some(id), bitmap)
     }
 
     fn register_bitmap_png(
@@ -815,7 +815,7 @@ impl RenderBackend for WebGlRenderBackend {
         swf_tag: &swf::DefineBitsLossless,
     ) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
-        self.register_bitmap(swf_tag.id, bitmap)
+        self.register_bitmap(Some(swf_tag.id), bitmap)
     }
 
     fn begin_frame(&mut self, clear: Color) {
@@ -936,7 +936,7 @@ impl RenderBackend for WebGlRenderBackend {
         // TODO: Might be better to make this separate code to render the bitmap
         // instead of going through render_shape. But render_shape already handles
         // masking etc.
-        if let Some((id, bitmap)) = self.textures.get(bitmap.0) {
+        if let Some((Some(id), bitmap)) = self.textures.get(bitmap.0) {
             // Adjust the quad draw to use the target bitmap.
             let mesh = &mut self.meshes[self.quad_shape.0];
             let draw = &mut mesh.draws[0];
@@ -1273,42 +1273,16 @@ impl RenderBackend for WebGlRenderBackend {
         self.mask_state_dirty = true;
     }
 
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>) {
-        //TODO: return option?
-        if let Some((id, _texture)) = self.textures.get(bitmap.0) {
-            if let Some(bitmap) = self.bitmap_registry.get(id) {
-                let data = match &bitmap.data {
-                    BitmapFormat::Rgb(x) => {
-                        x.chunks_exact(3).map(|chunk| {
-                            let r = chunk[0];
-                            let g = chunk[1];
-                            let b = chunk[2];
-                            (0xFF << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
-                        }).collect()
-                    }
-                    BitmapFormat::Rgba(x) => {
-                        x.chunks_exact(4).map(|chunk| {
-                            let r = chunk[0];
-                            let g = chunk[1];
-                            let b = chunk[2];
-                            //TODO: check this order, assuming because rgb_a
-                            let a = chunk[3];
-                            ((a as u32) << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
-                        }).collect()
-                    }
-                };
-                (bitmap.width, bitmap.height, data)
-            } else {
-                (0, 0, vec![])
-            }
-        } else {
-            (0, 0, vec![])
-        }
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
+        self.bitmap_registry.get(&bitmap).cloned()
     }
 
     fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
-        //TODO:
-        unimplemented!()
+        self.register_bitmap(None, Bitmap {
+            data: BitmapFormat::Rgba(rgba),
+            width,
+            height
+        }).unwrap().handle
     }
 }
 

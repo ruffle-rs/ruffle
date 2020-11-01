@@ -401,7 +401,7 @@ impl WebCanvasRenderBackend {
 
     fn register_bitmap_raw(
         &mut self,
-        id: CharacterId,
+        id: Option<CharacterId>,
         bitmap: Bitmap,
     ) -> Result<BitmapInfo, Error> {
         let (width, height) = (bitmap.width, bitmap.height);
@@ -418,7 +418,10 @@ impl WebCanvasRenderBackend {
             data: png,
         });
 
-        self.id_to_bitmap.insert(id, handle);
+        if let Some(id) = id {
+            self.id_to_bitmap.insert(id, handle);
+        }
+
         Ok(BitmapInfo {
             handle,
             width: width.try_into().expect("JPEG dimensions too large"),
@@ -502,7 +505,7 @@ impl RenderBackend for WebCanvasRenderBackend {
             self.register_bitmap_pure_jpeg(id, data)
         } else {
             let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
-            self.register_bitmap_raw(id, bitmap)
+            self.register_bitmap_raw(Some(id), bitmap)
         }
     }
 
@@ -514,7 +517,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     ) -> Result<BitmapInfo, Error> {
         let bitmap =
             ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        self.register_bitmap_raw(id, bitmap)
+        self.register_bitmap_raw(Some(id), bitmap)
     }
 
     fn register_bitmap_png(
@@ -748,7 +751,7 @@ impl RenderBackend for WebCanvasRenderBackend {
             .unwrap();
     }
 
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> (u32, u32, Vec<u32>) {
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
 
@@ -770,21 +773,20 @@ impl RenderBackend for WebCanvasRenderBackend {
         canvas.set_height(bitmap.height);
 
         context.draw_image_with_html_image_element(&bitmap.image, 0.0, 0.0).unwrap();
-        let bitmap_pixels = context.get_image_data(0.0, 0.0, bitmap.width as f64, bitmap.height as f64).unwrap();
-        let packed_rgba = bitmap_pixels.data().chunks_exact(4).map(|chunk| {
-            let r = chunk[0];
-            let g = chunk[1];
-            let b = chunk[2];
-            let a = chunk[3];
-            ((a as u32) << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
-        }).collect();
 
-        return (bitmap.width, bitmap.height, packed_rgba);
+        if let Some(bitmap_pixels) = context.get_image_data(0.0, 0.0, bitmap.width as f64, bitmap.height as f64) {
+            Some(Bitmap {
+                width: bitmap.width,
+                height: bitmap.height,
+                data: BitmapFormat::Rgba(bitmap_pixels),
+            })
+        } else {
+            None
+        }
     }
 
     fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
-        //TODO: dont use character id, we dont need it to be in the id map
-        self.register_bitmap_raw(0 as CharacterId, Bitmap {
+        self.register_bitmap_raw(None, Bitmap {
             width,
             height,
             data: BitmapFormat::Rgba(rgba)

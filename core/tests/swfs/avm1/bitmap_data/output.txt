@@ -879,3 +879,210 @@ a: 32, r: 32, g:32, b:32
 -1
 // src.getColorBoundsRect(0, 0)
 (x=0, y=0, w=3, h=3)
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 1, 1)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(1, 1), 1, 1)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(-1, -1), 1, 1)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 1, 2)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 1, 4)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 1, 8)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 2, 1)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 2, 4)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 2, 8)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 2, 2)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 4, 1)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 4, 2)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 4, 4)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 4, 8)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 8, 1)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 8, 2)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 8, 4)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 8, 8)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(no args)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0))
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 0)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
