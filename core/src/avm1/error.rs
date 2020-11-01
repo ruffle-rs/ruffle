@@ -23,6 +23,9 @@ pub enum Error<'gc> {
 
     #[error("A script has thrown a custom error.")]
     ThrownValue(Value<'gc>),
+
+    #[error("An object constructor failed.")]
+    ConstructorFailure,
 }
 
 impl Error<'_> {
@@ -35,6 +38,7 @@ impl Error<'_> {
             Error::InvalidSwf(_) => true,
             Error::InvalidDisplayObjectHierarchy => true,
             Error::ThrownValue(_) => false,
+            Error::ConstructorFailure => false,
         }
     }
 }

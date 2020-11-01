@@ -12,6 +12,18 @@ false
 10
 // bitmap.height (after set to 100)
 10
+// no_args
+undefined
+// no_args.width
+undefined
+// no_args.height
+undefined
+// big_bitmap
+undefined
+// big_bitmap.width
+undefined
+// big_bitmap.height
+undefined
 // get/set pixel with transparent = true
 // getPixel32(0, 0) after setPixel32(0, 0, 0xffffffff)
 -1
@@ -906,6 +918,15 @@ a: 32, r: 32, g:32, b:32
 -16711936
 // src.getPixel32(1, 1)
 -1
+// dest.copyChannel(src, src.rectangle, {x: 0, y: 0}, 1, 1)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
 // dest.copyChannel(src, src.rectangle, Point(0, 0), 1, 2)
 // src.getPixel32(0, 0)
 -65536
@@ -1078,6 +1099,15 @@ a: 32, r: 32, g:32, b:32
 // src.getPixel32(1, 1)
 -1
 // dest.copyChannel(src, src.rectangle, Point(0, 0), 0)
+// src.getPixel32(0, 0)
+-65536
+// src.getPixel32(0, 1)
+-16776961
+// src.getPixel32(1, 0)
+-16711936
+// src.getPixel32(1, 1)
+-1
+// dest.copyChannel(src, src.rectangle, Point(0, 0), 1, 1)
 // src.getPixel32(0, 0)
 -65536
 // src.getPixel32(0, 1)

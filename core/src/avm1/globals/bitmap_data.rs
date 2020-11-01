@@ -32,7 +32,7 @@ pub fn constructor<'gc>(
 
     if width > 2880 || height > 2880 || width <= 0 || height <= 0 {
         log::warn!("Invalid BitmapData size {}x{}", width, height);
-        return Ok(Value::Undefined);
+        return Err(Error::ConstructorFailure);
     }
 
     let transparency = args
