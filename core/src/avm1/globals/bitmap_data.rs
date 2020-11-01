@@ -16,8 +16,6 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    //TODO: if either width or height is missing then the constructor should fail
-
     let width = args
         .get(0)
         .unwrap_or(&Value::Number(0.0))
@@ -27,8 +25,6 @@ pub fn constructor<'gc>(
         .get(1)
         .unwrap_or(&Value::Number(0.0))
         .coerce_to_u32(activation)?;
-
-    log::warn!("New bitmap data {}x{}", width, height);
 
     if width > 2880 || height > 2880 || width <= 0 || height <= 0 {
         log::warn!("Invalid BitmapData size {}x{}", width, height);
@@ -351,7 +347,6 @@ pub fn fill_rect<'gc>(
         let bitmap_data = this.as_bitmap_data_object().unwrap();
         for x_offset in 0..width {
             for y_offset in 0..height {
-                //TODO: we should use unsigned for xy everywhere
                 bitmap_data.set_pixel32(
                     activation.context.gc_context,
                     (x + x_offset) as i32,
@@ -617,7 +612,6 @@ pub fn color_transform<'gc>(
         .get("height", activation)?
         .coerce_to_i32(activation)?;
 
-    //TODO: can this be done better
     let min_x = x.max(0) as u32;
     let end_x = (x + width) as u32;
     let min_y = y.max(0) as u32;
@@ -644,7 +638,6 @@ pub fn color_transform<'gc>(
                     activation.context.gc_context,
                     x,
                     y,
-                    //TODO: set_pixel32
                     Color::argb(a, r, g, b).to_premultiplied_alpha(bitmap_data.get_transparency()),
                 )
             }
@@ -1074,52 +1067,35 @@ pub fn load_bitmap<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
 
-    log::warn!("BitmapData.loadBitmap({:?}), not yet implemented", name);
+    let library = &*activation.context.library;
 
-    let swf = activation
-        .target_clip_or_root()
-        .movie()
-        .expect("No movie ?");
+    let movie = activation.target_clip_or_root().movie();
 
-    let bh = activation
-        .context
-        .library
-        .library_for_movie(swf)
-        .expect("No library for movie")
-        .get_character_by_export_name(name.as_str())
-        .expect("No character for name");
+    let renderer = &mut activation.context.renderer;
 
-    let bitmap = match bh {
-        Character::Bitmap(b) => b.bitmap_handle(),
-        _ => unimplemented!(),
-    };
-    //TODO: also return bounds?
+    let character = movie
+        .and_then(|m| library.library_for_movie(m))
+        .and_then(|l| l.get_character_by_export_name(name.as_str()));
 
-    //TODO:
-    let bitmap = activation
-        .context
-        .renderer
-        .get_bitmap_pixels(bitmap)
-        .unwrap();
-    //TODO:
-    let w = bitmap.width;
-    let h = bitmap.height;
-    let pixels: Vec<u32> = bitmap.data.into();
+    if let Some(Character::Bitmap(bitmap_object)) = character {
+        if let Some(bitmap) = renderer.get_bitmap_pixels(bitmap_object.bitmap_handle()) {
+            let proto = activation.context.system_prototypes.bitmap_data_constructor;
+            let new_bitmap =
+                proto.construct(activation, &[bitmap.width.into(), bitmap.height.into()])?;
+            let new_bitmap_object = new_bitmap.as_bitmap_data_object().unwrap();
 
-    // let (w, h, pixels) = activation.context.renderer.get_bitmap_pixels(bitmap);
-    log::warn!("Got response {} {} {:?}", w, h, pixels);
+            let pixels: Vec<i32> = bitmap.data.into();
 
-    let proto = activation.context.system_prototypes.bitmap_data_constructor;
-    let new_bitmap = proto.construct(activation, &[w.into(), h.into()])?;
-    let new_bitmap_object = new_bitmap.as_bitmap_data_object().unwrap();
+            new_bitmap_object.set_pixels(
+                activation.context.gc_context,
+                pixels.into_iter().map(|p| p.into()).collect(),
+            );
 
-    //todo: set w/h
-    new_bitmap_object.set_pixels(
-        activation.context.gc_context,
-        pixels.iter().map(|p| (*p as i32).into()).collect(),
-    );
+            return Ok(new_bitmap.into());
+        }
+    }
 
-    Ok(new_bitmap.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_bitmap_data_object<'gc>(
