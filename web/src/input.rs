@@ -300,9 +300,10 @@ pub fn web_key_to_codepoint(key: &str) -> Option<char> {
     // Single character strings will be an actual printable char that we can use as text input.
     // All the other special values are multiple characters (e.g. "ArrowLeft").
     // It's probably better to explicitly match on all the variants.
-    if key.len() == 1 {
-        key.chars().next()
-    } else {
-        None
+    match key {
+        key if key.len() == 1 => key.chars().next(),
+        "Backspace" => Some(8 as char),
+        "Delete" => Some(127 as char),
+        _ => None,
     }
 }
