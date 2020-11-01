@@ -2437,7 +2437,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         root: DisplayObject<'gc>,
         start: Object<'gc>,
         path: &str,
-        mut allow_this: bool,
+        mut first_element: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // Empty path resolves immediately to start clip.
         if path.is_empty() {
@@ -2504,8 +2504,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 // Guaranteed to be valid UTF-8.
                 let name = unsafe { std::str::from_utf8_unchecked(ident) };
 
-                if allow_this && name == "this" {
+                if first_element && name == "this" {
                     self.this_cell().into()
+                } else if first_element && name == "_root" {
+                    self.root_object()
                 } else {
                     // Get the value from the object.
                     // Resolves display object instances first, then local variables.
@@ -2521,8 +2523,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
             };
 
-            // `this` can only be the first element in the path.
-            allow_this = false;
+            // `this`/`_root` can only be the first element in the path.
+            first_element = false;
 
             // Resolve the value to an object while traversing the path.
             object = if let Value::Object(o) = val {
@@ -2568,7 +2570,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path, false)?
+                    self.resolve_target_path(start.root(), *scope.read().locals(), path, true)?
                 {
                     return Ok(Some((object, var_name)));
                 }
