@@ -1252,8 +1252,34 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ..Default::default()
         });
 
-        for layout_box in edit_text.layout.iter() {
-            self.render_layout_box(context, layout_box);
+        if edit_text.layout.is_empty() && edit_text.is_editable {
+            let selection = edit_text.selection;
+            if let Some(selection) = selection {
+                if selection.is_caret()
+                    && selection.start() == 0
+                    && Utc::now().timestamp_subsec_millis() / 500 == 0
+                {
+                    let caret = context.transform_stack.transform().matrix
+                        * Matrix::create_box(
+                            1.0,
+                            edit_text
+                                .text_spans
+                                .default_format()
+                                .size
+                                .unwrap_or_default() as f32,
+                            0.0,
+                            Twips::from_pixels(-1.0),
+                            Twips::from_pixels(2.0),
+                        );
+                    context
+                        .renderer
+                        .draw_rect(Color::from_rgb(0x000000, 0xFF), &caret);
+                }
+            }
+        } else {
+            for layout_box in edit_text.layout.iter() {
+                self.render_layout_box(context, layout_box);
+            }
         }
 
         context.renderer.deactivate_mask();
