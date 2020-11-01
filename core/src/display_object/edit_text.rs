@@ -704,6 +704,7 @@ impl<'gc> EditText<'gc> {
         let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content() {
             if let Some(selection) = selection {
                 if selection.is_caret()
+                    && edit_text.is_editable
                     && selection.start() >= *start
                     && selection.end() <= *end
                     && Utc::now().timestamp_subsec_millis() / 500 == 0
