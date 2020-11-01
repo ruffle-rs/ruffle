@@ -10,6 +10,7 @@ ruffle_shadow_tmpl.innerHTML = `
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
+            position: relative;
         }
 
         #container {
