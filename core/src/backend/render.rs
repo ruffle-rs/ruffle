@@ -191,20 +191,23 @@ impl From<BitmapFormat> for Vec<i32> {
             BitmapFormat::Rgb(x) => x
                 .chunks_exact(3)
                 .map(|chunk| {
-                    let r = chunk[0];
-                    let g = chunk[1];
-                    let b = chunk[2];
-                    (0xFF << 24) | ((r as i32) << 16) | ((g as i32) << 8) | (b as i32)
+                    let red = chunk[0];
+                    let green = chunk[1];
+                    let blue = chunk[2];
+                    (0xFF << 24) | ((red as i32) << 16) | ((green as i32) << 8) | (blue as i32)
                 })
                 .collect(),
             BitmapFormat::Rgba(x) => x
                 .chunks_exact(4)
                 .map(|chunk| {
-                    let r = chunk[0];
-                    let g = chunk[1];
-                    let b = chunk[2];
-                    let a = chunk[3];
-                    ((a as i32) << 24) | ((r as i32) << 16) | ((g as i32) << 8) | (b as i32)
+                    let red = chunk[0];
+                    let green = chunk[1];
+                    let blue = chunk[2];
+                    let alpha = chunk[3];
+                    ((alpha as i32) << 24)
+                        | ((red as i32) << 16)
+                        | ((green as i32) << 8)
+                        | (blue as i32)
                 })
                 .collect(),
         }

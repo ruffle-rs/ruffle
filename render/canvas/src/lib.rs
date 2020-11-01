@@ -32,7 +32,6 @@ pub struct WebCanvasRenderBackend {
     use_color_transform_hack: bool,
     pixelated_property_value: &'static str,
     deactivating_mask: bool,
-    bitmap_registry: HashMap<CharacterId, Bitmap>,
 }
 
 /// Canvas-drawable shape data extracted from an SWF file.
@@ -755,7 +754,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         let window = web_sys::window().unwrap();
         let document = window.document().unwrap();
 
-        let canvas: HtmlCanvasElement = document.create_element("canvas")
+        let canvas: HtmlCanvasElement = document
+            .create_element("canvas")
             .unwrap()
             .dyn_into()
             .unwrap();
@@ -772,13 +772,17 @@ impl RenderBackend for WebCanvasRenderBackend {
         canvas.set_width(bitmap.width);
         canvas.set_height(bitmap.height);
 
-        context.draw_image_with_html_image_element(&bitmap.image, 0.0, 0.0).unwrap();
+        context
+            .draw_image_with_html_image_element(&bitmap.image, 0.0, 0.0)
+            .unwrap();
 
-        if let Some(bitmap_pixels) = context.get_image_data(0.0, 0.0, bitmap.width as f64, bitmap.height as f64) {
+        if let Ok(bitmap_pixels) =
+            context.get_image_data(0.0, 0.0, bitmap.width as f64, bitmap.height as f64)
+        {
             Some(Bitmap {
                 width: bitmap.width,
                 height: bitmap.height,
-                data: BitmapFormat::Rgba(bitmap_pixels),
+                data: BitmapFormat::Rgba(bitmap_pixels.data().to_vec()),
             })
         } else {
             None
@@ -786,11 +790,16 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
-        self.register_bitmap_raw(None, Bitmap {
-            width,
-            height,
-            data: BitmapFormat::Rgba(rgba)
-        }).unwrap().handle
+        self.register_bitmap_raw(
+            None,
+            Bitmap {
+                width,
+                height,
+                data: BitmapFormat::Rgba(rgba),
+            },
+        )
+        .unwrap()
+        .handle
     }
 }
 

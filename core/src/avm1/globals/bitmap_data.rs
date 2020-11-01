@@ -19,12 +19,12 @@ pub fn constructor<'gc>(
     let width = args
         .get(0)
         .unwrap_or(&Value::Number(0.0))
-        .coerce_to_u32(activation)?;
+        .coerce_to_i32(activation)?;
 
     let height = args
         .get(1)
         .unwrap_or(&Value::Number(0.0))
-        .coerce_to_u32(activation)?;
+        .coerce_to_i32(activation)?;
 
     if width > 2880 || height > 2880 || width <= 0 || height <= 0 {
         log::warn!("Invalid BitmapData size {}x{}", width, height);
@@ -44,7 +44,12 @@ pub fn constructor<'gc>(
         .coerce_to_i32(activation)?;
 
     let bitmap_data = this.as_bitmap_data_object().unwrap();
-    bitmap_data.init_pixels(activation.context.gc_context, width, height, fill_color);
+    bitmap_data.init_pixels(
+        activation.context.gc_context,
+        width as u32,
+        height as u32,
+        fill_color,
+    );
     bitmap_data.set_transparency(activation.context.gc_context, transparency);
 
     Ok(Value::Undefined)
@@ -277,10 +282,12 @@ pub fn copy_channel<'gc>(
                 if bitmap_data.is_point_in_bounds((x + min_x) as i32, (y + min_y) as i32) {
                     let original_color: u32 = bitmap_data
                         .get_pixel_raw((x + min_x) as u32, (y + min_y) as u32)
-                        .unwrap_or(0.into())
+                        .unwrap_or_else(|| 0.into())
                         .into();
-                    let source_color: u32 =
-                        source_bitmap.get_pixel_raw(x, y).unwrap_or(0.into()).into();
+                    let source_color: u32 = source_bitmap
+                        .get_pixel_raw(x, y)
+                        .unwrap_or_else(|| 0.into())
+                        .into();
 
                     let channel_shift: u32 = match source_channel {
                         // Alpha
@@ -432,7 +439,7 @@ pub fn flood_fill<'gc>(
         let width = bitmap_data.get_width();
         let height = bitmap_data.get_height();
 
-        let expected_color = bitmap_data.get_pixel_raw(x, y).unwrap_or(0.into());
+        let expected_color = bitmap_data.get_pixel_raw(x, y).unwrap_or_else(|| 0.into());
 
         while !pending.is_empty() {
             if let Some((x, y)) = pending.pop() {
@@ -622,23 +629,27 @@ pub fn color_transform<'gc>(
             for y in min_y..end_y.min(bitmap_data.get_height()) {
                 let color = bitmap_data
                     .get_pixel_raw(x, y)
-                    .unwrap_or(0.into())
+                    .unwrap_or_else(|| 0.into())
                     .to_un_multiplied_alpha();
 
-                let a = ((color.get_alpha() as f32 * color_transform.get_alpha_multiplier() as f32)
+                let alpha = ((color.get_alpha() as f32
+                    * color_transform.get_alpha_multiplier() as f32)
                     + color_transform.get_alpha_offset() as f32) as u8;
-                let r = ((color.get_red() as f32 * color_transform.get_red_multiplier() as f32)
+                let red = ((color.get_red() as f32 * color_transform.get_red_multiplier() as f32)
                     + color_transform.get_red_offset() as f32) as u8;
-                let g = ((color.get_green() as f32 * color_transform.get_green_multiplier() as f32)
+                let green = ((color.get_green() as f32
+                    * color_transform.get_green_multiplier() as f32)
                     + color_transform.get_green_offset() as f32) as u8;
-                let b = ((color.get_blue() as f32 * color_transform.get_blue_multiplier() as f32)
+                let blue = ((color.get_blue() as f32
+                    * color_transform.get_blue_multiplier() as f32)
                     + color_transform.get_blue_offset() as f32) as u8;
 
                 bitmap_data.set_pixel32_raw(
                     activation.context.gc_context,
                     x,
                     y,
-                    Color::argb(a, r, g, b).to_premultiplied_alpha(bitmap_data.get_transparency()),
+                    Color::argb(alpha, red, green, blue)
+                        .to_premultiplied_alpha(bitmap_data.get_transparency()),
                 )
             }
         }
@@ -675,7 +686,10 @@ pub fn get_color_bounds_rect<'gc>(
 
         for x in 0..bitmap_data.get_width() {
             for y in 0..bitmap_data.get_height() {
-                let pixel_raw: i32 = bitmap_data.get_pixel_raw(x, y).unwrap_or(0.into()).into();
+                let pixel_raw: i32 = bitmap_data
+                    .get_pixel_raw(x, y)
+                    .unwrap_or_else(|| 0.into())
+                    .into();
                 let color_matches = if find_color {
                     (pixel_raw & mask) == color
                 } else {
@@ -835,23 +849,6 @@ pub fn threshold<'gc>(
     }
 
     log::warn!("BitmapData.threshold - not yet implemented");
-
-    //TODO: probably wont handle the edge cases correctly, also may have differences if we dont use premultiplied alpha in our impl (wonder if premultipliing only for functions that need it would be benificial in any way)
-    // pub fn threshold(&self, mask: i32, threshold: i32, new_color: i32, copy_source: bool) -> Vec<i32> {
-    //     self.0.read().pixels.iter().cloned().map(|p| {
-    //         //TODO: support other operations
-    //         if (p & mask) == (threshold & mask) {
-    //             new_color
-    //         } else {
-    //             if copy_source {
-    //                 p
-    //             } else {
-    //                 0 //TODO: is this correct
-    //             }
-    //         }
-    //     })
-    //         .collect()
-    // }
 
     Ok(Value::Undefined)
 }
