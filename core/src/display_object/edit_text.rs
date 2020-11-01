@@ -1,5 +1,5 @@
 //! `EditText` display object and support code.
-use crate::avm1::activation::Activation;
+use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::globals::text_field::attach_virtual_properties;
 use crate::avm1::{Avm1, AvmString, Object, StageObject, TObject, Value};
 use crate::backend::input::MouseCursor;
@@ -1004,6 +1004,7 @@ impl<'gc> EditText<'gc> {
         }
 
         if let Some(selection) = self.selection() {
+            let mut changed = false;
             match character as u8 {
                 8 | 127 if !selection.is_caret() => {
                     // Backspace or delete with multiple characters selected
@@ -1012,6 +1013,7 @@ impl<'gc> EditText<'gc> {
                         Some(TextSelection::for_position(selection.start())),
                         context.gc_context,
                     );
+                    changed = true;
                 }
                 8 => {
                     // Backspace with caret
@@ -1022,6 +1024,7 @@ impl<'gc> EditText<'gc> {
                             Some(TextSelection::for_position(selection.start() - 1)),
                             context.gc_context,
                         );
+                        changed = true;
                     }
                 }
                 127 => {
@@ -1030,6 +1033,7 @@ impl<'gc> EditText<'gc> {
                         // Delete next character
                         self.replace_text(selection.start(), selection.start() + 1, "", context);
                         // No need to change selection
+                        changed = true;
                     }
                 }
                 32..=126 => {
@@ -1045,8 +1049,22 @@ impl<'gc> EditText<'gc> {
                         Some(TextSelection::for_position(selection.start() + 1)),
                         context.gc_context,
                     );
+                    changed = true;
                 }
                 _ => {}
+            }
+
+            if changed {
+                let globals = context.avm1.global_object_cell();
+                let swf_version = context.swf.header().version;
+                let mut activation = Activation::from_nothing(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[Propagate Text Binding]"),
+                    swf_version,
+                    globals,
+                    self.into(),
+                );
+                self.propagate_text_binding(&mut activation);
             }
         }
     }
