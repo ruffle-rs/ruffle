@@ -185,7 +185,7 @@ pub enum BitmapFormat {
     Rgba(Vec<u8>),
 }
 
-impl From<BitmapFormat> for Vec<u32> {
+impl From<BitmapFormat> for Vec<i32> {
     fn from(format: BitmapFormat) -> Self {
         match format {
             BitmapFormat::Rgb(x) => x
@@ -194,7 +194,7 @@ impl From<BitmapFormat> for Vec<u32> {
                     let r = chunk[0];
                     let g = chunk[1];
                     let b = chunk[2];
-                    (0xFF << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
+                    (0xFF << 24) | ((r as i32) << 16) | ((g as i32) << 8) | (b as i32)
                 })
                 .collect(),
             BitmapFormat::Rgba(x) => x
@@ -204,7 +204,7 @@ impl From<BitmapFormat> for Vec<u32> {
                     let g = chunk[1];
                     let b = chunk[2];
                     let a = chunk[3];
-                    ((a as u32) << 24) | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32)
+                    ((a as i32) << 24) | ((r as i32) << 16) | ((g as i32) << 8) | (b as i32)
                 })
                 .collect(),
         }
