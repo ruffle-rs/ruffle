@@ -9,5 +9,8 @@
     },
     "dependencies": {
         "ruffle-core": "^0.1.0"
+    },
+    "devDependencies": {
+        "webpack": "^5.1.3"
     }
 }
