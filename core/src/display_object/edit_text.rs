@@ -160,6 +160,11 @@ impl<'gc> EditText<'gc> {
             text_spans.replace_text(0, text_spans.text().len(), &text, Some(&default_format));
         }
 
+        if !is_multiline {
+            let filtered = text_spans.text().replace("\n", "");
+            text_spans.replace_text(0, text_spans.text().len(), &filtered, Some(&default_format));
+        }
+
         let bounds: BoundingBox = swf_tag.bounds.clone().into();
 
         let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(

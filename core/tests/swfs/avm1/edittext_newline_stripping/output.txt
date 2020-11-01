@@ -1,0 +1,66 @@
+// singleline.text
+
+
+// singleline.text = "hello\nworld"
+
+// singleline.text
+hello
+world
+
+// singleline.htmlText = "hello\nworld"
+
+// singleline.text
+hello
+world
+
+
+// multiline.text
+
+
+
+// multiline.text = "hello\nworld"
+
+// multiline.text
+hello
+world
+
+// multiline.htmlText = "hello\nworld"
+
+// multiline.text
+hello
+world
+
+
+// singleline_with_text.text
+test
+
+// singleline_with_text.text = "hello\nworld"
+
+// singleline_with_text.text
+hello
+world
+
+// singleline_with_text.htmlText = "hello\nworld"
+
+// singleline_with_text.text
+hello
+world
+
+
+// multiline_with_text.text
+test
+
+
+// multiline_with_text.text = "hello\nworld"
+
+// multiline_with_text.text
+hello
+world
+
+// multiline_with_text.htmlText = "hello\nworld"
+
+// multiline_with_text.text
+hello
+world
+
+
