@@ -158,6 +158,28 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
 
         let Ruffle = await this.Ruffle.catch((e) => {
             console.error("Serious error loading Ruffle: " + e);
+
+            // Serious duck typing. In error conditions, let's not make assumptions.
+            const message =
+                e && e.message ? String(e.message).toLowerCase() : "";
+            if (message.indexOf("MIME") >= 0) {
+                this.panicked = true;
+                this.container.innerHTML = `
+                    <div id="panic">
+                        <div id="panic-title">Something went wrong :(</div>
+                        <div id="panic-body">
+                            <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
+                            <p>This web server is either not serving ".wasm" files with the correct MIME type, or the file cannot be found.</p>
+                            <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
+                        </div>
+                        <div id="panic-footer">
+                            <ul>
+                                <li><a href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-mime-type">view Ruffle wiki</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
             throw e;
         });
 
@@ -380,6 +402,12 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * reloaded fresh.
      */
     panic(error) {
+        if (this.panicked) {
+            // Only show the first major error, not any repeats - they aren't as important
+            return;
+        }
+        this.panicked = true;
+
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         this.container.innerHTML = `
             <div id="panic">
