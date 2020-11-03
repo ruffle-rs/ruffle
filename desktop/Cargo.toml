@@ -23,7 +23,7 @@ webbrowser = "0.5.5"
 url = "2.1.1"
 clipboard = "0.5.0"
 dirs = "3.0"
-isahc = "0.9.10"
+isahc = "0.9.11"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
