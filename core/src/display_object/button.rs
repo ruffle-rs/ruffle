@@ -210,6 +210,8 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             );
             mc.object = Some(object.into());
 
+            drop(mc);
+
             if run_frame {
                 self.run_frame(context);
             }
