@@ -1,0 +1,34 @@
+//var chx = this.getChildAt(0)
+//var chy = this.getChildAt(1)
+//var chz = this.getChildAt(2)
+//this.numChildren
+3
+//this.addChildAt(chx, 0)
+//chx === this.getChildAt(0)
+true
+//chy === this.getChildAt(1)
+true
+//chz === this.getChildAt(2)
+true
+//this.numChildren
+3
+//Removed symbol "chx" in timeline
+//chx === this.getChildAt(0)
+true
+//chy === this.getChildAt(1)
+true
+//chz === this.getChildAt(2)
+true
+//this.numChildren
+3
+//Inserted "chx"'s symbol at same depth in timeline
+//chx === this.getChildAt(0)
+true
+//chx === this.getChildAt(1)
+false
+//chy === this.getChildAt(2)
+true
+//chz === this.getChildAt(3)
+true
+//this.numChildren
+4
