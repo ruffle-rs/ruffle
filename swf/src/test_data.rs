@@ -8,6 +8,7 @@ use crate::read::tests::{read_tag_bytes_from_file, read_tag_bytes_from_file_with
 use crate::tag_code::TagCode;
 use crate::types::*;
 use crate::write::write_swf;
+use smallvec::smallvec;
 use std::fs::File;
 use std::vec::Vec;
 
@@ -2730,64 +2731,68 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         (3, Action::PreviousFrame, vec![0x05]),
         (
             4,
-            Action::Push(vec![Value::Str("test")]),
+            Action::Push(smallvec![Value::Str("test")]),
             vec![0x96, 6, 0, 0, 116, 101, 115, 116, 0],
         ),
         (
             4,
-            Action::Push(vec![Value::Float(0.0)]),
+            Action::Push(smallvec![Value::Float(0.0)]),
             vec![0x96, 5, 0, 1, 0, 0, 0, 0],
         ),
         (
             5,
-            Action::Push(vec![Value::Double(1.5)]),
+            Action::Push(smallvec![Value::Double(1.5)]),
             vec![0x96, 9, 0, 6, 0, 0, 248, 63, 0, 0, 0, 0],
         ),
-        (5, Action::Push(vec![Value::Null]), vec![0x96, 1, 0, 2]),
-        (5, Action::Push(vec![Value::Undefined]), vec![0x96, 1, 0, 3]),
+        (5, Action::Push(smallvec![Value::Null]), vec![0x96, 1, 0, 2]),
         (
             5,
-            Action::Push(vec![Value::Null, Value::Undefined]),
+            Action::Push(smallvec![Value::Undefined]),
+            vec![0x96, 1, 0, 3],
+        ),
+        (
+            5,
+            Action::Push(smallvec![Value::Null, Value::Undefined]),
             vec![0x96, 2, 0, 2, 3],
         ),
         (
             5,
-            Action::Push(vec![Value::Register(1)]),
+            Action::Push(smallvec![Value::Register(1)]),
             vec![0x96, 2, 0, 4, 1],
         ),
         (
             5,
-            Action::Push(vec![Value::Bool(false)]),
+            Action::Push(smallvec![Value::Bool(false)]),
             vec![0x96, 2, 0, 5, 0],
         ),
         (
             5,
-            Action::Push(vec![Value::Bool(true)]),
+            Action::Push(smallvec![Value::Bool(true)]),
             vec![0x96, 2, 0, 5, 1],
         ),
         (
             5,
-            Action::Push(vec![Value::Double(0.0)]),
+            Action::Push(smallvec![Value::Double(0.0)]),
             vec![0x96, 9, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0],
         ),
         (
             5,
-            Action::Push(vec![Value::Int(31)]),
+            Action::Push(smallvec![Value::Int(31)]),
             vec![0x96, 5, 0, 7, 31, 0, 0, 0],
         ),
         (
             5,
-            Action::Push(vec![Value::Int(-50)]),
+            Action::Push(smallvec![Value::Int(-50)]),
             vec![0x96, 5, 0, 7, 206, 255, 255, 255],
         ),
         (
             5,
-            Action::Push(vec![Value::ConstantPool(77)]),
+            Action::Push(smallvec![Value::ConstantPool(77)]),
             vec![0x96, 2, 0, 8, 77],
         ),
         (
             5,
-            Action::Push(vec![Value::ConstantPool(257)]),
+            Action::Push(smallvec![Value::ConstantPool(257)]),
             vec![0x96, 3, 0, 9, 1, 1],
         ),
         (4, Action::RandomNumber, vec![0x30]),

@@ -1,3 +1,5 @@
+use smallvec::SmallVec;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action<'a> {
     Add,
@@ -82,7 +84,7 @@ pub enum Action<'a> {
     Play,
     Pop,
     PreviousFrame,
-    Push(Vec<Value<'a>>),
+    Push(SmallVec<[Value<'a>; 4]>),
     PushDuplicate,
     RandomNumber,
     RemoveSprite,

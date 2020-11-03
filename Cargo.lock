@@ -3119,6 +3119,7 @@ dependencies = [
  "log",
  "num-derive",
  "num-traits",
+ "smallvec 1.4.2",
  "xz2",
 ]
 
