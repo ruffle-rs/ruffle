@@ -180,24 +180,24 @@ impl WebAudioBackend {
                             .warn_on_error();
 
                         let current_time = self.context.current_time();
-                        // If we are looping or have a custom end point, we have to manually stop the sound.
-                        if settings.out_sample.is_some() || settings.num_loops > 1 {
-                            let end_sample_frame = if let Some(out_sample) = settings.out_sample {
-                                f64::from(out_sample) / 44100.0
-                            } else {
-                                f64::from(
-                                    sound.num_sample_frames + u32::from(sound.skip_sample_frames),
-                                ) / sound_sample_rate
-                            };
-                            // `AudioSourceBufferNode.loop` is a bool, so we have to stop the loop at the proper time.
-                            // `start_with_when_and_grain_offset_and_grain_duration` unfortunately doesn't work
-                            // as you might expect with loops, so we use `stop_with_when` to stop the loop.
-                            let total_len = (end_sample_frame - start_sample_frame)
-                                * f64::from(settings.num_loops);
-                            node.set_loop_end(end_sample_frame);
-                            node.stop_with_when(current_time + total_len)
-                                .warn_on_error();
-                        }
+
+                        // The length of the sound in the swf, or by the script playing it, doesn't
+                        // always line up with the actual length of the sound.
+                        // Always set a custom end point to make sure we're correct.
+                        let end_sample_frame = if let Some(out_sample) = settings.out_sample {
+                            f64::from(out_sample) / 44100.0
+                        } else {
+                            f64::from(sound.num_sample_frames + u32::from(sound.skip_sample_frames))
+                                / sound_sample_rate
+                        };
+                        // `AudioSourceBufferNode.loop` is a bool, so we have to stop the loop at the proper time.
+                        // `start_with_when_and_grain_offset_and_grain_duration` unfortunately doesn't work
+                        // as you might expect with loops, so we use `stop_with_when` to stop the loop.
+                        let total_len =
+                            (end_sample_frame - start_sample_frame) * f64::from(settings.num_loops);
+                        node.set_loop_end(end_sample_frame);
+                        node.stop_with_when(current_time + total_len)
+                            .warn_on_error();
 
                         // For envelopes, we rig the node up to some splitter/gain nodes.
                         if let Some(envelope) = &settings.envelope {
