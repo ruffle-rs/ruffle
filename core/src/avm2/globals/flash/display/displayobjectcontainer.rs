@@ -58,16 +58,16 @@ fn validate_add_operation<'gc>(
         checking_parent = tp.parent();
     }
 
-    if proposed_index > mc.children().count() {
+    if proposed_index > mc.num_children() {
         return Err("RangeError: Index position does not exist in the child list".into());
     }
 
     Ok(())
 }
 
-/// Validate if we can add remove a child from a given parent.
+/// Validate if we can remove a child from a given parent.
 ///
-/// There are several conditions which should cause an add operation to fail:
+/// There are several conditions which should cause a remove operation to fail:
 ///
 ///  * The child is not a child of the parent
 fn validate_remove_operation<'gc>(
@@ -101,7 +101,6 @@ fn remove_child_from_displaylist<'gc>(
     if let Some(parent) = child.parent() {
         if let Some(mut mc) = parent.as_movie_clip() {
             mc.remove_child_from_avm(context, child);
-            mc.children();
         }
     }
 }
@@ -124,7 +123,6 @@ fn add_child_to_displaylist<'gc>(
     if let Some(mut mc) = parent.as_movie_clip() {
         mc.add_child_from_avm_by_id(context, child, index);
         child.set_placed_by_script(context.gc_context, true);
-        mc.children();
     }
 }
 
@@ -265,8 +263,11 @@ pub fn num_children<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
-        return Ok(parent.children().count().into());
+    if let Some(parent) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_movie_clip())
+    {
+        return Ok(parent.num_children().into());
     }
 
     Ok(Value::Undefined)
