@@ -17,6 +17,7 @@ use std::sync::Arc;
 
 mod bitmap;
 mod button;
+mod container;
 mod edit_text;
 mod graphic;
 mod morph_shape;
@@ -55,10 +56,6 @@ pub struct DisplayObjectBase<'gc> {
     scale_y: Percent,
     skew: f64,
 
-    /// The first child of this display object in order of execution.
-    /// This is different than render order.
-    first_child: Option<DisplayObject<'gc>>,
-
     /// The previous sibling of this display object in order of execution.
     prev_sibling: Option<DisplayObject<'gc>>,
 
@@ -82,7 +79,6 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             scale_x: Percent::from_unit(1.0),
             scale_y: Percent::from_unit(1.0),
             skew: 0.0,
-            first_child: None,
             prev_sibling: None,
             next_sibling: None,
             flags: DisplayObjectFlags::Visible.into(),
@@ -94,7 +90,6 @@ unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.parent.trace(cc);
-        self.first_child.trace(cc);
         self.prev_sibling.trace(cc);
         self.next_sibling.trace(cc);
     }
@@ -104,7 +99,6 @@ unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
 impl<'gc> DisplayObjectBase<'gc> {
     /// Reset all properties that would be adjusted by a movie load.
     fn reset_for_movie_load(&mut self) {
-        self.first_child = None;
         self.flags = DisplayObjectFlags::Visible.into();
     }
 
@@ -292,16 +286,6 @@ impl<'gc> DisplayObjectBase<'gc> {
         parent: Option<DisplayObject<'gc>>,
     ) {
         self.parent = parent;
-    }
-    fn first_child(&self) -> Option<DisplayObject<'gc>> {
-        self.first_child
-    }
-    fn set_first_child(
-        &mut self,
-        _context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    ) {
-        self.first_child = node;
     }
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
         self.prev_sibling
@@ -666,8 +650,18 @@ pub trait TDisplayObject<'gc>:
     fn set_clip_depth(&self, context: MutationContext<'gc, '_>, depth: Depth);
     fn parent(&self) -> Option<DisplayObject<'gc>>;
     fn set_parent(&self, context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
-    fn first_child(&self) -> Option<DisplayObject<'gc>>;
-    fn set_first_child(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
+
+    fn first_child(&self) -> Option<DisplayObject<'gc>> {
+        None
+    }
+
+    fn set_first_child(
+        &self,
+        _context: MutationContext<'gc, '_>,
+        _node: Option<DisplayObject<'gc>>,
+    ) {
+    }
+
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
     fn set_prev_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
     fn next_sibling(&self) -> Option<DisplayObject<'gc>>;
@@ -1104,16 +1098,6 @@ macro_rules! impl_display_object_sansbounds {
         ) {
             self.0.write(context).$field.set_parent(context, parent)
         }
-        fn first_child(&self) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.first_child()
-        }
-        fn set_first_child(
-            &self,
-            context: gc_arena::MutationContext<'gc, '_>,
-            node: Option<DisplayObject<'gc>>,
-        ) {
-            self.0.write(context).$field.set_first_child(context, node);
-        }
         fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.prev_sibling()
         }
@@ -1210,11 +1194,13 @@ macro_rules! impl_display_object {
 // we figure out inheritance
 pub fn render_children<'gc>(
     context: &mut RenderContext<'_, 'gc>,
-    children: &std::collections::BTreeMap<Depth, DisplayObject<'gc>>,
+    children: impl Iterator<Item = DisplayObject<'gc>>,
 ) {
     let mut clip_depth = 0;
     let mut clip_depth_stack: Vec<(Depth, DisplayObject<'_>)> = vec![];
-    for (&depth, &child) in children {
+    for child in children {
+        let depth = child.depth();
+
         // Check if we need to pop off a mask.
         // This must be a while loop because multiple masks can be popped
         // at the same dpeth.
@@ -1250,27 +1236,6 @@ pub fn render_children<'gc>(
         clip_child.render(context);
         context.allow_mask = true;
         context.renderer.pop_mask();
-    }
-}
-
-pub fn get_child_by_name<'gc>(
-    children: &std::collections::BTreeMap<Depth, DisplayObject<'gc>>,
-    name: &str,
-    case_sensitive: bool,
-) -> Option<DisplayObject<'gc>> {
-    // TODO: Make a HashMap from name -> child?
-    // But need to handle conflicting names (lowest in depth order takes priority).
-    use crate::string_utils::swf_string_eq_ignore_case;
-    if case_sensitive {
-        children
-            .values()
-            .copied()
-            .find(|child| &*child.name() == name)
-    } else {
-        children
-            .values()
-            .copied()
-            .find(|child| swf_string_eq_ignore_case(&*child.name(), name))
     }
 }
 
