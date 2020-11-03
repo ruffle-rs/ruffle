@@ -12,6 +12,7 @@ use crate::backend::audio::AudioStreamHandle;
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
+use crate::display_object::container::ChildContainer;
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
@@ -27,7 +28,7 @@ use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::Ref;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::read::SwfRead;
@@ -51,7 +52,7 @@ pub struct MovieClipData<'gc> {
     tag_stream_pos: u64,
     current_frame: FrameNumber,
     audio_stream: Option<AudioStreamHandle>,
-    children: BTreeMap<Depth, DisplayObject<'gc>>,
+    container: ChildContainer<'gc>,
     object: Option<AvmObject<'gc>>,
     clip_actions: Vec<ClipAction>,
     frame_scripts: Vec<Avm2FrameScript<'gc>>,
@@ -66,9 +67,7 @@ pub struct MovieClipData<'gc> {
 unsafe impl<'gc> Collect for MovieClipData<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        for child in self.children.values() {
-            child.trace(cc);
-        }
+        self.container.trace(cc);
         self.base.trace(cc);
         self.static_data.trace(cc);
         self.object.trace(cc);
@@ -88,7 +87,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
-                children: BTreeMap::new(),
+                container: ChildContainer::new(),
                 object: None,
                 clip_actions: Vec::new(),
                 frame_scripts: Vec::new(),
@@ -126,7 +125,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
-                children: BTreeMap::new(),
+                container: ChildContainer::new(),
                 object: None,
                 clip_actions: Vec::new(),
                 frame_scripts: Vec::new(),
@@ -922,9 +921,15 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    /// Returns the highest depth in use by this movie clip, or `None` if there are no children.
+    /// Returns the highest depth in use by this movie clip, or `None` if there
+    /// are no children.
     pub fn highest_depth(self) -> Option<Depth> {
-        self.0.read().children.keys().copied().rev().next()
+        self.0.read().container.highest_depth()
+    }
+
+    /// Returns the number of children on the render list.
+    pub fn num_children(self) -> usize {
+        self.0.read().container.num_children()
     }
 
     /// Gets the clip events for this movieclip.
@@ -941,68 +946,59 @@ impl<'gc> MovieClip<'gc> {
         mc.set_clip_actions(actions);
     }
 
-    /// Adds a script-created display object as a child to this clip.
-    pub fn add_child_from_avm(
+    /// Adds a script-created display object as a child to this clip by depth.
+    ///
+    /// This function manipulates the timeline list, and then attempts to
+    /// place the newly-inserted child into the render list at a location which
+    /// is relative to it's depth. The execution list will also be manipulated
+    /// in the case where a clip already exists at the same depth.
+    ///
+    /// Specifically, if there is already a child with the given depth, the old
+    /// child will be removed from the execution list and replaced with the new
+    /// child on the render list. If no child with the given depth exists, then
+    /// we look for the closest child with a lower depth than the proposed
+    /// depth. If we do, then we insert the new child in the render list
+    /// directly after that previous child. If we don't, then we put the child
+    /// at the front of the render list. The child will always be placed at the
+    /// end of the execution list and at the given position on the depth list.
+    pub fn add_child_from_avm_by_depth(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
         depth: Depth,
     ) {
-        let prev_child = self
-            .0
-            .write(context.gc_context)
-            .children
-            .insert(depth, child);
-        if let Some(prev_child) = prev_child {
-            self.remove_child_from_exec_list(context, prev_child);
-        }
-        self.0
-            .write(context.gc_context)
-            .add_child_to_exec_list(context.gc_context, child);
+        let mut parent = self.0.write(context.gc_context);
+
+        parent
+            .container
+            .replace_at_depth(context, child, depth, false);
         child.set_parent(context.gc_context, Some((*self).into()));
-        child.set_place_frame(context.gc_context, 0);
-        child.set_depth(context.gc_context, depth);
     }
 
     /// Adds a script-created display object as a child to this clip at a
-    /// particular position in the child list.
+    /// particular position in the render list.
     ///
-    /// The depth of `child` will be selected to maintain the invariant that
-    /// clips with a higher AS3 `id` also have a higher SWF depth than those
-    /// with a lower `id`. In cases where this is not numerically possible, the
-    /// depths of all clips above this one will be adjusted to maintain said
-    /// invariant.
+    /// This function does not adjust the depth list to correspond to the
+    /// render list. It is entirely possible (and, indeed, supported) that AS3
+    /// code reorganizes the render list in such a way as to produce unexpected
+    /// results when timeline interactions occur.
     pub fn add_child_from_avm_by_id(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
         index: usize,
     ) {
-        let parent = self.0.read();
-        let slot_depth = parent.children.keys().nth(index).copied();
-        if slot_depth.is_none() {
-            //Off-the-end child additions don't need depth adjustments
-            drop(parent);
-            return self.add_child_from_avm(context, child, self.highest_depth().unwrap_or(0) + 1);
-        }
+        let mut parent = self.0.write(context.gc_context);
 
-        let slot_depth = slot_depth.unwrap();
-        let shifted_children: Vec<(Depth, DisplayObject<'gc>)> = parent
-            .children
-            .range(slot_depth..)
-            .rev()
-            .map(|(k, v)| (*k, *v))
-            .collect();
-        drop(parent);
-
-        for (old_depth, old_child_at_slot) in shifted_children {
-            self.swap_child_to_depth(context, old_child_at_slot, old_depth + 1);
-        }
-
-        self.add_child_from_avm(context, child, slot_depth);
+        parent.container.insert_at_id(context, child, index);
+        child.set_parent(context.gc_context, Some((*self).into()));
     }
 
     /// Remove a child from this clip.
+    ///
+    /// This function will attempt to remove the child from the depth and
+    /// render lists. If either succeed, we also remove the child from the
+    /// execution list.
     pub fn remove_child_from_avm(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -1012,17 +1008,20 @@ impl<'gc> MovieClip<'gc> {
             child.parent().unwrap(),
             (*self).into()
         ));
-        let child = self
-            .0
-            .write(context.gc_context)
-            .children
-            .remove(&child.depth());
-        if let Some(child) = child {
-            self.remove_child_from_exec_list(context, child);
-        }
+        let mut parent = self.0.write(context.gc_context);
+        parent.container.remove_child(context, child);
     }
 
     /// Swaps a child to a target depth.
+    ///
+    /// If another child already exists at the target depth, it will be moved
+    /// to the current depth of the given child. Their relative positions in
+    /// the render list will also be swapped. If the target depth is empty, the
+    /// same steps occur, but the child will merely be removed and reinserted
+    /// within the render list at a position after the closest previous child
+    /// in the depth list.
+    ///
+    /// No modifications to the execution list are made by this method.
     pub fn swap_child_to_depth(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -1034,16 +1033,10 @@ impl<'gc> MovieClip<'gc> {
 
         // TODO: It'd be nice to just do a swap here, but no swap functionality in BTreeMap.
         let mut parent = self.0.write(context.gc_context);
-        let prev_depth = child.depth();
-        child.set_depth(context.gc_context, depth);
         child.set_transformed_by_script(context.gc_context, true);
-        if let Some(prev_child) = parent.children.insert(depth, child) {
-            prev_child.set_depth(context.gc_context, prev_depth);
-            prev_child.set_transformed_by_script(context.gc_context, true);
-            parent.children.insert(prev_depth, prev_child);
-        } else {
-            parent.children.remove(&prev_depth);
-        }
+        parent
+            .container
+            .swap_at_depth(context.gc_context, child, depth);
     }
 
     /// Returns an iterator of AVM1 `DoAction` blocks on the given frame number.
@@ -1212,6 +1205,7 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
+    /// Instantiate a given child object on the timeline at a given depth.
     #[allow(clippy::too_many_arguments)]
     fn instantiate_child(
         self,
@@ -1230,20 +1224,8 @@ impl<'gc> MovieClip<'gc> {
             // Remove previous child from children list,
             // and add new child onto front of the list.
             let prev_child = {
-                let prev_child = self
-                    .0
-                    .write(context.gc_context)
-                    .children
-                    .insert(depth, child);
-                if let Some(prev_child) = prev_child {
-                    if !prev_child.placed_by_script() {
-                        self.remove_child_from_exec_list(context, prev_child);
-                    }
-                }
-                self.0
-                    .write(context.gc_context)
-                    .add_child_to_exec_list(context.gc_context, child);
-                prev_child
+                let mut mc = self.0.write(context.gc_context);
+                mc.container.replace_at_depth(context, child, depth, false)
             };
             {
                 // Set initial properties for child.
@@ -1301,23 +1283,25 @@ impl<'gc> MovieClip<'gc> {
             // Remove all display objects that were created after the destination frame.
             // TODO: We want to do something like self.children.retain here,
             // but BTreeMap::retain does not exist.
+            // TODO: AS3 children don't live on the depth list. Do they respect
+            // or ignore GOTOs?
             let children: SmallVec<[_; 16]> = self
                 .0
                 .read()
-                .children
-                .iter()
+                .container
+                .iter_children_by_depth()
                 .filter_map(|(depth, clip)| {
                     if clip.place_frame() > frame {
-                        Some((*depth, *clip))
+                        Some((depth, clip))
                     } else {
                         None
                     }
                 })
                 .collect();
-            for (depth, child) in children {
+            for (_depth, child) in children {
                 if !child.placed_by_script() {
-                    self.0.write(context.gc_context).children.remove(&depth);
-                    self.remove_child_from_exec_list(context, child);
+                    let mut mc = self.0.write(context.gc_context);
+                    mc.container.remove_child(context, child);
                 }
             }
             true
@@ -1423,7 +1407,7 @@ impl<'gc> MovieClip<'gc> {
         let run_goto_command = |clip: MovieClip<'gc>,
                                 context: &mut UpdateContext<'_, 'gc, '_>,
                                 params: &GotoPlaceObject| {
-            let child_entry = clip.0.read().children.get(&params.depth()).copied();
+            let child_entry = clip.0.read().container.get_depth(params.depth());
             match child_entry {
                 // Apply final delta to display parameters.
                 // For rewinds, if an object was created before the final frame,
@@ -1761,11 +1745,10 @@ impl<'gc> MovieClip<'gc> {
             // start from an empty display list, and we also want to examine
             // the old children to decide if they persist (place_frame <= goto_frame).
             let read = self.0.read();
-            if let Some(child) = read.children.get(&depth).cloned() {
+            if let Some(child) = read.container.get_depth(depth) {
                 if !child.placed_by_script() {
                     drop(read);
-                    self.0.write(context.gc_context).children.remove(&depth);
-                    self.remove_child_from_exec_list(context, child);
+                    self.0.write(context.gc_context).container.remove_child(context, child);
                 }
             }
         }
@@ -1822,7 +1805,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
         self.0.read().drawing.render(context);
-        crate::display_object::render_children(context, &self.0.read().children);
+        crate::display_object::render_children(
+            context,
+            self.0.read().container.iter_render_children(),
+        );
         context.transform_stack.pop();
     }
 
@@ -1889,8 +1875,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
             // Maybe we could skip recursing down at all if !world_bounds.contains(point),
             // but a child button can have an invisible hit area outside the parent's bounds.
-            for child in self.0.read().children.values().rev() {
-                let result = child.mouse_pick(context, *child, point);
+            for child in self.0.read().container.iter_render_children().rev() {
+                let result = child.mouse_pick(context, child, point);
                 if result.is_some() {
                     return result;
                 }
@@ -1996,11 +1982,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn allow_as_mask(&self) -> bool {
-        !self.0.read().children.is_empty()
+        !self.0.read().container.is_empty()
     }
 
     fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
-        crate::display_object::get_child_by_name(&self.0.read().children, name, case_sensitive)
+        self.0.read().container.get_name(name, case_sensitive)
     }
 
     fn is_focusable(&self) -> bool {
@@ -2012,7 +1998,18 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn get_child_by_id(&self, id: usize) -> Option<DisplayObject<'gc>> {
-        self.0.read().children.iter().nth(id).map(|(_, v)| *v)
+        self.0.read().container.get_id(id)
+    }
+
+    fn first_child(&self) -> Option<DisplayObject<'gc>> {
+        self.0.read().container.first_child()
+    }
+
+    fn set_first_child(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
+        self.0
+            .write(context)
+            .container
+            .set_first_child(context, node);
     }
 }
 
@@ -2049,7 +2046,7 @@ impl<'gc> MovieClipData<'gc> {
         self.flags = MovieClipFlags::Playing.into();
         self.current_frame = 0;
         self.audio_stream = None;
-        self.children = BTreeMap::new();
+        self.container = ChildContainer::new();
     }
 
     fn id(&self) -> CharacterId {
@@ -2084,17 +2081,6 @@ impl<'gc> MovieClipData<'gc> {
         self.flags.insert(MovieClipFlags::ProgrammaticallyPlayed);
     }
 
-    fn first_child(&self) -> Option<DisplayObject<'gc>> {
-        self.base.first_child()
-    }
-    fn set_first_child(
-        &mut self,
-        context: gc_arena::MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    ) {
-        self.base.set_first_child(context, node);
-    }
-
     fn play(&mut self) {
         // Can only play clips with multiple frames.
         if self.total_frames() > 1 {
@@ -2109,20 +2095,6 @@ impl<'gc> MovieClipData<'gc> {
 
     fn tag_stream_len(&self) -> usize {
         self.static_data.swf.end - self.static_data.swf.start
-    }
-
-    /// Adds a child to the front of the execution list.
-    /// This does not affect the render list.
-    fn add_child_to_exec_list(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        child: DisplayObject<'gc>,
-    ) {
-        if let Some(head) = self.first_child() {
-            head.set_prev_sibling(gc_context, Some(child));
-            child.set_next_sibling(gc_context, Some(head));
-        }
-        self.set_first_child(gc_context, Some(child));
     }
 
     /// Handles a PlaceObject tag when running a goto action.
@@ -2974,13 +2946,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 }
             }
             PlaceObjectAction::Modify => {
-                if let Some(child) = self
-                    .0
-                    .read()
-                    .children
-                    .get(&place_object.depth.into())
-                    .copied()
-                {
+                if let Some(child) = self.0.read().container.get_depth(place_object.depth.into()) {
                     child.apply_place_object(context.gc_context, &place_object);
                     child
                 } else {
@@ -3004,13 +2970,12 @@ impl<'gc, 'a> MovieClip<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-
+        
         let read = self.0.read();
-        if let Some(child) = read.children.get(&remove_object.depth.into()).cloned() {
+        if let Some(child) = read.container.get_depth(remove_object.depth.into()) {
             if !child.placed_by_script() {
                 drop(read);
-                self.0.write(context.gc_context).children.remove(&remove_object.depth.into());
-                self.remove_child_from_exec_list(context, child);
+                self.0.write(context.gc_context).container.remove_child(context, child);
             }
         }
 

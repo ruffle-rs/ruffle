@@ -184,7 +184,10 @@ pub fn add_child<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+    if let Some(parent) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_movie_clip())
+    {
         let child = args
             .get(0)
             .cloned()
@@ -192,11 +195,10 @@ pub fn add_child<'gc>(
             .coerce_to_object(activation)?
             .as_display_object()
             .ok_or("ArgumentError: Child not a valid display object")?;
-        let target_index = parent.children().count();
+        let target_index = parent.num_children();
 
-        validate_add_operation(parent, child, target_index)?;
-        remove_child_from_displaylist(&mut activation.context, child);
-        add_child_to_displaylist(&mut activation.context, parent, child, target_index);
+        validate_add_operation(parent.into(), child, target_index)?;
+        add_child_to_displaylist(&mut activation.context, parent.into(), child, target_index);
 
         return Ok(child.object2());
     }
@@ -225,7 +227,6 @@ pub fn add_child_at<'gc>(
             .coerce_to_u32(activation)? as usize;
 
         validate_add_operation(parent, child, target_index)?;
-        remove_child_from_displaylist(&mut activation.context, child);
         add_child_to_displaylist(&mut activation.context, parent, child, target_index);
 
         return Ok(child.object2());
@@ -248,7 +249,7 @@ pub fn remove_child<'gc>(
             .coerce_to_object(activation)?
             .as_display_object()
             .ok_or("ArgumentError: Child not a valid display object")?;
-        
+
         validate_remove_operation(parent, child)?;
         remove_child_from_displaylist(&mut activation.context, child);
 

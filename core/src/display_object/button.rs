@@ -1,5 +1,6 @@
 use crate::avm1::{Object, StageObject, Value};
 use crate::context::{ActionType, RenderContext, UpdateContext};
+use crate::display_object::container::ChildContainer;
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
@@ -21,7 +22,7 @@ pub struct ButtonData<'gc> {
     static_data: GcCell<'gc, ButtonStatic>,
     state: ButtonState,
     hit_area: BTreeMap<Depth, DisplayObject<'gc>>,
-    children: BTreeMap<Depth, DisplayObject<'gc>>,
+    container: ChildContainer<'gc>,
     tracking: ButtonTracking,
     object: Option<Object<'gc>>,
     initialized: bool,
@@ -67,7 +68,7 @@ impl<'gc> Button<'gc> {
             ButtonData {
                 base: Default::default(),
                 static_data: GcCell::allocate(gc_context, static_data),
-                children: BTreeMap::new(),
+                container: ChildContainer::new(),
                 hit_area: BTreeMap::new(),
                 state: self::ButtonState::Up,
                 initialized: false,
@@ -134,7 +135,7 @@ impl<'gc> Button<'gc> {
             ButtonState::Over => swf::ButtonState::Over,
             ButtonState::Down => swf::ButtonState::Down,
         };
-        write.children.clear();
+        write.container.clear();
 
         let mut new_children = Vec::new();
         for record in &write.static_data.read().records {
@@ -152,7 +153,7 @@ impl<'gc> Button<'gc> {
                     );
                     child.set_depth(context.gc_context, record.depth.into());
 
-                    new_children.push((child, record.depth.into()));
+                    new_children.push((child, record.depth));
                 }
             }
         }
@@ -171,10 +172,12 @@ impl<'gc> Button<'gc> {
             // Initialize child.
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.run_frame(context);
-            self.0
-                .write(context.gc_context)
-                .children
-                .insert(depth, child);
+            self.0.write(context.gc_context).container.replace_at_depth(
+                context,
+                child,
+                depth.into(),
+                true,
+            );
             prev_child = Some(child);
         }
     }
@@ -275,7 +278,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
 
-        crate::display_object::render_children(context, &self.0.read().children);
+        crate::display_object::render_children(
+            context,
+            self.0.read().container.iter_render_children(),
+        );
 
         context.transform_stack.pop();
     }
@@ -329,7 +335,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 
     fn allow_as_mask(&self) -> bool {
-        !self.0.read().children.is_empty()
+        !self.0.read().container.is_empty()
     }
 
     /// Executes and propagates the given clip event.
@@ -421,7 +427,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 
     fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
-        crate::display_object::get_child_by_name(&self.0.read().children, name, case_sensitive)
+        self.0.read().container.get_name(name, case_sensitive)
     }
 
     fn is_focusable(&self) -> bool {
@@ -443,6 +449,17 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
     fn get_child_by_id(&self, id: usize) -> Option<DisplayObject<'gc>> {
         self.children().nth(id)
+    }
+
+    fn first_child(&self) -> Option<DisplayObject<'gc>> {
+        self.0.read().container.first_child()
+    }
+
+    fn set_first_child(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
+        self.0
+            .write(context)
+            .container
+            .set_first_child(context, node);
     }
 }
 
@@ -498,9 +515,7 @@ impl<'gc> ButtonData<'gc> {
 unsafe impl<'gc> gc_arena::Collect for ButtonData<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        for child in self.children.values() {
-            child.trace(cc);
-        }
+        self.container.trace(cc);
         for child in self.hit_area.values() {
             child.trace(cc);
         }
