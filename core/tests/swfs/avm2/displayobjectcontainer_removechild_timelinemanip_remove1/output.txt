@@ -1,0 +1,38 @@
+//var chx = this.getChildAt(0)
+//var chy = this.getChildAt(1)
+//var chz = this.getChildAt(2)
+//this.removeChild(chy)
+//chx === this.getChildAt(0)
+true
+//chz === this.getChildAt(1)
+true
+//this.numChildren
+2
+//Removed symbol "chz" in timeline
+//chx === this.getChildAt(0)
+true
+//this.numChildren
+1
+//Removed symbol "chy" in timeline
+//chx === this.getChildAt(0)
+true
+//this.numChildren
+1
+//Removed symbol "chx" in timeline
+//this.numChildren
+0
+//Re-added symbol "chx" in timeline
+//chx === this.getChildAt(0);
+false
+//this.numChildren
+1
+//Re-added symbol "chy" in timeline
+//chy === this.getChildAt(1);
+false
+//this.numChildren
+2
+//Re-added symbol "chz" in timeline
+//chz === this.getChildAt(2);
+false
+//this.numChildren
+3

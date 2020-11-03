@@ -416,6 +416,12 @@ swf_tests! {
     (as3_displayobjectcontainer_addchild, "avm2/displayobjectcontainer_addchild", 1),
     (as3_displayobjectcontainer_addchildat, "avm2/displayobjectcontainer_addchildat", 1),
     (as3_displayobjectcontainer_removechild, "avm2/displayobjectcontainer_removechild", 1),
+    (as3_displayobjectcontainer_addchild_timelinepull0, "avm2/displayobjectcontainer_addchild_timelinepull0", 7),
+    (as3_displayobjectcontainer_addchild_timelinepull1, "avm2/displayobjectcontainer_addchild_timelinepull1", 7),
+    (as3_displayobjectcontainer_addchild_timelinepull2, "avm2/displayobjectcontainer_addchild_timelinepull2", 7),
+    (as3_displayobjectcontainer_addchildat_timelinelock0, "avm2/displayobjectcontainer_addchildat_timelinelock0", 7),
+    (as3_displayobjectcontainer_addchildat_timelinelock1, "avm2/displayobjectcontainer_addchildat_timelinelock1", 7),
+    (as3_displayobjectcontainer_addchildat_timelinelock2, "avm2/displayobjectcontainer_addchildat_timelinelock2", 7),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
