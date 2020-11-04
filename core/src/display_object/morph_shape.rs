@@ -58,9 +58,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         // Noop
     }
 
-    fn render(&self, context: &mut RenderContext) {
-        context.transform_stack.push(&*self.transform());
-
+    fn render_self(&self, context: &mut RenderContext) {
         if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
             context
                 .renderer
@@ -68,8 +66,6 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         } else {
             log::warn!("Missing ratio for morph shape");
         }
-
-        context.transform_stack.pop();
     }
 
     fn self_bounds(&self) -> BoundingBox {

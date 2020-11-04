@@ -68,9 +68,8 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         // Noop
     }
 
-    fn render(&self, context: &mut RenderContext) {
+    fn render_self(&self, context: &mut RenderContext) {
         let tf = self.0.read();
-        context.transform_stack.push(&*self.transform());
         context.transform_stack.push(&Transform {
             matrix: tf.static_data.text_transform,
             ..Default::default()
@@ -120,7 +119,6 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 }
             }
         }
-        context.transform_stack.pop();
         context.transform_stack.pop();
     }
 

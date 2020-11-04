@@ -1618,11 +1618,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
-        context.transform_stack.push(&*self.transform());
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
         self.0.read().drawing.render(context);
         self.render_children(context);
-        context.transform_stack.pop();
     }
 
     fn self_bounds(&self) -> BoundingBox {

@@ -70,6 +70,12 @@ pub struct DisplayObjectBase<'gc> {
     /// The sound transform of sounds playing via this display object.
     sound_transform: SoundTransform,
 
+    /// The display object that we are being masked by.
+    masker: Option<DisplayObject<'gc>>,
+
+    /// The display object we are currently masking.
+    maskee: Option<DisplayObject<'gc>>,
+
     /// Bit flags for various display object properites.
     flags: DisplayObjectFlags,
 }
@@ -89,6 +95,8 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             skew: 0.0,
             prev_sibling: None,
             next_sibling: None,
+            masker: None,
+            maskee: None,
             sound_transform: Default::default(),
             flags: DisplayObjectFlags::VISIBLE,
         }
@@ -101,6 +109,8 @@ unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
         self.parent.trace(cc);
         self.prev_sibling.trace(cc);
         self.next_sibling.trace(cc);
+        self.masker.trace(cc);
+        self.maskee.trace(cc);
     }
 }
 
@@ -442,6 +452,20 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn movie(&self) -> Option<Arc<SwfMovie>> {
         self.parent.and_then(|p| p.movie())
     }
+
+    fn masker(&self) -> Option<DisplayObject<'gc>> {
+        self.masker
+    }
+    fn set_masker(&mut self, _context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
+        self.masker = node;
+    }
+
+    fn maskee(&self) -> Option<DisplayObject<'gc>> {
+        self.maskee
+    }
+    fn set_maskee(&mut self, _context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
+        self.maskee = node;
+    }
 }
 
 #[enum_trait_object(
@@ -737,6 +761,20 @@ pub trait TDisplayObject<'gc>:
     fn set_prev_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
     fn next_sibling(&self) -> Option<DisplayObject<'gc>>;
     fn set_next_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
+    fn masker(&self) -> Option<DisplayObject<'gc>>;
+    fn set_masker(
+        &self,
+        context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+        remove_old_link: bool,
+    );
+    fn maskee(&self) -> Option<DisplayObject<'gc>>;
+    fn set_maskee(
+        &self,
+        context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+        remove_old_link: bool,
+    );
 
     /// Get another level by level name.
     ///
@@ -844,7 +882,40 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn run_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
-    fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
+    fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}
+
+    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
+        if self.maskee().is_some() {
+            return;
+        }
+        context.transform_stack.push(&*self.transform());
+
+        let mask = self.masker();
+        let mut mask_transform = crate::transform::Transform::default();
+        if let Some(m) = mask {
+            mask_transform.matrix = self.global_to_local_matrix();
+            mask_transform.matrix *= m.local_to_global_matrix();
+            context.renderer.push_mask();
+            context.allow_mask = false;
+            context.transform_stack.push(&mask_transform);
+            m.render_self(context);
+            context.transform_stack.pop();
+            context.allow_mask = true;
+            context.renderer.activate_mask();
+        }
+        self.render_self(context);
+        if let Some(m) = mask {
+            context.renderer.deactivate_mask();
+            context.allow_mask = false;
+            context.transform_stack.push(&mask_transform);
+            m.render_self(context);
+            context.transform_stack.pop();
+            context.allow_mask = true;
+            context.renderer.pop_mask();
+        }
+
+        context.transform_stack.pop();
+    }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Unload children.
@@ -1232,6 +1303,38 @@ macro_rules! impl_display_object_sansbounds {
             node: Option<DisplayObject<'gc>>,
         ) {
             self.0.write(context).$field.set_next_sibling(context, node);
+        }
+        fn masker(&self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.masker()
+        }
+        fn set_masker(
+            &self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            node: Option<DisplayObject<'gc>>,
+            remove_old_link: bool,
+        ) {
+            if remove_old_link {
+                if let Some(old_masker) = self.0.read().$field.masker() {
+                    old_masker.set_maskee(context, None, false);
+                }
+            }
+            self.0.write(context).$field.set_masker(context, node);
+        }
+        fn maskee(&self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.maskee()
+        }
+        fn set_maskee(
+            &self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            node: Option<DisplayObject<'gc>>,
+            remove_old_link: bool,
+        ) {
+            if remove_old_link {
+                if let Some(old_maskee) = self.0.read().$field.maskee() {
+                    old_maskee.set_masker(context, None, false);
+                }
+            }
+            self.0.write(context).$field.set_maskee(context, node);
         }
         fn removed(&self) -> bool {
             self.0.read().$field.removed()

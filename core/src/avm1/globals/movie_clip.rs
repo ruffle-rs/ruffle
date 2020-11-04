@@ -189,6 +189,7 @@ pub fn create_proto<'gc>(
         "nextFrame" => next_frame,
         "play" => play,
         "prevFrame" => prev_frame,
+        "setMask" => set_mask,
         "startDrag" => start_drag,
         "stop" => stop,
         "stopDrag" => stop_drag,
@@ -941,6 +942,26 @@ fn remove_movie_clip<'gc>(
         crate::avm1::globals::display_object::remove_display_object(this, activation);
     }
 
+    Ok(Value::Undefined)
+}
+
+fn set_mask<'gc>(
+    movie_clip: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let mask = args
+        .get(0)
+        .unwrap()
+        .coerce_to_object(activation)
+        .as_display_object();
+    let mc = DisplayObject::MovieClip(movie_clip);
+    let context = &mut activation.context;
+    mc.set_clip_depth(context.gc_context, 0);
+    mc.set_masker(context.gc_context, mask, true);
+    if let Some(m) = mask {
+        m.set_maskee(context.gc_context, Some(mc), true);
+    }
     Ok(Value::Undefined)
 }
 
