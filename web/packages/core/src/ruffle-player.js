@@ -245,8 +245,8 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         const rect = this.getBoundingClientRect();
 
         this.right_click_menu.style.display = "block";
-        this.right_click_menu.style.left = Math.ceil(e.pageX - rect.x) + "px";
-        this.right_click_menu.style.top = Math.ceil(e.pageY - rect.y) + "px";
+        this.right_click_menu.style.left = Math.ceil(e.clientX - rect.x) + "px";
+        this.right_click_menu.style.top = Math.ceil(e.clientY - rect.y) + "px";
         e.preventDefault();
 
         this.right_click_menu.innerHTML = "";
