@@ -618,7 +618,7 @@ fn run_swf(
     player
         .lock()
         .unwrap()
-        .set_max_execution_duration(Duration::from_secs(120));
+        .set_max_execution_duration(Duration::from_secs(200));
 
     before_start(player.clone())?;
 
