@@ -3,6 +3,9 @@
         "browser": true
     },
     "globals": {
-        "__webpack_public_path__": true
+        "__webpack_public_path__": true,
+        "__COMMIT_HASH__": true,
+        "__COMMIT_DATE__": true,
+        "__CHANNEL__": true
     }
 }
