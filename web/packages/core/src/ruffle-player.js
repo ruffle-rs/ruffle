@@ -255,7 +255,11 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
 
         const element = document.createElement("li");
         element.className = "menu_item active";
-        element.innerText = `About Ruffle ${window.RufflePlayer.version}`;
+        const version =
+            __CHANNEL__ === "nightly"
+                ? `nightly ${__COMMIT_DATE__}`
+                : window.RufflePlayer.version;
+        element.innerText = `Ruffle ${version}`;
         element.addEventListener("click", () => {
             window.open("https://ruffle.rs", "_blank");
         });
