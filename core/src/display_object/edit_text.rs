@@ -1381,14 +1381,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.redraw_border(context);
     }
 
-    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
         if !self.world_bounds().intersects(&context.view_bounds) {
             // Off-screen; culled
             return;
         }
-
-        let transform = self.transform().clone();
-        context.transform_stack.push(&transform);
 
         let edit_text = self.0.read();
         context.transform_stack.push(&Transform {
@@ -1466,7 +1463,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         );
         context.renderer.pop_mask();
 
-        context.transform_stack.pop();
         context.transform_stack.pop();
     }
 

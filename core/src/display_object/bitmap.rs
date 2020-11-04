@@ -113,13 +113,11 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
     }
 
-    fn render(&self, context: &mut RenderContext) {
+    fn render_self(&self, context: &mut RenderContext) {
         if !self.world_bounds().intersects(&context.view_bounds) {
             // Off-screen; culled
             return;
         }
-
-        context.transform_stack.push(&*self.transform());
 
         let bitmap_data = self.0.read();
         context.renderer.render_bitmap(
@@ -127,8 +125,6 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             context.transform_stack.transform(),
             bitmap_data.smoothing,
         );
-
-        context.transform_stack.pop();
     }
 }
 
