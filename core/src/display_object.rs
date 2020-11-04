@@ -670,7 +670,6 @@ pub trait TDisplayObject<'gc>:
     fn last_child(&self) -> Option<DisplayObject<'gc>> {
         let mut last = self.first_child()?;
         while let Some(l) = last.next_sibling() {
-            log::error!("Searching for last child, got child at {}", l.depth());
             last = l;
         }
 
@@ -682,7 +681,6 @@ pub trait TDisplayObject<'gc>:
     fn children(&self) -> ChildIter<'gc> {
         ChildIter {
             cur_child: self.first_child(),
-            rev_child: self.last_child(),
         }
     }
 
@@ -1270,7 +1268,6 @@ enum DisplayObjectFlags {
 
 pub struct ChildIter<'gc> {
     cur_child: Option<DisplayObject<'gc>>,
-    rev_child: Option<DisplayObject<'gc>>,
 }
 
 impl<'gc> Iterator for ChildIter<'gc> {
@@ -1282,38 +1279,6 @@ impl<'gc> Iterator for ChildIter<'gc> {
             .cur_child
             .and_then(|display_cell| display_cell.next_sibling());
 
-        if cur.is_none()
-            || self
-                .rev_child
-                .map(|r| DisplayObject::ptr_eq(r, cur.unwrap()))
-                .unwrap_or(false)
-        {
-            self.cur_child = None;
-            self.rev_child = None;
-        }
-
         cur
-    }
-}
-
-impl<'gc> DoubleEndedIterator for ChildIter<'gc> {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        let rev = self.rev_child;
-
-        self.rev_child = self
-            .rev_child
-            .and_then(|display_cell| display_cell.prev_sibling());
-
-        if rev.is_none()
-            || self
-                .cur_child
-                .map(|c| DisplayObject::ptr_eq(c, rev.unwrap()))
-                .unwrap_or(false)
-        {
-            self.cur_child = None;
-            self.rev_child = None;
-        }
-
-        rev
     }
 }
