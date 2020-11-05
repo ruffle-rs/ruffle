@@ -7,6 +7,7 @@
 use crate::error::{Error, Result};
 use crate::types::*;
 use byteorder::{LittleEndian, ReadBytesExt};
+use encoding_rs::WINDOWS_1252;
 use enumset::EnumSet;
 use std::collections::HashSet;
 use std::convert::TryInto;
@@ -273,7 +274,14 @@ pub trait SwfRead<R: Read> {
         }
         // TODO: There is probably a better way to do this.
         // TODO: Verify ANSI for SWF 5 and earlier.
-        String::from_utf8(bytes).map_err(|_| Error::invalid_data("Invalid string data"))
+        String::from_utf8(bytes).or_else(|e| {
+            let (cow, _, have_err) = WINDOWS_1252.decode(e.as_bytes());
+            if have_err {
+                Err(Error::invalid_data("Invalid string data"))
+            } else {
+                Ok(cow.to_string())
+            }
+        })
     }
 }
 
