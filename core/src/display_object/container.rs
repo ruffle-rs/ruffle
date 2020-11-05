@@ -369,6 +369,7 @@ impl<'gc> ChildContainer<'gc> {
         }
 
         self.remove_child_from_exec_list(context, child);
+        child.set_parent(context.gc_context, None);
 
         removed_from_render_list || removed_from_depth_list
     }
