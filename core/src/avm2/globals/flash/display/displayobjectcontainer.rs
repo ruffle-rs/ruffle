@@ -273,6 +273,37 @@ pub fn num_children<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObjectContainer.contains`
+pub fn contains<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_movie_clip())
+    {
+        if let Some(child) = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?
+            .as_display_object()
+        {
+            let mut maybe_child_parent = Some(child);
+            while let Some(child_parent) = maybe_child_parent {
+                if DisplayObject::ptr_eq(child_parent, parent.into()) {
+                    return Ok(true.into());
+                }
+
+                maybe_child_parent = child_parent.parent();
+            }
+        }
+    }
+
+    Ok(false.into())
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -311,6 +342,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "removeChild"),
         Method::from_builtin(remove_child),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "contains"),
+        Method::from_builtin(contains),
     ));
 
     class
