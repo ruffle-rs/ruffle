@@ -551,7 +551,10 @@ fn create_empty_movie_clip<'gc>(
                 .wrapping_add(AVM_DEPTH_BIAS),
         ),
         _ => {
-            avm_error!(activation, "MovieClip.attachMovie: Too few parameters");
+            avm_error!(
+                activation,
+                "MovieClip.createEmptyMovieClip: Too few parameters"
+            );
             return Ok(Value::Undefined);
         }
     };
@@ -658,7 +661,10 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
             depth.coerce_to_i32(activation)?.wrapping_add(depth_bias),
         ),
         _ => {
-            avm_error!(activation, "MovieClip.attachMovie: Too few parameters");
+            avm_error!(
+                activation,
+                "MovieClip.duplicateMovieClip: Too few parameters"
+            );
             return Ok(Value::Undefined);
         }
     };
