@@ -46,6 +46,12 @@ pub struct ChildContainer<'gc> {
     exec_list: Option<DisplayObject<'gc>>,
 }
 
+impl<'gc> Default for ChildContainer<'gc> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'gc> ChildContainer<'gc> {
     pub fn new() -> Self {
         ChildContainer {
