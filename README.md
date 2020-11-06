@@ -25,6 +25,8 @@ Ruffle is in the proof-of-concept stage and can currently run early Flash animat
 
 [Nightly builds](https://github.com/ruffle-rs/ruffle/releases) of Ruffle are available for desktop and web platforms including the browser extension.
 
+Windows desktop builds require the x64 [2015-2019 Visual C++ Redistributable](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads).
+
 ## Building from source
 
 [Follow the official guide](https://www.rust-lang.org/tools/install) to install Rust for your platform.
