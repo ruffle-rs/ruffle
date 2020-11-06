@@ -355,9 +355,31 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                             .unwrap()
                             .handle_event(event)
                         {
-                            player_lock.handle_event(event);
-                            if player_lock.needs_render() {
-                                window.request_redraw();
+                            match event {
+                                ruffle_core::PlayerEvent::KeyDown {
+                                    key_code: ruffle_core::KeyCode::F11,
+                                } => {
+                                    if window.fullscreen().is_none() {
+                                        window.set_fullscreen(Some(
+                                            winit::window::Fullscreen::Borderless(None),
+                                        ));
+                                    } else {
+                                        window.set_fullscreen(None)
+                                    }
+                                    window.request_redraw();
+                                }
+                                ruffle_core::PlayerEvent::KeyDown {
+                                    key_code: ruffle_core::KeyCode::Escape,
+                                } => {
+                                    window.set_fullscreen(None);
+                                    window.request_redraw();
+                                }
+                                _ => {
+                                    player_lock.handle_event(event);
+                                    if player_lock.needs_render() {
+                                        window.request_redraw();
+                                    }
+                                }
                             }
                         }
                     }
