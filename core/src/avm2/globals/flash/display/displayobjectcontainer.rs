@@ -304,6 +304,35 @@ pub fn contains<'gc>(
     Ok(false.into())
 }
 
+/// Implements `DisplayObjectContainer.getChildIndex`
+pub fn get_child_index<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_movie_clip())
+    {
+        let target_child = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?
+            .as_display_object();
+
+        if let Some(target_child) = target_child {
+            for (i, child) in parent.as_container().iter_render_children().enumerate() {
+                if DisplayObject::ptr_eq(child, target_child) {
+                    return Ok(i.into());
+                }
+            }
+        }
+    }
+
+    Err("ArgumentError: Child is not a child of this object".into())
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -346,6 +375,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "contains"),
         Method::from_builtin(contains),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "getChildIndex"),
+        Method::from_builtin(get_child_index),
     ));
 
     class

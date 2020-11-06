@@ -1,0 +1,28 @@
+//var chx = this.getChildAt(0)
+//var chy = this.getChildAt(1)
+//var chz = this.getChildAt(2)
+//this.getChildIndex(chx);
+0
+//this.getChildIndex(chy);
+1
+//this.getChildIndex(chz);
+2
+//Removed symbol "chz" in timeline
+//this.getChildIndex(chx);
+0
+//this.getChildIndex(chy);
+1
+//Removed symbol "chy" in timeline
+//this.getChildIndex(chx);
+0
+//Removed symbol "chx" in timeline
+//Added nested symbols to timeline...
+//var sx = this.getChildAt(0);
+//var sy = sx.getChildAt(1);
+//var sz = sy.getChildAt(1);
+//this.getChildIndex(sx);
+0
+//sx.getChildIndex(sy);
+1
+//sy.getChildIndex(sz);
+1

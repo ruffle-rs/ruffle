@@ -1690,35 +1690,6 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(context.gc_context).is_focusable = focusable;
     }
 
-    /// Removes a child from the execution list.
-    /// This does not affect the render list.
-    fn remove_child_from_exec_list(
-        self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-    ) {
-        // Remove from children linked list.
-        let prev = child.prev_sibling();
-        let next = child.next_sibling();
-        if let Some(prev) = prev {
-            prev.set_next_sibling(context.gc_context, next);
-        }
-        if let Some(next) = next {
-            next.set_prev_sibling(context.gc_context, prev);
-        }
-
-        child.set_prev_sibling(context.gc_context, None);
-        child.set_next_sibling(context.gc_context, None);
-
-        if let Some(head) = self.first_child() {
-            if DisplayObject::ptr_eq(head, child) {
-                self.set_first_child(context.gc_context, next);
-            }
-        }
-        // Flag child as removed.
-        child.unload(context);
-    }
-
     /// Handle a RemoveObject tag when running a goto action.
     #[inline]
     fn goto_remove_object<'a>(
@@ -1753,6 +1724,11 @@ impl<'gc> MovieClip<'gc> {
             }
         }
         Ok(())
+    }
+    
+    /// Borrow the child container.
+    pub fn as_container<'a>(&'a self) -> Ref<'a, ChildContainer<'gc>> {
+        Ref::map(self.0.read(), |s| &s.container)
     }
 }
 
@@ -2970,7 +2946,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        
+
         let read = self.0.read();
         if let Some(child) = read.container.get_depth(remove_object.depth.into()) {
             if !child.placed_by_script() {
