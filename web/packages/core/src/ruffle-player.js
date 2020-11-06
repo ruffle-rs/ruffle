@@ -242,28 +242,61 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
     }
 
     open_right_click_menu(e) {
-        const rect = this.getBoundingClientRect();
+        e.preventDefault();
 
+        const rect = this.getBoundingClientRect();
         this.right_click_menu.style.display = "block";
         this.right_click_menu.style.left = Math.ceil(e.clientX - rect.x) + "px";
         this.right_click_menu.style.top = Math.ceil(e.clientY - rect.y) + "px";
-        e.preventDefault();
+        while (this.right_click_menu.firstChild) {
+            this.right_click_menu.removeChild(this.right_click_menu.lastChild);
+        }
 
-        this.right_click_menu.innerHTML = "";
-
-        // TODO: Loop through each item and create an appropriate element with appropriate callback here
-
-        const element = document.createElement("li");
-        element.className = "menu_item active";
-        const version =
-            __CHANNEL__ === "nightly"
-                ? `nightly ${__COMMIT_DATE__}`
-                : window.RufflePlayer.version;
-        element.innerText = `Ruffle ${version}`;
-        element.addEventListener("click", () => {
-            window.open("https://ruffle.rs", "_blank");
+        const items = [];
+        if (document.fullscreenEnabled) {
+            if (document.fullscreenElement) {
+                items.push({
+                    text: "Exit fullscreen",
+                    onClick: () => {
+                        document.exitFullscreen();
+                    },
+                });
+            } else {
+                items.push({
+                    text: "Enter fullscreen",
+                    onClick: () => {
+                        this.requestFullscreen();
+                        this.focus();
+                    },
+                });
+            }
+        }
+        items.push({
+            text: `Ruffle ${
+                __CHANNEL__ === "nightly"
+                    ? `nightly ${__COMMIT_DATE__}`
+                    : window.RufflePlayer.version
+            }`,
+            onClick() {
+                window.open("https://ruffle.rs", "_blank");
+            },
         });
-        this.right_click_menu.appendChild(element);
+
+        for (const [i, { text, onClick }] of items.entries()) {
+            const element = document.createElement("li");
+            element.className = "menu_item active";
+            if (i === 0) {
+                element.style.borderTopRightRadius = "5px";
+                element.style.borderTopLeftRadius = "5px";
+            }
+            if (i === items.length - 1) {
+                element.style.borderBottomRightRadius = "5px";
+                element.style.borderBottomLeftRadius = "5px";
+            }
+            element.textContent = text;
+            element.addEventListener("click", onClick);
+            this.right_click_menu.appendChild(element);
+        }
     }
 
     hide_right_click_menu() {
