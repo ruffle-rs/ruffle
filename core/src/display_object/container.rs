@@ -1,11 +1,266 @@
 //! Container mix-in for display objects
 
 use crate::context::UpdateContext;
+use crate::display_object::button::Button;
+use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject};
 use crate::string_utils::swf_string_eq_ignore_case;
 use gc_arena::{Collect, MutationContext};
+use ruffle_macros::enum_trait_object;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
+use std::fmt::Debug;
+
+#[enum_trait_object(
+    #[derive(Clone, Collect, Debug, Copy)]
+    #[collect(no_drop)]
+    pub enum DisplayObjectContainer<'gc> {
+        Button(Button<'gc>),
+        MovieClip(MovieClip<'gc>),
+    }
+)]
+pub trait TDisplayObjectContainer<'gc>:
+    'gc + Clone + Copy + Collect + Debug + Into<DisplayObjectContainer<'gc>>
+{
+    /// Get a child display object by it's position in the render list.
+    ///
+    /// The `id` provided here should not be confused with the `Depth`s used to
+    /// index the depth list.
+    fn child_by_id(self, id: usize) -> Option<DisplayObject<'gc>>;
+
+    /// Get a child display object by it's position in the depth list.
+    ///
+    /// The `Depth` provided here should not be confused with the `id`s used to
+    /// index the render list.
+    fn child_by_depth(self, depth: Depth) -> Option<DisplayObject<'gc>>;
+
+    /// Get a child display object by it's instance/timeline name.
+    ///
+    /// The `case_sensitive` parameter determines if we should consider
+    /// children with different capitalizations as being distinct names.
+    ///
+    /// If multiple children with the same name exist, the one with the lowest
+    /// depth wins. Children not on the depth list will not be accessible via
+    /// this mechanism.
+    fn child_by_name(self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>>;
+
+    /// Yield the head of the execution list.
+    fn first_executed_child(self) -> Option<DisplayObject<'gc>>;
+
+    /// Returns the number of children on the render list.
+    fn num_children(self) -> usize;
+
+    /// Insert a child display object into the container at a specific position
+    /// in the depth list, removing any child already at that position.
+    ///
+    /// After inserting the child into the depth list, we will attempt to
+    /// assign it a render list position one after the previous item in the
+    /// depth list. The position that children are placed into the render list
+    /// matches Flash Player behavior. The child will also be placed at the end
+    /// of the execution list.
+    ///
+    /// Any child removed from the depth list will also be removed from the
+    /// render and execution lists if and only if the child was not flagged as
+    /// being placed by script. If such a child was removed from said lists, it
+    /// will be returned here. Otherwise, this method returns `None`.
+    ///
+    /// The `already_on_exec_list` flag signals to the container that the child
+    /// being replaced is already on it's execution list and should not be
+    /// reinserted into the list.
+    fn replace_at_depth(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        child: DisplayObject<'gc>,
+        depth: Depth,
+        already_on_exec_list: bool,
+    ) -> Option<DisplayObject<'gc>>;
+
+    /// Move a child display object around in the container's depth list.
+    ///
+    /// Any child already at the desired position will move back to the new
+    /// child's former position. The render list positions of each child will
+    /// also be swapped, while the execution list will remain unchanged. If no
+    /// child has been displaced by the swap operation, then the render list
+    /// position of the child will be determined in the same way as
+    /// `replace_at_depth`.
+    fn swap_at_depth(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        child: DisplayObject<'gc>,
+        depth: Depth,
+    );
+
+    /// Insert a child display object into the container at a specific position
+    /// in the render list.
+    ///
+    /// This function does not adjust the depth or execution lists. Callers of
+    /// this method should be aware that reordering items onto or off of the
+    /// render list can make further depth list manipulations (e.g. from the
+    /// timeline) produce unusual results.
+    fn insert_at_id(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        child: DisplayObject<'gc>,
+        id: usize,
+    );
+
+    /// Remove a child display object from this container's render, depth, and
+    /// execution lists.
+    ///
+    /// If the child was found on any of the container's lists, this function
+    /// will return `true`.
+    fn remove_child(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        child: DisplayObject<'gc>,
+    ) -> bool;
+
+    /// Set the head of the execution list.
+    ///
+    /// TODO: Direct execution list manipulation shouldn't be allowed. Code
+    /// that uses this method is free to violate execution list invariants
+    /// (such as turning it into a circular list, not treating prev-and-next as
+    /// opposites, etc).
+    ///
+    /// It's only here for compatibility with some `Button` code. If you're
+    /// reviewing this PR please mark this as a problem so I can finish the
+    /// refactor
+    fn set_first_executed_child(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    );
+
+    /// Iterates over the children of this display object in execution order.
+    /// This is different than render or depth order.
+    ///
+    /// This yields an iterator that does *not* lock the parent and can be
+    /// safely held in situations where display objects need to be unlocked.
+    /// This means that unexpected but legal and defined items may be yielded
+    /// due to intended or unintended list manipulation by the caller.
+    ///
+    /// The iterator's concrete type is stated here due to Rust language
+    /// limitations.
+    fn iter_execution_list(self) -> ExecIter<'gc> {
+        ExecIter {
+            cur_child: self.first_executed_child(),
+        }
+    }
+
+    /// Iterates over the children of this display object in render order. This
+    /// is different than execution or depth order.
+    ///
+    /// This yields an iterator that *does* lock the parent and cannot be
+    /// safely held in situations where display objects need to be unlocked.
+    /// It's concrete type is stated here due to Rust language limitations.
+    fn iter_render_list(self) -> RenderIter<'gc> {
+        RenderIter::from_container(self.into())
+    }
+}
+
+#[macro_export]
+macro_rules! impl_display_object_container {
+    ($field:ident) => {
+        fn child_by_id(self, id: usize) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.get_id(id)
+        }
+
+        fn child_by_depth(self, depth: Depth) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.get_depth(depth)
+        }
+
+        fn child_by_name(self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.get_name(name, case_sensitive)
+        }
+
+        fn first_executed_child(self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.first_executed_child()
+        }
+
+        fn num_children(self) -> usize {
+            self.0.read().$field.num_children()
+        }
+
+        fn replace_at_depth(
+            &mut self,
+            context: &mut UpdateContext<'_, 'gc, '_>,
+            child: DisplayObject<'gc>,
+            depth: Depth,
+            already_on_exec_list: bool,
+        ) -> Option<DisplayObject<'gc>> {
+            self.0.write(context.gc_context).$field.replace_at_depth(
+                context,
+                (*self).into(),
+                child,
+                depth,
+                already_on_exec_list,
+            )
+        }
+
+        fn swap_at_depth(
+            &mut self,
+            context: &mut UpdateContext<'_, 'gc, '_>,
+            child: DisplayObject<'gc>,
+            depth: Depth,
+        ) {
+            // Verify this is actually our child.
+            // TODO: This seems unnecessary (especially since AS3 movieclips
+            // are allowed to be used in ways that would trip this assert)
+            debug_assert!(DisplayObject::ptr_eq(
+                child.parent().unwrap(),
+                (*self).into()
+            ));
+
+            self.0.write(context.gc_context).$field.swap_at_depth(
+                context.gc_context,
+                (*self).into(),
+                child,
+                depth,
+            );
+        }
+
+        fn insert_at_id(
+            &mut self,
+            context: &mut UpdateContext<'_, 'gc, '_>,
+            child: DisplayObject<'gc>,
+            id: usize,
+        ) {
+            self.0.write(context.gc_context).$field.insert_at_id(
+                context,
+                (*self).into(),
+                child,
+                id,
+            );
+        }
+
+        fn remove_child(
+            &mut self,
+            context: &mut UpdateContext<'_, 'gc, '_>,
+            child: DisplayObject<'gc>,
+        ) -> bool {
+            debug_assert!(DisplayObject::ptr_eq(
+                child.parent().unwrap(),
+                (*self).into()
+            ));
+
+            self.0
+                .write(context.gc_context)
+                .$field
+                .remove_child(context, child)
+        }
+
+        fn set_first_executed_child(
+            &self,
+            gc_context: MutationContext<'gc, '_>,
+            node: Option<DisplayObject<'gc>>,
+        ) {
+            self.0
+                .write(gc_context)
+                .$field
+                .set_first_executed_child(node)
+        }
+    };
+}
 
 /// A structure that stores child display objects.
 ///
@@ -62,16 +317,12 @@ impl<'gc> ChildContainer<'gc> {
     }
 
     /// Get the head of the execution list.
-    pub fn first_child(&self) -> Option<DisplayObject<'gc>> {
+    pub fn first_executed_child(&self) -> Option<DisplayObject<'gc>> {
         self.exec_list
     }
 
     /// Change the head of the execution list.
-    pub fn set_first_child(
-        &mut self,
-        _context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    ) {
+    pub fn set_first_executed_child(&mut self, node: Option<DisplayObject<'gc>>) {
         self.exec_list = node;
     }
 
@@ -151,7 +402,7 @@ impl<'gc> ChildContainer<'gc> {
         self.depth_list.get(&depth).copied()
     }
 
-    /// Get a child by it's timeline name.
+    /// Get a child by it's instance/timeline name.
     ///
     /// The `case_sensitive` parameter determines if we should consider
     /// children with different capitalizations as being distinct names.
@@ -192,15 +443,19 @@ impl<'gc> ChildContainer<'gc> {
     /// that all children after the old position will be shifted back by one,
     /// which must be taken into account when calculating future insertion IDs.
     ///
+    /// `parent` should be the display object that owns this container.
+    ///
     /// All children at or after the given ID will be shifted down in the
     /// render list. The child will *not* be put onto the depth list.
     pub fn insert_at_id(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        parent: DisplayObject<'gc>,
         child: DisplayObject<'gc>,
         id: usize,
     ) {
         child.set_place_frame(context.gc_context, 0);
+        child.set_parent(context.gc_context, Some(parent));
 
         if let Some(old_id) = self
             .render_list
@@ -221,8 +476,8 @@ impl<'gc> ChildContainer<'gc> {
         } else {
             if let Some(old_parent) = child.parent() {
                 //TODO: container access for non-clips
-                if let Some(mut old_parent_mc) = old_parent.as_movie_clip() {
-                    old_parent_mc.remove_child_from_avm(context, child);
+                if let Some(mut old_parent) = old_parent.as_container() {
+                    old_parent.remove_child(context, child);
                 }
             }
 
@@ -236,11 +491,13 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// If a child was replaced, this function returns the child that was
     /// removed from the container. It should be removed from any other lists
-    /// maintained by the owner of this container (e.g. the execution list).
+    /// maintained by the owner of this container.
     ///
     /// Children that have been placed by scripts will not be removed from the
     /// render list, only the depth list. This function will also not return
     /// such children.
+    ///
+    /// `parent` should be the display object that owns this container.
     ///
     /// The `already_on_exec_list` flag indicates that the caller has already
     /// added the child to the execution list, and thus this function should
@@ -248,12 +505,14 @@ impl<'gc> ChildContainer<'gc> {
     pub fn replace_at_depth(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        parent: DisplayObject<'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
         already_on_exec_list: bool,
     ) -> Option<DisplayObject<'gc>> {
         child.set_place_frame(context.gc_context, 0);
         child.set_depth(context.gc_context, depth);
+        child.set_parent(context.gc_context, Some(parent));
 
         let prev_child = self.depth_list.insert(depth, child);
         let removed_child = if let Some(prev_child) = prev_child {
@@ -306,14 +565,18 @@ impl<'gc> ChildContainer<'gc> {
     /// same steps occur, but the child will merely be removed and reinserted
     /// within the render list at a position after the closest previous child
     /// in the depth list.
+    ///
+    /// `parent` should be the display object that owns this container.
     pub fn swap_at_depth(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
+        parent: DisplayObject<'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
     ) {
         let prev_depth = child.depth();
         child.set_depth(gc_context, depth);
+        child.set_parent(gc_context, Some(parent));
 
         if let Some(prev_child) = self.depth_list.insert(depth, child) {
             prev_child.set_depth(gc_context, prev_depth);
@@ -386,19 +649,74 @@ impl<'gc> ChildContainer<'gc> {
         self.depth_list.clear();
     }
 
-    /// Yield children in the order that they are to be rendered,
-    /// back-to-front.
-    pub fn iter_render_children<'a>(
-        &'a self,
-    ) -> impl 'a + DoubleEndedIterator<Item = DisplayObject<'gc>> {
-        self.render_list.iter().copied()
-    }
-
     /// Yield children in the order expected of them by the timeline, alongside
     /// their corresponding depths.
     pub fn iter_children_by_depth<'a>(
         &'a self,
     ) -> impl 'a + Iterator<Item = (Depth, DisplayObject<'gc>)> {
         self.depth_list.iter().map(|(k, v)| (*k, *v))
+    }
+}
+
+pub struct ExecIter<'gc> {
+    cur_child: Option<DisplayObject<'gc>>,
+}
+
+impl<'gc> Iterator for ExecIter<'gc> {
+    type Item = DisplayObject<'gc>;
+    fn next(&mut self) -> Option<Self::Item> {
+        let cur = self.cur_child;
+
+        self.cur_child = self
+            .cur_child
+            .and_then(|display_cell| display_cell.next_sibling());
+
+        cur
+    }
+}
+
+pub struct RenderIter<'gc> {
+    src: DisplayObjectContainer<'gc>,
+    i: usize,
+    neg_i: usize,
+}
+
+impl<'gc> RenderIter<'gc> {
+    fn from_container(src: DisplayObjectContainer<'gc>) -> Self {
+        Self {
+            src,
+            i: 0,
+            neg_i: src.num_children(),
+        }
+    }
+}
+
+impl<'gc> Iterator for RenderIter<'gc> {
+    type Item = DisplayObject<'gc>;
+
+    fn next(&mut self) -> Option<DisplayObject<'gc>> {
+        if self.i == self.neg_i {
+            return None;
+        }
+
+        let this = self.src.child_by_id(self.i);
+
+        self.i += 1;
+
+        this
+    }
+}
+
+impl<'gc> DoubleEndedIterator for RenderIter<'gc> {
+    fn next_back(&mut self) -> Option<DisplayObject<'gc>> {
+        if self.i == self.neg_i {
+            return None;
+        }
+
+        let this = self.src.child_by_id(self.neg_i - 1);
+
+        self.neg_i -= 1;
+
+        this
     }
 }

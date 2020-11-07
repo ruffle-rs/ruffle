@@ -9,7 +9,7 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.DisplayObjectContainer`'s instance constructor.
@@ -41,9 +41,9 @@ fn validate_add_operation<'gc>(
     proposed_child: DisplayObject<'gc>,
     proposed_index: usize,
 ) -> Result<(), Error> {
-    let mc = new_parent
-        .as_movie_clip()
-        .ok_or("ArgumentError: Parent is not a movieclip")?;
+    let ctr = new_parent
+        .as_container()
+        .ok_or("ArgumentError: Parent is not a DisplayObjectContainer")?;
 
     let mut checking_parent = Some(new_parent);
 
@@ -58,7 +58,7 @@ fn validate_add_operation<'gc>(
         checking_parent = tp.parent();
     }
 
-    if proposed_index > mc.num_children() {
+    if proposed_index > ctr.num_children() {
         return Err("RangeError: Index position does not exist in the child list".into());
     }
 
@@ -74,11 +74,11 @@ fn validate_remove_operation<'gc>(
     old_parent: DisplayObject<'gc>,
     proposed_child: DisplayObject<'gc>,
 ) -> Result<(), Error> {
-    let _ = old_parent
-        .as_movie_clip()
-        .ok_or("ArgumentError: Parent is not a movieclip")?;
+    let old_ctr = old_parent
+        .as_container()
+        .ok_or("ArgumentError: Parent is not a DisplayObjectContainer")?;
 
-    for child in old_parent.children() {
+    for child in old_ctr.iter_execution_list() {
         if DisplayObject::ptr_eq(child, proposed_child) {
             return Ok(());
         }
@@ -99,8 +99,8 @@ fn remove_child_from_displaylist<'gc>(
     child: DisplayObject<'gc>,
 ) {
     if let Some(parent) = child.parent() {
-        if let Some(mut mc) = parent.as_movie_clip() {
-            mc.remove_child_from_avm(context, child);
+        if let Some(mut ctr) = parent.as_container() {
+            ctr.remove_child(context, child);
         }
     }
 }
@@ -120,8 +120,8 @@ fn add_child_to_displaylist<'gc>(
     index: usize,
 ) {
     //TODO: Non-MC objects can be containers in AS3!
-    if let Some(mut mc) = parent.as_movie_clip() {
-        mc.add_child_from_avm_by_id(context, child, index);
+    if let Some(mut ctr) = parent.as_container() {
+        ctr.insert_at_id(context, child, index);
         child.set_placed_by_script(context.gc_context, true);
     }
 }
@@ -132,13 +132,16 @@ pub fn get_child_at<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_container())
+    {
         let id = args
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_u32(activation)?;
-        let child = dobj.get_child_by_id(id as usize).ok_or_else(|| {
+        let child = dobj.child_by_id(id as usize).ok_or_else(|| {
             format!(
                 "RangeError: Display object container has no child with id {}",
                 id
@@ -157,13 +160,16 @@ pub fn get_child_by_name<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_container())
+    {
         let name = args
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
-        let child = dobj.get_child_by_name(&name, false).ok_or_else(|| {
+        let child = dobj.child_by_name(&name, false).ok_or_else(|| {
             format!(
                 "RangeError: Display object container has no child with name {}",
                 name
@@ -182,23 +188,22 @@ pub fn add_child<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(parent) = this
-        .and_then(|this| this.as_display_object())
-        .and_then(|this| this.as_movie_clip())
-    {
-        let child = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?
-            .as_display_object()
-            .ok_or("ArgumentError: Child not a valid display object")?;
-        let target_index = parent.num_children();
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        if let Some(ctr) = parent.as_container() {
+            let child = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_object(activation)?
+                .as_display_object()
+                .ok_or("ArgumentError: Child not a valid display object")?;
+            let target_index = ctr.num_children();
 
-        validate_add_operation(parent.into(), child, target_index)?;
-        add_child_to_displaylist(&mut activation.context, parent.into(), child, target_index);
+            validate_add_operation(parent, child, target_index)?;
+            add_child_to_displaylist(&mut activation.context, parent, child, target_index);
 
-        return Ok(child.object2());
+            return Ok(child.object2());
+        }
     }
 
     Ok(Value::Undefined)
@@ -265,7 +270,7 @@ pub fn num_children<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(parent) = this
         .and_then(|this| this.as_display_object())
-        .and_then(|this| this.as_movie_clip())
+        .and_then(|this| this.as_container())
     {
         return Ok(parent.num_children().into());
     }
@@ -279,24 +284,23 @@ pub fn contains<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(parent) = this
-        .and_then(|this| this.as_display_object())
-        .and_then(|this| this.as_movie_clip())
-    {
-        if let Some(child) = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?
-            .as_display_object()
-        {
-            let mut maybe_child_parent = Some(child);
-            while let Some(child_parent) = maybe_child_parent {
-                if DisplayObject::ptr_eq(child_parent, parent.into()) {
-                    return Ok(true.into());
-                }
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        if parent.as_container().is_some() {
+            if let Some(child) = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_object(activation)?
+                .as_display_object()
+            {
+                let mut maybe_child_parent = Some(child);
+                while let Some(child_parent) = maybe_child_parent {
+                    if DisplayObject::ptr_eq(child_parent, parent) {
+                        return Ok(true.into());
+                    }
 
-                maybe_child_parent = child_parent.parent();
+                    maybe_child_parent = child_parent.parent();
+                }
             }
         }
     }
@@ -310,21 +314,20 @@ pub fn get_child_index<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(parent) = this
-        .and_then(|this| this.as_display_object())
-        .and_then(|this| this.as_movie_clip())
-    {
-        let target_child = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?
-            .as_display_object();
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        if let Some(ctr) = parent.as_container() {
+            let target_child = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_object(activation)?
+                .as_display_object();
 
-        if let Some(target_child) = target_child {
-            for (i, child) in parent.as_container().iter_render_children().enumerate() {
-                if DisplayObject::ptr_eq(child, target_child) {
-                    return Ok(i.into());
+            if let Some(target_child) = target_child {
+                for (i, child) in ctr.iter_render_list().enumerate() {
+                    if DisplayObject::ptr_eq(child, target_child) {
+                        return Ok(i.into());
+                    }
                 }
             }
         }

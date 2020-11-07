@@ -12,7 +12,9 @@ use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
-use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObject};
+use crate::display_object::{
+    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
+};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
@@ -519,7 +521,7 @@ fn attach_movie<'gc>(
     {
         // Set name and attach to parent.
         new_clip.set_name(activation.context.gc_context, &new_instance_name);
-        movie_clip.add_child_from_avm_by_depth(&mut activation.context, new_clip, depth);
+        movie_clip.replace_at_depth(&mut activation.context, new_clip, depth, false);
         let init_object = if let Some(Value::Object(init_object)) = init_object {
             Some(init_object.to_owned())
         } else {
@@ -570,7 +572,7 @@ fn create_empty_movie_clip<'gc>(
 
     // Set name and attach to parent.
     new_clip.set_name(activation.context.gc_context, &new_instance_name);
-    movie_clip.add_child_from_avm_by_depth(&mut activation.context, new_clip.into(), depth);
+    movie_clip.replace_at_depth(&mut activation.context, new_clip.into(), depth, false);
     new_clip.post_instantiation(
         &mut activation.context,
         new_clip.into(),
@@ -621,10 +623,11 @@ fn create_text_field<'gc>(
         activation.context.gc_context,
         &instance_name.coerce_to_string(activation)?,
     );
-    movie_clip.add_child_from_avm_by_depth(
+    movie_clip.replace_at_depth(
         &mut activation.context,
         text_field,
         (depth as Depth).wrapping_add(AVM_DEPTH_BIAS),
+        false,
     );
     text_field.post_instantiation(
         &mut activation.context,
@@ -694,7 +697,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
     {
         // Set name and attach to parent.
         new_clip.set_name(activation.context.gc_context, &new_instance_name);
-        parent.add_child_from_avm_by_depth(&mut activation.context, new_clip, depth);
+        parent.replace_at_depth(&mut activation.context, new_clip, depth, false);
 
         // Copy display properties from previous clip to new clip.
         new_clip.set_matrix(activation.context.gc_context, &*movie_clip.matrix());
@@ -877,7 +880,7 @@ pub fn remove_movie_clip<'gc>(
             return Ok(Value::Undefined);
         };
 
-        parent.remove_child_from_avm(&mut activation.context, movie_clip.into());
+        parent.remove_child(&mut activation.context, movie_clip.into());
     }
     Ok(Value::Undefined)
 }
@@ -917,7 +920,7 @@ fn swap_depths<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
 
-    let parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
+    let mut parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
         parent
     } else {
         return Ok(Value::Undefined);
@@ -950,7 +953,8 @@ fn swap_depths<'gc>(
         }
 
         if depth != movie_clip.depth() {
-            parent.swap_child_to_depth(&mut activation.context, movie_clip.into(), depth);
+            parent.swap_at_depth(&mut activation.context, movie_clip.into(), depth);
+            movie_clip.set_transformed_by_script(activation.context.gc_context, true);
         }
     }
 

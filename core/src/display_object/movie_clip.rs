@@ -12,7 +12,7 @@ use crate::backend::audio::AudioStreamHandle;
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
-use crate::display_object::container::ChildContainer;
+use crate::display_object::container::{ChildContainer, TDisplayObjectContainer};
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
 };
@@ -946,99 +946,6 @@ impl<'gc> MovieClip<'gc> {
         mc.set_clip_actions(actions);
     }
 
-    /// Adds a script-created display object as a child to this clip by depth.
-    ///
-    /// This function manipulates the timeline list, and then attempts to
-    /// place the newly-inserted child into the render list at a location which
-    /// is relative to it's depth. The execution list will also be manipulated
-    /// in the case where a clip already exists at the same depth.
-    ///
-    /// Specifically, if there is already a child with the given depth, the old
-    /// child will be removed from the execution list and replaced with the new
-    /// child on the render list. If no child with the given depth exists, then
-    /// we look for the closest child with a lower depth than the proposed
-    /// depth. If we do, then we insert the new child in the render list
-    /// directly after that previous child. If we don't, then we put the child
-    /// at the front of the render list. The child will always be placed at the
-    /// end of the execution list and at the given position on the depth list.
-    pub fn add_child_from_avm_by_depth(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-        depth: Depth,
-    ) {
-        let mut parent = self.0.write(context.gc_context);
-
-        parent
-            .container
-            .replace_at_depth(context, child, depth, false);
-        child.set_parent(context.gc_context, Some((*self).into()));
-    }
-
-    /// Adds a script-created display object as a child to this clip at a
-    /// particular position in the render list.
-    ///
-    /// This function does not adjust the depth list to correspond to the
-    /// render list. It is entirely possible (and, indeed, supported) that AS3
-    /// code reorganizes the render list in such a way as to produce unexpected
-    /// results when timeline interactions occur.
-    pub fn add_child_from_avm_by_id(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-        index: usize,
-    ) {
-        let mut parent = self.0.write(context.gc_context);
-
-        parent.container.insert_at_id(context, child, index);
-        child.set_parent(context.gc_context, Some((*self).into()));
-    }
-
-    /// Remove a child from this clip.
-    ///
-    /// This function will attempt to remove the child from the depth and
-    /// render lists. If either succeed, we also remove the child from the
-    /// execution list.
-    pub fn remove_child_from_avm(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-    ) {
-        debug_assert!(DisplayObject::ptr_eq(
-            child.parent().unwrap(),
-            (*self).into()
-        ));
-        let mut parent = self.0.write(context.gc_context);
-        parent.container.remove_child(context, child);
-    }
-
-    /// Swaps a child to a target depth.
-    ///
-    /// If another child already exists at the target depth, it will be moved
-    /// to the current depth of the given child. Their relative positions in
-    /// the render list will also be swapped. If the target depth is empty, the
-    /// same steps occur, but the child will merely be removed and reinserted
-    /// within the render list at a position after the closest previous child
-    /// in the depth list.
-    ///
-    /// No modifications to the execution list are made by this method.
-    pub fn swap_child_to_depth(
-        self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-        depth: Depth,
-    ) {
-        // Verify this is actually our child.
-        debug_assert!(DisplayObject::ptr_eq(child.parent().unwrap(), self.into()));
-
-        // TODO: It'd be nice to just do a swap here, but no swap functionality in BTreeMap.
-        let mut parent = self.0.write(context.gc_context);
-        child.set_transformed_by_script(context.gc_context, true);
-        parent
-            .container
-            .swap_at_depth(context.gc_context, child, depth);
-    }
-
     /// Returns an iterator of AVM1 `DoAction` blocks on the given frame number.
     /// Used by the AVM `Call` action.
     pub fn actions_on_frame(
@@ -1225,7 +1132,8 @@ impl<'gc> MovieClip<'gc> {
             // and add new child onto front of the list.
             let prev_child = {
                 let mut mc = self.0.write(context.gc_context);
-                mc.container.replace_at_depth(context, child, depth, false)
+                mc.container
+                    .replace_at_depth(context, self.into(), child, depth, false)
             };
             {
                 // Set initial properties for child.
@@ -1689,7 +1597,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn set_focusable(self, focusable: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).is_focusable = focusable;
     }
-
+    
     /// Handle a RemoveObject tag when running a goto action.
     #[inline]
     fn goto_remove_object<'a>(
@@ -1725,11 +1633,6 @@ impl<'gc> MovieClip<'gc> {
         }
         Ok(())
     }
-    
-    /// Borrow the child container.
-    pub fn as_container<'a>(&'a self) -> Ref<'a, ChildContainer<'gc>> {
-        Ref::map(self.0.read(), |s| &s.container)
-    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -1749,7 +1652,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
-        for child in self.children() {
+        for child in self.iter_execution_list() {
             child.run_frame(context);
         }
 
@@ -1781,10 +1684,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
         self.0.read().drawing.render(context);
-        crate::display_object::render_children(
-            context,
-            self.0.read().container.iter_render_children(),
-        );
+        crate::display_object::render_children(context, self.iter_render_list());
         context.transform_stack.pop();
     }
 
@@ -1802,7 +1702,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         point: (Twips, Twips),
     ) -> bool {
         if self.world_bounds().contains(point) {
-            for child in self.children() {
+            for child in self.iter_execution_list() {
                 if child.hit_test_shape(context, point) {
                     return true;
                 }
@@ -1851,7 +1751,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
             // Maybe we could skip recursing down at all if !world_bounds.contains(point),
             // but a child button can have an invisible hit area outside the parent's bounds.
-            for child in self.0.read().container.iter_render_children().rev() {
+            for child in self.iter_render_list().rev() {
                 let result = child.mouse_pick(context, child, point);
                 if result.is_some() {
                     return result;
@@ -1868,7 +1768,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         if event.propagates() {
-            for child in self.children() {
+            for child in self.iter_execution_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
                 }
@@ -1880,6 +1780,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn as_movie_clip(&self) -> Option<MovieClip<'gc>> {
         Some(*self)
+    }
+
+    fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
+        Some(self.into())
     }
 
     fn post_instantiation(
@@ -1932,7 +1836,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        for child in self.children() {
+        for child in self.iter_execution_list() {
             child.unload(context);
         }
 
@@ -1961,10 +1865,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         !self.0.read().container.is_empty()
     }
 
-    fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
-        self.0.read().container.get_name(name, case_sensitive)
-    }
-
     fn is_focusable(&self) -> bool {
         self.0.read().is_focusable
     }
@@ -1972,21 +1872,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn on_focus_changed(&self, context: MutationContext<'gc, '_>, focused: bool) {
         self.0.write(context).has_focus = focused;
     }
+}
 
-    fn get_child_by_id(&self, id: usize) -> Option<DisplayObject<'gc>> {
-        self.0.read().container.get_id(id)
-    }
-
-    fn first_child(&self) -> Option<DisplayObject<'gc>> {
-        self.0.read().container.first_child()
-    }
-
-    fn set_first_child(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
-        self.0
-            .write(context)
-            .container
-            .set_first_child(context, node);
-    }
+impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
+    impl_display_object_container!(container);
 }
 
 impl<'gc> MovieClipData<'gc> {
