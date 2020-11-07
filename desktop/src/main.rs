@@ -357,8 +357,8 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                         {
                             match event {
                                 ruffle_core::PlayerEvent::KeyDown {
-                                    key_code: ruffle_core::KeyCode::F11,
-                                } => {
+                                    key_code: ruffle_core::KeyCode::Return,
+                                } if player_lock.input().is_key_down(ruffle_core::KeyCode::Alt) => {
                                     if window.fullscreen().is_none() {
                                         window.set_fullscreen(Some(
                                             winit::window::Fullscreen::Borderless(None),
@@ -366,12 +366,6 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                                     } else {
                                         window.set_fullscreen(None)
                                     }
-                                    window.request_redraw();
-                                }
-                                ruffle_core::PlayerEvent::KeyDown {
-                                    key_code: ruffle_core::KeyCode::Escape,
-                                } => {
-                                    window.set_fullscreen(None);
                                     window.request_redraw();
                                 }
                                 _ => {
