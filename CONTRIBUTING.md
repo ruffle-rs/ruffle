@@ -112,7 +112,7 @@ rustup component add clippy
 
 You can auto-format your changes with `rustfmt`:
 
-`cargo run fmt --all`
+`cargo fmt --all`
 
 and you can run the clippy lints:
 
