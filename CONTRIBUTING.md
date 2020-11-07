@@ -54,13 +54,13 @@ Ruffle is a young project, and there is still much Flash functionality that is u
 
 If you build Ruffle with `--features avm_debug` and enable debug logging (`RUST_LOG=warn,ruffle_core=debug`) then you will
 activate a few built-in debugging utilities inside Ruffle, listed below.
- 
+
 ### Warnings and Errors
-All AVM errors and warnings will print their stack trace so that you can view where they are in relation to the 
+All AVM errors and warnings will print their stack trace so that you can view where they are in relation to the
 ActionScript inside the movie. This requires no extra configuration and will be visible by default.
 
 ### Step-By-Step Output
-If you use the hotkey `CTRL + ALT + D` you will toggle verbose AVM debugging output on and off (default off). 
+If you use the hotkey `CTRL + ALT + D` you will toggle verbose AVM debugging output on and off (default off).
 You will be able to follow the flow of ActionScript inside of a SWF movie, as each action is performed.
 Please note that this will likely slow down Ruffle, and it may significantly spam output. Please use sparingly.
 
@@ -105,28 +105,36 @@ Ruffle is built using the latest stable version of the Rust compiler. Nightly an
 
 The Rust code in Ruffle strives to be idiomatic. The Rust compiler should emit no warnings when building the project. Additionally, all code should be formatted using [`rustfmt`](https://github.com/rust-lang/rustfmt) and linted using [`clippy`](https://github.com/rust-lang/rust-clippy). You can install these tools using `rustup`:
 
-```
+```sh
 rustup component add rustfmt
 rustup component add clippy
 ```
 
 You can auto-format your changes with `rustfmt`:
 
-`cargo run fmt --all`
+```sh
+cargo fmt --all
+```
 
 and you can run the clippy lints:
 
-`cargo clippy --all --tests`
+```sh
+cargo clippy --all --tests
+```
 
 Specific warnings and clippy lints can be allowed when appropriate using attributes, such as:
 
-`#[allow(clippy::float_cmp)]`
+```rs
+#[allow(clippy::float_cmp)]
+```
 
 ## Commit Message Guidelines
 
 Here is a sample commit message:
 
-`web: Fix incorrect rendering of gradients (close #23)`
+```
+web: Fix incorrect rendering of gradients (close #23)
+```
 
  * If applicable, prefix the first line with a tag indicating the relevant area of changes:
    * `core:`
@@ -146,6 +154,6 @@ Here is a sample commit message:
 
 Pull requests are the primary way to contribute code to Ruffle. Pull requests should be made against the latest `master` branch. Your pull request should not contain merges; you should always rebase when bringing the latest changes into your branch from the `master` branch. If there are merge conflicts, or if your commit history is messy, please rebase onto the latest master. [`git rebase -i`](https://thoughtbot.com/blog/git-interactive-rebase-squash-amend-rewriting-history#interactive-rebase) is a great way to clean up your pull request.
 
-When you make a pull request, our [CI](https://circleci.com/gh/ruffle-rs/ruffle) will build your changes and run them through all tests and style checks. All of these tests should pass before your pull request can be accepted. 
+When you make a pull request, our [CI](https://circleci.com/gh/ruffle-rs/ruffle) will build your changes and run them through all tests and style checks. All of these tests should pass before your pull request can be accepted.
 
 One of [our regular contributors](https://github.com/orgs/ruffle-rs/people) will review your changes and try their best to helpfully suggest any changes. If all goes well, your PR should be merged without much delay. We use both standard merge commits and fast-forward merges depending on the size of the changes. Thanks for your contribution!
