@@ -59,7 +59,7 @@ struct SoundInstance {
     signal: Signal,
 
     /// The character ID of the movie clip that contains this stream.
-    /// `None` if this sound is an event sound (`StartSound`).
+    // TODO: Make non-Option?
     clip_id: Option<swf::CharacterId>,
 
     /// Flag indicating whether this sound is still playing.
@@ -358,6 +358,7 @@ impl AudioBackend for CpalAudioBackend {
 
     fn start_sound(
         &mut self,
+        clip_id: Option<swf::CharacterId>,
         sound_handle: SoundHandle,
         settings: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error> {
@@ -381,8 +382,8 @@ impl AudioBackend for CpalAudioBackend {
         let mut sound_instances = self.sound_instances.lock().unwrap();
         let handle = sound_instances.insert(SoundInstance {
             handle: Some(sound_handle),
-            clip_id: None,
             signal,
+            clip_id,
             active: true,
         });
         Ok(handle)
@@ -403,6 +404,11 @@ impl AudioBackend for CpalAudioBackend {
             sound_instances.remove(i);
         }
         sound_instances.clear();
+    }
+
+    fn stop_sounds_with_clip_id(&mut self, clip_id: swf::CharacterId) {
+        let mut sound_instances = self.sound_instances.lock().unwrap();
+        sound_instances.retain(|_, instance| instance.clip_id != Some(clip_id));
     }
 
     fn stop_sounds_with_handle(&mut self, handle: SoundHandle) {

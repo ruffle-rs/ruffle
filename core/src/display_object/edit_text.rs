@@ -2,7 +2,6 @@
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::globals::text_field::attach_virtual_properties;
 use crate::avm1::{Avm1, AvmString, Object, StageObject, TObject, Value};
-use crate::backend::audio::SoundInstanceHandle;
 use crate::backend::input::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};

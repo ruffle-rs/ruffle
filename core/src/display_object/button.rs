@@ -1,5 +1,4 @@
 use crate::avm1::{Object, StageObject, Value};
-use crate::backend::audio::SoundInstanceHandle;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::ChildContainer;
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
@@ -461,7 +460,8 @@ impl<'gc> ButtonData<'gc> {
                 .library_for_movie_mut(self.movie())
                 .get_sound(*id)
             {
-                let _ = context.audio.start_sound(sound_handle, sound_info);
+                // TODO: pass id instead of None?
+                let _ = context.audio.start_sound(None, sound_handle, sound_info);
             }
         }
     }

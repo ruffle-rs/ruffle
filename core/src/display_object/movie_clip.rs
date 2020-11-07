@@ -10,7 +10,6 @@ use crate::avm2::{
 use crate::backend::audio::AudioStreamHandle;
 
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
-use crate::backend::audio::SoundInstanceHandle;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{ChildContainer, TDisplayObjectContainer};
@@ -2947,13 +2946,19 @@ impl<'gc, 'a> MovieClip<'gc> {
             match start_sound.sound_info.event {
                 // "Event" sounds always play, independent of the timeline.
                 SoundEvent::Event => {
-                    let _ = context.audio.start_sound(handle, &start_sound.sound_info);
+                    // TODO: pass start_sound.id instead of None?
+                    let _ = context
+                        .audio
+                        .start_sound(None, handle, &start_sound.sound_info);
                 }
 
                 // "Start" sounds only play if an instance of the same sound is not already playing.
                 SoundEvent::Start => {
                     if !context.audio.is_sound_playing_with_handle(handle) {
-                        let _ = context.audio.start_sound(handle, &start_sound.sound_info);
+                        // TODO: pass start_sound.id instead of None?
+                        let _ = context
+                            .audio
+                            .start_sound(None, handle, &start_sound.sound_info);
                     }
                 }
 

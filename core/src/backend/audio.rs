@@ -39,6 +39,7 @@ pub trait AudioBackend: Downcast {
     /// In Flash, this is known as an "Event" sound.
     fn start_sound(
         &mut self,
+        clip_id: Option<swf::CharacterId>,
         sound: SoundHandle,
         settings: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error>;
@@ -61,6 +62,9 @@ pub trait AudioBackend: Downcast {
 
     /// Good ol' stopAllSounds() :-)
     fn stop_all_sounds(&mut self);
+
+    /// Stops all active sound instances of a particular character ID.
+    fn stop_sounds_with_clip_id(&mut self, clip_id: swf::CharacterId);
 
     /// Stops all active sound instances of a particular sound.
     /// Used by SWF `StartSound` tag with `SoundEvent::Stop`.
@@ -115,6 +119,7 @@ impl AudioBackend for NullAudioBackend {
 
     fn start_sound(
         &mut self,
+        _clip_id: Option<swf::CharacterId>,
         _sound: SoundHandle,
         _sound_info: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error> {
@@ -137,6 +142,7 @@ impl AudioBackend for NullAudioBackend {
         self.streams.remove(stream);
     }
     fn stop_all_sounds(&mut self) {}
+    fn stop_sounds_with_clip_id(&mut self, _clip_id: swf::CharacterId) {}
     fn stop_sounds_with_handle(&mut self, _handle: SoundHandle) {}
     fn is_sound_playing_with_handle(&mut self, _handle: SoundHandle) -> bool {
         false

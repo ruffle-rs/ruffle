@@ -387,7 +387,9 @@ fn start<'gc>(
     use swf::{SoundEvent, SoundInfo};
     if let Some(sound_object) = this.as_sound_object() {
         if let Some(sound) = sound_object.sound() {
-            let sound_instance = activation.context.audio.start_sound(
+            let clip_id = sound_object.owner().map(|owner| owner.id());
+            let _ = activation.context.audio.start_sound(
+                clip_id,
                 sound,
                 &SoundInfo {
                     event: SoundEvent::Start,
@@ -401,9 +403,6 @@ fn start<'gc>(
                     envelope: None,
                 },
             );
-            if let (Ok(sound_instance), Some(mut owner)) = (sound_instance, sound_object.owner()) {
-                owner.add_sound_instance(activation.context.gc_context, sound_instance);
-            }
         } else {
             avm_warn!(activation, "Sound.start: No sound is attached");
         }
@@ -448,9 +447,10 @@ fn stop<'gc>(
             }
         } else if let Some(owner) = sound.owner() {
             // Usage 2: Stop all sound running within a given clip.
-            for &sound_instance in owner.sound_instances().iter() {
-                activation.context.audio.stop_sound(sound_instance);
-            }
+            activation
+                .context
+                .audio
+                .stop_sounds_with_clip_id(owner.id());
         } else {
             // Usage 3: If there is no owner and no name, this call acts like `stopAllSounds()`.
             activation.context.audio.stop_all_sounds();
