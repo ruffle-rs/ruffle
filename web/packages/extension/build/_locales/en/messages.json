@@ -9,7 +9,7 @@
         "message": "Ignore website compatibility warnings"
     },
     "status_init": {
-        "message": "Reading current tab..."
+        "message": "Reading current tab…"
     },
     "status_no_tabs": {
         "message": "There is no active tab."
@@ -18,7 +18,7 @@
         "message": "An error occurred when looking up the current tab."
     },
     "status_message_init": {
-        "message": "Checking Ruffle status on current tab..."
+        "message": "Checking Ruffle status on current tab…"
     },
     "status_result_running": {
         "message": "Ruffle is loaded and running Flash content on the current tab."
