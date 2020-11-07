@@ -26,6 +26,7 @@ mod text;
 
 use crate::avm1::activation::Activation;
 use crate::backend::input::MouseCursor;
+pub use crate::display_object::container::{DisplayObjectContainer, TDisplayObjectContainer};
 use crate::events::{ClipEvent, ClipEventResult};
 pub use bitmap::Bitmap;
 pub use button::Button;
@@ -415,10 +416,14 @@ pub trait TDisplayObject<'gc>:
     /// the overall AABB.
     fn bounds_with_transform(&self, matrix: &Matrix) -> BoundingBox {
         let mut bounds = self.self_bounds().transform(matrix);
-        for child in self.children() {
-            let matrix = *matrix * *child.matrix();
-            bounds.union(&child.bounds_with_transform(&matrix));
+
+        if let Some(ctr) = self.as_container() {
+            for child in ctr.iter_execution_list() {
+                let matrix = *matrix * *child.matrix();
+                bounds.union(&child.bounds_with_transform(&matrix));
+            }
         }
+
         bounds
     }
 
@@ -650,53 +655,10 @@ pub trait TDisplayObject<'gc>:
     fn set_clip_depth(&self, context: MutationContext<'gc, '_>, depth: Depth);
     fn parent(&self) -> Option<DisplayObject<'gc>>;
     fn set_parent(&self, context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
-
-    fn first_child(&self) -> Option<DisplayObject<'gc>> {
-        None
-    }
-
-    fn set_first_child(
-        &self,
-        _context: MutationContext<'gc, '_>,
-        _node: Option<DisplayObject<'gc>>,
-    ) {
-    }
-
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
     fn set_prev_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
     fn next_sibling(&self) -> Option<DisplayObject<'gc>>;
     fn set_next_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
-
-    fn last_child(&self) -> Option<DisplayObject<'gc>> {
-        let mut last = self.first_child()?;
-        while let Some(l) = last.next_sibling() {
-            last = l;
-        }
-
-        Some(last)
-    }
-
-    /// Iterates over the children of this display object in execution order.
-    /// This is different than render order.
-    fn children(&self) -> ChildIter<'gc> {
-        ChildIter {
-            cur_child: self.first_child(),
-        }
-    }
-
-    /// Get a child display object by instance name.
-    fn get_child_by_name(&self, _name: &str, _case_sensitive: bool) -> Option<DisplayObject<'gc>> {
-        // Overridden by subtraits.
-        None
-    }
-
-    /// Get a child display object by it's relative position in the child list.
-    ///
-    /// The ID of a display object is not it's Depth, but the index it has in
-    /// the sibling list.
-    fn get_child_by_id(&self, _id: usize) -> Option<DisplayObject<'gc>> {
-        None
-    }
 
     /// Get another level by level name.
     ///
@@ -780,8 +742,10 @@ pub trait TDisplayObject<'gc>:
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Unload children.
-        for child in self.children() {
-            child.unload(context);
+        if let Some(ctr) = self.as_container() {
+            for child in ctr.iter_execution_list() {
+                child.unload(context);
+            }
         }
 
         // Unregister any text field variable bindings, and replace them on the unbound list.
@@ -806,6 +770,10 @@ pub trait TDisplayObject<'gc>:
     fn as_morph_shape(&self) -> Option<MorphShape<'gc>> {
         None
     }
+    fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
+        None
+    }
+
     fn apply_place_object(
         &self,
         gc_context: MutationContext<'gc, '_>,
@@ -1264,21 +1232,4 @@ enum DisplayObjectFlags {
     /// Whether this object has been placed on the timeline by ActionScript 3.
     /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
     PlacedByScript,
-}
-
-pub struct ChildIter<'gc> {
-    cur_child: Option<DisplayObject<'gc>>,
-}
-
-impl<'gc> Iterator for ChildIter<'gc> {
-    type Item = DisplayObject<'gc>;
-    fn next(&mut self) -> Option<Self::Item> {
-        let cur = self.cur_child;
-
-        self.cur_child = self
-            .cur_child
-            .and_then(|display_cell| display_cell.next_sibling());
-
-        cur
-    }
 }

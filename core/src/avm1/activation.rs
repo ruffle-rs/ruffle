@@ -9,7 +9,7 @@ use crate::avm1::{
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
@@ -2538,7 +2538,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     // This is the opposite of general GetMember property access!
                     if let Some(child) = object
                         .as_display_object()
-                        .and_then(|o| o.get_child_by_name(name, case_sensitive))
+                        .and_then(|o| o.as_container())
+                        .and_then(|o| o.child_by_name(name, case_sensitive))
                     {
                         child.object()
                     } else {

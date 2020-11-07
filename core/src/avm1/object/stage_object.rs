@@ -8,7 +8,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
 use crate::avm_warn;
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, EditText, MovieClip};
+use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
 use crate::property_map::PropertyMap;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -143,7 +143,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             // 2) Display object properties such as _x, _y
             let val = property.get(activation, obj.display_object)?;
             Ok(val)
-        } else if let Some(child) = obj.display_object.get_child_by_name(name, case_sensitive) {
+        } else if let Some(child) = obj
+            .display_object
+            .as_container()
+            .and_then(|o| o.child_by_name(name, case_sensitive))
+        {
             // 3) Child display objects with the given instance name
             Ok(child.object())
         } else if let Some(level) =
@@ -361,7 +365,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         let case_sensitive = activation.is_case_sensitive();
         if obj
             .display_object
-            .get_child_by_name(name, case_sensitive)
+            .as_container()
+            .and_then(|o| o.child_by_name(name, case_sensitive))
             .is_some()
         {
             return true;
@@ -396,11 +401,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         // child display objects in order from highest depth to lowest depth.
         let obj = self.0.read();
         let mut keys = obj.base.get_keys(activation);
-        keys.extend(
-            obj.display_object
-                .children()
-                .map(|child| child.name().to_string()),
-        );
+
+        if let Some(ctr) = obj.display_object.as_container() {
+            keys.extend(
+                ctr.iter_execution_list()
+                    .map(|child| child.name().to_string()),
+            );
+        }
+
         keys
     }
 

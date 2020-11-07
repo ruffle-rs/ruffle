@@ -121,11 +121,11 @@ impl<'gc> Button<'gc> {
         state: ButtonState,
     ) {
         // Clear previous child execution list.
-        for child in self.children() {
+        for child in self.iter_execution_list() {
             child.set_next_sibling(context.gc_context, None);
             child.set_prev_sibling(context.gc_context, None);
         }
-        self.set_first_child(context.gc_context, None);
+        self.set_first_executed_child(context.gc_context, None);
 
         let movie = self.movie().unwrap();
         let mut write = self.0.write(context.gc_context);
@@ -167,13 +167,14 @@ impl<'gc> Button<'gc> {
                 child.set_prev_sibling(context.gc_context, Some(prev_child));
                 prev_child.set_next_sibling(context.gc_context, Some(child));
             } else {
-                self.set_first_child(context.gc_context, Some(child));
+                self.set_first_executed_child(context.gc_context, Some(child));
             }
             // Initialize child.
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.run_frame(context);
             self.0.write(context.gc_context).container.replace_at_depth(
                 context,
+                (*self).into(),
                 child,
                 depth.into(),
                 true,
@@ -270,7 +271,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             }
         }
 
-        for child in self.children() {
+        for child in self.iter_execution_list() {
             child.run_frame(context);
         }
     }
@@ -278,10 +279,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
 
-        crate::display_object::render_children(
-            context,
-            self.0.read().container.iter_render_children(),
-        );
+        crate::display_object::render_children(context, self.iter_render_list());
 
         context.transform_stack.pop();
     }
@@ -296,7 +294,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         point: (Twips, Twips),
     ) -> bool {
-        for child in self.children() {
+        for child in self.iter_execution_list() {
             if child.hit_test_shape(context, point) {
                 return true;
             }
@@ -334,6 +332,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         Some(*self)
     }
 
+    fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
+        Some(self.into())
+    }
+
     fn allow_as_mask(&self) -> bool {
         !self.0.read().container.is_empty()
     }
@@ -347,7 +349,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         if event.propagates() {
-            for child in self.children() {
+            for child in self.iter_execution_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
                 }
@@ -426,10 +428,6 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         handled
     }
 
-    fn get_child_by_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
-        self.0.read().container.get_name(name, case_sensitive)
-    }
-
     fn is_focusable(&self) -> bool {
         true
     }
@@ -446,21 +444,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         }
         self.set_removed(context.gc_context, true);
     }
+}
 
-    fn get_child_by_id(&self, id: usize) -> Option<DisplayObject<'gc>> {
-        self.children().nth(id)
-    }
-
-    fn first_child(&self) -> Option<DisplayObject<'gc>> {
-        self.0.read().container.first_child()
-    }
-
-    fn set_first_child(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>) {
-        self.0
-            .write(context)
-            .container
-            .set_first_child(context, node);
-    }
+impl<'gc> TDisplayObjectContainer<'gc> for Button<'gc> {
+    impl_display_object_container!(container);
 }
 
 impl<'gc> ButtonData<'gc> {
