@@ -36,7 +36,7 @@
         "message": "保護されたブラウザのページではRuffleをロードできません。"
     },
     "action_reload": {
-        "message": "タブをリロードして適応"
+        "message": "タブをリロードして適用"
     },
     "open_settings_page": {
         "message": "設定ページを開く"
