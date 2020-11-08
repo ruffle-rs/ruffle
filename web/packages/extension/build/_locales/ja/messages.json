@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "RuffleでFlashコンテンツを再生する"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Ruffleを無効にしたサイトでもFlashコンテンツを再生する"
+    },
+    "settings_ignore_optout": {
+        "message": "Webサイトの互換性に関する警告を無視する"
+    },
+    "status_init": {
+        "message": "現在のタブを読み取る..."
+    },
+    "status_no_tabs": {
+        "message": "アクティブなタブはありません。"
+    },
+    "status_tabs_error": {
+        "message": "現在のタブを検索中にエラーが発生しました。"
+    },
+    "status_message_init": {
+        "message": "現在のタブでRuffleの状態を確認..."
+    },
+    "status_result_running": {
+        "message": "Ruffleは、現在のタブでFlashコンテンツが読み込まれ、実行されています。"
+    },
+    "status_result_optout": {
+        "message": "Ruffleは、現在のページが互換性がないとマークされているため、ロードされません。"
+    },
+    "status_result_disabled": {
+        "message": "Ruffleはユーザーが無効化しているため、ロードされません。"
+    },
+    "status_result_error": {
+        "message": "現在のタブのRuffleインスタンスを照会するときにエラーが発生しました。"
+    },
+    "status_result_protected": {
+        "message": "保護されたブラウザのページではRuffleをロードできません。"
+    },
+    "action_reload": {
+        "message": "タブをリロードして適用"
+    },
+    "open_settings_page": {
+        "message": "設定ページを開く"
+    },
+    "settings_page": {
+        "message": "設定ページ"
+    },
+    "description": {
+        "message": "Flashを元の場所に戻します。"
+    },
+    "save_settings": {
+        "message": "設定を保存"
+    },
+    "settings_saved": {
+        "message": "保存完了"
+    }
+}
