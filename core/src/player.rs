@@ -921,7 +921,7 @@ impl Player {
 
             match actions.action_type {
                 // DoAction/clip event code
-                ActionType::Normal { bytecode } => {
+                ActionType::Normal { bytecode } | ActionType::Initialize { bytecode } => {
                     Avm1::run_stack_frame_for_action(
                         actions.clip,
                         "[Frame]",

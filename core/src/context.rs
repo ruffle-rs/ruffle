@@ -252,19 +252,21 @@ unsafe impl<'gc> Collect for QueuedActions<'gc> {
 
 /// Action and gotos need to be queued up to execute at the end of the frame.
 pub struct ActionQueue<'gc> {
-    change_prototype_queue: VecDeque<QueuedActions<'gc>>,
-    action_queue: VecDeque<QueuedActions<'gc>>,
+    /// Each priority is kept in a separate bucket.
+    action_queue: Vec<VecDeque<QueuedActions<'gc>>>,
 }
 
 impl<'gc> ActionQueue<'gc> {
     const DEFAULT_CAPACITY: usize = 32;
+    const NUM_PRIORITIES: usize = 3;
 
     /// Crates a new `ActionQueue` with an empty queue.
     pub fn new() -> Self {
-        Self {
-            change_prototype_queue: VecDeque::with_capacity(Self::DEFAULT_CAPACITY),
-            action_queue: VecDeque::with_capacity(Self::DEFAULT_CAPACITY),
+        let mut action_queue = Vec::with_capacity(Self::NUM_PRIORITIES);
+        for _ in 0..Self::NUM_PRIORITIES {
+            action_queue.push(VecDeque::with_capacity(Self::DEFAULT_CAPACITY))
         }
+        Self { action_queue }
     }
 
     /// Queues ActionScript to run for the given movie clip.
@@ -276,29 +278,27 @@ impl<'gc> ActionQueue<'gc> {
         action_type: ActionType<'gc>,
         is_unload: bool,
     ) {
-        // Prototype change goes a higher priority queue.
-        if let ActionType::Construct { .. } = action_type {
-            self.change_prototype_queue.push_back(QueuedActions {
-                clip,
-                action_type,
-                is_unload,
-            })
-        } else {
-            self.action_queue.push_back(QueuedActions {
-                clip,
-                action_type,
-                is_unload,
-            })
+        let priority = action_type.priority();
+        let action = QueuedActions {
+            clip,
+            action_type,
+            is_unload,
+        };
+        debug_assert!(priority < Self::NUM_PRIORITIES);
+        if let Some(queue) = self.action_queue.get_mut(priority) {
+            queue.push_back(action)
         }
     }
 
     /// Sorts and drains the actions from the queue.
     pub fn pop_action(&mut self) -> Option<QueuedActions<'gc>> {
-        if !self.change_prototype_queue.is_empty() {
-            self.change_prototype_queue.pop_front()
-        } else {
-            self.action_queue.pop_front()
+        for queue in self.action_queue.iter_mut().rev() {
+            let action = queue.pop_front();
+            if action.is_some() {
+                return action;
+            }
         }
+        None
     }
 }
 
@@ -311,8 +311,9 @@ impl<'gc> Default for ActionQueue<'gc> {
 unsafe impl<'gc> Collect for ActionQueue<'gc> {
     #[inline]
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.change_prototype_queue.iter().for_each(|o| o.trace(cc));
-        self.action_queue.iter().for_each(|o| o.trace(cc));
+        for queue in &self.action_queue {
+            queue.iter().for_each(|o| o.trace(cc));
+        }
     }
 }
 
@@ -344,6 +345,9 @@ pub enum ActionType<'gc> {
     /// Normal frame or event actions.
     Normal { bytecode: SwfSlice },
 
+    /// AVM1 initialize clip event
+    Initialize { bytecode: SwfSlice },
+
     /// Construct a movie with a custom class or on(construct) events
     Construct {
         constructor: Option<Avm1Object<'gc>>,
@@ -372,11 +376,25 @@ pub enum ActionType<'gc> {
     },
 }
 
+impl ActionType<'_> {
+    fn priority(&self) -> usize {
+        match self {
+            ActionType::Initialize { .. } => 2,
+            ActionType::Construct { .. } => 1,
+            _ => 0,
+        }
+    }
+}
+
 impl fmt::Debug for ActionType<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ActionType::Normal { bytecode } => f
                 .debug_struct("ActionType::Normal")
+                .field("bytecode", bytecode)
+                .finish(),
+            ActionType::Initialize { bytecode } => f
+                .debug_struct("ActionType::Initialize")
                 .field("bytecode", bytecode)
                 .finish(),
             ActionType::Construct {

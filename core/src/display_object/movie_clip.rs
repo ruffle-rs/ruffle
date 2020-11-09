@@ -1503,12 +1503,18 @@ impl<'gc> MovieClip<'gc> {
 
             let mut events = Vec::new();
 
-            for clip_action in mc
-                .clip_actions()
-                .iter()
-                .filter(|action| action.event == ClipEvent::Construct)
-            {
-                events.push(clip_action.action_data.clone());
+            for clip_action in mc.clip_actions().iter() {
+                match clip_action.event {
+                    ClipEvent::Initialize => context.action_queue.queue_actions(
+                        display_object,
+                        ActionType::Initialize {
+                            bytecode: clip_action.action_data.clone(),
+                        },
+                        false,
+                    ),
+                    ClipEvent::Construct => events.push(clip_action.action_data.clone()),
+                    _ => (),
+                }
             }
 
             context.action_queue.queue_actions(
