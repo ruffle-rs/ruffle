@@ -298,7 +298,7 @@ impl Player {
                 Instantiator::Movie,
                 false,
             );
-            context.levels.insert(0 as u32, fake_root.into());
+            context.levels.insert(0u32, fake_root.into());
 
             Avm2::load_player_globals(context)
         })?;

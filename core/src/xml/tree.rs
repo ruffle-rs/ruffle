@@ -1097,7 +1097,7 @@ impl<'gc> XMLNode<'gc> {
         let xmlns_default = XMLName::from_parts(None, "xmlns");
         let xmlns_ns = XMLName::from_parts(Some("xmlns"), namespace);
 
-        if namespace == "" {
+        if namespace.is_empty() {
             if let Some(url) = self.attribute_value(&xmlns_default) {
                 return Some(url);
             }

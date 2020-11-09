@@ -244,17 +244,21 @@ fn bounds_with_size() {
 
 #[test]
 fn textformat_merge() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("First".to_string());
-    tf1.size = Some(10.0);
-    tf1.bold = None;
-    tf1.italic = None;
+    let tf1 = TextFormat {
+        font: Some("First".to_string()),
+        size: Some(10.0),
+        bold: None,
+        italic: None,
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Second".to_string());
-    tf2.size = Some(10.0);
-    tf2.bold = Some(false);
-    tf2.italic = None;
+    let tf2 = TextFormat {
+        font: Some("Second".to_string()),
+        size: Some(10.0),
+        bold: Some(false),
+        italic: None,
+        ..Default::default()
+    };
 
     let merged = tf1.merge_matching_properties(tf2);
 
@@ -266,17 +270,21 @@ fn textformat_merge() {
 
 #[test]
 fn textformat_mix() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("First".to_string());
-    tf1.size = Some(10.0);
-    tf1.bold = None;
-    tf1.italic = None;
+    let tf1 = TextFormat {
+        font: Some("First".to_string()),
+        size: Some(10.0),
+        bold: None,
+        italic: None,
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Second".to_string());
-    tf2.size = Some(10.0);
-    tf2.bold = Some(false);
-    tf2.italic = None;
+    let tf2 = TextFormat {
+        font: Some("Second".to_string()),
+        size: Some(10.0),
+        bold: Some(false),
+        italic: None,
+        ..Default::default()
+    };
 
     let mixed = tf1.mix_with(tf2);
 
@@ -290,11 +298,13 @@ fn textformat_mix() {
 fn formatspans_set_default() {
     let mut fs = FormatSpans::new();
 
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("First".to_string());
-    tf1.size = Some(10.0);
-    tf1.bold = None;
-    tf1.italic = None;
+    let tf1 = TextFormat {
+        font: Some("First".to_string()),
+        size: Some(10.0),
+        bold: None,
+        italic: None,
+        ..Default::default()
+    };
 
     fs.set_default_format(tf1);
 
@@ -305,11 +315,13 @@ fn formatspans_set_default() {
     assert_eq!(out_tf1.bold, None);
     assert_eq!(out_tf1.italic, None);
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Second".to_string());
-    tf2.size = Some(10.0);
-    tf2.bold = Some(false);
-    tf2.italic = None;
+    let tf2 = TextFormat {
+        font: Some("Second".to_string()),
+        size: Some(10.0),
+        bold: Some(false),
+        italic: None,
+        ..Default::default()
+    };
 
     fs.set_default_format(tf2);
 
@@ -425,13 +437,17 @@ fn formatspans_span_boundaries() {
 
 #[test]
 fn formatspans_get_text_format() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
-    tf1.size = Some(12.0);
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
-    tf2.size = Some(12.0);
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
     let fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -478,13 +494,17 @@ fn formatspans_normalize_no_text() {
 
 #[test]
 fn formatspans_normalize_short_spans() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
-    tf1.size = Some(12.0);
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
-    tf2.size = Some(12.0);
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -503,13 +523,17 @@ fn formatspans_normalize_short_spans() {
 
 #[test]
 fn formatspans_normalize_exact_spans() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
-    tf1.size = Some(12.0);
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
-    tf2.size = Some(12.0);
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -528,13 +552,17 @@ fn formatspans_normalize_exact_spans() {
 
 #[test]
 fn formatspans_normalize_long_spans() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
-    tf1.size = Some(12.0);
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
-    tf2.size = Some(12.0);
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -554,9 +582,11 @@ fn formatspans_normalize_long_spans() {
 
 #[test]
 fn formatspans_normalize_merge_spans() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
-    tf1.size = Some(12.0);
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -573,9 +603,11 @@ fn formatspans_normalize_merge_spans() {
 
 #[test]
 fn formatspans_normalize_merge_many_spans() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
-    tf1.size = Some(12.0);
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -596,13 +628,17 @@ fn formatspans_normalize_merge_many_spans() {
 
 #[test]
 fn formatspans_normalize_long_spans_with_merge() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
-    tf1.size = Some(12.0);
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
-    tf2.size = Some(12.0);
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        size: Some(12.0),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -621,11 +657,15 @@ fn formatspans_normalize_long_spans_with_merge() {
 
 #[test]
 fn formatspans_normalize_set_text_format_double_cut() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -635,8 +675,10 @@ fn formatspans_normalize_set_text_format_double_cut() {
         ],
     );
 
-    let mut tf3 = TextFormat::default();
-    tf3.font = Some("Another difference!".to_string());
+    let tf3 = TextFormat {
+        font: Some("Another difference!".to_string()),
+        ..Default::default()
+    };
 
     fs.set_text_format(3, 7, &tf3);
 
@@ -647,11 +689,15 @@ fn formatspans_normalize_set_text_format_double_cut() {
 
 #[test]
 fn formatspans_normalize_set_text_format_single_cut() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -661,8 +707,10 @@ fn formatspans_normalize_set_text_format_single_cut() {
         ],
     );
 
-    let mut tf3 = TextFormat::default();
-    tf3.font = Some("Another difference!".to_string());
+    let tf3 = TextFormat {
+        font: Some("Another difference!".to_string()),
+        ..Default::default()
+    };
 
     fs.set_text_format(3, 5, &tf3);
 
@@ -673,11 +721,15 @@ fn formatspans_normalize_set_text_format_single_cut() {
 
 #[test]
 fn formatspans_normalize_set_text_format_no_cut() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -687,8 +739,10 @@ fn formatspans_normalize_set_text_format_no_cut() {
         ],
     );
 
-    let mut tf3 = TextFormat::default();
-    tf3.font = Some("Another difference!".to_string());
+    let tf3 = TextFormat {
+        font: Some("Another difference!".to_string()),
+        ..Default::default()
+    };
 
     fs.set_text_format(0, 5, &tf3);
 
@@ -698,11 +752,15 @@ fn formatspans_normalize_set_text_format_no_cut() {
 
 #[test]
 fn formatspans_replace_text_inbounds() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -722,11 +780,15 @@ fn formatspans_replace_text_inbounds() {
 
 #[test]
 fn formatspans_replace_text_edgebounds() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -747,11 +809,15 @@ fn formatspans_replace_text_edgebounds() {
 
 #[test]
 fn formatspans_replace_text_oob() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",
@@ -772,11 +838,15 @@ fn formatspans_replace_text_oob() {
 
 #[test]
 fn formatspans_replace_text_degenerate() {
-    let mut tf1 = TextFormat::default();
-    tf1.font = Some("Same!".to_string());
+    let tf1 = TextFormat {
+        font: Some("Same!".to_string()),
+        ..Default::default()
+    };
 
-    let mut tf2 = TextFormat::default();
-    tf2.font = Some("Difference!".to_string());
+    let tf2 = TextFormat {
+        font: Some("Difference!".to_string()),
+        ..Default::default()
+    };
 
     let mut fs = FormatSpans::from_str_and_spans(
         "abcdefghi",

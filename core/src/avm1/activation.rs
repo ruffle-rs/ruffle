@@ -922,7 +922,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             Some(self.context.avm1.prototypes.function),
             prototype,
         );
-        if name == "" {
+        if name.is_empty() {
             self.context.avm1.push(func_obj);
         } else {
             self.define(name, func_obj);
@@ -959,7 +959,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             Some(self.context.avm1.prototypes.function),
             prototype,
         );
-        if action_func.name == "" {
+        if action_func.name.is_empty() {
             self.context.avm1.push(func_obj);
         } else {
             self.define(action_func.name, func_obj);
@@ -1198,7 +1198,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
                     let level = self.resolve_level(level_id);
 
-                    if url == "" {
+                    if url.is_empty() {
                         //Blank URL on movie loads = unload!
                         if let Some(mut mc) = level.as_movie_clip() {
                             mc.replace_with_movie(self.context.gc_context, None)
@@ -1293,7 +1293,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
 
-                if url == "" {
+                if url.is_empty() {
                     //Blank URL on movie loads = unload!
                     if let Some(mut mc) = clip_target.as_movie_clip() {
                         mc.replace_with_movie(self.context.gc_context, None)

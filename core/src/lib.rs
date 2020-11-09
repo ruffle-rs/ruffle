@@ -1,4 +1,5 @@
 #![allow(
+    clippy::manual_range_contains,
     clippy::unneeded_field_pattern,
     clippy::same_item_push,
     clippy::unknown_clippy_lints

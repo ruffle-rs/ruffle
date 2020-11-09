@@ -733,9 +733,11 @@ impl Default for TextSpan {
 
 impl TextSpan {
     pub fn with_length_and_format(length: usize, tf: TextFormat) -> Self {
-        let mut data = Self::default();
+        let mut data = Self {
+            span_length: length,
+            ..Default::default()
+        };
 
-        data.span_length = length;
         data.set_text_format(&tf);
 
         data
@@ -1516,12 +1518,12 @@ impl FormatSpans {
                     last_u = None;
                 }
 
-                if span.url != "" && (ls.url != span.url || last_a.is_none()) {
+                if !span.url.is_empty() && (ls.url != span.url || last_a.is_none()) {
                     let new_a = XMLNode::new_element(mc, "A", document);
 
                     new_a.set_attribute_value(mc, &XMLName::from_str("HREF"), &span.url);
 
-                    if span.target != "" {
+                    if !span.target.is_empty() {
                         new_a.set_attribute_value(mc, &XMLName::from_str("TARGET"), &span.target);
                     }
 
@@ -1536,7 +1538,7 @@ impl FormatSpans {
                     last_b = None;
                     last_i = None;
                     last_u = None;
-                } else if span.url == "" && (ls.url != span.url || last_a.is_some()) {
+                } else if span.url.is_empty() && (ls.url != span.url || last_a.is_some()) {
                     last_a = None;
                     last_b = None;
                     last_i = None;

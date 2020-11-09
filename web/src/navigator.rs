@@ -79,7 +79,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     document.body().unwrap().append_child(&form);
                     form.submit();
                 }
-                (_, Some(ref window_name)) if window_name != "" => {
+                (_, Some(ref window_name)) if !window_name.is_empty() => {
                     window.open_with_url_and_target(&url, window_name);
                 }
                 _ => {

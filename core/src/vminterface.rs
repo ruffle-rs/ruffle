@@ -50,11 +50,7 @@ impl Instantiator {
     /// If that is the case, then any constructor calls necessary to finish the
     /// object must happen on-stack.
     pub fn is_avm(self) -> bool {
-        match self {
-            Self::Avm1 => true,
-            Self::Avm2 => true,
-            _ => false,
-        }
+        matches!(self, Self::Avm1 | Self::Avm2)
     }
 }
 
