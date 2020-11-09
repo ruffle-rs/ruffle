@@ -1,4 +1,9 @@
 frame 1
+clip initialize1
+clip initialize2
+child initialize
+clip construct
+child construct
 frame 2
 clip load
 clip frame 1
