@@ -63,16 +63,11 @@ pub trait TDisplayObjectContainer<'gc>:
     /// render and execution lists if and only if the child was not flagged as
     /// being placed by script. If such a child was removed from said lists, it
     /// will be returned here. Otherwise, this method returns `None`.
-    ///
-    /// The `already_on_exec_list` flag signals to the container that the child
-    /// being replaced is already on it's execution list and should not be
-    /// reinserted into the list.
     fn replace_at_depth(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
         depth: Depth,
-        already_on_exec_list: bool,
     ) -> Option<DisplayObject<'gc>>;
 
     /// Move a child display object around in the container's depth list.
@@ -115,21 +110,8 @@ pub trait TDisplayObjectContainer<'gc>:
         child: DisplayObject<'gc>,
     ) -> bool;
 
-    /// Set the head of the execution list.
-    ///
-    /// TODO: Direct execution list manipulation shouldn't be allowed. Code
-    /// that uses this method is free to violate execution list invariants
-    /// (such as turning it into a circular list, not treating prev-and-next as
-    /// opposites, etc).
-    ///
-    /// It's only here for compatibility with some `Button` code. If you're
-    /// reviewing this PR please mark this as a problem so I can finish the
-    /// refactor
-    fn set_first_executed_child(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    );
+    /// Clear all three lists in the container.
+    fn clear(&mut self, context: MutationContext<'gc, '_>);
 
     /// Iterates over the children of this display object in execution order.
     /// This is different than render or depth order.
@@ -186,14 +168,12 @@ macro_rules! impl_display_object_container {
             context: &mut UpdateContext<'_, 'gc, '_>,
             child: DisplayObject<'gc>,
             depth: Depth,
-            already_on_exec_list: bool,
         ) -> Option<DisplayObject<'gc>> {
             self.0.write(context.gc_context).$field.replace_at_depth(
                 context,
                 (*self).into(),
                 child,
                 depth,
-                already_on_exec_list,
             )
         }
 
@@ -249,15 +229,8 @@ macro_rules! impl_display_object_container {
                 .remove_child(context, child)
         }
 
-        fn set_first_executed_child(
-            &self,
-            gc_context: MutationContext<'gc, '_>,
-            node: Option<DisplayObject<'gc>>,
-        ) {
-            self.0
-                .write(gc_context)
-                .$field
-                .set_first_executed_child(node)
+        fn clear(&mut self, gc_context: MutationContext<'gc, '_>) {
+            self.0.write(gc_context).$field.clear(gc_context)
         }
     };
 }
@@ -319,11 +292,6 @@ impl<'gc> ChildContainer<'gc> {
     /// Get the head of the execution list.
     pub fn first_executed_child(&self) -> Option<DisplayObject<'gc>> {
         self.exec_list
-    }
-
-    /// Change the head of the execution list.
-    pub fn set_first_executed_child(&mut self, node: Option<DisplayObject<'gc>>) {
-        self.exec_list = node;
     }
 
     /// Adds a child to the front of the execution list.
@@ -475,7 +443,6 @@ impl<'gc> ChildContainer<'gc> {
             }
         } else {
             if let Some(old_parent) = child.parent() {
-                //TODO: container access for non-clips
                 if let Some(mut old_parent) = old_parent.as_container() {
                     old_parent.remove_child(context, child);
                 }
@@ -498,17 +465,12 @@ impl<'gc> ChildContainer<'gc> {
     /// such children.
     ///
     /// `parent` should be the display object that owns this container.
-    ///
-    /// The `already_on_exec_list` flag indicates that the caller has already
-    /// added the child to the execution list, and thus this function should
-    /// not modify the execution list.
     pub fn replace_at_depth(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         parent: DisplayObject<'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
-        already_on_exec_list: bool,
     ) -> Option<DisplayObject<'gc>> {
         child.set_place_frame(context.gc_context, 0);
         child.set_depth(context.gc_context, depth);
@@ -546,13 +508,11 @@ impl<'gc> ChildContainer<'gc> {
             None
         };
 
-        if !already_on_exec_list {
-            if let Some(removed_child) = removed_child {
-                self.remove_child_from_exec_list(context, removed_child);
-            }
-
-            self.add_child_to_exec_list(context.gc_context, child);
+        if let Some(removed_child) = removed_child {
+            self.remove_child_from_exec_list(context, removed_child);
         }
+
+        self.add_child_to_exec_list(context.gc_context, child);
 
         removed_child
     }
@@ -643,8 +603,21 @@ impl<'gc> ChildContainer<'gc> {
         removed_from_render_list || removed_from_depth_list
     }
 
-    /// Remove all children from the container.
-    pub fn clear(&mut self) {
+    /// Remove all children from the container's execution, render, and depth
+    /// lists.
+    pub fn clear(&mut self, gc_context: MutationContext<'gc, '_>) {
+        let mut head = self.exec_list;
+
+        while let Some(child) = head {
+            let next_head = child.next_sibling();
+
+            child.set_next_sibling(gc_context, None);
+            child.set_prev_sibling(gc_context, None);
+
+            head = next_head;
+        }
+
+        self.exec_list = None;
         self.render_list.clear();
         self.depth_list.clear();
     }

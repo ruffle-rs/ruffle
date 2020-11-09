@@ -120,13 +120,6 @@ impl<'gc> Button<'gc> {
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         state: ButtonState,
     ) {
-        // Clear previous child execution list.
-        for child in self.iter_execution_list() {
-            child.set_next_sibling(context.gc_context, None);
-            child.set_prev_sibling(context.gc_context, None);
-        }
-        self.set_first_executed_child(context.gc_context, None);
-
         let movie = self.movie().unwrap();
         let mut write = self.0.write(context.gc_context);
         write.state = state;
@@ -135,7 +128,7 @@ impl<'gc> Button<'gc> {
             ButtonState::Over => swf::ButtonState::Over,
             ButtonState::Down => swf::ButtonState::Down,
         };
-        write.container.clear();
+        write.container.clear(context.gc_context);
 
         let mut new_children = Vec::new();
         for record in &write.static_data.read().records {
@@ -160,15 +153,9 @@ impl<'gc> Button<'gc> {
 
         drop(write);
 
-        let mut prev_child = None;
+        //TODO: This code originally reinserted children onto the execution list
+        //"backwards" (compared to standard behavior) - do we still want that?
         for (child, depth) in new_children {
-            // Wire up new execution list.
-            if let Some(prev_child) = prev_child {
-                child.set_prev_sibling(context.gc_context, Some(prev_child));
-                prev_child.set_next_sibling(context.gc_context, Some(child));
-            } else {
-                self.set_first_executed_child(context.gc_context, Some(child));
-            }
             // Initialize child.
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.run_frame(context);
@@ -177,9 +164,7 @@ impl<'gc> Button<'gc> {
                 (*self).into(),
                 child,
                 depth.into(),
-                true,
             );
-            prev_child = Some(child);
         }
     }
 }

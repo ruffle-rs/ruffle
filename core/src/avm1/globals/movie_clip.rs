@@ -521,7 +521,7 @@ fn attach_movie<'gc>(
     {
         // Set name and attach to parent.
         new_clip.set_name(activation.context.gc_context, &new_instance_name);
-        movie_clip.replace_at_depth(&mut activation.context, new_clip, depth, false);
+        movie_clip.replace_at_depth(&mut activation.context, new_clip, depth);
         let init_object = if let Some(Value::Object(init_object)) = init_object {
             Some(init_object.to_owned())
         } else {
@@ -572,7 +572,7 @@ fn create_empty_movie_clip<'gc>(
 
     // Set name and attach to parent.
     new_clip.set_name(activation.context.gc_context, &new_instance_name);
-    movie_clip.replace_at_depth(&mut activation.context, new_clip.into(), depth, false);
+    movie_clip.replace_at_depth(&mut activation.context, new_clip.into(), depth);
     new_clip.post_instantiation(
         &mut activation.context,
         new_clip.into(),
@@ -627,7 +627,6 @@ fn create_text_field<'gc>(
         &mut activation.context,
         text_field,
         (depth as Depth).wrapping_add(AVM_DEPTH_BIAS),
-        false,
     );
     text_field.post_instantiation(
         &mut activation.context,
@@ -697,7 +696,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
     {
         // Set name and attach to parent.
         new_clip.set_name(activation.context.gc_context, &new_instance_name);
-        parent.replace_at_depth(&mut activation.context, new_clip, depth, false);
+        parent.replace_at_depth(&mut activation.context, new_clip, depth);
 
         // Copy display properties from previous clip to new clip.
         new_clip.set_matrix(activation.context.gc_context, &*movie_clip.matrix());

@@ -1133,7 +1133,7 @@ impl<'gc> MovieClip<'gc> {
             let prev_child = {
                 let mut mc = self.0.write(context.gc_context);
                 mc.container
-                    .replace_at_depth(context, self.into(), child, depth, false)
+                    .replace_at_depth(context, self.into(), child, depth)
             };
             {
                 // Set initial properties for child.
