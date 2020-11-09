@@ -225,6 +225,9 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// Amount of actions performed since the last timeout check
     actions_since_timeout_check: u8,
 
+    /// Whether the base clip was removed when we started this frame.
+    base_clip_unloaded: bool,
+
     pub context: UpdateContext<'a, 'gc, 'gc_context>,
 
     /// An identifier to refer to this activation by, when debugging.
@@ -260,6 +263,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             constant_pool,
             base_clip,
             target_clip: Some(base_clip),
+            base_clip_unloaded: base_clip.removed(),
             this,
             arguments,
             local_registers: None,
@@ -283,6 +287,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             constant_pool: self.constant_pool,
             base_clip: self.base_clip,
             target_clip: self.target_clip,
+            base_clip_unloaded: self.base_clip_unloaded,
             this: self.this,
             arguments: self.arguments,
             local_registers: self.local_registers,
@@ -317,6 +322,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             constant_pool: empty_constant_pool,
             base_clip,
             target_clip: Some(base_clip),
+            base_clip_unloaded: base_clip.removed(),
             this: globals,
             arguments: None,
             local_registers: None,
@@ -2913,7 +2919,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// If the clip executing a script is removed during exectuion, return from this activation.
     /// Should be called after any action that could potentially destroy a clip (gotos, etc.)
     fn continue_if_base_clip_exists(&self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        if self.base_clip.removed() {
+        // The exception is `unload` clip event handlers, which currently are called when the clip
+        // has already been removed. If this activation started with the base clip already removed,
+        // this is an unload handler, so allow the code to run regardless.
+        // (This may no longer be necessary once #1535 is fixed.)
+        if !self.base_clip_unloaded && self.base_clip.removed() {
             Ok(FrameControl::Return(ReturnType::Explicit(Value::Undefined)))
         } else {
             Ok(FrameControl::Continue)
