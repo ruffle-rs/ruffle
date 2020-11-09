@@ -77,6 +77,7 @@ swf_tests! {
     (call, "avm1/call", 2),
     (color, "avm1/color", 1),
     (clip_events, "avm1/clip_events", 4),
+    (unload_clip_event, "avm1/unload_clip_event", 2),
     (create_empty_movie_clip, "avm1/create_empty_movie_clip", 2),
     (empty_movieclip_can_attach_movies, "avm1/empty_movieclip_can_attach_movies", 1),
     (duplicate_movie_clip, "avm1/duplicate_movie_clip", 1),
