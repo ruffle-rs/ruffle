@@ -24,6 +24,7 @@ mod flash;
 mod function;
 mod global_scope;
 mod int;
+mod math;
 mod namespace;
 mod number;
 mod object;
@@ -402,6 +403,14 @@ pub fn load_player_globals<'gc>(
     constant(mc, "", "null", Value::Null, domain, script)?;
     constant(mc, "", "NaN", NAN.into(), domain, script)?;
     constant(mc, "", "Infinity", f64::INFINITY.into(), domain, script)?;
+
+    class(
+        activation,
+        math::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
 
     // package `flash.system`
     activation
