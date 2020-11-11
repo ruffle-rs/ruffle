@@ -425,6 +425,7 @@ swf_tests! {
     (as3_displayobjectcontainer_addchildat_timelinelock2, "avm2/displayobjectcontainer_addchildat_timelinelock2", 7),
     (as3_displayobjectcontainer_contains, "avm2/displayobjectcontainer_contains", 5),
     (as3_displayobjectcontainer_getchildindex, "avm2/displayobjectcontainer_getchildindex", 5),
+    (as3_displayobjectcontainer_removechildat, "avm2/displayobjectcontainer_removechildat", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

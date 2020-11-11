@@ -336,6 +336,40 @@ pub fn get_child_index<'gc>(
     Err("ArgumentError: Child is not a child of this object".into())
 }
 
+/// Implements `DisplayObjectContainer.removeChildAt`
+pub fn remove_child_at<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        if let Some(mut ctr) = parent.as_container() {
+            let target_child = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_i32(activation)?;
+
+            if target_child >= ctr.num_children() as i32 || target_child < 0 {
+                return Err(format!(
+                    "RangeError: {} does not exist in the child list (valid range is 0 to {})",
+                    target_child,
+                    ctr.num_children()
+                )
+                .into());
+            }
+
+            let child = ctr.child_by_id(target_child as usize).unwrap();
+
+            ctr.remove_child(&mut activation.context, child);
+
+            return Ok(child.object2());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -382,6 +416,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "getChildIndex"),
         Method::from_builtin(get_child_index),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "removeChildAt"),
+        Method::from_builtin(remove_child_at),
     ));
 
     class
