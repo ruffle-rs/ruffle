@@ -35,10 +35,16 @@ fn trace<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(s) = args.get(0) {
-        let message = s.clone().coerce_to_string(activation)?;
-        activation.context.log.avm_trace(&message);
+    let mut message = String::new();
+    if !args.is_empty() {
+        message.push_str(&args[0].clone().coerce_to_string(activation)?);
+        for arg in &args[1..] {
+            message.push(' ');
+            message.push_str(&arg.clone().coerce_to_string(activation)?);
+        }
     }
+
+    activation.context.log.avm_trace(&message);
 
     Ok(Value::Undefined)
 }
