@@ -7,6 +7,7 @@ pub use crate::{
     impl_display_object, impl_display_object_container, impl_display_object_sansbounds,
 };
 pub use log::{error, info, trace, warn};
+pub use std::ops::Range;
 pub use swf::Matrix;
 pub use swf::{CharacterId, Color, Twips};
 
