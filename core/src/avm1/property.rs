@@ -33,7 +33,7 @@ impl<'gc> Property<'gc> {
     /// Set a property slot.
     ///
     /// This function may return an `Executable` of the property's virtual
-    /// function, if any happen to exist. It should be resolved, and it's value
+    /// function, if any happen to exist. It should be resolved, and its value
     /// discarded.
     pub fn set(&mut self, new_value: impl Into<Value<'gc>>) -> Option<Object<'gc>> {
         match self {

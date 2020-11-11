@@ -279,7 +279,7 @@ impl<'gc> Value<'gc> {
     /// `TypeError`.
     ///
     /// The `Hint` parameter selects if the coercion prefers `toString` or
-    /// `valueOf`. If the preferred function is not available, it's opposite
+    /// `valueOf`. If the preferred function is not available, its opposite
     /// will be called. If neither function successfully generates a primitive,
     /// a `TypeError` will be raised.
     ///

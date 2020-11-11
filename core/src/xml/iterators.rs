@@ -57,7 +57,7 @@ impl<'gc> DoubleEndedIterator for ChildIter<'gc> {
 /// throughout the tree.
 #[derive(Copy, Clone)]
 pub enum Step<'gc> {
-    /// `WalkIter` has discovered a new element and will begin to yield it's
+    /// `WalkIter` has discovered a new element and will begin to yield its
     /// children's steps.
     In(XMLNode<'gc>),
 

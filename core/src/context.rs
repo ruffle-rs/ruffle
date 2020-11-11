@@ -134,7 +134,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The AVM2 global state.
     pub avm2: &'a mut Avm2<'gc>,
 
-    /// External interface for (for example) Javascript <-> Actionscript interaction
+    /// External interface for (for example) JavaScript <-> ActionScript interaction
     pub external_interface: &'a mut ExternalInterface<'gc>,
 
     /// The instant at which the current update started.
@@ -184,7 +184,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     /// a shorter internal lifetime.
     ///
     /// This is particularly useful for structures that may wish to hold an
-    /// update context without adding further lifetimes for it's borrowing.
+    /// update context without adding further lifetimes for its borrowing.
     /// Please note that you will not be able to use the original update
     /// context until this reborrowed copy has fallen out of scope.
     pub fn reborrow<'b>(&'b mut self) -> UpdateContext<'b, 'gc, 'gc_context>

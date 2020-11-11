@@ -15,7 +15,7 @@ use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
 
-/// An Object which can be called to execute it's function code.
+/// An Object which can be called to execute its function code.
 #[derive(Collect, Debug, Clone, Copy)]
 #[collect(no_drop)]
 pub struct FunctionObject<'gc>(GcCell<'gc, FunctionObjectData<'gc>>);
@@ -65,7 +65,7 @@ impl<'gc> FunctionObject<'gc> {
         )
     }
 
-    /// Construct a class with a different `TObject` implementation than it's
+    /// Construct a class with a different `TObject` implementation than its
     /// base class.
     ///
     /// This is identical to `from_class`, save for the fact that you must also
@@ -117,7 +117,7 @@ impl<'gc> FunctionObject<'gc> {
         FunctionObject::from_class_and_proto(activation, class, class_proto, scope)
     }
 
-    /// Construct a class with a custom object type as it's prototype.
+    /// Construct a class with a custom object type as its prototype.
     fn from_class_and_proto(
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,

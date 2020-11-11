@@ -457,7 +457,7 @@ impl<'gc> FunctionObject<'gc> {
     ///
     /// `fn_proto` refers to the implicit proto of the function object, and the
     /// `prototype` refers to the explicit prototype of the function.
-    /// The function and it's prototype will be linked to each other.
+    /// The function and its prototype will be linked to each other.
     fn allocate_function(
         context: MutationContext<'gc, '_>,
         function: Option<impl Into<Executable<'gc>>>,

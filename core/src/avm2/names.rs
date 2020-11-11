@@ -90,7 +90,7 @@ impl<'gc> Namespace<'gc> {
         self.eq(&Self::Package("".into())) || self.is_any()
     }
 
-    /// Get the string value of this namespace, ignoring it's type.
+    /// Get the string value of this namespace, ignoring its type.
     ///
     /// TODO: Is this *actually* the namespace URI?
     pub fn as_uri(&self) -> AvmString<'gc> {

@@ -82,7 +82,7 @@ struct GcRootData<'gc> {
     /// Timed callbacks created with `setInterval`/`setTimeout`.
     timers: Timers<'gc>,
 
-    /// External interface for (for example) Javascript <-> Actionscript interaction
+    /// External interface for (for example) JavaScript <-> ActionScript interaction
     external_interface: ExternalInterface<'gc>,
 
     /// A tracker for the current keyboard focused element

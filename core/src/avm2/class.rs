@@ -67,7 +67,7 @@ pub struct Class<'gc> {
     /// These are accessed as constructor properties.
     class_traits: Vec<Trait<'gc>>,
 
-    /// Whether or not this `Class` has loaded it's traits or not.
+    /// Whether or not this `Class` has loaded its traits or not.
     traits_loaded: bool,
 }
 
@@ -150,7 +150,7 @@ impl<'gc> Class<'gc> {
         self.protected_namespace = Some(ns)
     }
 
-    /// Construct a class from a `TranslationUnit` and it's class index.
+    /// Construct a class from a `TranslationUnit` and its class index.
     ///
     /// The returned class will be allocated, but no traits will be loaded. The
     /// caller is responsible for storing the class in the `TranslationUnit`
@@ -296,7 +296,7 @@ impl<'gc> Class<'gc> {
     /// Given a name, append class traits matching the name to a list of known
     /// traits.
     ///
-    /// This function adds it's result onto the list of known traits, with the
+    /// This function adds its result onto the list of known traits, with the
     /// caveat that duplicate entries will be replaced (if allowed). As such, this
     /// function should be run on the class hierarchy from top to bottom.
     ///
@@ -322,7 +322,7 @@ impl<'gc> Class<'gc> {
         false
     }
 
-    /// Look for a class trait with a given local name, and return it's
+    /// Look for a class trait with a given local name, and return its
     /// namespace.
     ///
     /// TODO: Matching multiple namespaces with the same local name is at least
@@ -349,7 +349,7 @@ impl<'gc> Class<'gc> {
     /// Given a name, append instance traits matching the name to a list of
     /// known traits.
     ///
-    /// This function adds it's result onto the list of known traits, with the
+    /// This function adds its result onto the list of known traits, with the
     /// caveat that duplicate entries will be replaced (if allowed). As such, this
     /// function should be run on the class hierarchy from top to bottom.
     ///
@@ -364,7 +364,7 @@ impl<'gc> Class<'gc> {
         do_trait_lookup(name, known_traits, &self.instance_traits)
     }
 
-    /// Determines if this class provides a given trait on it's instances.
+    /// Determines if this class provides a given trait on its instances.
     pub fn has_instance_trait(&self, name: &QName<'gc>) -> bool {
         for trait_entry in self.instance_traits.iter() {
             if name == trait_entry.name() {
@@ -375,7 +375,7 @@ impl<'gc> Class<'gc> {
         false
     }
 
-    /// Look for an instance trait with a given local name, and return it's
+    /// Look for an instance trait with a given local name, and return its
     /// namespace.
     ///
     /// TODO: Matching multiple namespaces with the same local name is at least

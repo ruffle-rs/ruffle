@@ -26,7 +26,7 @@ pub struct XMLName {
 }
 
 impl XMLName {
-    /// Construct an XML name from it's parts (name and namespace).
+    /// Construct an XML name from its parts (name and namespace).
     pub fn from_parts(namespace: Option<&str>, name: &str) -> Self {
         XMLName {
             namespace: namespace.map(|s| s.to_string()),

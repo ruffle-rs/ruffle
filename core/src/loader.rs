@@ -120,7 +120,7 @@ impl<'gc> LoadManager<'gc> {
     /// The root movie is special because it determines a few bits of player
     /// state, such as the size of the stage and the current frame rate. Ergo,
     /// this method should only be called once, by the player that is trying to
-    /// kick off it's root movie load.
+    /// kick off its root movie load.
     pub fn load_root_movie(
         &mut self,
         player: Weak<Mutex<Player>>,
@@ -162,7 +162,7 @@ impl<'gc> LoadManager<'gc> {
         loader.movie_loader(player, fetch, url)
     }
 
-    /// Indicates that a movie clip has initialized (ran it's first frame).
+    /// Indicates that a movie clip has initialized (ran its first frame).
     ///
     /// Interested loaders will be invoked from here.
     pub fn movie_clip_on_load(
@@ -280,7 +280,7 @@ pub enum Loader<'gc> {
         /// Indicates that the load has completed.
         ///
         /// This flag exists to prevent a situation in which loading a movie
-        /// into a clip that has not yet fired it's Load event causes the
+        /// into a clip that has not yet fired its Load event causes the
         /// loader to be prematurely removed. This flag is only set when either
         /// the movie has been replaced (and thus Load events can be trusted)
         /// or an error has occurred (in which case we don't care about the

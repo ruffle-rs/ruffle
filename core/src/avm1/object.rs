@@ -81,7 +81,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>>;
 
-    /// Retrieve a named property from the object, or it's prototype.
+    /// Retrieve a named property from the object, or its prototype.
     fn get(
         &self,
         name: &str,
@@ -94,7 +94,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
     }
 
-    /// Set a named property on this object, or it's prototype.
+    /// Set a named property on this object, or its prototype.
     fn set(
         &self,
         name: &str,
@@ -140,7 +140,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// It is highly recommended to use this convenience method to perform
     /// method calls. It is morally equivalent to an AVM1 `ActionCallMethod`
-    /// opcode. It will take care of retrieving the method, calculating it's
+    /// opcode. It will take care of retrieving the method, calculating its
     /// base prototype for `super` calls, and providing it with the correct
     /// `this` parameter.
     fn call_method(
@@ -177,7 +177,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>>;
 
-    /// Construct a host object of some kind and return it's cell.
+    /// Construct a host object of some kind and return its cell.
     ///
     /// As the first step in object construction, the `new` method is called on
     /// the prototype to initialize an object. The prototype may construct any
@@ -336,7 +336,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Determine if this object is an instance of a class.
     ///
-    /// The class is provided in the form of it's constructor function and the
+    /// The class is provided in the form of its constructor function and the
     /// explicit prototype of that constructor function. It is assumed that
     /// they are already linked.
     ///
