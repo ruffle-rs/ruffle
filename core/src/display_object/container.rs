@@ -10,6 +10,7 @@ use ruffle_macros::enum_trait_object;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
+use std::ops::Range;
 
 #[enum_trait_object(
     #[derive(Clone, Collect, Debug, Copy)]
@@ -109,6 +110,14 @@ pub trait TDisplayObjectContainer<'gc>:
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
     ) -> bool;
+
+    /// Remove a set of children identified by their render list IDs from this
+    /// container's render, depth, and execution lists.
+    fn remove_range_of_ids(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        range: Range<usize>,
+    );
 
     /// Clear all three lists in the container.
     fn clear(&mut self, context: MutationContext<'gc, '_>);
@@ -227,6 +236,17 @@ macro_rules! impl_display_object_container {
                 .write(context.gc_context)
                 .$field
                 .remove_child(context, child)
+        }
+
+        fn remove_range_of_ids(
+            &mut self,
+            context: &mut UpdateContext<'_, 'gc, '_>,
+            range: Range<usize>,
+        ) {
+            self.0
+                .write(context.gc_context)
+                .$field
+                .remove_range_of_ids(context, range)
         }
 
         fn clear(&mut self, gc_context: MutationContext<'gc, '_>) {
@@ -601,6 +621,21 @@ impl<'gc> ChildContainer<'gc> {
         child.set_parent(context.gc_context, None);
 
         removed_from_render_list || removed_from_depth_list
+    }
+
+    /// Remove a set of children identified by their render list IDs from this
+    /// container's render, depth, and execution lists.
+    pub fn remove_range_of_ids(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        range: Range<usize>,
+    ) {
+        let removed_list: Vec<DisplayObject<'gc>> = self.render_list.drain(range).collect();
+
+        for removed in removed_list {
+            self.remove_child_from_depth_list(removed);
+            self.remove_child_from_exec_list(context, removed);
+        }
     }
 
     /// Remove all children from the container's execution, render, and depth
