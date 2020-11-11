@@ -1,0 +1,40 @@
+//var chx = this.getChildAt(0)
+//var chy = this.getChildAt(1)
+//var chz = this.getChildAt(2)
+//this.removeChildren(0, 1)
+//this.getChildAt(0) === chz
+true
+//this.numChildren
+1
+//this.removeChildren(0,0x7fffffff)
+//this.numChildren
+0
+//var chx = this.getChildAt(0)
+//var chy = this.getChildAt(1)
+//var chz = this.getChildAt(2)
+//this.removeChildren(1)
+//this.getChildAt(0) === chx
+true
+//this.numChildren
+1
+//this.removeChildren()
+//this.numChildren
+0
+//var chx = this.getChildAt(0)
+//var chy = this.getChildAt(1)
+//var chz = this.getChildAt(2)
+//this.removeChildren(0, 0)
+//this.getChildAt(0) === chy
+true
+//this.getChildAt(1) === chz
+true
+//this.numChildren
+2
+//this.removeChildren(0, 0)
+//this.getChildAt(0) === chz
+true
+//this.numChildren
+1
+//this.removeChildren(0, 0)
+//this.numChildren
+0

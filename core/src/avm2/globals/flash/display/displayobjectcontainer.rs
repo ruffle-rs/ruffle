@@ -11,6 +11,7 @@ use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::{GcCell, MutationContext};
+use std::cmp::min;
 
 /// Implements `flash.display.DisplayObjectContainer`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -370,6 +371,57 @@ pub fn remove_child_at<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObjectContainer.removeChildren`
+pub fn remove_children<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        if let Some(mut ctr) = parent.as_container() {
+            let from = args
+                .get(0)
+                .cloned()
+                .unwrap_or_else(|| 0.into())
+                .coerce_to_i32(activation)?;
+            let to = args
+                .get(1)
+                .cloned()
+                .unwrap_or_else(|| i32::MAX.into())
+                .coerce_to_i32(activation)?;
+
+            if from >= ctr.num_children() as i32 || from < 0 {
+                return Err(format!(
+                    "RangeError: Starting position {} does not exist in the child list (valid range is 0 to {})",
+                    from,
+                    ctr.num_children()
+                )
+                .into());
+            }
+
+            if (to >= ctr.num_children() as i32 || to < 0) && to != i32::MAX {
+                return Err(format!(
+                    "RangeError: Ending position {} does not exist in the child list (valid range is 0 to {})",
+                    to,
+                    ctr.num_children()
+                )
+                .into());
+            }
+
+            if from > to {
+                return Err(format!("RangeError: Range {} to {} is invalid", from, to).into());
+            }
+
+            ctr.remove_range_of_ids(
+                &mut activation.context,
+                from as usize..min(ctr.num_children(), to as usize + 1),
+            );
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -420,6 +472,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "removeChildAt"),
         Method::from_builtin(remove_child_at),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "removeChildren"),
+        Method::from_builtin(remove_children),
     ));
 
     class
