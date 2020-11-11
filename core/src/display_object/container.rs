@@ -10,7 +10,7 @@ use ruffle_macros::enum_trait_object;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::ops::Range;
+use std::ops::RangeBounds;
 
 #[enum_trait_object(
     #[derive(Clone, Collect, Debug, Copy)]
@@ -113,11 +113,9 @@ pub trait TDisplayObjectContainer<'gc>:
 
     /// Remove a set of children identified by their render list IDs from this
     /// container's render, depth, and execution lists.
-    fn remove_range_of_ids(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        range: Range<usize>,
-    );
+    fn remove_range_of_ids<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
+    where
+        R: RangeBounds<usize>;
 
     /// Clear all three lists in the container.
     fn clear(&mut self, context: MutationContext<'gc, '_>);
@@ -238,11 +236,10 @@ macro_rules! impl_display_object_container {
                 .remove_child(context, child)
         }
 
-        fn remove_range_of_ids(
-            &mut self,
-            context: &mut UpdateContext<'_, 'gc, '_>,
-            range: Range<usize>,
-        ) {
+        fn remove_range_of_ids<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
+        where
+            R: RangeBounds<usize>,
+        {
             self.0
                 .write(context.gc_context)
                 .$field
@@ -625,11 +622,10 @@ impl<'gc> ChildContainer<'gc> {
 
     /// Remove a set of children identified by their render list IDs from this
     /// container's render, depth, and execution lists.
-    pub fn remove_range_of_ids(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        range: Range<usize>,
-    ) {
+    pub fn remove_range_of_ids<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
+    where
+        R: RangeBounds<usize>,
+    {
         let removed_list: Vec<DisplayObject<'gc>> = self.render_list.drain(range).collect();
 
         for removed in removed_list {
