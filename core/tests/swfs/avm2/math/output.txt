@@ -1,0 +1,498 @@
+Math.E = 2.718281828459045
+Math.LN10 = 2.302585092994046
+Math.LN2 = 0.6931471805599453
+Math.LOG10E = 0.4342944819032518
+Math.LOG2E = 1.4426950408889634
+Math.PI = 3.141592653589793
+Math.SQRT1_2 = 0.7071067811865476
+Math.SQRT2 = 1.4142135623730951
+
+Math.abs(0) =
+0
+Math.abs(1) =
+1
+Math.abs(-1) =
+1
+Math.abs(1234.5) =
+1234.5
+Math.abs(-1234.5) =
+1234.5
+Math.abs(Infinity) =
+Infinity
+Math.abs(-Infinity) =
+Infinity
+Math.abs(NaN) =
+NaN
+Math.abs(true) =
+1
+Math.abs(false) =
+0
+Math.abs(undefined) =
+NaN
+Math.abs(null) =
+0
+Math.abs(55.5) =
+55.5
+Math.abs([object Object]) =
+10.1
+
+Math.acos(0) =
+1.5707963267948966
+Math.acos(1) =
+0
+Math.acos(-1) =
+3.141592653589793
+Math.acos(1234.5) =
+NaN
+Math.acos(-1234.5) =
+NaN
+Math.acos(Infinity) =
+NaN
+Math.acos(-Infinity) =
+NaN
+Math.acos(NaN) =
+NaN
+Math.acos(true) =
+0
+Math.acos(false) =
+1.5707963267948966
+Math.acos(undefined) =
+NaN
+Math.acos(null) =
+1.5707963267948966
+Math.acos(55.5) =
+NaN
+Math.acos([object Object]) =
+NaN
+
+Math.asin(0) =
+0
+Math.asin(1) =
+1.5707963267948966
+Math.asin(-1) =
+-1.5707963267948966
+Math.asin(1234.5) =
+NaN
+Math.asin(-1234.5) =
+NaN
+Math.asin(Infinity) =
+NaN
+Math.asin(-Infinity) =
+NaN
+Math.asin(NaN) =
+NaN
+Math.asin(true) =
+1.5707963267948966
+Math.asin(false) =
+0
+Math.asin(undefined) =
+NaN
+Math.asin(null) =
+0
+Math.asin(55.5) =
+NaN
+Math.asin([object Object]) =
+NaN
+
+Math.atan(0) =
+0
+Math.atan(1) =
+0.7853981633974483
+Math.atan(-1) =
+-0.7853981633974483
+Math.atan(1234.5) =
+1.5699862824196225
+Math.atan(-1234.5) =
+-1.5699862824196225
+Math.atan(Infinity) =
+1.5707963267948966
+Math.atan(-Infinity) =
+-1.5707963267948966
+Math.atan(NaN) =
+NaN
+Math.atan(true) =
+0.7853981633974483
+Math.atan(false) =
+0
+Math.atan(undefined) =
+NaN
+Math.atan(null) =
+0
+Math.atan(55.5) =
+1.5527802582408412
+Math.atan([object Object]) =
+1.47210806614649
+
+Math.atan2(0, 0) =
+0
+Math.atan2(1, 2) =
+0.4636476090008061
+Math.atan2(2, -4) =
+2.677945044588987
+Math.atan2(4, -2) =
+2.0344439357957027
+Math.atan2(-99, -100) =
+-2.361219573523157
+Math.atan2(Infinity, -Infinity) =
+2.356194490192345
+Math.atan2(NaN, 100) =
+NaN
+Math.atan2(999, NaN) =
+NaN
+Math.atan2(true, false) =
+1.5707963267948966
+Math.atan2(undefined, null) =
+NaN
+Math.atan2(55.5, -1234) =
+3.096647253816438
+Math.atan2([object Object], [object Object]) =
+0.7853981633974483
+
+Math.ceil(0) =
+0
+Math.ceil(1) =
+1
+Math.ceil(-1) =
+-1
+Math.ceil(1234.5) =
+1235
+Math.ceil(-1234.5) =
+-1234
+Math.ceil(Infinity) =
+Infinity
+Math.ceil(-Infinity) =
+-Infinity
+Math.ceil(NaN) =
+NaN
+Math.ceil(true) =
+1
+Math.ceil(false) =
+0
+Math.ceil(undefined) =
+NaN
+Math.ceil(null) =
+0
+Math.ceil(55.5) =
+56
+Math.ceil([object Object]) =
+11
+
+Math.cos(0) =
+1
+Math.cos(1) =
+0.5403023058681398
+Math.cos(-1) =
+0.5403023058681398
+Math.cos(1234.5) =
+-0.989373592132422
+Math.cos(-1234.5) =
+-0.989373592132422
+Math.cos(Infinity) =
+NaN
+Math.cos(-Infinity) =
+NaN
+Math.cos(NaN) =
+NaN
+Math.cos(true) =
+0.5403023058681398
+Math.cos(false) =
+1
+Math.cos(undefined) =
+NaN
+Math.cos(null) =
+1
+Math.cos(55.5) =
+0.49872621790648564
+Math.cos([object Object]) =
+-0.7805681801691837
+
+Math.exp(0) =
+1
+Math.exp(1) =
+2.718281828459045
+Math.exp(-1) =
+0.36787944117144233
+Math.exp(1234.5) =
+Infinity
+Math.exp(-1234.5) =
+0
+Math.exp(Infinity) =
+Infinity
+Math.exp(-Infinity) =
+0
+Math.exp(NaN) =
+NaN
+Math.exp(true) =
+2.718281828459045
+Math.exp(false) =
+1
+Math.exp(undefined) =
+NaN
+Math.exp(null) =
+1
+Math.exp(55.5) =
+1.26865561401095e+24
+Math.exp([object Object]) =
+24343.00942440837
+
+Math.floor(0) =
+0
+Math.floor(1) =
+1
+Math.floor(-1) =
+-1
+Math.floor(1234.5) =
+1234
+Math.floor(-1234.5) =
+-1235
+Math.floor(Infinity) =
+Infinity
+Math.floor(-Infinity) =
+-Infinity
+Math.floor(NaN) =
+NaN
+Math.floor(true) =
+1
+Math.floor(false) =
+0
+Math.floor(undefined) =
+NaN
+Math.floor(null) =
+0
+Math.floor(55.5) =
+55
+Math.floor([object Object]) =
+10
+
+Math.log(0) =
+-Infinity
+Math.log(1) =
+0
+Math.log(-1) =
+NaN
+Math.log(1234.5) =
+7.118421308785234
+Math.log(-1234.5) =
+NaN
+Math.log(Infinity) =
+Infinity
+Math.log(-Infinity) =
+NaN
+Math.log(NaN) =
+NaN
+Math.log(true) =
+0
+Math.log(false) =
+-Infinity
+Math.log(undefined) =
+NaN
+Math.log(null) =
+-Infinity
+Math.log(55.5) =
+4.0163830207523885
+Math.log([object Object]) =
+2.312535423847214
+
+Math.max(0, 0) =
+0
+Math.max(1, 2) =
+2
+Math.max(2, -4) =
+2
+Math.max(4, -2) =
+4
+Math.max(-99, -100) =
+-99
+Math.max(Infinity, -Infinity) =
+Infinity
+Math.max(NaN, 100) =
+NaN
+Math.max(999, NaN) =
+NaN
+Math.max(true, false) =
+1
+Math.max(undefined, null) =
+NaN
+Math.max(55.5, -1234) =
+55.5
+Math.max([object Object], [object Object]) =
+10.1
+
+Math.min(0, 0) =
+0
+Math.min(1, 2) =
+1
+Math.min(2, -4) =
+-4
+Math.min(4, -2) =
+-2
+Math.min(-99, -100) =
+-100
+Math.min(Infinity, -Infinity) =
+-Infinity
+Math.min(NaN, 100) =
+NaN
+Math.min(999, NaN) =
+NaN
+Math.min(true, false) =
+0
+Math.min(undefined, null) =
+NaN
+Math.min(55.5, -1234) =
+-1234
+Math.min([object Object], [object Object]) =
+10.1
+
+Math.pow(0, 0) =
+1
+Math.pow(1, 2) =
+1
+Math.pow(2, -4) =
+0.0625
+Math.pow(4, -2) =
+0.0625
+Math.pow(-99, -100) =
+2.73199902642903e-200
+Math.pow(Infinity, -Infinity) =
+0
+Math.pow(NaN, 100) =
+NaN
+Math.pow(999, NaN) =
+NaN
+Math.pow(true, false) =
+1
+Math.pow(undefined, null) =
+1
+Math.pow(55.5, -1234) =
+0
+Math.pow([object Object], [object Object]) =
+13920212824.565006
+
+Math.round(0) =
+0
+Math.round(1) =
+1
+Math.round(-1) =
+-1
+Math.round(1234.5) =
+1235
+Math.round(-1234.5) =
+-1234
+Math.round(Infinity) =
+Infinity
+Math.round(-Infinity) =
+-Infinity
+Math.round(NaN) =
+NaN
+Math.round(true) =
+1
+Math.round(false) =
+0
+Math.round(undefined) =
+NaN
+Math.round(null) =
+0
+Math.round(55.5) =
+56
+Math.round([object Object]) =
+10
+
+Math.sin(0) =
+0
+Math.sin(1) =
+0.8414709848078965
+Math.sin(-1) =
+-0.8414709848078965
+Math.sin(1234.5) =
+0.14539565052293643
+Math.sin(-1234.5) =
+-0.14539565052293643
+Math.sin(Infinity) =
+NaN
+Math.sin(-Infinity) =
+NaN
+Math.sin(NaN) =
+NaN
+Math.sin(true) =
+0.8414709848078965
+Math.sin(false) =
+0
+Math.sin(undefined) =
+NaN
+Math.sin(null) =
+0
+Math.sin(55.5) =
+-0.8667595742607592
+Math.sin([object Object]) =
+-0.6250706488928821
+
+Math.sqrt(0) =
+0
+Math.sqrt(1) =
+1
+Math.sqrt(-1) =
+NaN
+Math.sqrt(1234.5) =
+35.13545218152173
+Math.sqrt(-1234.5) =
+NaN
+Math.sqrt(Infinity) =
+Infinity
+Math.sqrt(-Infinity) =
+NaN
+Math.sqrt(NaN) =
+NaN
+Math.sqrt(true) =
+1
+Math.sqrt(false) =
+0
+Math.sqrt(undefined) =
+NaN
+Math.sqrt(null) =
+0
+Math.sqrt(55.5) =
+7.44983221287567
+Math.sqrt([object Object]) =
+3.1780497164141406
+
+Math.tan(0) =
+0
+Math.tan(1) =
+1.5574077246549023
+Math.tan(-1) =
+-1.5574077246549023
+Math.tan(1234.5) =
+-0.14695727850342305
+Math.tan(-1234.5) =
+0.14695727850342305
+Math.tan(Infinity) =
+NaN
+Math.tan(-Infinity) =
+NaN
+Math.tan(NaN) =
+NaN
+Math.tan(true) =
+1.5574077246549023
+Math.tan(false) =
+0
+Math.tan(undefined) =
+NaN
+Math.tan(null) =
+0
+Math.tan(55.5) =
+-1.7379466792405172
+Math.tan([object Object]) =
+0.8007893029375109
+
+Math.min() = Infinity
+Math.min(0) = 0
+Math.min(1, 2, 3) = 1
+Math.min(-1.1, -2.2, -3.3) = -3.3
+Math.min(9, NaN, false, true, Infinity, undefined) = NaN
+
+Math.max() = -Infinity
+Math.max(0) = 0
+Math.max(1, 2, 3) = 3
+Math.max(-1.1, -2.2, -3.3) = -1.1
+Math.max(9, NaN, false, true, Infinity, undefined) = NaN
+
