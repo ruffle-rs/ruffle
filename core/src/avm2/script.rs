@@ -79,7 +79,7 @@ impl<'gc> TranslationUnit<'gc> {
         self.0.read().abc.0.clone()
     }
 
-    /// Load a method from the ABC file and return it's method definition.
+    /// Load a method from the ABC file and return its method definition.
     pub fn load_method(
         self,
         method_index: u32,
@@ -105,7 +105,7 @@ impl<'gc> TranslationUnit<'gc> {
         Ok(method)
     }
 
-    /// Load a class from the ABC file and return it's class definition.
+    /// Load a class from the ABC file and return its class definition.
     pub fn load_class(
         self,
         class_index: u32,
@@ -127,7 +127,7 @@ impl<'gc> TranslationUnit<'gc> {
         Ok(class)
     }
 
-    /// Load a script from the ABC file and return it's script definition.
+    /// Load a script from the ABC file and return its script definition.
     pub fn load_script(
         self,
         script_index: u32,
@@ -257,7 +257,7 @@ impl<'gc> Script<'gc> {
         ))
     }
 
-    /// Construct a script from a `TranslationUnit` and it's script index.
+    /// Construct a script from a `TranslationUnit` and its script index.
     ///
     /// The returned script will be allocated, but no traits will be loaded.
     /// The caller is responsible for storing the class in the

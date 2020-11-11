@@ -698,7 +698,7 @@ impl<'gc> EditText<'gc> {
         )
     }
 
-    /// Render a layout box, plus it's children.
+    /// Render a layout box, plus its children.
     fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
         let box_transform: Transform = lbox.bounds().origin().into();
         context.transform_stack.push(&box_transform);
@@ -852,7 +852,7 @@ impl<'gc> EditText<'gc> {
                                     &mut activation.context,
                                 );
                             } else {
-                                // Otherwise, we initialize the proprty with the text field's text, if it's non-empty.
+                                // Otherwise, we initialize the property with the text field's text, if it's non-empty.
                                 // Note that HTML text fields are often initialized with an empty <p> tag, which is not considered empty.
                                 let text = self.text();
                                 if !text.is_empty() {

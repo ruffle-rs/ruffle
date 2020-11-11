@@ -668,7 +668,7 @@ impl Ruffle {
                         >= std::f64::EPSILON
                 {
                     let mut mut_instance = instance.borrow_mut();
-                    // If a canvas resizes, it's drawing context will get scaled. You must reset
+                    // If a canvas resizes, its drawing context will get scaled. You must reset
                     // the width and height attributes of the canvas element to recreate the context.
                     // (NOT the CSS width/height!)
                     mut_instance.canvas_width = canvas_width;

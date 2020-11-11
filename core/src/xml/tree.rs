@@ -410,7 +410,7 @@ impl<'gc> XMLNode<'gc> {
     /// Adopt a new child node into the current node.
     ///
     /// This does not add the node to any internal lists; it merely updates the
-    /// child to ensure that it considers this node it's parent. This function
+    /// child to ensure that it considers this node its parent. This function
     /// should always be called after a child node is added to this one. If
     /// you adopt a node that is NOT already added to the children list, bad
     /// things may happen.
@@ -557,7 +557,7 @@ impl<'gc> XMLNode<'gc> {
         Ok(())
     }
 
-    /// Remove node from it's current siblings list.
+    /// Remove node from its current siblings list.
     ///
     /// If a former sibling exists, we will also adopt it to the opposing side
     /// of this node, so as to maintain a coherent sibling list.
@@ -598,10 +598,10 @@ impl<'gc> XMLNode<'gc> {
     /// Add node to a new siblings list.
     ///
     /// If a given sibling exists, we will also ensure this node is adopted as
-    /// it's sibling, so as to maintain a coherent sibling list.
+    /// its sibling, so as to maintain a coherent sibling list.
     ///
     /// This is the opposite of `disown_siblings` - the former removes a
-    /// sibling from it's current list, and this adds the sibling to a new one.
+    /// sibling from its current list, and this adds the sibling to a new one.
     fn adopt_siblings(
         &mut self,
         mc: MutationContext<'gc, '_>,
@@ -646,7 +646,7 @@ impl<'gc> XMLNode<'gc> {
     /// Insert a child element into the child list of an Element node.
     ///
     /// The child will be adopted into the current tree: all child references
-    /// to other nodes or documents will be adjusted to reflect it's new
+    /// to other nodes or documents will be adjusted to reflect its new
     /// position in the tree. This may remove it from any existing trees or
     /// documents.
     ///
@@ -1092,7 +1092,7 @@ impl<'gc> XMLNode<'gc> {
     /// Look up the URI for the given namespace.
     ///
     /// XML namespaces are determined by `xmlns:` namespace attributes on the
-    /// current node, or it's parent.
+    /// current node, or its parent.
     pub fn lookup_uri_for_namespace(self, namespace: &str) -> Option<String> {
         let xmlns_default = XMLName::from_parts(None, "xmlns");
         let xmlns_ns = XMLName::from_parts(Some("xmlns"), namespace);
@@ -1145,7 +1145,7 @@ impl<'gc> XMLNode<'gc> {
     /// Look up the namespace for the given URI.
     ///
     /// XML namespaces are determined by `xmlns:` namespace attributes on the
-    /// current node, or it's parent.
+    /// current node, or its parent.
     ///
     /// If there are multiple namespaces that match the URI, the first
     /// mentioned on the closest node will be returned.
@@ -1175,7 +1175,7 @@ impl<'gc> XMLNode<'gc> {
         Ok(String::from_utf8(buf)?)
     }
 
-    /// Write the contents of this node, including it's children, to the given
+    /// Write the contents of this node, including its children, to the given
     /// writer.
     ///
     /// The given filter function allows filtering specific children out of the

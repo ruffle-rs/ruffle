@@ -50,7 +50,7 @@ pub use crate::avm2::object::stage_object::StageObject;
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
-    /// Retrieve a property by it's QName, without taking prototype lookups
+    /// Retrieve a property by its QName, without taking prototype lookups
     /// into account.
     fn get_property_local(
         self,
@@ -59,7 +59,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error>;
 
-    /// Retrieve a property by it's QName.
+    /// Retrieve a property by its QName.
     fn get_property(
         &mut self,
         receiver: Object<'gc>,
@@ -110,7 +110,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error>;
 
-    /// Set a property by it's QName.
+    /// Set a property by its QName.
     fn set_property(
         &mut self,
         receiver: Object<'gc>,
@@ -152,7 +152,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error>;
 
-    /// Init a property by it's QName.
+    /// Init a property by its QName.
     fn init_property(
         &mut self,
         receiver: Object<'gc>,
@@ -185,10 +185,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         receiver.init_property_local(receiver, name, value, activation)
     }
 
-    /// Retrieve a slot by it's index.
+    /// Retrieve a slot by its index.
     fn get_slot(self, id: u32) -> Result<Value<'gc>, Error>;
 
-    /// Set a slot by it's index.
+    /// Set a slot by its index.
     fn set_slot(
         self,
         id: u32,
@@ -196,7 +196,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error>;
 
-    /// Initialize a slot by it's index.
+    /// Initialize a slot by its index.
     fn init_slot(
         self,
         id: u32,
@@ -204,7 +204,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error>;
 
-    /// Retrieve a method by it's index.
+    /// Retrieve a method by its index.
     fn get_method(self, id: u32) -> Option<Object<'gc>>;
 
     /// Retrieves a trait entry by name.
@@ -226,7 +226,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error>;
 
-    /// Retrieves the scope chain of the object at time of it's creation.
+    /// Retrieves the scope chain of the object at time of its creation.
     ///
     /// The scope chain is used to determine the starting scope stack when an
     /// object is called, as well as any class methods on the object.
@@ -340,7 +340,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Change the `__proto__` on this object.
     ///
     /// This method primarily exists so that the global scope that player
-    /// globals loads into can be created before it's superclasses are. It
+    /// globals loads into can be created before its superclasses are. It
     /// should be used sparingly, if at all.
     fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>);
 
@@ -638,7 +638,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Err("Object is not callable".into())
     }
 
-    /// Construct a host object of some kind and return it's cell.
+    /// Construct a host object of some kind and return its cell.
     ///
     /// As the first step in object construction, the `construct` method is
     /// called on the prototype to create a new object. The prototype may
@@ -737,7 +737,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Determine if this object is an instance of a given type.
     ///
     /// The given object should be the constructor for the given type we are
-    /// checking against this object. It's prototype will be searched in the
+    /// checking against this object. Its prototype will be searched in the
     /// prototype chain of this object. If `check_interfaces` is enabled, then
     /// the interfaces listed on each prototype will also be checked.
     #[allow(unused_mut)] //it's not unused
@@ -754,10 +754,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self.has_prototype_in_chain(type_proto, check_interfaces)
     }
 
-    /// Determine if this object has a given prototype in it's prototype chain.
+    /// Determine if this object has a given prototype in its prototype chain.
     ///
     /// The given object should be the prototype we are checking against this
-    /// object. It's prototype will be searched in the
+    /// object. Its prototype will be searched in the
     /// prototype chain of this object. If `check_interfaces` is enabled, then
     /// the interfaces listed on each prototype will also be checked.
     fn has_prototype_in_chain(
@@ -793,7 +793,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get this object's `Class`, if it has one.
     fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>>;
 
-    /// Get this object's `Class`, or any `Class` on it's prototype chain.
+    /// Get this object's `Class`, or any `Class` on its prototype chain.
     ///
     /// This only yields `None` for bare objects.
     fn as_proto_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {

@@ -524,7 +524,7 @@ impl<'gc> ScriptObjectData<'gc> {
             .map(|slot| slot.get().unwrap_or(Value::Undefined))
     }
 
-    /// Set a slot by it's index.
+    /// Set a slot by its index.
     pub fn set_slot(
         &mut self,
         id: u32,
@@ -538,7 +538,7 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    /// Set a slot by it's index.
+    /// Set a slot by its index.
     pub fn init_slot(
         &mut self,
         id: u32,

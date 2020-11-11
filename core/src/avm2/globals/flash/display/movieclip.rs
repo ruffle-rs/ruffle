@@ -137,7 +137,7 @@ pub fn current_label<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Given a scene, produce it's name, length, and a list of frame labels.
+/// Given a scene, produce its name, length, and a list of frame labels.
 ///
 /// The intended purpose of this output is to be sent directly into the
 /// constructor of `flash.display.Scene`.

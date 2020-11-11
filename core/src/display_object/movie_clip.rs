@@ -1178,7 +1178,7 @@ impl<'gc> MovieClip<'gc> {
             .instantiate_by_id(id, context.gc_context)
         {
             // Remove previous child from children list,
-            // and add new childonto front of the list.
+            // and add new child onto front of the list.
             let prev_child = {
                 let mut mc = self.0.write(context.gc_context);
                 let prev_child = mc.children.insert(depth, child);
@@ -1360,7 +1360,7 @@ impl<'gc> MovieClip<'gc> {
                                 params: &GotoPlaceObject| {
             let child_entry = clip.0.read().children.get(&params.depth()).copied();
             match child_entry {
-                // Apply final delta to display pamareters.
+                // Apply final delta to display parameters.
                 // For rewinds, if an object was created before the final frame,
                 // it will exist on the final frame as well. Re-use this object
                 // instead of recreating.

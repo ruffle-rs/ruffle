@@ -41,7 +41,7 @@ pub struct LayoutContext<'a, 'gc> {
     /// The position to put text into.
     ///
     /// This cursor does not take indents, left margins, or alignment into
-    /// account. It's X coordinate is always relative to the start of the
+    /// account. Its X coordinate is always relative to the start of the
     /// current line, not the left edge of the text field being laid out.
     cursor: Position<Twips>,
 
@@ -605,7 +605,7 @@ pub enum LayoutContent<'gc> {
 
     /// A layout box containing a drawing.
     ///
-    /// The drawing will be rendered with it's origin at the position of the
+    /// The drawing will be rendered with its origin at the position of the
     /// layout box's bounds. The size of those bounds do not affect the
     /// rendering of the drawing.
     Drawing(Drawing),

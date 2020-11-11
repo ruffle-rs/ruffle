@@ -805,7 +805,7 @@ where
 
 /// Sort array storage.
 ///
-/// This function expects it's values to have been pre-enumerated and
+/// This function expects its values to have been pre-enumerated and
 /// pre-resolved. They will be sorted in-place. It is the caller's
 /// responsibility to place the resulting half of the sorted array wherever.
 ///
@@ -944,7 +944,7 @@ fn sort_postprocess<'gc>(
     Ok(0.into())
 }
 
-/// Given a value, extract it's array values.
+/// Given a value, extract its array values.
 ///
 /// If the value is not an array, this function yields `None`.
 fn extract_array_values<'gc>(
@@ -1064,7 +1064,7 @@ pub fn sort<'gc>(
     Ok(0.into())
 }
 
-/// Given a value, extract it's array values.
+/// Given a value, extract its array values.
 ///
 /// If the value is not an array, it will be returned as if it was present in a
 /// one-element array containing itself. This is intended for use with parsing
@@ -1076,7 +1076,7 @@ fn extract_maybe_array_values<'gc>(
     Ok(extract_array_values(activation, value.clone())?.unwrap_or_else(|| vec![value]))
 }
 
-/// Given a value, extract it's array values and coerce them to strings.
+/// Given a value, extract its array values and coerce them to strings.
 ///
 /// If the value is not an array, it will be returned as if it was present in a
 /// one-element array containing itself. This is intended for use with parsing
@@ -1095,7 +1095,7 @@ fn extract_maybe_array_strings<'gc>(
     Ok(out)
 }
 
-/// Given a value, extract it's array values and coerce them to enumsets.
+/// Given a value, extract its array values and coerce them to enumsets.
 ///
 /// If the value is not an array, it will be returned as if it was present in a
 /// one-element array containing itself. This is intended for use with parsing

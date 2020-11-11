@@ -665,7 +665,7 @@ impl TextFormat {
 /// Represents the application of a `TextFormat` to a particular text span.
 ///
 /// The actual string data is not stored here; a `TextSpan` is meaningless
-/// without it's underlying string content. Furthermore, the start position
+/// without its underlying string content. Furthermore, the start position
 /// within the string is implicit in the sum of all previous text span's
 /// lengths. See `TextSpans` for more information.
 ///
@@ -902,7 +902,7 @@ impl FormatSpans {
         }
     }
 
-    /// Construct a format span from it's raw parts.
+    /// Construct a format span from its raw parts.
     #[allow(dead_code)]
     pub fn from_str_and_spans(text: &str, spans: &[TextSpan]) -> Self {
         FormatSpans {
@@ -937,7 +937,7 @@ impl FormatSpans {
     /// Find the index of the span that covers a given search position.
     ///
     /// This function returns both the index of the span which covers the
-    /// search position, but how far into the span it's position is.
+    /// search position, but how far into the span its position is.
     ///
     /// The index returned from this function is not valid across calls which
     /// mutate spans.
@@ -1150,7 +1150,7 @@ impl FormatSpans {
     ///
     /// Text span formatting will be adjusted to match: specifically, the spans
     /// corresponding to the range will be removed and replaced with a single
-    /// span for the newly inserted text. It's formatting will be determined by
+    /// span for the newly inserted text. Its formatting will be determined by
     /// either the formatting of the last span in the range, or if the range
     /// extends beyond the end of the field, the default text format.
     ///
