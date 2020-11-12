@@ -1,3 +1,8 @@
+interface Config {
+    public_paths?: Record<string, string>;
+    public_path?: string;
+}
+
 /**
  * Attempt to discover the public path of the current Ruffle source. This can
  * be used to configure Webpack.
@@ -18,7 +23,7 @@
  * @param {string} source_name The name of the source.
  * @returns {string} The public path for the given source.
  */
-exports.public_path = function public_path(config, source_name) {
+export function public_path(config: Config, source_name: string) {
     let public_path = "";
     if (
         config !== undefined &&
@@ -28,7 +33,11 @@ exports.public_path = function public_path(config, source_name) {
         public_path = config.public_paths[source_name];
     } else if (config !== undefined && config.public_path !== undefined) {
         public_path = config.public_path;
-    } else if (document.currentScript !== undefined) {
+    } else if (
+        document.currentScript !== undefined &&
+        document.currentScript !== null &&
+        "src" in document.currentScript
+    ) {
         // Default to the directory where this script resides.
         try {
             public_path = new URL(".", document.currentScript.src).href;
@@ -43,4 +52,4 @@ exports.public_path = function public_path(config, source_name) {
     }
 
     return public_path;
-};
+}

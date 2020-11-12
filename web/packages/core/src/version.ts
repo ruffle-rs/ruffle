@@ -1,4 +1,10 @@
-exports.Version = class Version {
+export class Version {
+    private readonly major: number;
+    private readonly minor: number;
+    private readonly patch: number;
+    private readonly pr_ident: any[];
+    private readonly build_ident: any[];
+
     /**
      * Construct a Version from components.
      *
@@ -10,7 +16,13 @@ exports.Version = class Version {
      * @param {array|undefined} build_ident A list of build identifiers, if
      * any.
      */
-    constructor(major, minor, patch, pr_ident, build_ident) {
+    constructor(
+        major: number,
+        minor: number,
+        patch: number,
+        pr_ident: any,
+        build_ident: any
+    ) {
         this.major = major;
         this.minor = minor;
         this.patch = patch;
@@ -27,8 +39,8 @@ exports.Version = class Version {
      * @param {string} version_string A semver 2.0.0 compliant version string.
      * @return {Version} A version object.
      */
-    static from_semver(version_string) {
-        let build_split = version_string.split("+"),
+    static from_semver(version_string: string) {
+        const build_split = version_string.split("+"),
             pr_split = build_split[0].split("-"),
             version_split = pr_split[0].split("."),
             version = [];
@@ -60,9 +72,9 @@ exports.Version = class Version {
         }
 
         return new Version(
-            version[0],
-            version[1],
-            version[2],
+            Number(version[0]),
+            Number(version[1]),
+            Number(version[2]),
             version[3],
             version[4]
         );
@@ -82,7 +94,7 @@ exports.Version = class Version {
      * @param {Version} fver The other version to test against
      * @return {bool}
      */
-    is_compatible_with(fver) {
+    is_compatible_with(fver: Version) {
         return (
             (this.major !== 0 && this.major === fver.major) ||
             (this.major === 0 &&
@@ -109,7 +121,7 @@ exports.Version = class Version {
      * @param {Version} fver The other version to test against
      * @return {bool} True if this version has precedence over the other one.
      */
-    has_precedence_over(fver) {
+    has_precedence_over(fver: Version) {
         if (this.major > fver.major) {
             return true;
         } else if (this.major < fver.major) {
@@ -131,7 +143,7 @@ exports.Version = class Version {
         if (this.pr_ident === undefined && fver.pr_ident !== undefined) {
             return true;
         } else if (this.pr_ident !== undefined && fver.pr_ident !== undefined) {
-            let is_numeric = /^[0-9]*$/;
+            const is_numeric = /^[0-9]*$/;
             for (
                 let i = 0;
                 i < this.pr_ident.length && i < fver.pr_ident.length;
@@ -188,7 +200,7 @@ exports.Version = class Version {
      * @param {Version} fver The other version to test against
      * @return {bool} True if the given version is equivalent.
      */
-    is_equal(fver) {
+    is_equal(fver: Version) {
         return (
             this.major === fver.major &&
             this.minor === fver.minor &&
@@ -209,7 +221,7 @@ exports.Version = class Version {
      * @return {bool} True if the given version is either stable, or a
      * prerelease in the same series as this one.
      */
-    is_stable_or_compatible_prerelease(fver) {
+    is_stable_or_compatible_prerelease(fver: Version) {
         if (fver.pr_ident === undefined) {
             return true;
         } else {
@@ -220,4 +232,4 @@ exports.Version = class Version {
             );
         }
     }
-};
+}

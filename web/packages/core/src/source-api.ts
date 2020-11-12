@@ -1,6 +1,6 @@
-const { polyfill, plugin_polyfill } = require("./polyfills");
-const { register_element } = require("./register-element");
-const { RufflePlayer } = require("./ruffle-player");
+import { polyfill, plugin_polyfill } from "./polyfills";
+import { register_element } from "./register-element";
+import { RufflePlayer } from "./ruffle-player";
 
 /**
  * Represents this particular version of Ruffle.
@@ -10,13 +10,14 @@ const { RufflePlayer } = require("./ruffle-player");
  * negotiator (see `PublicAPI`) what this particular version of Ruffle is and
  * how to control it.
  */
-exports.SourceAPI = class SourceAPI {
+export class SourceAPI {
+    private name: string;
     /**
      * Construct a Source API.
      *
      * @param {string} source_name The name of this particular source.
      */
-    constructor(source_name) {
+    constructor(source_name: string) {
         this.name = source_name;
     }
 
@@ -50,12 +51,12 @@ exports.SourceAPI = class SourceAPI {
      * may be inserted into the current page as you wish.
      */
     create_player() {
-        let player_element_name = register_element(
+        const player_element_name = register_element(
             "ruffle-player",
             RufflePlayer
         );
-        let player = document.createElement(player_element_name);
+        const player = document.createElement(player_element_name);
 
         return player;
     }
-};
+}

@@ -1,5 +1,5 @@
-let ruffle_shadow_tmpl = document.createElement("template");
-ruffle_shadow_tmpl.innerHTML = `
+export const ruffle_shadow_template = document.createElement("template");
+ruffle_shadow_template.innerHTML = `
     <style>
         :host {
             display: inline-block;
@@ -159,5 +159,3 @@ ruffle_shadow_tmpl.innerHTML = `
 
     <ul id="right_click_menu" style="display: none"></ul>
 `;
-
-module.exports = ruffle_shadow_tmpl;

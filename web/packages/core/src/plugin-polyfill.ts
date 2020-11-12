@@ -1,16 +1,4 @@
 /**
- * Equivalent object to `MimeType` that allows us to falsify mime types for
- * plugins.
- */
-class RuffleMimeType {
-    constructor(type, description, suffixes) {
-        this.type = type;
-        this.description = description;
-        this.suffixes = suffixes;
-    }
-}
-
-/**
  * Replacement object for `MimeTypeArray` that lets us install new fake mime
  * types.
  *
@@ -22,48 +10,68 @@ class RuffleMimeType {
  * `install` method, you should not use `RuffleMimeTypeArray` as some other
  * plugin emulator is already present.
  */
-class RuffleMimeTypeArray {
-    constructor(native_mimetype_array) {
+class RuffleMimeTypeArray implements MimeTypeArray {
+    private readonly __mimetypes: MimeType[];
+    private readonly __named_mimetypes: Record<string, MimeType>;
+
+    constructor(native_mimetype_array: MimeTypeArray | null) {
         this.__mimetypes = [];
         this.__named_mimetypes = {};
 
-        for (let mimetype of native_mimetype_array) {
-            this.install(mimetype);
+        if (native_mimetype_array) {
+            for (let i = 0; i < native_mimetype_array.length; i++) {
+                this.install(native_mimetype_array[i]);
+            }
         }
     }
 
     /**
      * Install a MIME Type into the array.
      *
-     * @param {MimeType | RuffleMimeType} mimetype
+     * @param mimetype
      */
-    install(mimetype) {
-        let id = this.__mimetypes.length;
+    install(mimetype: MimeType) {
+        const id = this.__mimetypes.length;
 
         this.__mimetypes.push(mimetype);
         this.__named_mimetypes[mimetype.type] = mimetype;
-        this[mimetype.type] = mimetype;
-        this[id] = mimetype;
+        (<any>this)[mimetype.type] = mimetype;
+        (<any>this)[id] = mimetype;
     }
 
-    item(index) {
+    item(index: number) {
         return this.__mimetypes[index];
     }
 
-    namedItem(name) {
+    namedItem(name: string) {
         return this.__named_mimetypes[name];
     }
 
     get length() {
         return this.__mimetypes.length;
     }
+
+    [index: number]: MimeType;
+
+    [Symbol.iterator](): IterableIterator<MimeType> {
+        return this.__mimetypes[Symbol.iterator]();
+    }
 }
 
 /**
  * Equivalent object to `Plugin` that allows us to falsify plugins.
  */
-class RufflePlugin extends RuffleMimeTypeArray {
-    constructor(name, description, filename, mimetypes) {
+class RufflePlugin extends RuffleMimeTypeArray implements Plugin {
+    name: string;
+    description: string;
+    filename: string;
+
+    constructor(
+        name: string,
+        description: string,
+        filename: string,
+        mimetypes: RuffleMimeTypeArray | null
+    ) {
         super(mimetypes);
 
         this.name = name;
@@ -71,12 +79,14 @@ class RufflePlugin extends RuffleMimeTypeArray {
         this.filename = filename;
     }
 
-    install(mimetype) {
-        if (!mimetype.enabledPlugin) {
-            mimetype.enabledPlugin = this;
-        }
+    install(mimetype: MimeType) {
+        super.install(<MimeType>mimetype);
+    }
 
-        super.install(mimetype);
+    [index: number]: MimeType;
+
+    [Symbol.iterator](): IterableIterator<MimeType> {
+        return super[Symbol.iterator]();
     }
 }
 
@@ -97,29 +107,32 @@ class RufflePlugin extends RuffleMimeTypeArray {
  * emulator is already present.
  */
 class RufflePluginArray {
-    constructor(native_plugin_array) {
+    private readonly __plugins: Plugin[];
+    private readonly __named_plugins: Record<string, Plugin>;
+
+    constructor(native_plugin_array: PluginArray) {
         this.__plugins = [];
         this.__named_plugins = {};
 
-        for (let plugin of native_plugin_array) {
-            this.install(plugin);
+        for (let i = 0; i < native_plugin_array.length; i++) {
+            this.install(native_plugin_array[i]);
         }
     }
 
-    install(plugin) {
-        let id = this.__plugins.length;
+    install(plugin: Plugin | RufflePlugin) {
+        const id = this.__plugins.length;
 
         this.__plugins.push(plugin);
         this.__named_plugins[plugin.name] = plugin;
-        this[plugin.name] = plugin;
-        this[id] = plugin;
+        (<any>this)[plugin.name] = plugin;
+        (<any>this)[id] = plugin;
     }
 
-    item(index) {
+    item(index: number) {
         return this.__plugins[index];
     }
 
-    namedItem(name) {
+    namedItem(name: string) {
         return this.__named_plugins[name];
     }
 
@@ -128,33 +141,37 @@ class RufflePluginArray {
     }
 }
 
-exports.FLASH_PLUGIN = new RufflePlugin(
+export const FLASH_PLUGIN = new RufflePlugin(
     "Shockwave Flash",
     "Shockwave Flash 32.0 r0",
     "ruffle.js",
-    [
-        new RuffleMimeType(
-            "application/futuresplash",
-            "Shockwave Flash",
-            "spl"
-        ),
-        new RuffleMimeType(
-            "application/x-shockwave-flash",
-            "Shockwave Flash",
-            "swf"
-        ),
-        new RuffleMimeType(
-            "application/x-shockwave-flash2-preview",
-            "Shockwave Flash",
-            "swf"
-        ),
-        new RuffleMimeType(
-            "application/vnd.adobe.flash-movie",
-            "Shockwave Flash",
-            "swf"
-        ),
-    ]
+    null
 );
+
+FLASH_PLUGIN.install({
+    type: "application/futuresplash",
+    description: "Shockwave Flash",
+    suffixes: "spl",
+    enabledPlugin: FLASH_PLUGIN,
+});
+FLASH_PLUGIN.install({
+    type: "application/x-shockwave-flash",
+    description: "Shockwave Flash",
+    suffixes: "swf",
+    enabledPlugin: FLASH_PLUGIN,
+});
+FLASH_PLUGIN.install({
+    type: "application/x-shockwave-flash2-preview",
+    description: "Shockwave Flash",
+    suffixes: "swf",
+    enabledPlugin: FLASH_PLUGIN,
+});
+FLASH_PLUGIN.install({
+    type: "application/vnd.adobe.flash-movie",
+    description: "Shockwave Flash",
+    suffixes: "swf",
+    enabledPlugin: FLASH_PLUGIN,
+});
 
 /**
  * Install a fake plugin such that detectors will see it in `navigator.plugins`.
@@ -164,24 +181,29 @@ exports.FLASH_PLUGIN = new RufflePlugin(
  * that version of the plugin array. This allows the plugin polyfill to compose
  * across multiple plugin emulators with the first emulator's polyfill winning.
  */
-exports.install_plugin = function install_plugin(plugin) {
-    if (!navigator.plugins.install) {
+export function install_plugin(plugin: RufflePlugin) {
+    if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {
         Object.defineProperty(navigator, "plugins", {
             value: new RufflePluginArray(navigator.plugins),
             writable: false,
         });
     }
 
-    navigator.plugins.install(plugin);
+    const plugins = <RufflePluginArray>(<unknown>navigator.plugins);
+    plugins.install(plugin);
 
-    if (plugin.length > 0 && !navigator.mimeTypes.install) {
+    if (
+        plugin.length > 0 &&
+        (!("install" in navigator.mimeTypes) || !navigator.mimeTypes["install"])
+    ) {
         Object.defineProperty(navigator, "mimeTypes", {
             value: new RuffleMimeTypeArray(navigator.mimeTypes),
             writable: false,
         });
     }
 
-    for (var i = 0; i < plugin.length; i += 1) {
-        navigator.mimeTypes.install(plugin[i]);
+    const mimeTypes = <RuffleMimeTypeArray>(<unknown>navigator.mimeTypes);
+    for (let i = 0; i < plugin.length; i += 1) {
+        mimeTypes.install(plugin[i]);
     }
-};
+}

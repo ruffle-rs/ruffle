@@ -35,6 +35,10 @@ module.exports = (env, argv) => {
         experiments: {
             syncWebAssembly: true,
         },
+        devtool: "source-map",
+        resolve: {
+            extensions: [".ts", ".tsx", ".js", ".wasm"],
+        },
         plugins: [
             new CleanWebpackPlugin(),
             new webpack.DefinePlugin({
@@ -46,5 +50,13 @@ module.exports = (env, argv) => {
                 patterns: [{ from: "LICENSE*" }, { from: "README.md" }],
             }),
         ],
+        module: {
+            rules: [
+                {
+                    test: /\.tsx?$/,
+                    loader: "ts-loader",
+                },
+            ],
+        },
     };
 };

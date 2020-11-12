@@ -1,10 +1,17 @@
-const { Version } = require("./version");
+import { Version } from "./version";
+
+interface Requirement {
+    comparator: string;
+    version: Version;
+}
 
 /**
  * Represents a set of version requirements.
  */
-exports.VersionRange = class VersionRange {
-    constructor(requirements) {
+export class VersionRange {
+    private readonly requirements: Requirement[][];
+
+    constructor(requirements: Requirement[][]) {
         this.requirements = requirements;
     }
 
@@ -14,13 +21,13 @@ exports.VersionRange = class VersionRange {
      * @param {Version} fver A version object to test against.
      * @return {bool} Whether or not the given version matches this range.
      */
-    satisfied_by(fver) {
+    satisfied_by(fver: Version) {
         for (let i = 0; i < this.requirements.length; i += 1) {
             let matches = true;
 
             for (let j = 0; j < this.requirements[i].length; j += 1) {
-                let comparator = this.requirements[i][j][0];
-                let version = this.requirements[i][j][1];
+                const comparator = this.requirements[i][j].comparator;
+                const version = this.requirements[i][j].version;
 
                 matches =
                     matches && version.is_stable_or_compatible_prerelease(fver);
@@ -63,10 +70,10 @@ exports.VersionRange = class VersionRange {
      * string ||.
      * @return {VersionRange} A version range object.
      */
-    static from_requirement_string(requirement) {
-        let components = requirement.split(" ");
-        let requirement_set = [];
-        let requirements = [];
+    static from_requirement_string(requirement: string) {
+        const components = requirement.split(" ");
+        let requirement_set: Requirement[] = [];
+        const requirements: Requirement[][] = [];
 
         for (let i = 0; i < components.length; i += 1) {
             if (components[i] === "||") {
@@ -75,13 +82,17 @@ exports.VersionRange = class VersionRange {
                     requirement_set = [];
                 }
             } else if (components[i].length > 0) {
-                let match = /[0-9]/.exec(components[i]);
-                let comparator = components[i].slice(0, match.index).trim();
-                let version = Version.from_semver(
-                    components[i].slice(match.index).trim()
-                );
+                const match = /[0-9]/.exec(components[i]);
+                if (match) {
+                    const comparator = components[i]
+                        .slice(0, match.index)
+                        .trim();
+                    const version = Version.from_semver(
+                        components[i].slice(match.index).trim()
+                    );
 
-                requirement_set.push([comparator, version]);
+                    requirement_set.push({ comparator, version });
+                }
             }
         }
 
@@ -91,4 +102,4 @@ exports.VersionRange = class VersionRange {
 
         return new VersionRange(requirements);
     }
-};
+}

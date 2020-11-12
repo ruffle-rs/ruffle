@@ -10,7 +10,16 @@
         "test": "mocha"
     },
     "devDependencies": {
-        "webpack-cli": "^4.0.0",
-        "mocha": "^8.0.1"
+        "@typescript-eslint/eslint-plugin": "^4.7.0",
+        "@typescript-eslint/parser": "^4.7.0",
+        "eslint": "^7.13.0",
+        "mocha": "^8.0.1",
+        "typedoc": "^0.19.2",
+        "typescript": "^4.0.5",
+        "webpack": "^5.1.3",
+        "webpack-cli": "^4.0.0"
+    },
+    "dependencies": {
+        "@types/source-map": "^0.5.2"
     }
 }

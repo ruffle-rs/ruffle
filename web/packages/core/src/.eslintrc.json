@@ -1,0 +1,19 @@
+{
+    "env": {
+        "browser": true
+    },
+    "globals": {
+        "__webpack_public_path__": true,
+        "__COMMIT_HASH__": true,
+        "__COMMIT_DATE__": true,
+        "__CHANNEL__": true
+    },
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+    ]
+}
