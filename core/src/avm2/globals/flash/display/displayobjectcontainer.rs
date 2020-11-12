@@ -455,6 +455,80 @@ pub fn set_child_index<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObjectContainer.swapChildrenAt`
+pub fn swap_children_at<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        if let Some(mut ctr) = parent.as_container() {
+            let index0 = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_i32(activation)?;
+            let index1 = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_i32(activation)?;
+            let bounds = ctr.num_children();
+
+            if index0 < 0 || index0 as usize >= bounds {
+                return Err(format!("RangeError: Index {} is out of bounds", index0).into());
+            }
+
+            if index1 < 0 || index1 as usize >= bounds {
+                return Err(format!("RangeError: Index {} is out of bounds", index1).into());
+            }
+
+            ctr.swap_at_id(&mut activation.context, index0 as usize, index1 as usize);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `DisplayObjectContainer.swapChildren`
+pub fn swap_children<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        if let Some(mut ctr) = parent.as_container() {
+            let child0 = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_object(activation)?
+                .as_display_object()
+                .ok_or_else(|| "ArgumentError: Child is not a display object")?;
+            let child1 = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_object(activation)?
+                .as_display_object()
+                .ok_or_else(|| "ArgumentError: Child is not a display object")?;
+
+            let index0 = ctr
+                .iter_render_list()
+                .position(|a| DisplayObject::ptr_eq(a, child0))
+                .ok_or_else(|| "ArgumentError: Child is not a child of this display object")?;
+            let index1 = ctr
+                .iter_render_list()
+                .position(|a| DisplayObject::ptr_eq(a, child1))
+                .ok_or_else(|| "ArgumentError: Child is not a child of this display object")?;
+
+            ctr.swap_at_id(&mut activation.context, index0, index1);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -513,6 +587,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "setChildIndex"),
         Method::from_builtin(set_child_index),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "swapChildrenAt"),
+        Method::from_builtin(swap_children_at),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "swapChildren"),
+        Method::from_builtin(swap_children),
     ));
 
     class

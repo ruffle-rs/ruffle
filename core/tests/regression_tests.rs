@@ -428,6 +428,8 @@ swf_tests! {
     (as3_displayobjectcontainer_removechildat, "avm2/displayobjectcontainer_removechildat", 1),
     (as3_displayobjectcontainer_removechildren, "avm2/displayobjectcontainer_removechildren", 5),
     (as3_displayobjectcontainer_setchildindex, "avm2/displayobjectcontainer_setchildindex", 1),
+    (as3_displayobjectcontainer_swapchildren, "avm2/displayobjectcontainer_swapchildren", 1),
+    (as3_displayobjectcontainer_swapchildrenat, "avm2/displayobjectcontainer_swapchildrenat", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
