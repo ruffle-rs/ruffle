@@ -1,7 +1,13 @@
 /**
  * A mapping between internal element IDs and DOM element IDs.
  */
-var private_registry = {};
+const private_registry: Record<string, Registration> = {};
+
+interface Registration {
+    class: CustomElementConstructor;
+    name: string;
+    internal_name: string;
+}
 
 /**
  * Lookup a previously registered custom element.
@@ -16,8 +22,8 @@ var private_registry = {};
  * properties listing the external name, implementing class, and internal name
  * respectively.
  */
-exports.lookup_element = function lookup_element(element_name) {
-    let data = private_registry[element_name];
+export function lookup_element(element_name: string) {
+    const data = private_registry[element_name];
     if (data !== undefined) {
         return {
             internal_name: element_name,
@@ -27,7 +33,7 @@ exports.lookup_element = function lookup_element(element_name) {
     } else {
         return null;
     }
-};
+}
 
 /**
  * Register a custom element.
@@ -42,7 +48,7 @@ exports.lookup_element = function lookup_element(element_name) {
  * about to work with custom element names.
  *
  * @param {string} element_name The internal name of the element.
- * @param {function} element_class The class of the element.
+ * @param {CustomElementConstructor} element_class The class of the element.
  *
  * You must call this function with the same class every time.
  *
@@ -50,9 +56,9 @@ exports.lookup_element = function lookup_element(element_name) {
  * @throws Throws an error if two different elements were registered with the
  * same internal name.
  */
-exports.register_element = function register_element(
-    element_name,
-    element_class
+export function register_element(
+    element_name: string,
+    element_class: CustomElementConstructor
 ) {
     if (private_registry[element_name] !== undefined) {
         if (private_registry[element_name].class !== element_class) {
@@ -85,4 +91,4 @@ exports.register_element = function register_element(
             }
         }
     }
-};
+}

@@ -1,23 +1,47 @@
-const load_ruffle = require("./load-ruffle");
-const ruffle_shadow_template = require("./shadow-template");
-const { lookup_element } = require("./register-element");
+import { Ruffle } from "../../../pkg/ruffle";
 
-exports.FLASH_MIMETYPE = "application/x-shockwave-flash";
-exports.FUTURESPLASH_MIMETYPE = "application/futuresplash";
-exports.FLASH7_AND_8_MIMETYPE = "application/x-shockwave-flash2-preview";
-exports.FLASH_MOVIE_MIMETYPE = "application/vnd.adobe.flash-movie";
-exports.FLASH_ACTIVEX_CLASSID = "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
+import { load_ruffle } from "./load-ruffle";
+import { ruffle_shadow_template } from "./shadow-template";
+import { lookup_element } from "./register-element";
+
+export const FLASH_MIMETYPE = "application/x-shockwave-flash";
+export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
+export const FLASH7_AND_8_MIMETYPE = "application/x-shockwave-flash2-preview";
+export const FLASH_MOVIE_MIMETYPE = "application/vnd.adobe.flash-movie";
+export const FLASH_ACTIVEX_CLASSID =
+    "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
-function sanitize_parameters(parameters) {
+declare global {
+    interface Window {
+        RufflePlayer: any;
+    }
+
+    interface Document {
+        webkitFullscreenEnabled?: boolean;
+        webkitFullscreenElement?: HTMLElement;
+        webkitCancelFullScreen?: () => void;
+    }
+
+    interface HTMLElement {
+        webkitRequestFullScreen?: () => void;
+    }
+}
+
+function sanitize_parameters(
+    parameters:
+        | (URLSearchParams | string | Record<string, string>)
+        | undefined
+        | null
+): Record<string, string> {
     if (parameters === null || parameters === undefined) {
         return {};
     }
     if (!(parameters instanceof URLSearchParams)) {
         parameters = new URLSearchParams(parameters);
     }
-    const output = {};
+    const output: Record<string, string> = {};
 
     for (const [key, value] of parameters) {
         // Every value must be type of string
@@ -27,38 +51,51 @@ function sanitize_parameters(parameters) {
     return output;
 }
 
-exports.RufflePlayer = class RufflePlayer extends HTMLElement {
-    constructor(...args) {
-        let self = super(...args);
+export class RufflePlayer extends HTMLElement {
+    private shadow: ShadowRoot;
+    private dynamic_styles: HTMLStyleElement;
+    private container: HTMLElement;
+    private play_button: HTMLElement;
+    private right_click_menu: HTMLElement;
+    private instance: Ruffle | null;
+    allow_script_access: boolean;
+    private _trace_observer: ((message: string) => void) | null;
+    private Ruffle: Promise<{ new (...args: any[]): Ruffle }>;
+    private panicked = false;
 
-        self.shadow = self.attachShadow({ mode: "closed" });
-        self.shadow.appendChild(ruffle_shadow_template.content.cloneNode(true));
+    constructor() {
+        super();
 
-        self.dynamic_styles = self.shadow.getElementById("dynamic_styles");
-        self.container = self.shadow.getElementById("container");
-        self.play_button = self.shadow.getElementById("play_button");
-        if (self.play_button) {
-            self.play_button.addEventListener(
+        this.shadow = this.attachShadow({ mode: "closed" });
+        this.shadow.appendChild(ruffle_shadow_template.content.cloneNode(true));
+
+        this.dynamic_styles = <HTMLStyleElement>(
+            this.shadow.getElementById("dynamic_styles")
+        );
+        this.container = this.shadow.getElementById("container")!;
+        this.play_button = this.shadow.getElementById("play_button")!;
+        if (this.play_button) {
+            this.play_button.addEventListener(
                 "click",
-                self.play_button_clicked.bind(self)
+                this.play_button_clicked.bind(this)
             );
         }
-        self.right_click_menu = self.shadow.getElementById("right_click_menu");
+        this.right_click_menu = this.shadow.getElementById("right_click_menu")!;
 
-        self.addEventListener(
+        this.addEventListener(
             "contextmenu",
-            self.open_right_click_menu.bind(self)
+            this.open_right_click_menu.bind(this)
         );
 
-        window.addEventListener("click", self.hide_right_click_menu.bind(self));
+        window.addEventListener("click", this.hide_right_click_menu.bind(this));
 
-        self.instance = null;
-        self.allow_script_access = false;
-        self._trace_observer = null;
+        this.instance = null;
+        this.allow_script_access = false;
+        this._trace_observer = null;
 
-        self.Ruffle = load_ruffle();
+        this.Ruffle = load_ruffle();
 
-        return self;
+        return this;
     }
 
     connectedCallback() {
@@ -69,7 +106,11 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         return ["width", "height"];
     }
 
-    attributeChangedCallback(name) {
+    attributeChangedCallback(
+        name: string,
+        oldValue: string | undefined,
+        newValue: string | undefined
+    ) {
         if (name === "width" || name === "height") {
             this.update_styles();
         }
@@ -87,7 +128,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         if (this.dynamic_styles.sheet) {
             if (this.dynamic_styles.sheet.rules) {
                 for (
-                    var i = 0;
+                    let i = 0;
                     i < this.dynamic_styles.sheet.rules.length;
                     i++
                 ) {
@@ -95,9 +136,10 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 }
             }
 
-            if (this.attributes.width) {
-                let width = RufflePlayer.html_dimension_to_css_dimension(
-                    this.attributes.width.value
+            const widthAttr = this.attributes.getNamedItem("width");
+            if (widthAttr !== undefined && widthAttr !== null) {
+                const width = RufflePlayer.html_dimension_to_css_dimension(
+                    widthAttr.value
                 );
                 if (width !== null) {
                     this.dynamic_styles.sheet.insertRule(
@@ -106,9 +148,10 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 }
             }
 
-            if (this.attributes.height) {
-                let height = RufflePlayer.html_dimension_to_css_dimension(
-                    this.attributes.height.value
+            const heightAttr = this.attributes.getNamedItem("height");
+            if (heightAttr !== undefined && heightAttr !== null) {
+                const height = RufflePlayer.html_dimension_to_css_dimension(
+                    heightAttr.value
                 );
                 if (height !== null) {
                     this.dynamic_styles.sheet.insertRule(
@@ -128,16 +171,16 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      */
     is_unused_fallback_object() {
         let parent = this.parentNode;
-        let element = lookup_element("ruffle-object");
+        const element = lookup_element("ruffle-object");
 
         if (element !== null) {
-            do {
+            while (parent != document && parent != null) {
                 if (parent.nodeName === element.name) {
                     return true;
                 }
 
                 parent = parent.parentNode;
-            } while (parent != document);
+            }
         }
 
         return false;
@@ -156,7 +199,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             console.log("Ruffle instance destroyed.");
         }
 
-        let Ruffle = await this.Ruffle.catch((e) => {
+        const Ruffle = await this.Ruffle.catch((e) => {
             console.error("Serious error loading Ruffle: " + e);
 
             // Serious duck typing. In error conditions, let's not make assumptions.
@@ -183,7 +226,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             throw e;
         });
 
-        this.instance = Ruffle.new(
+        this.instance = new Ruffle(
             this.container,
             this,
             this.allow_script_access
@@ -204,7 +247,15 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * If it's an object, every key and value must be a String.
      * These parameters will be merged onto any found in the query portion of the swf URL.
      */
-    async stream_swf_url(url, parameters) {
+    async stream_swf_url(
+        url: string,
+        parameters:
+            | URLSearchParams
+            | string
+            | Record<string, string>
+            | undefined
+            | null
+    ) {
         //TODO: Actually stream files...
         try {
             if (this.isConnected && !this.is_unused_fallback_object()) {
@@ -215,7 +266,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                     ...sanitize_parameters(url.substring(url.indexOf("?"))),
                     ...sanitize_parameters(parameters),
                 };
-                this.instance.stream_from(url, parameters);
+                this.instance!.stream_from(url, parameters);
 
                 if (this.play_button) {
                     this.play_button.style.display = "block";
@@ -241,50 +292,57 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         }
     }
 
-    fullscreenEnabled() {
-        return (
-            document.fullscreenEnabled ||
-            document.mozFullScreenEnabled ||
-            document.webkitFullscreenEnabled
+    /**
+     * Checks if this player is allowed to be fullscreen by the browser.
+     *
+     * @returns True if you may call [[enterFullscreen]].
+     */
+    get fullscreenEnabled(): boolean {
+        return !!(
+            document.fullscreenEnabled || document.webkitFullscreenEnabled
         );
     }
 
-    isFullscreen() {
+    /**
+     * Checks if this player is currently fullscreen inside the browser.
+     *
+     * @returns True if it is fullscreen.
+     */
+    get isFullscreen(): boolean {
         return (
-            (document.fullscreenElement ||
-                document.mozFullScreenElement ||
-                document.webkitFullscreenElement) === this
+            (document.fullscreenElement || document.webkitFullscreenElement) ===
+            this
         );
     }
 
-    enterFullscreen() {
+    /**
+     * Requests the browser to make this player fullscreen.
+     *
+     * This is not guaranteed to succeed, please check [[fullscreenEnabled]] first.
+     */
+    enterFullscreen(): void {
         if (this.requestFullscreen) {
             this.requestFullscreen();
-        } else if (this.mozRequestFullScreen) {
-            this.mozRequestFullScreen();
         } else if (this.webkitRequestFullScreen) {
             this.webkitRequestFullScreen();
-        } else if (this.msRequestFullscreen) {
-            this.msRequestFullscreen();
         }
     }
 
-    exitFullscreen() {
+    /**
+     * Requests the browser to no longer make this player fullscreen.
+     */
+    exitFullscreen(): void {
         if (document.exitFullscreen) {
             document.exitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen();
         } else if (document.webkitCancelFullScreen) {
             document.webkitCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
         }
     }
 
     right_click_menu_items() {
         const items = [];
-        if (this.fullscreenEnabled()) {
-            if (this.isFullscreen()) {
+        if (this.fullscreenEnabled) {
+            if (this.isFullscreen) {
                 items.push({
                     text: "Exit fullscreen",
                     onClick: this.exitFullscreen.bind(this),
@@ -309,12 +367,12 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         return items;
     }
 
-    open_right_click_menu(e) {
+    open_right_click_menu(e: MouseEvent) {
         e.preventDefault();
 
         // Clear all `right_click_menu` items.
         while (this.right_click_menu.firstChild) {
-            this.right_click_menu.removeChild(this.right_click_menu.lastChild);
+            this.right_click_menu.removeChild(this.right_click_menu.firstChild);
         }
 
         // Populate `right_click_menu` items.
@@ -364,18 +422,26 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * Please note that by doing this, no URL information will be provided to
      * the movie being loaded.
      *
-     * @param {String} url The URL to stream.
+     * @param {Iterable<number>} data The data to stream.
      * @param {URLSearchParams|String|Object} [parameters] The parameters (also known as "flashvars") to load the movie with.
      * If it's a string, it will be decoded into an object.
      * If it's an object, every key and value must be a String.
      */
-    async play_swf_data(data, parameters) {
+    async play_swf_data(
+        data: Iterable<number>,
+        parameters:
+            | URLSearchParams
+            | string
+            | Record<string, string>
+            | undefined
+            | null
+    ) {
         try {
             if (this.isConnected && !this.is_unused_fallback_object()) {
                 console.log("Got SWF data");
 
                 await this.ensure_fresh_instance();
-                this.instance.load_data(
+                this.instance!.load_data(
                     new Uint8Array(data),
                     sanitize_parameters(parameters)
                 );
@@ -400,9 +466,10 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * Copies attributes and children from another element to this player element.
      * Used by the polyfill elements, RuffleObject and RuffleEmbed.
      */
-    copy_element(elem) {
+    copy_element(elem: HTMLElement) {
         if (elem) {
-            for (let attrib of elem.attributes) {
+            for (let i = 0; i < elem.attributes.length; i++) {
+                const attrib = elem.attributes[i];
                 if (attrib.specified) {
                     // Issue 468: Chrome "Click to Active Flash" box stomps on title attribute
                     if (
@@ -423,7 +490,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 }
             }
 
-            for (let node of Array.from(elem.children)) {
+            for (const node of Array.from(elem.children)) {
                 this.appendChild(node);
             }
         }
@@ -435,9 +502,9 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * Add a 'px' unit unless the value is a percentage.
      * Returns null if this is not a valid dimension.
      */
-    static html_dimension_to_css_dimension(attribute) {
+    static html_dimension_to_css_dimension(attribute: string) {
         if (attribute) {
-            let match = attribute.match(DIMENSION_REGEX);
+            const match = attribute.match(DIMENSION_REGEX);
             if (match) {
                 let out = match[1];
                 if (!match[3]) {
@@ -454,10 +521,10 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * When a movie presents a new callback through `ExternalInterface.addCallback`,
      * we are informed so that we can expose the method on any relevant DOM element.
      */
-    on_callback_available(name) {
+    on_callback_available(name: string) {
         const instance = this.instance;
-        this[name] = (...args) => {
-            return instance.call_exposed_callback(name, args);
+        (<any>this)[name] = (...args: any[]) => {
+            return instance?.call_exposed_callback(name, args);
         };
     }
 
@@ -466,8 +533,8 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      *
      * The observer will be called, as a function, for each message that the playing movie will "trace" (output).
      */
-    set trace_observer(observer) {
-        this.instance.set_trace_observer(observer);
+    set trace_observer(observer: ((message: string) => void) | null) {
+        this.instance?.set_trace_observer(observer);
     }
 
     /*
@@ -481,7 +548,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
      * all players will panic and Ruffle will become "poisoned" - no more players will run on this page until it is
      * reloaded fresh.
      */
-    panic(error) {
+    panic(error: Error | null) {
         if (this.panicked) {
             // Only show the first major error, not any repeats - they aren't as important
             return;
@@ -504,7 +571,9 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                 </div>
             </div>
         `;
-        this.container.querySelector("#panic-view-details").onclick = () => {
+        (<HTMLLinkElement>(
+            this.container.querySelector("#panic-view-details")
+        )).onclick = () => {
             let error_text = "# Error Info\n";
 
             if (error instanceof Error) {
@@ -532,7 +601,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             error_text += `Ruffle source: ${window.RufflePlayer.name}\n`;
             this.container.querySelector(
                 "#panic-body"
-            ).innerHTML = `<textarea>${error_text}</textarea>`;
+            )!.innerHTML = `<textarea>${error_text}</textarea>`;
             return false;
         };
 
@@ -546,16 +615,15 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
     debug_player_info() {
         return `Allows script access: ${this.allow_script_access}\n`;
     }
-};
+}
 
 /*
  * Returns whether the given filename ends in an "swf" extension.
  */
-exports.is_swf_filename = function is_swf_filename(filename) {
+export function is_swf_filename(filename: string | null) {
     return (
         filename &&
-        typeof filename === "string" &&
         (filename.search(/\.swf(?:[?#]|$)/i) >= 0 ||
             filename.search(/\.spl(?:[?#]|$)/i) >= 0)
     );
-};
+}

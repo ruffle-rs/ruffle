@@ -1,4 +1,4 @@
-const {
+import {
     FLASH_MIMETYPE,
     FUTURESPLASH_MIMETYPE,
     FLASH7_AND_8_MIMETYPE,
@@ -6,12 +6,14 @@ const {
     FLASH_ACTIVEX_CLASSID,
     is_swf_filename,
     RufflePlayer,
-} = require("./ruffle-player.js");
-const { register_element } = require("./register-element");
+} from "./ruffle-player";
+import { register_element } from "./register-element";
 
-module.exports = class RuffleObject extends RufflePlayer {
-    constructor(...args) {
-        super(...args);
+export class RuffleObject extends RufflePlayer {
+    private params: Record<string, string> = {};
+
+    constructor() {
+        super();
     }
 
     connectedCallback() {
@@ -26,13 +28,13 @@ module.exports = class RuffleObject extends RufflePlayer {
         );
         let url = null;
 
-        if (this.attributes.data) {
-            url = this.attributes.data.value;
+        if (this.attributes.getNamedItem("data")) {
+            url = this.attributes.getNamedItem("data")?.value;
         } else if (this.params.movie) {
             url = this.params.movie;
         }
 
-        let parameters = RuffleObject.find_case_insensitive(
+        const parameters = RuffleObject.find_case_insensitive(
             this.params,
             "flashvars",
             RuffleObject.find_case_insensitive(
@@ -61,8 +63,8 @@ module.exports = class RuffleObject extends RufflePlayer {
 
         let url = null;
 
-        if (this.attributes.data) {
-            url = this.attributes.data.value;
+        if (this.attributes.getNamedItem("data")) {
+            url = this.attributes.getNamedItem("data")?.value;
         } else if (this.params.movie) {
             url = this.params.movie;
         }
@@ -73,24 +75,33 @@ module.exports = class RuffleObject extends RufflePlayer {
         });
 
         Object.keys(this.attributes).forEach((key) => {
-            error_text += `Attribute ${key}: ${this.attributes[key]}\n`;
+            error_text += `Attribute ${key}: ${
+                this.attributes.getNamedItem(key)?.value
+            }\n`;
         });
 
         return error_text;
     }
 
     get data() {
-        return this.attributes.data.value;
+        return this.attributes.getNamedItem("data")?.value;
     }
 
     set data(href) {
-        this.attributes.data = href;
+        if (href != undefined) {
+            const attr = document.createAttribute("data");
+            attr.value = href;
+            this.attributes.setNamedItem(attr);
+        } else {
+            this.attributes.removeNamedItem("data");
+        }
     }
 
-    static is_interdictable(elem) {
-        if (!elem.data) {
+    static is_interdictable(elem: HTMLElement) {
+        const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
+        if (!data) {
             let has_movie = false;
-            let params = elem.getElementsByTagName("param");
+            const params = elem.getElementsByTagName("param");
             for (let i = 0; i < params.length; i++) {
                 if (params[i].name == "movie" && params[i].value) {
                     has_movie = true;
@@ -100,26 +111,26 @@ module.exports = class RuffleObject extends RufflePlayer {
                 return false;
             }
         }
+
+        const type = elem.attributes.getNamedItem("type")?.value.toLowerCase();
+        const classid = elem.attributes
+            .getNamedItem("classid")
+            ?.value.toLowerCase();
         if (
-            elem.type.toLowerCase() === FLASH_MIMETYPE.toLowerCase() ||
-            elem.type.toLowerCase() === FUTURESPLASH_MIMETYPE.toLowerCase() ||
-            elem.type.toLowerCase() == FLASH7_AND_8_MIMETYPE.toLowerCase() ||
-            elem.type.toLowerCase() == FLASH_MOVIE_MIMETYPE.toLowerCase()
+            type === FLASH_MIMETYPE.toLowerCase() ||
+            type === FUTURESPLASH_MIMETYPE.toLowerCase() ||
+            type === FLASH7_AND_8_MIMETYPE.toLowerCase() ||
+            type === FLASH_MOVIE_MIMETYPE.toLowerCase()
         ) {
             return true;
-        } else if (
-            elem.attributes &&
-            elem.attributes.classid &&
-            elem.attributes.classid.value.toLowerCase() ===
-                FLASH_ACTIVEX_CLASSID.toLowerCase()
-        ) {
+        } else if (classid === FLASH_ACTIVEX_CLASSID.toLowerCase()) {
             return true;
         } else if (
-            (elem.type === undefined || elem.type === "") &&
-            elem.attributes.classid === undefined
+            (type == null || type === "") &&
+            (classid == null || classid === "")
         ) {
-            let params = RuffleObject.params_of(elem);
-            if (elem.data && is_swf_filename(elem.data)) {
+            const params = RuffleObject.params_of(elem);
+            if (data && is_swf_filename(data)) {
                 return true;
             } else if (
                 params &&
@@ -137,7 +148,7 @@ module.exports = class RuffleObject extends RufflePlayer {
      * Find and return the first value in obj with the given key.
      * Many Flash params were case insensitive, so we use this when checking for them.
      */
-    static find_case_insensitive(obj, key, defaultValue) {
+    static find_case_insensitive(obj: any, key: string, defaultValue: any) {
         key = key.toLowerCase();
         for (const k in obj) {
             if (Object.hasOwnProperty.call(obj, k) && key === k.toLowerCase()) {
@@ -147,23 +158,29 @@ module.exports = class RuffleObject extends RufflePlayer {
         return defaultValue;
     }
 
-    static params_of(elem) {
-        let params = {};
+    static params_of(elem: HTMLElement) {
+        const params: Record<string, string> = {};
 
-        for (let param of elem.children) {
-            if (param.constructor === HTMLParamElement) {
-                params[param.name] = param.value;
+        for (const param of elem.children) {
+            if (param instanceof HTMLParamElement) {
+                const key = param.attributes.getNamedItem("name")?.value;
+                const value = param.attributes.getNamedItem("value")?.value;
+                if (key && value) {
+                    params[key] = value;
+                }
             }
         }
 
         return params;
     }
 
-    static from_native_object_element(elem) {
-        let external_name = register_element("ruffle-object", RuffleObject);
-        let ruffle_obj = document.createElement(external_name);
+    static from_native_object_element(elem: HTMLElement) {
+        const external_name = register_element("ruffle-object", RuffleObject);
+        const ruffle_obj: RuffleObject = <RuffleObject>(
+            document.createElement(external_name)
+        );
         ruffle_obj.copy_element(elem);
 
         return ruffle_obj;
     }
-};
+}

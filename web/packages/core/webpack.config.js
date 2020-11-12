@@ -30,6 +30,10 @@ module.exports = (env, argv) => {
         experiments: {
             syncWebAssembly: true,
         },
+        devtool: "source-map",
+        resolve: {
+            extensions: [".ts", ".tsx", ".js", ".wasm"],
+        },
         plugins: [
             new CleanWebpackPlugin(),
             new WasmPackPlugin({
@@ -39,5 +43,13 @@ module.exports = (env, argv) => {
                 extraArgs,
             }),
         ],
+        module: {
+            rules: [
+                {
+                    test: /\.tsx?$/,
+                    loader: "ts-loader",
+                },
+            ],
+        },
     };
 };

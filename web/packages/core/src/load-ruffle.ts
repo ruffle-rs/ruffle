@@ -26,21 +26,21 @@ async function fetch_ruffle() {
 
     //We currently assume that if we are not executing inside the extension,
     //then we can use webpack to get Ruffle.
-    let ruffle_module = await import("../../../pkg/ruffle");
+    const ruffle_module = await import("../../../pkg/ruffle");
     return ruffle_module.Ruffle;
 }
 
-let last_loaded_ruffle = null;
+let last_loaded_ruffle: any = null;
 
 /**
  * Obtain an instance of `Ruffle`.
  *
  * This function returns a promise which yields `Ruffle` asynchronously.
  */
-module.exports = function load_ruffle() {
+export function load_ruffle() {
     if (last_loaded_ruffle == null) {
         last_loaded_ruffle = fetch_ruffle();
     }
 
     return last_loaded_ruffle;
-};
+}

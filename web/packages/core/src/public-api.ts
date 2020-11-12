@@ -1,5 +1,6 @@
-const { Version } = require("./version.js");
-const { VersionRange } = require("./version-range.js");
+import { Version } from "./version";
+import { VersionRange } from "./version-range";
+import { SourceAPI } from "./source-api";
 
 /**
  * Represents the Ruffle public API.
@@ -12,7 +13,13 @@ const { VersionRange } = require("./version-range.js");
  * This API *is* versioned, in case we need to upgrade it. However, it must be
  * backwards- and forwards-compatible with all known sources.
  */
-exports.PublicAPI = class PublicAPI {
+export class PublicAPI {
+    private sources: Record<string, SourceAPI>;
+    private config: any;
+    private invoked: boolean;
+    private newest_name: string | null;
+    private conflict: any;
+
     /**
      * Construct the Ruffle public API.
      *
@@ -28,13 +35,13 @@ exports.PublicAPI = class PublicAPI {
      * This is used to upgrade from a prior version of the public API, or from
      * a user-defined configuration object placed in the public API slot.
      */
-    constructor(prev) {
+    constructor(prev: any) {
         this.sources = {};
         this.config = {};
         this.invoked = false;
-        this.newest_name = false;
+        this.newest_name = null;
 
-        if (prev !== undefined) {
+        if (prev !== undefined && prev !== null) {
             if (prev.constructor.name === PublicAPI.name) {
                 /// We're upgrading from a previous API to a new one.
                 this.sources = prev.sources;
@@ -82,7 +89,7 @@ exports.PublicAPI = class PublicAPI {
      * @param {object} api The public API object. This must conform to the shape
      * of `SourceAPI`.
      */
-    register_source(name, api) {
+    register_source(name: string, api: SourceAPI) {
         this.sources[name] = api;
     }
 
@@ -93,12 +100,12 @@ exports.PublicAPI = class PublicAPI {
      * has yet to be registered.
      */
     newest_source_name() {
-        let newest_name = false,
+        let newest_name = null,
             newest_version = Version.from_semver("0.0.0");
 
-        for (let k in this.sources) {
+        for (const k in this.sources) {
             if (Object.prototype.hasOwnProperty.call(this.sources, k)) {
-                let k_version = Version.from_semver(this.sources[k].version);
+                const k_version = Version.from_semver(this.sources[k].version);
                 if (k_version.has_precedence_over(newest_version)) {
                     newest_name = k;
                     newest_version = k_version;
@@ -122,11 +129,11 @@ exports.PublicAPI = class PublicAPI {
             this.invoked = true;
             this.newest_name = this.newest_source_name();
 
-            if (this.newest_name === false) {
+            if (this.newest_name === null) {
                 throw new Error("No registered Ruffle source!");
             }
 
-            let polyfills = this.config.polyfills;
+            const polyfills = this.config.polyfills;
             if (polyfills !== false) {
                 this.sources[this.newest_name].polyfill();
             }
@@ -139,7 +146,8 @@ exports.PublicAPI = class PublicAPI {
      * @returns {SourceAPI} An instance of the Source API.
      */
     newest() {
-        return this.sources[this.newest_source_name()];
+        const name = this.newest_source_name();
+        return name != null ? this.sources[name] : null;
     }
 
     /**
@@ -152,13 +160,15 @@ exports.PublicAPI = class PublicAPI {
      * @returns {SourceAPI|null} An instance of the Source API, if one or more
      * sources satisfied the requirement.
      */
-    satisfying(ver_requirement) {
-        let requirement = VersionRange.from_requirement_string(ver_requirement);
+    satisfying(ver_requirement: string) {
+        const requirement = VersionRange.from_requirement_string(
+            ver_requirement
+        );
         let valid_source = null;
 
-        for (let k in this.sources) {
+        for (const k in this.sources) {
             if (Object.prototype.hasOwnProperty.call(this.sources, k)) {
-                let version = Version.from_semver(this.sources[k].version);
+                const version = Version.from_semver(this.sources[k].version);
 
                 if (requirement.satisfied_by(version)) {
                     valid_source = this.sources[k];
@@ -232,7 +242,11 @@ exports.PublicAPI = class PublicAPI {
      *
      * @returns {object} The Ruffle Public API.
      */
-    static negotiate(prev_ruffle, source_name, source_api) {
+    static negotiate(
+        prev_ruffle: any,
+        source_name: string | undefined,
+        source_api: SourceAPI | undefined
+    ) {
         let public_api;
         if (
             prev_ruffle !== undefined &&
@@ -250,7 +264,7 @@ exports.PublicAPI = class PublicAPI {
             // This is necessary because scripts such as SWFObject check for the
             // Flash Player immediately when they load.
             // TODO: Maybe there's a better place for this.
-            let polyfills = public_api.config.polyfills;
+            const polyfills = public_api.config.polyfills;
             if (polyfills !== false) {
                 source_api.plugin_polyfill();
             }
@@ -258,4 +272,4 @@ exports.PublicAPI = class PublicAPI {
 
         return public_api;
     }
-};
+}

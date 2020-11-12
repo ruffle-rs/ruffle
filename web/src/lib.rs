@@ -83,7 +83,7 @@ extern "C" {
     fn new(message: &str) -> JsError;
 }
 
-#[wasm_bindgen(module = "/packages/core/src/ruffle-player.js")]
+#[wasm_bindgen(module = "/packages/core/src/ruffle-player.ts")]
 extern "C" {
     #[wasm_bindgen(extends = EventTarget)]
     #[derive(Clone)]
@@ -109,6 +109,7 @@ pub struct Ruffle(Index);
 
 #[wasm_bindgen]
 impl Ruffle {
+    #[wasm_bindgen(constructor)]
     pub fn new(
         parent: HtmlElement,
         js_player: JavascriptPlayer,
