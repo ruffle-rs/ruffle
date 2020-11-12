@@ -9,7 +9,7 @@ interface Requirement {
  * Represents a set of version requirements.
  */
 export class VersionRange {
-    private readonly requirements: Requirement[][];
+    readonly requirements: Requirement[][];
 
     constructor(requirements: Requirement[][]) {
         this.requirements = requirements;

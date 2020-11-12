@@ -1,13 +1,13 @@
-const { assert } = require("chai");
-const { VersionRange } = require("../src/version-range");
-const { Version } = require("../src/version");
+import { assert } from "chai";
+import { VersionRange } from "../src/version-range";
+import { Version } from "../src/version";
 
 describe("VersionRange", function () {
     describe("#from_requirement_string()", function () {
         it("should accept a specific version without an equals sign", function () {
             const range = VersionRange.from_requirement_string("1.2.3");
             assert.deepEqual(range.requirements, [
-                [["", Version.from_semver("1.2.3")]],
+                [{ comparator: "", version: Version.from_semver("1.2.3") }],
             ]);
         });
 
@@ -16,15 +16,15 @@ describe("VersionRange", function () {
                 "1.2.3 || 1.2.4"
             );
             assert.deepEqual(range.requirements, [
-                [["", Version.from_semver("1.2.3")]],
-                [["", Version.from_semver("1.2.4")]],
+                [{ comparator: "", version: Version.from_semver("1.2.3") }],
+                [{ comparator: "", version: Version.from_semver("1.2.4") }],
             ]);
         });
 
         it("should accept a specific version with an equals sign", function () {
             const range = VersionRange.from_requirement_string("=1.2.3");
             assert.deepEqual(range.requirements, [
-                [["=", Version.from_semver("1.2.3")]],
+                [{ comparator: "=", version: Version.from_semver("1.2.3") }],
             ]);
         });
 
@@ -33,8 +33,8 @@ describe("VersionRange", function () {
                 "=1.2.3 || =1.2.4"
             );
             assert.deepEqual(range.requirements, [
-                [["=", Version.from_semver("1.2.3")]],
-                [["=", Version.from_semver("1.2.4")]],
+                [{ comparator: "=", version: Version.from_semver("1.2.3") }],
+                [{ comparator: "=", version: Version.from_semver("1.2.4") }],
             ]);
         });
 
@@ -42,8 +42,8 @@ describe("VersionRange", function () {
             const range = VersionRange.from_requirement_string(">1.2.3 <1.2.5");
             assert.deepEqual(range.requirements, [
                 [
-                    [">", Version.from_semver("1.2.3")],
-                    ["<", Version.from_semver("1.2.5")],
+                    { comparator: ">", version: Version.from_semver("1.2.3") },
+                    { comparator: "<", version: Version.from_semver("1.2.5") },
                 ],
             ]);
         });
@@ -54,8 +54,14 @@ describe("VersionRange", function () {
             );
             assert.deepEqual(range.requirements, [
                 [
-                    [">=", Version.from_semver("1-test")],
-                    ["<=", Version.from_semver("2-test")],
+                    {
+                        comparator: ">=",
+                        version: Version.from_semver("1-test"),
+                    },
+                    {
+                        comparator: "<=",
+                        version: Version.from_semver("2-test"),
+                    },
                 ],
             ]);
         });
@@ -64,8 +70,8 @@ describe("VersionRange", function () {
             const range = VersionRange.from_requirement_string("^1.2   <1.3");
             assert.deepEqual(range.requirements, [
                 [
-                    ["^", Version.from_semver("1.2")],
-                    ["<", Version.from_semver("1.3")],
+                    { comparator: "^", version: Version.from_semver("1.2") },
+                    { comparator: "<", version: Version.from_semver("1.3") },
                 ],
             ]);
         });
@@ -75,8 +81,8 @@ describe("VersionRange", function () {
                 "|| || 1.2.4 || || 1.2.5 ||"
             );
             assert.deepEqual(range.requirements, [
-                [["", Version.from_semver("1.2.4")]],
-                [["", Version.from_semver("1.2.5")]],
+                [{ comparator: "", version: Version.from_semver("1.2.4") }],
+                [{ comparator: "", version: Version.from_semver("1.2.5") }],
             ]);
         });
     });

@@ -1,5 +1,5 @@
-const { assert } = require("chai");
-const { Version } = require("../src/version");
+import { assert } from "chai";
+import { Version } from "../src/version";
 
 // Each row should be a list of compatible versions.
 // Earlier entries in a row should be "greater than" later entries in the same row.
@@ -24,12 +24,8 @@ const testMatrix = [
     ["0.0.1", "0.0.1-dev", "0.0.1-5", "0.0.1-2"],
 ];
 
-function flatten(arr) {
-    return arr.reduce(function (flat, toFlatten) {
-        return flat.concat(
-            Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten
-        );
-    }, []);
+function flatten<T>(arr: T[][]): T[] {
+    return arr.reduce((accumulator, value) => accumulator.concat(value), []);
 }
 
 describe("Version", function () {
@@ -72,9 +68,9 @@ describe("Version", function () {
 
     describe("#is_compatible_with()", function () {
         it("is compatible with similar versions", function () {
-            for (let test of testMatrix) {
-                for (let a of test) {
-                    for (let b of test) {
+            for (const test of testMatrix) {
+                for (const a of test) {
+                    for (const b of test) {
                         assert.isOk(
                             Version.from_semver(a).is_compatible_with(
                                 Version.from_semver(b)
@@ -86,11 +82,11 @@ describe("Version", function () {
             }
         });
         it("is not compatible with other versions", function () {
-            for (let test of testMatrix) {
-                for (let a of test) {
-                    for (let otherTest of testMatrix) {
+            for (const test of testMatrix) {
+                for (const a of test) {
+                    for (const otherTest of testMatrix) {
                         if (test === otherTest) continue;
-                        for (let b of otherTest) {
+                        for (const b of otherTest) {
                             assert.isNotOk(
                                 Version.from_semver(a).is_compatible_with(
                                     Version.from_semver(b)
@@ -150,7 +146,7 @@ describe("Version", function () {
     describe("#is_equal()", function () {
         it("returns true when it should", function () {
             const tests = flatten(testMatrix);
-            for (let version of tests) {
+            for (const version of tests) {
                 assert.isOk(
                     Version.from_semver(version).is_equal(
                         Version.from_semver(version)
@@ -186,7 +182,7 @@ describe("Version", function () {
     describe("#is_stable_or_compatible_prerelease()", function () {
         it("returns true for own versions", function () {
             const tests = flatten(testMatrix);
-            for (let version of tests) {
+            for (const version of tests) {
                 assert.isOk(
                     Version.from_semver(
                         version
@@ -199,8 +195,8 @@ describe("Version", function () {
         });
         it("returns true for compatible pre-releases", function () {
             const tests = ["1.2.3", "1.2.3-alpha", "1.2.3-beta1.build2"];
-            for (let a of tests) {
-                for (let b of tests) {
+            for (const a of tests) {
+                for (const b of tests) {
                     assert.isOk(
                         Version.from_semver(
                             a
@@ -214,8 +210,8 @@ describe("Version", function () {
         });
         it("returns false for incompatible pre-releases", function () {
             const tests = ["1-dev", "1.2-alpha", "1.2.3-beta1.build2"];
-            for (let a of tests) {
-                for (let b of tests) {
+            for (const a of tests) {
+                for (const b of tests) {
                     if (a === b) continue;
                     assert.isNotOk(
                         Version.from_semver(
