@@ -120,7 +120,6 @@ fn add_child_to_displaylist<'gc>(
     child: DisplayObject<'gc>,
     index: usize,
 ) {
-    //TODO: Non-MC objects can be containers in AS3!
     if let Some(mut ctr) = parent.as_container() {
         ctr.insert_at_id(context, child, index);
         child.set_placed_by_script(context.gc_context, true);
@@ -422,6 +421,40 @@ pub fn remove_children<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObjectContainer.setChildIndex`
+pub fn set_child_index<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        let child = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?
+            .as_display_object()
+            .ok_or("ArgumentError: Child not a valid display object")?;
+        let target_index = args
+            .get(1)
+            .cloned()
+            .ok_or("ArgumentError: Index to add child at not specified")?
+            .coerce_to_u32(activation)? as usize;
+
+        let child_parent = child.parent();
+        if child_parent.is_none() || !DisplayObject::ptr_eq(child_parent.unwrap(), parent) {
+            return Err("ArgumentError: Given child is not a child of this display object".into());
+        }
+
+        validate_add_operation(parent, child, target_index)?;
+        add_child_to_displaylist(&mut activation.context, parent, child, target_index);
+
+        return Ok(child.object2());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -476,6 +509,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "removeChildren"),
         Method::from_builtin(remove_children),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "setChildIndex"),
+        Method::from_builtin(set_child_index),
     ));
 
     class
