@@ -504,23 +504,23 @@ pub fn swap_children<'gc>(
                 .unwrap_or(Value::Undefined)
                 .coerce_to_object(activation)?
                 .as_display_object()
-                .ok_or_else(|| "ArgumentError: Child is not a display object")?;
+                .ok_or("ArgumentError: Child is not a display object")?;
             let child1 = args
                 .get(1)
                 .cloned()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_object(activation)?
                 .as_display_object()
-                .ok_or_else(|| "ArgumentError: Child is not a display object")?;
+                .ok_or("ArgumentError: Child is not a display object")?;
 
             let index0 = ctr
                 .iter_render_list()
                 .position(|a| DisplayObject::ptr_eq(a, child0))
-                .ok_or_else(|| "ArgumentError: Child is not a child of this display object")?;
+                .ok_or("ArgumentError: Child is not a child of this display object")?;
             let index1 = ctr
                 .iter_render_list()
                 .position(|a| DisplayObject::ptr_eq(a, child1))
-                .ok_or_else(|| "ArgumentError: Child is not a child of this display object")?;
+                .ok_or("ArgumentError: Child is not a child of this display object")?;
 
             ctr.swap_at_id(&mut activation.context, index0, index1);
         }
