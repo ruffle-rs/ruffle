@@ -7,13 +7,18 @@
     "scripts": {
         "build": "webpack",
         "prepare": "webpack",
-        "test": "mocha"
+        "test": "mocha -r esm -r ts-node/register test/**.ts"
     },
     "devDependencies": {
+        "@types/chai": "^4.2.14",
+        "@types/mocha": "^8.0.4",
         "@typescript-eslint/eslint-plugin": "^4.7.0",
         "@typescript-eslint/parser": "^4.7.0",
+        "chai": "^4.2.0",
         "eslint": "^7.13.0",
+        "esm": "^3.2.25",
         "mocha": "^8.0.1",
+        "ts-node": "^9.0.0",
         "typedoc": "^0.19.2",
         "typescript": "^4.0.5",
         "webpack": "^5.1.3",
