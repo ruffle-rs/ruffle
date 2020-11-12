@@ -246,7 +246,7 @@ impl ShapeTessellator {
                         BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
 
                     // TODO(Herschel): 0 width indicates "hairline".
-                    let width = if style.width.to_pixels() >= 1.0 {
+                    let width = if style.width.to_pixels() > 0.0 {
                         style.width.to_pixels() as f32
                     } else {
                         1.0
