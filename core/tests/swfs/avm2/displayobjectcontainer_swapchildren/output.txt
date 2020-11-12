@@ -1,0 +1,42 @@
+//var chx = this.getChildAt(0)
+//var chy = this.getChildAt(1)
+//var chz = this.getChildAt(2)
+//this.numChildren
+3
+//this.swapChildren(chx, chy)
+//chy === this.getChildAt(0)
+true
+//chx === this.getChildAt(1)
+true
+//chz === this.getChildAt(2)
+true
+//this.swapChildren(chx, chy)
+//chx === this.getChildAt(0)
+true
+//chy === this.getChildAt(1)
+true
+//chz === this.getChildAt(2)
+true
+//this.swapChildren(chz, chy)
+//chx === this.getChildAt(0)
+true
+//chz === this.getChildAt(1)
+true
+//chy === this.getChildAt(2)
+true
+//this.swapChildren(chy, chz)
+//chx === this.getChildAt(0)
+true
+//chy === this.getChildAt(1)
+true
+//chz === this.getChildAt(2)
+true
+//this.swapChildren(chz, chx)
+//chz === this.getChildAt(0)
+true
+//chy === this.getChildAt(1)
+true
+//chx === this.getChildAt(2)
+true
+//this.numChildren
+3

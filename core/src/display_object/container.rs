@@ -100,6 +100,11 @@ pub trait TDisplayObjectContainer<'gc>:
         id: usize,
     );
 
+    /// Swap two children in the render list.
+    ///
+    /// No changes to the depth or render lists are made by this function.
+    fn swap_at_id(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, id1: usize, id2: usize);
+
     /// Remove a child display object from this container's render, depth, and
     /// execution lists.
     ///
@@ -218,6 +223,10 @@ macro_rules! impl_display_object_container {
                 child,
                 id,
             );
+        }
+
+        fn swap_at_id(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, id1: usize, id2: usize) {
+            self.0.write(context.gc_context).$field.swap_at_id(id1, id2);
         }
 
         fn remove_child(
@@ -468,6 +477,13 @@ impl<'gc> ChildContainer<'gc> {
             self.render_list.insert(id, child);
             self.add_child_to_exec_list(context.gc_context, child);
         }
+    }
+
+    /// Swap two children in the render list.
+    ///
+    /// No changes to the depth or render lists are made by this function.
+    pub fn swap_at_id(&mut self, id1: usize, id2: usize) {
+        self.render_list.swap(id1, id2);
     }
 
     /// Insert a child into the container at a given depth, replacing any child
