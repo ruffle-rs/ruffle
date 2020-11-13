@@ -32,35 +32,35 @@ describe("Version", function () {
     describe("#from_semver()", function () {
         it("should parse valid semver strings", function () {
             assert.deepEqual(
-                Version.from_semver("1.2"),
+                Version.fromSemver("1.2"),
                 new Version(1, 2, 0, null, null)
             );
             assert.deepEqual(
-                Version.from_semver("1.2.3"),
+                Version.fromSemver("1.2.3"),
                 new Version(1, 2, 3, null, null)
             );
             assert.deepEqual(
-                Version.from_semver("1.09.3"),
+                Version.fromSemver("1.09.3"),
                 new Version(1, 9, 3, null, null)
             );
             assert.deepEqual(
-                Version.from_semver("1.2.3-pr"),
+                Version.fromSemver("1.2.3-pr"),
                 new Version(1, 2, 3, ["pr"], null)
             );
             assert.deepEqual(
-                Version.from_semver("1.2.3-pr1.pr2"),
+                Version.fromSemver("1.2.3-pr1.pr2"),
                 new Version(1, 2, 3, ["pr1", "pr2"], null)
             );
             assert.deepEqual(
-                Version.from_semver("1.2.3+build"),
+                Version.fromSemver("1.2.3+build"),
                 new Version(1, 2, 3, null, ["build"])
             );
             assert.deepEqual(
-                Version.from_semver("1.2.3+build1.build2"),
+                Version.fromSemver("1.2.3+build1.build2"),
                 new Version(1, 2, 3, null, ["build1", "build2"])
             );
             assert.deepEqual(
-                Version.from_semver("1-pr1.pr2+build1.build2"),
+                Version.fromSemver("1-pr1.pr2+build1.build2"),
                 new Version(1, 0, 0, ["pr1", "pr2"], ["build1", "build2"])
             );
         });
@@ -72,8 +72,8 @@ describe("Version", function () {
                 for (const a of test) {
                     for (const b of test) {
                         assert.isOk(
-                            Version.from_semver(a).is_compatible_with(
-                                Version.from_semver(b)
+                            Version.fromSemver(a).is_compatible_with(
+                                Version.fromSemver(b)
                             ),
                             `${a} is compatible with ${b}`
                         );
@@ -88,8 +88,8 @@ describe("Version", function () {
                         if (test === otherTest) continue;
                         for (const b of otherTest) {
                             assert.isNotOk(
-                                Version.from_semver(a).is_compatible_with(
-                                    Version.from_semver(b)
+                                Version.fromSemver(a).is_compatible_with(
+                                    Version.fromSemver(b)
                                 ),
                                 `${a} is not compatible with ${b}`
                             );
@@ -113,8 +113,8 @@ describe("Version", function () {
                         continue;
                     }
                     assert.isOk(
-                        Version.from_semver(tests[a]).has_precedence_over(
-                            Version.from_semver(tests[b])
+                        Version.fromSemver(tests[a]).has_precedence_over(
+                            Version.fromSemver(tests[b])
                         ),
                         `${tests[a]} has precedence over ${tests[b]}`
                     );
@@ -133,8 +133,8 @@ describe("Version", function () {
                         continue;
                     }
                     assert.isNotOk(
-                        Version.from_semver(tests[a]).has_precedence_over(
-                            Version.from_semver(tests[b])
+                        Version.fromSemver(tests[a]).has_precedence_over(
+                            Version.fromSemver(tests[b])
                         ),
                         `${tests[a]} doesn't have precedence over ${tests[b]}`
                     );
@@ -148,8 +148,8 @@ describe("Version", function () {
             const tests = flatten(testMatrix);
             for (const version of tests) {
                 assert.isOk(
-                    Version.from_semver(version).is_equal(
-                        Version.from_semver(version)
+                    Version.fromSemver(version).is_equal(
+                        Version.fromSemver(version)
                     ),
                     `${version} is equal to itself`
                 );
@@ -169,8 +169,8 @@ describe("Version", function () {
                         continue;
                     }
                     assert.isNotOk(
-                        Version.from_semver(tests[a]).is_equal(
-                            Version.from_semver(tests[b])
+                        Version.fromSemver(tests[a]).is_equal(
+                            Version.fromSemver(tests[b])
                         ),
                         `${tests[a]} does not equal ${tests[b]}`
                     );
@@ -184,10 +184,10 @@ describe("Version", function () {
             const tests = flatten(testMatrix);
             for (const version of tests) {
                 assert.isOk(
-                    Version.from_semver(
+                    Version.fromSemver(
                         version
                     ).is_stable_or_compatible_prerelease(
-                        Version.from_semver(version)
+                        Version.fromSemver(version)
                     ),
                     `${version} is compatible with itself`
                 );
@@ -198,10 +198,10 @@ describe("Version", function () {
             for (const a of tests) {
                 for (const b of tests) {
                     assert.isOk(
-                        Version.from_semver(
+                        Version.fromSemver(
                             a
                         ).is_stable_or_compatible_prerelease(
-                            Version.from_semver(b)
+                            Version.fromSemver(b)
                         ),
                         `${a} is compatible with ${b}`
                     );
@@ -214,10 +214,10 @@ describe("Version", function () {
                 for (const b of tests) {
                     if (a === b) continue;
                     assert.isNotOk(
-                        Version.from_semver(
+                        Version.fromSemver(
                             a
                         ).is_stable_or_compatible_prerelease(
-                            Version.from_semver(b)
+                            Version.fromSemver(b)
                         ),
                         `${a} is not compatible with ${b}`
                     );

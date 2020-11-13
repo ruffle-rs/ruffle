@@ -11,7 +11,7 @@ export class Version {
     /**
      * Construct a Version from specific components.
      *
-     * If you wish to parse a string into a Version then please use [[from_semver]].
+     * If you wish to parse a string into a Version then please use [[fromSemver]].
      *
      * @param major The major version component.
      * @param minor The minor version component.
@@ -43,7 +43,7 @@ export class Version {
      * @param version_string A semver 2.0.0 compliant version string
      * @return A version object
      */
-    static from_semver(version_string: string): Version {
+    static fromSemver(version_string: string): Version {
         const build_split = version_string.split("+"),
             pr_split = build_split[0].split("-"),
             version_split = pr_split[0].split(".");
