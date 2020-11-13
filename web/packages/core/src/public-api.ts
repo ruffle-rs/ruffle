@@ -106,7 +106,7 @@ export class PublicAPI {
         for (const k in this.sources) {
             if (Object.prototype.hasOwnProperty.call(this.sources, k)) {
                 const k_version = Version.fromSemver(this.sources[k].version);
-                if (k_version.has_precedence_over(newest_version)) {
+                if (k_version.hasPrecedenceOver(newest_version)) {
                     newest_name = k;
                     newest_version = k_version;
                 }

@@ -35,18 +35,18 @@ export class VersionRange {
                 if (comparator === "" || comparator === "=") {
                     matches = matches && version.is_equal(fver);
                 } else if (comparator === ">") {
-                    matches = matches && fver.has_precedence_over(version);
+                    matches = matches && fver.hasPrecedenceOver(version);
                 } else if (comparator === ">=") {
                     matches =
                         matches &&
-                        (fver.has_precedence_over(version) ||
+                        (fver.hasPrecedenceOver(version) ||
                             version.is_equal(fver));
                 } else if (comparator === "<") {
-                    matches = matches && version.has_precedence_over(fver);
+                    matches = matches && version.hasPrecedenceOver(fver);
                 } else if (comparator === "<=") {
                     matches =
                         matches &&
-                        (version.has_precedence_over(fver) ||
+                        (version.hasPrecedenceOver(fver) ||
                             version.is_equal(fver));
                 } else if (comparator === "^") {
                     matches = matches && version.isCompatibleWith(fver);
