@@ -57,7 +57,7 @@ export class VersionRange {
      * @param fver A version object to test against.
      * @return Whether or not the given version matches this range
      */
-    satisfied_by(fver: Version): boolean {
+    satisfiedBy(fver: Version): boolean {
         for (let i = 0; i < this.requirements.length; i += 1) {
             let matches = true;
 

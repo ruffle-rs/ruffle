@@ -170,7 +170,7 @@ export class PublicAPI {
             if (Object.prototype.hasOwnProperty.call(this.sources, k)) {
                 const version = Version.fromSemver(this.sources[k].version);
 
-                if (requirement.satisfied_by(version)) {
+                if (requirement.satisfiedBy(version)) {
                     valid_source = this.sources[k];
                 }
             }
