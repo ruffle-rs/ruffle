@@ -1,4 +1,4 @@
-import { Ruffle } from "../../../pkg/ruffle";
+import { Ruffle } from "../pkg/ruffle_web";
 
 import { load_ruffle } from "./load-ruffle";
 import { ruffle_shadow_template } from "./shadow-template";
