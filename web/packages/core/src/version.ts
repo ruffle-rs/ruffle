@@ -6,7 +6,7 @@ export class Version {
     private readonly minor: number;
     private readonly patch: number;
     private readonly prIdent: string[] | null;
-    private readonly build_ident: string[] | null;
+    private readonly buildIdent: string[] | null;
 
     /**
      * Construct a Version from specific components.
@@ -30,7 +30,7 @@ export class Version {
         this.minor = minor;
         this.patch = patch;
         this.prIdent = pr_ident;
-        this.build_ident = build_ident;
+        this.buildIdent = build_ident;
     }
 
     /**
