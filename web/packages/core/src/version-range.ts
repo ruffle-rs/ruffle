@@ -1,7 +1,27 @@
 import { Version } from "./version";
 
+/**
+ * A requirement is a comparator (such as ">" or "=" or "")
+ * and a version to compare against.
+ */
 interface Requirement {
+    /**
+     * A comparator is the operation to use with this requirement.
+     *
+     * Valid options are as follows:
+     *
+     * - `""` or `"="`: Precisely this version
+     * - `">`": A version newer than this one
+     * - `">`=": A version newer or equal to this one
+     * - `"<"`: A version older than this one
+     * - `"<="`: A version older or equal to this one
+     * - `"^"`: A version that is compatible with this one
+     */
     comparator: string;
+
+    /**
+     * The version to perform the test against.
+     */
     version: Version;
 }
 
@@ -9,8 +29,24 @@ interface Requirement {
  * Represents a set of version requirements.
  */
 export class VersionRange {
+    /**
+     * The list of requirements used by this version range.
+     *
+     * This is a disjunctive normal form - that is, an OR of ANDs.
+     *
+     * If all requirements of a single inner array match, the range is
+     * considered successful.
+     */
     readonly requirements: Requirement[][];
 
+    /**
+     * Constructs a range of versions as specified by the given requirements.
+     *
+     * If you wish to construct this object from a string representation,
+     * then use [[from_requirement_string]].
+     *
+     * @param requirements Requirements to set this range by
+     */
     constructor(requirements: Requirement[][]) {
         this.requirements = requirements;
     }
@@ -18,10 +54,10 @@ export class VersionRange {
     /**
      * Determine if a given version satisfies this range.
      *
-     * @param {Version} fver A version object to test against.
-     * @return {bool} Whether or not the given version matches this range.
+     * @param fver A version object to test against.
+     * @return Whether or not the given version matches this range
      */
-    satisfied_by(fver: Version) {
+    satisfied_by(fver: Version): boolean {
         for (let i = 0; i < this.requirements.length; i += 1) {
             let matches = true;
 
@@ -64,13 +100,24 @@ export class VersionRange {
     /**
      * Parse a requirement string into a version range.
      *
-     * @param {string} requirement The version requirements, consisting of a
+     * @param requirement The version requirements, consisting of a
      * series of space-separated strings, each one being a semver version
-     * optionally prefixed by a comparator (e.g. <, <=, >, >=, =, or ^), or the
-     * string ||.
-     * @return {VersionRange} A version range object.
+     * optionally prefixed by a comparator or a separator.
+     *
+     * Valid comparators are:
+     * - `""` or `"="`: Precisely this version
+     * - `">`": A version newer than this one
+     * - `">`=": A version newer or equal to this one
+     * - `"<"`: A version older than this one
+     * - `"<="`: A version older or equal to this one
+     * - `"^"`: A version that is compatible with this one
+     *
+     * A separator is `"||`" which splits the requirement string into
+     * left OR right.
+     *
+     * @return A version range object.
      */
-    static from_requirement_string(requirement: string) {
+    static from_requirement_string(requirement: string): VersionRange {
         const components = requirement.split(" ");
         let requirement_set: Requirement[] = [];
         const requirements: Requirement[][] = [];
