@@ -7,7 +7,7 @@ describe("VersionRange", function () {
         it("should accept a specific version without an equals sign", function () {
             const range = VersionRange.from_requirement_string("1.2.3");
             assert.deepEqual(range.requirements, [
-                [{ comparator: "", version: Version.from_semver("1.2.3") }],
+                [{ comparator: "", version: Version.fromSemver("1.2.3") }],
             ]);
         });
 
@@ -16,15 +16,15 @@ describe("VersionRange", function () {
                 "1.2.3 || 1.2.4"
             );
             assert.deepEqual(range.requirements, [
-                [{ comparator: "", version: Version.from_semver("1.2.3") }],
-                [{ comparator: "", version: Version.from_semver("1.2.4") }],
+                [{ comparator: "", version: Version.fromSemver("1.2.3") }],
+                [{ comparator: "", version: Version.fromSemver("1.2.4") }],
             ]);
         });
 
         it("should accept a specific version with an equals sign", function () {
             const range = VersionRange.from_requirement_string("=1.2.3");
             assert.deepEqual(range.requirements, [
-                [{ comparator: "=", version: Version.from_semver("1.2.3") }],
+                [{ comparator: "=", version: Version.fromSemver("1.2.3") }],
             ]);
         });
 
@@ -33,8 +33,8 @@ describe("VersionRange", function () {
                 "=1.2.3 || =1.2.4"
             );
             assert.deepEqual(range.requirements, [
-                [{ comparator: "=", version: Version.from_semver("1.2.3") }],
-                [{ comparator: "=", version: Version.from_semver("1.2.4") }],
+                [{ comparator: "=", version: Version.fromSemver("1.2.3") }],
+                [{ comparator: "=", version: Version.fromSemver("1.2.4") }],
             ]);
         });
 
@@ -42,8 +42,8 @@ describe("VersionRange", function () {
             const range = VersionRange.from_requirement_string(">1.2.3 <1.2.5");
             assert.deepEqual(range.requirements, [
                 [
-                    { comparator: ">", version: Version.from_semver("1.2.3") },
-                    { comparator: "<", version: Version.from_semver("1.2.5") },
+                    { comparator: ">", version: Version.fromSemver("1.2.3") },
+                    { comparator: "<", version: Version.fromSemver("1.2.5") },
                 ],
             ]);
         });
@@ -56,11 +56,11 @@ describe("VersionRange", function () {
                 [
                     {
                         comparator: ">=",
-                        version: Version.from_semver("1-test"),
+                        version: Version.fromSemver("1-test"),
                     },
                     {
                         comparator: "<=",
-                        version: Version.from_semver("2-test"),
+                        version: Version.fromSemver("2-test"),
                     },
                 ],
             ]);
@@ -70,8 +70,8 @@ describe("VersionRange", function () {
             const range = VersionRange.from_requirement_string("^1.2   <1.3");
             assert.deepEqual(range.requirements, [
                 [
-                    { comparator: "^", version: Version.from_semver("1.2") },
-                    { comparator: "<", version: Version.from_semver("1.3") },
+                    { comparator: "^", version: Version.fromSemver("1.2") },
+                    { comparator: "<", version: Version.fromSemver("1.3") },
                 ],
             ]);
         });
@@ -81,8 +81,8 @@ describe("VersionRange", function () {
                 "|| || 1.2.4 || || 1.2.5 ||"
             );
             assert.deepEqual(range.requirements, [
-                [{ comparator: "", version: Version.from_semver("1.2.4") }],
-                [{ comparator: "", version: Version.from_semver("1.2.5") }],
+                [{ comparator: "", version: Version.fromSemver("1.2.4") }],
+                [{ comparator: "", version: Version.fromSemver("1.2.5") }],
             ]);
         });
     });
@@ -149,7 +149,7 @@ describe("VersionRange", function () {
             describe(`with requirements '${group.requirements}'`, function () {
                 group.tests.forEach(function (test) {
                     it(`returns ${test.expected} for '${test.version}'`, function () {
-                        const version = Version.from_semver(test.version);
+                        const version = Version.fromSemver(test.version);
                         const result = range.satisfied_by.apply(range, [
                             version,
                         ]);
