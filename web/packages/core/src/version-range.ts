@@ -33,21 +33,21 @@ export class VersionRange {
                     matches && version.is_stable_or_compatible_prerelease(fver);
 
                 if (comparator === "" || comparator === "=") {
-                    matches = matches && version.is_equal(fver);
+                    matches = matches && version.isEqual(fver);
                 } else if (comparator === ">") {
                     matches = matches && fver.hasPrecedenceOver(version);
                 } else if (comparator === ">=") {
                     matches =
                         matches &&
                         (fver.hasPrecedenceOver(version) ||
-                            version.is_equal(fver));
+                            version.isEqual(fver));
                 } else if (comparator === "<") {
                     matches = matches && version.hasPrecedenceOver(fver);
                 } else if (comparator === "<=") {
                     matches =
                         matches &&
                         (version.hasPrecedenceOver(fver) ||
-                            version.is_equal(fver));
+                            version.isEqual(fver));
                 } else if (comparator === "^") {
                     matches = matches && version.isCompatibleWith(fver);
                 }

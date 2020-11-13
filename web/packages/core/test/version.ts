@@ -148,7 +148,7 @@ describe("Version", function () {
             const tests = flatten(testMatrix);
             for (const version of tests) {
                 assert.isOk(
-                    Version.fromSemver(version).is_equal(
+                    Version.fromSemver(version).isEqual(
                         Version.fromSemver(version)
                     ),
                     `${version} is equal to itself`
@@ -169,7 +169,7 @@ describe("Version", function () {
                         continue;
                     }
                     assert.isNotOk(
-                        Version.fromSemver(tests[a]).is_equal(
+                        Version.fromSemver(tests[a]).isEqual(
                             Version.fromSemver(tests[b])
                         ),
                         `${tests[a]} does not equal ${tests[b]}`
