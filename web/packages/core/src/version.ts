@@ -114,7 +114,7 @@ export class Version {
      * @param fver The other version to test against
      * @return True if this version has precedence over the other one
      */
-    has_precedence_over(fver: Version): boolean {
+    hasPrecedenceOver(fver: Version): boolean {
         if (this.major > fver.major) {
             return true;
         } else if (this.major < fver.major) {

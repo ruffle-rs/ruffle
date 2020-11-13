@@ -113,7 +113,7 @@ describe("Version", function () {
                         continue;
                     }
                     assert.isOk(
-                        Version.fromSemver(tests[a]).has_precedence_over(
+                        Version.fromSemver(tests[a]).hasPrecedenceOver(
                             Version.fromSemver(tests[b])
                         ),
                         `${tests[a]} has precedence over ${tests[b]}`
@@ -133,7 +133,7 @@ describe("Version", function () {
                         continue;
                     }
                     assert.isNotOk(
-                        Version.fromSemver(tests[a]).has_precedence_over(
+                        Version.fromSemver(tests[a]).hasPrecedenceOver(
                             Version.fromSemver(tests[b])
                         ),
                         `${tests[a]} doesn't have precedence over ${tests[b]}`
