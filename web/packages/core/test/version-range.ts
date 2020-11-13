@@ -150,7 +150,7 @@ describe("VersionRange", function () {
                 group.tests.forEach(function (test) {
                     it(`returns ${test.expected} for '${test.version}'`, function () {
                         const version = Version.fromSemver(test.version);
-                        const result = range.satisfied_by.apply(range, [
+                        const result = range.satisfiedBy.apply(range, [
                             version,
                         ]);
                         assert.equal(result, test.expected);
