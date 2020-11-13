@@ -16,21 +16,21 @@ export class Version {
      * @param major The major version component.
      * @param minor The minor version component.
      * @param patch The patch version component.
-     * @param pr_ident A list of pre-release identifiers, if any
-     * @param build_ident A list of build identifiers, if any
+     * @param prIdent A list of pre-release identifiers, if any
+     * @param buildIdent A list of build identifiers, if any
      */
     constructor(
         major: number,
         minor: number,
         patch: number,
-        pr_ident: string[] | null,
-        build_ident: string[] | null
+        prIdent: string[] | null,
+        buildIdent: string[] | null
     ) {
         this.major = major;
         this.minor = minor;
         this.patch = patch;
-        this.prIdent = pr_ident;
-        this.buildIdent = build_ident;
+        this.prIdent = prIdent;
+        this.buildIdent = buildIdent;
     }
 
     /**
@@ -40,37 +40,37 @@ export class Version {
      * Malformed strings may still parse correctly, but this result is not
      * guaranteed.
      *
-     * @param version_string A semver 2.0.0 compliant version string
+     * @param versionString A semver 2.0.0 compliant version string
      * @return A version object
      */
-    static fromSemver(version_string: string): Version {
-        const build_split = version_string.split("+"),
-            pr_split = build_split[0].split("-"),
-            version_split = pr_split[0].split(".");
+    static fromSemver(versionString: string): Version {
+        const buildSplit = versionString.split("+"),
+            prSplit = buildSplit[0].split("-"),
+            versionSplit = prSplit[0].split(".");
 
-        const major = parseInt(version_split[0], 10);
+        const major = parseInt(versionSplit[0], 10);
         let minor = 0;
         let patch = 0;
-        let pr_ident = null;
-        let build_ident = null;
+        let prIdent = null;
+        let buildIdent = null;
 
-        if (version_split[1] != undefined) {
-            minor = parseInt(version_split[1], 10);
+        if (versionSplit[1] != undefined) {
+            minor = parseInt(versionSplit[1], 10);
         }
 
-        if (version_split[2] != undefined) {
-            patch = parseInt(version_split[2], 10);
+        if (versionSplit[2] != undefined) {
+            patch = parseInt(versionSplit[2], 10);
         }
 
-        if (pr_split[1] != undefined) {
-            pr_ident = pr_split[1].split(".");
+        if (prSplit[1] != undefined) {
+            prIdent = prSplit[1].split(".");
         }
 
-        if (build_split[1] != undefined) {
-            build_ident = build_split[1].split(".");
+        if (buildSplit[1] != undefined) {
+            buildIdent = buildSplit[1].split(".");
         }
 
-        return new Version(major, minor, patch, pr_ident, build_ident);
+        return new Version(major, minor, patch, prIdent, buildIdent);
     }
 
     /**
@@ -84,22 +84,22 @@ export class Version {
      * This implements the ^ operator in npm's semver package, with the
      * exception of the prerelease exclusion rule.
      *
-     * @param fver The other version to test against
+     * @param other The other version to test against
      * @return True if compatible
      */
-    isCompatibleWith(fver: Version): boolean {
+    isCompatibleWith(other: Version): boolean {
         return (
-            (this.major !== 0 && this.major === fver.major) ||
+            (this.major !== 0 && this.major === other.major) ||
             (this.major === 0 &&
-                fver.major === 0 &&
+                other.major === 0 &&
                 this.minor !== 0 &&
-                this.minor === fver.minor) ||
+                this.minor === other.minor) ||
             (this.major === 0 &&
-                fver.major === 0 &&
+                other.major === 0 &&
                 this.minor === 0 &&
-                fver.minor === 0 &&
+                other.minor === 0 &&
                 this.patch !== 0 &&
-                this.patch === fver.patch)
+                this.patch === other.patch)
         );
     }
 
@@ -111,75 +111,75 @@ export class Version {
      * operator in npm's semver package, with the exception of the prerelease
      * exclusion rule.
      *
-     * @param fver The other version to test against
+     * @param other The other version to test against
      * @return True if this version has precedence over the other one
      */
-    hasPrecedenceOver(fver: Version): boolean {
-        if (this.major > fver.major) {
+    hasPrecedenceOver(other: Version): boolean {
+        if (this.major > other.major) {
             return true;
-        } else if (this.major < fver.major) {
+        } else if (this.major < other.major) {
             return false;
         }
 
-        if (this.minor > fver.minor) {
+        if (this.minor > other.minor) {
             return true;
-        } else if (this.minor < fver.minor) {
+        } else if (this.minor < other.minor) {
             return false;
         }
 
-        if (this.patch > fver.patch) {
+        if (this.patch > other.patch) {
             return true;
-        } else if (this.patch < fver.patch) {
+        } else if (this.patch < other.patch) {
             return false;
         }
 
-        if (this.prIdent == null && fver.prIdent != null) {
+        if (this.prIdent == null && other.prIdent != null) {
             return true;
-        } else if (this.prIdent != null && fver.prIdent != null) {
-            const is_numeric = /^[0-9]*$/;
+        } else if (this.prIdent != null && other.prIdent != null) {
+            const isNumeric = /^[0-9]*$/;
             for (
                 let i = 0;
-                i < this.prIdent.length && i < fver.prIdent.length;
+                i < this.prIdent.length && i < other.prIdent.length;
                 i += 1
             ) {
                 if (
-                    !is_numeric.test(this.prIdent[i]) &&
-                    is_numeric.test(fver.prIdent[i])
+                    !isNumeric.test(this.prIdent[i]) &&
+                    isNumeric.test(other.prIdent[i])
                 ) {
                     return true;
                 } else if (
-                    is_numeric.test(this.prIdent[i]) &&
-                    is_numeric.test(fver.prIdent[i])
+                    isNumeric.test(this.prIdent[i]) &&
+                    isNumeric.test(other.prIdent[i])
                 ) {
                     if (
                         parseInt(this.prIdent[i], 10) >
-                        parseInt(fver.prIdent[i], 10)
+                        parseInt(other.prIdent[i], 10)
                     ) {
                         return true;
                     } else if (
                         parseInt(this.prIdent[i], 10) <
-                        parseInt(fver.prIdent[i], 10)
+                        parseInt(other.prIdent[i], 10)
                     ) {
                         return false;
                     }
                 } else if (
-                    is_numeric.test(this.prIdent[i]) &&
-                    !is_numeric.test(fver.prIdent[i])
+                    isNumeric.test(this.prIdent[i]) &&
+                    !isNumeric.test(other.prIdent[i])
                 ) {
                     return false;
                 } else if (
-                    !is_numeric.test(this.prIdent[i]) &&
-                    !is_numeric.test(fver.prIdent[i])
+                    !isNumeric.test(this.prIdent[i]) &&
+                    !isNumeric.test(other.prIdent[i])
                 ) {
-                    if (this.prIdent[i] > fver.prIdent[i]) {
+                    if (this.prIdent[i] > other.prIdent[i]) {
                         return true;
-                    } else if (this.prIdent[i] < fver.prIdent[i]) {
+                    } else if (this.prIdent[i] < other.prIdent[i]) {
                         return false;
                     }
                 }
             }
 
-            return this.prIdent.length > fver.prIdent.length;
+            return this.prIdent.length > other.prIdent.length;
         }
 
         return false;
@@ -190,14 +190,14 @@ export class Version {
      *
      * Build and prerelease tags are ignored.
      *
-     * @param fver The other version to test against
+     * @param other The other version to test against
      * @return True if the given version is equivalent
      */
-    isEqual(fver: Version): boolean {
+    isEqual(other: Version): boolean {
         return (
-            this.major === fver.major &&
-            this.minor === fver.minor &&
-            this.patch === fver.patch
+            this.major === other.major &&
+            this.minor === other.minor &&
+            this.patch === other.patch
         );
     }
 
@@ -210,18 +210,18 @@ export class Version {
      * components of both versions are the same. Otherwise, the prerelease
      * version always fails.
      *
-     * @param fver The other version to test against
+     * @param other The other version to test against
      * @return True if the given version is either stable, or a
      * prerelease in the same series as this one.
      */
-    isStableOrCompatiblePrerelease(fver: Version): boolean {
-        if (fver.prIdent == null) {
+    isStableOrCompatiblePrerelease(other: Version): boolean {
+        if (other.prIdent == null) {
             return true;
         } else {
             return (
-                this.major === fver.major &&
-                this.minor === fver.minor &&
-                this.patch === fver.patch
+                this.major === other.major &&
+                this.minor === other.minor &&
+                this.patch === other.patch
             );
         }
     }
