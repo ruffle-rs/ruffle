@@ -193,7 +193,7 @@ export class Version {
      * @param fver The other version to test against
      * @return True if the given version is equivalent
      */
-    is_equal(fver: Version): boolean {
+    isEqual(fver: Version): boolean {
         return (
             this.major === fver.major &&
             this.minor === fver.minor &&
