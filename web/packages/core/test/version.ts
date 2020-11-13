@@ -184,9 +184,7 @@ describe("Version", function () {
             const tests = flatten(testMatrix);
             for (const version of tests) {
                 assert.isOk(
-                    Version.fromSemver(
-                        version
-                    ).is_stable_or_compatible_prerelease(
+                    Version.fromSemver(version).isStableOrCompatiblePrerelease(
                         Version.fromSemver(version)
                     ),
                     `${version} is compatible with itself`
@@ -198,9 +196,7 @@ describe("Version", function () {
             for (const a of tests) {
                 for (const b of tests) {
                     assert.isOk(
-                        Version.fromSemver(
-                            a
-                        ).is_stable_or_compatible_prerelease(
+                        Version.fromSemver(a).isStableOrCompatiblePrerelease(
                             Version.fromSemver(b)
                         ),
                         `${a} is compatible with ${b}`
@@ -214,9 +210,7 @@ describe("Version", function () {
                 for (const b of tests) {
                     if (a === b) continue;
                     assert.isNotOk(
-                        Version.fromSemver(
-                            a
-                        ).is_stable_or_compatible_prerelease(
+                        Version.fromSemver(a).isStableOrCompatiblePrerelease(
                             Version.fromSemver(b)
                         ),
                         `${a} is not compatible with ${b}`
