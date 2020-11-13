@@ -161,9 +161,7 @@ export class PublicAPI {
      * sources satisfied the requirement.
      */
     satisfying(ver_requirement: string) {
-        const requirement = VersionRange.from_requirement_string(
-            ver_requirement
-        );
+        const requirement = VersionRange.fromRequirementString(ver_requirement);
         let valid_source = null;
 
         for (const k in this.sources) {
