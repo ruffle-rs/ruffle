@@ -5,16 +5,14 @@ import { Version } from "../src/version";
 describe("VersionRange", function () {
     describe("#from_requirement_string()", function () {
         it("should accept a specific version without an equals sign", function () {
-            const range = VersionRange.from_requirement_string("1.2.3");
+            const range = VersionRange.fromRequirementString("1.2.3");
             assert.deepEqual(range.requirements, [
                 [{ comparator: "", version: Version.fromSemver("1.2.3") }],
             ]);
         });
 
         it("should accept two different versions without equals signs", function () {
-            const range = VersionRange.from_requirement_string(
-                "1.2.3 || 1.2.4"
-            );
+            const range = VersionRange.fromRequirementString("1.2.3 || 1.2.4");
             assert.deepEqual(range.requirements, [
                 [{ comparator: "", version: Version.fromSemver("1.2.3") }],
                 [{ comparator: "", version: Version.fromSemver("1.2.4") }],
@@ -22,14 +20,14 @@ describe("VersionRange", function () {
         });
 
         it("should accept a specific version with an equals sign", function () {
-            const range = VersionRange.from_requirement_string("=1.2.3");
+            const range = VersionRange.fromRequirementString("=1.2.3");
             assert.deepEqual(range.requirements, [
                 [{ comparator: "=", version: Version.fromSemver("1.2.3") }],
             ]);
         });
 
         it("should accept a specific version with an equals sign", function () {
-            const range = VersionRange.from_requirement_string(
+            const range = VersionRange.fromRequirementString(
                 "=1.2.3 || =1.2.4"
             );
             assert.deepEqual(range.requirements, [
@@ -39,7 +37,7 @@ describe("VersionRange", function () {
         });
 
         it("should accept a min and max range", function () {
-            const range = VersionRange.from_requirement_string(">1.2.3 <1.2.5");
+            const range = VersionRange.fromRequirementString(">1.2.3 <1.2.5");
             assert.deepEqual(range.requirements, [
                 [
                     { comparator: ">", version: Version.fromSemver("1.2.3") },
@@ -49,7 +47,7 @@ describe("VersionRange", function () {
         });
 
         it("should allow inclusive range", function () {
-            const range = VersionRange.from_requirement_string(
+            const range = VersionRange.fromRequirementString(
                 ">=1-test <=2-test"
             );
             assert.deepEqual(range.requirements, [
@@ -67,7 +65,7 @@ describe("VersionRange", function () {
         });
 
         it("should ignore extra whitespace within a range", function () {
-            const range = VersionRange.from_requirement_string("^1.2   <1.3");
+            const range = VersionRange.fromRequirementString("^1.2   <1.3");
             assert.deepEqual(range.requirements, [
                 [
                     { comparator: "^", version: Version.fromSemver("1.2") },
@@ -77,7 +75,7 @@ describe("VersionRange", function () {
         });
 
         it("should ignore empty ranges", function () {
-            const range = VersionRange.from_requirement_string(
+            const range = VersionRange.fromRequirementString(
                 "|| || 1.2.4 || || 1.2.5 ||"
             );
             assert.deepEqual(range.requirements, [
@@ -143,7 +141,7 @@ describe("VersionRange", function () {
         ];
 
         groups.forEach(function (group) {
-            const range = VersionRange.from_requirement_string(
+            const range = VersionRange.fromRequirementString(
                 group.requirements
             );
             describe(`with requirements '${group.requirements}'`, function () {

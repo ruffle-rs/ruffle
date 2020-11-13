@@ -43,7 +43,7 @@ export class VersionRange {
      * Constructs a range of versions as specified by the given requirements.
      *
      * If you wish to construct this object from a string representation,
-     * then use [[from_requirement_string]].
+     * then use [[fromRequirementString]].
      *
      * @param requirements Requirements to set this range by
      */
@@ -117,7 +117,7 @@ export class VersionRange {
      *
      * @return A version range object.
      */
-    static from_requirement_string(requirement: string): VersionRange {
+    static fromRequirementString(requirement: string): VersionRange {
         const components = requirement.split(" ");
         let requirement_set: Requirement[] = [];
         const requirements: Requirement[][] = [];
