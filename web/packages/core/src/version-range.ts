@@ -30,7 +30,7 @@ export class VersionRange {
                 const version = this.requirements[i][j].version;
 
                 matches =
-                    matches && version.is_stable_or_compatible_prerelease(fver);
+                    matches && version.isStableOrCompatiblePrerelease(fver);
 
                 if (comparator === "" || comparator === "=") {
                     matches = matches && version.isEqual(fver);

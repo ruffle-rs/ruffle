@@ -214,7 +214,7 @@ export class Version {
      * @return True if the given version is either stable, or a
      * prerelease in the same series as this one.
      */
-    is_stable_or_compatible_prerelease(fver: Version): boolean {
+    isStableOrCompatiblePrerelease(fver: Version): boolean {
         if (fver.prIdent == null) {
             return true;
         } else {
