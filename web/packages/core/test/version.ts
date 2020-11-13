@@ -72,7 +72,7 @@ describe("Version", function () {
                 for (const a of test) {
                     for (const b of test) {
                         assert.isOk(
-                            Version.fromSemver(a).is_compatible_with(
+                            Version.fromSemver(a).isCompatibleWith(
                                 Version.fromSemver(b)
                             ),
                             `${a} is compatible with ${b}`
@@ -88,7 +88,7 @@ describe("Version", function () {
                         if (test === otherTest) continue;
                         for (const b of otherTest) {
                             assert.isNotOk(
-                                Version.fromSemver(a).is_compatible_with(
+                                Version.fromSemver(a).isCompatibleWith(
                                     Version.fromSemver(b)
                                 ),
                                 `${a} is not compatible with ${b}`

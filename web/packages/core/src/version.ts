@@ -87,7 +87,7 @@ export class Version {
      * @param fver The other version to test against
      * @return True if compatible
      */
-    is_compatible_with(fver: Version): boolean {
+    isCompatibleWith(fver: Version): boolean {
         return (
             (this.major !== 0 && this.major === fver.major) ||
             (this.major === 0 &&
