@@ -5,7 +5,7 @@ export class Version {
     private readonly major: number;
     private readonly minor: number;
     private readonly patch: number;
-    private readonly pr_ident: string[] | null;
+    private readonly prIdent: string[] | null;
     private readonly build_ident: string[] | null;
 
     /**
@@ -29,7 +29,7 @@ export class Version {
         this.major = major;
         this.minor = minor;
         this.patch = patch;
-        this.pr_ident = pr_ident;
+        this.prIdent = pr_ident;
         this.build_ident = build_ident;
     }
 
@@ -133,53 +133,53 @@ export class Version {
             return false;
         }
 
-        if (this.pr_ident == null && fver.pr_ident != null) {
+        if (this.prIdent == null && fver.prIdent != null) {
             return true;
-        } else if (this.pr_ident != null && fver.pr_ident != null) {
+        } else if (this.prIdent != null && fver.prIdent != null) {
             const is_numeric = /^[0-9]*$/;
             for (
                 let i = 0;
-                i < this.pr_ident.length && i < fver.pr_ident.length;
+                i < this.prIdent.length && i < fver.prIdent.length;
                 i += 1
             ) {
                 if (
-                    !is_numeric.test(this.pr_ident[i]) &&
-                    is_numeric.test(fver.pr_ident[i])
+                    !is_numeric.test(this.prIdent[i]) &&
+                    is_numeric.test(fver.prIdent[i])
                 ) {
                     return true;
                 } else if (
-                    is_numeric.test(this.pr_ident[i]) &&
-                    is_numeric.test(fver.pr_ident[i])
+                    is_numeric.test(this.prIdent[i]) &&
+                    is_numeric.test(fver.prIdent[i])
                 ) {
                     if (
-                        parseInt(this.pr_ident[i], 10) >
-                        parseInt(fver.pr_ident[i], 10)
+                        parseInt(this.prIdent[i], 10) >
+                        parseInt(fver.prIdent[i], 10)
                     ) {
                         return true;
                     } else if (
-                        parseInt(this.pr_ident[i], 10) <
-                        parseInt(fver.pr_ident[i], 10)
+                        parseInt(this.prIdent[i], 10) <
+                        parseInt(fver.prIdent[i], 10)
                     ) {
                         return false;
                     }
                 } else if (
-                    is_numeric.test(this.pr_ident[i]) &&
-                    !is_numeric.test(fver.pr_ident[i])
+                    is_numeric.test(this.prIdent[i]) &&
+                    !is_numeric.test(fver.prIdent[i])
                 ) {
                     return false;
                 } else if (
-                    !is_numeric.test(this.pr_ident[i]) &&
-                    !is_numeric.test(fver.pr_ident[i])
+                    !is_numeric.test(this.prIdent[i]) &&
+                    !is_numeric.test(fver.prIdent[i])
                 ) {
-                    if (this.pr_ident[i] > fver.pr_ident[i]) {
+                    if (this.prIdent[i] > fver.prIdent[i]) {
                         return true;
-                    } else if (this.pr_ident[i] < fver.pr_ident[i]) {
+                    } else if (this.prIdent[i] < fver.prIdent[i]) {
                         return false;
                     }
                 }
             }
 
-            return this.pr_ident.length > fver.pr_ident.length;
+            return this.prIdent.length > fver.prIdent.length;
         }
 
         return false;
@@ -215,7 +215,7 @@ export class Version {
      * prerelease in the same series as this one.
      */
     is_stable_or_compatible_prerelease(fver: Version): boolean {
-        if (fver.pr_ident == null) {
+        if (fver.prIdent == null) {
             return true;
         } else {
             return (
