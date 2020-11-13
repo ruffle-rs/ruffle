@@ -1,0 +1,2 @@
+//this.stopAllMovieClips();
+//Main Timeline, frame 2

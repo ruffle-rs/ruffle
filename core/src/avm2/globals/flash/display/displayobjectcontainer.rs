@@ -529,6 +529,30 @@ pub fn swap_children<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObjectContainer.stopAllMovieClips`
+pub fn stop_all_movie_clips<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(parent) = this.and_then(|this| this.as_display_object()) {
+        if let Some(mc) = parent.as_movie_clip() {
+            mc.stop(&mut activation.context);
+        }
+
+        if let Some(ctr) = parent.as_container() {
+            for child in ctr.iter_render_list() {
+                if child.as_container().is_some() {
+                    let child_this = child.object2().coerce_to_object(activation)?;
+                    stop_all_movie_clips(activation, Some(child_this), &[])?;
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -595,6 +619,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "swapChildren"),
         Method::from_builtin(swap_children),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "stopAllMovieClips"),
+        Method::from_builtin(stop_all_movie_clips),
     ));
 
     class
