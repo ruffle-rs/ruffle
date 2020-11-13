@@ -49,7 +49,7 @@ export class VersionRange {
                         (version.has_precedence_over(fver) ||
                             version.is_equal(fver));
                 } else if (comparator === "^") {
-                    matches = matches && version.is_compatible_with(fver);
+                    matches = matches && version.isCompatibleWith(fver);
                 }
             }
 
