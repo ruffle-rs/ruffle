@@ -21,6 +21,7 @@
     "devDependencies": {
         "webpack-cli": "^4.0.0",
         "webpack-dev-server": "^3.11.0",
-        "@wdio/cli": "^6.1.12"
+        "@wdio/cli": "^6.1.12",
+        "webpack": "^5.1.3"
     }
 }
