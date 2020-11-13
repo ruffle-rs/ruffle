@@ -1,27 +1,30 @@
+/**
+ * A representation of a semver 2 compliant version string
+ */
 export class Version {
     private readonly major: number;
     private readonly minor: number;
     private readonly patch: number;
-    private readonly pr_ident: any[];
-    private readonly build_ident: any[];
+    private readonly pr_ident: string[] | null;
+    private readonly build_ident: string[] | null;
 
     /**
-     * Construct a Version from components.
+     * Construct a Version from specific components.
      *
-     * @param {number} major The major version
-     * @param {number} minor The minor version
-     * @param {number} patch The patch version
-     * @param {array|undefined} pr_ident A list of pre-release identifiers, if
-     * any.
-     * @param {array|undefined} build_ident A list of build identifiers, if
-     * any.
+     * If you wish to parse a string into a Version then please use [[from_semver]].
+     *
+     * @param major The major version component.
+     * @param minor The minor version component.
+     * @param patch The patch version component.
+     * @param pr_ident A list of pre-release identifiers, if any
+     * @param build_ident A list of build identifiers, if any
      */
     constructor(
         major: number,
         minor: number,
         patch: number,
-        pr_ident: any,
-        build_ident: any
+        pr_ident: string[] | null,
+        build_ident: string[] | null
     ) {
         this.major = major;
         this.minor = minor;
@@ -34,50 +37,40 @@ export class Version {
      * Construct a version from a semver 2 compliant string.
      *
      * This function is intended for use with semver 2 compliant strings.
-     * Malformatted strins may still parse correctly, however.
+     * Malformed strings may still parse correctly, but this result is not
+     * guaranteed.
      *
-     * @param {string} version_string A semver 2.0.0 compliant version string.
-     * @return {Version} A version object.
+     * @param version_string A semver 2.0.0 compliant version string
+     * @return A version object
      */
-    static from_semver(version_string: string) {
+    static from_semver(version_string: string): Version {
         const build_split = version_string.split("+"),
             pr_split = build_split[0].split("-"),
-            version_split = pr_split[0].split("."),
-            version = [];
+            version_split = pr_split[0].split(".");
 
-        version.push(parseInt(version_split[0], 10));
+        const major = parseInt(version_split[0], 10);
+        let minor = 0;
+        let patch = 0;
+        let pr_ident = null;
+        let build_ident = null;
 
         if (version_split[1] != undefined) {
-            version.push(parseInt(version_split[1], 10));
-        } else {
-            version.push(0);
+            minor = parseInt(version_split[1], 10);
         }
 
         if (version_split[2] != undefined) {
-            version.push(parseInt(version_split[2], 10));
-        } else {
-            version.push(0);
+            patch = parseInt(version_split[2], 10);
         }
 
         if (pr_split[1] != undefined) {
-            version.push(pr_split[1].split("."));
-        } else {
-            version.push(undefined);
+            pr_ident = pr_split[1].split(".");
         }
 
         if (build_split[1] != undefined) {
-            version.push(build_split[1].split("."));
-        } else {
-            version.push(undefined);
+            build_ident = build_split[1].split(".");
         }
 
-        return new Version(
-            Number(version[0]),
-            Number(version[1]),
-            Number(version[2]),
-            version[3],
-            version[4]
-        );
+        return new Version(major, minor, patch, pr_ident, build_ident);
     }
 
     /**
@@ -91,10 +84,10 @@ export class Version {
      * This implements the ^ operator in npm's semver package, with the
      * exception of the prerelease exclusion rule.
      *
-     * @param {Version} fver The other version to test against
-     * @return {bool}
+     * @param fver The other version to test against
+     * @return True if compatible
      */
-    is_compatible_with(fver: Version) {
+    is_compatible_with(fver: Version): boolean {
         return (
             (this.major !== 0 && this.major === fver.major) ||
             (this.major === 0 &&
@@ -118,10 +111,10 @@ export class Version {
      * operator in npm's semver package, with the exception of the prerelease
      * exclusion rule.
      *
-     * @param {Version} fver The other version to test against
-     * @return {bool} True if this version has precedence over the other one.
+     * @param fver The other version to test against
+     * @return True if this version has precedence over the other one
      */
-    has_precedence_over(fver: Version) {
+    has_precedence_over(fver: Version): boolean {
         if (this.major > fver.major) {
             return true;
         } else if (this.major < fver.major) {
@@ -140,9 +133,9 @@ export class Version {
             return false;
         }
 
-        if (this.pr_ident === undefined && fver.pr_ident !== undefined) {
+        if (this.pr_ident == null && fver.pr_ident != null) {
             return true;
-        } else if (this.pr_ident !== undefined && fver.pr_ident !== undefined) {
+        } else if (this.pr_ident != null && fver.pr_ident != null) {
             const is_numeric = /^[0-9]*$/;
             for (
                 let i = 0;
@@ -197,10 +190,10 @@ export class Version {
      *
      * Build and prerelease tags are ignored.
      *
-     * @param {Version} fver The other version to test against
-     * @return {bool} True if the given version is equivalent.
+     * @param fver The other version to test against
+     * @return True if the given version is equivalent
      */
-    is_equal(fver: Version) {
+    is_equal(fver: Version): boolean {
         return (
             this.major === fver.major &&
             this.minor === fver.minor &&
@@ -217,12 +210,12 @@ export class Version {
      * components of both versions are the same. Otherwise, the prerelease
      * version always fails.
      *
-     * @param {Version} fver The other version to test against
-     * @return {bool} True if the given version is either stable, or a
+     * @param fver The other version to test against
+     * @return True if the given version is either stable, or a
      * prerelease in the same series as this one.
      */
-    is_stable_or_compatible_prerelease(fver: Version) {
-        if (fver.pr_ident === undefined) {
+    is_stable_or_compatible_prerelease(fver: Version): boolean {
+        if (fver.pr_ident == null) {
             return true;
         } else {
             return (

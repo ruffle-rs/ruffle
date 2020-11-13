@@ -33,31 +33,31 @@ describe("Version", function () {
         it("should parse valid semver strings", function () {
             assert.deepEqual(
                 Version.from_semver("1.2"),
-                new Version(1, 2, 0, undefined, undefined)
+                new Version(1, 2, 0, null, null)
             );
             assert.deepEqual(
                 Version.from_semver("1.2.3"),
-                new Version(1, 2, 3, undefined, undefined)
+                new Version(1, 2, 3, null, null)
             );
             assert.deepEqual(
                 Version.from_semver("1.09.3"),
-                new Version(1, 9, 3, undefined, undefined)
+                new Version(1, 9, 3, null, null)
             );
             assert.deepEqual(
                 Version.from_semver("1.2.3-pr"),
-                new Version(1, 2, 3, ["pr"], undefined)
+                new Version(1, 2, 3, ["pr"], null)
             );
             assert.deepEqual(
                 Version.from_semver("1.2.3-pr1.pr2"),
-                new Version(1, 2, 3, ["pr1", "pr2"], undefined)
+                new Version(1, 2, 3, ["pr1", "pr2"], null)
             );
             assert.deepEqual(
                 Version.from_semver("1.2.3+build"),
-                new Version(1, 2, 3, undefined, ["build"])
+                new Version(1, 2, 3, null, ["build"])
             );
             assert.deepEqual(
                 Version.from_semver("1.2.3+build1.build2"),
-                new Version(1, 2, 3, undefined, ["build1", "build2"])
+                new Version(1, 2, 3, null, ["build1", "build2"])
             );
             assert.deepEqual(
                 Version.from_semver("1-pr1.pr2+build1.build2"),
