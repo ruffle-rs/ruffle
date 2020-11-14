@@ -89,12 +89,6 @@ fn validate_remove_operation<'gc>(
 }
 
 /// Remove an element from it's parent display list.
-///
-/// ActionScript 3 works in child indexes, even though the underlying display
-/// list tracks children by depth. We attempt to maintain the same depth
-/// numbers used previously, shifting each object down so that, for example,
-/// object B has the depth that object A used to have, object C has the depth
-/// object B used to have, etc.
 fn remove_child_from_displaylist<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     child: DisplayObject<'gc>,
@@ -107,13 +101,6 @@ fn remove_child_from_displaylist<'gc>(
 }
 
 /// Add the `child` to `parent`'s display list.
-///
-/// ActionScript 3 works in child indexes, even though the underlying display
-/// list tracks children by depth. We attempt to maintain the same depth
-/// numbers used previously, shifting each object down so that, for example,
-/// object A has the depth that object B used to have, object B has the depth
-/// that object C used to have, etc. If we run out of depths to reuse then we
-/// start incrementing by one.
 fn add_child_to_displaylist<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     parent: DisplayObject<'gc>,
