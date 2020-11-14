@@ -16,10 +16,10 @@ export class SourceAPI {
     /**
      * Construct a Source API.
      *
-     * @param source_name The name of this particular source.
+     * @param name The name of this particular source.
      */
-    constructor(source_name: string) {
-        this.name = source_name;
+    constructor(name: string) {
+        this.name = name;
     }
 
     /**
@@ -56,10 +56,7 @@ export class SourceAPI {
      * into the current page as you wish.
      */
     createPlayer(): RufflePlayer {
-        const player_element_name = register_element(
-            "ruffle-player",
-            RufflePlayer
-        );
-        return <RufflePlayer>document.createElement(player_element_name);
+        const name = register_element("ruffle-player", RufflePlayer);
+        return <RufflePlayer>document.createElement(name);
     }
 }
