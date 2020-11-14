@@ -470,6 +470,12 @@ pub fn swap_children_at<'gc>(
                 return Err(format!("RangeError: Index {} is out of bounds", index1).into());
             }
 
+            let child0 = ctr.child_by_id(index0 as usize).unwrap();
+            let child1 = ctr.child_by_id(index1 as usize).unwrap();
+
+            child0.set_placed_by_script(activation.context.gc_context, true);
+            child1.set_placed_by_script(activation.context.gc_context, true);
+
             ctr.swap_at_id(&mut activation.context, index0 as usize, index1 as usize);
         }
     }
@@ -508,6 +514,9 @@ pub fn swap_children<'gc>(
                 .iter_render_list()
                 .position(|a| DisplayObject::ptr_eq(a, child1))
                 .ok_or("ArgumentError: Child is not a child of this display object")?;
+
+            child0.set_placed_by_script(activation.context.gc_context, true);
+            child1.set_placed_by_script(activation.context.gc_context, true);
 
             ctr.swap_at_id(&mut activation.context, index0, index1);
         }
