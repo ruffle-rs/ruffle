@@ -264,7 +264,7 @@ export class PublicAPI {
             // TODO: Maybe there's a better place for this.
             const polyfills = public_api.config.polyfills;
             if (polyfills !== false) {
-                source_api.plugin_polyfill();
+                source_api.pluginPolyfill();
             }
         }
 
