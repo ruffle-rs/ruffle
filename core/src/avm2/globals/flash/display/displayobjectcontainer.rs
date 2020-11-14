@@ -553,6 +553,24 @@ pub fn stop_all_movie_clips<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Stubs `DisplayObjectContainer.getObjectsUnderPoint`
+pub fn get_objects_under_point<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("DisplayObjectContainer.getObjectsUnderPoint not yet implemented".into())
+}
+
+/// Stubs `DisplayObjectContainer.areInaccessibleObjectsUnderPoint`
+pub fn are_inaccessible_objects_under_point<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("DisplayObjectContainer.areInaccessibleObjectsUnderPoint not yet implemented".into())
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -623,6 +641,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "stopAllMovieClips"),
         Method::from_builtin(stop_all_movie_clips),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "getObjectsUnderPoint"),
+        Method::from_builtin(get_objects_under_point),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(
+            Namespace::public_namespace(),
+            "areInaccessibleObjectsUnderPoint",
+        ),
+        Method::from_builtin(are_inaccessible_objects_under_point),
     ));
 
     class
