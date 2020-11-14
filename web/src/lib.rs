@@ -65,6 +65,7 @@ struct RuffleInstance {
     mouse_move_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     mouse_up_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
+    player_mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     window_mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     mouse_wheel_callback: Option<Closure<dyn FnMut(WheelEvent)>>,
     key_down_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
@@ -84,6 +85,7 @@ extern "C" {
 
 #[wasm_bindgen(module = "/packages/core/src/ruffle-player.js")]
 extern "C" {
+    #[wasm_bindgen(extends = EventTarget)]
     #[derive(Clone)]
     pub type JavascriptPlayer;
 
@@ -204,6 +206,7 @@ impl Ruffle {
             instance.mouse_down_callback = None;
             instance.mouse_move_callback = None;
             instance.mouse_up_callback = None;
+            instance.player_mouse_down_callback = None;
             instance.window_mouse_down_callback = None;
 
             // Cancel the animation handler, if it's still active.
@@ -303,7 +306,7 @@ impl Ruffle {
         // Create instance.
         let instance = RuffleInstance {
             core,
-            js_player,
+            js_player: js_player.clone(),
             canvas: canvas.clone(),
             canvas_width: 0, // Initialize canvas width and height to 0 to force an initial canvas resize.
             canvas_height: 0,
@@ -312,6 +315,7 @@ impl Ruffle {
             animation_handler_id: None,
             mouse_move_callback: None,
             mouse_down_callback: None,
+            player_mouse_down_callback: None,
             window_mouse_down_callback: None,
             mouse_up_callback: None,
             mouse_wheel_callback: None,
@@ -372,6 +376,7 @@ impl Ruffle {
                     });
                 })
                     as Box<dyn FnMut(PointerEvent)>);
+
                 let canvas_events: &EventTarget = canvas.as_ref();
                 canvas_events
                     .add_event_listener_with_callback(
@@ -389,8 +394,6 @@ impl Ruffle {
                     INSTANCES.with(move |instances| {
                         let instances = instances.borrow();
                         if let Some(instance) = instances.get(index) {
-                            instance.borrow_mut().has_focus = true;
-
                             // Only fire player mouse event for left clicks.
                             if js_event.button() == 0 {
                                 if let Some(target) = js_event.current_target() {
@@ -411,6 +414,7 @@ impl Ruffle {
                     });
                 })
                     as Box<dyn FnMut(PointerEvent)>);
+
                 let canvas_events: &EventTarget = canvas.as_ref();
                 canvas_events
                     .add_event_listener_with_callback(
@@ -422,6 +426,29 @@ impl Ruffle {
                 instance.borrow_mut().mouse_down_callback = Some(mouse_down_callback);
             }
 
+            // Create player mouse down handler.
+            {
+                let player_mouse_down_callback =
+                    Closure::wrap(Box::new(move |_js_event: PointerEvent| {
+                        INSTANCES.with(move |instances| {
+                            let instances = instances.borrow();
+                            if let Some(instance) = instances.get(index) {
+                                instance.borrow_mut().has_focus = true;
+                            }
+                        });
+                    }) as Box<dyn FnMut(PointerEvent)>);
+
+                let js_player_events: &EventTarget = js_player.as_ref();
+                js_player_events
+                    .add_event_listener_with_callback(
+                        "pointerdown",
+                        player_mouse_down_callback.as_ref().unchecked_ref(),
+                    )
+                    .unwrap();
+                let instance = instances.get(index).unwrap();
+                instance.borrow_mut().player_mouse_down_callback = Some(player_mouse_down_callback);
+            }
+
             // Create window mouse down handler.
             {
                 let window_mouse_down_callback =
@@ -429,8 +456,8 @@ impl Ruffle {
                         INSTANCES.with(|instances| {
                             let instances = instances.borrow();
                             if let Some(instance) = instances.get(index) {
-                                // If we actually clicked on the canvas, this will be reset to true
-                                // after the event bubbles down to the canvas.
+                                // If we actually clicked on the player, this will be reset to true
+                                // after the event bubbles down to the player.
                                 instance.borrow_mut().has_focus = false;
                             }
                         });
@@ -440,7 +467,7 @@ impl Ruffle {
                     .add_event_listener_with_callback_and_bool(
                         "pointerdown",
                         window_mouse_down_callback.as_ref().unchecked_ref(),
-                        true, // Use capture so this first *before* the canvas mouse down handler.
+                        true, // Use capture so this first *before* the player mouse down handler.
                     )
                     .unwrap();
                 let instance = instances.get(index).unwrap();
@@ -476,6 +503,7 @@ impl Ruffle {
                     });
                 })
                     as Box<dyn FnMut(PointerEvent)>);
+
                 let canvas_events: &EventTarget = canvas.as_ref();
                 canvas_events
                     .add_event_listener_with_callback(
@@ -512,6 +540,7 @@ impl Ruffle {
                     });
                 })
                     as Box<dyn FnMut(WheelEvent)>);
+
                 let canvas_events: &EventTarget = canvas.as_ref();
                 let mut options = AddEventListenerOptions::new();
                 options.passive(false);
@@ -612,6 +641,7 @@ impl Ruffle {
                     });
                 })
                     as Box<dyn FnMut(KeyboardEvent)>);
+
                 window
                     .add_event_listener_with_callback(
                         "keyup",
