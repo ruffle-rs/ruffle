@@ -1,6 +1,6 @@
 //! `MovieClip` display object and support code.
 use crate::avm1::{
-    Avm1, Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value,
+    Avm1, AvmString, Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value,
 };
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
@@ -1150,6 +1150,24 @@ impl<'gc> MovieClip<'gc> {
                 child.post_instantiation(context, child, None, Instantiator::Movie, false);
                 child.run_frame(context);
             }
+
+            if let Avm2Value::Object(mut p) = self.object2() {
+                if let Avm2Value::Object(c) = child.object2() {
+                    let name = Avm2QName::new(
+                        Avm2Namespace::public_namespace(),
+                        AvmString::new(context.gc_context, child.name().to_owned()),
+                    );
+                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                    if let Err(e) = p.init_property(p, &name, c.into(), &mut activation) {
+                        log::error!(
+                            "Got error when setting AVM2 child named \"{}\": {}",
+                            &child.name(),
+                            e
+                        );
+                    }
+                }
+            }
+
             Some(child)
         } else {
             log::error!("Unable to instantiate display node id {}", id);
