@@ -295,24 +295,14 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
 
         const rect = this.getBoundingClientRect();
         this.right_click_menu.style.display = "block";
+        const maxX =
+            document.body.clientWidth - this.right_click_menu.clientWidth - 1;
         this.right_click_menu.style.left =
-            Math.floor(
-                Math.min(
-                    e.clientX,
-                    document.body.clientWidth -
-                        this.right_click_menu.clientWidth -
-                        1
-                ) - rect.x
-            ) + "px";
+            Math.floor(Math.min(e.clientX, maxX) - rect.x) + "px";
+        const maxY =
+            document.body.clientHeight - this.right_click_menu.clientHeight - 1;
         this.right_click_menu.style.top =
-            Math.floor(
-                Math.min(
-                    e.clientY,
-                    document.body.clientHeight -
-                        this.right_click_menu.clientHeight -
-                        1
-                ) - rect.y
-            ) + "px";
+            Math.floor(Math.min(e.clientY, maxY) - rect.y) + "px";
     }
 
     hide_right_click_menu() {
