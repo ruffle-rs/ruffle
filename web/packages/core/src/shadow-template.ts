@@ -1,5 +1,9 @@
-export const ruffle_shadow_template = document.createElement("template");
-ruffle_shadow_template.innerHTML = `
+/**
+ * The shadow template which is used to fill the actual Ruffle player element
+ * on the page.
+ */
+export const ruffleShadowTemplate = document.createElement("template");
+ruffleShadowTemplate.innerHTML = `
     <style>
         :host {
             display: inline-block;

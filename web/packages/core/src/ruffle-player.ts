@@ -1,7 +1,7 @@
 import { Ruffle } from "../pkg/ruffle_web";
 
 import { load_ruffle } from "./load-ruffle";
-import { ruffle_shadow_template } from "./shadow-template";
+import { ruffleShadowTemplate } from "./shadow-template";
 import { lookup_element } from "./register-element";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
@@ -67,7 +67,7 @@ export class RufflePlayer extends HTMLElement {
         super();
 
         this.shadow = this.attachShadow({ mode: "closed" });
-        this.shadow.appendChild(ruffle_shadow_template.content.cloneNode(true));
+        this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
 
         this.dynamic_styles = <HTMLStyleElement>(
             this.shadow.getElementById("dynamic_styles")
