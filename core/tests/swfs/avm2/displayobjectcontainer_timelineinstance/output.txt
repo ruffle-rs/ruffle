@@ -1,0 +1,48 @@
+//var shadow = "I didn't get shadowed!"
+//var SHADOW = "I didn't get SHADOWed!"
+//this.child_clip
+[object ChildClip_1]
+//var old_child_clip = this.child_clip
+//this.child_clip.child_method()
+//Child method called
+//Placed symbol 2 above symbol 1 with the same name
+//this.child_clip === old_child_clip
+false
+//var new_child_clip = this.child_clip
+//Replaced symbol 1 with symbol 3 with the same name
+//this.child_clip === old_child_clip
+false
+//this.child_clip === new_child_clip
+false
+//old_child_clip.child_method_2(this);
+//mc.shadow
+I didn't get shadowed!
+Shadowed a movieclip variable with another movieclip of the same name
+//this.shadow
+[object MovieClip]
+//old_child_clip.child_method_2(this);
+//mc.shadow
+[object MovieClip]
+//this.shadow = "I'll shadow you back!"
+//this.shadow
+I'll shadow you back!
+//old_child_clip.child_method_2(this);
+//mc.shadow
+I'll shadow you back!
+//Shadowed a movieclip variable with a differently cased timeline symbol
+//this.shadow
+I'll shadow you back!
+//this.SHADOW
+[object MovieClip]
+//this.shadow === this.SHADOW
+false
+//delete this.shadow
+false
+//this.shadow
+I'll shadow you back!
+//this.propertyIsEnumerable('child_clip');
+false
+//this.hasOwnProperty('child_clip');
+true
+//for (var k in this) {
+//}
