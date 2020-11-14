@@ -55,7 +55,7 @@ export class SourceAPI {
      * @returns The player element. This is a DOM element that may be inserted
      * into the current page as you wish.
      */
-    create_player(): RufflePlayer {
+    createPlayer(): RufflePlayer {
         const player_element_name = register_element(
             "ruffle-player",
             RufflePlayer
