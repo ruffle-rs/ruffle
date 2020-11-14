@@ -45,7 +45,7 @@ export class SourceAPI {
      *
      * This needs to run before any plugin detection script does.
      */
-    plugin_polyfill(): void {
+    pluginPolyfill(): void {
         plugin_polyfill();
     }
 
