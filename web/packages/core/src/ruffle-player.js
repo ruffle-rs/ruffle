@@ -50,7 +50,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             self.open_right_click_menu.bind(self)
         );
 
-        self.addEventListener("click", self.hide_right_click_menu.bind(self));
+        window.addEventListener("click", self.hide_right_click_menu.bind(self));
 
         self.instance = null;
         self.allow_script_access = false;
@@ -244,10 +244,6 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
     open_right_click_menu(e) {
         e.preventDefault();
 
-        const rect = this.getBoundingClientRect();
-        this.right_click_menu.style.display = "block";
-        this.right_click_menu.style.left = Math.ceil(e.clientX - rect.x) + "px";
-        this.right_click_menu.style.top = Math.ceil(e.clientY - rect.y) + "px";
         while (this.right_click_menu.firstChild) {
             this.right_click_menu.removeChild(this.right_click_menu.lastChild);
         }
@@ -266,7 +262,6 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                     text: "Enter fullscreen",
                     onClick: () => {
                         this.requestFullscreen();
-                        this.focus();
                     },
                 });
             }
@@ -278,7 +273,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
                     : window.RufflePlayer.version
             }`,
             onClick() {
-                window.open("https://ruffle.rs", "_blank");
+                window.open("https://ruffle.rs/", "_blank");
             },
         });
 
@@ -297,6 +292,27 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             element.addEventListener("click", onClick);
             this.right_click_menu.appendChild(element);
         }
+
+        const rect = this.getBoundingClientRect();
+        this.right_click_menu.style.display = "block";
+        this.right_click_menu.style.left =
+            Math.floor(
+                Math.min(
+                    e.clientX,
+                    document.body.clientWidth -
+                        this.right_click_menu.clientWidth -
+                        1
+                ) - rect.x
+            ) + "px";
+        this.right_click_menu.style.top =
+            Math.floor(
+                Math.min(
+                    e.clientY,
+                    document.body.clientHeight -
+                        this.right_click_menu.clientHeight -
+                        1
+                ) - rect.y
+            ) + "px";
     }
 
     hide_right_click_menu() {
