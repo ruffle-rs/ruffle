@@ -1094,7 +1094,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         Some(self.0.read().static_data.swf.clone())
     }
 
-    fn run_frame(&self, _context: &mut UpdateContext) {
+    fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
     }
 
@@ -1103,7 +1103,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn post_instantiation(
-        &self,
+        &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -1388,7 +1388,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn handle_clip_event(
-        &self,
+        &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
