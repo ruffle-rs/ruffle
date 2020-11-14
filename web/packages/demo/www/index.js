@@ -21,7 +21,7 @@ let gamesOptGroup = document.getElementById("games-optgroup");
 
 window.addEventListener("DOMContentLoaded", () => {
     ruffle = window.RufflePlayer.newest();
-    player = ruffle.create_player();
+    player = ruffle.createPlayer();
     player.id = "player";
     container.appendChild(player);
     fetch("swfs.json").then((response) => {
