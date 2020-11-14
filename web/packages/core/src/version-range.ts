@@ -119,14 +119,14 @@ export class VersionRange {
      */
     static fromRequirementString(requirement: string): VersionRange {
         const components = requirement.split(" ");
-        let requirement_set: Requirement[] = [];
+        let set: Requirement[] = [];
         const requirements: Requirement[][] = [];
 
         for (let i = 0; i < components.length; i += 1) {
             if (components[i] === "||") {
-                if (requirement_set.length > 0) {
-                    requirements.push(requirement_set);
-                    requirement_set = [];
+                if (set.length > 0) {
+                    requirements.push(set);
+                    set = [];
                 }
             } else if (components[i].length > 0) {
                 const match = /[0-9]/.exec(components[i]);
@@ -138,13 +138,13 @@ export class VersionRange {
                         components[i].slice(match.index).trim()
                     );
 
-                    requirement_set.push({ comparator, version });
+                    set.push({ comparator, version });
                 }
             }
         }
 
-        if (requirement_set.length > 0) {
-            requirements.push(requirement_set);
+        if (set.length > 0) {
+            requirements.push(set);
         }
 
         return new VersionRange(requirements);
