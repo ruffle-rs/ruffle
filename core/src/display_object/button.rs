@@ -115,7 +115,7 @@ impl<'gc> Button<'gc> {
     /// This function instantiates children and thus must not be called whilst
     /// the caller is holding a write lock on the button data.
     fn set_state(
-        &self,
+        &mut self,
         self_display_object: DisplayObject<'gc>,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         state: ButtonState,
@@ -153,18 +153,11 @@ impl<'gc> Button<'gc> {
 
         drop(write);
 
-        //TODO: This code originally reinserted children onto the execution list
-        //"backwards" (compared to standard behavior) - do we still want that?
-        for (child, depth) in new_children {
+        for (mut child, depth) in new_children {
             // Initialize child.
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.run_frame(context);
-            self.0.write(context.gc_context).container.replace_at_depth(
-                context,
-                (*self).into(),
-                child,
-                depth.into(),
-            );
+            self.replace_at_depth(context, child, depth.into());
         }
     }
 }
@@ -181,7 +174,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 
     fn post_instantiation(
-        &self,
+        &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -207,7 +200,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         }
     }
 
-    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let self_display_object = (*self).into();
         let initialized = self.0.read().initialized;
 
@@ -247,7 +240,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
             drop(read);
 
-            for (child, depth) in new_children {
+            for (mut child, depth) in new_children {
                 child.post_instantiation(context, child, None, Instantiator::Movie, false);
                 self.0
                     .write(context.gc_context)
@@ -256,7 +249,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             }
         }
 
-        for child in self.iter_execution_list() {
+        for mut child in self.iter_execution_list() {
             child.run_frame(context);
         }
     }
@@ -322,19 +315,19 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 
     fn allow_as_mask(&self) -> bool {
-        !self.0.read().container.is_empty()
+        !self.is_empty()
     }
 
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and
     /// so forth.
     fn handle_clip_event(
-        &self,
+        &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
         if event.propagates() {
-            for child in self.iter_execution_list() {
+            for mut child in self.iter_execution_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
                 }

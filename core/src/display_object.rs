@@ -730,14 +730,14 @@ pub trait TDisplayObject<'gc>:
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and
     /// so forth.
     fn handle_clip_event(
-        &self,
+        &mut self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _event: ClipEvent,
     ) -> ClipEventResult {
         ClipEventResult::NotHandled
     }
 
-    fn run_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
+    fn run_frame(&mut self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
     fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -870,7 +870,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn post_instantiation(
-        &self,
+        &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         _display_object: DisplayObject<'gc>,
         _init_object: Option<Avm1Object<'gc>>,

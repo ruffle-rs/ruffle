@@ -55,7 +55,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         bounds
     }
 
-    fn run_frame(&self, _context: &mut UpdateContext) {
+    fn run_frame(&mut self, _context: &mut UpdateContext) {
         // Noop
     }
 

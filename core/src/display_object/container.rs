@@ -51,6 +51,10 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Returns the number of children on the render list.
     fn num_children(self) -> usize;
 
+    /// Returns the highest depth on the render list, or `None` if no children
+    /// exist on the depth list.
+    fn highest_depth(self) -> Option<Depth>;
+
     /// Insert a child display object into the container at a specific position
     /// in the depth list, removing any child already at that position.
     ///
@@ -125,6 +129,9 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Clear all three lists in the container.
     fn clear(&mut self, context: MutationContext<'gc, '_>);
 
+    /// Determine if the container is empty.
+    fn is_empty(self) -> bool;
+
     /// Iterates over the children of this display object in execution order.
     /// This is different than render or depth order.
     ///
@@ -173,6 +180,10 @@ macro_rules! impl_display_object_container {
 
         fn num_children(self) -> usize {
             self.0.read().$field.num_children()
+        }
+
+        fn highest_depth(self) -> Option<Depth> {
+            self.0.read().$field.highest_depth()
         }
 
         fn replace_at_depth(
@@ -257,6 +268,10 @@ macro_rules! impl_display_object_container {
 
         fn clear(&mut self, gc_context: MutationContext<'gc, '_>) {
             self.0.write(gc_context).$field.clear(gc_context)
+        }
+
+        fn is_empty(self) -> bool {
+            self.0.read().$field.is_empty()
         }
     };
 }

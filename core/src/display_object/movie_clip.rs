@@ -921,17 +921,6 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    /// Returns the highest depth in use by this movie clip, or `None` if there
-    /// are no children.
-    pub fn highest_depth(self) -> Option<Depth> {
-        self.0.read().container.highest_depth()
-    }
-
-    /// Returns the number of children on the render list.
-    pub fn num_children(self) -> usize {
-        self.0.read().container.num_children()
-    }
-
     /// Gets the clip events for this movieclip.
     pub fn clip_actions(&self) -> Ref<[ClipAction]> {
         Ref::map(self.0.read(), |mc| mc.clip_actions())
@@ -1115,7 +1104,7 @@ impl<'gc> MovieClip<'gc> {
     /// Instantiate a given child object on the timeline at a given depth.
     #[allow(clippy::too_many_arguments)]
     fn instantiate_child(
-        self,
+        mut self,
         self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
@@ -1123,18 +1112,14 @@ impl<'gc> MovieClip<'gc> {
         place_object: &swf::PlaceObject,
         copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
-        if let Ok(child) = context
+        if let Ok(mut child) = context
             .library
             .library_for_movie_mut(self.movie().unwrap()) //TODO
             .instantiate_by_id(id, context.gc_context)
         {
             // Remove previous child from children list,
             // and add new child onto front of the list.
-            let prev_child = {
-                let mut mc = self.0.write(context.gc_context);
-                mc.container
-                    .replace_at_depth(context, self.into(), child, depth)
-            };
+            let prev_child = self.replace_at_depth(context, child, depth);
             {
                 // Set initial properties for child.
                 child.set_depth(context.gc_context, depth);
@@ -1176,7 +1161,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn run_goto(
-        self,
+        mut self,
         self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: FrameNumber,
@@ -1226,8 +1211,7 @@ impl<'gc> MovieClip<'gc> {
                 .collect();
             for (_depth, child) in children {
                 if !child.placed_by_script() {
-                    let mut mc = self.0.write(context.gc_context);
-                    mc.container.remove_child(context, child);
+                    self.remove_child(context, child);
                 }
             }
             true
@@ -1333,7 +1317,7 @@ impl<'gc> MovieClip<'gc> {
         let run_goto_command = |clip: MovieClip<'gc>,
                                 context: &mut UpdateContext<'_, 'gc, '_>,
                                 params: &GotoPlaceObject| {
-            let child_entry = clip.0.read().container.get_depth(params.depth());
+            let child_entry = clip.child_by_depth(params.depth());
             match child_entry {
                 // Apply final delta to display parameters.
                 // For rewinds, if an object was created before the final frame,
@@ -1395,7 +1379,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     fn construct_as_avm1_object(
-        self,
+        mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         init_object: Option<Avm1Object<'gc>>,
@@ -1668,9 +1652,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.read().movie().version()
     }
 
-    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
-        for child in self.iter_execution_list() {
+        for mut child in self.iter_execution_list() {
             child.run_frame(context);
         }
 
@@ -1781,12 +1765,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn handle_clip_event(
-        &self,
+        &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
         if event.propagates() {
-            for child in self.iter_execution_list() {
+            for mut child in self.iter_execution_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
                 }
@@ -1805,7 +1789,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn post_instantiation(
-        &self,
+        &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         init_object: Option<Avm1Object<'gc>>,
@@ -1880,7 +1864,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn allow_as_mask(&self) -> bool {
-        !self.0.read().container.is_empty()
+        !self.is_empty()
     }
 
     fn is_focusable(&self) -> bool {
@@ -2829,7 +2813,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 }
             }
             PlaceObjectAction::Modify => {
-                if let Some(child) = self.0.read().container.get_depth(place_object.depth.into()) {
+                if let Some(child) = self.child_by_depth(place_object.depth.into()) {
                     child.apply_place_object(context.gc_context, &place_object);
                     child
                 } else {
@@ -2843,7 +2827,7 @@ impl<'gc, 'a> MovieClip<'gc> {
 
     #[inline]
     fn remove_object(
-        self,
+        mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
         version: u8,
@@ -2853,12 +2837,10 @@ impl<'gc, 'a> MovieClip<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-
-        let read = self.0.read();
-        if let Some(child) = read.container.get_depth(remove_object.depth.into()) {
+        
+        if let Some(child) = self.child_by_depth(remove_object.depth.into()) {
             if !child.placed_by_script() {
-                drop(read);
-                self.0.write(context.gc_context).container.remove_child(context, child);
+                self.remove_child(context, child);
             }
         }
 

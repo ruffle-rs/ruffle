@@ -290,7 +290,7 @@ impl Player {
 
         player.mutate_with_update_context(|context| {
             // Instantiate an empty root before the main movie loads.
-            let fake_root = MovieClip::from_movie(context.gc_context, fake_movie);
+            let mut fake_root = MovieClip::from_movie(context.gc_context, fake_movie);
             fake_root.post_instantiation(
                 context,
                 fake_root.into(),
@@ -358,7 +358,7 @@ impl Player {
                 .library_for_movie_mut(context.swf.clone())
                 .set_avm2_domain(domain);
 
-            let root: DisplayObject =
+            let mut root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
 
             root.set_depth(context.gc_context, 0);
@@ -608,7 +608,7 @@ impl Player {
         if button_event.is_some() {
             self.mutate_with_update_context(|context| {
                 let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
-                for level in levels {
+                for mut level in levels {
                     if let Some(button_event) = button_event {
                         let state = level.handle_clip_event(context, button_event);
                         if state == ClipEventResult::Handled {
@@ -658,7 +658,7 @@ impl Player {
             // Fire clip event on all clips.
             if let Some(clip_event) = clip_event {
                 let levels: Vec<DisplayObject<'_>> = context.levels.values().copied().collect();
-                for level in levels {
+                for mut level in levels {
                     level.handle_clip_event(context, clip_event);
                 }
             }
@@ -689,7 +689,7 @@ impl Player {
                 PlayerEvent::MouseDown { .. } => {
                     is_mouse_down = true;
                     needs_render = true;
-                    if let Some(node) = context.mouse_hovered_object {
+                    if let Some(mut node) = context.mouse_hovered_object {
                         node.handle_clip_event(context, ClipEvent::Press);
                     }
                 }
@@ -697,7 +697,7 @@ impl Player {
                 PlayerEvent::MouseUp { .. } => {
                     is_mouse_down = false;
                     needs_render = true;
-                    if let Some(node) = context.mouse_hovered_object {
+                    if let Some(mut node) = context.mouse_hovered_object {
                         node.handle_clip_event(context, ClipEvent::Release);
                     }
                 }
@@ -766,7 +766,7 @@ impl Player {
 
             if cur_hovered.map(|d| d.as_ptr()) != new_hovered.map(|d| d.as_ptr()) {
                 // RollOut of previous node.
-                if let Some(node) = cur_hovered {
+                if let Some(mut node) = cur_hovered {
                     if !node.removed() {
                         node.handle_clip_event(context, ClipEvent::RollOut);
                     }
@@ -774,7 +774,7 @@ impl Player {
 
                 // RollOver on new node.I still
                 new_cursor = MouseCursor::Arrow;
-                if let Some(node) = new_hovered {
+                if let Some(mut node) = new_hovered {
                     new_cursor = node.mouse_cursor();
                     node.handle_clip_event(context, ClipEvent::RollOver);
                 }
@@ -828,7 +828,7 @@ impl Player {
             // want to run frames on
             let levels: Vec<_> = update_context.levels.values().copied().collect();
 
-            for level in levels {
+            for mut level in levels {
                 level.run_frame(update_context);
             }
         });
