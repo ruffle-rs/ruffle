@@ -551,7 +551,7 @@ impl<'gc> ChildContainer<'gc> {
 
             None
         } else {
-            self.render_list.push(child);
+            self.render_list.insert(0, child);
 
             None
         };
