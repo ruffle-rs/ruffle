@@ -5,25 +5,25 @@ use crate::display_object::button::Button;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject};
 use crate::string_utils::swf_string_eq_ignore_case;
+use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
-use enumset::{EnumSet, EnumSetType};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::ops::{RangeBounds, Bound};
+use std::ops::{Bound, RangeBounds};
 
 /// The three lists that a display object container is supposed to maintain.
 #[derive(EnumSetType)]
 pub enum Lists {
     /// The list that determines the order in which children are rendered.
-    /// 
+    ///
     /// This is directly manipulated by AVM2 code.
     Render,
 
     /// The list that determines the identity of children according to the
     /// timeline and AVM1 code.
-    /// 
+    ///
     /// Manipulations of the depth list are generally propagated to the render
     /// list, except in cases where children have been reordered by AVM2.
     Depth,
@@ -135,7 +135,7 @@ pub trait TDisplayObjectContainer<'gc>:
     ///
     /// If the child was found on any of the container's lists, this function
     /// will return `true`.
-    /// 
+    ///
     /// You can control which lists a child should be removed from with the
     /// `from_lists` parameter. If a list is omitted from `from_lists`, then
     /// not only will the child remain, but the return code will also not take
@@ -569,7 +569,11 @@ impl<'gc> ChildContainer<'gc> {
 
                 None
             }
-        } else if let Some((_, above_child)) = self.depth_list.range((Bound::Excluded(depth), Bound::Unbounded)).next() {
+        } else if let Some((_, above_child)) = self
+            .depth_list
+            .range((Bound::Excluded(depth), Bound::Unbounded))
+            .next()
+        {
             let position = self
                 .render_list
                 .iter()
@@ -658,7 +662,7 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// If the child was found on any of the container's lists, this function
     /// will return `true`.
-    /// 
+    ///
     /// You can control which lists a child should be removed from with the
     /// `from_lists` parameter. If a list is omitted from `from_lists`, then
     /// not only will the child remain, but the return code will also not take
@@ -669,7 +673,8 @@ impl<'gc> ChildContainer<'gc> {
         child: DisplayObject<'gc>,
         from_lists: EnumSet<Lists>,
     ) -> bool {
-        let removed_from_depth_list = from_lists.contains(Lists::Depth) && self.remove_child_from_depth_list(child);
+        let removed_from_depth_list =
+            from_lists.contains(Lists::Depth) && self.remove_child_from_depth_list(child);
 
         let removed_from_render_list = if from_lists.contains(Lists::Render) {
             let render_list_position = self
@@ -689,8 +694,9 @@ impl<'gc> ChildContainer<'gc> {
         let removed_from_execution_list = if from_lists.contains(Lists::Execution) {
             let present_on_execution_list = child.prev_sibling().is_none()
                 || child.next_sibling().is_none()
-                || (self.exec_list.is_some() && DisplayObject::ptr_eq(self.exec_list.unwrap(), child));
-            
+                || (self.exec_list.is_some()
+                    && DisplayObject::ptr_eq(self.exec_list.unwrap(), child));
+
             self.remove_child_from_exec_list(context, child);
             child.set_parent(context.gc_context, None);
 

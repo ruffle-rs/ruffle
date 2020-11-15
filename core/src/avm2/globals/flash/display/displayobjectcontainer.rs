@@ -10,8 +10,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
-use gc_arena::{GcCell, MutationContext};
 use enumset::EnumSet;
+use gc_arena::{GcCell, MutationContext};
 use std::cmp::min;
 
 /// Implements `flash.display.DisplayObjectContainer`'s instance constructor.

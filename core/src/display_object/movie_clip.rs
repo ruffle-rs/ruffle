@@ -1601,7 +1601,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn set_focusable(self, focusable: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).is_focusable = focusable;
     }
-    
+
     /// Handle a RemoveObject tag when running a goto action.
     #[inline]
     fn goto_remove_object<'a>(
@@ -1631,10 +1631,18 @@ impl<'gc> MovieClip<'gc> {
             if let Some(child) = read.container.get_depth(depth) {
                 if !child.placed_by_script() {
                     drop(read);
-                    self.0.write(context.gc_context).container.remove_child(context, child, EnumSet::all());
+                    self.0.write(context.gc_context).container.remove_child(
+                        context,
+                        child,
+                        EnumSet::all(),
+                    );
                 } else {
                     drop(read);
-                    self.0.write(context.gc_context).container.remove_child(context, child, Lists::Depth.into());
+                    self.0.write(context.gc_context).container.remove_child(
+                        context,
+                        child,
+                        Lists::Depth.into(),
+                    );
                 }
             }
         }
@@ -2842,7 +2850,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        
+
         if let Some(child) = self.child_by_depth(remove_object.depth.into()) {
             if !child.placed_by_script() {
                 self.remove_child(context, child, EnumSet::all());
