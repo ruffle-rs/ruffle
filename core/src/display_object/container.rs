@@ -11,7 +11,7 @@ use enumset::{EnumSet, EnumSetType};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::ops::RangeBounds;
+use std::ops::{RangeBounds, Bound};
 
 /// The three lists that a display object container is supposed to maintain.
 #[derive(EnumSetType)]
@@ -569,17 +569,17 @@ impl<'gc> ChildContainer<'gc> {
 
                 None
             }
-        } else if let Some((_, below_child)) = self.depth_list.range(..depth).rev().next() {
+        } else if let Some((_, above_child)) = self.depth_list.range((Bound::Excluded(depth), Bound::Unbounded)).next() {
             let position = self
                 .render_list
                 .iter()
-                .position(|x| DisplayObject::ptr_eq(*x, *below_child))
+                .position(|x| DisplayObject::ptr_eq(*x, *above_child))
                 .unwrap();
-            self.render_list.insert(position + 1, child);
+            self.render_list.insert(position, child);
 
             None
         } else {
-            self.render_list.insert(0, child);
+            self.render_list.push(child);
 
             None
         };
