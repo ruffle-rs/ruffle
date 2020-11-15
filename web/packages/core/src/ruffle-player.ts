@@ -304,7 +304,7 @@ export class RufflePlayer extends HTMLElement {
      * If it's an object, every key and value must be a String.
      * These parameters will be merged onto any found in the query portion of the swf URL.
      */
-    async stream_swf_url(
+    async streamSwfUrl(
         url: string,
         parameters:
             | URLSearchParams

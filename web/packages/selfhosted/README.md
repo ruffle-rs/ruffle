@@ -42,7 +42,7 @@ If you want to control the Ruffle player, you may use our Javascript API.
         let player = ruffle.create_player();
         let container = document.getElementById("container");
         container.appendChild(player);
-        player.stream_swf_url("movie.swf");
+        player.streamSwfUrl("movie.swf");
     });
 </script>
 <script src="path/to/ruffle/ruffle.js"></script>
