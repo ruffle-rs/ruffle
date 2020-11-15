@@ -249,7 +249,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * @private
      */
-    private async ensure_fresh_instance(): Promise<void> {
+    private async ensureFreshInstance(): Promise<void> {
         if (this.instance) {
             this.instance.destroy();
             this.instance = null;
@@ -318,7 +318,7 @@ export class RufflePlayer extends HTMLElement {
             if (this.isConnected && !this.isUnusedFallbackObject()) {
                 console.log("Loading SWF file " + url);
 
-                await this.ensure_fresh_instance();
+                await this.ensureFreshInstance();
                 parameters = {
                     ...sanitize_parameters(url.substring(url.indexOf("?"))),
                     ...sanitize_parameters(parameters),
@@ -503,7 +503,7 @@ export class RufflePlayer extends HTMLElement {
             if (this.isConnected && !this.isUnusedFallbackObject()) {
                 console.log("Got SWF data");
 
-                await this.ensure_fresh_instance();
+                await this.ensureFreshInstance();
                 this.instance?.load_data(
                     new Uint8Array(data),
                     sanitize_parameters(parameters)
