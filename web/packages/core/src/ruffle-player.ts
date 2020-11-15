@@ -224,7 +224,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * @private
      */
-    private is_unused_fallback_object(): boolean {
+    private isUnusedFallbackObject(): boolean {
         let parent = this.parentNode;
         const element = lookup_element("ruffle-object");
 
@@ -315,7 +315,7 @@ export class RufflePlayer extends HTMLElement {
     ): Promise<void> {
         //TODO: Actually stream files...
         try {
-            if (this.isConnected && !this.is_unused_fallback_object()) {
+            if (this.isConnected && !this.isUnusedFallbackObject()) {
                 console.log("Loading SWF file " + url);
 
                 await this.ensure_fresh_instance();
@@ -500,7 +500,7 @@ export class RufflePlayer extends HTMLElement {
             | null
     ): Promise<void> {
         try {
-            if (this.isConnected && !this.is_unused_fallback_object()) {
+            if (this.isConnected && !this.isUnusedFallbackObject()) {
                 console.log("Got SWF data");
 
                 await this.ensure_fresh_instance();
