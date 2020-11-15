@@ -22,7 +22,7 @@ export class RuffleEmbed extends RufflePlayer {
         }
         const src = this.attributes.getNamedItem("src");
         if (src) {
-            this.stream_swf_url(src.value, parameters);
+            this.streamSwfUrl(src.value, parameters);
         }
     }
 
@@ -58,7 +58,7 @@ export class RuffleEmbed extends RufflePlayer {
             }
             const src = this.attributes.getNamedItem("src");
             if (src) {
-                this.stream_swf_url(src.value, parameters);
+                this.streamSwfUrl(src.value, parameters);
             }
         }
     }

@@ -53,7 +53,7 @@ export class RuffleObject extends RufflePlayer {
                             new URL(url, window.location.href).origin));
 
             //Kick off the SWF download.
-            this.stream_swf_url(url, parameters);
+            this.streamSwfUrl(url, parameters);
         }
     }
 
