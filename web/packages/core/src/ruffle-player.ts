@@ -137,7 +137,7 @@ export class RufflePlayer extends HTMLElement {
      * @ignore
      */
     connectedCallback(): void {
-        this.update_styles();
+        this.updateStyles();
     }
 
     /**
@@ -156,7 +156,7 @@ export class RufflePlayer extends HTMLElement {
         _newValue: string | undefined
     ): void {
         if (name === "width" || name === "height") {
-            this.update_styles();
+            this.updateStyles();
         }
     }
 
@@ -177,7 +177,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * @protected
      */
-    protected update_styles(): void {
+    protected updateStyles(): void {
         if (this.dynamic_styles.sheet) {
             if (this.dynamic_styles.sheet.rules) {
                 for (
