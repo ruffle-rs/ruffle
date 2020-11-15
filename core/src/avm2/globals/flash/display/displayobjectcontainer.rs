@@ -11,6 +11,7 @@ use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::{GcCell, MutationContext};
+use enumset::EnumSet;
 use std::cmp::min;
 
 /// Implements `flash.display.DisplayObjectContainer`'s instance constructor.
@@ -95,7 +96,7 @@ fn remove_child_from_displaylist<'gc>(
 ) {
     if let Some(parent) = child.parent() {
         if let Some(mut ctr) = parent.as_container() {
-            ctr.remove_child(context, child);
+            ctr.remove_child(context, child, EnumSet::all());
         }
     }
 }
@@ -348,7 +349,7 @@ pub fn remove_child_at<'gc>(
 
             let child = ctr.child_by_id(target_child as usize).unwrap();
 
-            ctr.remove_child(&mut activation.context, child);
+            ctr.remove_child(&mut activation.context, child, EnumSet::all());
 
             return Ok(child.object2());
         }

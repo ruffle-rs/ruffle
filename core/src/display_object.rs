@@ -26,7 +26,7 @@ mod text;
 
 use crate::avm1::activation::Activation;
 use crate::backend::input::MouseCursor;
-pub use crate::display_object::container::{DisplayObjectContainer, TDisplayObjectContainer};
+pub use crate::display_object::container::{DisplayObjectContainer, TDisplayObjectContainer, Lists};
 use crate::events::{ClipEvent, ClipEventResult};
 pub use bitmap::Bitmap;
 pub use button::Button;
