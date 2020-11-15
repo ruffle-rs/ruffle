@@ -879,7 +879,7 @@ pub fn remove_movie_clip<'gc>(
             return Ok(Value::Undefined);
         };
 
-        parent.remove_child(&mut activation.context, movie_clip.into());
+        parent.remove_child(&mut activation.context, movie_clip.into(), EnumSet::all());
     }
     Ok(Value::Undefined)
 }

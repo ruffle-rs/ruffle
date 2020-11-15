@@ -1211,7 +1211,9 @@ impl<'gc> MovieClip<'gc> {
                 .collect();
             for (_depth, child) in children {
                 if !child.placed_by_script() {
-                    self.remove_child(context, child);
+                    self.remove_child(context, child, EnumSet::all());
+                } else {
+                    self.remove_child(context, child, Lists::Depth.into());
                 }
             }
             true
@@ -1629,7 +1631,10 @@ impl<'gc> MovieClip<'gc> {
             if let Some(child) = read.container.get_depth(depth) {
                 if !child.placed_by_script() {
                     drop(read);
-                    self.0.write(context.gc_context).container.remove_child(context, child);
+                    self.0.write(context.gc_context).container.remove_child(context, child, EnumSet::all());
+                } else {
+                    drop(read);
+                    self.0.write(context.gc_context).container.remove_child(context, child, Lists::Depth.into());
                 }
             }
         }
@@ -2840,7 +2845,9 @@ impl<'gc, 'a> MovieClip<'gc> {
         
         if let Some(child) = self.child_by_depth(remove_object.depth.into()) {
             if !child.placed_by_script() {
-                self.remove_child(context, child);
+                self.remove_child(context, child, EnumSet::all());
+            } else {
+                self.remove_child(context, child, Lists::Depth.into());
             }
         }
 

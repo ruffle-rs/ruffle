@@ -7,10 +7,31 @@ use crate::display_object::{Depth, DisplayObject, TDisplayObject};
 use crate::string_utils::swf_string_eq_ignore_case;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
+use enumset::{EnumSet, EnumSetType};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::ops::RangeBounds;
+
+/// The three lists that a display object container is supposed to maintain.
+#[derive(EnumSetType)]
+pub enum Lists {
+    /// The list that determines the order in which children are rendered.
+    /// 
+    /// This is directly manipulated by AVM2 code.
+    Render,
+
+    /// The list that determines the identity of children according to the
+    /// timeline and AVM1 code.
+    /// 
+    /// Manipulations of the depth list are generally propagated to the render
+    /// list, except in cases where children have been reordered by AVM2.
+    Depth,
+
+    /// The list that determines the order in which childrens' actions are
+    /// executed.
+    Execution,
+}
 
 #[enum_trait_object(
     #[derive(Clone, Collect, Debug, Copy)]
@@ -114,10 +135,16 @@ pub trait TDisplayObjectContainer<'gc>:
     ///
     /// If the child was found on any of the container's lists, this function
     /// will return `true`.
+    /// 
+    /// You can control which lists a child should be removed from with the
+    /// `from_lists` parameter. If a list is omitted from `from_lists`, then
+    /// not only will the child remain, but the return code will also not take
+    /// it's presence in the list into account.
     fn remove_child(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
+        from_lists: EnumSet<Lists>,
     ) -> bool;
 
     /// Remove a set of children identified by their render list IDs from this
@@ -244,6 +271,7 @@ macro_rules! impl_display_object_container {
             &mut self,
             context: &mut UpdateContext<'_, 'gc, '_>,
             child: DisplayObject<'gc>,
+            from_lists: EnumSet<Lists>,
         ) -> bool {
             debug_assert!(DisplayObject::ptr_eq(
                 child.parent().unwrap(),
@@ -253,7 +281,7 @@ macro_rules! impl_display_object_container {
             self.0
                 .write(context.gc_context)
                 .$field
-                .remove_child(context, child)
+                .remove_child(context, child, from_lists)
         }
 
         fn remove_range_of_ids<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
@@ -485,7 +513,7 @@ impl<'gc> ChildContainer<'gc> {
         } else {
             if let Some(old_parent) = child.parent() {
                 if let Some(mut old_parent) = old_parent.as_container() {
-                    old_parent.remove_child(context, child);
+                    old_parent.remove_child(context, child, EnumSet::all());
                 }
             }
 
@@ -625,30 +653,53 @@ impl<'gc> ChildContainer<'gc> {
         }
     }
 
-    /// Remove a child from the container.
+    /// Remove a child display object from this container's render, depth, and
+    /// execution lists.
     ///
-    /// This function returns true if the child was present on either the
-    /// render list or the depth list.
+    /// If the child was found on any of the container's lists, this function
+    /// will return `true`.
+    /// 
+    /// You can control which lists a child should be removed from with the
+    /// `from_lists` parameter. If a list is omitted from `from_lists`, then
+    /// not only will the child remain, but the return code will also not take
+    /// it's presence in the list into account.
     pub fn remove_child(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
+        from_lists: EnumSet<Lists>,
     ) -> bool {
-        let removed_from_depth_list = self.remove_child_from_depth_list(child);
+        let removed_from_depth_list = from_lists.contains(Lists::Depth) && self.remove_child_from_depth_list(child);
 
-        let render_list_position = self
-            .render_list
-            .iter()
-            .position(|x| DisplayObject::ptr_eq(*x, child));
-        let removed_from_render_list = render_list_position.is_some();
-        if let Some(position) = render_list_position {
-            self.render_list.remove(position);
-        }
+        let removed_from_render_list = if from_lists.contains(Lists::Render) {
+            let render_list_position = self
+                .render_list
+                .iter()
+                .position(|x| DisplayObject::ptr_eq(*x, child));
+            if let Some(position) = render_list_position {
+                self.render_list.remove(position);
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        };
 
-        self.remove_child_from_exec_list(context, child);
-        child.set_parent(context.gc_context, None);
+        let removed_from_execution_list = if from_lists.contains(Lists::Execution) {
+            let present_on_execution_list = child.prev_sibling().is_none()
+                || child.next_sibling().is_none()
+                || (self.exec_list.is_some() && DisplayObject::ptr_eq(self.exec_list.unwrap(), child));
+            
+            self.remove_child_from_exec_list(context, child);
+            child.set_parent(context.gc_context, None);
 
-        removed_from_render_list || removed_from_depth_list
+            present_on_execution_list
+        } else {
+            false
+        };
+
+        removed_from_render_list || removed_from_depth_list || removed_from_execution_list
     }
 
     /// Remove a set of children identified by their render list IDs from this
