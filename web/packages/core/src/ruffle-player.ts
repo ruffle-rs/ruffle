@@ -533,7 +533,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * @protected
      */
-    protected copy_element(elem: HTMLElement): void {
+    protected copyElement(elem: HTMLElement): void {
         if (elem) {
             for (let i = 0; i < elem.attributes.length; i++) {
                 const attrib = elem.attributes[i];
