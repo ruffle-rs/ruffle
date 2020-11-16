@@ -76,10 +76,10 @@ function sanitize_parameters(
  */
 export class RufflePlayer extends HTMLElement {
     private shadow: ShadowRoot;
-    private dynamic_styles: HTMLStyleElement;
+    private dynamicStyles: HTMLStyleElement;
     private container: HTMLElement;
-    private play_button: HTMLElement;
-    private right_click_menu: HTMLElement;
+    private playButton: HTMLElement;
+    private rightClickMenu: HTMLElement;
     private instance: Ruffle | null;
     private _trace_observer: ((message: string) => void) | null;
 
@@ -104,18 +104,18 @@ export class RufflePlayer extends HTMLElement {
         this.shadow = this.attachShadow({ mode: "closed" });
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
 
-        this.dynamic_styles = <HTMLStyleElement>(
+        this.dynamicStyles = <HTMLStyleElement>(
             this.shadow.getElementById("dynamic_styles")
         );
         this.container = this.shadow.getElementById("container")!;
-        this.play_button = this.shadow.getElementById("play_button")!;
-        if (this.play_button) {
-            this.play_button.addEventListener(
+        this.playButton = this.shadow.getElementById("play_button")!;
+        if (this.playButton) {
+            this.playButton.addEventListener(
                 "click",
                 this.playButtonClicked.bind(this)
             );
         }
-        this.right_click_menu = this.shadow.getElementById("right_click_menu")!;
+        this.rightClickMenu = this.shadow.getElementById("right_click_menu")!;
 
         this.addEventListener(
             "contextmenu",
@@ -178,14 +178,14 @@ export class RufflePlayer extends HTMLElement {
      * @protected
      */
     protected updateStyles(): void {
-        if (this.dynamic_styles.sheet) {
-            if (this.dynamic_styles.sheet.rules) {
+        if (this.dynamicStyles.sheet) {
+            if (this.dynamicStyles.sheet.rules) {
                 for (
                     let i = 0;
-                    i < this.dynamic_styles.sheet.rules.length;
+                    i < this.dynamicStyles.sheet.rules.length;
                     i++
                 ) {
-                    this.dynamic_styles.sheet.deleteRule(i);
+                    this.dynamicStyles.sheet.deleteRule(i);
                 }
             }
 
@@ -195,7 +195,7 @@ export class RufflePlayer extends HTMLElement {
                     widthAttr.value
                 );
                 if (width !== null) {
-                    this.dynamic_styles.sheet.insertRule(
+                    this.dynamicStyles.sheet.insertRule(
                         `:host { width: ${width}; }`
                     );
                 }
@@ -207,7 +207,7 @@ export class RufflePlayer extends HTMLElement {
                     heightAttr.value
                 );
                 if (height !== null) {
-                    this.dynamic_styles.sheet.insertRule(
+                    this.dynamicStyles.sheet.insertRule(
                         `:host { height: ${height}; }`
                     );
                 }
@@ -325,8 +325,8 @@ export class RufflePlayer extends HTMLElement {
                 };
                 this.instance!.stream_from(url, parameters);
 
-                if (this.play_button) {
-                    this.play_button.style.display = "block";
+                if (this.playButton) {
+                    this.playButton.style.display = "block";
                 }
             } else {
                 console.warn(
@@ -343,8 +343,8 @@ export class RufflePlayer extends HTMLElement {
     private playButtonClicked(): void {
         if (this.instance) {
             this.instance.play();
-            if (this.play_button) {
-                this.play_button.style.display = "none";
+            if (this.playButton) {
+                this.playButton.style.display = "none";
             }
         }
     }
@@ -428,8 +428,8 @@ export class RufflePlayer extends HTMLElement {
         e.preventDefault();
 
         // Clear all `right_click_menu` items.
-        while (this.right_click_menu.firstChild) {
-            this.right_click_menu.removeChild(this.right_click_menu.firstChild);
+        while (this.rightClickMenu.firstChild) {
+            this.rightClickMenu.removeChild(this.rightClickMenu.firstChild);
         }
 
         // Populate `right_click_menu` items.
@@ -438,27 +438,27 @@ export class RufflePlayer extends HTMLElement {
             element.className = "menu_item active";
             element.textContent = text;
             element.addEventListener("click", onClick);
-            this.right_click_menu.appendChild(element);
+            this.rightClickMenu.appendChild(element);
         }
 
         // Place `right_click_menu` in the top-left corner, so
         // its `clientWidth` and `clientHeight` are not clamped.
-        this.right_click_menu.style.left = "0";
-        this.right_click_menu.style.top = "0";
-        this.right_click_menu.style.display = "block";
+        this.rightClickMenu.style.left = "0";
+        this.rightClickMenu.style.top = "0";
+        this.rightClickMenu.style.display = "block";
 
         const rect = this.getBoundingClientRect();
         const x = e.clientX - rect.x;
         const y = e.clientY - rect.y;
-        const maxX = rect.width - this.right_click_menu.clientWidth - 1;
-        const maxY = rect.height - this.right_click_menu.clientHeight - 1;
+        const maxX = rect.width - this.rightClickMenu.clientWidth - 1;
+        const maxY = rect.height - this.rightClickMenu.clientHeight - 1;
 
-        this.right_click_menu.style.left = Math.floor(Math.min(x, maxX)) + "px";
-        this.right_click_menu.style.top = Math.floor(Math.min(y, maxY)) + "px";
+        this.rightClickMenu.style.left = Math.floor(Math.min(x, maxX)) + "px";
+        this.rightClickMenu.style.top = Math.floor(Math.min(y, maxY)) + "px";
     }
 
     private hideRightClickMenu(): void {
-        this.right_click_menu.style.display = "none";
+        this.rightClickMenu.style.display = "none";
     }
 
     /**
@@ -470,8 +470,8 @@ export class RufflePlayer extends HTMLElement {
     pause(): void {
         if (this.instance) {
             this.instance.pause();
-            if (this.play_button) {
-                this.play_button.style.display = "block";
+            if (this.playButton) {
+                this.playButton.style.display = "block";
             }
         }
     }
@@ -510,8 +510,8 @@ export class RufflePlayer extends HTMLElement {
                 );
                 console.log("New Ruffle instance created.");
 
-                if (this.play_button) {
-                    this.play_button.style.display = "block";
+                if (this.playButton) {
+                    this.playButton.style.display = "block";
                 }
             } else {
                 console.warn(
@@ -659,34 +659,34 @@ export class RufflePlayer extends HTMLElement {
         (<HTMLLinkElement>(
             this.container.querySelector("#panic-view-details")
         )).onclick = () => {
-            let error_text = "# Error Info\n";
+            let errorText = "# Error Info\n";
 
             if (error instanceof Error) {
-                error_text += `Error name: ${error.name}\n`;
-                error_text += `Error message: ${error.message}\n`;
+                errorText += `Error name: ${error.name}\n`;
+                errorText += `Error message: ${error.message}\n`;
                 if (error.stack) {
-                    error_text += `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`;
+                    errorText += `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`;
                 }
             } else {
-                error_text += `Error: ${error}\n`;
+                errorText += `Error: ${error}\n`;
             }
 
-            error_text += "\n# Player Info\n";
-            error_text += this.debugPlayerInfo();
+            errorText += "\n# Player Info\n";
+            errorText += this.debugPlayerInfo();
 
-            error_text += "\n# Page Info\n";
-            error_text += `Page URL: ${document.location.href}\n`;
+            errorText += "\n# Page Info\n";
+            errorText += `Page URL: ${document.location.href}\n`;
 
-            error_text += "\n# Browser Info\n";
-            error_text += `Useragent: ${window.navigator.userAgent}\n`;
-            error_text += `OS: ${window.navigator.platform}\n`;
+            errorText += "\n# Browser Info\n";
+            errorText += `Useragent: ${window.navigator.userAgent}\n`;
+            errorText += `OS: ${window.navigator.platform}\n`;
 
-            error_text += "\n# Ruffle Info\n";
-            error_text += `Ruffle version: ${window.RufflePlayer.version}\n`;
-            error_text += `Ruffle source: ${window.RufflePlayer.name}\n`;
+            errorText += "\n# Ruffle Info\n";
+            errorText += `Ruffle version: ${window.RufflePlayer.version}\n`;
+            errorText += `Ruffle source: ${window.RufflePlayer.name}\n`;
             this.container.querySelector(
                 "#panic-body"
-            )!.innerHTML = `<textarea>${error_text}</textarea>`;
+            )!.innerHTML = `<textarea>${errorText}</textarea>`;
             return false;
         };
 
