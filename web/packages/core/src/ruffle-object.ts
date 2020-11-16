@@ -117,8 +117,8 @@ export class RuffleObject extends RufflePlayer {
     }
 
     protected debugPlayerInfo(): string {
-        let error_text = super.debugPlayerInfo();
-        error_text += "Player type: Object\n";
+        let errorText = super.debugPlayerInfo();
+        errorText += "Player type: Object\n";
 
         let url = null;
 
@@ -127,19 +127,19 @@ export class RuffleObject extends RufflePlayer {
         } else if (this.params.movie) {
             url = this.params.movie;
         }
-        error_text += `SWF URL: ${url}\n`;
+        errorText += `SWF URL: ${url}\n`;
 
         Object.keys(this.params).forEach((key) => {
-            error_text += `Param ${key}: ${this.params[key]}\n`;
+            errorText += `Param ${key}: ${this.params[key]}\n`;
         });
 
         Object.keys(this.attributes).forEach((key) => {
-            error_text += `Attribute ${key}: ${
+            errorText += `Attribute ${key}: ${
                 this.attributes.getNamedItem(key)?.value
             }\n`;
         });
 
-        return error_text;
+        return errorText;
     }
 
     /**
@@ -175,14 +175,14 @@ export class RuffleObject extends RufflePlayer {
     static isInterdictable(elem: HTMLElement): boolean {
         const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
         if (!data) {
-            let has_movie = false;
+            let hasMovie = false;
             const params = elem.getElementsByTagName("param");
             for (let i = 0; i < params.length; i++) {
                 if (params[i].name == "movie" && params[i].value) {
-                    has_movie = true;
+                    hasMovie = true;
                 }
             }
-            if (!has_movie) {
+            if (!hasMovie) {
                 return false;
             }
         }
@@ -222,12 +222,12 @@ export class RuffleObject extends RufflePlayer {
      * @return Created RuffleObject.
      */
     static fromNativeObjectElement(elem: HTMLElement): RuffleObject {
-        const external_name = register_element("ruffle-object", RuffleObject);
-        const ruffle_obj: RuffleObject = <RuffleObject>(
-            document.createElement(external_name)
+        const externalName = register_element("ruffle-object", RuffleObject);
+        const ruffleObj: RuffleObject = <RuffleObject>(
+            document.createElement(externalName)
         );
-        ruffle_obj.copyElement(elem);
+        ruffleObj.copyElement(elem);
 
-        return ruffle_obj;
+        return ruffleObj;
     }
 }
