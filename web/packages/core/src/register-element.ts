@@ -16,17 +16,17 @@ interface Registration {
  * properties listing the external name, implementing class, and internal name
  * respectively.
  *
- * @param element_name The internal element name, previously used to
+ * @param elementName The internal element name, previously used to
  * register the element with the private registry.
  *
  * @returns The element data in the registry, or null if there is
  * no such element name registered.
  */
-export function lookupElement(element_name: string): Registration | null {
-    const data = privateRegistry[element_name];
+export function lookupElement(elementName: string): Registration | null {
+    const data = privateRegistry[elementName];
     if (data !== undefined) {
         return {
-            internalName: element_name,
+            internalName: elementName,
             name: data.name,
             class: data.class,
         };
@@ -47,8 +47,8 @@ export function lookupElement(element_name: string): Registration | null {
  * Thus, the proper way to use this function is to call it every time you are
  * about to work with custom element names.
  *
- * @param element_name The internal name of the element.
- * @param element_class The class of the element.
+ * @param elementName The internal name of the element.
+ * @param elementClass The class of the element.
  *
  * You must call this function with the same class every time.
  *
@@ -57,14 +57,14 @@ export function lookupElement(element_name: string): Registration | null {
  * same internal name.
  */
 export function register_element(
-    element_name: string,
-    element_class: CustomElementConstructor
+    elementName: string,
+    elementClass: CustomElementConstructor
 ): string {
-    if (privateRegistry[element_name] !== undefined) {
-        if (privateRegistry[element_name].class !== element_class) {
-            throw new Error("Internal naming conflict on " + element_name);
+    if (privateRegistry[elementName] !== undefined) {
+        if (privateRegistry[elementName].class !== elementClass) {
+            throw new Error("Internal naming conflict on " + elementName);
         } else {
-            return privateRegistry[element_name].name;
+            return privateRegistry[elementName].name;
         }
     }
 
@@ -72,19 +72,19 @@ export function register_element(
 
     while (true) {
         try {
-            let external_name = element_name;
+            let externalName = elementName;
             if (tries > 0) {
-                external_name = external_name + "-" + tries;
+                externalName = externalName + "-" + tries;
             }
 
-            window.customElements.define(external_name, element_class);
-            privateRegistry[element_name] = {
-                class: element_class,
-                name: external_name,
-                internalName: element_name,
+            window.customElements.define(externalName, elementClass);
+            privateRegistry[elementName] = {
+                class: elementClass,
+                name: externalName,
+                internalName: elementName,
             };
 
-            return external_name;
+            return externalName;
         } catch (e) {
             if (e.name === "NotSupportedError") {
                 tries += 1;
