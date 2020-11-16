@@ -35,9 +35,6 @@ module.exports = (env, argv) => {
             syncWebAssembly: true,
         },
         devtool: "source-map",
-        resolve: {
-            extensions: [".ts", ".tsx", ".js", ".wasm"],
-        },
         plugins: [
             new CleanWebpackPlugin(),
             new webpack.DefinePlugin({
@@ -60,13 +57,5 @@ module.exports = (env, argv) => {
                 ],
             }),
         ],
-        module: {
-            rules: [
-                {
-                    test: /\.tsx?$/,
-                    loader: "ts-loader",
-                },
-            ],
-        },
     };
 };
