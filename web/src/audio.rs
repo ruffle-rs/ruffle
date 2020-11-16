@@ -846,6 +846,7 @@ extern "C" {
     /// Imported JS method to copy data into an `AudioBuffer`.
     /// We'd prefer to use `AudioBuffer.copyToChannel`, but this isn't supported
     /// on Safari.
+    #[wasm_bindgen(js_name = "copyToAudioBuffer")]
     fn copy_to_audio_buffer(
         audio_buffer: &web_sys::AudioBuffer,
         left_data: Option<&[f32]>,
