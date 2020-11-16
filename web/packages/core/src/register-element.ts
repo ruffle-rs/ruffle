@@ -1,7 +1,7 @@
 /**
  * A mapping between internal element IDs and DOM element IDs.
  */
-const private_registry: Record<string, Registration> = {};
+const privateRegistry: Record<string, Registration> = {};
 
 interface Registration {
     class: CustomElementConstructor;
@@ -23,7 +23,7 @@ interface Registration {
  * respectively.
  */
 export function lookup_element(element_name: string) {
-    const data = private_registry[element_name];
+    const data = privateRegistry[element_name];
     if (data !== undefined) {
         return {
             internal_name: element_name,
@@ -60,11 +60,11 @@ export function register_element(
     element_name: string,
     element_class: CustomElementConstructor
 ) {
-    if (private_registry[element_name] !== undefined) {
-        if (private_registry[element_name].class !== element_class) {
+    if (privateRegistry[element_name] !== undefined) {
+        if (privateRegistry[element_name].class !== element_class) {
             throw new Error("Internal naming conflict on " + element_name);
         } else {
-            return private_registry[element_name].name;
+            return privateRegistry[element_name].name;
         }
     }
 
@@ -78,7 +78,7 @@ export function register_element(
             }
 
             window.customElements.define(external_name, element_class);
-            private_registry[element_name] = {
+            privateRegistry[element_name] = {
                 class: element_class,
                 name: external_name,
                 internal_name: element_name,
