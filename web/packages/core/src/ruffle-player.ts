@@ -112,7 +112,7 @@ export class RufflePlayer extends HTMLElement {
         if (this.play_button) {
             this.play_button.addEventListener(
                 "click",
-                this.play_button_clicked.bind(this)
+                this.playButtonClicked.bind(this)
             );
         }
         this.right_click_menu = this.shadow.getElementById("right_click_menu")!;
@@ -340,7 +340,7 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    private play_button_clicked(): void {
+    private playButtonClicked(): void {
         if (this.instance) {
             this.instance.play();
             if (this.play_button) {

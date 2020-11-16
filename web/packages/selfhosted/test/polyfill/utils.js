@@ -60,7 +60,7 @@ function play_and_monitor(browser, player, expected_output) {
                 has_error(browser) ||
                 browser.execute((player) => {
                     return (
-                        player.play_button_clicked !== undefined &&
+                        player.playButtonClicked !== undefined &&
                         player.instance
                     );
                 }, player)
@@ -78,7 +78,7 @@ function play_and_monitor(browser, player, expected_output) {
         };
 
         // TODO: make this an actual intended api...
-        player.play_button_clicked();
+        player.playButtonClicked();
     }, player);
 
     if (expected_output === undefined) {
