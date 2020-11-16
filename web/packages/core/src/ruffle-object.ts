@@ -4,7 +4,7 @@ import {
     FLASH7_AND_8_MIMETYPE,
     FLASH_MOVIE_MIMETYPE,
     FLASH_ACTIVEX_CLASSID,
-    is_swf_filename,
+    isSwfFilename,
     RufflePlayer,
 } from "./ruffle-player";
 import { register_element } from "./register-element";
@@ -130,13 +130,9 @@ export class RuffleObject extends RufflePlayer {
             (classid == null || classid === "")
         ) {
             const params = RuffleObject.params_of(elem);
-            if (data && is_swf_filename(data)) {
+            if (data && isSwfFilename(data)) {
                 return true;
-            } else if (
-                params &&
-                params.movie &&
-                is_swf_filename(params.movie)
-            ) {
+            } else if (params && params.movie && isSwfFilename(params.movie)) {
                 return true;
             }
         }

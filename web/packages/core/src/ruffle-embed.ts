@@ -3,7 +3,7 @@ import {
     FUTURESPLASH_MIMETYPE,
     FLASH7_AND_8_MIMETYPE,
     FLASH_MOVIE_MIMETYPE,
-    is_swf_filename,
+    isSwfFilename,
     RufflePlayer,
 } from "./ruffle-player";
 import { register_element } from "./register-element";
@@ -76,7 +76,7 @@ export class RuffleEmbed extends RufflePlayer {
         ) {
             return true;
         } else if (type == null || type === "") {
-            return is_swf_filename(elem.getAttribute("src"));
+            return isSwfFilename(elem.getAttribute("src"));
         }
 
         return false;
