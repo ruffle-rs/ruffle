@@ -45,7 +45,7 @@ export class RuffleObject extends RufflePlayer {
         );
 
         if (url) {
-            this.allow_script_access =
+            this.allowScriptAccess =
                 allowScriptAccess &&
                 (allowScriptAccess.toLowerCase() === "always" ||
                     (allowScriptAccess.toLowerCase() === "samedomain" &&
