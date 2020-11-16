@@ -14,6 +14,7 @@ pub struct AdpcmDecoder<R: Read> {
     right_sample: i32,
     right_step_index: i16,
     right_step: i32,
+    decoder: fn(i32, i32) -> i32,
 }
 
 impl<R: Read> AdpcmDecoder<R> {
@@ -100,6 +101,7 @@ impl<R: Read> AdpcmDecoder<R> {
         let right_sample = 0;
         let right_step_index = 0;
         let right_step = 0;
+        let decoder = Self::SAMPLE_DELTA_CALCULATOR[bits_per_sample - 2];
 
         Self {
             inner: reader,
@@ -113,6 +115,7 @@ impl<R: Read> AdpcmDecoder<R> {
             right_sample,
             right_step,
             right_step_index,
+            decoder,
         }
     }
 
@@ -139,7 +142,9 @@ impl<R: Read> AdpcmDecoder<R> {
         // TODO(Herschel): Other implementations use some bit-tricks for this.
         let sign_mask = 1 << (self.bits_per_sample - 1);
         let magnitude = data & !sign_mask;
-        let delta = Self::SAMPLE_DELTA_CALCULATOR[self.bits_per_sample - 2](self.left_step, magnitude);
+        // let delta =
+        //     Self::SAMPLE_DELTA_CALCULATOR[self.bits_per_sample - 2](self.left_step, magnitude);
+        let delta = (self.decoder)(self.left_step, magnitude);
         // Iterative version
         // let mut delta = self.left_step >> (self.bits_per_sample - 1);
         // let mut counter = (self.bits_per_sample - 2) as i8;
@@ -177,8 +182,9 @@ impl<R: Read> AdpcmDecoder<R> {
 
             let sign_mask = 1 << (self.bits_per_sample - 1);
             let magnitude = data & !sign_mask;
-            let delta =
-                Self::SAMPLE_DELTA_CALCULATOR[self.bits_per_sample - 2](self.right_step, magnitude);
+            let delta = (self.decoder)(self.right_step, magnitude);
+            // let delta =
+            //     Self::SAMPLE_DELTA_CALCULATOR[self.bits_per_sample - 2](self.right_step, magnitude);
 
             if (data & sign_mask) != 0 {
                 self.right_sample -= delta;
