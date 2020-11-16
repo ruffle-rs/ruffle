@@ -9,7 +9,7 @@
         "serve": "webpack serve"
     },
     "dependencies": {
-        "ruffle-selfhosted": "^0.1.0"
+        "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
         "webpack-cli": "^4.0.0"
