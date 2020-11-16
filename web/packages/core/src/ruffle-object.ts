@@ -9,14 +9,31 @@ import {
 } from "./ruffle-player";
 import { register_element } from "./register-element";
 
+/**
+ * A polyfill html element.
+ *
+ * This specific class tries to polyfill existing `<object>` tags,
+ * and should not be used. Prefer [[RufflePlayer]] instead.
+ *
+ * @internal
+ */
 export class RuffleObject extends RufflePlayer {
     private params: Record<string, string> = {};
 
+    /**
+     * Constructs a new Ruffle flash player for insertion onto the page.
+     *
+     * This specific class tries to polyfill existing `<object>` tags,
+     * and should not be used. Prefer [[RufflePlayer]] instead.
+     */
     constructor() {
         super();
     }
 
-    connectedCallback() {
+    /**
+     * @ignore
+     */
+    connectedCallback(): void {
         super.connectedCallback();
 
         this.params = RuffleObject.params_of(this);
@@ -37,27 +54,24 @@ export class RuffleObject extends RufflePlayer {
         const parameters = RuffleObject.find_case_insensitive(
             this.params,
             "flashvars",
-            RuffleObject.find_case_insensitive(
-                this.attributes,
-                "flashvars",
-                null
-            )
+            this.getAttribute("flashvars")
         );
 
         if (url) {
-            this.allowScriptAccess =
+            this.allowScriptAccess = !!(
                 allowScriptAccess &&
                 (allowScriptAccess.toLowerCase() === "always" ||
                     (allowScriptAccess.toLowerCase() === "samedomain" &&
                         new URL(window.location.href).origin ===
-                            new URL(url, window.location.href).origin));
+                            new URL(url, window.location.href).origin))
+            );
 
             //Kick off the SWF download.
             this.streamSwfUrl(url, parameters);
         }
     }
 
-    debugPlayerInfo() {
+    protected debugPlayerInfo(): string {
         let error_text = super.debugPlayerInfo();
         error_text += "Player type: Object\n";
 
@@ -83,11 +97,21 @@ export class RuffleObject extends RufflePlayer {
         return error_text;
     }
 
-    get data() {
-        return this.attributes.getNamedItem("data")?.value;
+    /**
+     * Polyfill of HTMLObjectElement.
+     *
+     * @ignore
+     */
+    get data(): string | null {
+        return this.getAttribute("data");
     }
 
-    set data(href) {
+    /**
+     * Polyfill of HTMLObjectElement.
+     *
+     * @ignore
+     */
+    set data(href: string | null) {
         if (href != undefined) {
             const attr = document.createAttribute("data");
             attr.value = href;
@@ -97,7 +121,13 @@ export class RuffleObject extends RufflePlayer {
         }
     }
 
-    static is_interdictable(elem: HTMLElement) {
+    /**
+     * Checks if the given element may be polyfilled with this one.
+     *
+     * @param elem Element to check.
+     * @return True if the element looks like a flash object.
+     */
+    static is_interdictable(elem: HTMLElement): boolean {
         const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
         if (!data) {
             let has_movie = false;
@@ -140,11 +170,20 @@ export class RuffleObject extends RufflePlayer {
         return false;
     }
 
-    /*
+    /**
      * Find and return the first value in obj with the given key.
      * Many Flash params were case insensitive, so we use this when checking for them.
+     *
+     * @param obj Object to check
+     * @param key Key to find
+     * @param defaultValue Value if not found
+     * @return Value if found, else [[defaultValue]]
      */
-    static find_case_insensitive(obj: any, key: string, defaultValue: any) {
+    static find_case_insensitive(
+        obj: { [key: string]: string | null },
+        key: string,
+        defaultValue: string | null
+    ): string | null {
         key = key.toLowerCase();
         for (const k in obj) {
             if (Object.hasOwnProperty.call(obj, k) && key === k.toLowerCase()) {
@@ -154,7 +193,13 @@ export class RuffleObject extends RufflePlayer {
         return defaultValue;
     }
 
-    static params_of(elem: HTMLElement) {
+    /**
+     * Returns all flash params ([[HTMLParamElement]]) that are for the given object.
+     *
+     * @param elem Element to check.
+     * @return A record of every parameter.
+     */
+    static params_of(elem: HTMLElement): Record<string, string> {
         const params: Record<string, string> = {};
 
         for (const param of elem.children) {
@@ -170,7 +215,13 @@ export class RuffleObject extends RufflePlayer {
         return params;
     }
 
-    static from_native_object_element(elem: HTMLElement) {
+    /**
+     * Creates a RuffleObject that will polyfill and replace the given element.
+     *
+     * @param elem Element to replace.
+     * @return Created RuffleObject.
+     */
+    static from_native_object_element(elem: HTMLElement): RuffleObject {
         const external_name = register_element("ruffle-object", RuffleObject);
         const ruffle_obj: RuffleObject = <RuffleObject>(
             document.createElement(external_name)
