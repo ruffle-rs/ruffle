@@ -708,7 +708,7 @@ export class RufflePlayer extends HTMLElement {
  * @param filename The filename to test.
  * @return True if the filename is a flash movie (swf or spl).
  */
-export function is_swf_filename(filename: string | null): boolean {
+export function isSwfFilename(filename: string | null): boolean {
     return !!(
         filename &&
         (filename.search(/\.swf(?:[?#]|$)/i) >= 0 ||
