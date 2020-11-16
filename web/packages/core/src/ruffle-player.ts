@@ -47,7 +47,7 @@ interface ContextMenuItem {
     onClick: (event: MouseEvent) => void;
 }
 
-function sanitize_parameters(
+function sanitizeParameters(
     parameters:
         | (URLSearchParams | string | Record<string, string>)
         | undefined
@@ -320,8 +320,8 @@ export class RufflePlayer extends HTMLElement {
 
                 await this.ensureFreshInstance();
                 parameters = {
-                    ...sanitize_parameters(url.substring(url.indexOf("?"))),
-                    ...sanitize_parameters(parameters),
+                    ...sanitizeParameters(url.substring(url.indexOf("?"))),
+                    ...sanitizeParameters(parameters),
                 };
                 this.instance!.stream_from(url, parameters);
 
@@ -506,7 +506,7 @@ export class RufflePlayer extends HTMLElement {
                 await this.ensureFreshInstance();
                 this.instance?.load_data(
                     new Uint8Array(data),
-                    sanitize_parameters(parameters)
+                    sanitizeParameters(parameters)
                 );
                 console.log("New Ruffle instance created.");
 
