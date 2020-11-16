@@ -89,7 +89,7 @@ extern "C" {
     #[derive(Clone)]
     pub type JavascriptPlayer;
 
-    #[wasm_bindgen(method)]
+    #[wasm_bindgen(method, js_name = "onCallbackAvailable")]
     fn on_callback_available(this: &JavascriptPlayer, name: &str);
 
     #[wasm_bindgen(method)]

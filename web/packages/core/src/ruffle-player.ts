@@ -601,7 +601,7 @@ export class RufflePlayer extends HTMLElement {
      * @internal
      * @ignore
      */
-    on_callback_available(name: string): void {
+    onCallbackAvailable(name: string): void {
         const instance = this.instance;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (<any>this)[name] = (...args: any[]) => {
