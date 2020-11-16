@@ -221,7 +221,7 @@ export class RuffleObject extends RufflePlayer {
      * @param elem Element to replace.
      * @return Created RuffleObject.
      */
-    static from_native_object_element(elem: HTMLElement): RuffleObject {
+    static fromNativeObjectElement(elem: HTMLElement): RuffleObject {
         const external_name = register_element("ruffle-object", RuffleObject);
         const ruffle_obj: RuffleObject = <RuffleObject>(
             document.createElement(external_name)
