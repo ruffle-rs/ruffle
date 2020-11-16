@@ -6,7 +6,7 @@ const privateRegistry: Record<string, Registration> = {};
 interface Registration {
     class: CustomElementConstructor;
     name: string;
-    internal_name: string;
+    internalName: string;
 }
 
 /**
@@ -26,7 +26,7 @@ export function lookupElement(element_name: string): Registration | null {
     const data = privateRegistry[element_name];
     if (data !== undefined) {
         return {
-            internal_name: element_name,
+            internalName: element_name,
             name: data.name,
             class: data.class,
         };
@@ -81,7 +81,7 @@ export function register_element(
             privateRegistry[element_name] = {
                 class: element_class,
                 name: external_name,
-                internal_name: element_name,
+                internalName: element_name,
             };
 
             return external_name;
