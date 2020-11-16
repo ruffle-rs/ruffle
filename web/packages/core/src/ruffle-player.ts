@@ -119,7 +119,7 @@ export class RufflePlayer extends HTMLElement {
 
         this.addEventListener(
             "contextmenu",
-            this.open_right_click_menu.bind(this)
+            this.openRightClickMenu.bind(this)
         );
 
         window.addEventListener("click", this.hide_right_click_menu.bind(this));
@@ -396,7 +396,7 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    private right_click_menu_items(): ContextMenuItem[] {
+    private contextMenuItems(): ContextMenuItem[] {
         const items = [];
         if (this.fullscreenEnabled) {
             if (this.isFullscreen) {
@@ -424,7 +424,7 @@ export class RufflePlayer extends HTMLElement {
         return items;
     }
 
-    private open_right_click_menu(e: MouseEvent): void {
+    private openRightClickMenu(e: MouseEvent): void {
         e.preventDefault();
 
         // Clear all `right_click_menu` items.
@@ -433,7 +433,7 @@ export class RufflePlayer extends HTMLElement {
         }
 
         // Populate `right_click_menu` items.
-        for (const { text, onClick } of this.right_click_menu_items()) {
+        for (const { text, onClick } of this.contextMenuItems()) {
             const element = document.createElement("li");
             element.className = "menu_item active";
             element.textContent = text;
