@@ -73,7 +73,7 @@ function play_and_monitor(browser, player, expected_output) {
 
     browser.execute((player) => {
         player.__ruffle_log__ = "";
-        player.trace_observer = (msg) => {
+        player.traceObserver = (msg) => {
             player.__ruffle_log__ += msg + "\n";
         };
 

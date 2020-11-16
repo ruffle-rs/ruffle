@@ -616,7 +616,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * @param observer The observer that will be called for each trace.
      */
-    set trace_observer(observer: ((message: string) => void) | null) {
+    set traceObserver(observer: ((message: string) => void) | null) {
         this.instance?.set_trace_observer(observer);
     }
 
