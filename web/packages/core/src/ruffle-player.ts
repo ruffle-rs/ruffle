@@ -93,7 +93,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * This should only be enabled for movies you trust.
      */
-    allow_script_access: boolean;
+    allowScriptAccess: boolean;
 
     /**
      * Constructs a new Ruffle flash player for insertion onto the page.
@@ -125,7 +125,7 @@ export class RufflePlayer extends HTMLElement {
         window.addEventListener("click", this.hideRightClickMenu.bind(this));
 
         this.instance = null;
-        this.allow_script_access = false;
+        this.allowScriptAccess = false;
         this._trace_observer = null;
 
         this.Ruffle = load_ruffle();
@@ -286,7 +286,7 @@ export class RufflePlayer extends HTMLElement {
         this.instance = new Ruffle(
             this.container,
             this,
-            this.allow_script_access
+            this.allowScriptAccess
         );
         console.log("New Ruffle instance created.");
     }
@@ -698,7 +698,7 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected debugPlayerInfo(): string {
-        return `Allows script access: ${this.allow_script_access}\n`;
+        return `Allows script access: ${this.allowScriptAccess}\n`;
     }
 }
 
