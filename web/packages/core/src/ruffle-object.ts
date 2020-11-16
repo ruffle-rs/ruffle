@@ -33,6 +33,28 @@ function findCaseInsensitive(
 }
 
 /**
+ * Returns all flash params ([[HTMLParamElement]]) that are for the given object.
+ *
+ * @param elem Element to check.
+ * @return A record of every parameter.
+ */
+function paramsOf(elem: HTMLElement): Record<string, string> {
+    const params: Record<string, string> = {};
+
+    for (const param of elem.children) {
+        if (param instanceof HTMLParamElement) {
+            const key = param.attributes.getNamedItem("name")?.value;
+            const value = param.attributes.getNamedItem("value")?.value;
+            if (key && value) {
+                params[key] = value;
+            }
+        }
+    }
+
+    return params;
+}
+
+/**
  * A polyfill html element.
  *
  * This specific class tries to polyfill existing `<object>` tags,
@@ -59,7 +81,7 @@ export class RuffleObject extends RufflePlayer {
     connectedCallback(): void {
         super.connectedCallback();
 
-        this.params = RuffleObject.params_of(this);
+        this.params = paramsOf(this);
 
         const allowScriptAccess = findCaseInsensitive(
             this.params,
@@ -182,7 +204,7 @@ export class RuffleObject extends RufflePlayer {
             (type == null || type === "") &&
             (classid == null || classid === "")
         ) {
-            const params = RuffleObject.params_of(elem);
+            const params = paramsOf(elem);
             if (data && isSwfFilename(data)) {
                 return true;
             } else if (params && params.movie && isSwfFilename(params.movie)) {
@@ -191,28 +213,6 @@ export class RuffleObject extends RufflePlayer {
         }
 
         return false;
-    }
-
-    /**
-     * Returns all flash params ([[HTMLParamElement]]) that are for the given object.
-     *
-     * @param elem Element to check.
-     * @return A record of every parameter.
-     */
-    static params_of(elem: HTMLElement): Record<string, string> {
-        const params: Record<string, string> = {};
-
-        for (const param of elem.children) {
-            if (param instanceof HTMLParamElement) {
-                const key = param.attributes.getNamedItem("name")?.value;
-                const value = param.attributes.getNamedItem("value")?.value;
-                if (key && value) {
-                    params[key] = value;
-                }
-            }
-        }
-
-        return params;
     }
 
     /**
