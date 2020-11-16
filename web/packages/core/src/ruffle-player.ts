@@ -122,7 +122,7 @@ export class RufflePlayer extends HTMLElement {
             this.openRightClickMenu.bind(this)
         );
 
-        window.addEventListener("click", this.hide_right_click_menu.bind(this));
+        window.addEventListener("click", this.hideRightClickMenu.bind(this));
 
         this.instance = null;
         this.allow_script_access = false;
@@ -457,7 +457,7 @@ export class RufflePlayer extends HTMLElement {
         this.right_click_menu.style.top = Math.floor(Math.min(y, maxY)) + "px";
     }
 
-    private hide_right_click_menu(): void {
+    private hideRightClickMenu(): void {
         this.right_click_menu.style.display = "none";
     }
 
