@@ -490,7 +490,7 @@ export class RufflePlayer extends HTMLElement {
      * If it's a string, it will be decoded into an object.
      * If it's an object, every key and value must be a String.
      */
-    async play_swf_data(
+    async playSwfData(
         data: Iterable<number>,
         parameters:
             | URLSearchParams
