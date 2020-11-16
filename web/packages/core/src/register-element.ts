@@ -12,17 +12,17 @@ interface Registration {
 /**
  * Lookup a previously registered custom element.
  *
- * @param {string} element_name The internal element name, previously used to
- * register the element with the private registry.
- *
- * @returns {object|null} The element data in the registry, or null if there is
- * no such element name registered.
- *
  * The returned object will have `name`, `class`, and `internal_name`
  * properties listing the external name, implementing class, and internal name
  * respectively.
+ *
+ * @param element_name The internal element name, previously used to
+ * register the element with the private registry.
+ *
+ * @returns The element data in the registry, or null if there is
+ * no such element name registered.
  */
-export function lookupElement(element_name: string) {
+export function lookupElement(element_name: string): Registration | null {
     const data = privateRegistry[element_name];
     if (data !== undefined) {
         return {
@@ -47,19 +47,19 @@ export function lookupElement(element_name: string) {
  * Thus, the proper way to use this function is to call it every time you are
  * about to work with custom element names.
  *
- * @param {string} element_name The internal name of the element.
- * @param {CustomElementConstructor} element_class The class of the element.
+ * @param element_name The internal name of the element.
+ * @param element_class The class of the element.
  *
  * You must call this function with the same class every time.
  *
- * @returns {string} The actual element name.
+ * @returns The actual element name.
  * @throws Throws an error if two different elements were registered with the
  * same internal name.
  */
 export function register_element(
     element_name: string,
     element_class: CustomElementConstructor
-) {
+): string {
     if (privateRegistry[element_name] !== undefined) {
         if (privateRegistry[element_name].class !== element_class) {
             throw new Error("Internal naming conflict on " + element_name);
