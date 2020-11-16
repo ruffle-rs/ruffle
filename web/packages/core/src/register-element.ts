@@ -22,7 +22,7 @@ interface Registration {
  * properties listing the external name, implementing class, and internal name
  * respectively.
  */
-export function lookup_element(element_name: string) {
+export function lookupElement(element_name: string) {
     const data = privateRegistry[element_name];
     if (data !== undefined) {
         return {

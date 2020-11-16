@@ -2,7 +2,7 @@ import { Ruffle } from "../pkg/ruffle_web";
 
 import { load_ruffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
-import { lookup_element } from "./register-element";
+import { lookupElement } from "./register-element";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -226,7 +226,7 @@ export class RufflePlayer extends HTMLElement {
      */
     private isUnusedFallbackObject(): boolean {
         let parent = this.parentNode;
-        const element = lookup_element("ruffle-object");
+        const element = lookupElement("ruffle-object");
 
         if (element !== null) {
             while (parent != document && parent != null) {
