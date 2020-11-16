@@ -672,7 +672,7 @@ export class RufflePlayer extends HTMLElement {
             }
 
             error_text += "\n# Player Info\n";
-            error_text += this.debug_player_info();
+            error_text += this.debugPlayerInfo();
 
             error_text += "\n# Page Info\n";
             error_text += `Page URL: ${document.location.href}\n`;
@@ -697,7 +697,7 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    protected debug_player_info(): string {
+    protected debugPlayerInfo(): string {
         return `Allows script access: ${this.allow_script_access}\n`;
     }
 }

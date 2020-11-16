@@ -57,8 +57,8 @@ export class RuffleObject extends RufflePlayer {
         }
     }
 
-    debug_player_info() {
-        let error_text = super.debug_player_info();
+    debugPlayerInfo() {
+        let error_text = super.debugPlayerInfo();
         error_text += "Player type: Object\n";
 
         let url = null;
