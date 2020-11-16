@@ -179,7 +179,7 @@ export class RuffleObject extends RufflePlayer {
         const ruffle_obj: RuffleObject = <RuffleObject>(
             document.createElement(external_name)
         );
-        ruffle_obj.copy_element(elem);
+        ruffle_obj.copyElement(elem);
 
         return ruffle_obj;
     }
