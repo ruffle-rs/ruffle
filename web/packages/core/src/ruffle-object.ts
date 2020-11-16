@@ -10,6 +10,29 @@ import {
 import { register_element } from "./register-element";
 
 /**
+ * Find and return the first value in obj with the given key.
+ * Many Flash params were case insensitive, so we use this when checking for them.
+ *
+ * @param obj Object to check
+ * @param key Key to find
+ * @param defaultValue Value if not found
+ * @return Value if found, else [[defaultValue]]
+ */
+function findCaseInsensitive(
+    obj: { [key: string]: string | null },
+    key: string,
+    defaultValue: string | null
+): string | null {
+    key = key.toLowerCase();
+    for (const k in obj) {
+        if (Object.hasOwnProperty.call(obj, k) && key === k.toLowerCase()) {
+            return obj[k];
+        }
+    }
+    return defaultValue;
+}
+
+/**
  * A polyfill html element.
  *
  * This specific class tries to polyfill existing `<object>` tags,
@@ -38,7 +61,7 @@ export class RuffleObject extends RufflePlayer {
 
         this.params = RuffleObject.params_of(this);
 
-        const allowScriptAccess = RuffleObject.find_case_insensitive(
+        const allowScriptAccess = findCaseInsensitive(
             this.params,
             "allowScriptAccess",
             "sameDomain"
@@ -51,7 +74,7 @@ export class RuffleObject extends RufflePlayer {
             url = this.params.movie;
         }
 
-        const parameters = RuffleObject.find_case_insensitive(
+        const parameters = findCaseInsensitive(
             this.params,
             "flashvars",
             this.getAttribute("flashvars")
@@ -168,29 +191,6 @@ export class RuffleObject extends RufflePlayer {
         }
 
         return false;
-    }
-
-    /**
-     * Find and return the first value in obj with the given key.
-     * Many Flash params were case insensitive, so we use this when checking for them.
-     *
-     * @param obj Object to check
-     * @param key Key to find
-     * @param defaultValue Value if not found
-     * @return Value if found, else [[defaultValue]]
-     */
-    static find_case_insensitive(
-        obj: { [key: string]: string | null },
-        key: string,
-        defaultValue: string | null
-    ): string | null {
-        key = key.toLowerCase();
-        for (const k in obj) {
-            if (Object.hasOwnProperty.call(obj, k) && key === k.toLowerCase()) {
-                return obj[k];
-            }
-        }
-        return defaultValue;
     }
 
     /**
