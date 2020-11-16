@@ -191,7 +191,7 @@ export class RufflePlayer extends HTMLElement {
 
             const widthAttr = this.attributes.getNamedItem("width");
             if (widthAttr !== undefined && widthAttr !== null) {
-                const width = RufflePlayer.html_dimension_to_css_dimension(
+                const width = RufflePlayer.htmlDimensionToCssDimension(
                     widthAttr.value
                 );
                 if (width !== null) {
@@ -203,7 +203,7 @@ export class RufflePlayer extends HTMLElement {
 
             const heightAttr = this.attributes.getNamedItem("height");
             if (heightAttr !== undefined && heightAttr !== null) {
-                const height = RufflePlayer.html_dimension_to_css_dimension(
+                const height = RufflePlayer.htmlDimensionToCssDimension(
                     heightAttr.value
                 );
                 if (height !== null) {
@@ -573,7 +573,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * @private
      */
-    private static html_dimension_to_css_dimension(
+    private static htmlDimensionToCssDimension(
         attribute: string
     ): string | null {
         if (attribute) {
