@@ -172,7 +172,7 @@ export class RuffleObject extends RufflePlayer {
      * @param elem Element to check.
      * @return True if the element looks like a flash object.
      */
-    static is_interdictable(elem: HTMLElement): boolean {
+    static isInterdictable(elem: HTMLElement): boolean {
         const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
         if (!data) {
             let has_movie = false;

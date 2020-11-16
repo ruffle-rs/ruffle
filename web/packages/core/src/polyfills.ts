@@ -42,7 +42,7 @@ function replace_flash_instances() {
 
         // Replace <object> first, because <object> often wraps <embed>.
         for (const elem of Array.from(objects)) {
-            if (RuffleObject.is_interdictable(elem)) {
+            if (RuffleObject.isInterdictable(elem)) {
                 const ruffle_obj = RuffleObject.from_native_object_element(
                     elem
                 );
