@@ -277,17 +277,9 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             },
         });
 
-        for (const [i, { text, onClick }] of items.entries()) {
+        for (const { text, onClick } of items) {
             const element = document.createElement("li");
             element.className = "menu_item active";
-            if (i === 0) {
-                element.style.borderTopRightRadius = "5px";
-                element.style.borderTopLeftRadius = "5px";
-            }
-            if (i === items.length - 1) {
-                element.style.borderBottomRightRadius = "5px";
-                element.style.borderBottomLeftRadius = "5px";
-            }
             element.textContent = text;
             element.addEventListener("click", onClick);
             this.right_click_menu.appendChild(element);

@@ -56,18 +56,18 @@ ruffle_shadow_tmpl.innerHTML = `
             background: linear-gradient(180deg, rgba(253,58,64,1) 0%, rgba(253,161,56,1) 100%);
             color: black;
         }
-    
+
         #panic a {
             color: #37528C;
         }
-    
+
         #panic-title {
             margin-top: 30px;
             text-align: center;
             font-size: 42px;
             font-weight: bold;
         }
-    
+
         #panic-body {
             text-align: center;
             font-size: 20px;
@@ -82,7 +82,7 @@ ruffle_shadow_tmpl.innerHTML = `
             width: 100%;
             height: 100%;
         }
-    
+
         #panic-footer {
             position: absolute;
             bottom: 30px;
@@ -90,7 +90,7 @@ ruffle_shadow_tmpl.innerHTML = `
             font-size: 20px;
             width: 100%;
         }
-    
+
         #panic ul {
             margin: 35px 0 0 0;
             padding: 0;
@@ -100,7 +100,7 @@ ruffle_shadow_tmpl.innerHTML = `
             justify-content: center;
             align-items: center;
         }
-    
+
         #panic li {
             padding: 10px 50px;
         }
@@ -139,6 +139,16 @@ ruffle_shadow_tmpl.innerHTML = `
 
         #right_click_menu hr {
             color: #FFAD33;
+        }
+
+        #right_click_menu > :first-child {
+            border-top-right-radius: 5px;
+            border-top-left-radius: 5px;
+        }
+
+        #right_click_menu > :last-child {
+            border-bottom-right-radius: 5px;
+            border-bottom-left-radius: 5px;
         }
     </style>
     <style id="dynamic_styles"></style>
