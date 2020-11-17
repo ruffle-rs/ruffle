@@ -56,7 +56,7 @@ export function lookupElement(elementName: string): Registration | null {
  * @throws Throws an error if two different elements were registered with the
  * same internal name.
  */
-export function register_element(
+export function registerElement(
     elementName: string,
     elementClass: CustomElementConstructor
 ): string {

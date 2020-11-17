@@ -6,7 +6,7 @@ import {
     isSwfFilename,
     RufflePlayer,
 } from "./ruffle-player";
-import { register_element } from "./register-element";
+import { registerElement } from "./register-element";
 
 /**
  * A polyfill html element.
@@ -128,7 +128,7 @@ export class RuffleEmbed extends RufflePlayer {
      * @return Created RuffleEmbed.
      */
     static fromNativeEmbedElement(elem: HTMLElement): RuffleEmbed {
-        const externalName = register_element("ruffle-embed", RuffleEmbed);
+        const externalName = registerElement("ruffle-embed", RuffleEmbed);
         const ruffleObj = <RuffleEmbed>document.createElement(externalName);
         ruffleObj.copyElement(elem);
 
