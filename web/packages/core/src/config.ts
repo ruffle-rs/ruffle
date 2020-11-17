@@ -15,4 +15,15 @@ export interface Config {
      * with this field being a fallback.
      */
     public_path?: string;
+
+    /**
+     * Whether or not to enable polyfills on the page.
+     *
+     * Polyfills will look for "legacy" flash content like `<object>`
+     * and `<embed>` elements, and replace them with compatible
+     * Ruffle elements.
+     *
+     * @default true
+     */
+    polyfills?: boolean;
 }
