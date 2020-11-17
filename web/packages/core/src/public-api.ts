@@ -30,12 +30,14 @@ export class PublicAPI {
      * Constructing a Public API will also trigger it to initialize Ruffle once
      * the page loads, if the API has not already been superseded.
      *
-     * @param {object} prev What used to be in the public API slot.
+     * @param prev What used to be in the public API slot.
      *
      * This is used to upgrade from a prior version of the public API, or from
      * a user-defined configuration object placed in the public API slot.
+     *
+     * @protected
      */
-    constructor(prev: any) {
+    protected constructor(prev: PublicAPI | null) {
         this.sources = {};
         this.config = {};
         this.invoked = false;
@@ -73,33 +75,35 @@ export class PublicAPI {
     /**
      * The version of the public API.
      *
+     * This is *not* the version of Ruffle itself.
+     *
      * This allows a page with an old version of the Public API to be upgraded
      * to a new version of the API. The public API is intended to be changed
      * very infrequently, if at all, but this provides an escape mechanism for
      * newer Ruffle sources to upgrade older installations.
      */
-    get version() {
+    get version(): string {
         return "0.1.0";
     }
 
     /**
      * Register a given source with the Ruffle Public API.
      *
-     * @param {string} name The name of the source.
-     * @param {object} api The public API object. This must conform to the shape
+     * @param name The name of the source.
+     * @param api The public API object. This must conform to the shape
      * of `SourceAPI`.
      */
-    register_source(name: string, api: SourceAPI) {
+    register_source(name: string, api: SourceAPI): void {
         this.sources[name] = api;
     }
 
     /**
      * Determine the name of the newest registered source in the Public API.
      *
-     * @returns {(string|bool)} The name of the source, or `false` if no source
+     * @returns The name of the source, or `null` if no source
      * has yet to be registered.
      */
-    newest_source_name() {
+    newest_source_name(): string | null {
         let newest_name = null,
             newest_version = Version.fromSemver("0.0.0");
 
@@ -124,7 +128,7 @@ export class PublicAPI {
      * use a built-in set of defaults sufficient to fool sites with static
      * content and weak plugin detection.
      */
-    init() {
+    init(): void {
         if (!this.invoked) {
             this.invoked = true;
             this.newest_name = this.newest_source_name();
@@ -143,9 +147,9 @@ export class PublicAPI {
     /**
      * Look up the newest Ruffle source and return it's API.
      *
-     * @returns {SourceAPI} An instance of the Source API.
+     * @returns An instance of the Source API.
      */
-    newest() {
+    newest(): SourceAPI | null {
         const name = this.newest_source_name();
         return name != null ? this.sources[name] : null;
     }
@@ -154,13 +158,13 @@ export class PublicAPI {
      * Look up a specific Ruffle version (or any version satisfying a given set
      * of requirements) and return it's API.
      *
-     * @param {string} ver_requirement A set of semantic version requirement
+     * @param ver_requirement A set of semantic version requirement
      * strings that the player version must satisfy.
      *
-     * @returns {SourceAPI|null} An instance of the Source API, if one or more
+     * @returns An instance of the Source API, if one or more
      * sources satisfied the requirement.
      */
-    satisfying(ver_requirement: string) {
+    satisfying(ver_requirement: string): SourceAPI | null {
         const requirement = VersionRange.fromRequirementString(ver_requirement);
         let valid_source = null;
 
@@ -180,8 +184,10 @@ export class PublicAPI {
     /**
      * Look up the newest Ruffle version compatible with the `local` source, if
      * it's installed. Otherwise, use the latest version.
+     *
+     * @returns An instance of the Source API
      */
-    local_compatible() {
+    local_compatible(): SourceAPI | null {
         if (this.sources.local !== undefined) {
             return this.satisfying("^" + this.sources.local.version);
         } else {
@@ -192,8 +198,10 @@ export class PublicAPI {
     /**
      * Look up the newest Ruffle version with the exact same version as the
      * `local` source, if it's installed. Otherwise, use the latest version.
+     *
+     * @returns An instance of the Source API
      */
-    local() {
+    local(): SourceAPI | null {
         if (this.sources.local !== undefined) {
             return this.satisfying("=" + this.sources.local.version);
         } else {
@@ -211,8 +219,10 @@ export class PublicAPI {
      *
      * Unfortunately, we can't disable polyfills after-the-fact, so this
      * only lets you disable the init event...
+     *
+     * @protected
      */
-    superseded() {
+    protected superseded(): void {
         this.invoked = true;
     }
 
@@ -230,24 +240,24 @@ export class PublicAPI {
      * Note that Public API upgrades are deliberately not enabled in this
      * version of Ruffle, since there is no Public API to upgrade from.
      *
-     * @param {string|undefined} source_name The name of this particular
+     * @param source_name The name of this particular
      * Ruffle source.
      *
-     * @param {object|undefined} source_api The Ruffle source to add.
+     * @param source_api The Ruffle source to add.
      *
      * If both parameters are provided they will be used to define a new Ruffle
      * source to register with the public API.
      *
-     * @returns {object} The Ruffle Public API.
+     * @returns The Ruffle Public API.
      */
     static negotiate(
-        prev_ruffle: any,
+        prev_ruffle: PublicAPI | null,
         source_name: string | undefined,
         source_api: SourceAPI | undefined
-    ) {
+    ): PublicAPI {
         let public_api;
         if (
-            prev_ruffle !== undefined &&
+            prev_ruffle != null &&
             prev_ruffle.constructor.name == PublicAPI.name
         ) {
             public_api = prev_ruffle;
