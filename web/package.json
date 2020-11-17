@@ -47,6 +47,7 @@
         "build:avm_debug": "lerna run build --stream -- -- --env features=avm_debug",
         "demo": "lerna run --scope ruffle-demo serve --stream",
         "test": "lerna run test --stream",
+        "docs": "lerna run docs --stream",
         "format": "eslint . --fix",
         "format:check": "eslint ."
     }
