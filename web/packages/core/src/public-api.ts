@@ -3,6 +3,18 @@ import { VersionRange } from "./version-range";
 import { SourceAPI } from "./source-api";
 import { Config } from "./config";
 
+declare global {
+    interface Window {
+        /**
+         * The public API for generating a ruffle player.
+         * This may be a config holder, which will be converted to a
+         * [[PublicAPI]] via [[PublicAPI.negotiate]], or an actual
+         * [[PublicAPI]] instance itself.
+         */
+        RufflePlayer?: { config?: Config } | PublicAPI;
+    }
+}
+
 /**
  * Represents the Ruffle public API.
  *
@@ -15,8 +27,12 @@ import { Config } from "./config";
  * backwards- and forwards-compatible with all known sources.
  */
 export class PublicAPI {
+    /**
+     * The configuration object used when Ruffle is instantiated.
+     */
+    config: Config;
+
     private sources: Record<string, SourceAPI>;
-    private config: Config;
     private invoked: boolean;
     private newestName: string | null;
     private conflict: Record<string, unknown> | null;

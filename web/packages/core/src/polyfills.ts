@@ -3,12 +3,6 @@ import { RuffleEmbed } from "./ruffle-embed";
 import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { public_path } from "./public-path";
 
-declare global {
-    interface Window {
-        RufflePlayer: any;
-    }
-}
-
 if (!window.RufflePlayer) {
     window.RufflePlayer = {};
 }
