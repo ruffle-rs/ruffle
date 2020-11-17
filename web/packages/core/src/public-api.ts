@@ -18,7 +18,7 @@ export class PublicAPI {
     private sources: Record<string, SourceAPI>;
     private config: Config;
     private invoked: boolean;
-    private newest_name: string | null;
+    private newestName: string | null;
     private conflict: Record<string, unknown> | null;
 
     /**
@@ -42,7 +42,7 @@ export class PublicAPI {
         this.sources = {};
         this.config = {};
         this.invoked = false;
-        this.newest_name = null;
+        this.newestName = null;
         this.conflict = null;
 
         if (prev !== undefined && prev !== null) {
@@ -52,7 +52,7 @@ export class PublicAPI {
                 this.config = prev.config;
                 this.invoked = prev.invoked;
                 this.conflict = prev.conflict;
-                this.newest_name = prev.newest_name;
+                this.newestName = prev.newestName;
 
                 prev.superseded();
             } else if (
@@ -106,20 +106,20 @@ export class PublicAPI {
      * has yet to be registered.
      */
     newestSourceName(): string | null {
-        let newest_name = null,
-            newest_version = Version.fromSemver("0.0.0");
+        let newestName = null,
+            newestVersion = Version.fromSemver("0.0.0");
 
         for (const k in this.sources) {
             if (Object.prototype.hasOwnProperty.call(this.sources, k)) {
                 const k_version = Version.fromSemver(this.sources[k].version);
-                if (k_version.hasPrecedenceOver(newest_version)) {
-                    newest_name = k;
-                    newest_version = k_version;
+                if (k_version.hasPrecedenceOver(newestVersion)) {
+                    newestName = k;
+                    newestVersion = k_version;
                 }
             }
         }
 
-        return newest_name;
+        return newestName;
     }
 
     /**
@@ -133,15 +133,15 @@ export class PublicAPI {
     init(): void {
         if (!this.invoked) {
             this.invoked = true;
-            this.newest_name = this.newestSourceName();
+            this.newestName = this.newestSourceName();
 
-            if (this.newest_name === null) {
+            if (this.newestName === null) {
                 throw new Error("No registered Ruffle source!");
             }
 
             const polyfills = this.config.polyfills;
             if (polyfills !== false) {
-                this.sources[this.newest_name].polyfill();
+                this.sources[this.newestName].polyfill();
             }
         }
     }
@@ -168,19 +168,19 @@ export class PublicAPI {
      */
     satisfying(ver_requirement: string): SourceAPI | null {
         const requirement = VersionRange.fromRequirementString(ver_requirement);
-        let valid_source = null;
+        let valid = null;
 
         for (const k in this.sources) {
             if (Object.prototype.hasOwnProperty.call(this.sources, k)) {
                 const version = Version.fromSemver(this.sources[k].version);
 
                 if (requirement.satisfiedBy(version)) {
-                    valid_source = this.sources[k];
+                    valid = this.sources[k];
                 }
             }
         }
 
-        return valid_source;
+        return valid;
     }
 
     /**
@@ -231,21 +231,21 @@ export class PublicAPI {
     /**
      * Join a source into the public API, if it doesn't already exist.
      *
-     * @param {*} prev_ruffle The previous iteration of the Ruffle API.
+     * @param prevRuffle The previous iteration of the Ruffle API.
      *
-     * The `prev_ruffle` param lists the previous object in the RufflePlayer
+     * The `prevRuffle` param lists the previous object in the RufflePlayer
      * slot. We perform some checks to see if this is a Ruffle public API or a
      * conflicting object. If this is conflicting, then a new public API will
      * be constructed (see the constructor information for what happens to
-     * `prev_ruffle`).
+     * `prevRuffle`).
      *
      * Note that Public API upgrades are deliberately not enabled in this
      * version of Ruffle, since there is no Public API to upgrade from.
      *
-     * @param source_name The name of this particular
+     * @param sourceName The name of this particular
      * Ruffle source.
      *
-     * @param source_api The Ruffle source to add.
+     * @param sourceAPI The Ruffle source to add.
      *
      * If both parameters are provided they will be used to define a new Ruffle
      * source to register with the public API.
@@ -253,30 +253,30 @@ export class PublicAPI {
      * @returns The Ruffle Public API.
      */
     static negotiate(
-        prev_ruffle: PublicAPI | null | Record<string, unknown>,
-        source_name: string | undefined,
-        source_api: SourceAPI | undefined
+        prevRuffle: PublicAPI | null | Record<string, unknown>,
+        sourceName: string | undefined,
+        sourceAPI: SourceAPI | undefined
     ): PublicAPI {
-        let public_api: PublicAPI;
-        if (prev_ruffle instanceof PublicAPI) {
-            public_api = prev_ruffle;
+        let publicAPI: PublicAPI;
+        if (prevRuffle instanceof PublicAPI) {
+            publicAPI = prevRuffle;
         } else {
-            public_api = new PublicAPI(prev_ruffle);
+            publicAPI = new PublicAPI(prevRuffle);
         }
 
-        if (source_name !== undefined && source_api !== undefined) {
-            public_api.registerSource(source_name, source_api);
+        if (sourceName !== undefined && sourceAPI !== undefined) {
+            publicAPI.registerSource(sourceName, sourceAPI);
 
             // Install the faux plugin detection immediately.
             // This is necessary because scripts such as SWFObject check for the
             // Flash Player immediately when they load.
             // TODO: Maybe there's a better place for this.
-            const polyfills = public_api.config.polyfills;
+            const polyfills = publicAPI.config.polyfills;
             if (polyfills !== false) {
-                source_api.pluginPolyfill();
+                sourceAPI.pluginPolyfill();
             }
         }
 
-        return public_api;
+        return publicAPI;
     }
 }
