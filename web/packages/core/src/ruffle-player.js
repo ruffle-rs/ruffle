@@ -241,6 +241,46 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         }
     }
 
+    fullscreenEnabled() {
+        return (
+            document.fullscreenEnabled ||
+            document.mozFullScreenEnabled ||
+            document.webkitFullscreenEnabled
+        );
+    }
+
+    isFullscreen() {
+        return (
+            (document.fullscreenElement ||
+                document.mozFullScreenElement ||
+                document.webkitFullscreenElement) === this
+        );
+    }
+
+    enterFullscreen() {
+        if (this.requestFullscreen) {
+            this.requestFullscreen();
+        } else if (this.mozRequestFullScreen) {
+            this.mozRequestFullScreen();
+        } else if (this.webkitRequestFullScreen) {
+            this.webkitRequestFullScreen();
+        } else if (this.msRequestFullscreen) {
+            this.msRequestFullscreen();
+        }
+    }
+
+    exitFullscreen() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.webkitCancelFullScreen) {
+            document.webkitCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+
     open_right_click_menu(e) {
         e.preventDefault();
 
@@ -249,20 +289,16 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         }
 
         const items = [];
-        if (document.fullscreenEnabled) {
-            if (document.fullscreenElement) {
+        if (this.fullscreenEnabled()) {
+            if (this.isFullscreen()) {
                 items.push({
                     text: "Exit fullscreen",
-                    onClick: () => {
-                        document.exitFullscreen();
-                    },
+                    onClick: this.exitFullscreen.bind(this),
                 });
             } else {
                 items.push({
                     text: "Enter fullscreen",
-                    onClick: () => {
-                        this.requestFullscreen();
-                    },
+                    onClick: this.enterFullscreen.bind(this),
                 });
             }
         }
