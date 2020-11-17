@@ -14,11 +14,6 @@ export const FLASH_ACTIVEX_CLASSID =
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
 declare global {
-    interface Window {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        RufflePlayer: any;
-    }
-
     interface Document {
         webkitFullscreenEnabled?: boolean;
         webkitFullscreenElement?: HTMLElement;
@@ -412,10 +407,11 @@ export class RufflePlayer extends HTMLElement {
             }
         }
         items.push({
+            // TODO: ruffle version info
             text: `Ruffle ${
                 __CHANNEL__ === "nightly"
                     ? `nightly ${__COMMIT_DATE__}`
-                    : window.RufflePlayer.version
+                    : "0.1.0"
             }`,
             onClick() {
                 window.open("https://ruffle.rs/", "_blank");
@@ -681,9 +677,8 @@ export class RufflePlayer extends HTMLElement {
             errorText += `Useragent: ${window.navigator.userAgent}\n`;
             errorText += `OS: ${window.navigator.platform}\n`;
 
-            errorText += "\n# Ruffle Info\n";
-            errorText += `Ruffle version: ${window.RufflePlayer.version}\n`;
-            errorText += `Ruffle source: ${window.RufflePlayer.name}\n`;
+            // TODO: Ruffle source version. No way to know right now?
+
             this.container.querySelector(
                 "#panic-body"
             )!.innerHTML = `<textarea>${errorText}</textarea>`;
