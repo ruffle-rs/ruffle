@@ -1,6 +1,7 @@
 import { Version } from "./version";
 import { VersionRange } from "./version-range";
 import { SourceAPI } from "./source-api";
+import { Config } from "./config";
 
 /**
  * Represents the Ruffle public API.
@@ -15,10 +16,10 @@ import { SourceAPI } from "./source-api";
  */
 export class PublicAPI {
     private sources: Record<string, SourceAPI>;
-    private config: any;
+    private config: Config;
     private invoked: boolean;
     private newest_name: string | null;
-    private conflict: any;
+    private conflict: Record<string, unknown> | null;
 
     /**
      * Construct the Ruffle public API.
@@ -42,6 +43,7 @@ export class PublicAPI {
         this.config = {};
         this.invoked = false;
         this.newest_name = null;
+        this.conflict = null;
 
         if (prev !== undefined && prev !== null) {
             if (prev.constructor.name === PublicAPI.name) {
