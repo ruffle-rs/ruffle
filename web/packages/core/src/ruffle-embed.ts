@@ -102,7 +102,7 @@ export class RuffleEmbed extends RufflePlayer {
      * @param elem Element to check.
      * @return True if the element looks like a flash embed.
      */
-    static is_interdictable(elem: HTMLElement): boolean {
+    static isInterdictable(elem: HTMLElement): boolean {
         if (!elem.getAttribute("src")) {
             return false;
         }
