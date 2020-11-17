@@ -279,6 +279,53 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
         }
     }
 
+    fullscreen() {
+        if (!document.fullscreenEnabled && !document.webkitFullscreenEnabled) {
+            //Does the browser support fullscreen? If it doesn't display an error message in the console.
+            console.error(
+                "Fullscreen is not enabled. Browser may not be supported."
+            );
+            return;
+        }
+        //Let's try to make the Ruffle player fullscreen.
+        if (this.requestFullscreen) {
+            if (document.fullscreenElement) {
+                document.exitFullscreen().then(() => {
+                    this.requestFullscreen().catch((err) => console.error(err));
+                });
+            } else {
+                this.requestFullscreen().catch((err) => console.error(err));
+            }
+        } else if (this.msRequestFullscreen) {
+            if (document.fullscreenElement) {
+                document.exitFullscreen().then(() => {
+                    this.requestFullscreen().catch((err) => console.log(err));
+                });
+            } else {
+                this.requestFullscreen().catch((err) => console.error(err));
+            }
+        } else if (this.webkitRequestFullscreen) {
+            if (document.webkitFullscreenElement) {
+                document.webkitExitFullscreen(); //This method in safari doesn't return a promise, which makes it hard to exit and then re-enter fullsreen for another element.
+                try {
+                    this.webkitRequestFullscreen();
+                } catch (error) {
+                    console.error(error);
+                }
+            } else {
+                try {
+                    this.webkitRequestFullscreen();
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+        } else {
+            console.error(
+                "Could not request access to fullscreen. Browser may not be supported."
+            );
+        }
+    }
+
     /**
      * Load a movie's data into this Ruffle Player instance.
      *
