@@ -189,7 +189,7 @@ export class PublicAPI {
      *
      * @returns An instance of the Source API
      */
-    local_compatible(): SourceAPI | null {
+    localCompatible(): SourceAPI | null {
         if (this.sources.local !== undefined) {
             return this.satisfying("^" + this.sources.local.version);
         } else {
