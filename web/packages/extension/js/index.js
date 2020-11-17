@@ -3,7 +3,7 @@ import { PublicAPI, SourceAPI } from "ruffle-core";
 window.RufflePlayer = PublicAPI.negotiate(
     window.RufflePlayer,
     "extension",
-    new SourceAPI()
+    new SourceAPI("extension")
 );
 
 if (obfuscated_event_prefix) {
