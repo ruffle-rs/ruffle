@@ -7,17 +7,17 @@ import { Config } from "./config";
 if (!window.RufflePlayer) {
     window.RufflePlayer = {};
 }
-let top_level_ruffle_config: Config;
-let ruffle_script_src = public_path({}, "ruffle.js");
+let topLevelRuffleConfig: Config;
+let ruffleScriptSrc = public_path({}, "ruffle.js");
 if (window.RufflePlayer.config) {
-    top_level_ruffle_config = window.RufflePlayer.config;
-    ruffle_script_src = public_path(window.RufflePlayer.config, "ruffle.js");
+    topLevelRuffleConfig = window.RufflePlayer.config;
+    ruffleScriptSrc = public_path(window.RufflePlayer.config, "ruffle.js");
 }
 /* public_path returns the directory where the file is, *
  * so we need to append the filename. We don't need to  *
  * worry about the directory not having a slash because *
  * public_path appends a slash.                         */
-ruffle_script_src += "ruffle.js";
+ruffleScriptSrc += "ruffle.js";
 
 /**
  * Polyfill native elements with Ruffle equivalents.
@@ -29,7 +29,7 @@ ruffle_script_src += "ruffle.js";
  */
 let objects: HTMLCollectionOf<HTMLElement>;
 let embeds: HTMLCollectionOf<HTMLElement>;
-function replace_flash_instances(): void {
+function replaceFlashInstances(): void {
     try {
         // Create live collections to track embed tags.
         objects = objects || document.getElementsByTagName("object");
@@ -38,14 +38,14 @@ function replace_flash_instances(): void {
         // Replace <object> first, because <object> often wraps <embed>.
         for (const elem of Array.from(objects)) {
             if (RuffleObject.isInterdictable(elem)) {
-                const ruffle_obj = RuffleObject.fromNativeObjectElement(elem);
-                elem.replaceWith(ruffle_obj);
+                const ruffleObject = RuffleObject.fromNativeObjectElement(elem);
+                elem.replaceWith(ruffleObject);
             }
         }
         for (const elem of Array.from(embeds)) {
             if (RuffleEmbed.isInterdictable(elem)) {
-                const ruffle_obj = RuffleEmbed.fromNativeEmbedElement(elem);
-                elem.replaceWith(ruffle_obj);
+                const ruffleObject = RuffleEmbed.fromNativeEmbedElement(elem);
+                elem.replaceWith(ruffleObject);
             }
         }
     } catch (err) {
@@ -56,11 +56,11 @@ function replace_flash_instances(): void {
     }
 }
 
-function polyfill_static_content(): void {
-    replace_flash_instances();
+function polyfillStaticContent(): void {
+    replaceFlashInstances();
 }
 
-function polyfill_dynamic_content(): void {
+function polyfillDynamicContent(): void {
     // Listen for changes to the DOM. If nodes are added, re-check for any Flash instances.
     const observer = new MutationObserver(function (mutationsList) {
         // If any nodes were added, re-run the polyfill to replace any new instances.
@@ -68,24 +68,24 @@ function polyfill_dynamic_content(): void {
             (mutation) => mutation.addedNodes.length > 0
         );
         if (nodesAdded) {
-            replace_flash_instances();
+            replaceFlashInstances();
         }
     });
 
     observer.observe(document, { childList: true, subtree: true });
 }
 
-function load_ruffle_player_into_frame(event: Event): void {
+function loadRufflePlayerIntoFrame(event: Event): void {
     const currentTarget = event.currentTarget;
     if (currentTarget != null && "contentWindow" in currentTarget) {
         loadFrame(currentTarget["contentWindow"]);
     }
 }
-function loadFrame(current_frame: Window): void {
-    let frame_document;
+function loadFrame(currentFrame: Window): void {
+    let frameDocument;
     try {
-        frame_document = current_frame.document;
-        if (!frame_document) {
+        frameDocument = currentFrame.document;
+        if (!frameDocument) {
             console.log("Frame has no document.");
             return;
         }
@@ -93,17 +93,17 @@ function loadFrame(current_frame: Window): void {
         console.log("Error Getting Frame: " + e.message);
         return;
     }
-    if (!current_frame.RufflePlayer) {
+    if (!currentFrame.RufflePlayer) {
         /* Make sure we populate the frame's window.RufflePlayer.config */
-        current_frame.RufflePlayer = {};
-        current_frame.RufflePlayer.config = top_level_ruffle_config;
-        const script = frame_document.createElement("script");
-        script.src = ruffle_script_src; /* Load this script(ruffle.js) into the frame */
-        frame_document.body.appendChild(script);
+        currentFrame.RufflePlayer = {};
+        currentFrame.RufflePlayer.config = topLevelRuffleConfig;
+        const script = frameDocument.createElement("script");
+        script.src = ruffleScriptSrc; /* Load this script(ruffle.js) into the frame */
+        frameDocument.body.appendChild(script);
     } else {
         console.log("(i)frame already has RufflePlayer");
     }
-    polyfill_frames_common(current_frame);
+    polyfillFramesCommon(currentFrame);
 }
 
 function handleFrames(
@@ -112,7 +112,7 @@ function handleFrames(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let originalOnLoad: ((ev: Event) => any) | null;
     for (let i = 0; i < frameList.length; i++) {
-        const current_frame = frameList[i];
+        const currentFrame = frameList[i];
         /* Apparently, using addEventListener attaches the event  *
          * to the dummy document, which is overwritten when the   *
          * iframe is loaded, so we do this. It can only works if  *
@@ -125,12 +125,12 @@ function handleFrames(
         setTimeout(function () {
             try {
                 if (
-                    current_frame.contentDocument &&
-                    current_frame.contentDocument.readyState &&
-                    current_frame.contentDocument.readyState == "complete" &&
-                    current_frame.contentWindow
+                    currentFrame.contentDocument &&
+                    currentFrame.contentDocument.readyState &&
+                    currentFrame.contentDocument.readyState == "complete" &&
+                    currentFrame.contentWindow
                 ) {
-                    loadFrame(current_frame.contentWindow);
+                    loadFrame(currentFrame.contentWindow);
                 }
             } catch (e) {
                 console.log(
@@ -139,8 +139,8 @@ function handleFrames(
             }
         }, 500);
         try {
-            if ((originalOnLoad = current_frame.onload)) {
-                current_frame.onload = function (event) {
+            if ((originalOnLoad = currentFrame.onload)) {
+                currentFrame.onload = function (event) {
                     if (originalOnLoad != null) {
                         try {
                             originalOnLoad(event);
@@ -150,14 +150,14 @@ function handleFrames(
                             );
                         }
                     }
-                    load_ruffle_player_into_frame(event);
+                    loadRufflePlayerIntoFrame(event);
                 };
             } else {
-                current_frame.onload = load_ruffle_player_into_frame;
+                currentFrame.onload = loadRufflePlayerIntoFrame;
             }
-            const depth = current_frame.contentWindow;
+            const depth = currentFrame.contentWindow;
             if (depth != null) {
-                polyfill_frames_common(depth);
+                polyfillFramesCommon(depth);
             }
         } catch (e) {
             console.log("error loading ruffle player into frame: " + e.message);
@@ -165,27 +165,27 @@ function handleFrames(
     }
 }
 
-function polyfill_frames_common(depth: Window): void {
+function polyfillFramesCommon(depth: Window): void {
     handleFrames(depth.document.getElementsByTagName("iframe"));
     handleFrames(depth.document.getElementsByTagName("frame"));
 }
 
-function polyfill_static_frames(): void {
-    polyfill_frames_common(window);
+function polyfillStaticFrames(): void {
+    polyfillFramesCommon(window);
 }
 
-function ruffle_frame_listener(mutationsList: MutationRecord[]): void {
+function runFrameListener(mutationsList: MutationRecord[]): void {
     /* Basically the same as the listener for dynamic embeds. */
     const nodesAdded = mutationsList.some(
         (mutation) => mutation.addedNodes.length > 0
     );
     if (nodesAdded) {
-        polyfill_frames_common(window);
+        polyfillFramesCommon(window);
     }
 }
 
-function polyfill_dynamic_frames(): void {
-    const observer = new MutationObserver(ruffle_frame_listener);
+function polyfillDynamicFrames(): void {
+    const observer = new MutationObserver(runFrameListener);
     observer.observe(document, { childList: true, subtree: true });
 }
 
@@ -200,8 +200,8 @@ export function pluginPolyfill(): void {
  * Polyfills legacy flash content on the page.
  */
 export function polyfill(): void {
-    polyfill_static_content();
-    polyfill_dynamic_content();
-    polyfill_static_frames();
-    polyfill_dynamic_frames();
+    polyfillStaticContent();
+    polyfillDynamicContent();
+    polyfillStaticFrames();
+    polyfillDynamicFrames();
 }
