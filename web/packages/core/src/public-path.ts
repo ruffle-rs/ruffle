@@ -1,5 +1,19 @@
+/**
+ * The configuration object to control Ruffle's behaviour on the website
+ * that it is included on.
+ */
 interface Config {
+    /**
+     * A map of public paths from source name to URL.
+     */
     public_paths?: Record<string, string>;
+
+    /**
+     * The URL at which Ruffle can load its extra files (ie `.wasm`).
+     *
+     * [public_paths] is consulted first for a source-specific URL,
+     * with this field being a fallback.
+     */
     public_path?: string;
 }
 
@@ -19,11 +33,11 @@ interface Config {
  * return the parent path of where this script is hosted, which should be
  * the correct default in most cases.
  *
- * @param {object} config The `window.RufflePlayer.config` object.
- * @param {string} source_name The name of the source.
- * @returns {string} The public path for the given source.
+ * @param config The `window.RufflePlayer.config` object.
+ * @param source_name The name of the source.
+ * @returns The public path for the given source.
  */
-export function public_path(config: Config, source_name: string) {
+export function public_path(config: Config, source_name: string): string {
     let public_path = "";
     if (
         config !== undefined &&
