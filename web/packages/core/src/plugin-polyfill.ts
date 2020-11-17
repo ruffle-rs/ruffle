@@ -184,7 +184,7 @@ FLASH_PLUGIN.install({
  * that version of the plugin array. This allows the plugin polyfill to compose
  * across multiple plugin emulators with the first emulator's polyfill winning.
  */
-export function install_plugin(plugin: RufflePlugin): void {
+export function installPlugin(plugin: RufflePlugin): void {
     if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {
         Object.defineProperty(navigator, "plugins", {
             value: new RufflePluginArray(navigator.plugins),
