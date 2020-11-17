@@ -1,6 +1,6 @@
 import { Ruffle } from "../pkg/ruffle_web";
 
-import { load_ruffle } from "./load-ruffle";
+import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 
@@ -123,7 +123,7 @@ export class RufflePlayer extends HTMLElement {
         this.allowScriptAccess = false;
         this._trace_observer = null;
 
-        this.ruffleConstructor = load_ruffle();
+        this.ruffleConstructor = loadRuffle();
 
         return this;
     }
