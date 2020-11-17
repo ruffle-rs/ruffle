@@ -30,24 +30,24 @@ class RuffleMimeTypeArray implements MimeTypeArray {
      *
      * @param mimetype
      */
-    install(mimetype: MimeType) {
+    install(mimetype: MimeType): void {
         const id = this.__mimetypes.length;
 
         this.__mimetypes.push(mimetype);
         this.__named_mimetypes[mimetype.type] = mimetype;
-        (<any>this)[mimetype.type] = mimetype;
-        (<any>this)[id] = mimetype;
+        (<Record<string, unknown>>this)[mimetype.type] = mimetype;
+        (<Record<string, unknown>>this)[id] = mimetype;
     }
 
-    item(index: number) {
+    item(index: number): MimeType {
         return this.__mimetypes[index];
     }
 
-    namedItem(name: string) {
+    namedItem(name: string): MimeType {
         return this.__named_mimetypes[name];
     }
 
-    get length() {
+    get length(): number {
         return this.__mimetypes.length;
     }
 
@@ -79,7 +79,7 @@ class RufflePlugin extends RuffleMimeTypeArray implements Plugin {
         this.filename = filename;
     }
 
-    install(mimetype: MimeType) {
+    install(mimetype: MimeType): void {
         super.install(<MimeType>mimetype);
     }
 
@@ -119,28 +119,31 @@ class RufflePluginArray {
         }
     }
 
-    install(plugin: Plugin | RufflePlugin) {
+    install(plugin: Plugin | RufflePlugin): void {
         const id = this.__plugins.length;
 
         this.__plugins.push(plugin);
         this.__named_plugins[plugin.name] = plugin;
-        (<any>this)[plugin.name] = plugin;
-        (<any>this)[id] = plugin;
+        (<Record<string, unknown>>this)[plugin.name] = plugin;
+        (<Record<string, unknown>>this)[id] = plugin;
     }
 
-    item(index: number) {
+    item(index: number): Plugin {
         return this.__plugins[index];
     }
 
-    namedItem(name: string) {
+    namedItem(name: string): Plugin {
         return this.__named_plugins[name];
     }
 
-    get length() {
+    get length(): number {
         return this.__plugins.length;
     }
 }
 
+/**
+ * A fake plugin designed to trigger Flash detection scripts.
+ */
 export const FLASH_PLUGIN = new RufflePlugin(
     "Shockwave Flash",
     "Shockwave Flash 32.0 r0",
@@ -181,7 +184,7 @@ FLASH_PLUGIN.install({
  * that version of the plugin array. This allows the plugin polyfill to compose
  * across multiple plugin emulators with the first emulator's polyfill winning.
  */
-export function install_plugin(plugin: RufflePlugin) {
+export function install_plugin(plugin: RufflePlugin): void {
     if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {
         Object.defineProperty(navigator, "plugins", {
             value: new RufflePluginArray(navigator.plugins),
