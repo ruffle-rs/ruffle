@@ -38,7 +38,7 @@ export class PublicAPI {
      *
      * @protected
      */
-    protected constructor(prev: PublicAPI | null) {
+    protected constructor(prev: PublicAPI | null | Record<string, unknown>) {
         this.sources = {};
         this.config = {};
         this.invoked = false;
@@ -46,7 +46,7 @@ export class PublicAPI {
         this.conflict = null;
 
         if (prev !== undefined && prev !== null) {
-            if (prev.constructor.name === PublicAPI.name) {
+            if (prev instanceof PublicAPI) {
                 /// We're upgrading from a previous API to a new one.
                 this.sources = prev.sources;
                 this.config = prev.config;
@@ -57,7 +57,7 @@ export class PublicAPI {
                 prev.superseded();
             } else if (
                 prev.constructor === Object &&
-                prev.config !== undefined
+                prev.config instanceof Object
             ) {
                 /// We're the first, install user configuration
                 this.config = prev.config;
@@ -253,15 +253,12 @@ export class PublicAPI {
      * @returns The Ruffle Public API.
      */
     static negotiate(
-        prev_ruffle: PublicAPI | null,
+        prev_ruffle: PublicAPI | null | Record<string, unknown>,
         source_name: string | undefined,
         source_api: SourceAPI | undefined
     ): PublicAPI {
-        let public_api;
-        if (
-            prev_ruffle != null &&
-            prev_ruffle.constructor.name == PublicAPI.name
-        ) {
+        let public_api: PublicAPI;
+        if (prev_ruffle instanceof PublicAPI) {
             public_api = prev_ruffle;
         } else {
             public_api = new PublicAPI(prev_ruffle);
