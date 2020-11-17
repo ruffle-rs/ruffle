@@ -49,7 +49,7 @@ function replace_flash_instances() {
         }
         for (const elem of Array.from(embeds)) {
             if (RuffleEmbed.isInterdictable(elem)) {
-                const ruffle_obj = RuffleEmbed.from_native_embed_element(elem);
+                const ruffle_obj = RuffleEmbed.fromNativeEmbedElement(elem);
                 elem.replaceWith(ruffle_obj);
             }
         }
