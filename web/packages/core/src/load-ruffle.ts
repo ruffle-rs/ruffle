@@ -13,7 +13,7 @@ import { Ruffle } from "../pkg/ruffle_web";
  * You should not use it directly; this module will memoize the resource
  * download.
  */
-async function fetch_ruffle(): Promise<{ new (...args: any[]): Ruffle }> {
+async function fetchRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
     try {
         //If runtime_path is defined then we are executing inside the extension
         //closure. In that case, we configure our local Webpack instance
@@ -41,7 +41,7 @@ let lastLoaded: Promise<{ new (...args: any[]): Ruffle }> | null = null;
  */
 export function load_ruffle(): Promise<{ new (...args: any[]): Ruffle }> {
     if (lastLoaded == null) {
-        lastLoaded = fetch_ruffle();
+        lastLoaded = fetchRuffle();
     }
 
     return lastLoaded;
