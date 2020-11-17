@@ -79,7 +79,7 @@ export class RufflePlayer extends HTMLElement {
     private _trace_observer: ((message: string) => void) | null;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private Ruffle: Promise<{ new (...args: any[]): Ruffle }>;
+    private ruffleConstructor: Promise<{ new (...args: any[]): Ruffle }>;
     private panicked = false;
 
     /**
@@ -123,7 +123,7 @@ export class RufflePlayer extends HTMLElement {
         this.allowScriptAccess = false;
         this._trace_observer = null;
 
-        this.Ruffle = load_ruffle();
+        this.ruffleConstructor = load_ruffle();
 
         return this;
     }
@@ -251,7 +251,7 @@ export class RufflePlayer extends HTMLElement {
             console.log("Ruffle instance destroyed.");
         }
 
-        const Ruffle = await this.Ruffle.catch((e) => {
+        const ruffleConstructor = await this.ruffleConstructor.catch((e) => {
             console.error("Serious error loading Ruffle: " + e);
 
             // Serious duck typing. In error conditions, let's not make assumptions.
@@ -278,7 +278,7 @@ export class RufflePlayer extends HTMLElement {
             throw e;
         });
 
-        this.instance = new Ruffle(
+        this.instance = new ruffleConstructor(
             this.container,
             this,
             this.allowScriptAccess

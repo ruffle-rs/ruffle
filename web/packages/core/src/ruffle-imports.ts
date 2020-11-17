@@ -10,17 +10,17 @@
  * @internal
  */
 export function copyToAudioBuffer(
-    audio_buffer: AudioBuffer,
-    left_data: ArrayLike<number>,
-    right_data: ArrayLike<number>
+    audioBuffer: AudioBuffer,
+    leftData: ArrayLike<number>,
+    rightData: ArrayLike<number>
 ): void {
-    if (left_data) {
-        const dst_buffer = audio_buffer.getChannelData(0);
-        dst_buffer.set(left_data);
+    if (leftData) {
+        const dstBuffer = audioBuffer.getChannelData(0);
+        dstBuffer.set(leftData);
     }
 
-    if (right_data) {
-        const dst_buffer = audio_buffer.getChannelData(1);
-        dst_buffer.set(right_data);
+    if (rightData) {
+        const dstBuffer = audioBuffer.getChannelData(1);
+        dstBuffer.set(rightData);
     }
 }

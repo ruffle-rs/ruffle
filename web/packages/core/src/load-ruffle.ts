@@ -28,11 +28,11 @@ async function fetch_ruffle(): Promise<{ new (...args: any[]): Ruffle }> {
 
     //We currently assume that if we are not executing inside the extension,
     //then we can use webpack to get Ruffle.
-    const ruffle_module = await import("../pkg/ruffle_web");
-    return ruffle_module.Ruffle;
+    const module = await import("../pkg/ruffle_web");
+    return module.Ruffle;
 }
 
-let last_loaded_ruffle: Promise<{ new (...args: any[]): Ruffle }> | null = null;
+let lastLoaded: Promise<{ new (...args: any[]): Ruffle }> | null = null;
 
 /**
  * Obtain an instance of `Ruffle`.
@@ -40,9 +40,9 @@ let last_loaded_ruffle: Promise<{ new (...args: any[]): Ruffle }> | null = null;
  * This function returns a promise which yields `Ruffle` asynchronously.
  */
 export function load_ruffle(): Promise<{ new (...args: any[]): Ruffle }> {
-    if (last_loaded_ruffle == null) {
-        last_loaded_ruffle = fetch_ruffle();
+    if (lastLoaded == null) {
+        lastLoaded = fetch_ruffle();
     }
 
-    return last_loaded_ruffle;
+    return lastLoaded;
 }
