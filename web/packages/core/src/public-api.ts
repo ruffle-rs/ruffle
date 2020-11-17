@@ -105,7 +105,7 @@ export class PublicAPI {
      * @returns The name of the source, or `null` if no source
      * has yet to be registered.
      */
-    newest_source_name(): string | null {
+    newestSourceName(): string | null {
         let newest_name = null,
             newest_version = Version.fromSemver("0.0.0");
 
@@ -133,7 +133,7 @@ export class PublicAPI {
     init(): void {
         if (!this.invoked) {
             this.invoked = true;
-            this.newest_name = this.newest_source_name();
+            this.newest_name = this.newestSourceName();
 
             if (this.newest_name === null) {
                 throw new Error("No registered Ruffle source!");
@@ -152,7 +152,7 @@ export class PublicAPI {
      * @returns An instance of the Source API.
      */
     newest(): SourceAPI | null {
-        const name = this.newest_source_name();
+        const name = this.newestSourceName();
         return name != null ? this.sources[name] : null;
     }
 
