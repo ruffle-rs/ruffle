@@ -1,17 +1,17 @@
 import { RuffleObject } from "./ruffle-object";
 import { RuffleEmbed } from "./ruffle-embed";
 import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
-import { public_path } from "./public-path";
+import { publicPath } from "./public-path";
 import { Config } from "./config";
 
 if (!window.RufflePlayer) {
     window.RufflePlayer = {};
 }
 let topLevelRuffleConfig: Config;
-let ruffleScriptSrc = public_path({}, "ruffle.js");
+let ruffleScriptSrc = publicPath({}, "ruffle.js");
 if (window.RufflePlayer.config) {
     topLevelRuffleConfig = window.RufflePlayer.config;
-    ruffleScriptSrc = public_path(window.RufflePlayer.config, "ruffle.js");
+    ruffleScriptSrc = publicPath(window.RufflePlayer.config, "ruffle.js");
 }
 /* public_path returns the directory where the file is, *
  * so we need to append the filename. We don't need to  *
