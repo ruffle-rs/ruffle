@@ -1,5 +1,5 @@
 import { plugin_polyfill, polyfill } from "./polyfills";
-import { register_element } from "./register-element";
+import { registerElement } from "./register-element";
 import { RufflePlayer } from "./ruffle-player";
 
 /**
@@ -56,7 +56,7 @@ export class SourceAPI {
      * into the current page as you wish.
      */
     createPlayer(): RufflePlayer {
-        const name = register_element("ruffle-player", RufflePlayer);
+        const name = registerElement("ruffle-player", RufflePlayer);
         return <RufflePlayer>document.createElement(name);
     }
 }

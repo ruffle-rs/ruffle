@@ -7,7 +7,7 @@ import {
     isSwfFilename,
     RufflePlayer,
 } from "./ruffle-player";
-import { register_element } from "./register-element";
+import { registerElement } from "./register-element";
 
 /**
  * Find and return the first value in obj with the given key.
@@ -222,7 +222,7 @@ export class RuffleObject extends RufflePlayer {
      * @return Created RuffleObject.
      */
     static fromNativeObjectElement(elem: HTMLElement): RuffleObject {
-        const externalName = register_element("ruffle-object", RuffleObject);
+        const externalName = registerElement("ruffle-object", RuffleObject);
         const ruffleObj: RuffleObject = <RuffleObject>(
             document.createElement(externalName)
         );
