@@ -95,7 +95,7 @@ export class PublicAPI {
      * @param api The public API object. This must conform to the shape
      * of `SourceAPI`.
      */
-    register_source(name: string, api: SourceAPI): void {
+    registerSource(name: string, api: SourceAPI): void {
         this.sources[name] = api;
     }
 
@@ -268,7 +268,7 @@ export class PublicAPI {
         }
 
         if (source_name !== undefined && source_api !== undefined) {
-            public_api.register_source(source_name, source_api);
+            public_api.registerSource(source_name, source_api);
 
             // Install the faux plugin detection immediately.
             // This is necessary because scripts such as SWFObject check for the
