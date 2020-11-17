@@ -42,6 +42,12 @@ interface ContextMenuItem {
     onClick: (event: MouseEvent) => void;
 }
 
+/**
+ * Converts arbitrary input to an easy to use record object.
+ *
+ * @param parameters Parameters to sanitize
+ * @returns A sanitized map of param name to param value
+ */
 function sanitizeParameters(
     parameters:
         | (URLSearchParams | string | Record<string, string>)
@@ -130,6 +136,7 @@ export class RufflePlayer extends HTMLElement {
 
     /**
      * @ignore
+     * @internal
      */
     connectedCallback(): void {
         this.updateStyles();
@@ -137,6 +144,7 @@ export class RufflePlayer extends HTMLElement {
 
     /**
      * @ignore
+     * @internal
      */
     static get observedAttributes(): string[] {
         return ["width", "height"];
@@ -144,6 +152,7 @@ export class RufflePlayer extends HTMLElement {
 
     /**
      * @ignore
+     * @internal
      */
     attributeChangedCallback(
         name: string,
@@ -157,6 +166,7 @@ export class RufflePlayer extends HTMLElement {
 
     /**
      * @ignore
+     * @internal
      */
     disconnectedCallback(): void {
         if (this.instance) {
@@ -701,7 +711,7 @@ export class RufflePlayer extends HTMLElement {
  * Returns whether the given filename ends in a known flash extension.
  *
  * @param filename The filename to test.
- * @return True if the filename is a flash movie (swf or spl).
+ * @returns True if the filename is a flash movie (swf or spl).
  */
 export function isSwfFilename(filename: string | null): boolean {
     return !!(

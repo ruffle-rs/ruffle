@@ -16,7 +16,7 @@ import { registerElement } from "./register-element";
  * @param obj Object to check
  * @param key Key to find
  * @param defaultValue Value if not found
- * @return Value if found, else [[defaultValue]]
+ * @returns Value if found, else [[defaultValue]]
  */
 function findCaseInsensitive(
     obj: { [key: string]: string | null },
@@ -36,7 +36,7 @@ function findCaseInsensitive(
  * Returns all flash params ([[HTMLParamElement]]) that are for the given object.
  *
  * @param elem Element to check.
- * @return A record of every parameter.
+ * @returns A record of every parameter.
  */
 function paramsOf(elem: HTMLElement): Record<string, string> {
     const params: Record<string, string> = {};
@@ -77,6 +77,7 @@ export class RuffleObject extends RufflePlayer {
 
     /**
      * @ignore
+     * @internal
      */
     connectedCallback(): void {
         super.connectedCallback();
@@ -146,6 +147,7 @@ export class RuffleObject extends RufflePlayer {
      * Polyfill of HTMLObjectElement.
      *
      * @ignore
+     * @internal
      */
     get data(): string | null {
         return this.getAttribute("data");
@@ -155,6 +157,7 @@ export class RuffleObject extends RufflePlayer {
      * Polyfill of HTMLObjectElement.
      *
      * @ignore
+     * @internal
      */
     set data(href: string | null) {
         if (href != undefined) {
@@ -170,7 +173,7 @@ export class RuffleObject extends RufflePlayer {
      * Checks if the given element may be polyfilled with this one.
      *
      * @param elem Element to check.
-     * @return True if the element looks like a flash object.
+     * @returns True if the element looks like a flash object.
      */
     static isInterdictable(elem: HTMLElement): boolean {
         const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
@@ -219,7 +222,7 @@ export class RuffleObject extends RufflePlayer {
      * Creates a RuffleObject that will polyfill and replace the given element.
      *
      * @param elem Element to replace.
-     * @return Created RuffleObject.
+     * @returns Created RuffleObject.
      */
     static fromNativeObjectElement(elem: HTMLElement): RuffleObject {
         const externalName = registerElement("ruffle-object", RuffleObject);

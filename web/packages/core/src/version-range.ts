@@ -55,7 +55,7 @@ export class VersionRange {
      * Determine if a given version satisfies this range.
      *
      * @param fver A version object to test against.
-     * @return Whether or not the given version matches this range
+     * @returns Whether or not the given version matches this range
      */
     satisfiedBy(fver: Version): boolean {
         for (let i = 0; i < this.requirements.length; i += 1) {
@@ -115,7 +115,7 @@ export class VersionRange {
      * A separator is `"||`" which splits the requirement string into
      * left OR right.
      *
-     * @return A version range object.
+     * @returns A version range object.
      */
     static fromRequirementString(requirement: string): VersionRange {
         const components = requirement.split(" ");

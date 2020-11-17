@@ -26,6 +26,8 @@ export class SourceAPI {
      * The version of this particular API.
      *
      * This is returned as a string in a semver compatible format.
+     *
+     * @returns The version of this Ruffle source
      */
     get version(): string {
         return "0.1.0";

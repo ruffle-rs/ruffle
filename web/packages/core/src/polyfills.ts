@@ -29,6 +29,9 @@ ruffleScriptSrc += "ruffle.js";
  */
 let objects: HTMLCollectionOf<HTMLElement>;
 let embeds: HTMLCollectionOf<HTMLElement>;
+/**
+ *
+ */
 function replaceFlashInstances(): void {
     try {
         // Create live collections to track embed tags.
@@ -56,10 +59,16 @@ function replaceFlashInstances(): void {
     }
 }
 
+/**
+ *
+ */
 function polyfillStaticContent(): void {
     replaceFlashInstances();
 }
 
+/**
+ *
+ */
 function polyfillDynamicContent(): void {
     // Listen for changes to the DOM. If nodes are added, re-check for any Flash instances.
     const observer = new MutationObserver(function (mutationsList) {
@@ -75,12 +84,18 @@ function polyfillDynamicContent(): void {
     observer.observe(document, { childList: true, subtree: true });
 }
 
+/**
+ * @param event The event to check
+ */
 function loadRufflePlayerIntoFrame(event: Event): void {
     const currentTarget = event.currentTarget;
     if (currentTarget != null && "contentWindow" in currentTarget) {
         loadFrame(currentTarget["contentWindow"]);
     }
 }
+/**
+ * @param currentFrame The frame's window object
+ */
 function loadFrame(currentFrame: Window): void {
     let frameDocument;
     try {
@@ -106,6 +121,9 @@ function loadFrame(currentFrame: Window): void {
     polyfillFramesCommon(currentFrame);
 }
 
+/**
+ * @param frameList The list of frames to polyfill inside
+ */
 function handleFrames(
     frameList: HTMLCollectionOf<HTMLIFrameElement | HTMLFrameElement>
 ): void {
@@ -165,15 +183,24 @@ function handleFrames(
     }
 }
 
+/**
+ * @param depth The window to polyfill
+ */
 function polyfillFramesCommon(depth: Window): void {
     handleFrames(depth.document.getElementsByTagName("iframe"));
     handleFrames(depth.document.getElementsByTagName("frame"));
 }
 
+/**
+ *
+ */
 function polyfillStaticFrames(): void {
     polyfillFramesCommon(window);
 }
 
+/**
+ * @param mutationsList The list of mutations to check
+ */
 function runFrameListener(mutationsList: MutationRecord[]): void {
     /* Basically the same as the listener for dynamic embeds. */
     const nodesAdded = mutationsList.some(
@@ -184,6 +211,9 @@ function runFrameListener(mutationsList: MutationRecord[]): void {
     }
 }
 
+/**
+ *
+ */
 function polyfillDynamicFrames(): void {
     const observer = new MutationObserver(runFrameListener);
     observer.observe(document, { childList: true, subtree: true });

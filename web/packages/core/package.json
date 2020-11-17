@@ -6,7 +6,9 @@
     "private": true,
     "main": "./pkg/index.js",
     "types": "./pkg/index.d.ts",
-    "files": ["pkg/"],
+    "files": [
+        "pkg/"
+    ],
     "scripts": {
         "build": "npm run build:wasm && npm run build:ts",
         "build:ts": "tsc -d",
@@ -20,6 +22,7 @@
         "@typescript-eslint/parser": "^4.7.0",
         "chai": "^4.2.0",
         "eslint": "^7.13.0",
+        "eslint-plugin-jsdoc": "^30.7.8",
         "esm": "^3.2.25",
         "mocha": "^8.0.1",
         "ts-node": "^9.0.0",
