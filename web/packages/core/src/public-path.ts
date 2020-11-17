@@ -21,15 +21,15 @@ import { Config } from "./config";
  * @returns The public path for the given source.
  */
 export function public_path(config: Config, source_name: string): string {
-    let public_path = "";
+    let path = "";
     if (
         config !== undefined &&
         config.public_paths !== undefined &&
         config.public_paths[source_name] !== undefined
     ) {
-        public_path = config.public_paths[source_name];
+        path = config.public_paths[source_name];
     } else if (config !== undefined && config.public_path !== undefined) {
-        public_path = config.public_path;
+        path = config.public_path;
     } else if (
         document.currentScript !== undefined &&
         document.currentScript !== null &&
@@ -37,16 +37,16 @@ export function public_path(config: Config, source_name: string): string {
     ) {
         // Default to the directory where this script resides.
         try {
-            public_path = new URL(".", document.currentScript.src).href;
+            path = new URL(".", document.currentScript.src).href;
         } catch (e) {
             console.warn("Unable to get currentScript URL");
         }
     }
 
     // Webpack expects the paths to end with a /.
-    if (public_path !== "" && !public_path.endsWith("/")) {
-        public_path += "/";
+    if (path !== "" && !path.endsWith("/")) {
+        path += "/";
     }
 
-    return public_path;
+    return path;
 }
