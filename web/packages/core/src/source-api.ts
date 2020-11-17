@@ -1,4 +1,4 @@
-import { plugin_polyfill, polyfill } from "./polyfills";
+import { pluginPolyfill, polyfill } from "./polyfills";
 import { registerElement } from "./register-element";
 import { RufflePlayer } from "./ruffle-player";
 
@@ -46,7 +46,7 @@ export class SourceAPI {
      * This needs to run before any plugin detection script does.
      */
     pluginPolyfill(): void {
-        plugin_polyfill();
+        pluginPolyfill();
     }
 
     /**

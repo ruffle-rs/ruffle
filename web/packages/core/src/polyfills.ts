@@ -192,7 +192,7 @@ function polyfill_dynamic_frames(): void {
 /**
  * Polyfills the detection of flash plugins in the browser.
  */
-export function plugin_polyfill(): void {
+export function pluginPolyfill(): void {
     install_plugin(FLASH_PLUGIN);
 }
 
