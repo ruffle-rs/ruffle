@@ -12,3 +12,4 @@ export * from "./shadow-template";
 export * from "./source-api";
 export * from "./version";
 export * from "./version-range";
+export * from "./config";
