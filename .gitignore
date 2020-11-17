@@ -3,6 +3,8 @@ target/
 bin/
 dist/
 pkg/
+web/packages/core/docs
+web/packages/core/tsd
 wasm-pack.log
 *.swd
 

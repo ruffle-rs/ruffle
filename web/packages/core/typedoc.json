@@ -1,0 +1,6 @@
+{
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeNotExported": true,
+  "stripInternal": true
+}
