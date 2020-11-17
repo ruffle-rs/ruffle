@@ -1,6 +1,6 @@
 import { RuffleObject } from "./ruffle-object";
 import { RuffleEmbed } from "./ruffle-embed";
-import { install_plugin, FLASH_PLUGIN } from "./plugin-polyfill";
+import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
 import { Config } from "./config";
 
@@ -193,7 +193,7 @@ function polyfillDynamicFrames(): void {
  * Polyfills the detection of flash plugins in the browser.
  */
 export function pluginPolyfill(): void {
-    install_plugin(FLASH_PLUGIN);
+    installPlugin(FLASH_PLUGIN);
 }
 
 /**
