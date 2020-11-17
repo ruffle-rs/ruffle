@@ -8,12 +8,29 @@ import {
 } from "./ruffle-player";
 import { register_element } from "./register-element";
 
+/**
+ * A polyfill html element.
+ *
+ * This specific class tries to polyfill existing `<embed>` tags,
+ * and should not be used. Prefer [[RufflePlayer]] instead.
+ *
+ * @internal
+ */
 export class RuffleEmbed extends RufflePlayer {
+    /**
+     * Constructs a new Ruffle flash player for insertion onto the page.
+     *
+     * This specific class tries to polyfill existing `<embed>` tags,
+     * and should not be used. Prefer [[RufflePlayer]] instead.
+     */
     constructor() {
         super();
     }
 
-    connectedCallback() {
+    /**
+     * @ignore
+     */
+    connectedCallback(): void {
         super.connectedCallback();
         let parameters = null;
         const flashvars = this.attributes.getNamedItem("flashvars");
@@ -26,11 +43,21 @@ export class RuffleEmbed extends RufflePlayer {
         }
     }
 
-    get src() {
+    /**
+     * Polyfill of HTMLObjectElement.
+     *
+     * @ignore
+     */
+    get src(): string | undefined {
         return this.attributes.getNamedItem("src")?.value;
     }
 
-    set src(srcval) {
+    /**
+     * Polyfill of HTMLObjectElement.
+     *
+     * @ignore
+     */
+    set src(srcval: string | undefined) {
         if (srcval != undefined) {
             const attr = document.createAttribute("src");
             attr.value = srcval;
@@ -40,15 +67,21 @@ export class RuffleEmbed extends RufflePlayer {
         }
     }
 
-    static get observedAttributes() {
+    /**
+     * @ignore
+     */
+    static get observedAttributes(): string[] {
         return ["src", "width", "height"];
     }
 
+    /**
+     * @ignore
+     */
     attributeChangedCallback(
         name: string,
         oldValue: string | undefined,
         newValue: string | undefined
-    ) {
+    ): void {
         super.attributeChangedCallback(name, oldValue, newValue);
         if (this.isConnected && name === "src") {
             let parameters = null;
@@ -63,7 +96,13 @@ export class RuffleEmbed extends RufflePlayer {
         }
     }
 
-    static is_interdictable(elem: HTMLElement) {
+    /**
+     * Checks if the given element may be polyfilled with this one.
+     *
+     * @param elem Element to check.
+     * @return True if the element looks like a flash embed.
+     */
+    static is_interdictable(elem: HTMLElement): boolean {
         if (!elem.getAttribute("src")) {
             return false;
         }
@@ -82,7 +121,13 @@ export class RuffleEmbed extends RufflePlayer {
         return false;
     }
 
-    static from_native_embed_element(elem: HTMLElement) {
+    /**
+     * Creates a RuffleEmbed that will polyfill and replace the given element.
+     *
+     * @param elem Element to replace.
+     * @return Created RuffleEmbed.
+     */
+    static from_native_embed_element(elem: HTMLElement): RuffleEmbed {
         const external_name = register_element("ruffle-embed", RuffleEmbed);
         const ruffle_obj = <RuffleEmbed>document.createElement(external_name);
         ruffle_obj.copyElement(elem);
