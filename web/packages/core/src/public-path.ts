@@ -20,7 +20,7 @@ import { Config } from "./config";
  * @param source_name The name of the source.
  * @returns The public path for the given source.
  */
-export function public_path(config: Config, source_name: string): string {
+export function publicPath(config: Config, source_name: string): string {
     let path = "";
     if (
         config !== undefined &&
