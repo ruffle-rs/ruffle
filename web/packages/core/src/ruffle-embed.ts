@@ -29,6 +29,7 @@ export class RuffleEmbed extends RufflePlayer {
 
     /**
      * @ignore
+     * @internal
      */
     connectedCallback(): void {
         super.connectedCallback();
@@ -47,6 +48,7 @@ export class RuffleEmbed extends RufflePlayer {
      * Polyfill of HTMLObjectElement.
      *
      * @ignore
+     * @internal
      */
     get src(): string | undefined {
         return this.attributes.getNamedItem("src")?.value;
@@ -56,6 +58,7 @@ export class RuffleEmbed extends RufflePlayer {
      * Polyfill of HTMLObjectElement.
      *
      * @ignore
+     * @internal
      */
     set src(srcval: string | undefined) {
         if (srcval != undefined) {
@@ -69,6 +72,7 @@ export class RuffleEmbed extends RufflePlayer {
 
     /**
      * @ignore
+     * @internal
      */
     static get observedAttributes(): string[] {
         return ["src", "width", "height"];
@@ -76,6 +80,7 @@ export class RuffleEmbed extends RufflePlayer {
 
     /**
      * @ignore
+     * @internal
      */
     attributeChangedCallback(
         name: string,
@@ -100,7 +105,7 @@ export class RuffleEmbed extends RufflePlayer {
      * Checks if the given element may be polyfilled with this one.
      *
      * @param elem Element to check.
-     * @return True if the element looks like a flash embed.
+     * @returns True if the element looks like a flash embed.
      */
     static isInterdictable(elem: HTMLElement): boolean {
         if (!elem.getAttribute("src")) {
@@ -125,7 +130,7 @@ export class RuffleEmbed extends RufflePlayer {
      * Creates a RuffleEmbed that will polyfill and replace the given element.
      *
      * @param elem Element to replace.
-     * @return Created RuffleEmbed.
+     * @returns Created RuffleEmbed.
      */
     static fromNativeEmbedElement(elem: HTMLElement): RuffleEmbed {
         const externalName = registerElement("ruffle-embed", RuffleEmbed);

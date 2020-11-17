@@ -28,7 +28,7 @@ class RuffleMimeTypeArray implements MimeTypeArray {
     /**
      * Install a MIME Type into the array.
      *
-     * @param mimetype
+     * @param mimetype The mimetype to install
      */
     install(mimetype: MimeType): void {
         const id = this.__mimetypes.length;
@@ -183,6 +183,8 @@ FLASH_PLUGIN.install({
  * `navigator.plugins` already accepts fake plugin entries. If so, it will use
  * that version of the plugin array. This allows the plugin polyfill to compose
  * across multiple plugin emulators with the first emulator's polyfill winning.
+ *
+ * @param plugin The plugin to install
  */
 export function installPlugin(plugin: RufflePlugin): void {
     if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {

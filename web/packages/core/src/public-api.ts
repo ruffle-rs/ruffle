@@ -99,6 +99,8 @@ export class PublicAPI {
      * to a new version of the API. The public API is intended to be changed
      * very infrequently, if at all, but this provides an escape mechanism for
      * newer Ruffle sources to upgrade older installations.
+     *
+     * @returns The version of this public API.
      */
     get version(): string {
         return "0.1.0";

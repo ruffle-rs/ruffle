@@ -10,11 +10,12 @@
     },
     "parser": "@typescript-eslint/parser",
     "plugins": [
-        "@typescript-eslint"
+        "@typescript-eslint", "jsdoc"
     ],
     "extends": [
         "eslint:recommended",
-        "plugin:@typescript-eslint/recommended"
+        "plugin:@typescript-eslint/recommended",
+        "plugin:jsdoc/recommended"
     ],
     "rules": {
         "@typescript-eslint/no-non-null-assertion": "off",
@@ -25,6 +26,18 @@
                 "selector": ["variable", "function"],
                 "format": ["camelCase", "UPPER_CASE"]
             }
-        ]
+        ],
+        "jsdoc/no-types": "error",
+        "jsdoc/require-returns-type": "off",
+        "jsdoc/require-param-type": "off",
+        "jsdoc/check-tag-names": ["warn", {
+            "definedTags": ["internal"]
+        }]
+    },
+    "settings": {
+        "jsdoc": {
+            "ignorePrivate": true,
+            "ignoreInternal": true
+        }
     }
 }

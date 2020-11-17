@@ -2,11 +2,13 @@
  * Functions imported from JS into Ruffle.
  *
  * @ignore
+ * @internal
  */
 
 /**
  * Copies data into the given audio channel.
  * This is necessary because Safari does not support `AudioBuffer.copyToChannel`.
+ *
  * @internal
  */
 export function copyToAudioBuffer(

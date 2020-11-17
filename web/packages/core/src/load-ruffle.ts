@@ -12,6 +12,9 @@ import { Ruffle } from "../pkg/ruffle_web";
  * This function returns a new instance of Ruffle and downloads it every time.
  * You should not use it directly; this module will memoize the resource
  * download.
+ *
+ * @returns A ruffle constructor that may be used to create new Ruffle
+ * instances.
  */
 async function fetchRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
     try {
@@ -38,6 +41,9 @@ let lastLoaded: Promise<{ new (...args: any[]): Ruffle }> | null = null;
  * Obtain an instance of `Ruffle`.
  *
  * This function returns a promise which yields `Ruffle` asynchronously.
+ *
+ * @returns A ruffle constructor that may be used to create new Ruffle
+ * instances.
  */
 export function loadRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
     if (lastLoaded == null) {

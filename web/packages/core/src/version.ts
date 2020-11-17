@@ -41,7 +41,7 @@ export class Version {
      * guaranteed.
      *
      * @param versionString A semver 2.0.0 compliant version string
-     * @return A version object
+     * @returns A version object
      */
     static fromSemver(versionString: string): Version {
         const buildSplit = versionString.split("+"),
@@ -85,7 +85,7 @@ export class Version {
      * exception of the prerelease exclusion rule.
      *
      * @param other The other version to test against
-     * @return True if compatible
+     * @returns True if compatible
      */
     isCompatibleWith(other: Version): boolean {
         return (
@@ -112,7 +112,7 @@ export class Version {
      * exclusion rule.
      *
      * @param other The other version to test against
-     * @return True if this version has precedence over the other one
+     * @returns True if this version has precedence over the other one
      */
     hasPrecedenceOver(other: Version): boolean {
         if (this.major > other.major) {
@@ -191,7 +191,7 @@ export class Version {
      * Build and prerelease tags are ignored.
      *
      * @param other The other version to test against
-     * @return True if the given version is equivalent
+     * @returns True if the given version is equivalent
      */
     isEqual(other: Version): boolean {
         return (
@@ -211,7 +211,7 @@ export class Version {
      * version always fails.
      *
      * @param other The other version to test against
-     * @return True if the given version is either stable, or a
+     * @returns True if the given version is either stable, or a
      * prerelease in the same series as this one.
      */
     isStableOrCompatiblePrerelease(other: Version): boolean {
