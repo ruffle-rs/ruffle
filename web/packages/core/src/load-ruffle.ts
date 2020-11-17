@@ -39,7 +39,7 @@ let lastLoaded: Promise<{ new (...args: any[]): Ruffle }> | null = null;
  *
  * This function returns a promise which yields `Ruffle` asynchronously.
  */
-export function load_ruffle(): Promise<{ new (...args: any[]): Ruffle }> {
+export function loadRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
     if (lastLoaded == null) {
         lastLoaded = fetchRuffle();
     }
