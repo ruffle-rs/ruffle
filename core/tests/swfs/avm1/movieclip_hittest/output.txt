@@ -66,3 +66,15 @@ true
 // circle.hitTest(upper)
 true
 
+// String path, below and to the right of the circle, overlapping only with BB.
+// circle.hitTest('_root.lower')
+true
+
+// String path, above and to the right of the circle.
+// circle.hitTest('../upper')
+true
+
+// String path, /
+// circle.hitTest('/')
+true
+

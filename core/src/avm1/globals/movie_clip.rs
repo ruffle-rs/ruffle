@@ -138,11 +138,8 @@ pub fn hit_test<'gc>(
             return Ok(ret.into());
         }
     } else if args.len() == 1 {
-        let other = args
-            .get(0)
-            .unwrap()
-            .coerce_to_object(activation)
-            .as_display_object();
+        let other = activation
+            .resolve_target_display_object(movie_clip.into(), args.get(0).unwrap().clone())?;
         if let Some(other) = other {
             return Ok(other
                 .world_bounds()
