@@ -138,8 +138,11 @@ pub fn hit_test<'gc>(
             return Ok(ret.into());
         }
     } else if args.len() == 1 {
-        let other = activation
-            .resolve_target_display_object(movie_clip.into(), args.get(0).unwrap().clone())?;
+        let other = activation.resolve_target_display_object(
+            movie_clip.into(),
+            args.get(0).unwrap().clone(),
+            false,
+        )?;
         if let Some(other) = other {
             return Ok(other
                 .world_bounds()
@@ -921,7 +924,9 @@ fn swap_depths<'gc>(
     let mut depth = None;
     if let Value::Number(n) = arg {
         depth = Some(crate::ecma_conversions::f64_to_wrapping_i32(n).wrapping_add(AVM_DEPTH_BIAS));
-    } else if let Some(target) = activation.resolve_target_display_object(movie_clip.into(), arg)? {
+    } else if let Some(target) =
+        activation.resolve_target_display_object(movie_clip.into(), arg, false)?
+    {
         if let Some(target_parent) = target.parent() {
             if DisplayObject::ptr_eq(target_parent, parent.into()) {
                 depth = Some(target.depth())
@@ -996,6 +1001,7 @@ fn get_bounds<'gc>(
             activation.resolve_target_display_object(
                 movie_clip.into(),
                 AvmString::new(activation.context.gc_context, path.to_string()).into(),
+                false,
             )?
         }
         None => Some(movie_clip.into()),

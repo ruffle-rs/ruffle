@@ -681,7 +681,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let target = self.context.avm1.pop();
         let source = self.context.avm1.pop();
         let start_clip = self.target_clip_or_root();
-        let source_clip = self.resolve_target_display_object(start_clip, source)?;
+        let source_clip = self.resolve_target_display_object(start_clip, source, true)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::duplicate_movie_clip_with_bias(
@@ -1159,7 +1159,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let prop_index = self.context.avm1.pop().into_number_v1() as usize;
         let path = self.context.avm1.pop();
         let ret = if let Some(target) = self.target_clip() {
-            if let Some(clip) = self.resolve_target_display_object(target, path)? {
+            if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
                 let display_properties = self.context.avm1.display_properties;
                 let props = display_properties.write(self.context.gc_context);
                 if let Some(property) = props.get_by_index(prop_index) {
@@ -1264,7 +1264,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 target.as_display_object()
             } else {
                 let start = self.target_clip_or_root();
-                self.resolve_target_display_object(start, target.clone())?
+                self.resolve_target_display_object(start, target.clone(), true)?
             }
         } else {
             Some(self.target_clip_or_root())
@@ -1794,7 +1794,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_remove_sprite(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.context.avm1.pop();
         let start_clip = self.target_clip_or_root();
-        let target_clip = self.resolve_target_display_object(start_clip, target)?;
+        let target_clip = self.resolve_target_display_object(start_clip, target, true)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::remove_movie_clip(target_clip, self, &[]);
@@ -1826,7 +1826,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let prop_index = self.context.avm1.pop().coerce_to_u32(self)? as usize;
         let path = self.context.avm1.pop();
         if let Some(target) = self.target_clip() {
-            if let Some(clip) = self.resolve_target_display_object(target, path)? {
+            if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
                 let display_properties = self.context.avm1.display_properties;
                 let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
@@ -1957,7 +1957,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_start_drag(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.context.avm1.pop();
         let start_clip = self.target_clip_or_root();
-        let display_object = self.resolve_target_display_object(start_clip, target)?;
+        let display_object = self.resolve_target_display_object(start_clip, target, true)?;
         if let Some(display_object) = display_object {
             let lock_center = self.context.avm1.pop();
             let constrain = self.context.avm1.pop().as_bool(self.current_swf_version());
@@ -2406,10 +2406,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// A target path always resolves via the display list. It can look
     /// at the prototype chain, but not the scope chain.
+    ///
+    /// `allow_empty` will allow the empty string to resolve to the start movie clip.
     pub fn resolve_target_display_object(
         &mut self,
         start: DisplayObject<'gc>,
         target: Value<'gc>,
+        allow_empty: bool,
     ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
         // If the value you got was a display object, we can just toss it straight back.
         if let Value::Object(o) = target {
@@ -2422,6 +2425,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // This means that values like `undefined` will resolve to clips with an instance name of
         // `"undefined"`, for example.
         let path = target.coerce_to_string(self)?;
+
+        if !allow_empty && path.is_empty() {
+            return Ok(None);
+        }
+
         let root = start.root();
         let start = start.object().coerce_to_object(self);
         Ok(self
