@@ -78,3 +78,7 @@ true
 // circle.hitTest('/')
 true
 
+// String path, ''
+// circle.hitTest('')
+false
+

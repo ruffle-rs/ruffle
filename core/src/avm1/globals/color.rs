@@ -82,9 +82,9 @@ fn target<'gc>(
     // depending on which timeline its called from!
     let target = this.get("target", activation)?;
     // Undefined or empty target is no-op.
-    if target != Value::Undefined && !matches!(&target, &Value::String(ref s) if s.is_empty()) {
+    if target != Value::Undefined {
         let start_clip = activation.target_clip_or_root();
-        activation.resolve_target_display_object(start_clip, target)
+        activation.resolve_target_display_object(start_clip, target, false)
     } else {
         Ok(None)
     }
