@@ -99,6 +99,7 @@ jobs:
         run: |
           npm run bootstrap
           npm run build
+          npm run docs
 
       - name: Build desktop
         uses: actions-rs/cargo@v1
@@ -233,4 +234,41 @@ jobs:
           repository: ruffle-rs/demo
           github_token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
           directory: demo
+          force: true
+
+      - name: Clone js docs
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/checkout@v2
+        with:
+          repository: ruffle-rs/js-docs
+          path: js-docs
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
+
+      - name: Update js docs
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd js-docs
+
+          # Delete the old docs
+          rm -rf master
+
+          # Copy the fresh docs into this folder.
+          cp -f ../web/packages/core/docs master
+
+          # Create git commit. Amend previous commit to avoid daily commit spam.
+          git config user.email "ruffle@ruffle.rs"
+          git config user.name "RuffleBuild"
+          git add -A
+          git commit --amend -am "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
+          cd ..
+
+      - name: Push js docs
+        if: matrix.os == 'ubuntu-latest'
+        uses: ad-m/github-push-action@master
+        with:
+          repository: ruffle-rs/js-docs
+          github_token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
+          directory: js-docs
           force: true
