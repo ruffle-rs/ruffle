@@ -11,7 +11,7 @@ clap = "3.0.0-beta.2"
 cpal = "0.13.1"
 ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
-env_logger = "0.8.1"
+env_logger = "0.8.2"
 generational-arena = "0.2.8"
 image = "0.23.11"
 jpeg-decoder = "0.1.20"
