@@ -259,7 +259,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             __CHANNEL__ === "nightly"
                 ? `nightly ${__COMMIT_DATE__}`
                 : window.RufflePlayer.version;
-        element.innerText = `Ruffle ${version}`;
+        element.innerText = `About Ruffle ${version}...`;
         element.addEventListener("click", () => {
             window.open("https://ruffle.rs", "_blank");
         });
