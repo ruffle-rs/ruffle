@@ -38,7 +38,7 @@ jobs:
              fi
           fi
           if [ $alive -eq 1 ]; then
-             echo ::set-env name=GHA_REPO_ALIVE::true
+            echo "GHA_REPO_ALIVE=true" >> $GITHUB_ENV
           fi
         shell: bash
 
