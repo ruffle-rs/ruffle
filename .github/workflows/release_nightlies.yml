@@ -117,7 +117,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           cp target/release/ruffle_desktop.exe release/ruffle.exe
-          7z a release.zip release/*
+          7z a release.zip ./release/*
 
       - name: Package linux/mac
         if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
