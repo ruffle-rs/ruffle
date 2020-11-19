@@ -162,7 +162,7 @@ exports.RufflePlayer = class RufflePlayer extends HTMLElement {
             // Serious duck typing. In error conditions, let's not make assumptions.
             const message =
                 e && e.message ? String(e.message).toLowerCase() : "";
-            if (message.indexOf("MIME") >= 0) {
+            if (message.indexOf("mime") >= 0) {
                 this.panicked = true;
                 this.container.innerHTML = `
                     <div id="panic">
