@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 wgpu = {git = "https://github.com/gfx-rs/wgpu-rs", rev = "e3eadca8c626beb9a1c25c359b0e20f6fdef00c4"}
-image = "0.23.11"
+image = "0.23.12"
 jpeg-decoder = "0.1.20"
 log = "0.4"
 lyon = "0.16.2"
