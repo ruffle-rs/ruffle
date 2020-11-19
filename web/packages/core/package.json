@@ -10,7 +10,7 @@
     ],
     "scripts": {
         "build": "npm run build:wasm && npm run build:ts",
-        "build:ts": "tsc -d",
+        "build:ts": "tsc -d && node tools/set_version.js",
         "build:wasm": "wasm-pack build ../../ --out-dir packages/core/pkg",
         "docs": "typedoc",
         "test": "mocha -r esm -r ts-node/register test/**.ts"
@@ -25,6 +25,7 @@
         "eslint-plugin-jsdoc": "^30.7.8",
         "esm": "^3.2.25",
         "mocha": "^8.0.1",
+        "replace-in-file": "^6.1.0",
         "ts-node": "^9.0.0",
         "typedoc": "^0.19.2",
         "typescript": "^4.0.5"
