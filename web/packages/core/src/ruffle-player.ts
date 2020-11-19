@@ -417,12 +417,7 @@ export class RufflePlayer extends HTMLElement {
             }
         }
         items.push({
-            // TODO: ruffle version info
-            text: `Ruffle ${
-                __CHANNEL__ === "nightly"
-                    ? `nightly ${__COMMIT_DATE__}`
-                    : "0.1.0"
-            }`,
+            text: `Ruffle %VERSION_NAME%`,
             onClick() {
                 window.open("https://ruffle.rs/", "_blank");
             },
@@ -687,7 +682,12 @@ export class RufflePlayer extends HTMLElement {
             errorText += `Useragent: ${window.navigator.userAgent}\n`;
             errorText += `OS: ${window.navigator.platform}\n`;
 
-            // TODO: Ruffle source version. No way to know right now?
+            errorText += "\n# Ruffle Info\n";
+            errorText += `Version: %VERSION_NUMBER%\n`;
+            errorText += `Name: %VERSION_NAME%\n`;
+            errorText += `Channel: %VERSION_CHANNEL%\n`;
+            errorText += `Built: %BUILD_DATE%\n`;
+            errorText += `Commit: %COMMIT_HASH%\n`;
 
             this.container.querySelector(
                 "#panic-body"
