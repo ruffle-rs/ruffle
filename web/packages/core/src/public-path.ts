@@ -9,7 +9,7 @@ import { Config } from "./config";
  *
  * 1. The public path can be specified on a per-source basis using the
  * RufflePlayer config, for example:
- * `window.RufflePlayer.config.public_paths.local = "/dist/";`
+ * `window.RufflePlayer.config.publicPaths.local = "/dist/";`
  * 2. A global public path can be specified for all sources, also in config.
  * `window.RufflePlayer.config.publicPath = "/dist/";`
  * 3. If there is absolutely no configuration that yields a public path then we
@@ -24,10 +24,10 @@ export function publicPath(config: Config, source_name: string): string {
     let path = "";
     if (
         config !== undefined &&
-        config.public_paths !== undefined &&
-        config.public_paths[source_name] !== undefined
+        config.publicPaths !== undefined &&
+        config.publicPaths[source_name] !== undefined
     ) {
-        path = config.public_paths[source_name];
+        path = config.publicPaths[source_name];
     } else if (config !== undefined && config.publicPath !== undefined) {
         path = config.publicPath;
     } else if (
