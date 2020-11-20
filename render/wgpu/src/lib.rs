@@ -590,11 +590,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
                     let mut options = StrokeOptions::default()
                         .with_line_width(width)
-                        .with_line_join(match style.join_style {
-                            swf::LineJoinStyle::Round => tessellation::LineJoin::Round,
-                            swf::LineJoinStyle::Bevel => tessellation::LineJoin::Bevel,
-                            swf::LineJoinStyle::Miter(_) => tessellation::LineJoin::MiterClip,
-                        })
                         .with_start_cap(match style.start_cap {
                             swf::LineCapStyle::None => tessellation::LineCap::Butt,
                             swf::LineCapStyle::Round => tessellation::LineCap::Round,
@@ -606,9 +601,20 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             swf::LineCapStyle::Square => tessellation::LineCap::Square,
                         });
 
-                    if let swf::LineJoinStyle::Miter(limit) = style.join_style {
-                        options = options.with_miter_limit(limit);
-                    }
+                    let line_join = match style.join_style {
+                        swf::LineJoinStyle::Round => tessellation::LineJoin::Round,
+                        swf::LineJoinStyle::Bevel => tessellation::LineJoin::Bevel,
+                        swf::LineJoinStyle::Miter(limit) => {
+                            // Avoid lyon assert with small miter limits.
+                            if limit >= StrokeOptions::MINIMUM_MITER_LIMIT {
+                                options = options.with_miter_limit(limit);
+                                tessellation::LineJoin::MiterClip
+                            } else {
+                                tessellation::LineJoin::Bevel
+                            }
+                        }
+                    };
+                    options = options.with_line_join(line_join);
 
                     if let Err(e) = stroke_tess.tessellate_path(
                         &ruffle_path_to_lyon_path(commands, is_closed),
