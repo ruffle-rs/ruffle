@@ -137,7 +137,7 @@ impl<'gc> Button<'gc> {
                 if let Ok(child) = context
                     .library
                     .library_for_movie_mut(movie.clone())
-                    .instantiate_by_id(record.id, context.gc_context)
+                    .instantiate_by_id(record.id, context)
                 {
                     child.set_parent(context.gc_context, Some(self.into()));
                     child.set_matrix(context.gc_context, &record.matrix);
@@ -193,7 +193,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        self.set_default_instance_name(context);
+        self.set_default_instance_name(context.gc_context);
 
         let mut mc = self.0.write(context.gc_context);
         if mc.object.is_none() {
@@ -230,7 +230,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
                     match context
                         .library
                         .library_for_movie_mut(read.static_data.read().swf.clone())
-                        .instantiate_by_id(record.id, context.gc_context)
+                        .instantiate_by_id(record.id, context)
                     {
                         Ok(child) => {
                             child.set_matrix(context.gc_context, &record.matrix);

@@ -40,6 +40,7 @@ pub use text::Text;
 
 #[derive(Clone, Debug)]
 pub struct DisplayObjectBase<'gc> {
+    instance_id: i32,
     parent: Option<DisplayObject<'gc>>,
     place_frame: u16,
     depth: Depth,
@@ -85,6 +86,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             prev_sibling: None,
             next_sibling: None,
             flags: DisplayObjectFlags::Visible.into(),
+            instance_id: 123,
         }
     }
 }
@@ -105,8 +107,11 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags = DisplayObjectFlags::Visible.into();
     }
 
-    fn id(&self) -> CharacterId {
-        0
+    fn instance_id(&self) -> i32 {
+        self.instance_id
+    }
+    fn set_instance_id(&mut self, instance_id: i32) {
+        self.instance_id = instance_id;
     }
     fn depth(&self) -> Depth {
         self.depth
@@ -385,6 +390,8 @@ pub trait TDisplayObject<'gc>:
     'gc + Clone + Copy + Collect + Debug + Into<DisplayObject<'gc>>
 {
     fn id(&self) -> CharacterId;
+    fn instance_id(&self) -> i32;
+    fn set_instance_id(&self, context: MutationContext<'gc, '_>, instance_id: i32);
     fn depth(&self) -> Depth;
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
 
@@ -941,11 +948,10 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Assigns a default instance name `instanceN` to this object.
-    fn set_default_instance_name(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn set_default_instance_name(&self, gc_context: MutationContext<'gc, '_>) {
         if self.name().is_empty() {
-            let name = format!("instance{}", *context.instance_counter);
-            self.set_name(context.gc_context, &name);
-            *context.instance_counter = context.instance_counter.wrapping_add(1);
+            let name = format!("instance{}", self.instance_id());
+            self.set_name(gc_context, &name);
         }
     }
 
@@ -973,6 +979,12 @@ pub enum DisplayObjectPtr {}
 #[macro_export]
 macro_rules! impl_display_object_sansbounds {
     ($field:ident) => {
+        fn instance_id(&self) -> i32 {
+            self.0.read().$field.instance_id()
+        }
+        fn set_instance_id(&self, gc_context: gc_arena::MutationContext<'gc, '_>, instance_id: i32) {
+            self.0.write(gc_context).$field.set_instance_id(instance_id)
+        }
         fn depth(&self) -> crate::prelude::Depth {
             self.0.read().$field.depth()
         }

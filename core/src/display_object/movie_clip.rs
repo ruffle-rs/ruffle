@@ -1121,7 +1121,7 @@ impl<'gc> MovieClip<'gc> {
         if let Ok(child) = context
             .library
             .library_for_movie_mut(self.movie().unwrap()) //TODO
-            .instantiate_by_id(id, context.gc_context)
+            .instantiate_by_id(id, context)
         {
             // Remove previous child from children list,
             // and add new child onto front of the list.
@@ -1823,7 +1823,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        self.set_default_instance_name(context);
+        self.set_default_instance_name(context.gc_context);
 
         let movie = self.movie().unwrap();
         let library = context.library.library_for_movie_mut(movie);
