@@ -80,6 +80,7 @@ export class RufflePlayer extends HTMLElement {
     private dynamicStyles: HTMLStyleElement;
     private container: HTMLElement;
     private playButton: HTMLElement;
+    private unmuteOverlay: HTMLElement;
     private rightClickMenu: HTMLElement;
     private instance: Ruffle | null;
     private _trace_observer: ((message: string) => void) | null;
@@ -116,6 +117,13 @@ export class RufflePlayer extends HTMLElement {
                 this.playButtonClicked.bind(this)
             );
         }
+
+        this.unmuteOverlay = this.shadow.getElementById("unmute_overlay")!;
+        this.unmuteOverlay.addEventListener(
+            "click",
+            this.unmuteOverlayClicked.bind(this)
+        );
+
         this.rightClickMenu = this.shadow.getElementById("right_click_menu")!;
 
         this.addEventListener(
@@ -473,6 +481,28 @@ export class RufflePlayer extends HTMLElement {
             this.instance.pause();
             if (this.playButton) {
                 this.playButton.style.display = "block";
+            }
+        }
+    }
+
+    private audioState(): string {
+        if (this.instance) {
+            const audioContext = this.instance.audio_context();
+            return (audioContext && audioContext.state) || "running";
+        }
+        return "suspended";
+    }
+
+    private unmuteOverlayClicked(): void {
+        if (this.instance) {
+            if (this.audioState() !== "running") {
+                const audioContext = this.instance.audio_context();
+                if (audioContext) {
+                    audioContext.resume();
+                }
+            }
+            if (this.unmuteOverlay) {
+                this.unmuteOverlay.style.display = "none";
             }
         }
     }
