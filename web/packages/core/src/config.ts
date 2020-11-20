@@ -60,7 +60,7 @@ export interface Config {
      * [public_paths] is consulted first for a source-specific URL,
      * with this field being a fallback.
      */
-    public_path?: string;
+    publicPath?: string;
 
     /**
      * Whether or not to enable polyfills on the page.
