@@ -408,7 +408,7 @@ impl<'gc> MovieClip<'gc> {
 
         // Finalize audio stream.
         if self.0.read().static_data.audio_stream_info.is_some() {
-            context.audio.preload_sound_stream_end(self.0.read().id());
+            context.audio.preload_sound_stream_end(self.instance_id());
         }
     }
 
@@ -2255,7 +2255,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             let data = &data[pos..pos + tag_len];
             context
                 .audio
-                .preload_sound_stream_block(self.id(), cur_frame, data);
+                .preload_sound_stream_block(self.base.instance_id(), cur_frame, data);
         }
 
         Ok(())
@@ -2273,7 +2273,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let audio_stream_info = reader.read_sound_stream_head()?;
         context
             .audio
-            .preload_sound_stream_head(self.id(), cur_frame, &audio_stream_info);
+            .preload_sound_stream_head(self.base.instance_id(), cur_frame, &audio_stream_info);
         static_data.audio_stream_info = Some(audio_stream_info);
         Ok(())
     }
@@ -2917,8 +2917,8 @@ impl<'gc, 'a> MovieClip<'gc> {
                         )
                     })?;
                 let audio_stream = context.audio.start_stream(
-                    mc.id(),
-                    mc.current_frame() + 1,
+                    self.instance_id(),
+                    self.current_frame() + 1,
                     slice,
                     &stream_info,
                 );
@@ -2946,7 +2946,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             match start_sound.sound_info.event {
                 // "Event" sounds always play, independent of the timeline.
                 SoundEvent::Event => {
-                    // TODO: pass start_sound.id instead of None?
+                    // TODO: pass instance_id instead of None?
                     let _ = context
                         .audio
                         .start_sound(None, handle, &start_sound.sound_info);
@@ -2955,7 +2955,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 // "Start" sounds only play if an instance of the same sound is not already playing.
                 SoundEvent::Start => {
                     if !context.audio.is_sound_playing_with_handle(handle) {
-                        // TODO: pass start_sound.id instead of None?
+                        // TODO: pass instance_id instead of None?
                         let _ = context
                             .audio
                             .start_sound(None, handle, &start_sound.sound_info);

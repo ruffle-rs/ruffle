@@ -14,8 +14,8 @@ use web_sys::AudioContext;
 pub struct WebAudioBackend {
     context: AudioContext,
     sounds: Arena<Sound>,
-    stream_data: FnvHashMap<swf::CharacterId, StreamData>,
-    id_to_sound: FnvHashMap<swf::CharacterId, SoundHandle>,
+    stream_data: FnvHashMap<i32, StreamData>,
+    instance_id_to_sound: FnvHashMap<i32, SoundHandle>,
     left_samples: Vec<f32>,
     right_samples: Vec<f32>,
     frame_rate: f64,
@@ -87,9 +87,9 @@ struct SoundInstance {
     /// and played with and AudioBufferSourceNode.
     instance_type: SoundInstanceType,
 
-    /// The character ID of the movie clip that contains this stream.
+    /// The instance ID of the movie clip that contains this stream.
     // TODO: Make non-Option?
-    clip_id: Option<swf::CharacterId>,
+    instance_id: Option<i32>,
 }
 
 /// The Drop impl ensures that the sound is stopped and remove from the audio context,
@@ -142,7 +142,7 @@ impl WebAudioBackend {
             context,
             sounds: Arena::new(),
             stream_data: FnvHashMap::default(),
-            id_to_sound: FnvHashMap::default(),
+            instance_id_to_sound: FnvHashMap::default(),
             left_samples: vec![],
             right_samples: vec![],
             frame_rate: 1.0,
@@ -157,7 +157,7 @@ impl WebAudioBackend {
 
     fn start_sound_internal(
         &mut self,
-        clip_id: Option<swf::CharacterId>,
+        instance_id: Option<i32>,
         handle: SoundHandle,
         settings: Option<&swf::SoundInfo>,
     ) -> Result<SoundInstanceHandle, Error> {
@@ -240,7 +240,7 @@ impl WebAudioBackend {
                         node,
                         buffer_source_node: buffer_source_node.clone(),
                     },
-                    clip_id,
+                    instance_id,
                 };
                 let instance_handle = SOUND_INSTANCES.with(|instances| {
                     let mut instances = instances.borrow_mut();
@@ -293,7 +293,7 @@ impl WebAudioBackend {
                     handle: Some(handle),
                     format: sound.format.clone(),
                     instance_type: SoundInstanceType::Decoder(decoder),
-                    clip_id,
+                    instance_id,
                 };
                 SOUND_INSTANCES.with(|instances| {
                     let mut instances = instances.borrow_mut();
@@ -625,12 +625,12 @@ impl AudioBackend for WebAudioBackend {
 
     fn preload_sound_stream_head(
         &mut self,
-        clip_id: swf::CharacterId,
+        instance_id: i32,
         _stream_start_frame: u16,
         stream_info: &swf::SoundStreamHead,
     ) {
         self.stream_data
-            .entry(clip_id)
+            .entry(instance_id)
             .or_insert_with(|| StreamData {
                 format: stream_info.stream_format.clone(),
                 audio_data: vec![],
@@ -645,11 +645,11 @@ impl AudioBackend for WebAudioBackend {
 
     fn preload_sound_stream_block(
         &mut self,
-        clip_id: swf::CharacterId,
+        instance_id: i32,
         clip_frame: u16,
         audio_data: &[u8],
     ) {
-        if let Some(stream) = self.stream_data.get_mut(&clip_id) {
+        if let Some(stream) = self.stream_data.get_mut(&instance_id) {
             // Handle gaps in streaming audio. Store the offsets for each stream segment.
             if stream.audio_data.is_empty() || stream.last_clip_frame + 1 != clip_frame {
                 let sample_mult = 44100 / stream.format.sample_rate;
@@ -694,8 +694,8 @@ impl AudioBackend for WebAudioBackend {
         }
     }
 
-    fn preload_sound_stream_end(&mut self, clip_id: swf::CharacterId) {
-        let stream_data = self.stream_data.remove(&clip_id);
+    fn preload_sound_stream_end(&mut self, instance_id: i32) {
+        let stream_data = self.stream_data.remove(&instance_id);
 
         if let Some(mut stream) = stream_data {
             if !stream.audio_data.is_empty() {
@@ -711,14 +711,14 @@ impl AudioBackend for WebAudioBackend {
                     },
                 ) {
                     stream.audio_data = vec![];
-                    self.stream_data.insert(clip_id, stream.clone());
+                    self.stream_data.insert(instance_id, stream.clone());
                     let handle = self.sounds.insert(Sound {
                         format: stream.format,
                         source: SoundSource::AudioBuffer(audio_buffer),
                         num_sample_frames: stream.num_sample_frames,
                         skip_sample_frames: stream.skip_sample_frames,
                     });
-                    self.id_to_sound.insert(clip_id, handle);
+                    self.instance_id_to_sound.insert(instance_id, handle);
                 }
             }
         }
@@ -726,25 +726,25 @@ impl AudioBackend for WebAudioBackend {
 
     fn start_sound(
         &mut self,
-        clip_id: Option<swf::CharacterId>,
+        instance_id: Option<i32>,
         sound: SoundHandle,
         sound_info: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error> {
-        let handle = self.start_sound_internal(clip_id, sound, Some(sound_info))?;
+        let handle = self.start_sound_internal(instance_id, sound, Some(sound_info))?;
         Ok(handle)
     }
 
     fn start_stream(
         &mut self,
-        clip_id: swf::CharacterId,
+        instance_id: i32,
         clip_frame: u16,
         _clip_data: ruffle_core::tag_utils::SwfSlice,
         _stream_info: &swf::SoundStreamHead,
     ) -> Result<AudioStreamHandle, Error> {
-        if let Some(&handle) = self.id_to_sound.get(&clip_id) {
+        if let Some(&handle) = self.instance_id_to_sound.get(&instance_id) {
             let mut sound_info = None;
             if clip_frame > 1 {
-                if let Some(stream_data) = self.stream_data.get(&clip_id) {
+                if let Some(stream_data) = self.stream_data.get(&instance_id) {
                     // Figure out the frame and sample where this stream segment first starts.
                     let start_pos = match stream_data
                         .stream_segments
@@ -773,10 +773,10 @@ impl AudioBackend for WebAudioBackend {
                     });
                 }
             }
-            let handle = self.start_sound_internal(Some(clip_id), handle, sound_info.as_ref())?;
+            let handle = self.start_sound_internal(Some(instance_id), handle, sound_info.as_ref())?;
             Ok(handle)
         } else {
-            let msg = format!("Missing stream for clip {}", clip_id);
+            let msg = format!("Missing stream for clip {}", instance_id);
             log::error!("{}", msg);
             Err(msg.into())
         }
@@ -824,10 +824,10 @@ impl AudioBackend for WebAudioBackend {
         })
     }
 
-    fn stop_sounds_with_clip_id(&mut self, clip_id: swf::CharacterId) {
+    fn stop_sounds_with_instance_id(&mut self, instance_id: i32) {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
-            instances.retain(|_, instance| instance.clip_id != Some(clip_id));
+            instances.retain(|_, instance| instance.instance_id != Some(instance_id));
         })
     }
 

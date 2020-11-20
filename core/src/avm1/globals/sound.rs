@@ -387,9 +387,9 @@ fn start<'gc>(
     use swf::{SoundEvent, SoundInfo};
     if let Some(sound_object) = this.as_sound_object() {
         if let Some(sound) = sound_object.sound() {
-            let clip_id = sound_object.owner().map(|owner| owner.id());
+            let instance_id = sound_object.owner().map(|owner| owner.instance_id());
             let _ = activation.context.audio.start_sound(
-                clip_id,
+                instance_id,
                 sound,
                 &SoundInfo {
                     event: SoundEvent::Start,
@@ -450,7 +450,7 @@ fn stop<'gc>(
             activation
                 .context
                 .audio
-                .stop_sounds_with_clip_id(owner.id());
+                .stop_sounds_with_instance_id(owner.instance_id());
         } else {
             // Usage 3: If there is no owner and no name, this call acts like `stopAllSounds()`.
             activation.context.audio.stop_all_sounds();

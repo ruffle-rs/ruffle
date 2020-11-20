@@ -460,7 +460,7 @@ impl<'gc> ButtonData<'gc> {
                 .library_for_movie_mut(self.movie())
                 .get_sound(*id)
             {
-                // TODO: pass id instead of None?
+                // TODO: pass instance_id instead of None?
                 let _ = context.audio.start_sound(None, sound_handle, sound_info);
             }
         }

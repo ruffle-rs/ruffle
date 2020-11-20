@@ -58,9 +58,9 @@ struct SoundInstance {
     /// The audio stream. Call `next()` to yield sample frames.
     signal: Signal,
 
-    /// The character ID of the movie clip that contains this stream.
+    /// The instance ID of the movie clip that contains this stream.
     // TODO: Make non-Option?
-    clip_id: Option<swf::CharacterId>,
+    instance_id: Option<i32>,
 
     /// Flag indicating whether this sound is still playing.
     /// If this flag is false, the sound will be cleaned up during the
@@ -329,7 +329,7 @@ impl AudioBackend for CpalAudioBackend {
 
     fn start_stream(
         &mut self,
-        clip_id: swf::CharacterId,
+        instance_id: i32,
         _clip_frame: u16,
         clip_data: SwfSlice,
         stream_info: &swf::SoundStreamHead,
@@ -344,7 +344,7 @@ impl AudioBackend for CpalAudioBackend {
         let mut sound_instances = self.sound_instances.lock().unwrap();
         let handle = sound_instances.insert(SoundInstance {
             handle: None,
-            clip_id: Some(clip_id),
+            instance_id: Some(instance_id),
             signal,
             active: true,
         });
@@ -358,7 +358,7 @@ impl AudioBackend for CpalAudioBackend {
 
     fn start_sound(
         &mut self,
-        clip_id: Option<swf::CharacterId>,
+        instance_id: Option<i32>,
         sound_handle: SoundHandle,
         settings: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error> {
@@ -383,7 +383,7 @@ impl AudioBackend for CpalAudioBackend {
         let handle = sound_instances.insert(SoundInstance {
             handle: Some(sound_handle),
             signal,
-            clip_id,
+            instance_id,
             active: true,
         });
         Ok(handle)
@@ -406,9 +406,9 @@ impl AudioBackend for CpalAudioBackend {
         sound_instances.clear();
     }
 
-    fn stop_sounds_with_clip_id(&mut self, clip_id: swf::CharacterId) {
+    fn stop_sounds_with_instance_id(&mut self, instance_id: i32) {
         let mut sound_instances = self.sound_instances.lock().unwrap();
-        sound_instances.retain(|_, instance| instance.clip_id != Some(clip_id));
+        sound_instances.retain(|_, instance| instance.instance_id != Some(instance_id));
     }
 
     fn stop_sounds_with_handle(&mut self, handle: SoundHandle) {

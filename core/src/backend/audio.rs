@@ -21,32 +21,32 @@ pub trait AudioBackend: Downcast {
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error>;
     fn preload_sound_stream_head(
         &mut self,
-        _clip_id: swf::CharacterId,
+        _instance_id: i32,
         _clip_frame: u16,
         _stream_info: &swf::SoundStreamHead,
     ) {
     }
     fn preload_sound_stream_block(
         &mut self,
-        _clip_id: swf::CharacterId,
+        _instance_id: i32,
         _clip_frame: u16,
         _audio_data: &[u8],
     ) {
     }
-    fn preload_sound_stream_end(&mut self, _clip_id: swf::CharacterId) {}
+    fn preload_sound_stream_end(&mut self, _instance_id: i32) {}
 
     /// Starts playing a sound instance that is not tied to a MovieClip timeline.
     /// In Flash, this is known as an "Event" sound.
     fn start_sound(
         &mut self,
-        clip_id: Option<swf::CharacterId>,
+        instance_id: Option<i32>,
         sound: SoundHandle,
         settings: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error>;
 
     fn start_stream(
         &mut self,
-        clip_id: crate::prelude::CharacterId,
+        instance_id: i32,
         clip_frame: u16,
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
@@ -63,8 +63,8 @@ pub trait AudioBackend: Downcast {
     /// Good ol' stopAllSounds() :-)
     fn stop_all_sounds(&mut self);
 
-    /// Stops all active sound instances of a particular character ID.
-    fn stop_sounds_with_clip_id(&mut self, clip_id: swf::CharacterId);
+    /// Stops all active sound instances of a particular instance ID.
+    fn stop_sounds_with_instance_id(&mut self, instance_id: i32);
 
     /// Stops all active sound instances of a particular sound.
     /// Used by SWF `StartSound` tag with `SoundEvent::Stop`.
@@ -119,7 +119,7 @@ impl AudioBackend for NullAudioBackend {
 
     fn start_sound(
         &mut self,
-        _clip_id: Option<swf::CharacterId>,
+        _instance_id: Option<i32>,
         _sound: SoundHandle,
         _sound_info: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error> {
@@ -128,7 +128,7 @@ impl AudioBackend for NullAudioBackend {
 
     fn start_stream(
         &mut self,
-        _clip_id: crate::prelude::CharacterId,
+        _instance_id: i32,
         _stream_start_frame: u16,
         _clip_data: crate::tag_utils::SwfSlice,
         _handle: &swf::SoundStreamHead,
@@ -142,7 +142,7 @@ impl AudioBackend for NullAudioBackend {
         self.streams.remove(stream);
     }
     fn stop_all_sounds(&mut self) {}
-    fn stop_sounds_with_clip_id(&mut self, _clip_id: swf::CharacterId) {}
+    fn stop_sounds_with_instance_id(&mut self, _instance_id: i32) {}
     fn stop_sounds_with_handle(&mut self, _handle: SoundHandle) {}
     fn is_sound_playing_with_handle(&mut self, _handle: SoundHandle) -> bool {
         false
