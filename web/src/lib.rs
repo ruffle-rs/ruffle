@@ -282,13 +282,15 @@ impl Ruffle {
 
         let current_domain = window.location().href().unwrap();
 
-        let local_storage = window
-            .local_storage()
-            .unwrap()
-            .map(|s| {
+        let local_storage = match window.local_storage() {
+            Ok(Some(s)) => {
                 Box::new(LocalStorageBackend::new(s, current_domain)) as Box<dyn StorageBackend>
-            })
-            .unwrap_or_else(|| Box::new(MemoryStorageBackend::default()));
+            }
+            err => {
+                log::warn!("Unable to use localStorage: {:?}\nData will not save.", err);
+                Box::new(MemoryStorageBackend::default())
+            }
+        };
 
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
         let log = Box::new(WebLogBackend::new(trace_observer.clone()));
