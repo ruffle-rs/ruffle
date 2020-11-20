@@ -982,7 +982,11 @@ macro_rules! impl_display_object_sansbounds {
         fn instance_id(&self) -> i32 {
             self.0.read().$field.instance_id()
         }
-        fn set_instance_id(&self, gc_context: gc_arena::MutationContext<'gc, '_>, instance_id: i32) {
+        fn set_instance_id(
+            &self,
+            gc_context: gc_arena::MutationContext<'gc, '_>,
+            instance_id: i32,
+        ) {
             self.0.write(gc_context).$field.set_instance_id(instance_id)
         }
         fn depth(&self) -> crate::prelude::Depth {

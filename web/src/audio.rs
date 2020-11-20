@@ -643,12 +643,7 @@ impl AudioBackend for WebAudioBackend {
             });
     }
 
-    fn preload_sound_stream_block(
-        &mut self,
-        instance_id: i32,
-        clip_frame: u16,
-        audio_data: &[u8],
-    ) {
+    fn preload_sound_stream_block(&mut self, instance_id: i32, clip_frame: u16, audio_data: &[u8]) {
         if let Some(stream) = self.stream_data.get_mut(&instance_id) {
             // Handle gaps in streaming audio. Store the offsets for each stream segment.
             if stream.audio_data.is_empty() || stream.last_clip_frame + 1 != clip_frame {
@@ -773,7 +768,8 @@ impl AudioBackend for WebAudioBackend {
                     });
                 }
             }
-            let handle = self.start_sound_internal(Some(instance_id), handle, sound_info.as_ref())?;
+            let handle =
+                self.start_sound_internal(Some(instance_id), handle, sound_info.as_ref())?;
             Ok(handle)
         } else {
             let msg = format!("Missing stream for clip {}", instance_id);

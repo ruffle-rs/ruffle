@@ -2271,9 +2271,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         _version: u8,
     ) -> DecodeResult {
         let audio_stream_info = reader.read_sound_stream_head()?;
-        context
-            .audio
-            .preload_sound_stream_head(self.base.instance_id(), cur_frame, &audio_stream_info);
+        context.audio.preload_sound_stream_head(
+            self.base.instance_id(),
+            cur_frame,
+            &audio_stream_info,
+        );
         static_data.audio_stream_info = Some(audio_stream_info);
         Ok(())
     }
