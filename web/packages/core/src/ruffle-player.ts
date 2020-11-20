@@ -3,6 +3,7 @@ import { Ruffle } from "../pkg/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
+import { AutoPlay, Config, UnmuteOverlay } from "./config";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -96,6 +97,12 @@ export class RufflePlayer extends HTMLElement {
      * This should only be enabled for movies you trust.
      */
     allowScriptAccess: boolean;
+
+    /**
+     * Any configuration that should apply to this specific player.
+     * This will be defaulted with any global configuration.
+     */
+    config: Config = {};
 
     /**
      * Constructs a new Ruffle flash player for insertion onto the page.
@@ -302,6 +309,61 @@ export class RufflePlayer extends HTMLElement {
             this.allowScriptAccess
         );
         console.log("New Ruffle instance created.");
+
+        // In Firefox, AudioContext.state is always "suspended" when the object has just been created.
+        // It may change by itself to "running" some milliseconds later. So we need to wait a little
+        // bit before checking if autoplay is supported and applying the instance config.
+        if (this.audioState() !== "running") {
+            this.container.style.visibility = "hidden";
+            await new Promise((resolve) => {
+                window.setTimeout(() => {
+                    resolve();
+                }, 200);
+            });
+            this.container.style.visibility = "visible";
+        }
+
+        const config = {
+            ...this.config,
+            ...(window.RufflePlayer?.config ?? {}),
+        };
+        const autoplay = config.autoplay ?? AutoPlay.Off;
+        const unmuteVisibility = config.unmuteOverlay ?? UnmuteOverlay.Visible;
+
+        if (
+            autoplay == AutoPlay.On ||
+            (autoplay == AutoPlay.Auto && this.audioState() === "running")
+        ) {
+            this.play();
+
+            if (this.audioState() !== "running") {
+                this.unmuteOverlay.style.display = "block";
+
+                // We need to mark each child as hidden or visible, as we want an overlay even if it's "hidden".
+                // We need to undo this later if the config changed back to visible, but we already hid them.
+                this.unmuteOverlay.childNodes.forEach((node) => {
+                    if ("style" in node) {
+                        const style = (<ElementCSSInlineStyle>node).style;
+                        style.visibility =
+                            unmuteVisibility == UnmuteOverlay.Visible
+                                ? "visible"
+                                : "hidden";
+                    }
+                });
+
+                const audioContext = this.instance?.audio_context();
+                if (audioContext) {
+                    audioContext.onstatechange = () => {
+                        if (audioContext.state === "running") {
+                            this.unmuteOverlayClicked();
+                        }
+                        audioContext.onstatechange = null;
+                    };
+                }
+            }
+        } else {
+            this.playButton.style.display = "block";
+        }
     }
 
     /**
@@ -337,10 +399,6 @@ export class RufflePlayer extends HTMLElement {
                     ...sanitizeParameters(parameters),
                 };
                 this.instance!.stream_from(url, parameters);
-
-                if (this.playButton) {
-                    this.playButton.style.display = "block";
-                }
             } else {
                 console.warn(
                     "Ignoring attempt to play a disconnected or suspended Ruffle element"
@@ -354,6 +412,13 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private playButtonClicked(): void {
+        this.play();
+    }
+
+    /**
+     * Plays or resumes the movie.
+     */
+    play(): void {
         if (this.instance) {
             this.instance.play();
             if (this.playButton) {
@@ -540,10 +605,6 @@ export class RufflePlayer extends HTMLElement {
                     sanitizeParameters(parameters)
                 );
                 console.log("New Ruffle instance created.");
-
-                if (this.playButton) {
-                    this.playButton.style.display = "block";
-                }
             } else {
                 console.warn(
                     "Ignoring attempt to play a disconnected or suspended Ruffle element"
