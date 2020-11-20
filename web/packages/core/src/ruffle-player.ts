@@ -327,7 +327,7 @@ export class RufflePlayer extends HTMLElement {
             ...(window.RufflePlayer?.config ?? {}),
             ...this.config,
         };
-        const autoplay = config.autoplay ?? AutoPlay.Off;
+        const autoplay = config.autoplay ?? AutoPlay.Auto;
         const unmuteVisibility = config.unmuteOverlay ?? UnmuteOverlay.Visible;
 
         if (

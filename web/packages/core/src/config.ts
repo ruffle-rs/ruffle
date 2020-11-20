@@ -76,7 +76,7 @@ export interface Config {
     /**
      * Controls the auto-play behaviour of Ruffle.
      *
-     * @default AutoPlay.Off
+     * @default AutoPlay.Auto
      */
     autoplay?: AutoPlay;
 
