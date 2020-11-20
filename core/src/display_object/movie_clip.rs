@@ -946,13 +946,17 @@ impl<'gc> MovieClip<'gc> {
         child: DisplayObject<'gc>,
         depth: Depth,
     ) {
-        let mut parent = self.0.write(context.gc_context);
-
-        let prev_child = parent.children.insert(depth, child);
+        let prev_child = self
+            .0
+            .write(context.gc_context)
+            .children
+            .insert(depth, child);
         if let Some(prev_child) = prev_child {
-            parent.remove_child_from_exec_list(context, prev_child);
+            self.remove_child_from_exec_list(context, prev_child);
         }
-        parent.add_child_to_exec_list(context.gc_context, child);
+        self.0
+            .write(context.gc_context)
+            .add_child_to_exec_list(context.gc_context, child);
         child.set_parent(context.gc_context, Some((*self).into()));
         child.set_place_frame(context.gc_context, 0);
         child.set_depth(context.gc_context, depth);
@@ -968,9 +972,13 @@ impl<'gc> MovieClip<'gc> {
             child.parent().unwrap(),
             (*self).into()
         ));
-        let mut parent = self.0.write(context.gc_context);
-        if let Some(child) = parent.children.remove(&child.depth()) {
-            parent.remove_child_from_exec_list(context, child);
+        let child = self
+            .0
+            .write(context.gc_context)
+            .children
+            .remove(&child.depth());
+        if let Some(child) = child {
+            self.remove_child_from_exec_list(context, child);
         }
     }
 
@@ -1180,12 +1188,17 @@ impl<'gc> MovieClip<'gc> {
             // Remove previous child from children list,
             // and add new child onto front of the list.
             let prev_child = {
-                let mut mc = self.0.write(context.gc_context);
-                let prev_child = mc.children.insert(depth, child);
+                let prev_child = self
+                    .0
+                    .write(context.gc_context)
+                    .children
+                    .insert(depth, child);
                 if let Some(prev_child) = prev_child {
-                    mc.remove_child_from_exec_list(context, prev_child);
+                    self.remove_child_from_exec_list(context, prev_child);
                 }
-                mc.add_child_to_exec_list(context.gc_context, child);
+                self.0
+                    .write(context.gc_context)
+                    .add_child_to_exec_list(context.gc_context, child);
                 prev_child
             };
             {
@@ -1258,9 +1271,8 @@ impl<'gc> MovieClip<'gc> {
                 })
                 .collect();
             for (depth, child) in children {
-                let mut mc = self.0.write(context.gc_context);
-                mc.children.remove(&depth);
-                mc.remove_child_from_exec_list(context, child);
+                self.0.write(context.gc_context).children.remove(&depth);
+                self.remove_child_from_exec_list(context, child);
             }
             true
         } else {
@@ -1288,7 +1300,6 @@ impl<'gc> MovieClip<'gc> {
             self.0.write(context.gc_context).current_frame += 1;
             frame_pos = reader.get_inner().position();
 
-            let mut mc = self.0.write(context.gc_context);
             let version = reader.version();
             use swf::TagCode;
             let tag_callback = |reader: &mut SwfStream<&[u8]>, tag_code, tag_len| {
@@ -1299,6 +1310,8 @@ impl<'gc> MovieClip<'gc> {
                 match tag_code {
                     TagCode::PlaceObject => {
                         index += 1;
+                        let mut mc = self.0.write(context.gc_context);
+
                         mc.goto_place_object(
                             reader,
                             tag_len,
@@ -1310,6 +1323,8 @@ impl<'gc> MovieClip<'gc> {
                     }
                     TagCode::PlaceObject2 => {
                         index += 1;
+                        let mut mc = self.0.write(context.gc_context);
+
                         mc.goto_place_object(
                             reader,
                             tag_len,
@@ -1321,6 +1336,8 @@ impl<'gc> MovieClip<'gc> {
                     }
                     TagCode::PlaceObject3 => {
                         index += 1;
+                        let mut mc = self.0.write(context.gc_context);
+
                         mc.goto_place_object(
                             reader,
                             tag_len,
@@ -1332,6 +1349,8 @@ impl<'gc> MovieClip<'gc> {
                     }
                     TagCode::PlaceObject4 => {
                         index += 1;
+                        let mut mc = self.0.write(context.gc_context);
+
                         mc.goto_place_object(
                             reader,
                             tag_len,
@@ -1342,10 +1361,10 @@ impl<'gc> MovieClip<'gc> {
                         )
                     }
                     TagCode::RemoveObject => {
-                        mc.goto_remove_object(reader, 1, context, &mut goto_commands, is_rewind)
+                        self.goto_remove_object(reader, 1, context, &mut goto_commands, is_rewind)
                     }
                     TagCode::RemoveObject2 => {
-                        mc.goto_remove_object(reader, 2, context, &mut goto_commands, is_rewind)
+                        self.goto_remove_object(reader, 2, context, &mut goto_commands, is_rewind)
                     }
                     _ => Ok(()),
                 }
@@ -1629,6 +1648,64 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_focusable(self, focusable: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).is_focusable = focusable;
+    }
+
+    /// Removes a child from the execution list.
+    /// This does not affect the render list.
+    fn remove_child_from_exec_list(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        child: DisplayObject<'gc>,
+    ) {
+        // Remove from children linked list.
+        let prev = child.prev_sibling();
+        let next = child.next_sibling();
+        if let Some(prev) = prev {
+            prev.set_next_sibling(context.gc_context, next);
+        }
+        if let Some(next) = next {
+            next.set_prev_sibling(context.gc_context, prev);
+        }
+        if let Some(head) = self.first_child() {
+            if DisplayObject::ptr_eq(head, child) {
+                self.set_first_child(context.gc_context, next);
+            }
+        }
+        // Flag child as removed.
+        child.unload(context);
+    }
+
+    /// Handle a RemoveObject tag when running a goto action.
+    #[inline]
+    fn goto_remove_object<'a>(
+        self,
+        reader: &mut SwfStream<&'a [u8]>,
+        version: u8,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        goto_commands: &mut Vec<GotoPlaceObject>,
+        is_rewind: bool,
+    ) -> DecodeResult {
+        let remove_object = if version == 1 {
+            reader.read_remove_object_1()
+        } else {
+            reader.read_remove_object_2()
+        }?;
+        let depth = Depth::from(remove_object.depth);
+        if let Some(i) = goto_commands.iter().position(|o| o.depth() == depth) {
+            goto_commands.swap_remove(i);
+        }
+        if !is_rewind {
+            // For fast-forwards, if this tag were to remove an object
+            // that existed before the goto, then we can remove that child right away.
+            // Don't do this for rewinds, because they conceptually
+            // start from an empty display list, and we also want to examine
+            // the old children to decide if they persist (place_frame <= goto_frame).
+            let child = self.0.write(context.gc_context).children.remove(&depth);
+            if let Some(child) = child {
+                self.remove_child_from_exec_list(context, child);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -1979,30 +2056,6 @@ impl<'gc> MovieClipData<'gc> {
         }
         self.set_first_child(gc_context, Some(child));
     }
-    /// Removes a child from the execution list.
-    /// This does not affect the render list.
-    fn remove_child_from_exec_list(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-    ) {
-        // Remove from children linked list.
-        let prev = child.prev_sibling();
-        let next = child.next_sibling();
-        if let Some(prev) = prev {
-            prev.set_next_sibling(context.gc_context, next);
-        }
-        if let Some(next) = next {
-            next.set_prev_sibling(context.gc_context, prev);
-        }
-        if let Some(head) = self.first_child() {
-            if DisplayObject::ptr_eq(head, child) {
-                self.set_first_child(context.gc_context, next);
-            }
-        }
-        // Flag child as removed.
-        child.unload(context);
-    }
 
     /// Handles a PlaceObject tag when running a goto action.
     #[inline]
@@ -2031,39 +2084,6 @@ impl<'gc> MovieClipData<'gc> {
             goto_commands.push(goto_place);
         }
 
-        Ok(())
-    }
-
-    /// Handle a RemoveObject tag when running a goto action.
-    #[inline]
-    fn goto_remove_object<'a>(
-        &mut self,
-        reader: &mut SwfStream<&'a [u8]>,
-        version: u8,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        goto_commands: &mut Vec<GotoPlaceObject>,
-        is_rewind: bool,
-    ) -> DecodeResult {
-        let remove_object = if version == 1 {
-            reader.read_remove_object_1()
-        } else {
-            reader.read_remove_object_2()
-        }?;
-        let depth = Depth::from(remove_object.depth);
-        if let Some(i) = goto_commands.iter().position(|o| o.depth() == depth) {
-            goto_commands.swap_remove(i);
-        }
-        if !is_rewind {
-            // For fast-forwards, if this tag were to remove an object
-            // that existed before the goto, then we can remove that child right away.
-            // Don't do this for rewinds, because they conceptually
-            // start from an empty display list, and we also want to examine
-            // the old children to decide if they persist (place_frame <= goto_frame).
-            let child = self.children.remove(&depth);
-            if let Some(child) = child {
-                self.remove_child_from_exec_list(context, child);
-            }
-        }
         Ok(())
     }
 
@@ -2916,10 +2936,13 @@ impl<'gc, 'a> MovieClip<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        let mut mc = self.0.write(context.gc_context);
-        let child = mc.children.remove(&remove_object.depth.into());
+        let child = self
+            .0
+            .write(context.gc_context)
+            .children
+            .remove(&remove_object.depth.into());
         if let Some(child) = child {
-            mc.remove_child_from_exec_list(context, child);
+            self.remove_child_from_exec_list(context, child);
         }
         Ok(())
     }
