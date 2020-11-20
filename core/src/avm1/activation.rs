@@ -423,7 +423,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut read = Reader::new(code.as_ref(), self.swf_version());
+        let mut read = Reader::new(&code.movie.data()[..], self.swf_version());
+        read.seek(code.start as isize);
 
         loop {
             let result = self.do_action(&code, &mut read);
@@ -449,7 +450,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
         }
 
-        if reader.pos() >= (data.end - data.start) {
+        if reader.pos() >= data.end {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
         } else if let Some(action) = reader.read_action()? {
