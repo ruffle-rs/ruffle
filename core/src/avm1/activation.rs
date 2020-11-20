@@ -489,7 +489,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 } => self.action_define_function(
                     &name,
                     &params[..],
-                    data.to_subslice(actions).unwrap(),
+                    data.to_unbounded_subslice(actions).unwrap(),
                 ),
                 Action::DefineFunction2(func) => self.action_define_function_2(&func, &data),
                 Action::DefineLocal => self.action_define_local(),
@@ -580,7 +580,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::WaitForFrame2 {
                     num_actions_to_skip,
                 } => self.action_wait_for_frame_2(num_actions_to_skip, reader),
-                Action::With { actions } => self.action_with(data.to_subslice(actions).unwrap()),
+                Action::With { actions } => {
+                    self.action_with(data.to_unbounded_subslice(actions).unwrap())
+                }
                 Action::Throw => self.action_throw(),
                 Action::Try(try_block) => self.action_try(&try_block, &data),
                 _ => self.unknown_op(action),
@@ -944,7 +946,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let swf_version = self.swf_version();
-        let func_data = parent_data.to_subslice(action_func.actions).unwrap();
+        let func_data = parent_data
+            .to_unbounded_subslice(action_func.actions)
+            .unwrap();
         let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
         let constant_pool = self.constant_pool();
         let func = Avm1Function::from_df2(
@@ -2239,7 +2243,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         try_block: &TryBlock,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let mut result = self.run_actions(parent_data.to_subslice(try_block.try_actions).unwrap());
+        let mut result = self.run_actions(
+            parent_data
+                .to_unbounded_subslice(try_block.try_actions)
+                .unwrap(),
+        );
 
         if let Some((catch_vars, actions)) = &try_block.catch {
             if let Err(Error::ThrownValue(value)) = &result {
@@ -2261,13 +2269,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     }
                 }
 
-                result = activation.run_actions(parent_data.to_subslice(actions).unwrap());
+                result =
+                    activation.run_actions(parent_data.to_unbounded_subslice(actions).unwrap());
             }
         }
 
         if let Some(actions) = try_block.finally {
             if let ReturnType::Explicit(value) =
-                self.run_actions(parent_data.to_subslice(actions).unwrap())?
+                self.run_actions(parent_data.to_unbounded_subslice(actions).unwrap())?
             {
                 return Ok(FrameControl::Return(ReturnType::Explicit(value)));
             }

@@ -211,6 +211,26 @@ impl SwfSlice {
         }
     }
 
+    /// Construct a new SwfSlice from a movie subslice.
+    ///
+    /// This function allows subslices outside the current slice to be formed,
+    /// as long as they are valid subslices of the movie itself.
+    pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Option<SwfSlice> {
+        let self_pval = self.movie.data().as_ptr() as usize;
+        let self_len = self.movie.data().len();
+        let slice_pval = slice.as_ptr() as usize;
+
+        if self_pval <= slice_pval && slice_pval < (self_pval + self_len) {
+            Some(SwfSlice {
+                movie: self.movie.clone(),
+                start: slice_pval - self_pval,
+                end: (slice_pval - self_pval) + slice.len(),
+            })
+        } else {
+            None
+        }
+    }
+
     /// Construct a new SwfSlice from a Reader and a size.
     ///
     /// This is intended to allow constructing references to the contents of a
