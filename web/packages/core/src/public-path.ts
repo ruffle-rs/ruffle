@@ -11,7 +11,7 @@ import { Config } from "./config";
  * RufflePlayer config, for example:
  * `window.RufflePlayer.config.public_paths.local = "/dist/";`
  * 2. A global public path can be specified for all sources, also in config.
- * `window.RufflePlayer.config.public_path = "/dist/";`
+ * `window.RufflePlayer.config.publicPath = "/dist/";`
  * 3. If there is absolutely no configuration that yields a public path then we
  * return the parent path of where this script is hosted, which should be
  * the correct default in most cases.
@@ -28,8 +28,8 @@ export function publicPath(config: Config, source_name: string): string {
         config.public_paths[source_name] !== undefined
     ) {
         path = config.public_paths[source_name];
-    } else if (config !== undefined && config.public_path !== undefined) {
-        path = config.public_path;
+    } else if (config !== undefined && config.publicPath !== undefined) {
+        path = config.publicPath;
     } else if (
         document.currentScript !== undefined &&
         document.currentScript !== null &&

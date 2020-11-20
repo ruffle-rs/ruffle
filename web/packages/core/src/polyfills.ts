@@ -13,10 +13,10 @@ if (window.RufflePlayer.config) {
     topLevelRuffleConfig = window.RufflePlayer.config;
     ruffleScriptSrc = publicPath(window.RufflePlayer.config, "ruffle.js");
 }
-/* public_path returns the directory where the file is, *
+/* publicPath returns the directory where the file is, *
  * so we need to append the filename. We don't need to  *
  * worry about the directory not having a slash because *
- * public_path appends a slash.                         */
+ * publicPath appends a slash.                         */
 ruffleScriptSrc += "ruffle.js";
 
 /**
