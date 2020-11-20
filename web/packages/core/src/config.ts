@@ -52,12 +52,12 @@ export interface Config {
     /**
      * A map of public paths from source name to URL.
      */
-    public_paths?: Record<string, string>;
+    publicPaths?: Record<string, string>;
 
     /**
      * The URL at which Ruffle can load its extra files (ie `.wasm`).
      *
-     * [public_paths] is consulted first for a source-specific URL,
+     * [publicPaths] is consulted first for a source-specific URL,
      * with this field being a fallback.
      */
     publicPath?: string;
