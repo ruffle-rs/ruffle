@@ -171,10 +171,10 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn cache_scale_rotation(&mut self) {
         if !self.flags.contains(DisplayObjectFlags::ScaleRotationCached) {
             let (a, b, c, d) = (
-                self.transform.matrix.a,
-                self.transform.matrix.b,
-                self.transform.matrix.c,
-                self.transform.matrix.d,
+                f64::from(self.transform.matrix.a),
+                f64::from(self.transform.matrix.b),
+                f64::from(self.transform.matrix.c),
+                f64::from(self.transform.matrix.d),
             );
             // If this object's transform matrix is:
             // [[a c tx]
@@ -190,14 +190,14 @@ impl<'gc> DisplayObjectBase<'gc> {
             // This can produce some surprising results due to the overlap between flipping/rotation/skewing.
             // For example, in Flash, using Modify->Transform->Flip Horizontal and then tracing _xscale, _yscale, and _rotation
             // will output 100, 100, and 180. (a horizontal flip could also be a 180 degree skew followed by 180 degree rotation!)
-            let rotation_x = f32::atan2(b, a);
-            let rotation_y = f32::atan2(-c, d);
-            let scale_x = f32::sqrt(a * a + b * b);
-            let scale_y = f32::sqrt(c * c + d * d);
-            self.rotation = Degrees::from_radians(rotation_x.into());
-            self.scale_x = Percent::from_unit(scale_x.into());
-            self.scale_y = Percent::from_unit(scale_y.into());
-            self.skew = (rotation_y - rotation_x).into();
+            let rotation_x = f64::atan2(b, a);
+            let rotation_y = f64::atan2(-c, d);
+            let scale_x = f64::sqrt(a * a + b * b);
+            let scale_y = f64::sqrt(c * c + d * d);
+            self.rotation = Degrees::from_radians(rotation_x);
+            self.scale_x = Percent::from_unit(scale_x);
+            self.scale_y = Percent::from_unit(scale_y);
+            self.skew = rotation_y - rotation_x;
             self.flags.insert(DisplayObjectFlags::ScaleRotationCached);
         }
     }
