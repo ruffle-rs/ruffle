@@ -411,6 +411,14 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
+    pub fn is_editable(self) -> bool {
+        self.0.read().is_editable
+    }
+
+    pub fn set_editable(self, is_editable: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).is_editable = is_editable;
+    }
+
     pub fn is_multiline(self) -> bool {
         self.0.read().is_multiline
     }

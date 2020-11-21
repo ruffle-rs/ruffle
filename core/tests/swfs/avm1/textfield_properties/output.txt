@@ -1,0 +1,8 @@
+// txt.type:
+dynamic
+// txt.type = 'input':
+input
+// txt.type = 'DYNAMIC':
+dynamic
+// txt.type = 'invalid':
+dynamic

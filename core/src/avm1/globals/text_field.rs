@@ -208,6 +208,64 @@ macro_rules! with_text_field {
     }};
 }
 
+macro_rules! with_text_field_props {
+    ($obj:ident, $gc:ident, $fn_proto:ident, $($name:literal => [$get:ident $(, $set:ident)*],)*) => {
+        $(
+            $obj.add_property(
+                $gc,
+                $name,
+                with_text_field_props!(getter $gc, $fn_proto, $get),
+                with_text_field_props!(setter $gc, $fn_proto, $($set),*),
+                Default::default()
+            );
+        )*
+    };
+
+    (getter $gc:ident, $fn_proto:ident, $get:ident) => {
+        FunctionObject::function(
+            $gc,
+            Executable::Native(
+                |activation: &mut Activation<'_, 'gc, '_>, this, _args| -> Result<Value<'gc>, Error<'gc>> {
+                    if let Some(display_object) = this.as_display_object() {
+                        if let Some(edit_text) = display_object.as_edit_text() {
+                            return $get(edit_text, activation);
+                        }
+                    }
+                    Ok(Value::Undefined)
+                } as crate::avm1::function::NativeFunction<'gc>
+            ),
+            Some($fn_proto),
+            $fn_proto
+        )
+    };
+
+    (setter $gc:ident, $fn_proto:ident, $set:ident) => {
+        Some(FunctionObject::function(
+            $gc,
+            Executable::Native(
+                |activation: &mut Activation<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
+                    if let Some(display_object) = this.as_display_object() {
+                        if let Some(edit_text) = display_object.as_edit_text() {
+                            let value = args
+                                .get(0)
+                                .unwrap_or(&Value::Undefined)
+                                .clone();
+                            $set(edit_text, activation, value)?;
+                        }
+                    }
+                    Ok(Value::Undefined)
+                } as crate::avm1::function::NativeFunction<'gc>
+            ),
+            Some($fn_proto),
+            $fn_proto)
+        )
+    };
+
+    (setter $gc:ident, $fn_proto:ident,) => {
+        None
+    };
+}
+
 pub fn text_width<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -450,6 +508,11 @@ pub fn create_proto<'gc>(
         "getTextFormat" => get_text_format,
         "setTextFormat" => set_text_format,
         "replaceText" => replace_text
+    );
+
+    with_text_field_props!(
+        object, gc_context, fn_proto,
+        "type" => [get_type, set_type],
     );
 
     object.into()
@@ -769,4 +832,32 @@ fn replace_text<'gc>(
     text_field.replace_text(from as usize, to as usize, &text, &mut activation.context);
 
     Ok(Value::Undefined)
+}
+
+pub fn get_type<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let tf_type = match this.is_editable() {
+        true => "input",
+        false => "dynamic",
+    };
+    Ok(AvmString::new(activation.context.gc_context, tf_type).into())
+}
+
+pub fn set_type<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    match value
+        .coerce_to_string(activation)?
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "input" => this.set_editable(true, &mut activation.context),
+        "dynamic" => this.set_editable(false, &mut activation.context),
+        value => log::warn!("Invalid TextField.type: {}", value),
+    };
+    Ok(())
 }
