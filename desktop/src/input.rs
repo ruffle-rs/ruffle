@@ -3,7 +3,7 @@ use ruffle_core::backend::input::{InputBackend, MouseCursor};
 use ruffle_core::events::{KeyCode, PlayerEvent};
 use std::collections::HashSet;
 use std::rc::Rc;
-use winit::event::{ElementState, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, ModifiersState, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
 
 pub struct WinitInputBackend {
@@ -11,6 +11,7 @@ pub struct WinitInputBackend {
     window: Rc<Window>,
     cursor_visible: bool,
     last_key: KeyCode,
+    last_char: Option<char>,
     clipboard: ClipboardContext,
 }
 
@@ -19,6 +20,7 @@ impl WinitInputBackend {
         Self {
             keys_down: HashSet::new(),
             cursor_visible: true,
+            last_char: None,
             last_key: KeyCode::Unknown,
             window,
             clipboard: ClipboardProvider::new().unwrap(),
@@ -27,11 +29,15 @@ impl WinitInputBackend {
 
     /// Process an input event, and returns an event that should be forward to the player, if any.
     pub fn handle_event(&mut self, event: WindowEvent) -> Option<PlayerEvent> {
+        // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet)
+        #[allow(deprecated)]
         match event {
             WindowEvent::KeyboardInput { input, .. } => match input.state {
                 ElementState::Pressed => {
                     if let Some(key) = input.virtual_keycode {
                         self.keys_down.insert(key);
+                        self.last_char =
+                            winit_key_to_char(key, input.modifiers.contains(ModifiersState::SHIFT));
                         if let Some(key_code) = winit_to_ruffle_key_code(key) {
                             self.last_key = key_code;
                             return Some(PlayerEvent::KeyDown { key_code });
@@ -43,6 +49,8 @@ impl WinitInputBackend {
                 ElementState::Released => {
                     if let Some(key) = input.virtual_keycode {
                         self.keys_down.remove(&key);
+                        self.last_char =
+                            winit_key_to_char(key, input.modifiers.contains(ModifiersState::SHIFT));
                         if let Some(key_code) = winit_to_ruffle_key_code(key) {
                             self.last_key = key_code;
                             return Some(PlayerEvent::KeyUp { key_code });
@@ -53,6 +61,7 @@ impl WinitInputBackend {
                 }
             },
             WindowEvent::ReceivedCharacter(codepoint) => {
+                log::info!("rc: {}", codepoint);
                 return Some(PlayerEvent::TextInput { codepoint });
             }
             _ => (),
@@ -171,8 +180,12 @@ impl InputBackend for WinitInputBackend {
         }
     }
 
-    fn get_last_key_code(&self) -> KeyCode {
+    fn last_key_code(&self) -> KeyCode {
         self.last_key
+    }
+
+    fn last_key_char(&self) -> Option<char> {
+        self.last_char
     }
 
     fn mouse_visible(&self) -> bool {
@@ -304,6 +317,142 @@ fn winit_to_ruffle_key_code(key_code: VirtualKeyCode) -> Option<KeyCode> {
         VirtualKeyCode::F11 => KeyCode::F11,
         VirtualKeyCode::F12 => KeyCode::F12,
         _ => return None,
+    };
+    Some(out)
+}
+
+/// Return a character for the given key code and shift state.
+fn winit_key_to_char(key_code: VirtualKeyCode, is_shift_down: bool) -> Option<char> {
+    // We need to know the character that a keypressoutputs for both key down and key up events,
+    // but the winit keyboard API does not provide a way to do this (winit/#753).
+    // CharacterReceived events are insufficent because they  only fire on key down, not on key up.
+    // This is a half-measure to map from keyboard keys back to a character, but does will not work fully
+    // for international layouts.
+    log::info!("{}", is_shift_down);
+    let out = if is_shift_down {
+        match key_code {
+            VirtualKeyCode::Space => ' ',
+            VirtualKeyCode::Key0 => '0',
+            VirtualKeyCode::Key1 => '1',
+            VirtualKeyCode::Key2 => '2',
+            VirtualKeyCode::Key3 => '3',
+            VirtualKeyCode::Key4 => '4',
+            VirtualKeyCode::Key5 => '5',
+            VirtualKeyCode::Key6 => '6',
+            VirtualKeyCode::Key7 => '7',
+            VirtualKeyCode::Key8 => '8',
+            VirtualKeyCode::Key9 => '9',
+            VirtualKeyCode::A => 'A',
+            VirtualKeyCode::B => 'B',
+            VirtualKeyCode::C => 'C',
+            VirtualKeyCode::D => 'D',
+            VirtualKeyCode::E => 'E',
+            VirtualKeyCode::F => 'F',
+            VirtualKeyCode::G => 'G',
+            VirtualKeyCode::H => 'H',
+            VirtualKeyCode::I => 'I',
+            VirtualKeyCode::J => 'J',
+            VirtualKeyCode::K => 'K',
+            VirtualKeyCode::L => 'L',
+            VirtualKeyCode::M => 'M',
+            VirtualKeyCode::N => 'N',
+            VirtualKeyCode::O => 'O',
+            VirtualKeyCode::P => 'P',
+            VirtualKeyCode::Q => 'Q',
+            VirtualKeyCode::R => 'R',
+            VirtualKeyCode::S => 'S',
+            VirtualKeyCode::T => 'T',
+            VirtualKeyCode::U => 'U',
+            VirtualKeyCode::V => 'V',
+            VirtualKeyCode::W => 'W',
+            VirtualKeyCode::X => 'X',
+            VirtualKeyCode::Y => 'Y',
+            VirtualKeyCode::Z => 'Z',
+            VirtualKeyCode::Semicolon => ':',
+            VirtualKeyCode::Equals => '+',
+            VirtualKeyCode::Comma => '<',
+            VirtualKeyCode::Minus => '_',
+            VirtualKeyCode::Period => '>',
+            VirtualKeyCode::Slash => '?',
+            VirtualKeyCode::Grave => '~',
+            VirtualKeyCode::LBracket => '{',
+            VirtualKeyCode::Backslash => '|',
+            VirtualKeyCode::RBracket => '}',
+            VirtualKeyCode::Apostrophe => '"',
+            VirtualKeyCode::NumpadMultiply => '*',
+            VirtualKeyCode::NumpadAdd => '+',
+            VirtualKeyCode::NumpadSubtract => '-',
+            VirtualKeyCode::NumpadDecimal => '.',
+            VirtualKeyCode::NumpadDivide => '/',
+            _ => return None,
+        }
+    } else {
+        match key_code {
+            VirtualKeyCode::Space => ' ',
+            VirtualKeyCode::Key0 => '0',
+            VirtualKeyCode::Key1 => '1',
+            VirtualKeyCode::Key2 => '2',
+            VirtualKeyCode::Key3 => '3',
+            VirtualKeyCode::Key4 => '4',
+            VirtualKeyCode::Key5 => '5',
+            VirtualKeyCode::Key6 => '6',
+            VirtualKeyCode::Key7 => '7',
+            VirtualKeyCode::Key8 => '8',
+            VirtualKeyCode::Key9 => '9',
+            VirtualKeyCode::A => 'a',
+            VirtualKeyCode::B => 'b',
+            VirtualKeyCode::C => 'c',
+            VirtualKeyCode::D => 'd',
+            VirtualKeyCode::E => 'e',
+            VirtualKeyCode::F => 'f',
+            VirtualKeyCode::G => 'g',
+            VirtualKeyCode::H => 'h',
+            VirtualKeyCode::I => 'i',
+            VirtualKeyCode::J => 'j',
+            VirtualKeyCode::K => 'k',
+            VirtualKeyCode::L => 'l',
+            VirtualKeyCode::M => 'm',
+            VirtualKeyCode::N => 'n',
+            VirtualKeyCode::O => 'o',
+            VirtualKeyCode::P => 'p',
+            VirtualKeyCode::Q => 'q',
+            VirtualKeyCode::R => 'r',
+            VirtualKeyCode::S => 's',
+            VirtualKeyCode::T => 't',
+            VirtualKeyCode::U => 'u',
+            VirtualKeyCode::V => 'v',
+            VirtualKeyCode::W => 'w',
+            VirtualKeyCode::X => 'x',
+            VirtualKeyCode::Y => 'y',
+            VirtualKeyCode::Z => 'z',
+            VirtualKeyCode::Semicolon => ';',
+            VirtualKeyCode::Equals => '=',
+            VirtualKeyCode::Comma => ',',
+            VirtualKeyCode::Minus => '-',
+            VirtualKeyCode::Period => '.',
+            VirtualKeyCode::Slash => '/',
+            VirtualKeyCode::Grave => '`',
+            VirtualKeyCode::LBracket => '[',
+            VirtualKeyCode::Backslash => '\\',
+            VirtualKeyCode::RBracket => ']',
+            VirtualKeyCode::Apostrophe => '\'',
+            VirtualKeyCode::Numpad0 => '0',
+            VirtualKeyCode::Numpad1 => '1',
+            VirtualKeyCode::Numpad2 => '2',
+            VirtualKeyCode::Numpad3 => '3',
+            VirtualKeyCode::Numpad4 => '4',
+            VirtualKeyCode::Numpad5 => '5',
+            VirtualKeyCode::Numpad6 => '6',
+            VirtualKeyCode::Numpad7 => '7',
+            VirtualKeyCode::Numpad8 => '8',
+            VirtualKeyCode::Numpad9 => '9',
+            VirtualKeyCode::NumpadMultiply => '*',
+            VirtualKeyCode::NumpadAdd => '+',
+            VirtualKeyCode::NumpadSubtract => '-',
+            VirtualKeyCode::NumpadDecimal => '.',
+            VirtualKeyCode::NumpadDivide => '/',
+            _ => return None,
+        }
     };
     Some(out)
 }
