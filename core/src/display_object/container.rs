@@ -11,7 +11,7 @@ use ruffle_macros::enum_trait_object;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::ops::{Bound, RangeBounds};
+use std::ops::RangeBounds;
 
 /// The three lists that a display object container is supposed to maintain.
 #[derive(EnumSetType)]
@@ -219,12 +219,69 @@ macro_rules! impl_display_object_container {
             child: DisplayObject<'gc>,
             depth: Depth,
         ) -> Option<DisplayObject<'gc>> {
-            self.0.write(context.gc_context).$field.replace_at_depth(
-                context,
-                (*self).into(),
-                child,
-                depth,
-            )
+            child.set_place_frame(context.gc_context, 0);
+            child.set_depth(context.gc_context, depth);
+            child.set_parent(context.gc_context, Some((*self).into()));
+
+            let mut write = self.0.write(context.gc_context);
+
+            let prev_child = write.$field.insert_child_into_depth_list(depth, child);
+            let removed_child = if let Some(prev_child) = prev_child {
+                let position = write
+                    .$field
+                    .iter_render_list()
+                    .position(|x| DisplayObject::ptr_eq(x, prev_child))
+                    .unwrap();
+
+                if !prev_child.placed_by_script() {
+                    write.$field.replace_id(position, child);
+
+                    Some(prev_child)
+                } else {
+                    write.$field.insert_id(position + 1, child);
+
+                    None
+                }
+            } else {
+                let above = write
+                    .$field
+                    .iter_depth_range((Bound::Excluded(depth), Bound::Unbounded))
+                    .next();
+
+                if let Some((_, above_child)) = above {
+                    let position = write
+                        .$field
+                        .iter_render_list()
+                        .position(|x| DisplayObject::ptr_eq(x, above_child))
+                        .unwrap();
+                    write.$field.insert_id(position, child);
+
+                    None
+                } else {
+                    write.$field.push_id(child);
+
+                    None
+                }
+            };
+
+            if let Some(removed_child) = removed_child {
+                write
+                    .$field
+                    .remove_child_from_exec_list(context, removed_child);
+            }
+
+            write
+                .$field
+                .add_child_to_exec_list(context.gc_context, child);
+
+            drop(write);
+
+            if let Some(removed_child) = removed_child {
+                removed_child.unload(context);
+                removed_child.set_parent(context.gc_context, None);
+            }
+
+            removed_child
         }
 
         fn swap_at_depth(
@@ -278,20 +335,44 @@ macro_rules! impl_display_object_container {
                 (*self).into()
             ));
 
-            self.0
-                .write(context.gc_context)
-                .$field
-                .remove_child(context, child, from_lists)
+            let mut write = self.0.write(context.gc_context);
+
+            let removed_from_depth_list = from_lists.contains(Lists::Depth)
+                && write.$field.remove_child_from_depth_list(child);
+            let removed_from_render_list = from_lists.contains(Lists::Render)
+                && write.$field.remove_child_from_render_list(child);
+            let removed_from_execution_list = from_lists.contains(Lists::Execution)
+                && write.$field.remove_child_from_exec_list(context, child);
+
+            drop(write);
+
+            if removed_from_execution_list {
+                child.unload(context);
+                child.set_parent(context.gc_context, None);
+            }
+
+            removed_from_render_list || removed_from_depth_list || removed_from_execution_list
         }
 
         fn remove_range_of_ids<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
         where
             R: RangeBounds<usize>,
         {
-            self.0
-                .write(context.gc_context)
-                .$field
-                .remove_range_of_ids(context, range)
+            let mut write = self.0.write(context.gc_context);
+            let removed_list: Vec<DisplayObject<'gc>> =
+                write.$field.drain_render_range(range).collect();
+
+            for removed in removed_list {
+                write.$field.remove_child_from_depth_list(removed);
+                write.$field.remove_child_from_exec_list(context, removed);
+
+                drop(write);
+
+                removed.unload(context);
+                removed.set_parent(context.gc_context, None);
+
+                write = self.0.write(context.gc_context);
+            }
         }
 
         fn clear(&mut self, gc_context: MutationContext<'gc, '_>) {
@@ -366,7 +447,7 @@ impl<'gc> ChildContainer<'gc> {
     /// Adds a child to the front of the execution list.
     ///
     /// This does not affect the render or depth lists.
-    fn add_child_to_exec_list(
+    pub fn add_child_to_exec_list(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
         child: DisplayObject<'gc>,
@@ -381,15 +462,24 @@ impl<'gc> ChildContainer<'gc> {
 
     /// Removes a child from the execution list.
     ///
-    /// This does not affect the render or depth lists.
-    fn remove_child_from_exec_list(
+    /// This returns `true` if the child was successfully removed, and `false`
+    /// if no list alterations were made.
+    ///
+    /// This does not affect the render or depth lists, nor does it unload the
+    /// child. You must unload the child yourself in a clean stack frame, as
+    /// display objects are permitted to run code when unloading. We also don't
+    /// unset the parent either as that's expected to happen after unloading.
+    pub fn remove_child_from_exec_list(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
-    ) {
+    ) -> bool {
         // Remove from children linked list.
         let prev = child.prev_sibling();
         let next = child.next_sibling();
+        let present_on_execution_list = prev.is_some()
+            || next.is_some()
+            || (self.exec_list.is_some() && DisplayObject::ptr_eq(self.exec_list.unwrap(), child));
 
         if let Some(prev) = prev {
             prev.set_next_sibling(context.gc_context, next);
@@ -406,18 +496,48 @@ impl<'gc> ChildContainer<'gc> {
                 self.exec_list = next;
             }
         }
-        // Flag child as removed.
-        child.unload(context);
+
+        present_on_execution_list
     }
 
-    /// Remove a child from the display list.
+    /// Add a child to the depth list.
+    ///
+    /// This returns the child that was previously at that particular depth, if
+    /// such a child exists. If so, that constitutes removing the child from
+    /// the depth list.
+    pub fn insert_child_into_depth_list(
+        &mut self,
+        depth: Depth,
+        child: DisplayObject<'gc>,
+    ) -> Option<DisplayObject<'gc>> {
+        self.depth_list.insert(depth, child)
+    }
+
+    /// Remove a child from the depth list.
     ///
     /// This returns `true` if the child was successfully removed, and `false`
     /// if no list alterations were made.
-    fn remove_child_from_depth_list(&mut self, child: DisplayObject<'gc>) -> bool {
+    pub fn remove_child_from_depth_list(&mut self, child: DisplayObject<'gc>) -> bool {
         if let Some(other_child) = self.depth_list.get(&child.depth()) {
             DisplayObject::ptr_eq(*other_child, child)
                 && self.depth_list.remove(&child.depth()).is_some()
+        } else {
+            false
+        }
+    }
+
+    /// Remove a child from the render list.
+    ///
+    /// This returns `true` if the child was successfully removed, and `false`
+    /// if no list alterations were made.
+    pub fn remove_child_from_render_list(&mut self, child: DisplayObject<'gc>) -> bool {
+        let render_list_position = self
+            .render_list
+            .iter()
+            .position(|x| DisplayObject::ptr_eq(*x, child));
+        if let Some(position) = render_list_position {
+            self.render_list.remove(position);
+            true
         } else {
             false
         }
@@ -466,6 +586,22 @@ impl<'gc> ChildContainer<'gc> {
     /// Get a child by it's render list position (ID).
     pub fn get_id(&self, id: usize) -> Option<DisplayObject<'gc>> {
         self.render_list.get(id).copied()
+    }
+
+    /// Replace a child in the render list with another child in the same
+    /// position.
+    pub fn replace_id(&mut self, id: usize, child: DisplayObject<'gc>) {
+        self.render_list[id] = child;
+    }
+
+    /// Insert a child into the render list at a particular position.
+    pub fn insert_id(&mut self, id: usize, child: DisplayObject<'gc>) {
+        self.render_list.insert(id, child);
+    }
+
+    /// Push a child onto the end of the render list.
+    pub fn push_id(&mut self, child: DisplayObject<'gc>) {
+        self.render_list.push(child);
     }
 
     /// Get the number of children on the render list.
@@ -529,74 +665,6 @@ impl<'gc> ChildContainer<'gc> {
         self.render_list.swap(id1, id2);
     }
 
-    /// Insert a child into the container at a given depth, replacing any child
-    /// that already exists at the given depth.
-    ///
-    /// If a child was replaced, this function returns the child that was
-    /// removed from the container. It should be removed from any other lists
-    /// maintained by the owner of this container.
-    ///
-    /// Children that have been placed by scripts will not be removed from the
-    /// render list, only the depth list. This function will also not return
-    /// such children.
-    ///
-    /// `parent` should be the display object that owns this container.
-    pub fn replace_at_depth(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        parent: DisplayObject<'gc>,
-        child: DisplayObject<'gc>,
-        depth: Depth,
-    ) -> Option<DisplayObject<'gc>> {
-        child.set_place_frame(context.gc_context, 0);
-        child.set_depth(context.gc_context, depth);
-        child.set_parent(context.gc_context, Some(parent));
-
-        let prev_child = self.depth_list.insert(depth, child);
-        let removed_child = if let Some(prev_child) = prev_child {
-            let position = self
-                .render_list
-                .iter()
-                .position(|x| DisplayObject::ptr_eq(*x, prev_child))
-                .unwrap();
-
-            if !prev_child.placed_by_script() {
-                self.render_list[position] = child;
-
-                Some(prev_child)
-            } else {
-                self.render_list.insert(position + 1, child);
-
-                None
-            }
-        } else if let Some((_, above_child)) = self
-            .depth_list
-            .range((Bound::Excluded(depth), Bound::Unbounded))
-            .next()
-        {
-            let position = self
-                .render_list
-                .iter()
-                .position(|x| DisplayObject::ptr_eq(*x, *above_child))
-                .unwrap();
-            self.render_list.insert(position, child);
-
-            None
-        } else {
-            self.render_list.push(child);
-
-            None
-        };
-
-        if let Some(removed_child) = removed_child {
-            self.remove_child_from_exec_list(context, removed_child);
-        }
-
-        self.add_child_to_exec_list(context.gc_context, child);
-
-        removed_child
-    }
-
     /// Move an already-inserted child to a new location on the depth list.
     ///
     /// If another child already exists at the target depth, it will be moved
@@ -657,71 +725,6 @@ impl<'gc> ChildContainer<'gc> {
         }
     }
 
-    /// Remove a child display object from this container's render, depth, and
-    /// execution lists.
-    ///
-    /// If the child was found on any of the container's lists, this function
-    /// will return `true`.
-    ///
-    /// You can control which lists a child should be removed from with the
-    /// `from_lists` parameter. If a list is omitted from `from_lists`, then
-    /// not only will the child remain, but the return code will also not take
-    /// it's presence in the list into account.
-    pub fn remove_child(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-        from_lists: EnumSet<Lists>,
-    ) -> bool {
-        let removed_from_depth_list =
-            from_lists.contains(Lists::Depth) && self.remove_child_from_depth_list(child);
-
-        let removed_from_render_list = if from_lists.contains(Lists::Render) {
-            let render_list_position = self
-                .render_list
-                .iter()
-                .position(|x| DisplayObject::ptr_eq(*x, child));
-            if let Some(position) = render_list_position {
-                self.render_list.remove(position);
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        };
-
-        let removed_from_execution_list = if from_lists.contains(Lists::Execution) {
-            let present_on_execution_list = child.prev_sibling().is_none()
-                || child.next_sibling().is_none()
-                || (self.exec_list.is_some()
-                    && DisplayObject::ptr_eq(self.exec_list.unwrap(), child));
-
-            self.remove_child_from_exec_list(context, child);
-            child.set_parent(context.gc_context, None);
-
-            present_on_execution_list
-        } else {
-            false
-        };
-
-        removed_from_render_list || removed_from_depth_list || removed_from_execution_list
-    }
-
-    /// Remove a set of children identified by their render list IDs from this
-    /// container's render, depth, and execution lists.
-    pub fn remove_range_of_ids<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
-    where
-        R: RangeBounds<usize>,
-    {
-        let removed_list: Vec<DisplayObject<'gc>> = self.render_list.drain(range).collect();
-
-        for removed in removed_list {
-            self.remove_child_from_depth_list(removed);
-            self.remove_child_from_exec_list(context, removed);
-        }
-    }
-
     /// Remove all children from the container's execution, render, and depth
     /// lists.
     pub fn clear(&mut self, gc_context: MutationContext<'gc, '_>) {
@@ -747,6 +750,33 @@ impl<'gc> ChildContainer<'gc> {
         &'a self,
     ) -> impl 'a + Iterator<Item = (Depth, DisplayObject<'gc>)> {
         self.depth_list.iter().map(|(k, v)| (*k, *v))
+    }
+
+    /// Iter a particular range of depths.
+    pub fn iter_depth_range<'a, R>(
+        &'a self,
+        range: R,
+    ) -> impl 'a + Iterator<Item = (Depth, DisplayObject<'gc>)>
+    where
+        R: RangeBounds<Depth>,
+    {
+        self.depth_list.range(range).map(|(k, v)| (*k, *v))
+    }
+
+    /// Yield children in the order they are rendered.
+    pub fn iter_render_list<'a>(&'a self) -> impl 'a + Iterator<Item = DisplayObject<'gc>> {
+        self.render_list.iter().copied()
+    }
+
+    /// Remove children from the render list and yield them.
+    pub fn drain_render_range<'a, R>(
+        &'a mut self,
+        range: R,
+    ) -> impl 'a + Iterator<Item = DisplayObject<'gc>>
+    where
+        R: RangeBounds<usize>,
+    {
+        self.render_list.drain(range)
     }
 }
 
