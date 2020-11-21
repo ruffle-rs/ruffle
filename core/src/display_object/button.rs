@@ -438,6 +438,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             let tracker = context.focus_tracker;
             tracker.set(None, context);
         }
+        self.set_removed(context.gc_context, true);
     }
 }
 
