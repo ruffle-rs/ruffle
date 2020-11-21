@@ -1605,7 +1605,7 @@ impl<'gc> MovieClip<'gc> {
     /// Handle a RemoveObject tag when running a goto action.
     #[inline]
     fn goto_remove_object<'a>(
-        self,
+        mut self,
         reader: &mut SwfStream<&'a [u8]>,
         version: u8,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -1631,18 +1631,10 @@ impl<'gc> MovieClip<'gc> {
             if let Some(child) = read.container.get_depth(depth) {
                 if !child.placed_by_script() {
                     drop(read);
-                    self.0.write(context.gc_context).container.remove_child(
-                        context,
-                        child,
-                        EnumSet::all(),
-                    );
+                    self.remove_child(context, child, EnumSet::all());
                 } else {
                     drop(read);
-                    self.0.write(context.gc_context).container.remove_child(
-                        context,
-                        child,
-                        Lists::Depth.into(),
-                    );
+                    self.remove_child(context, child, Lists::Depth.into());
                 }
             }
         }

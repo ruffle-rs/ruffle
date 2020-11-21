@@ -8,7 +8,7 @@ pub use crate::{
 };
 pub use enumset::EnumSet;
 pub use log::{error, info, trace, warn};
-pub use std::ops::RangeBounds;
+pub use std::ops::{Bound, RangeBounds};
 pub use swf::Matrix;
 pub use swf::{CharacterId, Color, Twips};
 
