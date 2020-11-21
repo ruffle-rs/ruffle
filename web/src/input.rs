@@ -2,7 +2,7 @@ use ruffle_core::backend::input::{InputBackend, MouseCursor};
 use ruffle_core::events::KeyCode;
 use ruffle_web_common::JsResult;
 use std::collections::HashSet;
-use web_sys::HtmlCanvasElement;
+use web_sys::{HtmlCanvasElement, KeyboardEvent};
 
 /// An implementation of `InputBackend` utilizing `web_sys` bindings to input
 /// APIs
@@ -12,6 +12,7 @@ pub struct WebInputBackend {
     cursor_visible: bool,
     cursor: MouseCursor,
     last_key: KeyCode,
+    last_char: Option<char>,
 }
 
 impl WebInputBackend {
@@ -22,19 +23,24 @@ impl WebInputBackend {
             cursor_visible: true,
             cursor: MouseCursor::Arrow,
             last_key: KeyCode::Unknown,
+            last_char: None,
         }
     }
 
     /// Register a key press for a given code string.
-    pub fn keydown(&mut self, code: String) {
+    pub fn keydown(&mut self, event: &KeyboardEvent) {
+        let code = event.code();
         self.last_key = web_to_ruffle_key_code(&code).unwrap_or(KeyCode::Unknown);
         self.keys_down.insert(code);
+        self.last_char = web_key_to_codepoint(&event.key());
     }
 
     /// Register a key release for a given code string.
-    pub fn keyup(&mut self, code: String) {
+    pub fn keyup(&mut self, event: &KeyboardEvent) {
+        let code = event.code();
         self.last_key = web_to_ruffle_key_code(&code).unwrap_or(KeyCode::Unknown);
         self.keys_down.remove(&code);
+        self.last_char = web_key_to_codepoint(&event.key());
     }
 
     fn update_mouse_cursor(&self) {
@@ -162,8 +168,12 @@ impl InputBackend for WebInputBackend {
         }
     }
 
-    fn get_last_key_code(&self) -> KeyCode {
+    fn last_key_code(&self) -> KeyCode {
         self.last_key
+    }
+
+    fn last_key_char(&self) -> Option<char> {
+        self.last_char
     }
 
     fn mouse_visible(&self) -> bool {

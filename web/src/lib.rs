@@ -16,11 +16,12 @@ use crate::{
 };
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Function, Object, Uint8Array};
+use ruffle_core::backend::input::InputBackend;
 use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::storage::StorageBackend;
 use ruffle_core::context::UpdateContext;
-use ruffle_core::events::MouseWheelDelta;
+use ruffle_core::events::{KeyCode, MouseWheelDelta};
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
@@ -581,36 +582,25 @@ impl Ruffle {
                 let key_down_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
                     INSTANCES.with(|instances| {
                         if let Some(instance) = instances.borrow().get(index) {
-                            if instance.borrow().has_focus {
-                                let code = js_event.code();
-                                instance
-                                    .borrow()
-                                    .core
-                                    .lock()
-                                    .unwrap()
-                                    .input_mut()
-                                    .downcast_mut::<WebInputBackend>()
-                                    .unwrap()
-                                    .keydown(code.clone());
+                            let instance = instance.borrow();
+                            if instance.has_focus {
+                                let mut core = instance.core.lock().unwrap();
+                                let input =
+                                    core.input_mut().downcast_mut::<WebInputBackend>().unwrap();
+                                input.keydown(&js_event);
 
-                                if let Some(codepoint) =
-                                    input::web_key_to_codepoint(&js_event.key())
-                                {
-                                    instance
-                                        .borrow()
-                                        .core
-                                        .lock()
-                                        .unwrap()
-                                        .handle_event(PlayerEvent::TextInput { codepoint });
+                                let key_code = input.last_key_code();
+                                let key_char = input.last_key_char();
+                                if key_code != KeyCode::Unknown {
+                                    core.handle_event(PlayerEvent::KeyUp { key_code });
                                 }
 
-                                if let Some(key_code) = input::web_to_ruffle_key_code(&code) {
-                                    instance
-                                        .borrow()
-                                        .core
-                                        .lock()
-                                        .unwrap()
-                                        .handle_event(PlayerEvent::KeyDown { key_code });
+                                if key_code != KeyCode::Unknown {
+                                    core.handle_event(PlayerEvent::KeyDown { key_code });
+                                }
+
+                                if let Some(codepoint) = key_char {
+                                    core.handle_event(PlayerEvent::TextInput { codepoint });
                                 }
 
                                 js_event.prevent_default();
@@ -635,25 +625,16 @@ impl Ruffle {
                     js_event.prevent_default();
                     INSTANCES.with(|instances| {
                         if let Some(instance) = instances.borrow().get(index) {
-                            if instance.borrow().has_focus {
-                                let code = js_event.code();
-                                instance
-                                    .borrow()
-                                    .core
-                                    .lock()
-                                    .unwrap()
-                                    .input_mut()
-                                    .downcast_mut::<WebInputBackend>()
-                                    .unwrap()
-                                    .keyup(code.clone());
+                            let instance = instance.borrow();
+                            if instance.has_focus {
+                                let mut core = instance.core.lock().unwrap();
+                                let input =
+                                    core.input_mut().downcast_mut::<WebInputBackend>().unwrap();
+                                input.keyup(&js_event);
 
-                                if let Some(key_code) = input::web_to_ruffle_key_code(&code) {
-                                    instance
-                                        .borrow()
-                                        .core
-                                        .lock()
-                                        .unwrap()
-                                        .handle_event(PlayerEvent::KeyUp { key_code });
+                                let key_code = input.last_key_code();
+                                if key_code != KeyCode::Unknown {
+                                    core.handle_event(PlayerEvent::KeyUp { key_code });
                                 }
 
                                 js_event.prevent_default();

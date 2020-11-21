@@ -23,12 +23,21 @@ pub fn is_down<'gc>(
     }
 }
 
+pub fn get_ascii<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let ord = activation.context.input.last_key_char().unwrap_or_default() as u32;
+    Ok(ord.into())
+}
+
 pub fn get_code<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let code: u8 = activation.context.input.get_last_key_code().into();
+    let code: u8 = activation.context.input.last_key_code().into();
     Ok(code.into())
 }
 
@@ -161,6 +170,14 @@ pub fn create_key_object<'gc>(
     key.force_set_function(
         "isDown",
         is_down,
+        gc_context,
+        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        fn_proto,
+    );
+
+    key.force_set_function(
+        "getAscii",
+        get_ascii,
         gc_context,
         Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
         fn_proto,
