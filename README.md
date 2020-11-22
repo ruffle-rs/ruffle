@@ -66,7 +66,7 @@ This currently requires hardware acceleration, but can be run headless (with no 
 
 ## Sponsors
 
-You can support the development of Ruffle via [GitHub Sponsors](https://github.com/sponsors/Herschel). Your sponsorship will help to ensure the accessibility of Flash content for the future. Thank you!
+You can support the development of Ruffle via [GitHub Sponsors](https://github.com/sponsors/ruffle-rs). Your sponsorship will help to ensure the accessibility of Flash content for the future. Thank you!
 
 Sincere thanks to the diamond level sponsors of Ruffle:
 
@@ -85,6 +85,9 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   </a>
   <a href="https://www.coolmathgames.com">
     <img src="https://ruffle.rs/assets/sponsors/coolmathgames.png" alt="Cool Math Games">
+  </a>
+  <a href="https://www.nytimes.com/">
+    <img src="https://ruffle.rs/assets/sponsors/nyt.png" alt="The New York Times">
   </a>
 </p>
 
