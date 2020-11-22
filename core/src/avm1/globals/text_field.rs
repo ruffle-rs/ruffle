@@ -1,7 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::globals::display_object;
+use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_REMOVE_DEPTH};
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
@@ -507,7 +507,8 @@ pub fn create_proto<'gc>(
         "setNewTextFormat" => set_new_text_format,
         "getTextFormat" => get_text_format,
         "setTextFormat" => set_text_format,
-        "replaceText" => replace_text
+        "replaceText" => replace_text,
+        "removeTextField" => remove_text_field
     );
 
     with_text_field_props!(
@@ -860,4 +861,25 @@ pub fn set_type<'gc>(
         value => log::warn!("Invalid TextField.type: {}", value),
     };
     Ok(())
+}
+
+fn remove_text_field<'gc>(
+    text_field: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let depth = text_field.depth();
+
+    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH {
+        // Need a parent to remove from.
+        let mut parent = if let Some(parent) = text_field.parent().and_then(|o| o.as_movie_clip()) {
+            parent
+        } else {
+            return Ok(Value::Undefined);
+        };
+
+        parent.remove_child_from_avm(&mut activation.context, text_field.into());
+    }
+
+    Ok(Value::Undefined)
 }

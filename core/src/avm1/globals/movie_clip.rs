@@ -3,7 +3,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
+use crate::avm1::globals::display_object::{
+    self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH, AVM_MAX_REMOVE_DEPTH,
+};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
@@ -867,7 +869,7 @@ pub fn remove_movie_clip<'gc>(
     // Generally this prevents you from removing non-dynamically created clips,
     // although you can get around it with swapDepths.
     // TODO: Figure out the derivation of this range.
-    if depth >= AVM_DEPTH_BIAS && depth < 2_130_706_416 {
+    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH {
         // Need a parent to remove from.
         let mut parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
             parent
