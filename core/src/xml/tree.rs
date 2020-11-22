@@ -1203,7 +1203,7 @@ impl<'gc> XMLNode<'gc> {
         let children_len = children.len();
 
         match &*self.0.read() {
-            XMLNodeData::DocumentRoot { .. } => Ok(0),
+            XMLNodeData::DocumentRoot { .. } => Ok(()),
             XMLNodeData::Element {
                 tag_name,
                 attributes,
@@ -1250,7 +1250,7 @@ impl<'gc> XMLNode<'gc> {
         }
 
         match &*self.0.read() {
-            XMLNodeData::DocumentRoot { .. } => Ok(0),
+            XMLNodeData::DocumentRoot { .. } => Ok(()),
             XMLNodeData::Element { tag_name, .. } => {
                 if children_len > 0 {
                     let bs = match tag_name.node_name() {
@@ -1259,12 +1259,12 @@ impl<'gc> XMLNode<'gc> {
                     };
                     writer.write_event(&Event::End(bs))
                 } else {
-                    Ok(0)
+                    Ok(())
                 }
             }
-            XMLNodeData::Text { .. } => Ok(0),
-            XMLNodeData::Comment { .. } => Ok(0),
-            XMLNodeData::DocType { .. } => Ok(0),
+            XMLNodeData::Text { .. } => Ok(()),
+            XMLNodeData::Comment { .. } => Ok(()),
+            XMLNodeData::DocType { .. } => Ok(()),
         }?;
 
         Ok(())
