@@ -19,6 +19,10 @@ pub const AVM_DEPTH_BIAS: i32 = 16384;
 /// What is the derivation of this number...?
 pub const AVM_MAX_DEPTH: i32 = 2_130_706_428;
 
+/// The maximum depth that the AVM will allow you to remove clips from.
+/// What is the derivation of this number...?
+pub const AVM_MAX_REMOVE_DEPTH: i32 = 2_130_706_416;
+
 macro_rules! with_display_object {
     ( $gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),* ) => {{
         $(

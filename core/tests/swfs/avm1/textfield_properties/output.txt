@@ -6,3 +6,9 @@ input
 dynamic
 // txt.type = 'invalid':
 dynamic
+
+// createTextField('txt2', 0, 0, 0, 100, 100)
+_level0.txt2
+// txt2.removeTextField()
+undefined
+
