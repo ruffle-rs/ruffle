@@ -86,6 +86,11 @@ b
 // array
 b,a,c
 
+// array = array.reverse(); array = array.reverse();
+
+// array
+b,a,c
+
 // array.join(" / ")
 b / a / c
 

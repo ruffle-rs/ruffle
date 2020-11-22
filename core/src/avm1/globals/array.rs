@@ -256,7 +256,8 @@ pub fn reverse<'gc>(
         this.set_array_element(i, values.pop().unwrap(), activation.context.gc_context);
     }
 
-    Ok(Value::Undefined)
+    // Some docs incorrectly say reverse returns Void.
+    Ok(this.into())
 }
 
 pub fn join<'gc>(
