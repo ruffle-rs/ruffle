@@ -46,7 +46,9 @@ If you have a collection of "real world" SWFs to test against, the scanner may b
 ruffle's parsing capabilities. Provided with a folder and an output filename, it will attempt to read
 all of the flash files and report on the success of such a task.
 
-- `cargo run --package=ruffle_scanner -- folder/with/swfs/ results.csv`
+```bash
+cargo run --package=ruffle_scanner -- folder/with/swfs/ results.csv
+```
 
 ### Exporter
 
