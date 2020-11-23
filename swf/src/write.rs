@@ -2237,8 +2237,7 @@ impl<W: Write> Writer<W> {
         self.write_bit(clip_events.contains(ClipEventFlag::Data))?;
         if self.version >= 6 {
             self.write_ubits(5, 0)?;
-            let has_construct = self.version >= 7 && clip_events.contains(ClipEventFlag::Construct);
-            self.write_bit(has_construct)?;
+            self.write_bit(clip_events.contains(ClipEventFlag::Construct))?;
             self.write_bit(clip_events.contains(ClipEventFlag::KeyPress))?;
             self.write_bit(clip_events.contains(ClipEventFlag::DragOut))?;
             self.write_u8(0)?;
