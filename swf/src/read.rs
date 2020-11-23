@@ -2356,7 +2356,9 @@ impl<R: Read> Reader<R> {
                 self.read_u16()?;
             } else {
                 self.read_ubits(5)?;
-                if self.read_bit()? && self.version >= 7 {
+                if self.read_bit()? {
+                    // Construct was only added in SWF7, but it's not version-gated;
+                    // Construct events will still fire in SWF6 in a v7+ player. (#1424)
                     event_list.insert(ClipEventFlag::Construct);
                 }
                 if self.read_bit()? {
