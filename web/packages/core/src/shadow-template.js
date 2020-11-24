@@ -34,7 +34,7 @@ ruffle_shadow_tmpl.innerHTML = `
         }
 
         #play_button .icon {
-            position: relative;
+            position: absolute;
             top: 50%;
             left: 50%;
             width: 90%;
