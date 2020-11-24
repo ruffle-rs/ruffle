@@ -9,6 +9,7 @@ window.RufflePlayer = PublicAPI.negotiate(
 let ruffle;
 let player;
 let jsonData;
+let initialFile;
 
 let container = document.getElementById("main");
 let author_container = document.getElementById("author-container");
@@ -24,6 +25,7 @@ window.addEventListener("DOMContentLoaded", () => {
     player = ruffle.createPlayer();
     player.id = "player";
     container.appendChild(player);
+    initialFile = new URLSearchParams(window.location.search).get("file");
     fetch("swfs.json").then((response) => {
         if (response.ok) {
             response.json().then((data) => {
@@ -40,11 +42,22 @@ window.addEventListener("DOMContentLoaded", () => {
                     }
                 });
                 sampleFileInputContainer.style.display = "inline-block";
-                // Load a random file.
-                let rn = Math.floor(
-                    Math.random() * Math.floor(jsonData.swfs.length)
-                );
-                sampleFileInput.selectedIndex = rn + 1;
+
+                if (initialFile) {
+                    let opts = Array.from(sampleFileInput.options).map(
+                        (item) => item.value
+                    );
+                    sampleFileInput.selectedIndex = Math.max(
+                        opts.findIndex((item) => item.endsWith(initialFile)),
+                        0
+                    );
+                } else {
+                    // Load a random file.
+                    let rn = Math.floor(
+                        Math.random() * Math.floor(jsonData.swfs.length)
+                    );
+                    sampleFileInput.selectedIndex = rn + 1;
+                }
                 sampleFileSelected();
             });
         } else {
