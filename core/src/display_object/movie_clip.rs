@@ -182,7 +182,9 @@ impl<'gc> MovieClip<'gc> {
         let tag_callback = |reader: &mut SwfStream<&[u8]>, tag_code, tag_len| {
             let data = *reader.get_inner().get_ref();
             let tag_pos = reader.get_inner().position() as usize;
-            let tag_slice = &data[tag_pos..tag_pos + tag_len];
+            let tag_slice = data
+                .get(tag_pos..tag_pos + tag_len)
+                .ok_or("Unexpected end of tag")?;
             let reader = &mut SwfStream::new(std::io::Cursor::new(tag_slice), version);
             match tag_code {
                 TagCode::FileAttributes => {
@@ -1118,7 +1120,9 @@ impl<'gc> MovieClip<'gc> {
         let tag_callback = |reader: &mut SwfStream<&[u8]>, tag_code, tag_len| {
             let data = *reader.get_inner().get_ref();
             let tag_pos = reader.get_inner().position() as usize;
-            let tag_slice = &data[tag_pos..tag_pos + tag_len];
+            let tag_slice = data
+                .get(tag_pos..tag_pos + tag_len)
+                .ok_or("Not enough data for tag")?;
             let reader = &mut SwfStream::new(std::io::Cursor::new(tag_slice), version);
             match tag_code {
                 TagCode::DoAction => self.do_action(self_display_object, context, reader, tag_len),
