@@ -3,8 +3,14 @@ import { Ruffle } from "../pkg/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
-import { AutoPlay, Config, UnmuteOverlay } from "./config";
-import { DataLoadOptions, URLLoadOptions } from "./load-options";
+import { Config } from "./config";
+import {
+    BaseLoadOptions,
+    DataLoadOptions,
+    URLLoadOptions,
+    AutoPlay,
+    UnmuteOverlay,
+} from "./load-options";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -270,7 +276,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * @private
      */
-    private async ensureFreshInstance(): Promise<void> {
+    private async ensureFreshInstance(config: BaseLoadOptions): Promise<void> {
         if (this.instance) {
             this.instance.destroy();
             this.instance = null;
@@ -324,10 +330,6 @@ export class RufflePlayer extends HTMLElement {
             this.container.style.visibility = "visible";
         }
 
-        const config = {
-            ...(window.RufflePlayer?.config ?? {}),
-            ...this.config,
-        };
         const autoplay = config.autoplay ?? AutoPlay.Auto;
         const unmuteVisibility = config.unmuteOverlay ?? UnmuteOverlay.Visible;
 
@@ -376,6 +378,9 @@ export class RufflePlayer extends HTMLElement {
      * - A URL, passed as a string, which will load a URL with default options.
      * - A [[URLLoadOptions]] object, to load a URL with options.
      * - A [[DataLoadOptions]] object, to load data with options.
+     *
+     * The options will be defaulted by the [[config]] field, which itself
+     * is defaulted by a global `window.RufflePlayer.config`.
      */
     async load(
         options: string | URLLoadOptions | DataLoadOptions
@@ -391,7 +396,13 @@ export class RufflePlayer extends HTMLElement {
         //TODO: Actually stream files...
         try {
             if (this.isConnected && !this.isUnusedFallbackObject()) {
-                await this.ensureFreshInstance();
+                const config: BaseLoadOptions = {
+                    ...(window.RufflePlayer?.config ?? {}),
+                    ...this.config,
+                    ...options,
+                };
+
+                await this.ensureFreshInstance(config);
 
                 if ("url" in options) {
                     console.log("Loading SWF file " + options.url);

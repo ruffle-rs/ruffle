@@ -1,54 +1,13 @@
 /**
  * Represents the various types of auto-play behaviours that are supported.
  */
-export enum AutoPlay {
-    /**
-     * The player should automatically play the movie as soon as it is loaded.
-     *
-     * If the browser does not support automatic audio, the movie will begin
-     * muted.
-     */
-    On = "on",
-
-    /**
-     * The player should not attempt to automatically play the movie.
-     *
-     * This will leave it to the user or API to actually play when appropriate.
-     */
-    Off = "off",
-
-    /**
-     * The player should automatically play the movie as soon as it is deemed
-     * "appropriate" to do so.
-     *
-     * The exact behaviour depends on the browser, but commonly requires some
-     * form of user interaction on the page in order to allow auto playing videos
-     * with sound.
-     */
-    Auto = "auto",
-}
-
-/**
- * When the player is muted, this controls whether or not Ruffle will show a
- * "click to unmute" overlay on top of the movie.
- */
-export enum UnmuteOverlay {
-    /**
-     * Show an overlay explaining that the movie is muted.
-     */
-    Visible = "visible",
-
-    /**
-     * Don't show an overlay and pretend that everything is fine.
-     */
-    Hidden = "hidden",
-}
+import { BaseLoadOptions } from "./load-options";
 
 /**
  * The configuration object to control Ruffle's behaviour on the website
  * that it is included on.
  */
-export interface Config {
+export interface Config extends BaseLoadOptions {
     /**
      * A map of public paths from source name to URL.
      */
@@ -72,19 +31,4 @@ export interface Config {
      * @default true
      */
     polyfills?: boolean;
-
-    /**
-     * Controls the auto-play behaviour of Ruffle.
-     *
-     * @default AutoPlay.Auto
-     */
-    autoplay?: AutoPlay;
-
-    /**
-     * Controls the visiblity of the unmute overlay when the player
-     * is started muted.
-     *
-     * @default UnmuteOverlay.Visible
-     */
-    unmuteOverlay?: UnmuteOverlay;
 }
