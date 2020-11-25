@@ -1691,7 +1691,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         context.transform_stack.push(&*self.transform());
         self.0.read().drawing.render(context);
-        crate::display_object::render_children(context, self.iter_render_list());
+        self.render_children(context);
         context.transform_stack.pop();
     }
 

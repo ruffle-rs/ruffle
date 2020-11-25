@@ -1,6 +1,6 @@
 //! Container mix-in for display objects
 
-use crate::context::UpdateContext;
+use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::button::Button;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject};
@@ -183,6 +183,51 @@ pub trait TDisplayObjectContainer<'gc>:
     /// It's concrete type is stated here due to Rust language limitations.
     fn iter_render_list(self) -> RenderIter<'gc> {
         RenderIter::from_container(self.into())
+    }
+
+    /// Renders the children of this container in render list order.
+    fn render_children(self, context: &mut RenderContext<'_, 'gc>) {
+        let mut clip_depth = 0;
+        let mut clip_depth_stack: Vec<(Depth, DisplayObject<'_>)> = vec![];
+        for child in self.iter_render_list() {
+            let depth = child.depth();
+
+            // Check if we need to pop off a mask.
+            // This must be a while loop because multiple masks can be popped
+            // at the same dpeth.
+            while clip_depth > 0 && depth >= clip_depth {
+                // Clear the mask stencil and pop the mask.
+                let (prev_clip_depth, clip_child) = clip_depth_stack.pop().unwrap();
+                clip_depth = prev_clip_depth;
+                context.renderer.deactivate_mask();
+                context.allow_mask = false;
+                clip_child.render(context);
+                context.allow_mask = true;
+                context.renderer.pop_mask();
+            }
+            if context.allow_mask && child.clip_depth() > 0 && child.allow_as_mask() {
+                // Push and render the mask.
+                clip_depth_stack.push((clip_depth, child));
+                clip_depth = child.clip_depth();
+                context.renderer.push_mask();
+                context.allow_mask = false;
+                child.render(context);
+                context.allow_mask = true;
+                context.renderer.activate_mask();
+            } else if child.visible() {
+                // Normal child.
+                child.render(context);
+            }
+        }
+
+        // Pop any remaining masks.
+        for (_, clip_child) in clip_depth_stack.into_iter().rev() {
+            context.renderer.deactivate_mask();
+            context.allow_mask = false;
+            clip_child.render(context);
+            context.allow_mask = true;
+            context.renderer.pop_mask();
+        }
     }
 }
 
