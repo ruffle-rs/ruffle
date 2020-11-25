@@ -1,6 +1,7 @@
 #![allow(
     clippy::float_cmp,
     clippy::inconsistent_digit_grouping,
+    clippy::unknown_clippy_lints,
     clippy::unreadable_literal
 )]
 
@@ -128,6 +129,7 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
 }
 
 #[cfg(feature = "flate2")]
+#[allow(clippy::unnecessary_wraps)]
 fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
     use flate2::read::ZlibDecoder;
     Ok(Box::new(ZlibDecoder::new(input)))

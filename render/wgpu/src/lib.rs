@@ -682,7 +682,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         id: swf::CharacterId,
         bitmap: Bitmap,
         debug_str: &str,
-    ) -> Result<BitmapInfo, Error> {
+    ) -> BitmapInfo {
         let extent = wgpu::Extent3d {
             width: bitmap.width,
             height: bitmap.height,
@@ -744,11 +744,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             },
         ));
 
-        Ok(BitmapInfo {
+        BitmapInfo {
             handle,
             width: bitmap.width.try_into().unwrap(),
             height: bitmap.height.try_into().unwrap(),
-        })
+        }
     }
 
     pub fn target(&self) -> &T {
@@ -843,7 +843,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn register_bitmap_jpeg_2(&mut self, id: u16, data: &[u8]) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
-        self.register_bitmap(id, bitmap, "JPEG2")
+        Ok(self.register_bitmap(id, bitmap, "JPEG2"))
     }
 
     fn register_bitmap_jpeg_3(
@@ -854,12 +854,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     ) -> Result<BitmapInfo, Error> {
         let bitmap =
             ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        self.register_bitmap(id, bitmap, "JPEG3")
+        Ok(self.register_bitmap(id, bitmap, "JPEG3"))
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &DefineBitsLossless) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
-        self.register_bitmap(swf_tag.id, bitmap, "PNG")
+        Ok(self.register_bitmap(swf_tag.id, bitmap, "PNG"))
     }
 
     fn begin_frame(&mut self, clear: Color) {
