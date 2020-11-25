@@ -128,7 +128,7 @@ pub fn get_child_at<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
         let child = dobj.child_by_id(id as usize).ok_or_else(|| {
             format!(
                 "RangeError: Display object container has no child with id {}",
@@ -215,7 +215,7 @@ pub fn add_child_at<'gc>(
             .get(1)
             .cloned()
             .ok_or("ArgumentError: Index to add child at not specified")?
-            .coerce_to_u32(activation)? as usize;
+            .coerce_to_i32(activation)? as usize;
 
         validate_add_operation(parent, child, target_index)?;
         add_child_to_displaylist(&mut activation.context, parent, child, target_index);
@@ -427,7 +427,7 @@ pub fn set_child_index<'gc>(
             .get(1)
             .cloned()
             .ok_or("ArgumentError: Index to add child at not specified")?
-            .coerce_to_u32(activation)? as usize;
+            .coerce_to_i32(activation)? as usize;
 
         let child_parent = child.parent();
         if child_parent.is_none() || !DisplayObject::ptr_eq(child_parent.unwrap(), parent) {
