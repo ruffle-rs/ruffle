@@ -9,6 +9,7 @@ import {
 } from "./ruffle-player";
 import { registerElement } from "./register-element";
 import { URLLoadOptions } from "./load-options";
+import { RuffleEmbed } from "./ruffle-embed";
 
 /**
  * Find and return the first value in obj with the given key.
@@ -181,24 +182,38 @@ export class RuffleObject extends RufflePlayer {
      * @returns True if the element looks like a flash object.
      */
     static isInterdictable(elem: HTMLElement): boolean {
+        // Don't polyfill if no movie specified.
         const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
-        if (!data) {
-            let hasMovie = false;
-            const params = elem.getElementsByTagName("param");
-            for (let i = 0; i < params.length; i++) {
-                if (params[i].name == "movie" && params[i].value) {
-                    hasMovie = true;
-                }
-            }
-            if (!hasMovie) {
-                return false;
-            }
+        const params = paramsOf(elem);
+        let isSwf;
+        // Check for SWF file.
+        if (data) {
+            isSwf = isSwfFilename(data);
+        } else if (params && params.movie) {
+            isSwf = isSwfFilename(params.movie);
+        } else {
+            // Don't polyfill when no file is specified.
+            return false;
         }
 
-        const type = elem.attributes.getNamedItem("type")?.value.toLowerCase();
+        // Check ActiveX class ID.
         const classid = elem.attributes
             .getNamedItem("classid")
             ?.value.toLowerCase();
+        if (classid === FLASH_ACTIVEX_CLASSID.toLowerCase()) {
+            // classid is an old-IE style embed that would not work on modern browsers.
+            // Often there will be an <embed> inside the <object> that would take precedence.
+            // Only polyfill this <object> if it doesn't contain a polyfillable <embed>.
+            return !Array.from(elem.getElementsByTagName("embed")).some(
+                RuffleEmbed.isInterdictable
+            );
+        } else if (classid != null && classid !== "") {
+            // Non-Flash classid.
+            return false;
+        }
+
+        // Check for MIME type.
+        const type = elem.attributes.getNamedItem("type")?.value.toLowerCase();
         if (
             type === FLASH_MIMETYPE.toLowerCase() ||
             type === FUTURESPLASH_MIMETYPE.toLowerCase() ||
@@ -206,21 +221,12 @@ export class RuffleObject extends RufflePlayer {
             type === FLASH_MOVIE_MIMETYPE.toLowerCase()
         ) {
             return true;
-        } else if (classid === FLASH_ACTIVEX_CLASSID.toLowerCase()) {
-            return true;
-        } else if (
-            (type == null || type === "") &&
-            (classid == null || classid === "")
-        ) {
-            const params = paramsOf(elem);
-            if (data && isSwfFilename(data)) {
-                return true;
-            } else if (params && params.movie && isSwfFilename(params.movie)) {
-                return true;
-            }
+        } else if (type != null && type !== "") {
+            return false;
         }
 
-        return false;
+        // If no MIME/class type is specified, polyfill if movie is an SWF file.
+        return isSwf;
     }
 
     /**
@@ -234,6 +240,16 @@ export class RuffleObject extends RufflePlayer {
         const ruffleObj: RuffleObject = <RuffleObject>(
             document.createElement(externalName)
         );
+
+        // Avoid copying embeds-inside-objects to avoid double polyfilling.
+        for (const embedElem of Array.from(
+            elem.getElementsByTagName("embed")
+        )) {
+            if (RuffleEmbed.isInterdictable(embedElem)) {
+                embedElem.remove();
+            }
+        }
+
         ruffleObj.copyElement(elem);
 
         return ruffleObj;
