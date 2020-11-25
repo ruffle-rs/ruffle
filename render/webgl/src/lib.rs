@@ -312,7 +312,9 @@ impl WebGlRenderBackend {
     }
 
     fn compile_shader(gl: &Gl, shader_type: u32, glsl_src: &str) -> Result<WebGlShader, Error> {
-        let shader = gl.create_shader(shader_type).unwrap();
+        let shader = gl
+            .create_shader(shader_type)
+            .ok_or("Unable to create shader")?;
         gl.shader_source(&shader, glsl_src);
         gl.compile_shader(&shader);
         let log = gl.get_shader_info_log(&shader).unwrap_or_default();

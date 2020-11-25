@@ -376,10 +376,10 @@ impl WebCanvasRenderBackend {
     ) -> Result<BitmapInfo, Error> {
         let data = ruffle_core::backend::render::remove_invalid_jpeg_data(data);
         let mut decoder = jpeg_decoder::Decoder::new(&data[..]);
-        decoder.read_info().unwrap();
-        let metadata = decoder.info().unwrap();
+        decoder.read_info()?;
+        let metadata = decoder.info().ok_or("Expected JPEG metadata")?;
 
-        let image = HtmlImageElement::new().unwrap();
+        let image = HtmlImageElement::new().into_js_result()?;
         let jpeg_encoded = format!("data:image/jpeg;base64,{}", &base64::encode(&data[..]));
         image.set_src(&jpeg_encoded);
 
