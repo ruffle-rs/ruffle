@@ -59,16 +59,17 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
         console.log("Couldn't read settings.");
     }
 
-    document.addEventListener(obfuscated_event_prefix + "_response", function (
-        e
-    ) {
-        if (next_response_promise_resolve !== null) {
-            next_response_promise_resolve(e);
+    document.addEventListener(
+        obfuscated_event_prefix + "_response",
+        function (e) {
+            if (next_response_promise_resolve !== null) {
+                next_response_promise_resolve(e);
 
-            next_response_promise = null;
-            next_response_promise_resolve = null;
+                next_response_promise = null;
+                next_response_promise_resolve = null;
+            }
         }
-    });
+    );
 
     /**
      * Returns a promise which resolves the next time we receive our custom
