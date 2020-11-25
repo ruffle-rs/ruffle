@@ -5,8 +5,9 @@ use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_REMOVE_
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
-use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
+use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TDisplayObjectContainer};
 use crate::html::TextFormat;
+use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// Implements `TextField`
@@ -878,7 +879,7 @@ fn remove_text_field<'gc>(
             return Ok(Value::Undefined);
         };
 
-        parent.remove_child_from_avm(&mut activation.context, text_field.into());
+        parent.remove_child(&mut activation.context, text_field.into(), EnumSet::all());
     }
 
     Ok(Value::Undefined)
