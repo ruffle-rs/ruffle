@@ -53,7 +53,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         Some(self.0.read().static_data.swf.clone())
     }
 
-    fn run_frame(&mut self, _context: &mut UpdateContext) {
+    fn run_frame(&self, _context: &mut UpdateContext) {
         // Noop
     }
 
