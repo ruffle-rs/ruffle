@@ -33,14 +33,14 @@ export class RuffleEmbed extends RufflePlayer {
      */
     connectedCallback(): void {
         super.connectedCallback();
-        let parameters = null;
+        let parameters;
         const flashvars = this.attributes.getNamedItem("flashvars");
         if (flashvars) {
             parameters = flashvars.value;
         }
         const src = this.attributes.getNamedItem("src");
         if (src) {
-            this.streamSwfUrl(src.value, parameters);
+            this.load({ url: src.value, parameters });
         }
     }
 
@@ -89,14 +89,14 @@ export class RuffleEmbed extends RufflePlayer {
     ): void {
         super.attributeChangedCallback(name, oldValue, newValue);
         if (this.isConnected && name === "src") {
-            let parameters = null;
+            let parameters;
             const flashvars = this.attributes.getNamedItem("flashvars");
             if (flashvars) {
                 parameters = flashvars.value;
             }
             const src = this.attributes.getNamedItem("src");
             if (src) {
-                this.streamSwfUrl(src.value, parameters);
+                this.load({ url: src.value, parameters });
             }
         }
     }

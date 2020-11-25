@@ -13,3 +13,4 @@ export * from "./source-api";
 export * from "./version";
 export * from "./version-range";
 export * from "./config";
+export * from "./load-options";

@@ -97,7 +97,7 @@ function localFileSelected() {
     if (file) {
         let fileReader = new FileReader();
         fileReader.onload = () => {
-            player.playSwfData(fileReader.result);
+            player.load({ data: fileReader.result });
         };
         fileReader.readAsArrayBuffer(file);
     }
@@ -105,7 +105,7 @@ function localFileSelected() {
 
 function loadRemoteFile(url) {
     fetch(url).then((response) => {
-        response.arrayBuffer().then((data) => player.playSwfData(data));
+        response.arrayBuffer().then((data) => player.load({ data }));
     });
 }
 
