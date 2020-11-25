@@ -8,6 +8,7 @@ import {
     RufflePlayer,
 } from "./ruffle-player";
 import { registerElement } from "./register-element";
+import { URLLoadOptions } from "./load-options";
 
 /**
  * Find and return the first value in obj with the given key.
@@ -113,7 +114,11 @@ export class RuffleObject extends RufflePlayer {
             );
 
             //Kick off the SWF download.
-            this.streamSwfUrl(url, parameters);
+            const options: URLLoadOptions = { url };
+            if (parameters) {
+                options.parameters = parameters;
+            }
+            this.load(options);
         }
     }
 
