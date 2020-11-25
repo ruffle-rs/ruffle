@@ -4,6 +4,7 @@ import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { AutoPlay, Config, UnmuteOverlay } from "./config";
+import { DataLoadOptions, URLLoadOptions } from "./load-options";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -367,38 +368,48 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * Load a movie into this Ruffle Player instance by URL.
+     * Loads a specified movie into this player.
      *
-     * Any existing movie will be immediately stopped, while the new movie's
-     * load happens asynchronously. There is currently no way to await the file
-     * being loaded, or any errors that happen loading it.
+     * This will replace any existing movie that may be playing.
      *
-     * @param url The URL to stream.
-     * @param parameters The parameters (also known as "flashvars") to load the movie with.
-     * If it's a string, it will be decoded into an object.
-     * If it's an object, every key and value must be a String.
-     * These parameters will be merged onto any found in the query portion of the swf URL.
+     * @param options One of the following:
+     * - A URL, passed as a string, which will load a URL with default options.
+     * - A [[URLLoadOptions]] object, to load a URL with options.
+     * - A [[DataLoadOptions]] object, to load data with options.
      */
-    async streamSwfUrl(
-        url: string,
-        parameters:
-            | URLSearchParams
-            | string
-            | Record<string, string>
-            | undefined
-            | null
+    async load(
+        options: string | URLLoadOptions | DataLoadOptions
     ): Promise<void> {
+        if (typeof options == "string") {
+            options = { url: options };
+        }
+
+        if (!("url" in options) && !("data" in options)) {
+            throw new TypeError("options must contain url or data");
+        }
+
         //TODO: Actually stream files...
         try {
             if (this.isConnected && !this.isUnusedFallbackObject()) {
-                console.log("Loading SWF file " + url);
-
                 await this.ensureFreshInstance();
-                parameters = {
-                    ...sanitizeParameters(url.substring(url.indexOf("?"))),
-                    ...sanitizeParameters(parameters),
-                };
-                this.instance!.stream_from(url, parameters);
+
+                if ("url" in options) {
+                    console.log("Loading SWF file " + options.url);
+
+                    const parameters = {
+                        ...sanitizeParameters(
+                            options.url.substring(options.url.indexOf("?"))
+                        ),
+                        ...sanitizeParameters(options.parameters),
+                    };
+                    this.instance!.stream_from(options.url, parameters);
+                } else if ("data" in options) {
+                    console.log("Loading SWF data");
+                    this.instance!.load_data(
+                        new Uint8Array(options.data),
+                        sanitizeParameters(options.parameters)
+                    );
+                }
             } else {
                 console.warn(
                     "Ignoring attempt to play a disconnected or suspended Ruffle element"
@@ -569,51 +580,6 @@ export class RufflePlayer extends HTMLElement {
             if (this.unmuteOverlay) {
                 this.unmuteOverlay.style.display = "none";
             }
-        }
-    }
-
-    /**
-     * Load a movie's data into this Ruffle Player instance.
-     *
-     * Any existing movie will be immediately stopped, and the new movie's data
-     * placed into a fresh Stage on the same stack.
-     *
-     * Please note that by doing this, no URL information will be provided to
-     * the movie being loaded.
-     *
-     * @param data The data to stream.
-     * @param parameters The parameters (also known as "flashvars") to load the movie with.
-     * If it's a string, it will be decoded into an object.
-     * If it's an object, every key and value must be a String.
-     */
-    async playSwfData(
-        data: Iterable<number>,
-        parameters:
-            | URLSearchParams
-            | string
-            | Record<string, string>
-            | undefined
-            | null
-    ): Promise<void> {
-        try {
-            if (this.isConnected && !this.isUnusedFallbackObject()) {
-                console.log("Got SWF data");
-
-                await this.ensureFreshInstance();
-                this.instance?.load_data(
-                    new Uint8Array(data),
-                    sanitizeParameters(parameters)
-                );
-                console.log("New Ruffle instance created.");
-            } else {
-                console.warn(
-                    "Ignoring attempt to play a disconnected or suspended Ruffle element"
-                );
-            }
-        } catch (err) {
-            console.error("Serious error occurred loading SWF file: " + err);
-            this.panic(err);
-            throw err;
         }
     }
 
