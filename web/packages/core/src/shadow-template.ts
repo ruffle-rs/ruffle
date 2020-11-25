@@ -11,6 +11,7 @@ ruffleShadowTemplate.innerHTML = `
             width: 550px;
             height: 400px;
             font-family: Arial, sans-serif;
+			letter-spacing: 0.4px;
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
@@ -128,7 +129,6 @@ ruffleShadowTemplate.innerHTML = `
             box-shadow: 0px 5px 15px -5px #000;
             position: absolute;
             text-align: left;
-            letter-spacing: 0.4px;
             list-style: none;
             padding: 0;
             margin: 0;
