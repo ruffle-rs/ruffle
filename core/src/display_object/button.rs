@@ -115,7 +115,7 @@ impl<'gc> Button<'gc> {
     /// This function instantiates children and thus must not be called whilst
     /// the caller is holding a write lock on the button data.
     fn set_state(
-        &mut self,
+        &self,
         self_display_object: DisplayObject<'gc>,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         state: ButtonState,
@@ -153,7 +153,7 @@ impl<'gc> Button<'gc> {
 
         drop(write);
 
-        for (mut child, depth) in new_children {
+        for (child, depth) in new_children {
             // Initialize child.
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.run_frame(context);
@@ -174,7 +174,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 
     fn post_instantiation(
-        &mut self,
+        &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
@@ -200,7 +200,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         }
     }
 
-    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let self_display_object = (*self).into();
         let initialized = self.0.read().initialized;
 
@@ -240,7 +240,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
             drop(read);
 
-            for (mut child, depth) in new_children {
+            for (child, depth) in new_children {
                 child.post_instantiation(context, child, None, Instantiator::Movie, false);
                 self.0
                     .write(context.gc_context)
@@ -249,7 +249,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             }
         }
 
-        for mut child in self.iter_execution_list() {
+        for child in self.iter_execution_list() {
             child.run_frame(context);
         }
     }
@@ -322,12 +322,12 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and
     /// so forth.
     fn handle_clip_event(
-        &mut self,
+        &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
         if event.propagates() {
-            for mut child in self.iter_execution_list() {
+            for child in self.iter_execution_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
                 }

@@ -1104,7 +1104,7 @@ impl<'gc> MovieClip<'gc> {
     /// Instantiate a given child object on the timeline at a given depth.
     #[allow(clippy::too_many_arguments)]
     fn instantiate_child(
-        mut self,
+        self,
         self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
@@ -1112,7 +1112,7 @@ impl<'gc> MovieClip<'gc> {
         place_object: &swf::PlaceObject,
         copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
-        if let Ok(mut child) = context
+        if let Ok(child) = context
             .library
             .library_for_movie_mut(self.movie().unwrap()) //TODO
             .instantiate_by_id(id, context.gc_context)
@@ -1381,7 +1381,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     fn construct_as_avm1_object(
-        mut self,
+        self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         init_object: Option<Avm1Object<'gc>>,
@@ -1657,9 +1657,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.read().movie().version()
     }
 
-    fn run_frame(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
-        for mut child in self.iter_execution_list() {
+        for child in self.iter_execution_list() {
             child.run_frame(context);
         }
 
@@ -1770,12 +1770,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn handle_clip_event(
-        &mut self,
+        &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
         if event.propagates() {
-            for mut child in self.iter_execution_list() {
+            for child in self.iter_execution_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
                 }
@@ -1794,7 +1794,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn post_instantiation(
-        &mut self,
+        &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
         init_object: Option<Avm1Object<'gc>>,

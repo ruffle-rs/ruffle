@@ -90,7 +90,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// being placed by script. If such a child was removed from said lists, it
     /// will be returned here. Otherwise, this method returns `None`.
     fn replace_at_depth(
-        &mut self,
+        self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
         depth: Depth,
@@ -214,14 +214,14 @@ macro_rules! impl_display_object_container {
         }
 
         fn replace_at_depth(
-            &mut self,
+            self,
             context: &mut UpdateContext<'_, 'gc, '_>,
             child: DisplayObject<'gc>,
             depth: Depth,
         ) -> Option<DisplayObject<'gc>> {
             child.set_place_frame(context.gc_context, 0);
             child.set_depth(context.gc_context, depth);
-            child.set_parent(context.gc_context, Some((*self).into()));
+            child.set_parent(context.gc_context, Some(self.into()));
 
             let mut write = self.0.write(context.gc_context);
 
