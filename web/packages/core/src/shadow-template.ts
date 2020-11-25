@@ -10,6 +10,8 @@ ruffleShadowTemplate.innerHTML = `
             /* Default width/height; this will get overridden by user styles/attributes */
             width: 550px;
             height: 400px;
+            font-family: Arial, sans-serif;
+            letter-spacing: 0.4px;
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
@@ -29,29 +31,7 @@ ruffleShadowTemplate.innerHTML = `
             height: 100%;
         }
 
-        #play_button {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-            display: none;
-        }
-
-        #play_button .icon {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 90%;
-            height: 90%;
-            max-width: 500px;
-            max-height: 500px;
-            transform: translate(-50%, -50%);
-        }
-
-        #play_button:hover .icon {
-            filter: brightness(1.3);
-        }
-        
+        #play_button,
         #unmute_overlay {
             position: absolute;
             width: 100%;
@@ -65,45 +45,55 @@ ruffleShadowTemplate.innerHTML = `
             width: 100%;
             height: 100%;
             background-color: #000;
-            opacity: 0.8;
+            opacity: 0.7;
         }
         
+        #play_button .icon,
         #unmute_overlay .icon {
-            position: relative;
+            position: absolute;
             top: 50%;
             left: 50%;
-            width: 90%;
-            height: 90%;
-            max-width: 500px;
-            max-height: 500px;
+            width: 50%;
+            height: 50%;
+            max-width: 384px;
+            max-height: 384px;
             transform: translate(-50%, -50%);
-            opacity: 0.6;
+            opacity: 0.7;
+        }
+
+        #play_button:hover .icon,
+        #unmute_overlay:hover .icon {
+            opacity: 1;
         }
 
         #panic {
             position: absolute;
+            font-size: 20px;
+            text-align: center;
             width: 100%;
             height: 100%;
             /* Inverted colours from play button! */
             background: linear-gradient(180deg, rgba(253,58,64,1) 0%, rgba(253,161,56,1) 100%);
-            color: #000;
+            color: #FFF;
         }
 
         #panic a {
             color: #37528C;
+            font-weight: bold;
+        }
+        
+        #panic > div {
+            position: absolute;
         }
 
         #panic-title {
-            margin-top: 30px;
-            text-align: center;
+            width: 100%;
+            top: 30px;
             font-size: 42px;
             font-weight: bold;
         }
 
         #panic-body {
-            text-align: center;
-            font-size: 20px;
-            position: absolute;
             top: 100px;
             bottom: 80px;
             left: 50px;
@@ -116,10 +106,7 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #panic-footer {
-            position: absolute;
             bottom: 30px;
-            text-align: center;
-            font-size: 20px;
             width: 100%;
         }
 
@@ -142,6 +129,7 @@ ruffleShadowTemplate.innerHTML = `
             color: #FFAD33;
             border-radius: 5px;
             position: absolute;
+            text-align: left;
             list-style: none;
             padding: 0;
             margin: 0;
@@ -162,7 +150,7 @@ ruffleShadowTemplate.innerHTML = `
 
         #right_click_menu .disabled {
             cursor: default;
-            color: #94672f;
+            color: #94672F;
         }
 
         #right_click_menu .active:hover {
@@ -173,14 +161,10 @@ ruffleShadowTemplate.innerHTML = `
             color: #FFAD33;
         }
 
-        #right_click_menu > :first-child {
+        #right_click_menu > :first-child,
+        #right_click_menu > :last-child {
             border-top-right-radius: 5px;
             border-top-left-radius: 5px;
-        }
-
-        #right_click_menu > :last-child {
-            border-bottom-right-radius: 5px;
-            border-bottom-left-radius: 5px;
         }
     </style>
     <style id="dynamic_styles"></style>
