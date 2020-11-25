@@ -109,7 +109,7 @@ fn add_child_to_displaylist<'gc>(
     index: usize,
 ) {
     if let Some(mut ctr) = parent.as_container() {
-        ctr.insert_at_id(context, child, index);
+        ctr.insert_at_index(context, child, index);
         child.set_placed_by_script(context.gc_context, true);
     }
 }
@@ -124,15 +124,15 @@ pub fn get_child_at<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_container())
     {
-        let id = args
+        let index = args
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        let child = dobj.child_by_id(id as usize).ok_or_else(|| {
+        let child = dobj.child_by_index(index as usize).ok_or_else(|| {
             format!(
                 "RangeError: Display object container has no child with id {}",
-                id
+                index
             )
         })?;
 
@@ -347,7 +347,7 @@ pub fn remove_child_at<'gc>(
                 .into());
             }
 
-            let child = ctr.child_by_id(target_child as usize).unwrap();
+            let child = ctr.child_by_index(target_child as usize).unwrap();
 
             ctr.remove_child(&mut activation.context, child, EnumSet::all());
 
@@ -399,7 +399,7 @@ pub fn remove_children<'gc>(
                 return Err(format!("RangeError: Range {} to {} is invalid", from, to).into());
             }
 
-            ctr.remove_range_of_ids(
+            ctr.remove_range(
                 &mut activation.context,
                 from as usize..min(ctr.num_children(), to as usize + 1),
             );
@@ -471,13 +471,13 @@ pub fn swap_children_at<'gc>(
                 return Err(format!("RangeError: Index {} is out of bounds", index1).into());
             }
 
-            let child0 = ctr.child_by_id(index0 as usize).unwrap();
-            let child1 = ctr.child_by_id(index1 as usize).unwrap();
+            let child0 = ctr.child_by_index(index0 as usize).unwrap();
+            let child1 = ctr.child_by_index(index1 as usize).unwrap();
 
             child0.set_placed_by_script(activation.context.gc_context, true);
             child1.set_placed_by_script(activation.context.gc_context, true);
 
-            ctr.swap_at_id(&mut activation.context, index0 as usize, index1 as usize);
+            ctr.swap_at_index(&mut activation.context, index0 as usize, index1 as usize);
         }
     }
 
@@ -519,7 +519,7 @@ pub fn swap_children<'gc>(
             child0.set_placed_by_script(activation.context.gc_context, true);
             child1.set_placed_by_script(activation.context.gc_context, true);
 
-            ctr.swap_at_id(&mut activation.context, index0, index1);
+            ctr.swap_at_index(&mut activation.context, index0, index1);
         }
     }
 

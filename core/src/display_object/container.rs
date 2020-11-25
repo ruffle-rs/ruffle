@@ -46,14 +46,14 @@ pub trait TDisplayObjectContainer<'gc>:
 {
     /// Get a child display object by it's position in the render list.
     ///
-    /// The `id` provided here should not be confused with the `Depth`s used to
-    /// index the depth list.
-    fn child_by_id(self, id: usize) -> Option<DisplayObject<'gc>>;
+    /// The `index` provided here should not be confused with the `Depth`s used
+    /// to index the depth list.
+    fn child_by_index(self, index: usize) -> Option<DisplayObject<'gc>>;
 
     /// Get a child display object by it's position in the depth list.
     ///
-    /// The `Depth` provided here should not be confused with the `id`s used to
-    /// index the render list.
+    /// The `Depth` provided here should not be confused with the `index`s used
+    /// to index the render list.
     fn child_by_depth(self, depth: Depth) -> Option<DisplayObject<'gc>>;
 
     /// Get a child display object by it's instance/timeline name.
@@ -118,17 +118,22 @@ pub trait TDisplayObjectContainer<'gc>:
     /// this method should be aware that reordering items onto or off of the
     /// render list can make further depth list manipulations (e.g. from the
     /// timeline) produce unusual results.
-    fn insert_at_id(
+    fn insert_at_index(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
-        id: usize,
+        index: usize,
     );
 
     /// Swap two children in the render list.
     ///
     /// No changes to the depth or render lists are made by this function.
-    fn swap_at_id(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, id1: usize, id2: usize);
+    fn swap_at_index(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        index1: usize,
+        index2: usize,
+    );
 
     /// Remove a child display object from this container's render, depth, and
     /// execution lists.
@@ -147,9 +152,9 @@ pub trait TDisplayObjectContainer<'gc>:
         from_lists: EnumSet<Lists>,
     ) -> bool;
 
-    /// Remove a set of children identified by their render list IDs from this
-    /// container's render, depth, and execution lists.
-    fn remove_range_of_ids<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
+    /// Remove a set of children identified by their render list indicies from
+    /// this container's render, depth, and execution lists.
+    fn remove_range<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
     where
         R: RangeBounds<usize>;
 
@@ -234,8 +239,8 @@ pub trait TDisplayObjectContainer<'gc>:
 #[macro_export]
 macro_rules! impl_display_object_container {
     ($field:ident) => {
-        fn child_by_id(self, id: usize) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.get_id(id)
+        fn child_by_index(self, index: usize) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.get_id(index)
         }
 
         fn child_by_depth(self, depth: Depth) -> Option<DisplayObject<'gc>> {
@@ -351,22 +356,30 @@ macro_rules! impl_display_object_container {
             );
         }
 
-        fn insert_at_id(
+        fn insert_at_index(
             &mut self,
             context: &mut UpdateContext<'_, 'gc, '_>,
             child: DisplayObject<'gc>,
-            id: usize,
+            index: usize,
         ) {
             self.0.write(context.gc_context).$field.insert_at_id(
                 context,
                 (*self).into(),
                 child,
-                id,
+                index,
             );
         }
 
-        fn swap_at_id(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, id1: usize, id2: usize) {
-            self.0.write(context.gc_context).$field.swap_at_id(id1, id2);
+        fn swap_at_index(
+            &mut self,
+            context: &mut UpdateContext<'_, 'gc, '_>,
+            index1: usize,
+            index2: usize,
+        ) {
+            self.0
+                .write(context.gc_context)
+                .$field
+                .swap_at_id(index1, index2);
         }
 
         fn remove_child(
@@ -399,7 +412,7 @@ macro_rules! impl_display_object_container {
             removed_from_render_list || removed_from_depth_list || removed_from_execution_list
         }
 
-        fn remove_range_of_ids<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
+        fn remove_range<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
         where
             R: RangeBounds<usize>,
         {
@@ -866,7 +879,7 @@ impl<'gc> Iterator for RenderIter<'gc> {
             return None;
         }
 
-        let this = self.src.child_by_id(self.i);
+        let this = self.src.child_by_index(self.i);
 
         self.i += 1;
 
@@ -880,7 +893,7 @@ impl<'gc> DoubleEndedIterator for RenderIter<'gc> {
             return None;
         }
 
-        let this = self.src.child_by_id(self.neg_i - 1);
+        let this = self.src.child_by_index(self.neg_i - 1);
 
         self.neg_i -= 1;
 
