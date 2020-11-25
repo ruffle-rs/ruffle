@@ -1157,56 +1157,6 @@ macro_rules! impl_display_object {
     };
 }
 
-/// Renders the children of a display object, taking masking into account.
-// TODO(Herschel): Move this into an IDisplayObject/IDisplayObjectContainer trait when
-// we figure out inheritance
-pub fn render_children<'gc>(
-    context: &mut RenderContext<'_, 'gc>,
-    children: impl Iterator<Item = DisplayObject<'gc>>,
-) {
-    let mut clip_depth = 0;
-    let mut clip_depth_stack: Vec<(Depth, DisplayObject<'_>)> = vec![];
-    for child in children {
-        let depth = child.depth();
-
-        // Check if we need to pop off a mask.
-        // This must be a while loop because multiple masks can be popped
-        // at the same dpeth.
-        while clip_depth > 0 && depth >= clip_depth {
-            // Clear the mask stencil and pop the mask.
-            let (prev_clip_depth, clip_child) = clip_depth_stack.pop().unwrap();
-            clip_depth = prev_clip_depth;
-            context.renderer.deactivate_mask();
-            context.allow_mask = false;
-            clip_child.render(context);
-            context.allow_mask = true;
-            context.renderer.pop_mask();
-        }
-        if context.allow_mask && child.clip_depth() > 0 && child.allow_as_mask() {
-            // Push and render the mask.
-            clip_depth_stack.push((clip_depth, child));
-            clip_depth = child.clip_depth();
-            context.renderer.push_mask();
-            context.allow_mask = false;
-            child.render(context);
-            context.allow_mask = true;
-            context.renderer.activate_mask();
-        } else if child.visible() {
-            // Normal child.
-            child.render(context);
-        }
-    }
-
-    // Pop any remaining masks.
-    for (_, clip_child) in clip_depth_stack.into_iter().rev() {
-        context.renderer.deactivate_mask();
-        context.allow_mask = false;
-        clip_child.render(context);
-        context.allow_mask = true;
-        context.renderer.pop_mask();
-    }
-}
-
 impl<'gc> DisplayObject<'gc> {
     pub fn ptr_eq(a: DisplayObject<'gc>, b: DisplayObject<'gc>) -> bool {
         a.as_ptr() == b.as_ptr()
