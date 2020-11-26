@@ -359,8 +359,16 @@ pub fn xmlnode_first_child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(mut children) = node.children() {
-            return Ok(children
-                .next()
+            let mut next = children.next();
+            while let Some(my_next) = next {
+                if is_as2_compatible(my_next) {
+                    break;
+                }
+
+                next = my_next.next_sibling().unwrap_or(None);
+            }
+
+            return Ok(next
                 .map(|mut child| {
                     child
                         .script_object(
@@ -383,8 +391,15 @@ pub fn xmlnode_last_child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(mut children) = node.children() {
-            return Ok(children
-                .next_back()
+            let mut prev = children.next_back();
+            while let Some(my_prev) = prev {
+                if is_as2_compatible(my_prev) {
+                    break;
+                }
+
+                prev = my_prev.prev_sibling().unwrap_or(None);
+            }
+            return Ok(prev
                 .map(|mut child| {
                     child
                         .script_object(
