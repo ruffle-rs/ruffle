@@ -269,10 +269,6 @@ macro_rules! impl_display_object_container {
             child: DisplayObject<'gc>,
             depth: Depth,
         ) -> Option<DisplayObject<'gc>> {
-            child.set_place_frame(context.gc_context, 0);
-            child.set_depth(context.gc_context, depth);
-            child.set_parent(context.gc_context, Some(self.into()));
-
             let mut write = self.0.write(context.gc_context);
 
             let prev_child = write.$field.insert_child_into_depth_list(depth, child);
@@ -325,6 +321,10 @@ macro_rules! impl_display_object_container {
                 .add_child_to_exec_list(context.gc_context, child);
 
             drop(write);
+
+            child.set_parent(context.gc_context, Some(self.into()));
+            child.set_place_frame(context.gc_context, 0);
+            child.set_depth(context.gc_context, depth);
 
             if let Some(removed_child) = removed_child {
                 removed_child.unload(context);
@@ -406,7 +406,13 @@ macro_rules! impl_display_object_container {
 
             if removed_from_execution_list {
                 child.unload(context);
-                child.set_parent(context.gc_context, None);
+
+                //TODO: This is an awful, *awful* hack to deal with the fact
+                //that unloaded AVM1 clips see their parents, while AVM2 clips
+                //don't.
+                if !matches!(child.object2(), Avm2Value::Undefined) {
+                    child.set_parent(context.gc_context, None);
+                }
             }
 
             removed_from_render_list || removed_from_depth_list || removed_from_execution_list
