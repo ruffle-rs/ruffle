@@ -33,6 +33,7 @@ json = "0.12.4"
 chrono = "0.4"
 num-traits = "0.2"
 instant = "0.1"
+encoding_rs = "0.8.26"
 
 [dependencies.jpeg-decoder]
 version = "0.1.20"
