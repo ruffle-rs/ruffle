@@ -151,10 +151,9 @@ impl<'gc> EditText<'gc> {
         text_spans.set_default_format(default_format.clone());
 
         if is_html {
-            document
+            let _ = document
                 .as_node()
-                .replace_with_str(context.gc_context, &text, false)
-                .unwrap();
+                .replace_with_str(context.gc_context, &text, false);
             text_spans.lower_from_html(document);
         } else {
             text_spans.replace_text(0, text_spans.text().len(), &text, Some(&default_format));
