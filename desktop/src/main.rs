@@ -129,8 +129,12 @@ fn load_movie_from_path(
 
 fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let movie_url = if opt.input_path.exists() {
-        let absolute_path = opt.input_path.canonicalize()?;
-        Url::from_file_path(absolute_path).map_err(|_| "Path cannot be a URL")?
+        let absolute_path = opt
+            .input_path
+            .canonicalize()
+            .unwrap_or_else(|_| opt.input_path.to_owned());
+        Url::from_file_path(absolute_path)
+            .map_err(|_| "Path must be absolute and cannot be a URL")?
     } else {
         Url::parse(opt.input_path.to_str().unwrap_or_default())
             .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
