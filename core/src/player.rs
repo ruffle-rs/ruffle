@@ -238,7 +238,7 @@ impl Player {
             view_matrix: Default::default(),
             inverse_view_matrix: Default::default(),
 
-            rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
+            rng: SmallRng::seed_from_u64(chrono::Utc::now().timestamp_millis() as u64),
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
                 GcRoot(GcCell::allocate(
