@@ -73,6 +73,7 @@ pub struct DisplayObjectBase<'gc> {
 impl<'gc> Default for DisplayObjectBase<'gc> {
     fn default() -> Self {
         Self {
+            instance_id: 0,
             parent: Default::default(),
             place_frame: Default::default(),
             depth: Default::default(),
@@ -86,7 +87,6 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             prev_sibling: None,
             next_sibling: None,
             flags: DisplayObjectFlags::Visible.into(),
-            instance_id: 123,
         }
     }
 }

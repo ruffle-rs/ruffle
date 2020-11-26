@@ -14,7 +14,7 @@ use web_sys::AudioContext;
 pub struct WebAudioBackend {
     context: AudioContext,
     sounds: Arena<Sound>,
-    stream_data: FnvHashMap<i32, StreamData>,
+    stream_data: FnvHashMap<u32, StreamData>,
     instance_id_to_sound: FnvHashMap<u32, SoundHandle>,
     left_samples: Vec<f32>,
     right_samples: Vec<f32>,
