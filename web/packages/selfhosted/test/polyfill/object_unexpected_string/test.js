@@ -24,7 +24,7 @@ describe("Object with unexpected string", () => {
     it("Plays a movie", () => {
         play_and_monitor(
             browser,
-            browser.$("#test-container").$("<ruffle-object />")
+            browser.$("#test-container").$("<ruffle-embed />")
         );
     });
 });
