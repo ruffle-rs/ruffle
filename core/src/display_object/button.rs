@@ -137,7 +137,7 @@ impl<'gc> Button<'gc> {
                 if let Ok(child) = context
                     .library
                     .library_for_movie_mut(movie.clone())
-                    .instantiate_by_id(record.id, context)
+                    .instantiate_by_id(record.id, context.gc_context)
                 {
                     child.set_parent(context.gc_context, Some(self.into()));
                     child.set_matrix(context.gc_context, &record.matrix);
@@ -230,7 +230,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
                     match context
                         .library
                         .library_for_movie_mut(read.static_data.read().swf.clone())
-                        .instantiate_by_id(record.id, context)
+                        .instantiate_by_id(record.id, context.gc_context)
                     {
                         Ok(child) => {
                             child.set_matrix(context.gc_context, &record.matrix);

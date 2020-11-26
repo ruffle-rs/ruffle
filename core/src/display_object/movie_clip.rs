@@ -1121,7 +1121,7 @@ impl<'gc> MovieClip<'gc> {
         if let Ok(child) = context
             .library
             .library_for_movie_mut(self.movie().unwrap()) //TODO
-            .instantiate_by_id(id, context)
+            .instantiate_by_id(id, context.gc_context)
         {
             // Remove previous child from children list,
             // and add new child onto front of the list.

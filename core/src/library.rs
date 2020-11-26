@@ -1,14 +1,13 @@
 use crate::avm2::Domain as Avm2Domain;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
-use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use crate::property_map::{Entry, PropertyMap};
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::AvmType;
-use gc_arena::Collect;
+use gc_arena::{Collect, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use swf::{CharacterId, TagCode};
@@ -99,10 +98,10 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn instantiate_by_id(
         &self,
         id: CharacterId,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
         if let Some(character) = self.characters.get(&id) {
-            self.instantiate_display_object(character, context)
+            self.instantiate_display_object(character, gc_context)
         } else {
             log::error!("Tried to instantiate non-registered character ID {}", id);
             Err("Character id doesn't exist".into())
@@ -114,10 +113,10 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn instantiate_by_export_name(
         &self,
         export_name: &str,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
         if let Some(character) = self.export_characters.get(export_name, false) {
-            self.instantiate_display_object(character, context)
+            self.instantiate_display_object(character, gc_context)
         } else {
             log::error!(
                 "Tried to instantiate non-registered character {}",
@@ -132,24 +131,18 @@ impl<'gc> MovieLibrary<'gc> {
     fn instantiate_display_object(
         &self,
         character: &Character<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
-        let instance = match character {
-            Character::Bitmap(bitmap) => Ok(bitmap.instantiate(context.gc_context)),
-            Character::EditText(edit_text) => Ok(edit_text.instantiate(context.gc_context)),
-            Character::Graphic(graphic) => Ok(graphic.instantiate(context.gc_context)),
-            Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(context.gc_context)),
-            Character::MovieClip(movie_clip) => Ok(movie_clip.instantiate(context.gc_context)),
-            Character::Button(button) => Ok(button.instantiate(context.gc_context)),
-            Character::Text(text) => Ok(text.instantiate(context.gc_context)),
+        match character {
+            Character::Bitmap(bitmap) => Ok(bitmap.instantiate(gc_context)),
+            Character::EditText(edit_text) => Ok(edit_text.instantiate(gc_context)),
+            Character::Graphic(graphic) => Ok(graphic.instantiate(gc_context)),
+            Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(gc_context)),
+            Character::MovieClip(movie_clip) => Ok(movie_clip.instantiate(gc_context)),
+            Character::Button(button) => Ok(button.instantiate(gc_context)),
+            Character::Text(text) => Ok(text.instantiate(gc_context)),
             _ => Err("Not a DisplayObject".into()),
-        };
-        if let Ok(instance) = instance {
-            let instance_id = *context.instance_counter;
-            instance.set_instance_id(context.gc_context, instance_id);
-            *context.instance_counter = context.instance_counter.wrapping_add(1);
         }
-        instance
     }
 
     pub fn get_font(&self, id: CharacterId) -> Option<Font<'gc>> {
