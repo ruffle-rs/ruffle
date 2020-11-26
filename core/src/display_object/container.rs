@@ -433,7 +433,10 @@ macro_rules! impl_display_object_container {
                 drop(write);
 
                 removed.unload(context);
-                removed.set_parent(context.gc_context, None);
+
+                if !matches!(removed.object2(), Avm2Value::Undefined) {
+                    removed.set_parent(context.gc_context, None);
+                }
 
                 write = self.0.write(context.gc_context);
             }
