@@ -60,7 +60,7 @@ struct SoundInstance {
 
     /// The instance ID of the movie clip that contains this stream.
     // TODO: Make non-Option?
-    instance_id: Option<i32>,
+    instance_id: Option<u32>,
 
     /// Flag indicating whether this sound is still playing.
     /// If this flag is false, the sound will be cleaned up during the
@@ -329,7 +329,7 @@ impl AudioBackend for CpalAudioBackend {
 
     fn start_stream(
         &mut self,
-        instance_id: i32,
+        instance_id: u32,
         _clip_frame: u16,
         clip_data: SwfSlice,
         stream_info: &swf::SoundStreamHead,
@@ -358,7 +358,7 @@ impl AudioBackend for CpalAudioBackend {
 
     fn start_sound(
         &mut self,
-        instance_id: Option<i32>,
+        instance_id: Option<u32>,
         sound_handle: SoundHandle,
         settings: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error> {
@@ -406,7 +406,7 @@ impl AudioBackend for CpalAudioBackend {
         sound_instances.clear();
     }
 
-    fn stop_sounds_with_instance_id(&mut self, instance_id: i32) {
+    fn stop_sounds_with_instance_id(&mut self, instance_id: u32) {
         let mut sound_instances = self.sound_instances.lock().unwrap();
         sound_instances.retain(|_, instance| instance.instance_id != Some(instance_id));
     }

@@ -188,7 +188,7 @@ pub struct Player {
     system: SystemProperties,
 
     /// The current instance ID. Used to generate default `instanceN` names.
-    instance_counter: i32,
+    instance_counter: u32,
 
     /// Time remaining until the next timer will fire.
     time_til_next_timer: Option<f64>,

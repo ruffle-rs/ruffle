@@ -40,7 +40,7 @@ pub use text::Text;
 
 #[derive(Clone, Debug)]
 pub struct DisplayObjectBase<'gc> {
-    instance_id: i32,
+    instance_id: u32,
     parent: Option<DisplayObject<'gc>>,
     place_frame: u16,
     depth: Depth,
@@ -107,10 +107,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags = DisplayObjectFlags::Visible.into();
     }
 
-    fn instance_id(&self) -> i32 {
+    fn instance_id(&self) -> u32 {
         self.instance_id
     }
-    fn set_instance_id(&mut self, instance_id: i32) {
+    fn set_instance_id(&mut self, instance_id: u32) {
         self.instance_id = instance_id;
     }
     fn depth(&self) -> Depth {
@@ -390,8 +390,8 @@ pub trait TDisplayObject<'gc>:
     'gc + Clone + Copy + Collect + Debug + Into<DisplayObject<'gc>>
 {
     fn id(&self) -> CharacterId;
-    fn instance_id(&self) -> i32;
-    fn set_instance_id(&self, context: MutationContext<'gc, '_>, instance_id: i32);
+    fn instance_id(&self) -> u32;
+    fn set_instance_id(&self, context: MutationContext<'gc, '_>, instance_id: u32);
     fn depth(&self) -> Depth;
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
 
@@ -979,13 +979,13 @@ pub enum DisplayObjectPtr {}
 #[macro_export]
 macro_rules! impl_display_object_sansbounds {
     ($field:ident) => {
-        fn instance_id(&self) -> i32 {
+        fn instance_id(&self) -> u32 {
             self.0.read().$field.instance_id()
         }
         fn set_instance_id(
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
-            instance_id: i32,
+            instance_id: u32,
         ) {
             self.0.write(gc_context).$field.set_instance_id(instance_id)
         }

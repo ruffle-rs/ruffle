@@ -117,7 +117,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub system: &'a mut SystemProperties,
 
     /// The current instance ID. Used to generate default `instanceN` names.
-    pub instance_counter: &'a mut i32,
+    pub instance_counter: &'a mut u32,
 
     /// Shared objects cache
     pub shared_objects: &'a mut HashMap<String, Avm1Object<'gc>>,
