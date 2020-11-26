@@ -87,6 +87,9 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
       - name: Setup node
         if: matrix.os == 'ubuntu-latest'
         uses: actions/setup-node@v1
