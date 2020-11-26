@@ -301,7 +301,7 @@ export class RufflePlayer extends HTMLElement {
                         </div>
                         <div id="panic-footer">
                             <ul>
-                                <li><a href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-mime-type">view Ruffle wiki</a></li>
+                                <li><a href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-mime-type">View Ruffle Wiki</a></li>
                             </ul>
                         </div>
                     </div>
@@ -719,8 +719,8 @@ export class RufflePlayer extends HTMLElement {
                 </div>
                 <div id="panic-footer">
                     <ul>
-                        <li><a href="https://github.com/ruffle-rs/ruffle/issues/new">report bug</a></li>
-                        <li><a href="#" id="panic-view-details">view error details</a></li>
+                        <li><a href="https://github.com/ruffle-rs/ruffle/issues/new">Report Bug</a></li>
+                        <li><a href="#" id="panic-view-details">View Error Details</a></li>
                     </ul>
                 </div>
             </div>
