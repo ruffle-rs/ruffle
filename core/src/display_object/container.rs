@@ -769,14 +769,14 @@ impl<'gc> ChildContainer<'gc> {
         } else {
             self.depth_list.remove(&prev_depth);
 
-            if let Some((_, below_child)) = self.depth_list.range(..depth).rev().next() {
-                let old_position = self
-                    .render_list
-                    .iter()
-                    .position(|x| DisplayObject::ptr_eq(*x, child))
-                    .unwrap();
-                self.render_list.remove(old_position);
+            let old_position = self
+                .render_list
+                .iter()
+                .position(|x| DisplayObject::ptr_eq(*x, child))
+                .unwrap();
+            self.render_list.remove(old_position);
 
+            if let Some((_, below_child)) = self.depth_list.range(..depth).rev().next() {
                 let new_position = self
                     .render_list
                     .iter()
