@@ -325,9 +325,7 @@ fn position<'gc>(
             // the previous valid position.
             // Needs some audio backend work for this.
             if sound_object.sound().is_some() {
-                /*if let Some(_sound_instance) = sound_object.sound_instance() {
-                    avm_warn!(activation, "Sound.position: Unimplemented");
-                }*/
+                avm_warn!(activation, "Sound.position: Unimplemented");
                 return Ok(sound_object.position().into());
             }
         } else {
