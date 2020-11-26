@@ -1823,7 +1823,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        self.set_default_instance_name(context.gc_context);
+        self.set_instance_id_and_default_instance_name(context);
 
         let movie = self.movie().unwrap();
         let library = context.library.library_for_movie_mut(movie);

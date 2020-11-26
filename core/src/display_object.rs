@@ -947,11 +947,15 @@ pub trait TDisplayObject<'gc>:
             .expect("All objects must have root")
     }
 
-    /// Assigns a default instance name `instanceN` to this object.
-    fn set_default_instance_name(&self, gc_context: MutationContext<'gc, '_>) {
+    /// Assigns an instance ID and a default instance name `instanceN` to this object.
+    fn set_instance_id_and_default_instance_name(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let instance_id = *context.instance_counter;
+        self.set_instance_id(context.gc_context, instance_id);
+        *context.instance_counter += 1;
+
         if self.name().is_empty() {
-            let name = format!("instance{}", self.instance_id());
-            self.set_name(gc_context, &name);
+            let name = format!("instance{}", instance_id);
+            self.set_name(context.gc_context, &name);
         }
     }
 

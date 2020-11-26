@@ -193,7 +193,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        self.set_default_instance_name(context.gc_context);
+        self.set_instance_id_and_default_instance_name(context);
 
         let mut mc = self.0.write(context.gc_context);
         if mc.object.is_none() {
