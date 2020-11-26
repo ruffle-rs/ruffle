@@ -2930,6 +2930,7 @@ dependencies = [
  "bitstream-io 0.9.0",
  "chrono",
  "downcast-rs",
+ "encoding_rs",
  "enumset",
  "flate2",
  "fnv",

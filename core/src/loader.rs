@@ -11,6 +11,7 @@ use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use crate::xml::XMLNode;
+use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext, MutationContext};
 use generational_arena::{Arena, Index};
 use std::string::FromUtf8Error;
@@ -671,10 +672,8 @@ impl<'gc> Loader<'gc> {
                 match data {
                     Ok(data) => {
                         // Fire the onData method with the loaded string.
-                        let string_data = AvmString::new(
-                            activation.context.gc_context,
-                            String::from_utf8_lossy(&data),
-                        );
+                        let string_data =
+                            AvmString::new(activation.context.gc_context, UTF_8.decode(&data).0);
                         let _ = that.call_method("onData", &[string_data.into()], &mut activation);
                     }
                     Err(_) => {
