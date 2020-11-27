@@ -81,12 +81,15 @@ pub fn set_height<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_alpha = args
+        let new_height = args
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_number(activation)?;
-        dobj.set_height(activation.context.gc_context, new_alpha);
+
+        if new_height >= 0.0 {
+            dobj.set_height(activation.context.gc_context, new_height);
+        }
     }
 
     Ok(Value::Undefined)
