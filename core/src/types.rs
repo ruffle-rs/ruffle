@@ -4,38 +4,48 @@ use gc_arena::Collect;
 
 /// Percent units for things that need to be stored as percentages.
 ///
-/// Actual percentages (0-100) can be stored in here by `From` and `Into`
-/// coercions. Thus, this wrapper serves as a unit marker. To convert into unit
-/// ranges (0-1), use the `from_unit` and `into_unit` methods.
+/// A percentage can be stored in two forms:
 ///
-/// No arithmetic operators are provided on percentages as most of the math
-/// they are involved in should be done in unit proportions rather than
-/// percentages.
+///  * Unit proportions, which represent 0 through 100% as [0.0, 1.0]
+///  * Fractions, which represent 0 through 100% as [0.0, 100.0]
+///
+/// This unit wrapper provides no coercions; you must explicitly ask for your
+/// percentages to be converted in a given form. This is because different VMs
+/// represent and store percentages differently. For the same reason, no
+/// arithmetic operators are provided on `Percent` to avoid potential implicit
+/// coercions.
 #[derive(Copy, Clone, Debug, Collect, PartialEq, PartialOrd)]
 #[collect(require_static)]
-pub struct Percent(f64);
+pub enum Percent {
+    Unit(f64),
+    Fraction(f64),
+}
 
 impl Percent {
-    /// Convert a unit proportion into a percentage.
+    /// Construct a percent from a unit proportion.
     pub fn from_unit(unit: f64) -> Self {
-        Self(unit * 100.0)
+        Self::Unit(unit)
     }
 
-    /// Convert a percentage into a unit proportion.
+    /// Construct a percent from an upper fraction.
+    pub fn from_fraction(unit: f64) -> Self {
+        Self::Fraction(unit)
+    }
+
+    /// Get the unit proportion form of a percentage.
     pub fn into_unit(self) -> f64 {
-        self.0 / 100.0
+        match self {
+            Self::Unit(unit) => unit,
+            Self::Fraction(pct) => pct / 100.0,
+        }
     }
-}
 
-impl From<f64> for Percent {
-    fn from(percent: f64) -> Self {
-        Self(percent)
-    }
-}
-
-impl Into<f64> for Percent {
-    fn into(self) -> f64 {
-        self.0
+    /// Get the fraction form of a percentage.
+    pub fn into_fraction(self) -> f64 {
+        match self {
+            Self::Unit(unit) => unit * 100.0,
+            Self::Fraction(pct) => pct,
+        }
     }
 }
 

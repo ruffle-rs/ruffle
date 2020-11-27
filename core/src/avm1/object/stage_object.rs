@@ -10,6 +10,7 @@ use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
 use crate::property_map::PropertyMap;
+use crate::types::Percent;
 use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
@@ -633,7 +634,7 @@ fn x_scale<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let val: f64 = this.scale_x(activation.context.gc_context).into();
+    let val: f64 = this.scale_x(activation.context.gc_context).into_fraction();
     Ok(val.into())
 }
 
@@ -643,7 +644,7 @@ fn set_x_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_x(activation.context.gc_context, val.into());
+        this.set_scale_x(activation.context.gc_context, Percent::from_fraction(val));
     }
     Ok(())
 }
@@ -652,7 +653,7 @@ fn y_scale<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let scale_y: f64 = this.scale_y(activation.context.gc_context).into();
+    let scale_y: f64 = this.scale_y(activation.context.gc_context).into_fraction();
     Ok(scale_y.into())
 }
 
@@ -662,7 +663,7 @@ fn set_y_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_y(activation.context.gc_context, val.into());
+        this.set_scale_y(activation.context.gc_context, Percent::from_fraction(val));
     }
     Ok(())
 }
