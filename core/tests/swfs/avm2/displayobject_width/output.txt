@@ -8,23 +8,40 @@
 //this.scaleX;
 1
 //this.width = 400;
+//this.width;
+400
 //this.scaleX;
 0.7272727272727273
 //this.width = 0;
+//this.width;
+0
 //this.scaleX;
 0
 //this.scaleX = 1.0;
 //this.width;
 550
+//this.scaleX;
+1
 //this.scaleX = -0.5;
 //this.width;
 275
+//this.scaleX;
+-0.5
 //this.width = -400;
+//this.width;
+275
 //this.scaleX;
 -0.5
 //this.width = 400;
+//this.width;
+400
 //this.scaleX;
 0.7272727272727273
+//this.scaleX = 107;
+//this.width;
+58850
+//this.scaleX;
+107
 //this.width = 0;
 //this.scaleX;
 0
@@ -1632,7 +1649,7 @@
 //this.scaleX = -1.0;
 //this.width;
 550
-//(scaleX ramp from -1.0 to 1.0 in 1px steps
+//(scaleX ramp from -1.0 to 1.0 in 2.5% steps
 //this.width;
 548.6
 //this.scaleX;
