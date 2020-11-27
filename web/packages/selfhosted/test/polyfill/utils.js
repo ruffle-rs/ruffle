@@ -119,4 +119,5 @@ module.exports = {
     inject_ruffle,
     inject_ruffle_and_wait,
     open_test,
+    setup_error_handler,
 };
