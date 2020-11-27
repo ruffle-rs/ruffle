@@ -95,6 +95,10 @@ impl Twips {
     pub fn to_pixels(self) -> f64 {
         f64::from(self.0) / Self::TWIPS_PER_PIXEL
     }
+
+    pub fn saturating_sub(self, rhs: Self) -> Self {
+        Self(self.0.saturating_sub(rhs.0))
+    }
 }
 
 impl std::ops::Add for Twips {
