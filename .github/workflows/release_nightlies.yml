@@ -258,7 +258,7 @@ jobs:
           rm -rf master
 
           # Copy the fresh docs into this folder.
-          cp -f ../web/packages/core/docs master
+          cp -R ../web/packages/core/docs master
 
           # Create git commit. Amend previous commit to avoid daily commit spam.
           git config user.email "ruffle@ruffle.rs"
