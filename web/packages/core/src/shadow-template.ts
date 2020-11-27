@@ -109,7 +109,7 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #panic ul {
-            margin: 35px 0 0 0;
+            margin-top: 35px;
             padding: 0;
             width: inherit;
             display: flex;
@@ -128,6 +128,7 @@ ruffleShadowTemplate.innerHTML = `
             border-radius: 5px;
             box-shadow: 0px 5px 15px -5px #000;
             position: absolute;
+            font-size: 16px;
             text-align: left;
             list-style: none;
             padding: 0;
