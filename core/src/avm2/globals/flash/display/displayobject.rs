@@ -95,7 +95,7 @@ pub fn set_height<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `scaleX`'s getter.
+/// Implements `scaleY`'s getter.
 pub fn scale_y<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -110,7 +110,7 @@ pub fn scale_y<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `scaleX`'s setter.
+/// Implements `scaleY`'s setter.
 pub fn set_scale_y<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -123,6 +123,40 @@ pub fn set_scale_y<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_number(activation)?;
         dobj.set_scale_y(activation.context.gc_context, Percent::from_unit(new_scale));
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `width`'s getter.
+pub fn width<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        return Ok(dobj.width().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `width`'s setter.
+pub fn set_width<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let new_width = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+
+        if new_width >= 0.0 {
+            dobj.set_width(activation.context.gc_context, new_width);
+        }
     }
 
     Ok(Value::Undefined)
@@ -196,6 +230,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::package(""), "scaleY"),
         Method::from_builtin(set_scale_y),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "width"),
+        Method::from_builtin(width),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::package(""), "width"),
+        Method::from_builtin(set_width),
     ));
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::package(""), "scaleX"),
