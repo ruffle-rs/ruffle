@@ -9,7 +9,7 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
-use crate::types::Percent;
+use crate::types::{Degrees, Percent};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.
@@ -259,6 +259,45 @@ pub fn set_y<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `rotation`'s getter.
+pub fn rotation<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let rot: f64 = dobj.rotation(activation.context.gc_context).into();
+        let rem = rot % 360.0;
+
+        if rem <= 180.0 {
+            return Ok(Value::Number(rem));
+        } else {
+            return Ok(Value::Number(rem - 360.0));
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `rotation`'s setter.
+pub fn set_rotation<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let new_rotation = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+
+        dobj.set_rotation(activation.context.gc_context, Degrees::from(new_rotation));
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -326,6 +365,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::package(""), "y"),
         Method::from_builtin(set_y),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "rotation"),
+        Method::from_builtin(rotation),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::package(""), "rotation"),
+        Method::from_builtin(set_rotation),
     ));
 
     class
