@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Lire du contenu Flash avec Ruffle"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Lire du contenu Flash même sur les sites qui désactivent Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Ignorer les avertissements de compatibilité des sites Internet"
+    },
+    "status_init": {
+        "message": "Lecture de l'onglet actuel"
+    },
+    "status_no_tabs": {
+        "message": "Il n'y a pas d'onglet actif."
+    },
+    "status_tabs_error": {
+        "message": "Une erreur s'est produite lors de la recherche de l'onglet actuel."
+    },
+    "status_message_init": {
+        "message": "Vérification de l'état de Ruffle dans l'onglet actuel"
+    },
+    "status_result_running": {
+        "message": "Ruffle est chargé et exécute Flash dans l'onglet actuel."
+    },
+    "status_result_optout": {
+        "message": "Ruffle n'est pas chargé car la page en cours est incompatible."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle n'est pas chargé car il a été désactivé par l'utilisateur."
+    },
+    "status_result_error": {
+        "message": "Une erreur s'est produite lors de l'interrogation de l'instance de Ruffle dans l'onglet actuel."
+    },
+    "status_result_protected": {
+        "message": "Ruffle ne peut pas se charger sur les pages protégées du navigateur."
+    },
+    "action_reload": {
+        "message": "Recharger l'onglet pour appliquer les modifications"
+    },
+    "open_settings_page": {
+        "message": "Ouvrir la page des paramètres"
+    },
+    "settings_page": {
+        "message": "Page des paramètres"
+    },
+    "description": {
+        "message": "Remet Flash à sa juste place, sur Internet."
+    },
+    "save_settings": {
+        "message": "Enregistrer les paramètres"
+    },
+    "settings_saved": {
+        "message": "Paramètres sauvegardés"
+    }
+}
