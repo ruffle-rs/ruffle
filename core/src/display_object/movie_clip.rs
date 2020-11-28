@@ -1128,6 +1128,7 @@ impl<'gc> MovieClip<'gc> {
             let prev_child = self.replace_at_depth(context, child, depth);
             {
                 // Set initial properties for child.
+                child.set_instantiated_by_timeline(context.gc_context, true);
                 child.set_depth(context.gc_context, depth);
                 child.set_parent(context.gc_context, Some(self_display_object));
                 child.set_place_frame(context.gc_context, self.current_frame());

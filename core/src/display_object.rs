@@ -357,6 +357,21 @@ impl<'gc> DisplayObjectBase<'gc> {
         }
     }
 
+    fn instantiated_by_timeline(&self) -> bool {
+        self.flags
+            .contains(DisplayObjectFlags::InstantiatedByTimeline)
+    }
+
+    fn set_instantiated_by_timeline(&mut self, value: bool) {
+        if value {
+            self.flags
+                .insert(DisplayObjectFlags::InstantiatedByTimeline);
+        } else {
+            self.flags
+                .remove(DisplayObjectFlags::InstantiatedByTimeline);
+        }
+    }
+
     fn swf_version(&self) -> u8 {
         self.parent
             .map(|p| p.swf_version())
@@ -727,6 +742,16 @@ pub trait TDisplayObject<'gc>:
     /// When this flag is set, changes from SWF `RemoveObject` tags are
     /// ignored.
     fn set_placed_by_script(&self, context: MutationContext<'gc, '_>, value: bool);
+
+    /// Whether this display object has been instantiated by the timeline.
+    /// When this flag is set, attempts to change the object's name from AVM2
+    /// throw an exception.
+    fn instantiated_by_timeline(&self) -> bool;
+
+    /// Sets whether this display object has been instantiated by the timeline.
+    /// When this flag is set, attempts to change the object's name from AVM2
+    /// throw an exception.
+    fn set_instantiated_by_timeline(&self, context: MutationContext<'gc, '_>, value: bool);
 
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and
@@ -1129,6 +1154,19 @@ macro_rules! impl_display_object_sansbounds {
         fn set_placed_by_script(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_placed_by_script(value)
         }
+        fn instantiated_by_timeline(&self) -> bool {
+            self.0.read().$field.instantiated_by_timeline()
+        }
+        fn set_instantiated_by_timeline(
+            &self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            value: bool,
+        ) {
+            self.0
+                .write(context)
+                .$field
+                .set_instantiated_by_timeline(value)
+        }
         fn instantiate(
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
@@ -1193,7 +1231,11 @@ enum DisplayObjectFlags {
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
     TransformedByScript,
 
-    /// Whether this object has been placed on the timeline by ActionScript 3.
+    /// Whether this object has been placed in a container by ActionScript 3.
     /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
     PlacedByScript,
+
+    /// Whether this object has been instantiated by a SWF tag.
+    /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
+    InstantiatedByTimeline,
 }
