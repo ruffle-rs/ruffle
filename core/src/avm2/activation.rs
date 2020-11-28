@@ -657,6 +657,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::GreaterThan => self.op_greater_than(),
                 Op::LessEquals => self.op_less_equals(),
                 Op::LessThan => self.op_less_than(),
+                Op::Nop => self.op_nop(),
                 Op::Not => self.op_not(),
                 Op::HasNext => self.op_has_next(),
                 Op::HasNext2 {
@@ -2129,6 +2130,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         self.context.avm2.push(result);
 
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_nop(&mut self) -> Result<FrameControl<'gc>, Error> {
         Ok(FrameControl::Continue)
     }
 
