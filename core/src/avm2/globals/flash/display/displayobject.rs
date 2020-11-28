@@ -5,6 +5,7 @@ use crate::avm2::class::Class;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -298,6 +299,46 @@ pub fn set_rotation<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `name`'s getter.
+pub fn name<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        return Ok(AvmString::new(activation.context.gc_context, dobj.name().to_string()).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `name`'s setter.
+pub fn set_name<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let new_name = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+
+        if dobj.instantiated_by_timeline() {
+            return Err(format!(
+                "Display object {} was placed by the timeline and cannot have it's name changed.",
+                new_name
+            )
+            .into());
+        }
+
+        dobj.set_name(activation.context.gc_context, &new_name);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -373,6 +414,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::package(""), "rotation"),
         Method::from_builtin(set_rotation),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "name"),
+        Method::from_builtin(name),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::package(""), "name"),
+        Method::from_builtin(set_name),
     ));
 
     class

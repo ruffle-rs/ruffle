@@ -1,0 +1,22 @@
+//this.name (Timeline)
+root1
+//this.name (Symbol 1)
+symbol1
+//this.name (Symbol 1)
+symbol1_1
+//this.name (Symbol 2)
+symbol1
+//var s1 = new MovieClip();
+//s1.name = 'not_symbol_one';
+//s1.name;
+not_symbol_one
+//this.addChild(s1);
+//s1.name;
+not_symbol_one
+//this.not_symbol_one;
+undefined
+//this.not_symbol_one === s1;
+false
+//s1.name = 'not_symbol_two';
+//s1.name;
+not_symbol_two
