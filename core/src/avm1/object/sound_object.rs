@@ -35,6 +35,8 @@ pub struct SoundObjectData<'gc> {
 
     /// Duration of the currently attached sound in milliseconds.
     duration: u32,
+
+    volume: f64,
 }
 
 unsafe impl<'gc> Collect for SoundObjectData<'gc> {
@@ -69,6 +71,7 @@ impl<'gc> SoundObject<'gc> {
                 owner: None,
                 position: 0,
                 duration: 0,
+                volume: 0.0,
             },
         ))
     }
@@ -79,6 +82,14 @@ impl<'gc> SoundObject<'gc> {
 
     pub fn set_duration(self, gc_context: MutationContext<'gc, '_>, duration: u32) {
         self.0.write(gc_context).duration = duration;
+    }
+
+    pub fn volume(self) -> f64 {
+        self.0.read().volume
+    }
+
+    pub fn set_volume(self, gc_context: MutationContext<'gc, '_>, volume: f64) {
+        self.0.write(gc_context).volume = volume;
     }
 
     pub fn sound(self) -> Option<SoundHandle> {

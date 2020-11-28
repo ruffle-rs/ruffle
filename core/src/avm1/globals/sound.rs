@@ -285,11 +285,17 @@ fn get_transform<'gc>(
 
 fn get_volume<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Sound.getVolume: Unimplemented");
-    Ok(100.into())
+    if activation.current_swf_version() >= 5 {
+        if let Some(sound_object) = this.as_sound_object() {
+            return Ok(sound_object.volume().into());
+        } else {
+            avm_warn!(activation, "Sound.getVolume: this is not a Sound");
+        }
+    }
+    Ok(Value::Undefined)
 }
 
 fn id3<'gc>(
@@ -366,6 +372,7 @@ fn set_volume<'gc>(
             .unwrap_or(&Value::Number(100.0))
             .coerce_to_f64(activation)?;
         if let Some(sound_object) = this.as_sound_object() {
+            sound_object.set_volume(activation.context.gc_context, value);
             if let Some(sound_instance) = sound_object.sound_instance() {
                 activation
                     .context
@@ -419,6 +426,10 @@ fn start<'gc>(
             if let Ok(sound_instance) = sound_instance {
                 sound_object
                     .set_sound_instance(activation.context.gc_context, Some(sound_instance));
+                activation
+                    .context
+                    .audio
+                    .set_volume(sound_instance, sound_object.volume() / 100.0);
             }
         } else {
             avm_warn!(activation, "Sound.start: No sound is attached");
