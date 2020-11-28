@@ -362,12 +362,21 @@ macro_rules! impl_display_object_container {
             child: DisplayObject<'gc>,
             index: usize,
         ) {
-            self.0.write(context.gc_context).$field.insert_at_id(
-                context,
-                (*self).into(),
-                child,
-                index,
-            );
+            if let Some(old_parent) = child.parent() {
+                if !DisplayObject::ptr_eq(old_parent, (*self).into()) {
+                    if let Some(mut old_parent) = old_parent.as_container() {
+                        old_parent.remove_child(context, child, EnumSet::all());
+                    }
+                }
+            }
+
+            child.set_place_frame(context.gc_context, 0);
+            child.set_parent(context.gc_context, Some((*self).into()));
+
+            self.0
+                .write(context.gc_context)
+                .$field
+                .insert_at_id(context, child, index);
         }
 
         fn swap_at_index(
@@ -678,10 +687,12 @@ impl<'gc> ChildContainer<'gc> {
 
     /// Insert a child at a given render list position.
     ///
-    /// If the child is already a child of another container, we will remove it
-    /// from that container. This also applies to our own render list. Note
-    /// that all children after the old position will be shifted back by one,
-    /// which must be taken into account when calculating future insertion IDs.
+    /// If the child is already a child of another container, you must remove
+    /// it from that container before calling this method. If it's already a
+    /// member of this container, do not remove it, as we will need to take
+    /// care of that. In that case, note that all children after the old
+    /// position will be shifted back by one, which must be taken into account
+    /// when calculating future insertion IDs.
     ///
     /// `parent` should be the display object that owns this container.
     ///
@@ -690,13 +701,9 @@ impl<'gc> ChildContainer<'gc> {
     pub fn insert_at_id(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        parent: DisplayObject<'gc>,
         child: DisplayObject<'gc>,
         id: usize,
     ) {
-        child.set_place_frame(context.gc_context, 0);
-        child.set_parent(context.gc_context, Some(parent));
-
         if let Some(old_id) = self
             .render_list
             .iter()
@@ -714,12 +721,6 @@ impl<'gc> ChildContainer<'gc> {
                 Ordering::Equal => {}
             }
         } else {
-            if let Some(old_parent) = child.parent() {
-                if let Some(mut old_parent) = old_parent.as_container() {
-                    old_parent.remove_child(context, child, EnumSet::all());
-                }
-            }
-
             self.render_list.insert(id, child);
             self.add_child_to_exec_list(context.gc_context, child);
         }
