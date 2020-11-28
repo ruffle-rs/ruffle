@@ -434,6 +434,8 @@ swf_tests! {
     (button_order, "avm1/button_order", 1),
     (as3_displayobjectcontainer_stopallmovieclips, "avm2/displayobjectcontainer_stopallmovieclips", 2),
     (as3_displayobjectcontainer_timelineinstance, "avm2/displayobjectcontainer_timelineinstance", 6),
+    (as3_displayobject_x, "avm2/displayobject_x", 1),
+    (as3_displayobject_y, "avm2/displayobject_y", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
