@@ -949,6 +949,18 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
+    /// Assigns a default root name to this object.
+    ///
+    /// The default root names change based on the AVM configuration of the
+    /// clip; AVM2 clips get `rootN` while AVM1 clips get blank strings.
+    fn set_default_root_name(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if !matches!(self.object2(), Avm2Value::Undefined) {
+            self.set_name(context.gc_context, &format!("root{}", self.depth() + 1));
+        } else if !matches!(self.object(), Avm1Value::Undefined) {
+            self.set_name(context.gc_context, "");
+        }
+    }
+
     fn bind_text_field_variables(&self, activation: &mut Activation<'_, 'gc, '_>) {
         // Check all unbound text fields to see if they apply to this object.
         // TODO: Replace with `Vec::drain_filter` when stable.
