@@ -195,6 +195,70 @@ pub fn set_scale_x<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `x`'s getter.
+pub fn x<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        return Ok(dobj.x().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `x`'s setter.
+pub fn set_x<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let new_x = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+
+        dobj.set_x(activation.context.gc_context, new_x);
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `y`'s getter.
+pub fn y<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        return Ok(dobj.y().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `y`'s setter.
+pub fn set_y<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let new_y = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+
+        dobj.set_y(activation.context.gc_context, new_y);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -246,6 +310,22 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::package(""), "scaleX"),
         Method::from_builtin(set_scale_x),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "x"),
+        Method::from_builtin(x),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::package(""), "x"),
+        Method::from_builtin(set_x),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "y"),
+        Method::from_builtin(y),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::package(""), "y"),
+        Method::from_builtin(set_y),
     ));
 
     class
