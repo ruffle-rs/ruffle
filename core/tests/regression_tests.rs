@@ -434,6 +434,7 @@ swf_tests! {
     (button_order, "avm1/button_order", 1),
     (as3_displayobjectcontainer_stopallmovieclips, "avm2/displayobjectcontainer_stopallmovieclips", 2),
     (as3_displayobjectcontainer_timelineinstance, "avm2/displayobjectcontainer_timelineinstance", 6),
+    (as3_displayobject_alpha, "avm2/displayobject_alpha", 1),
     (as3_displayobject_x, "avm2/displayobject_x", 1),
     (as3_displayobject_y, "avm2/displayobject_y", 1),
 }
