@@ -325,7 +325,9 @@ fn position<'gc>(
             // the previous valid position.
             // Needs some audio backend work for this.
             if sound_object.sound().is_some() {
-                avm_warn!(activation, "Sound.position: Unimplemented");
+                if let Some(_sound_instance) = sound_object.sound_instance() {
+                    avm_warn!(activation, "Sound.position: Unimplemented");
+                }
                 return Ok(sound_object.position().into());
             }
         } else {
@@ -386,7 +388,7 @@ fn start<'gc>(
     if let Some(sound_object) = this.as_sound_object() {
         if let Some(sound) = sound_object.sound() {
             let instance_id = sound_object.owner().map(|owner| owner.instance_id());
-            let _ = activation.context.audio.start_sound(
+            let sound_instance = activation.context.audio.start_sound(
                 instance_id,
                 sound,
                 &SoundInfo {
@@ -401,6 +403,10 @@ fn start<'gc>(
                     envelope: None,
                 },
             );
+            if let Ok(sound_instance) = sound_instance {
+                sound_object
+                    .set_sound_instance(activation.context.gc_context, Some(sound_instance));
+            }
         } else {
             avm_warn!(activation, "Sound.start: No sound is attached");
         }
