@@ -2871,22 +2871,27 @@ impl<'gc, 'a> MovieClip<'gc> {
         _reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
         let mut mc = self.0.write(context.gc_context);
-        if let (Some(stream_info), None) = (&mc.static_data.audio_stream_info, mc.audio_stream) {
-            let slice = mc
-                .static_data
-                .swf
-                .to_start_and_end(mc.tag_stream_pos as usize, mc.tag_stream_len())
-                .ok_or_else(|| {
-                    std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "Invalid slice generated when constructing sound stream block",
-                    )
-                })?;
-            let audio_stream =
-                context
-                    .audio
-                    .start_stream(mc.id(), mc.current_frame() + 1, slice, &stream_info);
-            mc.audio_stream = audio_stream.ok();
+        if mc.playing() {
+            if let (Some(stream_info), None) = (&mc.static_data.audio_stream_info, mc.audio_stream)
+            {
+                let slice = mc
+                    .static_data
+                    .swf
+                    .to_start_and_end(mc.tag_stream_pos as usize, mc.tag_stream_len())
+                    .ok_or_else(|| {
+                        std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            "Invalid slice generated when constructing sound stream block",
+                        )
+                    })?;
+                let audio_stream = context.audio.start_stream(
+                    mc.id(),
+                    mc.current_frame() + 1,
+                    slice,
+                    &stream_info,
+                );
+                mc.audio_stream = audio_stream.ok();
+            }
         }
 
         Ok(())
