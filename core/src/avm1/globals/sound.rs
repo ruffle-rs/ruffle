@@ -357,10 +357,25 @@ fn set_transform<'gc>(
 
 fn set_volume<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Sound.setVolume: Unimplemented");
+    if activation.current_swf_version() >= 5 {
+        let value = args
+            .get(0)
+            .unwrap_or(&Value::Number(100.0))
+            .coerce_to_f64(activation)?;
+        if let Some(sound_object) = this.as_sound_object() {
+            if let Some(sound_instance) = sound_object.sound_instance() {
+                activation
+                    .context
+                    .audio
+                    .set_volume(sound_instance, value / 100.0);
+            }
+        } else {
+            avm_warn!(activation, "Sound.setVolume: this is not a Sound");
+        }
+    }
     Ok(Value::Undefined)
 }
 

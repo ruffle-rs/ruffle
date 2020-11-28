@@ -71,6 +71,8 @@ pub trait AudioBackend: Downcast {
     /// which only plays a sound if that sound is not already playing.
     fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool;
 
+    fn set_volume(&self, sound: SoundInstanceHandle, volume: f64);
+
     /// Get the duration of a sound in milliseconds.
     /// Returns `None` if sound is not registered.
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32>;
@@ -141,6 +143,8 @@ impl AudioBackend for NullAudioBackend {
     fn is_sound_playing_with_handle(&mut self, _handle: SoundHandle) -> bool {
         false
     }
+
+    fn set_volume(&self, _sound: SoundInstanceHandle, _volume: f64) {}
 
     fn get_sound_duration(&self, _sound: SoundHandle) -> Option<u32> {
         None

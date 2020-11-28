@@ -411,6 +411,10 @@ impl AudioBackend for CpalAudioBackend {
         sound_instances.retain(|_, instance| instance.handle != handle);
     }
 
+    fn set_volume(&self, _sound: SoundInstanceHandle, _volume: f64) {
+        // TODO
+    }
+
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32> {
         if let Some(sound) = self.sounds.get(sound) {
             // AS duration does not subtract skip_sample_frames.

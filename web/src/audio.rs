@@ -94,10 +94,12 @@ impl Drop for SoundInstance {
     fn drop(&mut self) {
         if let SoundInstanceType::AudioBuffer {
             node,
+            gain,
             buffer_source_node,
         } = &self.instance_type
         {
             let _ = buffer_source_node.set_onended(None);
+            let _ = gain.disconnect();
             let _ = node.disconnect();
         }
     }
@@ -109,6 +111,8 @@ enum SoundInstanceType {
     AudioBuffer {
         /// The node that is connected to the output.
         node: web_sys::AudioNode,
+
+        gain: web_sys::GainNode,
 
         /// The buffer node containing the audio data.
         /// This is often the same as `node`, but will be different
@@ -224,8 +228,10 @@ impl WebAudioBackend {
                     }
                 };
 
-                node.connect_with_audio_node(&self.context.destination())
-                    .warn_on_error();
+                let gain = self.context.create_gain().into_js_result()?;
+                node.connect_with_audio_node(&gain).into_js_result()?;
+                gain.connect_with_audio_node(&self.context.destination())
+                    .into_js_result()?;
 
                 // Create the sound instance and add it to the active instances list.
                 let instance = SoundInstance {
@@ -233,6 +239,7 @@ impl WebAudioBackend {
                     format: sound.format.clone(),
                     instance_type: SoundInstanceType::AudioBuffer {
                         node,
+                        gain,
                         buffer_source_node: buffer_source_node.clone(),
                     },
                 };
@@ -831,6 +838,24 @@ impl AudioBackend for WebAudioBackend {
             instances
                 .iter()
                 .any(|(_, instance)| instance.handle == handle)
+        })
+    }
+
+    fn set_volume(&self, sound: SoundInstanceHandle, volume: f64) {
+        SOUND_INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            if let Some(instance) = instances.get(sound) {
+                if let SoundInstanceType::AudioBuffer {
+                    node: _,
+                    gain,
+                    buffer_source_node: _,
+                } = &instance.instance_type
+                {
+                    gain.gain()
+                        .set_value_at_time(volume as f32, self.context.current_time())
+                        .warn_on_error();
+                }
+            }
         })
     }
 
