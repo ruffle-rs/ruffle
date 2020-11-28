@@ -66,6 +66,8 @@ struct SoundInstance {
     /// If this flag is false, the sound will be cleaned up during the
     /// next loop of the sound thread.
     active: bool,
+
+    volume: f64,
 }
 
 impl CpalAudioBackend {
@@ -282,6 +284,7 @@ impl CpalAudioBackend {
             for (_, sound) in sound_instances.iter_mut() {
                 if sound.active && !sound.signal.is_exhausted() {
                     let sound_frame = sound.signal.next();
+                    let sound_frame = sound_frame.scale_amp(sound.volume as f32);
                     let sound_frame: Stereo<T::Signed> = Frame::map(sound_frame, Sample::to_sample);
                     output_frame = output_frame.add_amp(sound_frame);
                 } else {
@@ -347,6 +350,7 @@ impl AudioBackend for CpalAudioBackend {
             clip_id: Some(clip_id),
             signal,
             active: true,
+            volume: 1.0,
         });
         Ok(handle)
     }
@@ -384,6 +388,7 @@ impl AudioBackend for CpalAudioBackend {
             clip_id: None,
             signal,
             active: true,
+            volume: 1.0,
         });
         Ok(handle)
     }
@@ -411,8 +416,11 @@ impl AudioBackend for CpalAudioBackend {
         sound_instances.retain(|_, instance| instance.handle != handle);
     }
 
-    fn set_volume(&self, _sound: SoundInstanceHandle, _volume: f64) {
-        // TODO
+    fn set_volume(&self, sound: SoundInstanceHandle, volume: f64) {
+        let mut sound_instances = self.sound_instances.lock().unwrap();
+        if let Some(sound_instance) = sound_instances.get_mut(sound) {
+            sound_instance.volume = volume;
+        }
     }
 
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32> {
