@@ -55,7 +55,7 @@ pub trait AudioBackend: Downcast {
     /// No-op if the sound is not playing.
     fn stop_sound(&mut self, sound: SoundInstanceHandle);
 
-    /// Stops a playing stream souund.
+    /// Stops a playing stream sound.
     /// Should be called whenever a MovieClip timeline stops playing or seeks to a new frame.
     fn stop_stream(&mut self, stream: AudioStreamHandle);
 
@@ -71,6 +71,8 @@ pub trait AudioBackend: Downcast {
     /// which only plays a sound if that sound is not already playing.
     fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool;
 
+    /// Sets volume of a playing sound instance between 0 and 1.
+    /// No-op if the sound is not playing.
     fn set_volume(&self, sound: SoundInstanceHandle, volume: f64);
 
     /// Get the duration of a sound in milliseconds.

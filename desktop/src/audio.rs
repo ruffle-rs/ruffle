@@ -67,6 +67,7 @@ struct SoundInstance {
     /// next loop of the sound thread.
     active: bool,
 
+    /// The volume of this sound between 0 and 1.
     volume: f64,
 }
 

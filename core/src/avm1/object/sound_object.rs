@@ -36,6 +36,7 @@ pub struct SoundObjectData<'gc> {
     /// Duration of the currently attached sound in milliseconds.
     duration: u32,
 
+    /// Volume of the currently playing sound between 0 and 100.
     volume: f64,
 }
 
@@ -71,7 +72,7 @@ impl<'gc> SoundObject<'gc> {
                 owner: None,
                 position: 0,
                 duration: 0,
-                volume: 0.0,
+                volume: 100.0,
             },
         ))
     }
