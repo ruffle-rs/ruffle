@@ -458,6 +458,7 @@ swf_tests_approx! {
     (as3_math, "avm2/math", 1, max_relative = 30.0 * std::f64::EPSILON),
     (as3_displayobject_height, "avm2/displayobject_height", 7, epsilon = 0.06), // TODO: height/width appears to be off by 1 twip sometimes
     (as3_displayobject_width, "avm2/displayobject_width", 7, epsilon = 0.06),
+    (as3_displayobject_rotation, "avm2/displayobject_rotation", 1, epsilon = 0.0000000001),
 }
 
 #[test]
