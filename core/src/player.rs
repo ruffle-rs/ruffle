@@ -377,7 +377,7 @@ impl Player {
                 None
             };
             root.post_instantiation(context, root, flashvars, Instantiator::Movie, false);
-            root.set_name(context.gc_context, "");
+            root.set_default_root_name(context);
             context.levels.insert(0, root);
 
             // Load and parse the device font.
