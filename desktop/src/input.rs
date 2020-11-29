@@ -61,7 +61,6 @@ impl WinitInputBackend {
                 }
             },
             WindowEvent::ReceivedCharacter(codepoint) => {
-                log::info!("rc: {}", codepoint);
                 return Some(PlayerEvent::TextInput { codepoint });
             }
             _ => (),
@@ -328,7 +327,6 @@ fn winit_key_to_char(key_code: VirtualKeyCode, is_shift_down: bool) -> Option<ch
     // CharacterReceived events are insufficent because they  only fire on key down, not on key up.
     // This is a half-measure to map from keyboard keys back to a character, but does will not work fully
     // for international layouts.
-    log::info!("{}", is_shift_down);
     let out = if is_shift_down {
         match key_code {
             VirtualKeyCode::Space => ' ',
