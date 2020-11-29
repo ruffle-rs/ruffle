@@ -326,6 +326,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
+        if !self.visible() {
+            return ClipEventResult::NotHandled;
+        }
+
         if event.propagates() {
             for child in self.iter_execution_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
