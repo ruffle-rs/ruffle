@@ -65,8 +65,10 @@ pub struct WebGlRenderBackend {
     mult_color: Option<[f32; 4]>,
     add_color: Option<[f32; 4]>,
 
-    viewport_width: f32,
-    viewport_height: f32,
+    renderbuffer_width: i32,
+    renderbuffer_height: i32,
+    view_width: i32,
+    view_height: i32,
     view_matrix: [[f32; 4]; 4],
 }
 
@@ -192,8 +194,10 @@ impl WebGlRenderBackend {
             meshes: vec![],
             quad_shape: ShapeHandle(0),
             textures: vec![],
-            viewport_width: 500.0,
-            viewport_height: 500.0,
+            renderbuffer_width: 1,
+            renderbuffer_height: 1,
+            view_width: 1,
+            view_height: 1,
             view_matrix: [[0.0; 4]; 4],
 
             mask_state: MaskState::NoMask,
@@ -208,8 +212,7 @@ impl WebGlRenderBackend {
 
         let quad_mesh = renderer.build_quad_mesh()?;
         renderer.meshes.push(quad_mesh);
-        renderer.build_msaa_buffers()?;
-        renderer.build_matrices();
+        renderer.set_viewport_dimensions(1, 1);
 
         Ok(renderer)
     }
@@ -324,7 +327,7 @@ impl WebGlRenderBackend {
         Ok(shader)
     }
 
-    fn build_msaa_buffers(&mut self) -> Result<(), Error> {
+    fn build_msaa_buffers(&mut self, width: i32, height: i32) -> Result<(), Error> {
         if self.gl2.is_none() || self.msaa_sample_count <= 1 {
             self.gl.bind_framebuffer(Gl::FRAMEBUFFER, None);
             self.gl.bind_renderbuffer(Gl::RENDERBUFFER, None);
@@ -362,8 +365,8 @@ impl WebGlRenderBackend {
             Gl2::RENDERBUFFER,
             self.msaa_sample_count as i32,
             Gl2::RGB8,
-            self.viewport_width as i32,
-            self.viewport_height as i32,
+            width,
+            height,
         );
         gl.check_error("renderbuffer_storage_multisample (color)")?;
 
@@ -375,8 +378,8 @@ impl WebGlRenderBackend {
             Gl2::RENDERBUFFER,
             self.msaa_sample_count as i32,
             Gl2::STENCIL_INDEX8,
-            self.viewport_width as i32,
-            self.viewport_height as i32,
+            width,
+            height,
         );
         gl.check_error("renderbuffer_storage_multisample (stencil)")?;
 
@@ -412,8 +415,8 @@ impl WebGlRenderBackend {
             Gl2::TEXTURE_2D,
             0,
             Gl2::RGB as i32,
-            self.viewport_width as i32,
-            self.viewport_height as i32,
+            width,
+            height,
             0,
             Gl2::RGB,
             Gl2::UNSIGNED_BYTE,
@@ -603,8 +606,8 @@ impl WebGlRenderBackend {
 
     fn build_matrices(&mut self) {
         self.view_matrix = [
-            [1.0 / (self.viewport_width as f32 / 2.0), 0.0, 0.0, 0.0],
-            [0.0, -1.0 / (self.viewport_height as f32 / 2.0), 0.0, 0.0],
+            [1.0 / (self.view_width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [0.0, -1.0 / (self.view_height as f32 / 2.0), 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
             [-1.0, 1.0, 0.0, 1.0],
         ];
@@ -735,11 +738,20 @@ impl WebGlRenderBackend {
 
 impl RenderBackend for WebGlRenderBackend {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
-        self.viewport_width = width as f32;
-        self.viewport_height = height as f32;
-        self.gl.viewport(0, 0, width as i32, height as i32);
-        self.build_msaa_buffers().unwrap();
+        self.view_width = width as i32;
+        self.view_height = height as i32;
+
+        // Build view matrix based on canvas size.
         self.build_matrices();
+
+        // Setup GL viewport and renderbuffers clamped to reasonable sizes.
+        self.renderbuffer_width = self.view_width.max(1).min(self.gl.drawing_buffer_width());
+        self.renderbuffer_height = self.view_height.max(1).min(self.gl.drawing_buffer_height());
+
+        // Recreate framebuffers with the new size.
+        let _ = self.build_msaa_buffers(self.renderbuffer_width, self.renderbuffer_height);
+        self.gl
+            .viewport(0, 0, self.renderbuffer_width, self.renderbuffer_height);
     }
 
     fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
@@ -815,6 +827,9 @@ impl RenderBackend for WebGlRenderBackend {
             gl.bind_framebuffer(Gl::FRAMEBUFFER, Some(&msaa_buffers.render_framebuffer));
         }
 
+        self.gl
+            .viewport(0, 0, self.renderbuffer_width, self.renderbuffer_height);
+
         self.set_stencil_state();
         self.gl.clear_color(
             clear.r as f32 / 255.0,
@@ -840,18 +855,26 @@ impl RenderBackend for WebGlRenderBackend {
             gl.blit_framebuffer(
                 0,
                 0,
-                self.viewport_width as i32,
-                self.viewport_height as i32,
+                self.renderbuffer_width,
+                self.renderbuffer_height,
                 0,
                 0,
-                self.viewport_width as i32,
-                self.viewport_height as i32,
+                self.renderbuffer_width,
+                self.renderbuffer_height,
                 Gl2::COLOR_BUFFER_BIT,
                 Gl2::NEAREST,
             );
 
             // Render the resolved framebuffer texture to a quad on the screen.
             gl.bind_framebuffer(Gl2::FRAMEBUFFER, None);
+
+            self.gl.viewport(
+                0,
+                0,
+                self.gl.drawing_buffer_width(),
+                self.gl.drawing_buffer_height(),
+            );
+
             let program = &self.bitmap_program;
             self.gl.use_program(Some(&program.program));
 
@@ -1176,37 +1199,37 @@ impl RenderBackend for WebGlRenderBackend {
         match letterbox {
             Letterbox::None => (),
             Letterbox::Letterbox(margin_height) => {
+                let margin_height = f32::ceil(
+                    margin_height * self.renderbuffer_height as f32 / self.view_height as f32,
+                ) as i32;
                 self.gl.enable(Gl::SCISSOR_TEST);
                 self.gl
-                    .scissor(0, 0, self.viewport_width as i32, margin_height as i32);
+                    .scissor(0, 0, self.renderbuffer_width, margin_height);
                 self.gl.clear(Gl::COLOR_BUFFER_BIT);
                 self.gl.scissor(
                     0,
-                    (self.viewport_height - margin_height) as i32,
-                    self.viewport_width as i32,
-                    margin_height as i32 + 1,
+                    self.renderbuffer_height - margin_height,
+                    self.renderbuffer_width,
+                    margin_height,
                 );
                 self.gl.clear(Gl::COLOR_BUFFER_BIT);
                 self.gl.disable(Gl::SCISSOR_TEST);
             }
             Letterbox::Pillarbox(margin_width) => {
+                let margin_width = f32::ceil(
+                    margin_width * self.renderbuffer_width as f32 / self.view_width as f32,
+                ) as i32;
                 self.gl.enable(Gl::SCISSOR_TEST);
                 self.gl
-                    .scissor(0, 0, margin_width as i32, self.viewport_height as i32);
+                    .scissor(0, 0, margin_width, self.renderbuffer_height);
                 self.gl.clear(Gl::COLOR_BUFFER_BIT);
                 self.gl.scissor(
-                    (self.viewport_width - margin_width) as i32,
+                    self.renderbuffer_width - margin_width,
                     0,
-                    margin_width as i32 + 1,
-                    self.viewport_height as i32,
+                    margin_width,
+                    self.renderbuffer_height,
                 );
                 self.gl.clear(Gl::COLOR_BUFFER_BIT);
-                self.gl.scissor(
-                    0,
-                    0,
-                    self.viewport_width as i32,
-                    self.viewport_height as i32,
-                );
                 self.gl.disable(Gl::SCISSOR_TEST);
             }
         }
