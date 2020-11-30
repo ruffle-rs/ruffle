@@ -117,8 +117,7 @@ impl<'gc> Button<'gc> {
     /// This function instantiates children and thus must not be called whilst
     /// the caller is holding a write lock on the button data.
     fn set_state(
-        &self,
-        self_display_object: DisplayObject<'gc>,
+        self,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
         state: ButtonState,
     ) {
@@ -140,7 +139,7 @@ impl<'gc> Button<'gc> {
                     .library_for_movie_mut(movie.clone())
                     .instantiate_by_id(record.id, context.gc_context)
                 {
-                    child.set_parent(context.gc_context, Some(self_display_object));
+                    child.set_parent(context.gc_context, Some(self.into()));
                     child.set_matrix(context.gc_context, &record.matrix);
                     child.set_color_transform(
                         context.gc_context,
@@ -170,7 +169,7 @@ impl<'gc> Button<'gc> {
     pub fn set_enabled(self, context: &mut UpdateContext<'_, 'gc, '_>, enabled: bool) {
         self.0.write(context.gc_context).enabled = enabled;
         if !enabled {
-            self.set_state(self.into(), context, ButtonState::Up);
+            self.set_state(context, ButtonState::Up);
         }
     }
 }
@@ -221,7 +220,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         if !initialized {
             let mut new_children = Vec::new();
 
-            self.set_state(self_display_object, context, ButtonState::Up);
+            self.set_state(context, ButtonState::Up);
             self.0.write(context.gc_context).initialized = true;
 
             let read = self.0.read();
@@ -421,7 +420,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
         if write.state != new_state {
             drop(write);
-            self.set_state(self_display_object, context, new_state);
+            self.set_state(context, new_state);
         }
 
         handled
