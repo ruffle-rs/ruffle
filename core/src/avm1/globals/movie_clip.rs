@@ -210,6 +210,7 @@ pub fn create_proto<'gc>(
     with_movie_clip_props!(
         proto, gc_context, fn_proto,
         "transform" => [transform, set_transform],
+        "enabled" => [enabled, set_enabled],
         "focusEnabled" => [focus_enabled, set_focus_enabled],
     );
 
@@ -1197,6 +1198,23 @@ fn set_transform<'gc>(
 ) -> Result<(), Error<'gc>> {
     let transform = value.coerce_to_object(activation);
     crate::avm1::globals::transform::apply_to_display_object(activation, transform, this.into())?;
+    Ok(())
+}
+
+fn enabled<'gc>(
+    this: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.enabled().into())
+}
+
+fn set_enabled<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let enabled = value.as_bool(activation.current_swf_version());
+    this.set_enabled(&mut activation.context, enabled);
     Ok(())
 }
 

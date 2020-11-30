@@ -27,6 +27,7 @@ pub struct ButtonData<'gc> {
     object: Option<Object<'gc>>,
     initialized: bool,
     has_focus: bool,
+    enabled: bool,
 }
 
 impl<'gc> Button<'gc> {
@@ -79,6 +80,7 @@ impl<'gc> Button<'gc> {
                     ButtonTracking::Push
                 },
                 has_focus: false,
+                enabled: true,
             },
         ))
     }
@@ -158,6 +160,17 @@ impl<'gc> Button<'gc> {
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.run_frame(context);
             self.replace_at_depth(context, child, depth.into());
+        }
+    }
+
+    pub fn enabled(self) -> bool {
+        self.0.read().enabled
+    }
+
+    pub fn set_enabled(self, context: &mut UpdateContext<'_, 'gc, '_>, enabled: bool) {
+        self.0.write(context.gc_context).enabled = enabled;
+        if !enabled {
+            self.set_state(self.into(), context, ButtonState::Up);
         }
     }
 }
@@ -327,6 +340,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         if !self.visible() {
+            return ClipEventResult::NotHandled;
+        }
+
+        if !self.enabled() && !matches!(event, ClipEvent::KeyPress { .. }) {
             return ClipEventResult::NotHandled;
         }
 

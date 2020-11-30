@@ -62,6 +62,7 @@ pub struct MovieClipData<'gc> {
     drawing: Drawing,
     is_focusable: bool,
     has_focus: bool,
+    enabled: bool,
 }
 
 unsafe impl<'gc> Collect for MovieClipData<'gc> {
@@ -97,6 +98,7 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
+                enabled: true,
             },
         ))
     }
@@ -135,6 +137,7 @@ impl<'gc> MovieClip<'gc> {
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
+                enabled: true,
             },
         ))
     }
@@ -1640,6 +1643,14 @@ impl<'gc> MovieClip<'gc> {
         }
         Ok(())
     }
+
+    pub fn enabled(self) -> bool {
+        self.0.read().enabled
+    }
+
+    pub fn set_enabled(self, context: &mut UpdateContext<'_, 'gc, '_>, enabled: bool) {
+        self.0.write(context.gc_context).enabled = enabled;
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -1775,6 +1786,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         if event.is_button_event() && !self.visible() {
+            return ClipEventResult::NotHandled;
+        }
+
+        if !self.enabled() && !matches!(event, ClipEvent::KeyPress { .. }) {
             return ClipEventResult::NotHandled;
         }
 
