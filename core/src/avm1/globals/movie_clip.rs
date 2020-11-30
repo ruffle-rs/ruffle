@@ -208,7 +208,7 @@ pub fn create_proto<'gc>(
     );
 
     with_movie_clip_props!(
-        proto, gc_context, fn_proto,
+        object, gc_context, fn_proto,
         "transform" => [transform, set_transform],
         "enabled" => [enabled, set_enabled],
         "focusEnabled" => [focus_enabled, set_focus_enabled],
