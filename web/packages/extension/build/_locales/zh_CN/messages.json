@@ -24,13 +24,13 @@
         "message": "Ruffle 已加载并正在当前标签页播放 Flash 内容。"
     },
     "status_result_optout": {
-        "message": "Ruffle 未加载因为当前标签页标注自己不兼容。"
+        "message": "Ruffle 未加载因为当前页面标注自己不兼容。"
     },
     "status_result_disabled": {
         "message": "Ruffle 未加载因为被用户禁用。"
     },
     "status_result_error": {
-        "message": "在查询 Ruffle 中此标签页实例时发生错误。"
+        "message": "在查询此标签页中的 Ruffle 实例时发生错误。"
     },
     "status_result_protected": {
         "message": "Ruffle 无法在被浏览器保护的页面中加载。"
