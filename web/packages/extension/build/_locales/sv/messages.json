@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Spela upp Flash-innehåll i Ruffle"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Spela upp Flash-innehåll även på sidor som inaktiverar Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Ignorera webbsidekompatibilitetsvarningar"
+    },
+    "status_init": {
+        "message": "Avläser aktuell flik…"
+    },
+    "status_no_tabs": {
+        "message": "Det finns ingen aktiv flik."
+    },
+    "status_tabs_error": {
+        "message": "Ett fel uppstod när den aktuella fliken slogs upp."
+    },
+    "status_message_init": {
+        "message": "Kontrollerar Ruffle-status i aktuella fliken…"
+    },
+    "status_result_running": {
+        "message": "Ruffle är inläst och spelar upp Flash-innehåll i den aktuella filken."
+    },
+    "status_result_optout": {
+        "message": "Ruffle är inte inläst för den nuvarande sidan har markerat sig själv som inkompatibel."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle är inte inläst för den stängdes av av användaren."
+    },
+    "status_result_error": {
+        "message": "Ett fel uppstod när den den aktuella flikens instans av Ruffle letades upp."
+    },
+    "status_result_protected": {
+        "message": "Ruffle kan inte läsas in på skyddade webbläsarsidor."
+    },
+    "action_reload": {
+        "message": "Ladda om fliken för att applicera ändringar"
+    },
+    "open_settings_page": {
+        "message": "Öppna inställningarna"
+    },
+    "settings_page": {
+        "message": "Inställningar"
+    },
+    "description": {
+        "message": "Återställer Flash på webben, där det hör hemma."
+    },
+    "save_settings": {
+        "message": "Spara inställningar"
+    },
+    "settings_saved": {
+        "message": "Inställningar sparade"
+    }
+}
