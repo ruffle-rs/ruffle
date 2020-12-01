@@ -13,44 +13,44 @@ use std::fmt;
 pub struct Color(i32);
 
 impl Color {
-    pub fn get_blue(&self) -> u8 {
+    pub fn blue(&self) -> u8 {
         (self.0 & 0xFF) as u8
     }
 
-    pub fn get_green(&self) -> u8 {
+    pub fn green(&self) -> u8 {
         ((self.0 >> 8) & 0xFF) as u8
     }
 
-    pub fn get_red(&self) -> u8 {
+    pub fn red(&self) -> u8 {
         ((self.0 >> 16) & 0xFF) as u8
     }
 
-    pub fn get_alpha(&self) -> u8 {
+    pub fn alpha(&self) -> u8 {
         ((self.0 >> 24) & 0xFF) as u8
     }
 
     pub fn to_premultiplied_alpha(&self, transparency: bool) -> Color {
         // This has some accuracy issues with some alpha values
 
-        let old_alpha = if transparency { self.get_alpha() } else { 255 };
+        let old_alpha = if transparency { self.alpha() } else { 255 };
 
         let a = old_alpha as f64 / 255.0;
 
-        let r = (self.get_red() as f64 * a).round() as u8;
-        let g = (self.get_green() as f64 * a).round() as u8;
-        let b = (self.get_blue() as f64 * a).round() as u8;
+        let r = (self.red() as f64 * a).round() as u8;
+        let g = (self.green() as f64 * a).round() as u8;
+        let b = (self.blue() as f64 * a).round() as u8;
 
         Color::argb(old_alpha, r, g, b)
     }
 
     pub fn to_un_multiplied_alpha(&self) -> Color {
-        let a = self.get_alpha() as f64 / 255.0;
+        let a = self.alpha() as f64 / 255.0;
 
-        let r = (self.get_red() as f64 / a).round() as u8;
-        let g = (self.get_green() as f64 / a).round() as u8;
-        let b = (self.get_blue() as f64 / a).round() as u8;
+        let r = (self.red() as f64 / a).round() as u8;
+        let g = (self.green() as f64 / a).round() as u8;
+        let b = (self.blue() as f64 / a).round() as u8;
 
-        Color::argb(self.get_alpha(), r, g, b)
+        Color::argb(self.alpha(), r, g, b)
     }
 
     pub fn argb(alpha: u8, red: u8, green: u8, blue: u8) -> Color {
@@ -58,7 +58,7 @@ impl Color {
     }
 
     pub fn with_alpha(&self, alpha: u8) -> Color {
-        Color::argb(alpha, self.get_red(), self.get_green(), self.get_blue())
+        Color::argb(alpha, self.red(), self.green(), self.blue())
     }
 }
 
@@ -121,11 +121,11 @@ impl fmt::Debug for BitmapDataObject<'_> {
 
 impl<'gc> BitmapDataObject<'gc> {
     add_field_accessors!(
-        [transparency, bool, set => set_transparency, get => get_transparency],
-        [disposed, bool, get => get_disposed],
+        [transparency, bool, set => set_transparency, get => transparency],
+        [disposed, bool, get => disposed],
         [pixels, Vec<Color>, set => set_pixels],
-        [width, u32, get => get_width],
-        [height, u32, get => get_height],
+        [width, u32, get => width],
+        [height, u32, get => height],
     );
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
@@ -143,12 +143,13 @@ impl<'gc> BitmapDataObject<'gc> {
     }
 
     pub fn get_pixels_rgba(&self) -> Vec<u8> {
-        self.0
-            .read()
-            .pixels
-            .iter()
-            .flat_map(|p| vec![p.get_red(), p.get_green(), p.get_blue(), p.get_alpha()])
-            .collect()
+        let mut output = Vec::new();
+
+        for p in &self.0.read().pixels {
+            output.extend_from_slice(&[p.red(), p.green(), p.blue(), p.alpha()])
+        }
+
+        output
     }
 
     pub fn get_pixels(&self) -> Vec<Color> {
@@ -166,24 +167,24 @@ impl<'gc> BitmapDataObject<'gc> {
         self.0.write(gc_context).height = height;
         self.0.write(gc_context).pixels = vec![
             Color(fill_color)
-                .to_premultiplied_alpha(self.get_transparency());
+                .to_premultiplied_alpha(self.transparency());
             (width * height) as usize
         ]
     }
 
     pub fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {
-        x >= 0 && x < self.get_width() as i32 && y >= 0 && y < self.get_height() as i32
+        x >= 0 && x < self.width() as i32 && y >= 0 && y < self.height() as i32
     }
 
     pub fn get_pixel_raw(&self, x: u32, y: u32) -> Option<Color> {
-        if x > self.get_width() || y > self.get_height() {
+        if x > self.width() || y > self.height() {
             return None;
         }
 
         self.0
             .read()
             .pixels
-            .get((x + y * self.get_width()) as usize)
+            .get((x + y * self.width()) as usize)
             .copied()
     }
 
@@ -208,7 +209,7 @@ impl<'gc> BitmapDataObject<'gc> {
         y: u32,
         color: Color,
     ) {
-        let width = self.get_width();
+        let width = self.width();
         self.0.write(gc_context).pixels[(x + y * width) as usize] = color;
     }
 
@@ -218,13 +219,13 @@ impl<'gc> BitmapDataObject<'gc> {
                 gc_context,
                 x as u32,
                 y as u32,
-                color.to_premultiplied_alpha(self.get_transparency()),
+                color.to_premultiplied_alpha(self.transparency()),
             )
         }
     }
 
     pub fn set_pixel(&self, gc_context: MutationContext<'gc, '_>, x: u32, y: u32, color: Color) {
-        let current_alpha = self.get_pixel_raw(x, y).map(|p| p.get_alpha()).unwrap_or(0);
+        let current_alpha = self.get_pixel_raw(x, y).map(|p| p.alpha()).unwrap_or(0);
         self.set_pixel32(
             gc_context,
             x as i32,

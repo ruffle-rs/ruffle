@@ -234,23 +234,26 @@ fn attach_bitmap<'gc>(
                 let rgba = bitmap_data.get_pixels_rgba();
 
                 let bitmap_handle = activation.context.renderer.register_bitmap_raw(
-                    bitmap_data.get_width(),
-                    bitmap_data.get_height(),
+                    bitmap_data.width(),
+                    bitmap_data.height(),
                     rgba,
                 );
-                //TODO: do attached BitmapDatas have character ids?
-                let display_object = Bitmap::new(
-                    &mut activation.context,
-                    0,
-                    bitmap_handle,
-                    bitmap_data.get_width() as u16,
-                    bitmap_data.get_height() as u16,
-                );
-                movie_clip.replace_at_depth(
-                    &mut activation.context,
-                    display_object.into(),
-                    depth,
-                );
+
+                if let Ok(bitmap_handle) = bitmap_handle {
+                    //TODO: do attached BitmapDatas have character ids?
+                    let display_object = Bitmap::new(
+                        &mut activation.context,
+                        0,
+                        bitmap_handle,
+                        bitmap_data.width() as u16,
+                        bitmap_data.height() as u16,
+                    );
+                    movie_clip.replace_at_depth(
+                        &mut activation.context,
+                        display_object.into(),
+                        depth,
+                    );
+                }
             }
         }
     }

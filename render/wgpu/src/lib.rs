@@ -1500,8 +1500,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.bitmap_registry.get(&bitmap).cloned()
     }
 
-    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
-        self.register_bitmap(
+    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> Result<BitmapHandle, Error> {
+        Ok(self.register_bitmap(
             None,
             Bitmap {
                 height,
@@ -1509,9 +1509,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 data: BitmapFormat::Rgba(rgba),
             },
             "RAW",
-        )
-        .unwrap()
-        .handle
+        )?
+        .handle)
     }
 }
 
