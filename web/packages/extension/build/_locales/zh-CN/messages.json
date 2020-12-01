@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "使用Ruffle播放Flash内容"
+    },
+    "settings_page_ignore_optout": {
+        "message": "即使在禁用了Ruffle的网站上也播放Flash内容"
+    },
+    "settings_ignore_optout": {
+        "message": "忽略网站兼容性警告"
+    },
+    "status_init": {
+        "message": "读取当前标签页……"
+    },
+    "status_no_tabs": {
+        "message": "没有活动的标签页。"
+    },
+    "status_tabs_error": {
+        "message": "查找当前标签页时发生错误。"
+    },
+    "status_message_init": {
+        "message": "检查Ruffle在当前标签页上的状态……"
+    },
+    "status_result_running": {
+        "message": "Ruffle已加载并在当前标签页上运行Flash内容。"
+    },
+    "status_result_optout": {
+        "message": "未加载Ruffle，因为当前页面将其自身标记为不兼容。"
+    },
+    "status_result_disabled": {
+        "message": "未加载Ruffle，因为用户禁用了它。"
+    },
+    "status_result_error": {
+        "message": "查询当前标签页的Ruffle实例时发生错误。"
+    },
+    "status_result_protected": {
+        "message": "Ruffle无法在被保护的浏览器页面上加载。"
+    },
+    "action_reload": {
+        "message": "重新加载标签页使改变生效"
+    },
+    "open_settings_page": {
+        "message": "打开设置页"
+    },
+    "settings_page": {
+        "message": "设置页"
+    },
+    "description": {
+        "message": "将Flash放回其原始位置。"
+    },
+    "save_settings": {
+        "message": "保存设置"
+    },
+    "settings_saved": {
+        "message": "设置已保存"
+    }
+}
