@@ -212,6 +212,7 @@ pub fn create_proto<'gc>(
         "transform" => [transform, set_transform],
         "enabled" => [enabled, set_enabled],
         "focusEnabled" => [focus_enabled, set_focus_enabled],
+        "_lockroot" => [lock_root, set_lock_root],
     );
 
     object.into()
@@ -1234,5 +1235,22 @@ fn set_focus_enabled<'gc>(
         value.as_bool(activation.current_swf_version()),
         &mut activation.context,
     );
+    Ok(())
+}
+
+fn lock_root<'gc>(
+    this: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.lock_root().into())
+}
+
+fn set_lock_root<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let lock_root = value.as_bool(activation.current_swf_version());
+    this.set_lock_root(activation.context.gc_context, lock_root);
     Ok(())
 }
