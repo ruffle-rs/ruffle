@@ -789,17 +789,16 @@ impl RenderBackend for WebCanvasRenderBackend {
         }
     }
 
-    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle {
-        self.register_bitmap_raw(
+    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> Result<BitmapHandle, Error> {
+        Ok(self.register_bitmap_raw(
             None,
             Bitmap {
                 width,
                 height,
                 data: BitmapFormat::Rgba(rgba),
             },
-        )
-        .unwrap()
-        .handle
+        )?
+        .handle)
     }
 }
 

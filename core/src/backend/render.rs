@@ -44,7 +44,12 @@ pub trait RenderBackend: Downcast {
     fn pop_mask(&mut self);
 
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap>;
-    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> BitmapHandle;
+    fn register_bitmap_raw(
+        &mut self,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error>;
 }
 impl_downcast!(RenderBackend);
 
@@ -153,8 +158,13 @@ impl RenderBackend for NullRenderer {
     fn get_bitmap_pixels(&mut self, _bitmap: BitmapHandle) -> Option<Bitmap> {
         None
     }
-    fn register_bitmap_raw(&mut self, _width: u32, _height: u32, _rgba: Vec<u8>) -> BitmapHandle {
-        BitmapHandle(0)
+    fn register_bitmap_raw(
+        &mut self,
+        _width: u32,
+        _height: u32,
+        _rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error> {
+        Ok(BitmapHandle(0))
     }
 }
 
