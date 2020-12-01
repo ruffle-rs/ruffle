@@ -339,6 +339,22 @@ pub fn set_name<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `parent`.
+pub fn parent<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        return Ok(dobj
+            .parent()
+            .map(|parent| parent.object2())
+            .unwrap_or(Value::Null));
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -422,6 +438,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::package(""), "name"),
         Method::from_builtin(set_name),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "parent"),
+        Method::from_builtin(parent),
     ));
 
     class

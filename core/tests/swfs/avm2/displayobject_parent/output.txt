@@ -1,0 +1,12 @@
+//this.parent (Symbol 1)
+[object MainTimeline]
+//this.parent (Symbol 1)
+[object MainTimeline]
+//this.parent (Symbol 2)
+[object MainTimeline]
+//var s1 = new MovieClip();
+//s1.parent;
+null
+//this.addChild(s1);
+//s1.parent;
+[object MainTimeline]
