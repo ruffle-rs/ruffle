@@ -1,0 +1,29 @@
+Parent: level is _level0, root is _level0, _lockroot is false
+Parent: setting _lockroot to true sets it to true.
+Parent: setting _lockroot to false sets it to false.
+Parent: setting _lockroot to undefined sets it to false.
+Parent: setting _lockroot to null sets it to false.
+Parent: setting _lockroot to NaN sets it to false.
+Parent: setting _lockroot to -1 sets it to true.
+Parent: setting _lockroot to 0 sets it to false.
+Parent: setting _lockroot to 1 sets it to true.
+Parent: setting _lockroot to 1337 sets it to true.
+Parent: setting _lockroot to "true" sets it to true.
+Parent: setting _lockroot to "false" sets it to true.
+Parent: setting _lockroot to "foo" sets it to true.
+Parent: setting _lockroot to "" sets it to false.
+Parent: setting _lockroot to "0" sets it to true.
+Parent: setting _lockroot to [object Object] sets it to true.
+Child: level is _level0.child1, root is _level0, _lockroot is false, parent is _level0
+Child: level is _level0.child2, root is _level0.child2, _lockroot is true, parent is _level0
+Child: level is _level0.child3, root is _level0.child3, _lockroot is true, parent is _level0
+Child: level is _level0.child1.child1, root is _level0, _lockroot is false, parent is _level0.child1
+Child: level is _level0.child1.child2, root is _level0.child1.child2, _lockroot is true, parent is _level0.child1
+Child: level is _level0.child1.child3, root is _level0.child1.child3, _lockroot is true, parent is _level0.child1
+Child: level is _level0.child2.child1, root is _level0.child2, _lockroot is false, parent is _level0.child2
+Child: level is _level0.child2.child2, root is _level0.child2.child2, _lockroot is true, parent is _level0.child2
+Child: level is _level0.child2.child3, root is _level0.child2.child3, _lockroot is true, parent is _level0.child2
+Child: level is _level0.child3.child1, root is _level0.child3, _lockroot is false, parent is _level0.child3
+Child: level is _level0.child3.child2, root is _level0.child3.child2, _lockroot is true, parent is _level0.child3
+Child: level is _level0.child3.child3, root is _level0.child3.child3, _lockroot is true, parent is _level0.child3
+All tests done.
