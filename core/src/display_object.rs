@@ -104,7 +104,11 @@ unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
 impl<'gc> DisplayObjectBase<'gc> {
     /// Reset all properties that would be adjusted by a movie load.
     fn reset_for_movie_load(&mut self) {
+        let flags_to_keep = self
+            .flags
+            .intersection(EnumSet::from(DisplayObjectFlags::LockRoot));
         self.flags = DisplayObjectFlags::Visible.into();
+        self.flags.insert_all(flags_to_keep);
     }
 
     fn id(&self) -> CharacterId {
@@ -332,6 +336,18 @@ impl<'gc> DisplayObjectBase<'gc> {
             self.flags.insert(DisplayObjectFlags::Visible);
         } else {
             self.flags.remove(DisplayObjectFlags::Visible);
+        }
+    }
+
+    fn lock_root(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::LockRoot)
+    }
+
+    fn set_lock_root(&mut self, value: bool) {
+        if value {
+            self.flags.insert(DisplayObjectFlags::LockRoot);
+        } else {
+            self.flags.remove(DisplayObjectFlags::LockRoot);
         }
     }
 
@@ -717,6 +733,14 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_visible`/`visible` ActionScript properties.
     fn set_visible(&self, context: MutationContext<'gc, '_>, value: bool);
 
+    /// Whether this display object is used as the _root of itself and its children.
+    /// Returned by the `_lockroot` ActionScript property.
+    fn lock_root(&self) -> bool;
+
+    /// Sets whether this display object is used as the _root of itself and its children.
+    /// Returned by the `_lockroot` ActionScript property.
+    fn set_lock_root(&self, context: MutationContext<'gc, '_>, value: bool);
+
     /// Whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
     fn transformed_by_script(&self) -> bool;
@@ -947,9 +971,17 @@ pub trait TDisplayObject<'gc>:
     /// Obtain the top-most parent of the display tree hierarchy, if a suitable
     /// object exists.
     fn root(&self) -> Option<DisplayObject<'gc>> {
-        let mut parent = self.parent();
+        let mut parent = if self.lock_root() {
+            None
+        } else {
+            self.parent()
+        };
 
         while let Some(p) = parent {
+            if p.lock_root() {
+                break;
+            }
+
             let grandparent = p.parent();
 
             if grandparent.is_none() {
@@ -1150,6 +1182,12 @@ macro_rules! impl_display_object_sansbounds {
         fn set_visible(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_visible(value);
         }
+        fn lock_root(&self) -> bool {
+            self.0.read().$field.lock_root()
+        }
+        fn set_lock_root(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+            self.0.write(context).$field.set_lock_root(value);
+        }
         fn transformed_by_script(&self) -> bool {
             self.0.read().$field.transformed_by_script()
         }
@@ -1253,4 +1291,8 @@ enum DisplayObjectFlags {
     /// Whether this object has been instantiated by a SWF tag.
     /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
     InstantiatedByTimeline,
+
+    /// Whether this object has `_lockroot` set to true, in which case
+    /// it becomes the _root of itself and of any children
+    LockRoot,
 }
