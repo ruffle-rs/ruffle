@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "使用 Ruffle 播放 Flash 内容"
+    },
+    "settings_page_ignore_optout": {
+        "message": "即便站点禁用了 Ruffle 也播放 Flash 内容"
+    },
+    "settings_ignore_optout": {
+        "message": "忽略网站兼容性警告"
+    },
+    "status_init": {
+        "message": "正在读取当前标签页……"
+    },
+    "status_no_tabs": {
+        "message": "没有活动的标签页。"
+    },
+    "status_tabs_error": {
+        "message": "查找当前标签页时发生错误。"
+    },
+    "status_message_init": {
+        "message": "在此标签页上检查 Ruffle 状态。"
+    },
+    "status_result_running": {
+        "message": "Ruffle 已加载并正在当前标签页播放 Flash 内容。"
+    },
+    "status_result_optout": {
+        "message": "Ruffle 未加载因为当前页面标注自己不兼容。"
+    },
+    "status_result_disabled": {
+        "message": "Ruffle 未加载因为被用户禁用。"
+    },
+    "status_result_error": {
+        "message": "在查询此标签页中的 Ruffle 实例时发生错误。"
+    },
+    "status_result_protected": {
+        "message": "Ruffle 无法在被浏览器保护的页面中加载。"
+    },
+    "action_reload": {
+        "message": "刷新页面以应用更改"
+    },
+    "open_settings_page": {
+        "message": "打开设置页"
+    },
+    "settings_page": {
+        "message": "设置"
+    },
+    "description": {
+        "message": "将 Flash 重新带回网络。"
+    },
+    "save_settings": {
+        "message": "保存设置"
+    },
+    "settings_saved": {
+        "message": "设置已保存"
+    }
+}
