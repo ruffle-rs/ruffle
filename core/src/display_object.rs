@@ -1,5 +1,5 @@
-use crate::avm1::{Object as Avm1Object, TObject, Value as Avm1Value};
-use crate::avm2::Value as Avm2Value;
+use crate::avm1::{Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value};
+use crate::avm2::{TObject as Avm2TObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
@@ -936,12 +936,9 @@ pub trait TDisplayObject<'gc>:
         MouseCursor::Hand
     }
 
-    /// Obtain the top-most parent of the display tree hierarchy.
-    ///
-    /// This function can panic in the rare case that a top-level display
-    /// object has not been post-instantiated, or that a top-level display
-    /// object does not implement `object`.
-    fn root(&self) -> DisplayObject<'gc> {
+    /// Obtain the top-most parent of the display tree hierarchy, if a suitable
+    /// object exists.
+    fn root(&self) -> Option<DisplayObject<'gc>> {
         let mut parent = self.parent();
 
         while let Some(p) = parent {
@@ -954,15 +951,15 @@ pub trait TDisplayObject<'gc>:
             parent = grandparent;
         }
 
-        parent
-            .or_else(|| {
-                if let Avm1Value::Object(object) = self.object() {
-                    object.as_display_object()
-                } else {
-                    None
-                }
-            })
-            .expect("All objects must have root")
+        parent.or_else(|| {
+            if let Avm1Value::Object(object) = self.object() {
+                object.as_display_object()
+            } else if let Avm2Value::Object(object) = self.object2() {
+                object.as_display_object()
+            } else {
+                None
+            }
+        })
     }
 
     /// Assigns a default instance name `instanceN` to this object.
