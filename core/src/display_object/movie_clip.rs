@@ -262,7 +262,10 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .write(context.gc_context)
                     .define_font_3(context, reader),
-                TagCode::DefineFont4 => unimplemented!(),
+                TagCode::DefineFont4 => self
+                    .0
+                    .write(context.gc_context)
+                    .define_font_4(context, reader),
                 TagCode::DefineMorphShape => self.0.write(context.gc_context).define_morph_shape(
                     context,
                     reader,
@@ -2595,6 +2598,16 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library_for_movie_mut(self.movie())
             .register_character(font.id, Character::Font(font_object));
 
+        Ok(())
+    }
+
+    #[inline]
+    fn define_font_4(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _reader: &mut SwfStream<&'a [u8]>,
+    ) -> DecodeResult {
+        log::warn!("DefineFont4 tag (TLF text) is not implemented");
         Ok(())
     }
 
