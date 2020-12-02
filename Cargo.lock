@@ -2979,6 +2979,7 @@ dependencies = [
  "lyon",
  "ruffle_core",
  "ruffle_render_wgpu",
+ "tinyfiledialogs",
  "url 2.2.0",
  "webbrowser",
  "winapi 0.3.9",
@@ -3512,6 +3513,15 @@ dependencies = [
  "libc",
  "wasi 0.10.0+wasi-snapshot-preview1",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "tinyfiledialogs"
+version = "3.3.10"
+source = "git+https://github.com/jdm/tinyfiledialogs-rs?rev=1a235d1#1a235d1b14f05354af23ecd0781dba2fe72fdd83"
+dependencies = [
+ "cc",
+ "libc",
 ]
 
 [[package]]

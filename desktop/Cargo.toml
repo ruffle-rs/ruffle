@@ -24,6 +24,7 @@ url = "2.2.0"
 clipboard = "0.5.0"
 dirs = "3.0"
 isahc = "0.9.13"
+tinyfiledialogs = {git ="https://github.com/jdm/tinyfiledialogs-rs", rev="1a235d1"}
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"

@@ -22,6 +22,7 @@ use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
+use tinyfiledialogs::open_file_dialog;
 use url::Url;
 
 use crate::storage::DiskStorageBackend;
@@ -44,7 +45,7 @@ use winit::window::{Icon, WindowBuilder};
 struct Opt {
     /// Path to a flash movie (swf) to play
     #[clap(name = "FILE", parse(from_os_str))]
-    input_path: PathBuf,
+    input_path: Option<PathBuf>,
 
     /// A "flashvars" parameter to provide to the movie.
     /// This can be repeated multiple times, for example -Pkey=value -Pfoo=bar
@@ -128,17 +129,33 @@ fn load_movie_from_path(
 }
 
 fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
-    let movie_url = if opt.input_path.exists() {
-        let absolute_path = opt
-            .input_path
-            .canonicalize()
-            .unwrap_or_else(|_| opt.input_path.to_owned());
-        Url::from_file_path(absolute_path)
-            .map_err(|_| "Path must be absolute and cannot be a URL")?
-    } else {
-        Url::parse(opt.input_path.to_str().unwrap_or_default())
-            .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
+    let movie_url = match &opt.input_path {
+        Some(path) => {
+            if path.exists() {
+                let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
+                Url::from_file_path(absolute_path)
+                    .map_err(|_| "Path must be absolute and cannot be a URL")?
+            } else {
+                Url::parse(path.to_str().unwrap_or_default())
+                    .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
+            }
+        }
+        None => {
+            let result = open_file_dialog("Load a Flash File", "", Some((&["*.swf"], ".swf")));
+
+            let selected = match result {
+                Some(file_path) => PathBuf::from(file_path),
+                None => return Ok(()),
+            };
+
+            let absolute_path = selected
+                .canonicalize()
+                .unwrap_or_else(|_| selected.to_owned());
+            Url::from_file_path(absolute_path)
+                .map_err(|_| "Path must be absolute and cannot be a URL")?
+        }
     };
+
     let mut movie = load_movie_from_path(movie_url.to_owned(), opt.proxy.to_owned())?;
     let movie_size = LogicalSize::new(movie.width(), movie.height());
 
@@ -186,14 +203,19 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     )?);
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
     let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
-        movie_url,
+        movie_url.clone(),
         chan,
         event_loop.create_proxy(),
         opt.proxy,
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let storage = Box::new(DiskStorageBackend::new(
-        opt.input_path.file_name().unwrap_or_default().as_ref(),
+        movie_url
+            .to_file_path()
+            .unwrap_or_default()
+            .file_name()
+            .unwrap_or_default()
+            .as_ref(),
     ));
     let locale = Box::new(locale::DesktopLocaleBackend::new());
     let player = Player::new(
