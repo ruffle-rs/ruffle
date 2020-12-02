@@ -355,6 +355,22 @@ pub fn parent<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `root`.
+pub fn root<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        return Ok(dobj
+            .root()
+            .map(|root| root.object2())
+            .unwrap_or(Value::Null));
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -442,6 +458,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::package(""), "parent"),
         Method::from_builtin(parent),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "root"),
+        Method::from_builtin(root),
     ));
 
     class
