@@ -1,0 +1,24 @@
+//this.root;
+[object MainTimeline]
+//this.root === this;
+true
+//this.root (Symbol 1)
+[object MainTimeline]
+//this.root === this.parent;
+true
+//this.root (Symbol 1)
+[object MainTimeline]
+//this.root === this.parent;
+true
+//this.root (Symbol 2)
+[object MainTimeline]
+//this.root === this.parent;
+true
+//var s1 = new MovieClip();
+//s1.root;
+null
+//this.addChild(s1);
+//s1.root;
+[object MainTimeline]
+//s1.root === s1.parent;
+true
