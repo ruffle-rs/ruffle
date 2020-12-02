@@ -2231,6 +2231,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "nfd"
+version = "0.0.4"
+source = "git+https://github.com/EmbarkStudios/nfd-rs?rev=90ff6d2#90ff6d29d33be8bc4b3e9605cb5921ff9d6456b6"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "nix"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2977,6 +2985,7 @@ dependencies = [
  "jpeg-decoder",
  "log",
  "lyon",
+ "nfd",
  "ruffle_core",
  "ruffle_render_wgpu",
  "url 2.2.0",

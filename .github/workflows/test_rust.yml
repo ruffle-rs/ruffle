@@ -30,7 +30,7 @@ jobs:
 
     - name: Install linux dependencies
       if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
+      run: sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev
 
     - name: Run all rust tests
       uses: actions-rs/cargo@v1

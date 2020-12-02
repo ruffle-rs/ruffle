@@ -24,6 +24,7 @@ url = "2.2.0"
 clipboard = "0.5.0"
 dirs = "3.0"
 isahc = "0.9.13"
+nfd = {git = "https://github.com/EmbarkStudios/nfd-rs", rev="90ff6d2"}
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
