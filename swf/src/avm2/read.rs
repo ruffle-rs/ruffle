@@ -810,7 +810,7 @@ impl<R: Read> Reader<R> {
             OpCode::PushNull => Op::PushNull,
             OpCode::PushScope => Op::PushScope,
             OpCode::PushShort => Op::PushShort {
-                value: self.read_u30()?,
+                value: self.read_u30()? as i16,
             },
             OpCode::PushString => Op::PushString {
                 value: self.read_index()?,

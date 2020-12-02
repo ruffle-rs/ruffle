@@ -907,7 +907,7 @@ impl<W: Write> Writer<W> {
             Op::PushScope => self.write_opcode(OpCode::PushScope)?,
             Op::PushShort { value } => {
                 self.write_opcode(OpCode::PushShort)?;
-                self.write_u30(value)?;
+                self.write_u30(value as u32)?;
             }
             Op::PushString { ref value } => {
                 self.write_opcode(OpCode::PushString)?;
