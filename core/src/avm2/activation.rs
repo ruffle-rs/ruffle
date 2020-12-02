@@ -637,8 +637,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_push_short(&mut self, value: u32) -> Result<FrameControl<'gc>, Error> {
-        self.context.avm2.push(value as i32);
+    fn op_push_short(&mut self, value: i16) -> Result<FrameControl<'gc>, Error> {
+        self.context.avm2.push(value);
         Ok(FrameControl::Continue)
     }
 

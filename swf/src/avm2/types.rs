@@ -476,8 +476,8 @@ pub enum Op {
     PushNull,
     PushScope,
     PushShort {
-        value: u32,
-    }, // TODO: Is this really a u30?
+        value: i16,
+    },
     PushString {
         value: Index<String>,
     },
