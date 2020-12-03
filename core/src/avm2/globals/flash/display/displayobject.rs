@@ -403,6 +403,36 @@ pub fn set_visible<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `mouseX`.
+pub fn mouse_x<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let local_mouse = dobj.global_to_local(*activation.context.mouse_position);
+
+        return Ok(local_mouse.0.to_pixels().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `mouseY`.
+pub fn mouse_y<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let local_mouse = dobj.global_to_local(*activation.context.mouse_position);
+
+        return Ok(local_mouse.1.to_pixels().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -502,6 +532,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::package(""), "visible"),
         Method::from_builtin(set_visible),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "mouseX"),
+        Method::from_builtin(mouse_x),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "mouseY"),
+        Method::from_builtin(mouse_y),
     ));
 
     class
