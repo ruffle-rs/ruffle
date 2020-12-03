@@ -1733,8 +1733,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_swap(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let value2 = self.context.avm2.pop().coerce_to_i32(self)?;
-        let value1 = self.context.avm2.pop().coerce_to_i32(self)?;
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
 
         self.context.avm2.push(value2);
         self.context.avm2.push(value1);
