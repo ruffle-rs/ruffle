@@ -1,0 +1,23 @@
+//this.visible (Timeline)
+true
+//this.visible (Symbol 1)
+true
+//this.visible = false;
+//this.visible;
+false
+//this.visible (Symbol 1)
+true
+//this.visible = false;
+//this.visible;
+false
+//this.visible (Symbol 2)
+true
+//this.visible = false;
+//this.visible;
+false
+//var s1 = new MovieClip();
+//s1.visible;
+true
+//this.addChild(s1);
+//s1.visible;
+true
