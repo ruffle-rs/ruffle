@@ -13,10 +13,15 @@ use std::borrow::Cow;
 
 /// Implements `Object` constructor
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: &mut Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(val) = args.get(0) {
+        // If argument is an object, return a reference to that object.
+        // If it's a primitive type, box it.
+        *this = val.coerce_to_object(activation);
+    }
     Ok(Value::Undefined)
 }
 
@@ -384,7 +389,7 @@ pub fn create_object_object<'gc>(
     let object_function = FunctionObject::function_and_constructor(
         gc_context,
         Executable::Native(object_function),
-        Executable::Native(constructor),
+        Executable::NativeConstructor(constructor),
         Some(fn_proto),
         proto,
     );
