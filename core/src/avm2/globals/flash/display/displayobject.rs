@@ -371,6 +371,38 @@ pub fn root<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `visible`'s getter.
+pub fn visible<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        return Ok(dobj.visible().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `visible`'s setter.
+pub fn set_visible<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let new_visible = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_boolean();
+
+        dobj.set_visible(activation.context.gc_context, new_visible);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -462,6 +494,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::package(""), "root"),
         Method::from_builtin(root),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::package(""), "visible"),
+        Method::from_builtin(visible),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::package(""), "visible"),
+        Method::from_builtin(set_visible),
     ));
 
     class
