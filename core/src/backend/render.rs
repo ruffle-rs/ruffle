@@ -424,7 +424,13 @@ pub fn decode_define_bits_lossless(
             }
             out_data
         }
-        _ => unimplemented!("{:?} {:?}", swf_tag.version, swf_tag.format),
+        _ => {
+            return Err(format!(
+                "Unexpected DefineBitsLossless{} format: {:?} ",
+                swf_tag.version, swf_tag.format,
+            )
+            .into());
+        }
     };
 
     Ok(Bitmap {
