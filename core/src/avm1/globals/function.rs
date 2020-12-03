@@ -36,7 +36,7 @@ pub fn call<'gc>(
     func: Object<'gc>,
     myargs: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = match myargs.get(0) {
+    let mut this = match myargs.get(0) {
         Some(Value::Object(this)) => *this,
         _ => activation.context.avm1.globals,
     };
@@ -51,7 +51,7 @@ pub fn call<'gc>(
         Some(exec) => exec.exec(
             "[Anonymous]",
             activation,
-            this,
+            &mut this,
             None,
             args,
             ExecutionReason::FunctionCall,
@@ -67,7 +67,7 @@ pub fn apply<'gc>(
     func: Object<'gc>,
     myargs: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = match myargs.get(0) {
+    let mut this = match myargs.get(0) {
         Some(Value::Object(this)) => *this,
         _ => activation.context.avm1.globals,
     };
@@ -89,7 +89,7 @@ pub fn apply<'gc>(
         Some(exec) => exec.exec(
             "[Anonymous]",
             activation,
-            this,
+            &mut this,
             None,
             &child_args,
             ExecutionReason::FunctionCall,

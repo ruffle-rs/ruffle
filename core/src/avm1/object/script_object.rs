@@ -41,7 +41,7 @@ impl<'gc> Watcher<'gc> {
         name: &str,
         old_value: Value<'gc>,
         new_value: Value<'gc>,
-        this: Object<'gc>,
+        mut this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, crate::avm1::error::Error<'gc>> {
         let args = [
@@ -57,7 +57,7 @@ impl<'gc> Watcher<'gc> {
             executable.exec(
                 name,
                 activation,
-                this,
+                &mut this,
                 base_proto,
                 &args,
                 ExecutionReason::Special,
@@ -255,7 +255,7 @@ impl<'gc> ScriptObject<'gc> {
         name: &str,
         mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        mut this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if name == "__proto__" {
@@ -303,7 +303,7 @@ impl<'gc> ScriptObject<'gc> {
                             let _ = exec.exec(
                                 "[Setter]",
                                 activation,
-                                this,
+                                &mut this,
                                 Some(this_proto),
                                 &[value.clone()],
                                 ExecutionReason::Special,
@@ -366,7 +366,7 @@ impl<'gc> ScriptObject<'gc> {
                         let _ = exec.exec(
                             "[Setter]",
                             activation,
-                            this,
+                            &mut this,
                             base_proto,
                             &[value],
                             ExecutionReason::Special,
@@ -396,7 +396,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        mut this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name == "__proto__" {
             return Ok(self.proto().map_or(Value::Undefined, Value::Object));
@@ -422,7 +422,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
                 match exec.exec(
                     "[Getter]",
                     activation,
-                    this,
+                    &mut this,
                     Some((*self).into()),
                     &[],
                     ExecutionReason::Special,

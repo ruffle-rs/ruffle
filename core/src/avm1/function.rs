@@ -32,6 +32,12 @@ use swf::avm1::types::FunctionParam;
 pub type NativeFunction<'gc> =
     fn(&mut Activation<'_, 'gc, '_>, Object<'gc>, &[Value<'gc>]) -> Result<Value<'gc>, Error<'gc>>;
 
+pub type NativeConstructor<'gc> = fn(
+    &mut Activation<'_, 'gc, '_>,
+    &mut Object<'gc>,
+    &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>>;
+
 /// Indicates the reason for an execution
 #[derive(Debug, Clone)]
 pub enum ExecutionReason {
@@ -193,6 +199,9 @@ pub enum Executable<'gc> {
     /// A function provided by the Ruffle runtime and implemented in Rust.
     Native(NativeFunction<'gc>),
 
+    /// A function provided by the Ruffle runtime and implemented in Rust.
+    NativeConstructor(NativeConstructor<'gc>),
+
     /// ActionScript data defined by a previous `DefineFunction` or
     /// `DefineFunction2` action.
     Action(Gc<'gc, Avm1Function<'gc>>),
@@ -201,7 +210,7 @@ pub enum Executable<'gc> {
 unsafe impl<'gc> Collect for Executable<'gc> {
     fn trace(&self, cc: CollectionContext) {
         match self {
-            Self::Native(_) => {}
+            Self::Native(_) | Self::NativeConstructor(_) => {}
             Self::Action(af) => af.trace(cc),
         }
     }
@@ -212,6 +221,10 @@ impl fmt::Debug for Executable<'_> {
         match self {
             Executable::Native(nf) => f
                 .debug_tuple("Executable::Native")
+                .field(&format!("{:p}", nf))
+                .finish(),
+            Executable::NativeConstructor(nf) => f
+                .debug_tuple("Executable::NativeConstructor")
                 .field(&format!("{:p}", nf))
                 .finish(),
             Executable::Action(af) => f.debug_tuple("Executable::Action").field(&af).finish(),
@@ -231,14 +244,15 @@ impl<'gc> Executable<'gc> {
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        this: &mut Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
         reason: ExecutionReason,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
-            Executable::Native(nf) => nf(activation, this, args),
+            Executable::Native(nf) => nf(activation, *this, args),
+            Executable::NativeConstructor(nf) => nf(activation, this, args),
             Executable::Action(af) => {
                 let child_scope = GcCell::allocate(
                     activation.context.gc_context,
@@ -269,8 +283,8 @@ impl<'gc> Executable<'gc> {
                 let super_object: Option<Object<'gc>> = if !af.suppress_super {
                     Some(
                         SuperObject::from_this_and_base_proto(
-                            this,
-                            base_proto.unwrap_or(this),
+                            *this,
+                            base_proto.unwrap_or(*this),
                             activation,
                         )?
                         .into(),
@@ -315,7 +329,7 @@ impl<'gc> Executable<'gc> {
                     child_scope,
                     af.constant_pool,
                     af.base_clip,
-                    this,
+                    *this,
                     Some(argcell),
                 );
 
@@ -326,7 +340,7 @@ impl<'gc> Executable<'gc> {
                 if af.preload_this {
                     //TODO: What happens if you specify both suppress and
                     //preload for this?
-                    frame.set_local_register(preload_r, this);
+                    frame.set_local_register(preload_r, *this);
                     preload_r += 1;
                 }
 
@@ -547,7 +561,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        mut this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -555,7 +569,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             exec.exec(
                 name,
                 activation,
-                this,
+                &mut this,
                 base_proto,
                 args,
                 ExecutionReason::FunctionCall,
@@ -569,7 +583,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn construct_on_existing(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        this: &mut Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
         this.set("__constructor__", (*self).into(), activation)?;
@@ -599,7 +613,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 (*self).into(),
             )?;
         } else {
-            let _ = self.call("[ctor]", activation, this, None, args)?;
+            let _ = self.call("[ctor]", activation, *this, None, args)?;
         }
         Ok(())
     }
@@ -612,8 +626,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         let prototype = self
             .get("prototype", activation)?
             .coerce_to_object(activation);
-        let this = prototype.create_bare_object(activation, prototype)?;
-        self.construct_on_existing(activation, this, args)?;
+        let mut this = prototype.create_bare_object(activation, prototype)?;
+        self.construct_on_existing(activation, &mut this, args)?;
         Ok(this)
     }
 

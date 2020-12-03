@@ -1421,7 +1421,7 @@ impl<'gc> MovieClip<'gc> {
                     .get("prototype", &mut activation)
                     .map(|v| v.coerce_to_object(&mut activation))
                 {
-                    let object: Avm1Object<'gc> = StageObject::for_display_object(
+                    let mut object: Avm1Object<'gc> = StageObject::for_display_object(
                         activation.context.gc_context,
                         self.into(),
                         Some(prototype),
@@ -1438,7 +1438,7 @@ impl<'gc> MovieClip<'gc> {
                     if run_frame {
                         self.run_frame(&mut activation.context);
                     }
-                    let _ = constructor.construct_on_existing(&mut activation, object, &[]);
+                    let _ = constructor.construct_on_existing(&mut activation, &mut object, &[]);
                 }
 
                 return;

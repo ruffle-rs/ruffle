@@ -949,7 +949,7 @@ impl Player {
                         .get("prototype", &mut activation)
                         .map(|v| v.coerce_to_object(&mut activation))
                     {
-                        if let Value::Object(object) = actions.clip.object() {
+                        if let Value::Object(mut object) = actions.clip.object() {
                             object.set_proto(activation.context.gc_context, Some(prototype));
                             for event in events {
                                 let _ = activation.run_child_frame_for_action(
@@ -960,7 +960,11 @@ impl Player {
                                 );
                             }
 
-                            let _ = constructor.construct_on_existing(&mut activation, object, &[]);
+                            let _ = constructor.construct_on_existing(
+                                &mut activation,
+                                &mut object,
+                                &[],
+                            );
                         }
                     }
                 }

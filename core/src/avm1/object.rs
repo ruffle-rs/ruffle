@@ -130,7 +130,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn construct_on_existing(
         &self,
         _activation: &mut Activation<'_, 'gc, '_>,
-        mut _this: Object<'gc>,
+        _this: &mut Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
         Ok(())
