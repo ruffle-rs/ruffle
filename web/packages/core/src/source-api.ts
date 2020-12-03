@@ -37,9 +37,11 @@ export class SourceAPI {
      * Start up the polyfills.
      *
      * Do not run polyfills for more than one Ruffle source at a time.
+     *
+     * @param isExt Whether or not Ruffle is running as a browser's extension.
      */
-    polyfill(): void {
-        polyfill();
+    polyfill(isExt: boolean): void {
+        polyfill(isExt);
     }
 
     /**

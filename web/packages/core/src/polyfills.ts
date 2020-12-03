@@ -4,35 +4,24 @@ import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
 import { Config } from "./config";
 
-if (!window.RufflePlayer) {
-    window.RufflePlayer = {};
-}
-let topLevelRuffleConfig: Config;
-let ruffleScriptSrc = publicPath({}, "ruffle.js");
-if (window.RufflePlayer.config) {
-    topLevelRuffleConfig = window.RufflePlayer.config;
-    ruffleScriptSrc = publicPath(window.RufflePlayer.config, "ruffle.js");
-}
-/* publicPath returns the directory where the file is, *
- * so we need to append the filename. We don't need to  *
- * worry about the directory not having a slash because *
- * publicPath appends a slash.                         */
-ruffleScriptSrc += "ruffle.js";
+let isExtension: boolean;
+const globalConfig: Config = window.RufflePlayer?.config ?? {};
+const jsScriptUrl = publicPath(globalConfig, "ruffle.js") + "ruffle.js";
 
 /**
- * Polyfill native elements with Ruffle equivalents.
+ * Polyfill native Flash elements with Ruffle equivalents.
  *
  * This polyfill isn't fool-proof: If there's a chance site JavaScript has
  * access to a pre-polyfill element, then this will break horribly. We can
  * keep native objects out of the DOM, and thus out of JavaScript's grubby
  * little hands, but only if we load first.
  */
-let objects: HTMLCollectionOf<HTMLElement>;
-let embeds: HTMLCollectionOf<HTMLElement>;
+let objects: HTMLCollectionOf<HTMLObjectElement>;
+let embeds: HTMLCollectionOf<HTMLEmbedElement>;
 /**
  *
  */
-function replaceFlashInstances(): void {
+function polyfillFlashInstances(): void {
     try {
         // Create live collections to track embed tags.
         objects = objects || document.getElementsByTagName("object");
@@ -47,191 +36,164 @@ function replaceFlashInstances(): void {
         }
         for (const elem of Array.from(embeds)) {
             if (RuffleEmbed.isInterdictable(elem)) {
-                const ruffleObject = RuffleEmbed.fromNativeEmbedElement(elem);
-                elem.replaceWith(ruffleObject);
+                const ruffleEmbed = RuffleEmbed.fromNativeEmbedElement(elem);
+                elem.replaceWith(ruffleEmbed);
             }
         }
     } catch (err) {
         console.error(
-            "Serious error encountered when polyfilling native Flash elements: " +
-                err
+            `Serious error encountered when polyfilling native Flash elements: ${err}`
         );
     }
 }
 
 /**
+ * Inject Ruffle into <iframe> and <frame> elements.
  *
+ * This polyfill isn't fool-proof either: On self-hosted builds, it may
+ * not work due to browsers CORS policy or be loaded too late for some
+ * libraries like SWFObject. These should be less of a problem on the
+ * web extension. This polyfill should, however, do the trick in most
+ * cases, but users should be aware of its natural limits.
  */
-function polyfillStaticContent(): void {
-    replaceFlashInstances();
-}
-
+let iframes: HTMLCollectionOf<HTMLIFrameElement>;
+let frames: HTMLCollectionOf<HTMLFrameElement>;
 /**
  *
  */
-function polyfillDynamicContent(): void {
-    // Listen for changes to the DOM. If nodes are added, re-check for any Flash instances.
+function polyfillFrames(): void {
+    // Create live collections to track embed tags.
+    iframes = iframes || document.getElementsByTagName("iframe");
+    frames = frames || document.getElementsByTagName("frame");
+
+    [iframes, frames].forEach((elementsList) => {
+        for (let i = 0; i < elementsList.length; i++) {
+            const element = elementsList[i];
+            if (element.dataset.rufflePolyfilled !== undefined) {
+                // Don't re-polyfill elements with the "data-ruffle-polyfilled" attribute.
+                continue;
+            }
+            element.dataset.rufflePolyfilled = "";
+
+            const elementWindow = element.contentWindow;
+
+            // Cross origin requests may reach an exception, so let's prepare for this eventuality.
+            const errorMessage = `Couldn't load Ruffle into ${element.tagName}[${element.src}]: `;
+            try {
+                if (elementWindow!.document!.readyState === "complete") {
+                    injectRuffle(elementWindow!, errorMessage);
+                }
+            } catch (err) {
+                if (!isExtension) {
+                    // The web extension should be able to load Ruffle into cross origin frames
+                    // because it has "all_frames" set to true in its manifest.json: RufflePlayer
+                    // config won't be injected but it's not worth showing an error.
+                    console.warn(errorMessage + err);
+                }
+            }
+
+            // Attach listener to the element to handle frame navigation.
+            element.addEventListener(
+                "load",
+                () => {
+                    injectRuffle(elementWindow!, errorMessage);
+                },
+                false
+            );
+        }
+    });
+}
+
+/**
+ * @param elementWindow The (i)frame's window object.
+ * @param errorMessage The message to log when Ruffle cannot access the (i)frame's document.
+ */
+async function injectRuffle(
+    elementWindow: Window,
+    errorMessage: string
+): Promise<void> {
+    // The document is supposed to be completely loaded when this function is run.
+    // As Chrome may be unable to read from the dataset below, we have to delay the execution a little bit.
+    await new Promise((resolve) => {
+        window.setTimeout(() => {
+            resolve();
+        }, 100);
+    });
+
+    let elementDocument: HTMLDocument;
+    try {
+        elementDocument = elementWindow.document;
+    } catch (err) {
+        if (!isExtension) {
+            console.warn(errorMessage + err);
+        }
+        return;
+    }
+
+    if (
+        !isExtension &&
+        elementDocument.documentElement.dataset.ruffleOptout !== undefined
+    ) {
+        // Don't polyfill elements with the "data-ruffle-optout" attribute.
+        return;
+    }
+
+    if (!isExtension) {
+        if (!elementWindow.RufflePlayer) {
+            elementWindow.RufflePlayer = {};
+            const script = elementDocument.createElement("script");
+            script.setAttribute("src", jsScriptUrl);
+            script.onload = () => {
+                // Inject parent configuration once the script is loaded, preventing it from being ignored.
+                elementWindow!.RufflePlayer!.config = globalConfig;
+            };
+            elementDocument.head.appendChild(script);
+        }
+    } else {
+        if (!elementWindow.RufflePlayer) {
+            elementWindow.RufflePlayer = {};
+        }
+        // Merge parent window and frame configurations, will likely be applied too late though.
+        elementWindow.RufflePlayer.config = {
+            ...globalConfig,
+            ...(elementWindow.RufflePlayer?.config ?? {}),
+        };
+    }
+}
+
+/**
+ * Listen for changes to the DOM.
+ *
+ */
+function initMutationObserver(): void {
     const observer = new MutationObserver(function (mutationsList) {
-        // If any nodes were added, re-run the polyfill to replace any new instances.
+        // If any nodes were added, re-run the polyfill to detect any new instances.
         const nodesAdded = mutationsList.some(
             (mutation) => mutation.addedNodes.length > 0
         );
         if (nodesAdded) {
-            replaceFlashInstances();
+            polyfillFlashInstances();
+            polyfillFrames();
         }
     });
-
     observer.observe(document, { childList: true, subtree: true });
 }
 
 /**
- * @param event The event to check
- */
-function loadRufflePlayerIntoFrame(event: Event): void {
-    const currentTarget = event.currentTarget;
-    if (currentTarget != null && "contentWindow" in currentTarget) {
-        loadFrame(currentTarget["contentWindow"]);
-    }
-}
-/**
- * @param currentFrame The frame's window object
- */
-function loadFrame(currentFrame: Window): void {
-    let frameDocument;
-    try {
-        frameDocument = currentFrame.document;
-        if (!frameDocument) {
-            console.log("Frame has no document.");
-            return;
-        }
-    } catch (e) {
-        console.log("Error Getting Frame: " + e.message);
-        return;
-    }
-    if (!currentFrame.RufflePlayer) {
-        /* Make sure we populate the frame's window.RufflePlayer.config */
-        currentFrame.RufflePlayer = {};
-        currentFrame.RufflePlayer.config = topLevelRuffleConfig;
-        const script = frameDocument.createElement("script");
-        script.src = ruffleScriptSrc; /* Load this script(ruffle.js) into the frame */
-        frameDocument.body.appendChild(script);
-    } else {
-        console.log("(i)frame already has RufflePlayer");
-    }
-    polyfillFramesCommon(currentFrame);
-}
-
-/**
- * @param frameList The list of frames to polyfill inside
- */
-function handleFrames(
-    frameList: HTMLCollectionOf<HTMLIFrameElement | HTMLFrameElement>
-): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let originalOnLoad: ((ev: Event) => any) | null;
-    for (let i = 0; i < frameList.length; i++) {
-        const currentFrame = frameList[i];
-        /* Apparently, using addEventListener attaches the event  *
-         * to the dummy document, which is overwritten when the   *
-         * iframe is loaded, so we do this. It can only works if  *
-         * it's attached to the frame object itself, which is why *
-         * we're using                                            *
-         * depth.document.getElementsByTagName("iframe") instead  *
-         * of depth.frames to get the iframes at the depth.       *
-         * Also, this way we should be able to handle frame       *
-         * frame navigation, which is good.                       */
-        setTimeout(function () {
-            try {
-                if (
-                    currentFrame.contentDocument &&
-                    currentFrame.contentDocument.readyState &&
-                    currentFrame.contentDocument.readyState == "complete" &&
-                    currentFrame.contentWindow
-                ) {
-                    loadFrame(currentFrame.contentWindow);
-                }
-            } catch (e) {
-                console.log(
-                    "error loading ruffle player into frame: " + e.message
-                );
-            }
-        }, 500);
-        try {
-            if ((originalOnLoad = currentFrame.onload)) {
-                currentFrame.onload = function (event) {
-                    if (originalOnLoad != null) {
-                        try {
-                            originalOnLoad(event);
-                        } catch (e) {
-                            console.log(
-                                "Error calling original onload: " + e.message
-                            );
-                        }
-                    }
-                    loadRufflePlayerIntoFrame(event);
-                };
-            } else {
-                currentFrame.onload = loadRufflePlayerIntoFrame;
-            }
-            const depth = currentFrame.contentWindow;
-            if (depth != null) {
-                polyfillFramesCommon(depth);
-            }
-        } catch (e) {
-            console.log("error loading ruffle player into frame: " + e.message);
-        }
-    }
-}
-
-/**
- * @param depth The window to polyfill
- */
-function polyfillFramesCommon(depth: Window): void {
-    handleFrames(depth.document.getElementsByTagName("iframe"));
-    handleFrames(depth.document.getElementsByTagName("frame"));
-}
-
-/**
- *
- */
-function polyfillStaticFrames(): void {
-    polyfillFramesCommon(window);
-}
-
-/**
- * @param mutationsList The list of mutations to check
- */
-function runFrameListener(mutationsList: MutationRecord[]): void {
-    /* Basically the same as the listener for dynamic embeds. */
-    const nodesAdded = mutationsList.some(
-        (mutation) => mutation.addedNodes.length > 0
-    );
-    if (nodesAdded) {
-        polyfillFramesCommon(window);
-    }
-}
-
-/**
- *
- */
-function polyfillDynamicFrames(): void {
-    const observer = new MutationObserver(runFrameListener);
-    observer.observe(document, { childList: true, subtree: true });
-}
-
-/**
- * Polyfills the detection of flash plugins in the browser.
+ * Polyfills the detection of Flash plugins in the browser.
  */
 export function pluginPolyfill(): void {
     installPlugin(FLASH_PLUGIN);
 }
 
 /**
- * Polyfills legacy flash content on the page.
+ * Polyfills legacy Flash content on the page.
+ *
+ * @param isExt Whether or not Ruffle is running as a browser's extension.
  */
-export function polyfill(): void {
-    polyfillStaticContent();
-    polyfillDynamicContent();
-    polyfillStaticFrames();
-    polyfillDynamicFrames();
+export function polyfill(isExt: boolean): void {
+    isExtension = isExt;
+    polyfillFlashInstances();
+    polyfillFrames();
+    initMutationObserver();
 }
