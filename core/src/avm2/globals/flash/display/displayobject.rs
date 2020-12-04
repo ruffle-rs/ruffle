@@ -12,6 +12,7 @@ use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use crate::types::{Degrees, Percent};
 use gc_arena::{GcCell, MutationContext};
+use swf::Twips;
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -433,6 +434,41 @@ pub fn mouse_y<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `hitTestPoint`.
+pub fn hit_test_point<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let x = Twips::from_pixels(
+            args.get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+        let y = Twips::from_pixels(
+            args.get(1)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+        let shape_flag = args
+            .get(2)
+            .cloned()
+            .unwrap_or_else(|| false.into())
+            .coerce_to_boolean();
+
+        if shape_flag {
+            return Ok(dobj.hit_test_shape(&mut activation.context, (x, y)).into());
+        } else {
+            return Ok(dobj.hit_test_bounds((x, y)).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -540,6 +576,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::package(""), "mouseY"),
         Method::from_builtin(mouse_y),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::package(""), "hitTestPoint"),
+        Method::from_builtin(hit_test_point),
     ));
 
     class
