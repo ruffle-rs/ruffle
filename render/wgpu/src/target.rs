@@ -48,7 +48,7 @@ impl RenderTargetFrame for SwapChainTargetFrame {
 impl SwapChainTarget {
     pub fn new(surface: wgpu::Surface, size: (u32, u32), device: &wgpu::Device) -> Self {
         let swap_chain_desc = wgpu::SwapChainDescriptor {
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8Unorm,
             width: size.0,
             height: size.1,
@@ -137,7 +137,7 @@ impl TextureTarget {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
+            usage: wgpu::TextureUsage::RENDER_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
         });
         let buffer_label = create_debug_label!("Render target buffer");
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -196,7 +196,7 @@ impl RenderTarget for TextureTarget {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: self.format,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
+            usage: wgpu::TextureUsage::RENDER_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
         });
 
         let buffer_label = create_debug_label!("Render target buffer");

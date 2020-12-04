@@ -196,6 +196,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
 
         let (device, queue) = block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
+                label: None,
                 features: Default::default(),
                 limits: wgpu::Limits::default(),
                 shader_validation: false,
@@ -225,7 +226,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             sample_count: descriptors.msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
             format: target.format(),
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
         });
         let frame_buffer_view = frame_buffer.create_view(&Default::default());
 
@@ -237,7 +238,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             sample_count: descriptors.msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Depth24PlusStencil8,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
         });
 
         let depth_texture_view = depth_texture.create_view(&Default::default());
@@ -783,7 +784,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 sample_count: self.descriptors.msaa_sample_count,
                 dimension: wgpu::TextureDimension::D2,
                 format: self.target.format(),
-                usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+                usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
             });
         self.frame_buffer_view = frame_buffer.create_view(&Default::default());
 
@@ -802,7 +803,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 sample_count: self.descriptors.msaa_sample_count,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Depth24PlusStencil8,
-                usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+                usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
             });
         self.depth_texture_view = depth_texture.create_view(&Default::default());
 
