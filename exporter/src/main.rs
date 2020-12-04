@@ -382,6 +382,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (device, queue) = block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {
+            label: None,
             features: Default::default(),
             limits: wgpu::Limits::default(),
             shader_validation: false,
