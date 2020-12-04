@@ -877,6 +877,12 @@ pub trait TDisplayObject<'gc>:
         self.world_bounds().contains(pos)
     }
 
+    /// Tests if a given object's world bounds intersects with the world bounds
+    /// of this object.
+    fn hit_test_object(&self, rhs: DisplayObject<'gc>) -> bool {
+        self.world_bounds().intersects(&rhs.world_bounds())
+    }
+
     /// Tests if a given stage position point intersects within this object, considering the art.
     fn hit_test_shape(
         &self,

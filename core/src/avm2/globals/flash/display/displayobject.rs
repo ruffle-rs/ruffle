@@ -469,6 +469,27 @@ pub fn hit_test_point<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `hitTestObject`.
+pub fn hit_test_object<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        if let Some(rhs_dobj) = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?
+            .as_display_object()
+        {
+            return Ok(dobj.hit_test_object(rhs_dobj).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -580,6 +601,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::package(""), "hitTestPoint"),
         Method::from_builtin(hit_test_point),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::package(""), "hitTestObject"),
+        Method::from_builtin(hit_test_object),
     ));
 
     class
