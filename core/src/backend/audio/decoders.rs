@@ -2,10 +2,12 @@
 
 mod adpcm;
 mod mp3;
+mod nellymoser;
 mod pcm;
 
 pub use adpcm::AdpcmDecoder;
 pub use mp3::Mp3Decoder;
+pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
 use crate::tag_utils::SwfSlice;
@@ -56,6 +58,9 @@ pub fn make_decoder<'a, R: 'a + Send + Read>(
             format.sample_rate.into(),
             data,
         )),
+        AudioCompression::Nellymoser => {
+            Box::new(NellymoserDecoder::new(data, format.sample_rate.into()))
+        }
         _ => {
             let msg = format!(
                 "make_decoder: Unhandled audio compression {:?}",

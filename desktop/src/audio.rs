@@ -1,7 +1,7 @@
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use generational_arena::Arena;
 use ruffle_core::backend::audio::decoders::{
-    self, AdpcmDecoder, Mp3Decoder, PcmDecoder, SeekableDecoder,
+    self, AdpcmDecoder, Mp3Decoder, NellymoserDecoder, PcmDecoder, SeekableDecoder,
 };
 use ruffle_core::backend::audio::{
     swf, AudioBackend, SoundHandle, SoundInstanceHandle, SoundTransform,
@@ -167,6 +167,9 @@ impl CpalAudioBackend {
                 format.sample_rate.into(),
                 data,
             )),
+            AudioCompression::Nellymoser => {
+                Box::new(NellymoserDecoder::new(data, format.sample_rate.into()))
+            }
             _ => {
                 let msg = format!(
                     "start_stream: Unhandled audio compression {:?}",

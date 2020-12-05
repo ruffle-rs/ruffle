@@ -1,7 +1,7 @@
 use fnv::FnvHashMap;
 use generational_arena::Arena;
 use ruffle_core::backend::audio::{
-    decoders::{AdpcmDecoder, Mp3Decoder},
+    decoders::{AdpcmDecoder, Mp3Decoder, NellymoserDecoder},
     swf::{self, AudioCompression},
     AudioBackend, PreloadStreamHandle, SoundHandle, SoundInstanceHandle, SoundTransform,
 };
@@ -452,6 +452,10 @@ impl WebAudioBackend {
                         sound.format.sample_rate.into(),
                         std::io::Cursor::new(audio_data.to_vec()), //&sound.data[..]
                     )),
+                    AudioCompression::Nellymoser => Box::new(NellymoserDecoder::new(
+                        std::io::Cursor::new(audio_data.to_vec()),
+                        sound.format.sample_rate.into(),
+                    )),
                     compression => {
                         return Err(format!("Unimplemented codec: {:?}", compression).into())
                     }
@@ -631,6 +635,14 @@ impl WebAudioBackend {
                         self.left_samples
                             .extend(decoder.map(|n| f32::from(n[0]) / 32767.0));
                     }
+                }
+            }
+            AudioCompression::Nellymoser => {
+                let decoder = NellymoserDecoder::new(audio_data, format.sample_rate.into());
+                for frame in decoder {
+                    let (l, r) = (frame[0], frame[1]);
+                    self.left_samples.push(f32::from(l) / 32767.0);
+                    self.right_samples.push(f32::from(r) / 32767.0);
                 }
             }
             compression => return Err(format!("Unimplemented codec: {:?}", compression).into()),
@@ -871,6 +883,10 @@ impl AudioBackend for WebAudioBackend {
                     // so that we read the header in each block.
                     stream.num_sample_frames += stream.samples_per_block;
                     stream.adpcm_block_offsets.push(stream.audio_data.len());
+                    stream.audio_data.extend_from_slice(audio_data);
+                }
+                AudioCompression::Nellymoser => {
+                    stream.num_sample_frames += stream.samples_per_block;
                     stream.audio_data.extend_from_slice(audio_data);
                 }
                 _ => {
