@@ -123,6 +123,10 @@ async function injectRuffle(
     let elementDocument: HTMLDocument;
     try {
         elementDocument = elementWindow.document;
+        if (!elementDocument) {
+            // Don't polyfill if the window has no document: the element may have been removed from the parent window.
+            return;
+        }
     } catch (err) {
         if (!isExtension) {
             console.warn(errorMessage + err);
@@ -156,7 +160,7 @@ async function injectRuffle(
         // Merge parent window and frame configurations, will likely be applied too late though.
         elementWindow.RufflePlayer.config = {
             ...globalConfig,
-            ...(elementWindow.RufflePlayer?.config ?? {}),
+            ...(elementWindow.RufflePlayer.config ?? {}),
         };
     }
 }
