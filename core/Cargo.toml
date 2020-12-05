@@ -36,6 +36,7 @@ encoding_rs = "0.8.28"
 rand = { version = "0.8.4", features = ["std", "small_rng"], default-features = false }
 serde = { version = "1.0.127", features = ["derive"], optional = true }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser" }
+h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "837f075d280680abc8dd3fc3d47656d5a770c48e" }
 regress = "0.4"
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "19fecd07b9888c4bdaa66771c468095783b52bed" }
 json = "0.12.4"
