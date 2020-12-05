@@ -192,19 +192,19 @@ impl MorphShapeStatic {
             match (s, e) {
                 (ShapeRecord::StyleChange(start_change), ShapeRecord::StyleChange(end_change)) => {
                     let mut style_change = start_change.clone();
-                    if let Some((s_x, s_y)) = start_change.move_to {
-                        if let Some((e_x, e_y)) = end_change.move_to {
+                    if start_change.move_to != end_change.move_to {
+                        if let Some((s_x, s_y)) = start_change.move_to {
                             start_x = s_x;
                             start_y = s_y;
+                        }
+                        if let Some((e_x, e_y)) = end_change.move_to {
                             end_x = e_x;
                             end_y = e_y;
-                            style_change.move_to = Some((
-                                lerp_twips(start_x, end_x, a, b),
-                                lerp_twips(start_y, end_y, a, b),
-                            ));
-                        } else {
-                            panic!("Expected move_to for morph shape")
                         }
+                        style_change.move_to = Some((
+                            lerp_twips(start_x, end_x, a, b),
+                            lerp_twips(start_y, end_y, a, b),
+                        ));
                     }
                     shape.push(ShapeRecord::StyleChange(style_change));
                     start = start_iter.next();
