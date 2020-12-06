@@ -24,8 +24,8 @@ let embeds: HTMLCollectionOf<HTMLEmbedElement>;
 function polyfillFlashInstances(): void {
     try {
         // Create live collections to track embed tags.
-        objects = objects || document.getElementsByTagName("object");
-        embeds = embeds || document.getElementsByTagName("embed");
+        objects = objects ?? document.getElementsByTagName("object");
+        embeds = embeds ?? document.getElementsByTagName("embed");
 
         // Replace <object> first, because <object> often wraps <embed>.
         for (const elem of Array.from(objects)) {
@@ -63,8 +63,8 @@ let frames: HTMLCollectionOf<HTMLFrameElement>;
  */
 function polyfillFrames(): void {
     // Create live collections to track embed tags.
-    iframes = iframes || document.getElementsByTagName("iframe");
-    frames = frames || document.getElementsByTagName("frame");
+    iframes = iframes ?? document.getElementsByTagName("iframe");
+    frames = frames ?? document.getElementsByTagName("frame");
 
     [iframes, frames].forEach((elementsList) => {
         for (let i = 0; i < elementsList.length; i++) {
@@ -113,7 +113,7 @@ async function injectRuffle(
     errorMessage: string
 ): Promise<void> {
     // The document is supposed to be completely loaded when this function is run.
-    // As Chrome may be unable to read from the dataset below, we have to delay the execution a little bit.
+    // As Chrome may be unable to access the document properties, we have to delay the execution a little bit.
     await new Promise((resolve) => {
         window.setTimeout(() => {
             resolve();
@@ -144,12 +144,12 @@ async function injectRuffle(
 
     if (!isExtension) {
         if (!elementWindow.RufflePlayer) {
-            elementWindow.RufflePlayer = {};
             const script = elementDocument.createElement("script");
             script.setAttribute("src", jsScriptUrl);
             script.onload = () => {
                 // Inject parent configuration once the script is loaded, preventing it from being ignored.
-                elementWindow!.RufflePlayer!.config = globalConfig;
+                elementWindow.RufflePlayer = {};
+                elementWindow.RufflePlayer.config = globalConfig;
             };
             elementDocument.head.appendChild(script);
         }
