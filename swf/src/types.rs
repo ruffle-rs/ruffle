@@ -180,6 +180,9 @@ impl Color {
             a: alpha,
         }
     }
+    pub fn to_rgb(&self) -> u32 {
+        ((self.r as u32) << 16) | ((self.g as u32) << 8) | (self.b as u32)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

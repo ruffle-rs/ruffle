@@ -82,6 +82,32 @@ pub fn set_html<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_text_color<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(color) = this.new_text_format().color {
+        return Ok(color.to_rgb().into());
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn set_text_color<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if let Ok(rgb) = value.coerce_to_u32(activation) {
+        let tf = TextFormat {
+            color: Some(swf::Color::from_rgb(rgb, 0xFF)),
+            ..TextFormat::default()
+        };
+        this.set_text_format(0, this.text_length(), tf.clone(), &mut activation.context);
+        this.set_new_text_format(tf, &mut activation.context);
+    }
+    Ok(())
+}
+
 pub fn get_html_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -515,6 +541,7 @@ pub fn create_proto<'gc>(
     with_text_field_props!(
         object, gc_context, fn_proto,
         "type" => [get_type, set_type],
+        "textColor" => [get_text_color, set_text_color],
     );
 
     object.into()
