@@ -1,3 +1,5 @@
+#![allow(clippy::suspicious_operation_groupings)]
+
 use crate::Twips;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
