@@ -66,7 +66,7 @@
         border-radius: 5px;
         margin: 4px 0px auto 15px;
 
-        background-color: #966214;
+        background-color: #a0a0a0;
     }
 
     .RufflePopup-checkbox_slider:after {
@@ -85,10 +85,14 @@
         transition: left 0.1s;
     }
 
+    .RufflePopup-checkbox_with_slider:checked ~ .RufflePopup-checkbox_slider {
+        background-color: #966214;
+    }
+
     .RufflePopup-checkbox_with_slider:checked ~ .RufflePopup-checkbox_slider:after {
         left: 85%;
     }
-    
+
     .RufflePopup-reload_button {
         display: block;
         overflow: hidden;
