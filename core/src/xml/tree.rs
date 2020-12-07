@@ -793,7 +793,10 @@ impl<'gc> XMLNode<'gc> {
     /// Document roots and elements can yield children, while all other
     /// elements are structurally prohibited from adopting child `XMLNode`s.
     pub fn has_children(self) -> bool {
-        matches!(*self.0.read(), XMLNodeData::Element { .. } | XMLNodeData::DocumentRoot { .. })
+        matches!(
+            *self.0.read(),
+            XMLNodeData::Element { .. } | XMLNodeData::DocumentRoot { .. }
+        )
     }
 
     /// Returns an iterator that yields child nodes.

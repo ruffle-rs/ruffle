@@ -82,13 +82,28 @@ impl ClipEvent {
     pub fn propagates(self) -> bool {
         matches!(
             self,
-            Self::MouseUp | Self::MouseDown | Self::MouseMove | Self::KeyPress { .. } | Self::KeyDown | Self::KeyUp
+            Self::MouseUp
+                | Self::MouseDown
+                | Self::MouseMove
+                | Self::KeyPress { .. }
+                | Self::KeyDown
+                | Self::KeyUp
         )
     }
 
     /// Indicates whether this is an event type used by Buttons (i.e., on that can be used in an `on` handler in Flash).
     pub fn is_button_event(self) -> bool {
-        matches!(self, Self::DragOut | Self::DragOver | Self::KeyPress { .. } | Self::Press | Self::RollOut | Self::RollOver | Self::Release | Self::ReleaseOutside)
+        matches!(
+            self,
+            Self::DragOut
+                | Self::DragOver
+                | Self::KeyPress { .. }
+                | Self::Press
+                | Self::RollOut
+                | Self::RollOver
+                | Self::Release
+                | Self::ReleaseOutside
+        )
     }
 
     /// Returns the method name of the event handler for this event.
