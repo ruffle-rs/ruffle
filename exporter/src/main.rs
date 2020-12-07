@@ -198,12 +198,7 @@ fn take_screenshot(
             .ok()
             .unwrap()
             .descriptors();
-        Ok((
-            CaptureDescriptors::Png {
-                descriptors: descriptors.into(),
-            },
-            result,
-        ))
+        Ok((CaptureDescriptors::Png { descriptors }, result))
     } else {
         Ok((CaptureDescriptors::Svg, result))
     }
@@ -456,9 +451,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 trace_path(&opt),
             ))?;
             let descriptors = Descriptors::new(device, queue)?;
-            CaptureDescriptors::Png {
-                descriptors: descriptors.into(),
-            }
+            CaptureDescriptors::Png { descriptors }
         }
         Format::Svg => CaptureDescriptors::Svg,
     };
