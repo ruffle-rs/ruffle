@@ -117,7 +117,7 @@ export class RufflePlayer extends HTMLElement {
     constructor() {
         super();
 
-        this.shadow = this.attachShadow({ mode: "closed" });
+        this.shadow = this.attachShadow({ mode: "open" });
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
 
         this.dynamicStyles = <HTMLStyleElement>(
