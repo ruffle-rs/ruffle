@@ -22,6 +22,7 @@ mod activation;
 mod array;
 mod class;
 mod domain;
+mod events;
 mod function;
 mod globals;
 mod method;

@@ -445,6 +445,7 @@ swf_tests! {
     (as3_displayobject_visible, "avm2/displayobject_visible", 4),
     (as3_displayobject_hittestpoint, "avm2/displayobject_hittestpoint", 2),
     (as3_displayobject_hittestobject, "avm2/displayobject_hittestobject", 1),
+    (as3_event_valueof_tostring, "avm2/event_valueof_tostring", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
