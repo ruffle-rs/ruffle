@@ -430,6 +430,13 @@ pub fn load_player_globals<'gc>(
     // package `flash.events`
     class(
         activation,
+        flash::events::event::create_class(mc),
+        flash::events::event::event_deriver,
+        domain,
+        script,
+    )?;
+    class(
+        activation,
         flash::events::ieventdispatcher::create_interface(mc),
         implicit_deriver,
         domain,
