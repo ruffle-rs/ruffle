@@ -89,6 +89,49 @@ pub fn get_type<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `target` property's getter
+pub fn target<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(evt) = this.unwrap().as_event() {
+        return Ok(evt.target().map(|o| o.into()).unwrap_or(Value::Null));
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `currentTarget` property's getter
+pub fn current_target<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(evt) = this.unwrap().as_event() {
+        return Ok(evt
+            .current_target()
+            .map(|o| o.into())
+            .unwrap_or(Value::Null));
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `eventPhase` property's getter
+pub fn event_phase<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(evt) = this.unwrap().as_event() {
+        let event_phase: u32 = evt.event_phase().into();
+        return Ok(event_phase.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Event`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -112,6 +155,18 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public_namespace(), "type"),
         Method::from_builtin(get_type),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public_namespace(), "target"),
+        Method::from_builtin(target),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public_namespace(), "currentTarget"),
+        Method::from_builtin(current_target),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public_namespace(), "eventPhase"),
+        Method::from_builtin(event_phase),
     ));
 
     class
