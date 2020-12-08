@@ -93,11 +93,7 @@ Sincere thanks to the diamond level sponsors of Ruffle:
 
 ## License
 
-Licensed under either of
-
-- Apache License, Version 2.0 ([LICENSE_APACHE](LICENSE_APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE_MIT](LICENSE_MIT) or http://opensource.org/licenses/MIT)
-  at your option.
+Licensed under the [MIT lICENSE](LICENSE).
 
 ### Contribution
 
