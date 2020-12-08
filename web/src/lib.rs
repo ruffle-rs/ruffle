@@ -591,9 +591,6 @@ impl Ruffle {
 
                                 let key_code = input.last_key_code();
                                 let key_char = input.last_key_char();
-                                if key_code != KeyCode::Unknown {
-                                    core.handle_event(PlayerEvent::KeyUp { key_code });
-                                }
 
                                 if key_code != KeyCode::Unknown {
                                     core.handle_event(PlayerEvent::KeyDown { key_code });
