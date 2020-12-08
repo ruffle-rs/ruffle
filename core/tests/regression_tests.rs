@@ -446,6 +446,9 @@ swf_tests! {
     (as3_displayobject_hittestpoint, "avm2/displayobject_hittestpoint", 2),
     (as3_displayobject_hittestobject, "avm2/displayobject_hittestobject", 1),
     (as3_event_valueof_tostring, "avm2/event_valueof_tostring", 1),
+    (as3_event_bubbles, "avm2/event_bubbles", 1),
+    (as3_event_cancelable, "avm2/event_cancelable", 1),
+    (as3_event_type, "avm2/event_type", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
