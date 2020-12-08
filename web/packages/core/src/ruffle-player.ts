@@ -90,6 +90,7 @@ export class RufflePlayer extends HTMLElement {
     private playButton: HTMLElement;
     private unmuteOverlay: HTMLElement;
     private rightClickMenu: HTMLElement;
+    private swfUrl?: string;
     private instance: Ruffle | null;
     private _trace_observer: ((message: string) => void) | null;
 
@@ -406,6 +407,7 @@ export class RufflePlayer extends HTMLElement {
 
                 if ("url" in options) {
                     console.log("Loading SWF file " + options.url);
+                    this.swfUrl = options.url;
 
                     const parameters = {
                         ...sanitizeParameters(
@@ -496,6 +498,18 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    /**
+     * Opens the loaded SWF in a new tab, causing the browser to download the file.
+     */
+    downloadSwf(): void {
+        if (this.instance && this.swfUrl) {
+            console.log("Downloading SWF: " + this.swfUrl);
+            window.open(this.swfUrl);
+        } else {
+            console.error("SWF download failed");
+        }
+    }
+
     private contextMenuItems(): ContextMenuItem[] {
         const items = [];
         if (this.fullscreenEnabled) {
@@ -510,6 +524,12 @@ export class RufflePlayer extends HTMLElement {
                     onClick: this.enterFullscreen.bind(this),
                 });
             }
+        }
+        if (this.instance && this.swfUrl) {
+            items.push({
+                text: `Download .swf`,
+                onClick: this.downloadSwf.bind(this),
+            });
         }
         items.push({
             text: `Ruffle %VERSION_NAME%`,
