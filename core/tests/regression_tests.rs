@@ -449,6 +449,7 @@ swf_tests! {
     (as3_event_bubbles, "avm2/event_bubbles", 1),
     (as3_event_cancelable, "avm2/event_cancelable", 1),
     (as3_event_type, "avm2/event_type", 1),
+    (as3_event_clone, "avm2/event_clone", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

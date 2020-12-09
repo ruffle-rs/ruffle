@@ -69,6 +69,7 @@ pub struct SystemPrototypes<'gc> {
     pub framelabel: Object<'gc>,
     pub scene: Object<'gc>,
     pub application_domain: Object<'gc>,
+    pub event: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -101,6 +102,7 @@ impl<'gc> SystemPrototypes<'gc> {
             framelabel: empty,
             scene: empty,
             application_domain: empty,
+            event: empty,
         }
     }
 }
@@ -428,7 +430,13 @@ pub fn load_player_globals<'gc>(
     )?;
 
     // package `flash.events`
-    class(
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
+        .event = class(
         activation,
         flash::events::event::create_class(mc),
         flash::events::event::event_deriver,

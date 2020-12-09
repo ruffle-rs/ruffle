@@ -132,6 +132,26 @@ pub fn event_phase<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `clone`
+pub fn clone<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(evt) = this.unwrap().as_event() {
+        let evt_proto = activation.avm2().system_prototypes.as_ref().unwrap().event;
+
+        return Ok(EventObject::from_event(
+            activation.context.gc_context,
+            Some(evt_proto),
+            evt.clone(),
+        )
+        .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Event`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -167,6 +187,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public_namespace(), "eventPhase"),
         Method::from_builtin(event_phase),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "clone"),
+        Method::from_builtin(clone),
     ));
 
     class
