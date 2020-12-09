@@ -22,15 +22,17 @@ pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);
 pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, BitmapStatic>,
+    bitmap_data: Option<GcCell<'gc, crate::avm1::object::bitmap_data::BitmapData>>,
 }
 
 impl<'gc> Bitmap<'gc> {
-    pub fn new(
+    pub fn new_with_bitmap_data(
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
         bitmap_handle: BitmapHandle,
         width: u16,
         height: u16,
+        bitmap_data: Option<GcCell<'gc, crate::avm1::object::bitmap_data::BitmapData>>,
     ) -> Self {
         Bitmap(GcCell::allocate(
             context.gc_context,
@@ -45,8 +47,19 @@ impl<'gc> Bitmap<'gc> {
                         height,
                     },
                 ),
+                bitmap_data,
             },
         ))
+    }
+
+    pub fn new(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        id: CharacterId,
+        bitmap_handle: BitmapHandle,
+        width: u16,
+        height: u16,
+    ) -> Self {
+        Self::new_with_bitmap_data(context, id, bitmap_handle, width, height, None)
     }
 
     #[allow(dead_code)]
@@ -80,8 +93,20 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
     }
 
-    fn run_frame(&self, _context: &mut UpdateContext) {
-        // Noop
+    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(bitmap_data) = &self.0.read().bitmap_data {
+            let bd = bitmap_data.read();
+            if bd.dirty() {
+                let _ = context.renderer.update_texture(
+                    self.0.read().static_data.bitmap_handle,
+                    bd.width(),
+                    bd.height(),
+                    bd.pixels_rgba(),
+                );
+                drop(bd);
+                bitmap_data.write(context.gc_context).set_dirty(false);
+            }
+        }
     }
 
     fn render(&self, context: &mut RenderContext) {

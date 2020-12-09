@@ -789,16 +789,51 @@ impl RenderBackend for WebCanvasRenderBackend {
         }
     }
 
-    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> Result<BitmapHandle, Error> {
-        Ok(self.register_bitmap_raw(
-            None,
-            Bitmap {
+    fn register_bitmap_raw(
+        &mut self,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error> {
+        Ok(self
+            .register_bitmap_raw(
+                None,
+                Bitmap {
+                    width,
+                    height,
+                    data: BitmapFormat::Rgba(rgba),
+                },
+            )?
+            .handle)
+    }
+
+    fn update_texture(
+        &mut self,
+        handle: BitmapHandle,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error> {
+        let png = Self::bitmap_to_png_data_uri(Bitmap {
+            width,
+            height,
+            data: BitmapFormat::Rgba(rgba),
+        })?;
+
+        let image = HtmlImageElement::new().unwrap();
+        image.set_src(&png);
+
+        self.bitmaps.insert(
+            handle.0,
+            BitmapData {
+                image,
                 width,
                 height,
-                data: BitmapFormat::Rgba(rgba),
+                data: png,
             },
-        )?
-        .handle)
+        );
+
+        Ok(handle)
     }
 }
 

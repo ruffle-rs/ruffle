@@ -1,6 +1,7 @@
 use crate::shape_utils::DistilledShape;
 pub use crate::{transform::Transform, Color};
 use downcast_rs::Downcast;
+use gc_arena::Collect;
 use std::io::Read;
 pub use swf;
 use swf::Matrix;
@@ -50,6 +51,13 @@ pub trait RenderBackend: Downcast {
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error>;
+    fn update_texture(
+        &mut self,
+        bitmap: BitmapHandle,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error>;
 }
 impl_downcast!(RenderBackend);
 
@@ -58,7 +66,8 @@ type Error = Box<dyn std::error::Error>;
 #[derive(Copy, Clone, Debug)]
 pub struct ShapeHandle(pub usize);
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Collect)]
+#[collect(no_drop)]
 pub struct BitmapHandle(pub usize);
 
 /// Info returned by the `register_bitmap` methods.
@@ -160,6 +169,16 @@ impl RenderBackend for NullRenderer {
     }
     fn register_bitmap_raw(
         &mut self,
+        _width: u32,
+        _height: u32,
+        _rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error> {
+        Ok(BitmapHandle(0))
+    }
+
+    fn update_texture(
+        &mut self,
+        _bitmap: BitmapHandle,
         _width: u32,
         _height: u32,
         _rgba: Vec<u8>,
