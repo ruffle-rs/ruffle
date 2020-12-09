@@ -225,28 +225,29 @@ fn attach_bitmap<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap) = args.get(0) {
-        if let Some(bitmap_data) = bitmap.coerce_to_object(activation).as_bitmap_data_object() {
+        if let Some(bitmap_data) = bitmap
+            .coerce_to_object(activation)
+            .as_bitmap_data_object()
+            .map(|bd| bd.bitmap_data())
+        {
             if let Some(depth) = args.get(1) {
                 let depth = depth
                     .coerce_to_i32(activation)?
                     .wrapping_add(AVM_DEPTH_BIAS);
 
-                let rgba = bitmap_data.get_pixels_rgba();
+                let bitmap_handle = bitmap_data
+                    .write(activation.context.gc_context)
+                    .bitmap_handle(activation.context.renderer);
 
-                let bitmap_handle = activation.context.renderer.register_bitmap_raw(
-                    bitmap_data.width(),
-                    bitmap_data.height(),
-                    rgba,
-                );
-
-                if let Ok(bitmap_handle) = bitmap_handle {
+                if let Some(bitmap_handle) = bitmap_handle {
                     //TODO: do attached BitmapDatas have character ids?
-                    let display_object = Bitmap::new(
+                    let display_object = Bitmap::new_with_bitmap_data(
                         &mut activation.context,
                         0,
                         bitmap_handle,
-                        bitmap_data.width() as u16,
-                        bitmap_data.height() as u16,
+                        bitmap_data.read().width() as u16,
+                        bitmap_data.read().height() as u16,
+                        Some(bitmap_data),
                     );
                     movie_clip.replace_at_depth(
                         &mut activation.context,

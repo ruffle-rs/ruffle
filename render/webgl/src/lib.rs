@@ -1279,16 +1279,87 @@ impl RenderBackend for WebGlRenderBackend {
         self.bitmap_registry.get(&bitmap).cloned()
     }
 
-    fn register_bitmap_raw(&mut self, width: u32, height: u32, rgba: Vec<u8>) -> Result<BitmapHandle, Error> {
-        Ok(self.register_bitmap(
-            None,
-            Bitmap {
-                data: BitmapFormat::Rgba(rgba),
-                width,
-                height,
-            },
-        )?
-        .handle)
+    fn register_bitmap_raw(
+        &mut self,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error> {
+        Ok(self
+            .register_bitmap(
+                None,
+                Bitmap {
+                    data: BitmapFormat::Rgba(rgba),
+                    width,
+                    height,
+                },
+            )?
+            .handle)
+    }
+
+    fn update_texture(
+        &mut self,
+        handle: BitmapHandle,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error> {
+        let texture = self.gl.create_texture().unwrap();
+        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+
+        self.gl
+            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+                Gl::TEXTURE_2D,
+                0,
+                Gl::RGBA as i32,
+                width as i32,
+                height as i32,
+                0,
+                Gl::RGBA,
+                Gl::UNSIGNED_BYTE,
+                Some(&rgba),
+            )
+            .into_js_result()?;
+
+        // You must set the texture parameters for non-power-of-2 textures to function in WebGL1.
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
+
+        let bitmap = Bitmap {
+            width,
+            height,
+            data: BitmapFormat::Rgba(rgba),
+        };
+
+        self.bitmap_registry.insert(handle, bitmap);
+
+        let old_texture = self.textures.get(handle.0);
+
+        if let Some((id, old_texture)) = old_texture {
+            let id = *id;
+
+            self.gl.delete_texture(Some(&old_texture.texture));
+
+            self.textures.insert(
+                handle.0,
+                (
+                    id,
+                    Texture {
+                        texture,
+                        width,
+                        height,
+                    },
+                ),
+            );
+        }
+
+        Ok(handle)
     }
 }
 

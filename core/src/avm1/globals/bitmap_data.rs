@@ -3,13 +3,12 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::bitmap_data::{BitmapDataObject, Color};
+use crate::avm1::object::bitmap_data::{BitmapDataObject, ChannelOptions, Color};
 use crate::avm1::{Object, TObject, Value};
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
-use rand::Rng;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -44,13 +43,10 @@ pub fn constructor<'gc>(
         .coerce_to_i32(activation)?;
 
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
-        bitmap_data.init_pixels(
-            activation.context.gc_context,
-            width as u32,
-            height as u32,
-            fill_color,
-        );
-        bitmap_data.set_transparency(activation.context.gc_context, transparency);
+        bitmap_data
+            .bitmap_data()
+            .write(activation.context.gc_context)
+            .init_pixels(width as u32, height as u32, fill_color, transparency);
     }
 
     Ok(Value::Undefined)
@@ -63,7 +59,7 @@ pub fn height<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            return Ok(bitmap_data.height().into());
+            return Ok(bitmap_data.bitmap_data().read().height().into());
         }
     }
 
@@ -77,7 +73,7 @@ pub fn width<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            return Ok(bitmap_data.width().into());
+            return Ok(bitmap_data.bitmap_data().read().width().into());
         }
     }
 
@@ -91,7 +87,7 @@ pub fn get_transparent<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            return Ok(bitmap_data.transparency().into());
+            return Ok(bitmap_data.bitmap_data().read().transparency().into());
         }
     }
 
@@ -111,8 +107,8 @@ pub fn get_rectangle<'gc>(
                 &[
                     0.into(),
                     0.into(),
-                    bitmap_data.width().into(),
-                    bitmap_data.height().into(),
+                    bitmap_data.bitmap_data().read().width().into(),
+                    bitmap_data.bitmap_data().read().height().into(),
                 ],
             )?;
             return Ok(rect.into());
@@ -132,7 +128,7 @@ pub fn get_pixel<'gc>(
             if let (Some(x_val), Some(y_val)) = (args.get(0), args.get(1)) {
                 let x = x_val.coerce_to_i32(activation)?;
                 let y = y_val.coerce_to_i32(activation)?;
-                return Ok(bitmap_data.get_pixel(x, y).into());
+                return Ok(bitmap_data.bitmap_data().read().get_pixel(x, y).into());
             }
         }
     }
@@ -150,7 +146,7 @@ pub fn get_pixel32<'gc>(
             if let (Some(x_val), Some(y_val)) = (args.get(0), args.get(1)) {
                 let x = x_val.coerce_to_i32(activation)?;
                 let y = y_val.coerce_to_i32(activation)?;
-                let col: i32 = bitmap_data.get_pixel32(x, y).into();
+                let col: i32 = bitmap_data.bitmap_data().read().get_pixel32(x, y).into();
                 return Ok(col.into());
             }
         }
@@ -173,7 +169,10 @@ pub fn set_pixel<'gc>(
                 let y = y_val.coerce_to_u32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                bitmap_data.set_pixel(activation.context.gc_context, x, y, color.into());
+                bitmap_data
+                    .bitmap_data()
+                    .write(activation.context.gc_context)
+                    .set_pixel(x, y, color.into());
 
                 return Ok(Value::Undefined);
             }
@@ -197,7 +196,10 @@ pub fn set_pixel32<'gc>(
                 let y = y_val.coerce_to_i32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                bitmap_data.set_pixel32(activation.context.gc_context, x, y, color.into());
+                bitmap_data
+                    .bitmap_data()
+                    .write(activation.context.gc_context)
+                    .set_pixel32(x, y, color.into());
             }
 
             return Ok(Value::Undefined);
@@ -244,11 +246,11 @@ pub fn copy_channel<'gc>(
                 let min_x = dest_point
                     .get("x", activation)?
                     .coerce_to_u32(activation)?
-                    .min(bitmap_data.width());
+                    .min(bitmap_data.bitmap_data().read().width());
                 let min_y = dest_point
                     .get("y", activation)?
                     .coerce_to_u32(activation)?
-                    .min(bitmap_data.height());
+                    .min(bitmap_data.bitmap_data().read().height());
 
                 let src_min_x = source_rect
                     .get("x", activation)?
@@ -265,53 +267,18 @@ pub fn copy_channel<'gc>(
                 let src_max_x = src_min_x + src_width;
                 let src_max_y = src_min_y + src_height;
 
-                for x in src_min_x.max(0)..src_max_x.min(source_bitmap.width()) {
-                    for y in src_min_y.max(0)..src_max_y.min(source_bitmap.height()) {
-                        if bitmap_data.is_point_in_bounds((x + min_x) as i32, (y + min_y) as i32) {
-                            let original_color: u32 = bitmap_data
-                                .get_pixel_raw((x + min_x) as u32, (y + min_y) as u32)
-                                .unwrap_or_else(|| 0.into())
-                                .into();
-                            let source_color: u32 = source_bitmap
-                                .get_pixel_raw(x, y)
-                                .unwrap_or_else(|| 0.into())
-                                .into();
+                let src_bitmap_data = source_bitmap.bitmap_data();
 
-                            let channel_shift: u32 = match source_channel {
-                                // Alpha
-                                8 => 24,
-                                // red
-                                1 => 16,
-                                // green
-                                2 => 8,
-                                // blue
-                                4 => 0,
-                                _ => 0,
-                            };
-
-                            let source_part = (source_color >> channel_shift) & 0xFF;
-
-                            let result_color: u32 = match dest_channel {
-                                // Alpha
-                                8 => (original_color & 0x00FFFFFF) | source_part << 24,
-                                // red
-                                1 => (original_color & 0xFF00FFFF) | source_part << 16,
-                                // green
-                                2 => (original_color & 0xFFFF00FF) | source_part << 8,
-                                // blue
-                                4 => (original_color & 0xFFFFFF00) | source_part,
-                                _ => original_color,
-                            };
-
-                            bitmap_data.set_pixel32_raw(
-                                activation.context.gc_context,
-                                (x + min_x) as u32,
-                                (y + min_y) as u32,
-                                (result_color as i32).into(),
-                            );
-                        }
-                    }
-                }
+                bitmap_data
+                    .bitmap_data()
+                    .write(activation.context.gc_context)
+                    .copy_channel(
+                        (min_x, min_y),
+                        (src_min_x, src_min_y, src_max_x, src_max_y),
+                        &src_bitmap_data.read(),
+                        source_channel,
+                        dest_channel,
+                    );
             }
 
             return Ok(Value::Undefined);
@@ -345,16 +312,10 @@ pub fn fill_rect<'gc>(
                     .get("height", activation)?
                     .coerce_to_u32(activation)?;
 
-                for x_offset in 0..width {
-                    for y_offset in 0..height {
-                        bitmap_data.set_pixel32(
-                            activation.context.gc_context,
-                            (x + x_offset) as i32,
-                            (y + y_offset) as i32,
-                            color.into(),
-                        )
-                    }
-                }
+                bitmap_data
+                    .bitmap_data()
+                    .write(activation.context.gc_context)
+                    .fill_rect(x, y, width, height, color.into());
             }
             return Ok(Value::Undefined);
         }
@@ -374,18 +335,18 @@ pub fn clone<'gc>(
             let new_bitmap_data = proto.construct(
                 activation,
                 &[
-                    bitmap_data.width().into(),
-                    bitmap_data.height().into(),
-                    bitmap_data.transparency().into(),
+                    bitmap_data.bitmap_data().read().width().into(),
+                    bitmap_data.bitmap_data().read().height().into(),
+                    bitmap_data.bitmap_data().read().transparency().into(),
                     0xFFFFFF.into(),
                 ],
             )?;
             let new_bitmap_data_object = new_bitmap_data.as_bitmap_data_object().unwrap();
 
-            new_bitmap_data_object.set_pixels(
-                activation.context.gc_context,
-                bitmap_data.get_pixels().to_vec(),
-            );
+            new_bitmap_data_object
+                .bitmap_data()
+                .write(activation.context.gc_context)
+                .set_pixels(bitmap_data.bitmap_data().read().pixels().to_vec());
 
             return Ok(new_bitmap_data.into());
         }
@@ -423,43 +384,14 @@ pub fn flood_fill<'gc>(
                 let y = y_val.coerce_to_u32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                let mut pending = Vec::new();
-                pending.push((x, y));
-
                 let color: Color = color.into();
-                let color: Color = color.to_premultiplied_alpha(bitmap_data.transparency());
+                let color: Color =
+                    color.to_premultiplied_alpha(bitmap_data.bitmap_data().read().transparency());
 
-                let width = bitmap_data.width();
-                let height = bitmap_data.height();
-
-                let expected_color = bitmap_data.get_pixel_raw(x, y).unwrap_or_else(|| 0.into());
-
-                while !pending.is_empty() {
-                    if let Some((x, y)) = pending.pop() {
-                        if let Some(old_color) = bitmap_data.get_pixel_raw(x, y) {
-                            if old_color == expected_color {
-                                if x > 0 {
-                                    pending.push((x - 1, y));
-                                }
-                                if y > 0 {
-                                    pending.push((x, y - 1));
-                                }
-                                if x < width - 1 {
-                                    pending.push((x + 1, y))
-                                }
-                                if y < height - 1 {
-                                    pending.push((x, y + 1));
-                                }
-                                bitmap_data.set_pixel32_raw(
-                                    activation.context.gc_context,
-                                    x,
-                                    y,
-                                    color,
-                                );
-                            }
-                        }
-                    }
-                }
+                bitmap_data
+                    .bitmap_data()
+                    .write(activation.context.gc_context)
+                    .flood_fill(x, y, color);
             }
             return Ok(Value::Undefined);
         }
@@ -485,7 +417,7 @@ pub fn noise<'gc>(
 
     let channel_options = args
         .get(3)
-        .unwrap_or(&Value::Number((1 | 2 | 4) as f64))
+        .unwrap_or(&Value::Number(ChannelOptions::rgb().0 as f64))
         .coerce_to_u32(activation)?;
 
     let gray_scale = args
@@ -496,57 +428,18 @@ pub fn noise<'gc>(
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
             if let Some(random_seed_val) = args.get(0) {
-                let _random_seed = random_seed_val.coerce_to_u32(activation)?;
-
-                let width = bitmap_data.width();
-                let height = bitmap_data.height();
-                for x in 0..width {
-                    for y in 0..height {
-                        let pixel_color = if gray_scale {
-                            let gray = activation.context.rng.gen_range(low, high);
-                            Color::argb(
-                                if channel_options & 8 == 8 {
-                                    activation.context.rng.gen_range(low, high)
-                                } else {
-                                    255
-                                },
-                                gray,
-                                gray,
-                                gray,
-                            )
-                        } else {
-                            Color::argb(
-                                if channel_options & 8 == 8 {
-                                    activation.context.rng.gen_range(low, high)
-                                } else {
-                                    255
-                                },
-                                if channel_options & 1 == 1 {
-                                    activation.context.rng.gen_range(low, high)
-                                } else {
-                                    0
-                                },
-                                if channel_options & 2 == 2 {
-                                    activation.context.rng.gen_range(low, high)
-                                } else {
-                                    0
-                                },
-                                if channel_options & 4 == 4 {
-                                    activation.context.rng.gen_range(low, high)
-                                } else {
-                                    0
-                                },
-                            )
-                        };
-
-                        bitmap_data.set_pixel32_raw(
-                            activation.context.gc_context,
-                            x,
-                            y,
-                            pixel_color,
-                        );
-                    }
-                }
+                let random_seed = random_seed_val.coerce_to_u32(activation)?;
+                bitmap_data
+                    .bitmap_data()
+                    .write(activation.context.gc_context)
+                    .noise(
+                        activation.context.rng,
+                        random_seed,
+                        low,
+                        high,
+                        channel_options.into(),
+                        gray_scale,
+                    )
             }
 
             return Ok(Value::Undefined);
@@ -627,39 +520,10 @@ pub fn color_transform<'gc>(
             let end_y = (y + height) as u32;
 
             if let Some(color_transform) = color_transform.as_color_transform_object() {
-                for x in min_x..end_x.min(bitmap_data.width()) {
-                    for y in min_y..end_y.min(bitmap_data.height()) {
-                        let color = bitmap_data
-                            .get_pixel_raw(x, y)
-                            .unwrap_or_else(|| 0.into())
-                            .to_un_multiplied_alpha();
-
-                        let alpha = ((color.alpha() as f32
-                            * color_transform.get_alpha_multiplier() as f32)
-                            + color_transform.get_alpha_offset() as f32)
-                            as u8;
-                        let red = ((color.red() as f32
-                            * color_transform.get_red_multiplier() as f32)
-                            + color_transform.get_red_offset() as f32)
-                            as u8;
-                        let green = ((color.green() as f32
-                            * color_transform.get_green_multiplier() as f32)
-                            + color_transform.get_green_offset() as f32)
-                            as u8;
-                        let blue = ((color.blue() as f32
-                            * color_transform.get_blue_multiplier() as f32)
-                            + color_transform.get_blue_offset() as f32)
-                            as u8;
-
-                        bitmap_data.set_pixel32_raw(
-                            activation.context.gc_context,
-                            x,
-                            y,
-                            Color::argb(alpha, red, green, blue)
-                                .to_premultiplied_alpha(bitmap_data.transparency()),
-                        )
-                    }
-                }
+                bitmap_data
+                    .bitmap_data()
+                    .write(activation.context.gc_context)
+                    .color_transform(min_x, min_y, end_x, end_y, color_transform);
             }
 
             return Ok(Value::Undefined);
@@ -685,50 +549,10 @@ pub fn get_color_bounds_rect<'gc>(
                 let mask = mask_val.coerce_to_i32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                let mut min_x = Option::<i32>::None;
-                let mut max_x = Option::<i32>::None;
-                let mut min_y = Option::<i32>::None;
-                let mut max_y = Option::<i32>::None;
-
-                for x in 0..bitmap_data.width() {
-                    for y in 0..bitmap_data.height() {
-                        let pixel_raw: i32 = bitmap_data
-                            .get_pixel_raw(x, y)
-                            .unwrap_or_else(|| 0.into())
-                            .into();
-                        let color_matches = if find_color {
-                            (pixel_raw & mask) == color
-                        } else {
-                            (pixel_raw & mask) != color
-                        };
-
-                        if color_matches {
-                            if (x as i32) < min_x.unwrap_or(bitmap_data.width() as i32) {
-                                min_x = Some(x as i32)
-                            }
-                            if (x as i32) > max_x.unwrap_or(-1) {
-                                max_x = Some(x as i32 + 1)
-                            }
-
-                            if (y as i32) < min_y.unwrap_or(bitmap_data.height() as i32) {
-                                min_y = Some(y as i32)
-                            }
-                            if (y as i32) > max_y.unwrap_or(-1) {
-                                max_y = Some(y as i32 + 1)
-                            }
-                        }
-                    }
-                }
-
-                let min_x = min_x.unwrap_or(0);
-                let min_y = min_y.unwrap_or(0);
-                let max_x = max_x.unwrap_or(0);
-                let max_y = max_y.unwrap_or(0);
-
-                let x = min_x as u32;
-                let y = min_y as u32;
-                let w = (max_x - min_x) as u32;
-                let h = (max_y - min_y) as u32;
+                let (x, y, w, h) = bitmap_data
+                    .bitmap_data()
+                    .read()
+                    .color_bounds_rect(find_color, mask, color);
 
                 let proto = activation.context.system_prototypes.rectangle_constructor;
                 let rect =
@@ -1091,10 +915,10 @@ pub fn load_bitmap<'gc>(
 
             let pixels: Vec<i32> = bitmap.data.into();
 
-            new_bitmap_object.set_pixels(
-                activation.context.gc_context,
-                pixels.into_iter().map(|p| p.into()).collect(),
-            );
+            new_bitmap_object
+                .bitmap_data()
+                .write(activation.context.gc_context)
+                .set_pixels(pixels.into_iter().map(|p| p.into()).collect());
 
             return Ok(new_bitmap.into());
         }
