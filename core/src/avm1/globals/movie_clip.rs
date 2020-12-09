@@ -132,8 +132,7 @@ pub fn hit_test<'gc>(
             // The docs say the point is in "Stage coordinates", but actually they are in root coordinates.
             // root can be moved via _root._x etc., so we actually have to transform from root to world space.
             let point = movie_clip
-                .root()
-                .expect("AVM1 display objects must have root")
+                .avm1_root()?
                 .local_to_global((Twips::from_pixels(x), Twips::from_pixels(y)));
             let ret = if shape {
                 movie_clip.hit_test_shape(&mut activation.context, point)

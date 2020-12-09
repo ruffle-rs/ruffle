@@ -31,7 +31,7 @@ mod value;
 mod tests;
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::error::Error;
+pub use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 pub use globals::SystemPrototypes;

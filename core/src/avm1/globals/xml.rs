@@ -928,7 +928,7 @@ pub fn xml_load<'gc>(
             .context
             .navigator
             .fetch(&url, RequestOptions::get());
-        let target_clip = activation.target_clip_or_root();
+        let target_clip = activation.target_clip_or_root()?;
         let process = activation.context.load_manager.load_xml_into_node(
             activation.context.player.clone().unwrap(),
             node,
