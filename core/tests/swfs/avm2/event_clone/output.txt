@@ -1,0 +1,20 @@
+///(DynEvent is a dynamic subclass of Event that fails to override clone)
+///var e = new DynEvent("test_event", false, true);
+///e.expando = "Original expando property!"
+///e.expando;
+Original expando property!
+///var e2 = e.clone();
+///e2 === e;
+false
+///e2.hasOwnProperty('expando');
+false
+///e2.type
+test_event
+///e2.bubbles
+false
+///e2.cancelable
+true
+///e2 instanceof Event
+true
+///e2 instanceof DynEvent
+false
