@@ -1,6 +1,5 @@
 //! `EditText` display object and support code.
 use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::globals::text_field::attach_virtual_properties;
 use crate::avm1::{Avm1, AvmString, Object, StageObject, TObject, Value};
 use crate::backend::input::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
@@ -1119,12 +1118,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 Some(context.system_prototypes.text_field),
             )
             .into();
-
-            attach_virtual_properties(
-                context.gc_context,
-                object,
-                context.system_prototypes.function,
-            );
 
             text.object = Some(object);
         }
