@@ -217,6 +217,32 @@ pub fn prevent_default<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `stopPropagation`
+pub fn stop_propagation<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut evt) = this.unwrap().as_event_mut(activation.context.gc_context) {
+        evt.stop_propagation();
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `stopImmediatePropagation`
+pub fn stop_immediate_propagation<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut evt) = this.unwrap().as_event_mut(activation.context.gc_context) {
+        evt.stop_immediate_propagation();
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Event`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -268,6 +294,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "preventDefault"),
         Method::from_builtin(prevent_default),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "stopPropagation"),
+        Method::from_builtin(stop_propagation),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "stopImmediatePropagation"),
+        Method::from_builtin(stop_immediate_propagation),
     ));
 
     class

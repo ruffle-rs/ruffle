@@ -30,6 +30,20 @@ impl Into<u32> for EventPhase {
     }
 }
 
+/// How this event is allowed to propagate.
+#[derive(Copy, Clone, Collect, Debug)]
+#[collect(require_static)]
+pub enum PropagationMode {
+    /// Propagate events normally.
+    AllowPropagation,
+
+    /// Stop capturing or bubbling events.
+    StopPropagation,
+
+    /// Stop running event handlers altogether.
+    StopImmediatePropagation,
+}
+
 /// Represents data fields of an event that can be fired on an object that
 /// implements `IEventDispatcher`.
 #[derive(Clone, Collect, Debug)]
@@ -45,6 +59,9 @@ pub struct Event<'gc> {
 
     /// Whether or not the event's default response has been cancelled.
     cancelled: bool,
+
+    /// Whether or not event propagation has stopped.
+    propagation: PropagationMode,
 
     /// The object currently having it's event handlers invoked.
     current_target: Option<Object<'gc>>,
@@ -69,6 +86,7 @@ impl<'gc> Event<'gc> {
             bubbles: false,
             cancelable: false,
             cancelled: false,
+            propagation: PropagationMode::AllowPropagation,
             current_target: None,
             event_phase: EventPhase::Bubbling,
             target: None,
@@ -111,6 +129,24 @@ impl<'gc> Event<'gc> {
         if self.cancelable {
             self.cancelled = true;
         }
+    }
+
+    pub fn is_propagation_stopped(&self) -> bool {
+        !matches!(self.propagation, PropagationMode::AllowPropagation)
+    }
+
+    pub fn stop_propagation(&mut self) {
+        if !matches!(self.propagation, PropagationMode::StopImmediatePropagation) {
+            self.propagation = PropagationMode::StopPropagation;
+        }
+    }
+
+    pub fn is_propagation_stopped_immediately(&self) -> bool {
+        matches!(self.propagation, PropagationMode::StopImmediatePropagation)
+    }
+
+    pub fn stop_immediate_propagation(&mut self) {
+        self.propagation = PropagationMode::StopImmediatePropagation;
     }
 
     pub fn phase(&self) -> EventPhase {
