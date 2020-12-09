@@ -687,8 +687,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         bitmap: Bitmap,
         debug_str: &str,
     ) -> BitmapInfo {
-        self.bitmap_registry.insert(id, bitmap.clone());
-
         let extent = wgpu::Extent3d {
             width: bitmap.width,
             height: bitmap.height,
@@ -1515,7 +1513,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     data: BitmapFormat::Rgba(rgba),
                 },
                 "RAW",
-            )?
+            )
             .handle)
     }
 
