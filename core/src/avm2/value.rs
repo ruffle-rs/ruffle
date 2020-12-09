@@ -536,6 +536,25 @@ impl<'gc> Value<'gc> {
         })
     }
 
+    /// Coerce the value to a literal value / debug string.
+    ///
+    /// This matches the string formatting that appears to be in use in "debug"
+    /// contexts, where strings themselves also get quoted. Such contexts would
+    /// include things like `valueOf`/`toString` on classes that expose their
+    /// properties as part of the string.
+    pub fn coerce_to_debug_string<'a>(
+        &'a self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<AvmString<'gc>, Error> {
+        Ok(match self {
+            Value::String(s) => AvmString::new(activation.context.gc_context, format!("\"{}\"", s)),
+            Value::Object(_) => self
+                .coerce_to_primitive(Some(Hint::String), activation)?
+                .coerce_to_debug_string(activation)?,
+            _ => self.coerce_to_string(activation)?,
+        })
+    }
+
     /// Coerce the value to an Object.
     ///
     /// TODO: In ECMA-262 3rd Edition, this would also box primitive values

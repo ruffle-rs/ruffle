@@ -6,6 +6,7 @@ use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{EventObject, Object, TObject};
 use crate::avm2::scope::Scope;
+use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -152,6 +153,44 @@ pub fn clone<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `formatToString`
+pub fn format_to_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut this) = this {
+        let class_name = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+        let mut stringified_params = Vec::new();
+
+        if let Some(params) = args.get(1..) {
+            for param_name in params {
+                let param_name = QName::dynamic_name(match param_name {
+                    Value::Undefined | Value::Null => "null".into(),
+                    _ => param_name.coerce_to_string(activation)?,
+                });
+
+                let param_value = this
+                    .get_property(this, &param_name, activation)?
+                    .coerce_to_debug_string(activation)?;
+                stringified_params.push(format!(" {}={}", param_name.local_name(), param_value));
+            }
+        }
+
+        return Ok(AvmString::new(
+            activation.context.gc_context,
+            format!("[{}{}]", class_name, stringified_params.join("")),
+        )
+        .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Event`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -191,6 +230,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "clone"),
         Method::from_builtin(clone),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "formatToString"),
+        Method::from_builtin(format_to_string),
     ));
 
     class
