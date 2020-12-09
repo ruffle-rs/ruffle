@@ -160,8 +160,4 @@ impl<'gc> Event<'gc> {
     pub fn current_target(&self) -> Option<Object<'gc>> {
         self.current_target
     }
-
-    pub fn event_phase(&self) -> EventPhase {
-        self.event_phase
-    }
 }
