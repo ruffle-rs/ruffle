@@ -10,210 +10,6 @@ use crate::html::TextFormat;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
-/// Implements `TextField`
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
-pub fn get_text<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            return Ok(AvmString::new(activation.context.gc_context, text_field.text()).into());
-        }
-    }
-    Ok(Value::Undefined)
-}
-
-pub fn set_text<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            if let Some(value) = args.get(0) {
-                if let Err(err) = text_field.set_text(
-                    value.coerce_to_string(activation)?.to_string(),
-                    &mut activation.context,
-                ) {
-                    avm_error!(activation, "Error when setting TextField.text: {}", err);
-                }
-                text_field.propagate_text_binding(activation);
-            }
-        }
-    }
-    Ok(Value::Undefined)
-}
-
-pub fn get_html<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            return Ok(text_field.is_html().into());
-        }
-    }
-    Ok(Value::Undefined)
-}
-
-pub fn set_html<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            if let Some(value) = args.get(0) {
-                let current_swf_version = activation.current_swf_version();
-                text_field.set_is_html(&mut activation.context, value.as_bool(current_swf_version));
-            }
-        }
-    }
-    Ok(Value::Undefined)
-}
-
-pub fn get_text_color<'gc>(
-    this: EditText<'gc>,
-    _activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(color) = this.new_text_format().color {
-        return Ok(color.to_rgb().into());
-    }
-    Ok(Value::Undefined)
-}
-
-pub fn set_text_color<'gc>(
-    this: EditText<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    value: Value<'gc>,
-) -> Result<(), Error<'gc>> {
-    if let Ok(rgb) = value.coerce_to_u32(activation) {
-        let tf = TextFormat {
-            color: Some(swf::Color::from_rgb(rgb, 0xFF)),
-            ..TextFormat::default()
-        };
-        this.set_text_format(0, this.text_length(), tf.clone(), &mut activation.context);
-        this.set_new_text_format(tf, &mut activation.context);
-    }
-    Ok(())
-}
-
-pub fn get_html_text<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            if let Ok(text) = text_field.html_text(&mut activation.context) {
-                return Ok(AvmString::new(activation.context.gc_context, text).into());
-            }
-        }
-    }
-    Ok(Value::Undefined)
-}
-
-pub fn set_html_text<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            let text = args
-                .get(0)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_string(activation)?;
-            let _ = text_field.set_html_text(text.to_string(), &mut activation.context);
-            // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
-        }
-    }
-    Ok(Value::Undefined)
-}
-
-pub fn get_border<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            return Ok(text_field.has_border().into());
-        }
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_border<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            if let Some(value) = args.get(0) {
-                let has_border = value.as_bool(activation.current_swf_version());
-                text_field.set_has_border(activation.context.gc_context, has_border);
-            }
-        }
-    }
-    Ok(Value::Undefined)
-}
-
-pub fn get_embed_fonts<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            return Ok((!text_field.is_device_font()).into());
-        }
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_embed_fonts<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            if let Some(value) = args.get(0) {
-                let embed_fonts = value.as_bool(activation.current_swf_version());
-                text_field.set_is_device_font(&mut activation.context, !embed_fonts);
-            }
-        }
-    }
-    Ok(Value::Undefined)
-}
-
-pub fn get_length<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        if let Some(text_field) = display_object.as_edit_text() {
-            return Ok((text_field.text_length() as f64).into());
-        }
-    }
-    Ok(Value::Undefined)
-}
-
 macro_rules! with_text_field {
     ( $gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),* ) => {{
         $(
@@ -293,227 +89,12 @@ macro_rules! with_text_field_props {
     };
 }
 
-pub fn text_width<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        let metrics = etext.measure_text(&mut activation.context);
-
-        return Ok(metrics.0.to_pixels().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn text_height<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        let metrics = etext.measure_text(&mut activation.context);
-
-        return Ok(metrics.1.to_pixels().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn multiline<'gc>(
+/// Implements `TextField`
+pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        return Ok(etext.is_multiline().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_multiline<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let is_multiline = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_bool(activation.current_swf_version());
-
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        etext.set_multiline(is_multiline, &mut activation.context);
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn selectable<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        return Ok(etext.is_selectable().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_selectable<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let set_selectable = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_bool(activation.current_swf_version());
-
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        etext.set_selectable(set_selectable, &mut activation.context);
-    }
-
-    Ok(Value::Undefined)
-}
-
-fn variable<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        if let Some(variable) = etext.variable() {
-            return Ok(AvmString::new(activation.context.gc_context, variable.to_string()).into());
-        }
-    }
-
-    // Unset `variable` returns null, not undefined
-    Ok(Value::Null)
-}
-
-fn set_variable<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let variable = match args.get(0) {
-        None | Some(Value::Undefined) | Some(Value::Null) => None,
-        Some(v) => Some(v.coerce_to_string(activation)?),
-    };
-
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        etext.set_variable(variable.map(|v| v.to_string()), activation);
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn word_wrap<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        return Ok(etext.is_word_wrap().into());
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_word_wrap<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let is_word_wrap = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_bool(activation.current_swf_version());
-
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        etext.set_word_wrap(is_word_wrap, &mut activation.context);
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn auto_size<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        return Ok(match etext.autosize() {
-            AutoSizeMode::None => "none".into(),
-            AutoSizeMode::Left => "left".into(),
-            AutoSizeMode::Center => "center".into(),
-            AutoSizeMode::Right => "right".into(),
-        });
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn set_auto_size<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(etext) = this
-        .as_display_object()
-        .and_then(|dobj| dobj.as_edit_text())
-    {
-        etext.set_autosize(
-            match args.get(0).cloned().unwrap_or(Value::Undefined) {
-                Value::String(s) if s == "left" => AutoSizeMode::Left,
-                Value::String(s) if s == "center" => AutoSizeMode::Center,
-                Value::String(s) if s == "right" => AutoSizeMode::Right,
-                Value::Bool(true) => AutoSizeMode::Left,
-                _ => AutoSizeMode::None,
-            },
-            &mut activation.context,
-        );
-    }
-
     Ok(Value::Undefined)
 }
 
@@ -540,224 +121,24 @@ pub fn create_proto<'gc>(
 
     with_text_field_props!(
         object, gc_context, fn_proto,
+        "autoSize" => [auto_size, set_auto_size],
+        "border" => [border, set_border],
+        "embedFonts" => [embed_fonts, set_embed_fonts],
+        "html" => [html, set_html],
+        "htmlText" => [html_text, set_html_text],
+        "length" => [length],
+        "multiline" => [multiline, set_multiline],
+        "selectable" => [selectable, set_selectable],
+        "text" => [text, set_text],
+        "textColor" => [text_color, set_text_color],
+        "textHeight" => [text_height],
+        "textWidth" => [text_width],
         "type" => [get_type, set_type],
-        "textColor" => [get_text_color, set_text_color],
+        "variable" => [variable, set_variable],
+        "wordWrap" => [word_wrap, set_word_wrap],
     );
 
     object.into()
-}
-
-pub fn attach_virtual_properties<'gc>(
-    gc_context: MutationContext<'gc, '_>,
-    object: Object<'gc>,
-    fn_proto: Object<'gc>,
-) {
-    object.add_property(
-        gc_context,
-        "text",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_text),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_text),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        ReadOnly.into(),
-    );
-    object.add_property(
-        gc_context,
-        "html",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_html),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_html),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        ReadOnly.into(),
-    );
-    object.add_property(
-        gc_context,
-        "htmlText",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_html_text),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_html_text),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        ReadOnly.into(),
-    );
-    object.add_property(
-        gc_context,
-        "length",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_length),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        ReadOnly.into(),
-    );
-    object.add_property(
-        gc_context,
-        "textWidth",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(text_width),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        ReadOnly.into(),
-    );
-    object.add_property(
-        gc_context,
-        "textHeight",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(text_height),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        ReadOnly.into(),
-    );
-    object.add_property(
-        gc_context,
-        "multiline",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(multiline),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_multiline),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        ReadOnly.into(),
-    );
-    object.add_property(
-        gc_context,
-        "selectable",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(selectable),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_selectable),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        DontDelete | ReadOnly | DontEnum,
-    );
-    object.add_property(
-        gc_context,
-        "variable",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(variable),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_variable),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        DontDelete | ReadOnly | DontEnum,
-    );
-    object.add_property(
-        gc_context,
-        "wordWrap",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(word_wrap),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_word_wrap),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        ReadOnly.into(),
-    );
-    object.add_property(
-        gc_context,
-        "autoSize",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(auto_size),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_auto_size),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        ReadOnly.into(),
-    );
-    object.add_property(
-        gc_context,
-        "border",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_border),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_border),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        ReadOnly.into(),
-    );
-    object.add_property(
-        gc_context,
-        "embedFonts",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_embed_fonts),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_embed_fonts),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        ReadOnly.into(),
-    );
 }
 
 fn get_new_text_format<'gc>(
@@ -863,6 +244,279 @@ fn replace_text<'gc>(
     Ok(Value::Undefined)
 }
 
+fn remove_text_field<'gc>(
+    text_field: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let depth = text_field.depth();
+
+    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH {
+        // Need a parent to remove from.
+        let mut parent = if let Some(parent) = text_field.parent().and_then(|o| o.as_movie_clip()) {
+            parent
+        } else {
+            return Ok(Value::Undefined);
+        };
+
+        parent.remove_child(&mut activation.context, text_field.into(), EnumSet::all());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn text<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(AvmString::new(activation.context.gc_context, this.text()).into())
+}
+
+pub fn set_text<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if let Err(err) = this.set_text(
+        value.coerce_to_string(activation)?.to_string(),
+        &mut activation.context,
+    ) {
+        avm_error!(activation, "Error when setting TextField.text: {}", err);
+    }
+    this.propagate_text_binding(activation);
+
+    Ok(())
+}
+
+pub fn html<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.is_html().into())
+}
+
+pub fn set_html<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let current_swf_version = activation.current_swf_version();
+    this.set_is_html(&mut activation.context, value.as_bool(current_swf_version));
+    Ok(())
+}
+
+pub fn text_color<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(color) = this.new_text_format().color {
+        return Ok(color.to_rgb().into());
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn set_text_color<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if let Ok(rgb) = value.coerce_to_u32(activation) {
+        let tf = TextFormat {
+            color: Some(swf::Color::from_rgb(rgb, 0xFF)),
+            ..TextFormat::default()
+        };
+        this.set_text_format(0, this.text_length(), tf.clone(), &mut activation.context);
+        this.set_new_text_format(tf, &mut activation.context);
+    }
+    Ok(())
+}
+
+pub fn html_text<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Ok(text) = this.html_text(&mut activation.context) {
+        return Ok(AvmString::new(activation.context.gc_context, text).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_html_text<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let text = value.coerce_to_string(activation)?;
+    let _ = this.set_html_text(text.to_string(), &mut activation.context);
+    // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
+    Ok(())
+}
+
+pub fn border<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.has_border().into())
+}
+
+pub fn set_border<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let has_border = value.as_bool(activation.current_swf_version());
+    this.set_has_border(activation.context.gc_context, has_border);
+    Ok(())
+}
+
+pub fn embed_fonts<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok((!this.is_device_font()).into())
+}
+
+pub fn set_embed_fonts<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let embed_fonts = value.as_bool(activation.current_swf_version());
+    this.set_is_device_font(&mut activation.context, !embed_fonts);
+    Ok(())
+}
+
+pub fn length<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok((this.text_length() as f64).into())
+}
+
+pub fn text_width<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let metrics = this.measure_text(&mut activation.context);
+    Ok(metrics.0.to_pixels().into())
+}
+
+pub fn text_height<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let metrics = this.measure_text(&mut activation.context);
+    Ok(metrics.1.to_pixels().into())
+}
+
+pub fn multiline<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.is_multiline().into())
+}
+
+pub fn set_multiline<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let is_multiline = value.as_bool(activation.current_swf_version());
+    this.set_multiline(is_multiline, &mut activation.context);
+    Ok(())
+}
+
+pub fn selectable<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.is_selectable().into())
+}
+
+pub fn set_selectable<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let set_selectable = value.as_bool(activation.current_swf_version());
+    this.set_selectable(set_selectable, &mut activation.context);
+    Ok(())
+}
+
+fn variable<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(variable) = this.variable() {
+        return Ok(AvmString::new(activation.context.gc_context, variable.to_string()).into());
+    }
+
+    // Unset `variable` returns null, not undefined
+    Ok(Value::Null)
+}
+
+fn set_variable<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let variable = match value {
+        Value::Undefined | Value::Null => None,
+        v => Some(v.coerce_to_string(activation)?),
+    };
+    this.set_variable(variable.map(|v| v.to_string()), activation);
+    Ok(())
+}
+
+pub fn word_wrap<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.is_word_wrap().into())
+}
+
+pub fn set_word_wrap<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let is_word_wrap = value.as_bool(activation.current_swf_version());
+    this.set_word_wrap(is_word_wrap, &mut activation.context);
+    Ok(())
+}
+
+pub fn auto_size<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(match this.autosize() {
+        AutoSizeMode::None => "none".into(),
+        AutoSizeMode::Left => "left".into(),
+        AutoSizeMode::Center => "center".into(),
+        AutoSizeMode::Right => "right".into(),
+    })
+}
+
+pub fn set_auto_size<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    this.set_autosize(
+        match value {
+            Value::String(s) if s == "left" => AutoSizeMode::Left,
+            Value::String(s) if s == "center" => AutoSizeMode::Center,
+            Value::String(s) if s == "right" => AutoSizeMode::Right,
+            Value::Bool(true) => AutoSizeMode::Left,
+            _ => AutoSizeMode::None,
+        },
+        &mut activation.context,
+    );
+
+    Ok(())
+}
+
 pub fn get_type<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
@@ -889,25 +543,4 @@ pub fn set_type<'gc>(
         value => log::warn!("Invalid TextField.type: {}", value),
     };
     Ok(())
-}
-
-fn remove_text_field<'gc>(
-    text_field: EditText<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let depth = text_field.depth();
-
-    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH {
-        // Need a parent to remove from.
-        let mut parent = if let Some(parent) = text_field.parent().and_then(|o| o.as_movie_clip()) {
-            parent
-        } else {
-            return Ok(Value::Undefined);
-        };
-
-        parent.remove_child(&mut activation.context, text_field.into(), EnumSet::all());
-    }
-
-    Ok(Value::Undefined)
 }
