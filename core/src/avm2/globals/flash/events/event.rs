@@ -243,6 +243,19 @@ pub fn stop_immediate_propagation<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `toString`
+pub fn to_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        return this.value_of(activation.context.gc_context);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Event`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -302,6 +315,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "stopImmediatePropagation"),
         Method::from_builtin(stop_immediate_propagation),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "toString"),
+        Method::from_builtin(to_string),
     ));
 
     class
