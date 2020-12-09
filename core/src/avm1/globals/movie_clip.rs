@@ -13,7 +13,7 @@ use crate::avm_error;
 use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{
-    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer, Bitmap
+    Bitmap, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
@@ -220,7 +220,7 @@ pub fn create_proto<'gc>(
 }
 
 fn attach_bitmap<'gc>(
-    mut movie_clip: MovieClip<'gc>,
+    movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
