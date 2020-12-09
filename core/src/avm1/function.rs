@@ -349,13 +349,7 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_root {
-                    frame.set_local_register(
-                        preload_r,
-                        af.base_clip
-                            .root()
-                            .expect("AVM1 display objects must have root")
-                            .object(),
-                    );
+                    frame.set_local_register(preload_r, af.base_clip.avm1_root()?.object());
                     preload_r += 1;
                 }
 

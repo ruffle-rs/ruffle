@@ -683,7 +683,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let depth = self.context.avm1.pop();
         let target = self.context.avm1.pop();
         let source = self.context.avm1.pop();
-        let start_clip = self.target_clip_or_root();
+        let start_clip = self.target_clip_or_root()?;
         let source_clip = self.resolve_target_display_object(start_clip, source, true)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
@@ -751,7 +751,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_call(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Runs any actions on the given frame.
         let arg = self.context.avm1.pop();
-        let target = self.target_clip_or_root();
+        let target = self.target_clip_or_root()?;
 
         // The parameter can be a frame # or a path to a movie clip with a frame number.
         let mut call_frame = None;
@@ -806,7 +806,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let variable = self.get_variable(&fn_name)?;
 
         let result = variable.call_with_default_this(
-            self.target_clip_or_root().object().coerce_to_object(self),
+            self.target_clip_or_root()?.object().coerce_to_object(self),
             &fn_name,
             self,
             None,
@@ -839,7 +839,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         match method_name {
             Value::Undefined | Value::Null => {
-                let this = self.target_clip_or_root().object().coerce_to_object(self);
+                let this = self.target_clip_or_root()?.object().coerce_to_object(self);
                 let result = object.call("[Anonymous]", self, this, None, &args)?;
                 self.context.avm1.push(result);
                 self.continue_if_base_clip_exists()
@@ -918,7 +918,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             params,
             scope,
             constant_pool,
-            self.target_clip_or_root(),
+            self.target_clip_or_root()?,
         );
         let prototype = ScriptObject::object(
             self.context.gc_context,
@@ -1268,11 +1268,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             if let Value::Object(target) = target {
                 target.as_display_object()
             } else {
-                let start = self.target_clip_or_root();
+                let start = self.target_clip_or_root()?;
                 self.resolve_target_display_object(start, target.clone(), true)?
             }
         } else {
-            Some(self.target_clip_or_root())
+            Some(self.target_clip_or_root()?)
         };
 
         if is_load_vars {
@@ -1798,7 +1798,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_remove_sprite(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.context.avm1.pop();
-        let start_clip = self.target_clip_or_root();
+        let start_clip = self.target_clip_or_root()?;
         let target_clip = self.resolve_target_display_object(start_clip, target, true)?;
 
         if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
@@ -1868,9 +1868,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_set_target(&mut self, target: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
         let base_clip = self.base_clip();
         let new_target_clip;
-        let root = base_clip
-            .root()
-            .expect("AVM1 display objects must have root");
+        let root = base_clip.avm1_root()?;
         let start = base_clip.object().coerce_to_object(self);
         if target.is_empty() {
             new_target_clip = Some(base_clip);
@@ -1898,15 +1896,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.set_target_clip(new_target_clip);
 
         let scope = self.scope_cell();
-        let clip_obj = self
-            .target_clip()
-            .unwrap_or_else(|| {
-                self.base_clip()
-                    .root()
-                    .expect("AVM1 display objects must have root")
-            })
-            .object()
-            .coerce_to_object(self);
+        let clip_obj = self.target_clip_or_root()?.object().coerce_to_object(self);
 
         self.set_scope(Scope::new_target_scope(
             scope,
@@ -1944,15 +1934,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
 
         let scope = self.scope_cell();
-        let clip_obj = self
-            .target_clip()
-            .unwrap_or_else(|| {
-                self.base_clip()
-                    .root()
-                    .expect("AVM1 display objects must have root")
-            })
-            .object()
-            .coerce_to_object(self);
+        let clip_obj = self.target_clip_or_root()?.object().coerce_to_object(self);
+
         self.set_scope(Scope::new_target_scope(
             scope,
             clip_obj,
@@ -1971,7 +1954,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_start_drag(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.context.avm1.pop();
-        let start_clip = self.target_clip_or_root();
+        let start_clip = self.target_clip_or_root()?;
         let display_object = self.resolve_target_display_object(start_clip, target, true)?;
         if let Some(display_object) = display_object {
             let lock_center = self.context.avm1.pop();
@@ -2450,7 +2433,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(None);
         }
 
-        let root = start.root().expect("AVM1 display objects must have root");
+        let root = start.avm1_root()?;
         let start = start.object().coerce_to_object(self);
         Ok(self
             .resolve_target_path(root, start, &path, false)?
@@ -2541,7 +2524,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if first_element && name == "this" {
                     self.this_cell().into()
                 } else if first_element && name == "_root" {
-                    self.root_object()
+                    self.root_object()?
                 } else {
                     // Get the value from the object.
                     // Resolves display object instances first, then local variables.
@@ -2605,7 +2588,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) = self.resolve_target_path(
-                    start.root().expect("AVM1 display objects must have root"),
+                    start.avm1_root()?,
                     *scope.read().locals(),
                     path,
                     true,
@@ -2650,7 +2633,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// scope chain.
     pub fn get_variable<'s>(&mut self, path: &'s str) -> Result<CallableValue<'gc>, Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
-        let start = self.target_clip_or_root();
+        let start = self.target_clip_or_root()?;
 
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
@@ -2676,7 +2659,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) = self.resolve_target_path(
-                    start.root().expect("AVM1 display objects must have root"),
+                    start.avm1_root()?,
                     *scope.read().locals(),
                     path,
                     true,
@@ -2697,7 +2680,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) = self.resolve_target_path(
-                    start.root().expect("AVM1 display objects must have root"),
+                    start.avm1_root()?,
                     *scope.read().locals(),
                     path,
                     false,
@@ -2737,7 +2720,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// name and is set on the scope chain as usual.
     pub fn set_variable<'s>(&mut self, path: &'s str, value: Value<'gc>) -> Result<(), Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
-        let start = self.target_clip_or_root();
+        let start = self.target_clip_or_root()?;
 
         // If the target clip is invalid, we default to root for the variable path.
         if path.is_empty() {
@@ -2759,7 +2742,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 if let Some(object) = self.resolve_target_path(
-                    start.root().expect("AVM1 display objects must have root"),
+                    start.avm1_root()?,
                     *scope.read().locals(),
                     path,
                     true,
@@ -2810,20 +2793,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Actions that affect `root` after an invalid `tellTarget` will use this.
     ///
     /// The `root` is determined relative to the base clip that defined the
-    pub fn target_clip_or_root(&self) -> DisplayObject<'gc> {
-        self.target_clip().unwrap_or_else(|| {
-            self.base_clip()
-                .root()
-                .expect("AVM1 display objects must have root")
-        })
+    pub fn target_clip_or_root(&self) -> Result<DisplayObject<'gc>, Error<'gc>> {
+        if let Some(target) = self.target_clip() {
+            return Ok(target);
+        }
+
+        self.base_clip().avm1_root()
     }
 
     /// Obtain the value of `_root`.
-    pub fn root_object(&self) -> Value<'gc> {
-        self.base_clip()
-            .root()
-            .expect("AVM1 display objects must have root")
-            .object()
+    pub fn root_object(&self) -> Result<Value<'gc>, Error<'gc>> {
+        Ok(self.base_clip().avm1_root()?.object())
     }
 
     /// Get the currently executing SWF version.

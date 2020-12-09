@@ -1,4 +1,6 @@
-use crate::avm1::{Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value};
+use crate::avm1::{
+    Error as Avm1Error, Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value,
+};
 use crate::avm2::{TObject as Avm2TObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
@@ -966,6 +968,16 @@ pub trait TDisplayObject<'gc>:
                 None
             }
         })
+    }
+
+    /// Obtain the top-most parent of the display tree hierarchy, or some kind
+    /// of an error.
+    ///
+    /// AVM1 cannot normally access rootless display objects, so this will
+    /// generate an AVM1 runtime error (which might also be unexpected, but
+    /// less unexpected than a panic).
+    fn avm1_root(&self) -> Result<DisplayObject<'gc>, Avm1Error<'gc>> {
+        self.root().ok_or(Avm1Error::InvalidDisplayObjectHierarchy)
     }
 
     /// Assigns a default instance name `instanceN` to this object.

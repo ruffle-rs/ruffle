@@ -81,7 +81,7 @@ pub fn define_display_object_proto<'gc>(
         "_root",
         FunctionObject::function(
             gc_context,
-            Executable::Native(|activation, _this, _args| Ok(activation.root_object())),
+            Executable::Native(|activation, _this, _args| activation.root_object()),
             Some(fn_proto),
             fn_proto,
         ),
