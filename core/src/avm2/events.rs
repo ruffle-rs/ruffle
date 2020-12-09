@@ -103,6 +103,16 @@ impl<'gc> Event<'gc> {
         self.cancelable = cancelable;
     }
 
+    pub fn is_cancelled(&self) -> bool {
+        self.cancelled
+    }
+
+    pub fn cancel(&mut self) {
+        if self.cancelable {
+            self.cancelled = true;
+        }
+    }
+
     pub fn phase(&self) -> EventPhase {
         self.event_phase
     }

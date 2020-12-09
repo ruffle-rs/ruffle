@@ -191,6 +191,32 @@ pub fn format_to_string<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `isDefaultPrevented`
+pub fn is_default_prevented<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(evt) = this.unwrap().as_event() {
+        return Ok(evt.is_cancelled().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `preventDefault`
+pub fn prevent_default<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut evt) = this.unwrap().as_event_mut(activation.context.gc_context) {
+        evt.cancel();
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Event`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -234,6 +260,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "formatToString"),
         Method::from_builtin(format_to_string),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "isDefaultPrevented"),
+        Method::from_builtin(is_default_prevented),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "preventDefault"),
+        Method::from_builtin(prevent_default),
     ));
 
     class
