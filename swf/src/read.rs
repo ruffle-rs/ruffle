@@ -21,6 +21,7 @@ use std::io::{self, Read};
 ///
 /// # Example
 /// ```
+/// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
 /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
 /// let swf = swf::read_swf(&data[..]).unwrap();
 /// println!("Number of frames: {}", swf.header.num_frames);
@@ -74,6 +75,7 @@ pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
 ///
 /// # Example
 /// ```
+/// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
 /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
 /// let swf_stream = swf::read_swf_header(&data[..]).unwrap();
 /// println!("FPS: {}", swf_stream.header.frame_rate);
@@ -367,6 +369,7 @@ impl<R: Read> Reader<R> {
     /// Reads the next SWF tag from the stream.
     /// # Example
     /// ```
+    /// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
     /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
     /// let mut swf_stream = swf::read_swf_header(&data[..]).unwrap();
     /// while let Ok(tag) = swf_stream.reader.read_tag() {
