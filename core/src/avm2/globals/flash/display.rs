@@ -6,4 +6,5 @@ pub mod framelabel;
 pub mod interactiveobject;
 pub mod movieclip;
 pub mod scene;
+pub mod simplebutton;
 pub mod sprite;

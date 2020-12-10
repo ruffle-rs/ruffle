@@ -491,6 +491,19 @@ pub fn load_player_globals<'gc>(
         .system_prototypes
         .as_mut()
         .unwrap()
+        .movieclip = class(
+        activation,
+        flash::display::simplebutton::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
         .framelabel = class(
         activation,
         flash::display::framelabel::create_class(mc),
