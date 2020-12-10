@@ -321,6 +321,295 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         Method::from_builtin(to_string),
     ));
 
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "ACTIVATE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("activate".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "ADDED"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("added".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "ADDED_TO_STAGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("addedToStage".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "BROWSER_ZOOM_CHANGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("browserZoomChange".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CANCEL"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("cancel".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CHANGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("change".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CHANNEL_MESSAGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("channelMessage".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CHANNEL_STATE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("channelState".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CLEAR"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("clear".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CLOSE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("close".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CLOSING"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("closing".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "COMPLETE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("complete".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CONNECT"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("connect".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CONTEXT3D_CREATE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("context3DCreate".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "COPY"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("copy".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "CUT"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("cut".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "DEACTIVATE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("deactivate".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "DISPLAYING"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("displaying".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "ENTER_FRAME"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("enterFrame".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "EXIT_FRAME"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("exitFrame".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "EXITING"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("exiting".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "FRAME_CONSTRUCTED"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("frameConstructed".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "FRAME_LABEL"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("frameLabel".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "FULLSCREEN"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("fullScreen".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "HTML_BOUNDS_CHANGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("htmlBoundsChange".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "HTML_DOM_INITIALIZE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("htmlDOMInitialize".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "HTML_RENDER"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("htmlRender".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "ID3"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("id3".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "INIT"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("init".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "LOCATION_CHANGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("locationChange".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "MOUSE_LEAVE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("mouseLeave".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "NETWORK_CHANGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("networkChange".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "OPEN"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("open".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "PASTE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("paste".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "PREPARING"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("preparing".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "REMOVED"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("removed".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "REMOVED_FROM_STAGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("removedFromStage".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "RENDER"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("render".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "RESIZE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("resize".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "SCROLL"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("scroll".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "SELECT"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("select".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "SELECT_ALL"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("selectAll".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "SOUND_COMPLETE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("soundComplete".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "STANDARD_ERROR_CLOSE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("standardErrorClose".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "STANDARD_INPUT_CLOSE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("standardInputClose".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "STANDARD_OUTPUT_CLOSE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("standardOutputClose".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "SUSPEND"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("suspend".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "TAB_CHILDREN_CHANGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("tabChildrenChange".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "TAB_ENABLED_CHANGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("tabEnabledChange".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "TAB_INDEX_CHANGE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("tabIndexChange".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(
+            Namespace::public_namespace(),
+            "TEXT_INTERACTION_MODE_CHANGE",
+        ),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("textInteractionModeChange".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "TEXTURE_READY"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("textureReady".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "UNLOAD"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("unload".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "USER_IDLE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("userIdle".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "USER_PRESENT"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("userPresent".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "VIDEO_FRAME"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("videoFrame".into()),
+    ));
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public_namespace(), "WORKER_STATE"),
+        QName::new(Namespace::public_namespace(), "String").into(),
+        Some("workerState".into()),
+    ));
+
     class
 }
 
