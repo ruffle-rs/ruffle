@@ -254,6 +254,16 @@ export class RuffleObject extends RufflePlayer {
             }
         }
 
+        // Avoid copying objects-inside-objects to avoid double polyfilling.
+        // This may happen when Internet Explorer's conditional comments are used.
+        for (const objectElem of Array.from(
+            elem.getElementsByTagName("object")
+        )) {
+            if (RuffleObject.isInterdictable(objectElem)) {
+                objectElem.remove();
+            }
+        }
+
         ruffleObj.copyElement(elem);
 
         return ruffleObj;
