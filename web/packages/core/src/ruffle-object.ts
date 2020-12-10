@@ -114,7 +114,7 @@ export class RuffleObject extends RufflePlayer {
                             new URL(url, window.location.href).origin))
             );
 
-            // Kick off the SWF download.
+            //Kick off the SWF download.
             const options: URLLoadOptions = { url };
             if (parameters) {
                 options.parameters = parameters;
@@ -179,30 +179,13 @@ export class RuffleObject extends RufflePlayer {
      * Checks if the given element may be polyfilled with this one.
      *
      * @param elem Element to check.
-     * @param depth Index of the child element to check, -1 to only check the parent.
-     * @returns An HTMLElement if the element looks like a flash object.
+     * @returns True if the element looks like a flash object.
      */
-    static isInterdictable(
-        elem: HTMLElement,
-        depth?: number
-    ): HTMLElement | null {
-        // Don't polyfill if there's already a <ruffle-*> element inside the <object>.
-        if (
-            elem.getElementsByTagName("ruffle-object").length > 0 ||
-            elem.getElementsByTagName("ruffle-embed").length > 0
-        ) {
-            return null;
+    static isInterdictable(elem: HTMLElement): boolean {
+        // Don't polyfill if there's already a <ruffle-embed> inside the <object>.
+        if (elem.getElementsByTagName("ruffle-embed").length > 0) {
+            return false;
         }
-
-        // Check for <object> children, start giving priority to the deepest element, if any.
-        // This usually happens when Internet Explorer's conditional comments are used.
-        const parent = elem;
-        const objects = parent.getElementsByTagName("object");
-        depth = depth ?? objects.length - 1;
-        if (depth >= 0) {
-            elem = objects[depth] ?? parent;
-        }
-
         // Don't polyfill if no movie specified.
         const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
         const params = paramsOf(elem);
@@ -214,7 +197,7 @@ export class RuffleObject extends RufflePlayer {
             isSwf = isSwfFilename(params.movie);
         } else {
             // Don't polyfill when no file is specified.
-            return null;
+            return false;
         }
 
         // Check ActiveX class ID.
@@ -227,12 +210,10 @@ export class RuffleObject extends RufflePlayer {
             // Only polyfill this <object> if it doesn't contain a polyfillable <embed>.
             return !Array.from(elem.getElementsByTagName("embed")).some(
                 RuffleEmbed.isInterdictable
-            )
-                ? elem
-                : null;
+            );
         } else if (classid != null && classid !== "") {
             // Non-Flash classid.
-            return null;
+            return false;
         }
 
         // Check for MIME type.
@@ -243,20 +224,13 @@ export class RuffleObject extends RufflePlayer {
             type === FLASH7_AND_8_MIMETYPE.toLowerCase() ||
             type === FLASH_MOVIE_MIMETYPE.toLowerCase()
         ) {
-            return elem;
+            return true;
         } else if (type != null && type !== "") {
-            return null;
+            return false;
         }
 
         // If no MIME/class type is specified, polyfill if movie is an SWF file.
-        if (isSwf) {
-            return elem;
-        }
-
-        // Element cannot be polyfilled, check for the next <object> child, if any.
-        return depth >= 0
-            ? RuffleObject.isInterdictable(parent, --depth)
-            : null;
+        return isSwf;
     }
 
     /**

@@ -35,27 +35,26 @@ let embeds: HTMLCollectionOf<HTMLElement>;
 function replaceFlashInstances(): void {
     try {
         // Create live collections to track embed tags.
-        objects = objects ?? document.getElementsByTagName("object");
-        embeds = embeds ?? document.getElementsByTagName("embed");
+        objects = objects || document.getElementsByTagName("object");
+        embeds = embeds || document.getElementsByTagName("embed");
 
         // Replace <object> first, because <object> often wraps <embed>.
-        for (const obj of Array.from(objects)) {
-            const elem = RuffleObject.isInterdictable(obj);
-            if (elem) {
+        for (const elem of Array.from(objects)) {
+            if (RuffleObject.isInterdictable(elem)) {
                 const ruffleObject = RuffleObject.fromNativeObjectElement(elem);
                 elem.replaceWith(ruffleObject);
             }
         }
-        for (const emb of Array.from(embeds)) {
-            const elem = RuffleEmbed.isInterdictable(emb);
-            if (elem) {
-                const ruffleEmbed = RuffleEmbed.fromNativeEmbedElement(elem);
-                elem.replaceWith(ruffleEmbed);
+        for (const elem of Array.from(embeds)) {
+            if (RuffleEmbed.isInterdictable(elem)) {
+                const ruffleObject = RuffleEmbed.fromNativeEmbedElement(elem);
+                elem.replaceWith(ruffleObject);
             }
         }
     } catch (err) {
         console.error(
-            `Serious error encountered when polyfilling native Flash elements: ${err}`
+            "Serious error encountered when polyfilling native Flash elements: " +
+                err
         );
     }
 }

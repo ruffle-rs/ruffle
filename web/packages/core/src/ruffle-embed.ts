@@ -105,11 +105,11 @@ export class RuffleEmbed extends RufflePlayer {
      * Checks if the given element may be polyfilled with this one.
      *
      * @param elem Element to check.
-     * @returns An HTMLElement if the element looks like a flash embed.
+     * @returns True if the element looks like a flash embed.
      */
-    static isInterdictable(elem: HTMLElement): HTMLElement | null {
+    static isInterdictable(elem: HTMLElement): boolean {
         if (!elem.getAttribute("src")) {
-            return null;
+            return false;
         }
         const type = elem.getAttribute("type")?.toLowerCase();
         if (
@@ -118,12 +118,12 @@ export class RuffleEmbed extends RufflePlayer {
             type === FLASH7_AND_8_MIMETYPE.toLowerCase() ||
             type === FLASH_MOVIE_MIMETYPE.toLowerCase()
         ) {
-            return elem;
+            return true;
         } else if (type == null || type === "") {
-            return isSwfFilename(elem.getAttribute("src")) ? elem : null;
+            return isSwfFilename(elem.getAttribute("src"));
         }
 
-        return null;
+        return false;
     }
 
     /**
