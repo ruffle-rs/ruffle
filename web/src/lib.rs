@@ -450,12 +450,16 @@ impl Ruffle {
 
             // Create player mouse down handler.
             {
+                let window = window.clone();
                 let player_mouse_down_callback =
                     Closure::wrap(Box::new(move |_js_event: PointerEvent| {
-                        INSTANCES.with(move |instances| {
+                        INSTANCES.with(|instances| {
                             let instances = instances.borrow();
                             if let Some(instance) = instances.get(index) {
                                 instance.borrow_mut().has_focus = true;
+                                // Ensure the parent window gets focus. This is necessary for events
+                                // to be received when the player is inside a frame.
+                                let _ = window.focus();
                             }
                         });
                     }) as Box<dyn FnMut(PointerEvent)>);
