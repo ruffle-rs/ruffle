@@ -421,7 +421,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
                     context.action_queue.queue_actions(
                         self_display_object,
                         ActionType::Method {
-                            object: object,
+                            object,
                             name,
                             args: vec![],
                         },
