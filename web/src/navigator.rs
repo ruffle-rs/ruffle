@@ -1,5 +1,4 @@
 //! Navigator backend for web
-
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
     url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
@@ -8,6 +7,7 @@ use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
 use std::time::Duration;
+use url::Url;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{window, Blob, BlobPropertyBag, Performance, Request, RequestInit, Response};
@@ -15,16 +15,18 @@ use web_sys::{window, Blob, BlobPropertyBag, Performance, Request, RequestInit, 
 pub struct WebNavigatorBackend {
     performance: Performance,
     start_time: f64,
+    upgrade_to_https: bool,
 }
 
 impl WebNavigatorBackend {
-    pub fn new() -> Self {
+    pub fn new(upgrade_to_https: bool) -> Self {
         let window = web_sys::window().expect("window()");
         let performance = window.performance().expect("window.performance()");
 
         WebNavigatorBackend {
             start_time: performance.now(),
             performance,
+            upgrade_to_https,
         }
     }
 }
@@ -37,6 +39,12 @@ impl NavigatorBackend for WebNavigatorBackend {
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
         if let Some(window) = window() {
+            let url = if let Ok(parsed_url) = Url::parse(&url) {
+                self.pre_process_url(parsed_url).to_string()
+            } else {
+                url.to_string()
+            };
+
             //TODO: Should we return a result for failed opens? Does Flash care?
             #[allow(unused_must_use)]
             match (vars_method, window_spec) {
@@ -95,7 +103,12 @@ impl NavigatorBackend for WebNavigatorBackend {
     }
 
     fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
-        let url = url.to_string();
+        let url = if let Ok(parsed_url) = Url::parse(url) {
+            self.pre_process_url(parsed_url).to_string()
+        } else {
+            url.to_string()
+        };
+
         Box::pin(async move {
             let mut init = RequestInit::new();
 
@@ -171,5 +184,12 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
 
         url.into()
+    }
+
+    fn pre_process_url(&self, mut url: Url) -> Url {
+        if self.upgrade_to_https && url.scheme() == "http" && url.set_scheme("https").is_err() {
+            log::error!("Url::set_scheme failed on: {}", url);
+        }
+        url
     }
 }

@@ -76,6 +76,10 @@ struct Opt {
     /// (Optional) Proxy to use when loading movies via URL
     #[clap(long, case_insensitive = true)]
     proxy: Option<Url>,
+
+    /// (Optional) Replace all embedded http URLs with https
+    #[clap(long, case_insensitive = true, takes_value = false)]
+    upgrade_to_https: bool,
 }
 
 #[cfg(feature = "render_trace")]
@@ -207,6 +211,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         chan,
         event_loop.create_proxy(),
         opt.proxy,
+        opt.upgrade_to_https,
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let storage = Box::new(DiskStorageBackend::new(

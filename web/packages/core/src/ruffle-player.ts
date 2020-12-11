@@ -314,7 +314,9 @@ export class RufflePlayer extends HTMLElement {
         this.instance = new ruffleConstructor(
             this.container,
             this,
-            this.allowScriptAccess
+            this.allowScriptAccess,
+            config.upgradeToHttps !== false &&
+                window.location.protocol === "https:"
         );
         console.log("New Ruffle instance created.");
 
