@@ -1,0 +1,11 @@
+///testfunc.apply(null, ["arg1", "arg2", "arg3"]);
+arg1
+arg2
+arg3
+///Array.prototype[1] = "hole";
+///var a = [];
+///a[2] = "not a hole";
+///testfunc.apply(null, a);
+undefined
+hole
+not a hole

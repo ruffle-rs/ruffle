@@ -113,7 +113,7 @@ pub fn concat<'gc>(
 }
 
 /// Resolves array holes.
-fn resolve_array_hole<'gc>(
+pub fn resolve_array_hole<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     i: usize,
