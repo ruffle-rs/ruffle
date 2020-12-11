@@ -115,6 +115,7 @@ impl Ruffle {
         parent: HtmlElement,
         js_player: JavascriptPlayer,
         allow_script_access: bool,
+        upgrade_to_https: bool,
     ) -> Result<Ruffle, JsValue> {
         if RUFFLE_GLOBAL_PANIC.is_completed() {
             // If an actual panic happened, then we can't trust the state it left us in.
@@ -122,7 +123,7 @@ impl Ruffle {
             return Err("Ruffle is panicking!".into());
         }
         set_panic_handler();
-        Ruffle::new_internal(parent, js_player, allow_script_access)
+        Ruffle::new_internal(parent, js_player, allow_script_access, upgrade_to_https)
             .map_err(|_| "Error creating player".into())
     }
 
@@ -284,6 +285,7 @@ impl Ruffle {
         parent: HtmlElement,
         js_player: JavascriptPlayer,
         allow_script_access: bool,
+        upgrade_to_https: bool,
     ) -> Result<Ruffle, Box<dyn Error>> {
         let _ = console_log::init_with_level(log::Level::Trace);
 
@@ -296,7 +298,7 @@ impl Ruffle {
             .into_js_result()?;
 
         let audio = Box::new(WebAudioBackend::new()?);
-        let navigator = Box::new(WebNavigatorBackend::new());
+        let navigator = Box::new(WebNavigatorBackend::new(upgrade_to_https));
         let input = Box::new(WebInputBackend::new(&canvas));
         let locale = Box::new(WebLocaleBackend::new());
 

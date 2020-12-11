@@ -34,6 +34,8 @@ pub struct ExternalNavigatorBackend {
 
     // Client to use for network requests
     client: Option<Rc<HttpClient>>,
+
+    upgrade_to_https: bool,
 }
 
 impl ExternalNavigatorBackend {
@@ -44,6 +46,7 @@ impl ExternalNavigatorBackend {
         channel: Sender<OwnedFuture<(), Error>>,
         event_loop: EventLoopProxy<RuffleEvent>,
         proxy: Option<Url>,
+        upgrade_to_https: bool,
     ) -> Self {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
@@ -58,6 +61,7 @@ impl ExternalNavigatorBackend {
             client,
             movie_url,
             start_time: Instant::now(),
+            upgrade_to_https,
         }
     }
 }
@@ -96,9 +100,9 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     }
                 }
 
-                parsed_url.into_string()
+                self.pre_process_url(parsed_url.as_str()).to_string()
             }
-            None => url,
+            None => self.pre_process_url(url.as_str()).to_string(),
         };
 
         match webbrowser::open(&modified_url) {
@@ -107,25 +111,33 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         };
     }
 
-    fn time_since_launch(&mut self) -> Duration {
-        Instant::now().duration_since(self.start_time)
-    }
-
     fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
         let full_url = self.movie_url.clone().join(url).unwrap();
+        let processed_url = match Url::parse(&self.pre_process_url(full_url.as_str())) {
+            Ok(parsed_url) => parsed_url,
+            Err(e) => {
+                log::warn!(
+                    "Could not parse pre_processed URL because of {}, the source URL was: {}",
+                    e,
+                    full_url.as_str()
+                );
+                full_url
+            }
+        };
 
         let client = self.client.clone();
-        match full_url.scheme() {
+
+        match processed_url.scheme() {
             "file" => Box::pin(async move {
-                fs::read(full_url.to_file_path().unwrap()).map_err(Error::NetworkError)
+                fs::read(processed_url.to_file_path().unwrap()).map_err(Error::NetworkError)
             }),
             _ => Box::pin(async move {
                 let client = client.ok_or(Error::NetworkUnavailable)?;
 
                 let request = match options.method() {
-                    NavigationMethod::GET => Request::get(full_url.to_string()),
-                    NavigationMethod::POST => Request::post(full_url.to_string()),
+                    NavigationMethod::GET => Request::get(processed_url.to_string()),
+                    NavigationMethod::POST => Request::post(processed_url.to_string()),
                 };
 
                 let (body_data, _) = options.body().clone().unwrap_or_default();
@@ -143,6 +155,10 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         }
     }
 
+    fn time_since_launch(&mut self) -> Duration {
+        Instant::now().duration_since(self.start_time)
+    }
+
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
         self.channel.send(future).expect("working channel send");
 
@@ -157,6 +173,14 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         let relative = self.movie_url.join(url);
         if let Ok(relative) = relative {
             relative.into_string().into()
+        } else {
+            url.into()
+        }
+    }
+
+    fn pre_process_url<'a>(&self, url: &'a str) -> Cow<'a, str> {
+        if self.upgrade_to_https && url.starts_with("http://") {
+            url.replace("http://", "https://").into()
         } else {
             url.into()
         }
