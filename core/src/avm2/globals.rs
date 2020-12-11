@@ -472,15 +472,9 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
-    activation
-        .context
-        .avm2
-        .system_prototypes
-        .as_mut()
-        .unwrap()
-        .movieclip = class(
+    class(
         activation,
-        flash::display::movieclip::create_class(mc),
+        flash::display::simplebutton::create_class(mc),
         implicit_deriver,
         domain,
         script,
@@ -493,7 +487,7 @@ pub fn load_player_globals<'gc>(
         .unwrap()
         .movieclip = class(
         activation,
-        flash::display::simplebutton::create_class(mc),
+        flash::display::movieclip::create_class(mc),
         implicit_deriver,
         domain,
         script,
