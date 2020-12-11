@@ -308,7 +308,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
-            exec.exec(receiver, arguments, activation, base_proto)
+            exec.exec(receiver, arguments, activation, base_proto, self.into())
         } else {
             Err("Not a callable function!".into())
         }

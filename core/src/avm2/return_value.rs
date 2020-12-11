@@ -1,8 +1,7 @@
 //! Return value enum
 
 use crate::avm2::activation::Activation;
-use crate::avm2::function::Executable;
-use crate::avm2::object::Object;
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::{Error, Value};
 use std::fmt;
 
@@ -35,7 +34,7 @@ pub enum ReturnValue<'gc> {
     /// This exists for functions that do need to reference the result of user
     /// code in order to produce their result.
     ResultOf {
-        executable: Executable<'gc>,
+        callee: Object<'gc>,
         unbound_reciever: Option<Object<'gc>>,
         arguments: Vec<Value<'gc>>,
         base_proto: Option<Object<'gc>>,
@@ -47,13 +46,13 @@ impl fmt::Debug for ReturnValue<'_> {
         match self {
             Self::Immediate(v) => f.debug_tuple("ReturnValue::Immediate").field(v).finish(),
             Self::ResultOf {
-                executable: _executable,
+                callee,
                 unbound_reciever,
                 arguments,
                 base_proto,
             } => f
                 .debug_struct("ReturnValue")
-                .field("executable", &"<Executable code>")
+                .field("callee", callee)
                 .field("unbound_reciever", unbound_reciever)
                 .field("arguments", arguments)
                 .field("base_proto", base_proto)
@@ -65,13 +64,13 @@ impl fmt::Debug for ReturnValue<'_> {
 impl<'gc> ReturnValue<'gc> {
     /// Construct a new return value.
     pub fn defer_execution(
-        executable: Executable<'gc>,
+        callee: Object<'gc>,
         unbound_reciever: Option<Object<'gc>>,
         arguments: Vec<Value<'gc>>,
         base_proto: Option<Object<'gc>>,
     ) -> Self {
         Self::ResultOf {
-            executable,
+            callee,
             unbound_reciever,
             arguments,
             base_proto,
@@ -86,11 +85,17 @@ impl<'gc> ReturnValue<'gc> {
         match self {
             Self::Immediate(v) => Ok(v),
             Self::ResultOf {
-                executable,
+                callee,
                 unbound_reciever,
                 arguments,
                 base_proto,
-            } => executable.exec(unbound_reciever, &arguments, activation, base_proto),
+            } => callee.as_executable().unwrap().exec(
+                unbound_reciever,
+                &arguments,
+                activation,
+                base_proto,
+                callee,
+            ),
         }
     }
 }

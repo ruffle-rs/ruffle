@@ -83,6 +83,7 @@ impl<'gc> Executable<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
         base_proto: Option<Object<'gc>>,
+        callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
         match self {
             Executable::Native(nf, receiver) => {
@@ -97,6 +98,7 @@ impl<'gc> Executable<'gc> {
                     receiver,
                     arguments,
                     base_proto,
+                    callee,
                 )?;
 
                 activation.run_actions(bm.method)
