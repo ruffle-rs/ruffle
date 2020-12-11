@@ -2,7 +2,6 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
@@ -804,10 +803,9 @@ impl<'gc> ScriptObjectData<'gc> {
         disp_id: u32,
         function: Object<'gc>,
     ) -> Result<(), Error> {
-        let executable: Result<Executable<'gc>, Error> = function
+        function
             .as_executable()
-            .ok_or_else(|| "Attempted to install getter without a valid method".into());
-        let executable = executable?;
+            .ok_or_else(|| Error::from("Attempted to install getter without a valid method"))?;
 
         if disp_id > 0 {
             if self.methods.len() <= disp_id as usize {
@@ -825,7 +823,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.values
             .get_mut(&name)
             .unwrap()
-            .install_virtual_getter(executable)
+            .install_virtual_getter(function)
     }
 
     /// Install a setter into the object.
@@ -839,10 +837,9 @@ impl<'gc> ScriptObjectData<'gc> {
         disp_id: u32,
         function: Object<'gc>,
     ) -> Result<(), Error> {
-        let executable: Result<Executable<'gc>, Error> = function
+        function
             .as_executable()
-            .ok_or_else(|| "Attempted to install setter without a valid method".into());
-        let executable = executable?;
+            .ok_or_else(|| Error::from("Attempted to install setter without a valid method"))?;
 
         if disp_id > 0 {
             if self.methods.len() <= disp_id as usize {
@@ -860,7 +857,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.values
             .get_mut(&name)
             .unwrap()
-            .install_virtual_setter(executable)
+            .install_virtual_setter(function)
     }
 
     pub fn install_dynamic_property(

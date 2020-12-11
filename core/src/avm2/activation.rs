@@ -178,15 +178,21 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         this: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         base_proto: Option<Object<'gc>>,
+        callee: Object<'gc>,
     ) -> Result<Self, Error> {
         let body: Result<_, Error> = method
             .body()
             .ok_or_else(|| "Cannot execute non-native method without body".into());
         let num_locals = body?.num_locals;
+        let arg_register = if method.method().needs_arguments_object {
+            1
+        } else {
+            0
+        };
         let num_declared_arguments = method.method().params.len() as u32;
         let local_registers = GcCell::allocate(
             context.gc_context,
-            RegisterSet::new(num_locals + num_declared_arguments + 1),
+            RegisterSet::new(num_locals + num_declared_arguments + arg_register + 1),
         );
 
         {
@@ -201,7 +207,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
         }
 
-        Ok(Self {
+        let mut activation = Self {
             this,
             arguments: None,
             is_executing: false,
@@ -211,7 +217,36 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             scope,
             base_proto,
             context,
-        })
+        };
+
+        if method.method().needs_arguments_object {
+            let args_array = ArrayStorage::from_args(arguments);
+            let mut args_object = ArrayObject::from_array(
+                args_array,
+                activation
+                    .context
+                    .avm2
+                    .system_prototypes
+                    .as_ref()
+                    .unwrap()
+                    .array,
+                activation.context.gc_context,
+            );
+
+            args_object.set_property(
+                args_object,
+                &QName::new(Namespace::public_namespace(), "callee"),
+                callee.into(),
+                &mut activation,
+            )?;
+
+            *local_registers
+                .write(activation.context.gc_context)
+                .get_mut(1 + num_declared_arguments)
+                .unwrap() = args_object.into();
+        }
+
+        Ok(activation)
     }
 
     /// Execute a script initializer.

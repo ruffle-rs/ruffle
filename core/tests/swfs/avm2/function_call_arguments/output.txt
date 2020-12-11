@@ -1,0 +1,28 @@
+///testfunc("arg1");
+1
+arg1
+///testfunc("arg1", "arg2", "arg3");
+3
+arg1
+arg2
+arg3
+///testfunc("arg1", "arg2", "arg3", "arg4", "arg5");
+5
+arg1
+arg2
+arg3
+arg4
+arg5
+///Array.prototype.test = "test";
+///arguments.test
+test
+///argument.callee === argprops
+true
+///(Evil is a class with a property that resolves to it's own getter)
+///var x = new Evil();
+///x.propget
+function Function() {}
+///x.propget()
+function Function() {}
+///x.propget === x.propget()
+true

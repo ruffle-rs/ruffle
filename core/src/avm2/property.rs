@@ -1,7 +1,6 @@
 //! Property data structures
 
 use self::Attribute::*;
-use crate::avm2::function::Executable;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::value::Value;
@@ -22,8 +21,8 @@ pub enum Attribute {
 #[derive(Clone, Debug)]
 pub enum Property<'gc> {
     Virtual {
-        get: Option<Executable<'gc>>,
-        set: Option<Executable<'gc>>,
+        get: Option<Object<'gc>>,
+        set: Option<Object<'gc>>,
         attributes: EnumSet<Attribute>,
     },
     Stored {
@@ -105,7 +104,10 @@ impl<'gc> Property<'gc> {
     ///
     /// This function errors if attempting to install executables into a
     /// non-virtual property.
-    pub fn install_virtual_getter(&mut self, getter_impl: Executable<'gc>) -> Result<(), Error> {
+    ///
+    /// The implementation must be a valid function, otherwise the VM will
+    /// panic when the property is accessed.
+    pub fn install_virtual_getter(&mut self, getter_impl: Object<'gc>) -> Result<(), Error> {
         match self {
             Property::Virtual { get, .. } => *get = Some(getter_impl),
             Property::Stored { .. } => return Err("Not a virtual property".into()),
@@ -119,7 +121,10 @@ impl<'gc> Property<'gc> {
     ///
     /// This function errors if attempting to install executables into a
     /// non-virtual property.
-    pub fn install_virtual_setter(&mut self, setter_impl: Executable<'gc>) -> Result<(), Error> {
+    ///
+    /// The implementation must be a valid function, otherwise the VM will
+    /// panic when the property is accessed.
+    pub fn install_virtual_setter(&mut self, setter_impl: Object<'gc>) -> Result<(), Error> {
         match self {
             Property::Virtual { set, .. } => *set = Some(setter_impl),
             Property::Stored { .. } => return Err("Not a virtual property".into()),
