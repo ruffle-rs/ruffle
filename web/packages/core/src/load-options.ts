@@ -69,6 +69,19 @@ export interface BaseLoadOptions {
      * @default UnmuteOverlay.Visible
      */
     unmuteOverlay?: UnmuteOverlay;
+
+    /**
+     * Whether or not to auto-upgrade all embedded URLs to https.
+     *
+     * Flash content that embeds http urls will be blocked from
+     * accessing those urls by the browser when Ruffle is loaded
+     * in a https context. Set to `true` to automatically change
+     * `http://` to `https://` for all embedded URLs when Ruffle is
+     * loaded in an https context.
+     *
+     * @default true
+     */
+    upgradeToHttps?: boolean;
 }
 
 /**

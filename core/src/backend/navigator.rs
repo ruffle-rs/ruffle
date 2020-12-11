@@ -198,6 +198,12 @@ pub trait NavigatorBackend {
     /// current document's base URL, while the most obvious base for a desktop
     /// client would be the file-URL form of the current path.
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str>;
+
+    /// Handle any context specific pre-processing
+    ///
+    /// Changing http -> https for example. This function may alter any part of the
+    /// URL (generally only if configured to do so by the user).
+    fn pre_process_url(&self, url: Url) -> Url;
 }
 
 /// A null implementation of an event loop that only supports blocking.
@@ -377,5 +383,9 @@ impl NavigatorBackend for NullNavigatorBackend {
         } else {
             url.into()
         }
+    }
+
+    fn pre_process_url(&self, url: Url) -> Url {
+        url
     }
 }
