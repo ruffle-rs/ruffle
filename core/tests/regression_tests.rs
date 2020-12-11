@@ -455,6 +455,7 @@ swf_tests! {
     (as3_event_isdefaultprevented, "avm2/event_isdefaultprevented", 1),
     (as3_function_call_via_apply, "avm2/function_call_via_apply", 1),
     (as3_function_call_arguments, "avm2/function_call_arguments", 1),
+    (as3_function_call_rest, "avm2/function_call_rest", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

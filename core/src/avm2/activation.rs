@@ -184,11 +184,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .body()
             .ok_or_else(|| "Cannot execute non-native method without body".into());
         let num_locals = body?.num_locals;
-        let arg_register = if method.method().needs_arguments_object {
-            1
-        } else {
-            0
-        };
+        let has_rest_or_args = method.method().needs_arguments_object || method.method().needs_rest;
+        let arg_register = if has_rest_or_args { 1 } else { 0 };
         let num_declared_arguments = method.method().params.len() as u32;
         let local_registers = GcCell::allocate(
             context.gc_context,
@@ -219,8 +216,19 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             context,
         };
 
-        if method.method().needs_arguments_object {
-            let args_array = ArrayStorage::from_args(arguments);
+        if has_rest_or_args {
+            let args_array = if method.method().needs_arguments_object {
+                ArrayStorage::from_args(arguments)
+            } else if method.method().needs_rest {
+                if let Some(rest_args) = arguments.get(num_declared_arguments as usize..) {
+                    ArrayStorage::from_args(rest_args)
+                } else {
+                    ArrayStorage::new(0)
+                }
+            } else {
+                unreachable!();
+            };
+
             let mut args_object = ArrayObject::from_array(
                 args_array,
                 activation
@@ -233,12 +241,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 activation.context.gc_context,
             );
 
-            args_object.set_property(
-                args_object,
-                &QName::new(Namespace::public_namespace(), "callee"),
-                callee.into(),
-                &mut activation,
-            )?;
+            if method.method().needs_arguments_object {
+                args_object.set_property(
+                    args_object,
+                    &QName::new(Namespace::public_namespace(), "callee"),
+                    callee.into(),
+                    &mut activation,
+                )?;
+            }
 
             *local_registers
                 .write(activation.context.gc_context)
