@@ -1,4 +1,4 @@
-use crate::avm1::{Object, StageObject, Value};
+use crate::avm1::{Object as Avm1Object, StageObject, Value as Avm1Value};
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::ChildContainer;
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
@@ -6,7 +6,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::types::{Degrees, Percent};
-use crate::vminterface::Instantiator;
+use crate::vminterface::{AvmObject, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
@@ -24,7 +24,7 @@ pub struct ButtonData<'gc> {
     hit_area: BTreeMap<Depth, DisplayObject<'gc>>,
     container: ChildContainer<'gc>,
     tracking: ButtonTracking,
-    object: Option<Object<'gc>>,
+    object: Option<AvmObject<'gc>>,
     initialized: bool,
     has_focus: bool,
     enabled: bool,
@@ -189,7 +189,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        _init_object: Option<Object<'gc>>,
+        _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
@@ -197,11 +197,12 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
         let mut mc = self.0.write(context.gc_context);
         if mc.object.is_none() {
-            let object = StageObject::for_display_object(
+            let object: Avm1Object<'gc> = StageObject::for_display_object(
                 context.gc_context,
                 display_object,
                 Some(context.system_prototypes.button),
-            );
+            )
+            .into();
             mc.object = Some(object.into());
 
             drop(mc);
@@ -310,12 +311,22 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         None
     }
 
-    fn object(&self) -> Value<'gc> {
+    fn object(&self) -> Avm1Value<'gc> {
         self.0
             .read()
             .object
-            .map(Value::from)
-            .unwrap_or(Value::Undefined)
+            .and_then(|o| o.as_avm1_object().ok())
+            .map(Avm1Value::from)
+            .unwrap_or(Avm1Value::Undefined)
+    }
+
+    fn object2(&self) -> Avm2Value<'gc> {
+        self.0
+            .read()
+            .object
+            .and_then(|o| o.as_avm2_object().ok())
+            .map(Avm2Value::from)
+            .unwrap_or(Avm2Value::Undefined)
     }
 
     fn as_button(&self) -> Option<Self> {
@@ -406,15 +417,17 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         // (e.g., clip.onRelease = foo).
         if context.swf.version() >= 6 {
             if let Some(name) = event.method_name() {
-                context.action_queue.queue_actions(
-                    self_display_object,
-                    ActionType::Method {
-                        object: write.object.unwrap(),
-                        name,
-                        args: vec![],
-                    },
-                    false,
-                );
+                if let Some(AvmObject::Avm1(object)) = write.object {
+                    context.action_queue.queue_actions(
+                        self_display_object,
+                        ActionType::Method {
+                            object: object,
+                            name,
+                            args: vec![],
+                        },
+                        false,
+                    );
+                }
             }
         }
 
