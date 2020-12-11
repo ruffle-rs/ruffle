@@ -1148,6 +1148,7 @@ dependencies = [
  "log",
  "path-slash",
  "ruffle_core",
+ "ruffle_render_svg",
  "ruffle_render_wgpu",
  "walkdir",
 ]
@@ -3019,6 +3020,18 @@ dependencies = [
  "log",
  "lyon",
  "ruffle_core",
+]
+
+[[package]]
+name = "ruffle_render_svg"
+version = "0.1.0"
+dependencies = [
+ "base64 0.12.3",
+ "fnv",
+ "jpeg-decoder",
+ "png",
+ "ruffle_core",
+ "svg",
 ]
 
 [[package]]

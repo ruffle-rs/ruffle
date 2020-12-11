@@ -9,6 +9,7 @@ license = "MIT OR Apache-2.0"
 clap = "3.0.0-beta.2"
 ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
+ruffle_render_svg = { path = "../render/svg" }
 env_logger = "0.8.2"
 image = "0.23.12"
 log = "0.4"
