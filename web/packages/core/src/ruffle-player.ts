@@ -19,6 +19,7 @@ export const FLASH_MOVIE_MIMETYPE = "application/vnd.adobe.flash-movie";
 export const FLASH_ACTIVEX_CLASSID =
     "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
 
+const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
 declare global {
@@ -514,7 +515,7 @@ export class RufflePlayer extends HTMLElement {
         items.push({
             text: `Ruffle %VERSION_NAME%`,
             onClick() {
-                window.open("https://ruffle.rs/", "_blank");
+                window.open(RUFFLE_ORIGIN, "_blank");
             },
         });
         return items;
@@ -782,9 +783,20 @@ export class RufflePlayer extends HTMLElement {
  * @returns True if the filename is a flash movie (swf or spl).
  */
 export function isSwfFilename(filename: string | null): boolean {
-    return !!(
-        filename &&
-        (filename.search(/\.swf(?:[?#]|$)/i) >= 0 ||
-            filename.search(/\.spl(?:[?#]|$)/i) >= 0)
-    );
+    if (filename) {
+        let pathname = "";
+        try {
+            // A base URL is required if `filename` is a relative URL, but we don't need to detect the real URL origin.
+            pathname = new URL(filename, RUFFLE_ORIGIN).pathname;
+        } catch (err) {
+            // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
+        }
+        if (pathname && pathname.length >= 4) {
+            const extension = pathname.slice(-4).toLowerCase();
+            if (extension === ".swf" || extension === ".spl") {
+                return true;
+            }
+        }
+    }
+    return false;
 }
