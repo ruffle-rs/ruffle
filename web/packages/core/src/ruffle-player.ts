@@ -90,6 +90,7 @@ export class RufflePlayer extends HTMLElement {
     private playButton: HTMLElement;
     private unmuteOverlay: HTMLElement;
     private rightClickMenu: HTMLElement;
+    private swfUrl?: string;
     private instance: Ruffle | null;
     private _trace_observer: ((message: string) => void) | null;
 
@@ -406,6 +407,7 @@ export class RufflePlayer extends HTMLElement {
 
                 if ("url" in options) {
                     console.log("Loading SWF file " + options.url);
+                    this.swfUrl = new URL(options.url, document.location.href).href;
 
                     const parameters = {
                         ...sanitizeParameters(
@@ -726,6 +728,8 @@ export class RufflePlayer extends HTMLElement {
 
         errorText += "\n# Page Info\n";
         errorText += `Page URL: ${document.location.href}\n`;
+        if (this.swfUrl)
+            errorText += `SWF URL: ${this.swfUrl}\n`;
 
         errorText += "\n# Browser Info\n";
         errorText += `Useragent: ${window.navigator.userAgent}\n`;
