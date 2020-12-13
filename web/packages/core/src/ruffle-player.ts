@@ -744,8 +744,8 @@ export class RufflePlayer extends HTMLElement {
         errorText += `Built: %BUILD_DATE%\n`;
         errorText += `Commit: %COMMIT_HASH%\n`;
 
-        let issueTitle = `Ruffle Error on ${document.location.href}`;
-        let issueLink =
+        const issueTitle = `Ruffle Error on ${document.location.href}`;
+        const issueLink =
             "https://github.com/ruffle-rs/ruffle/issues/new?title=" +
             encodeURIComponent(issueTitle) +
             "&body=" +
