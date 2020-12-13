@@ -248,6 +248,7 @@ swf_tests! {
     (edittext_newline_stripping, "avm1/edittext_newline_stripping", 1),
     (define_local, "avm1/define_local", 1),
     (textfield_properties, "avm1/textfield_properties", 1),
+    (textfield_background_color, "avm1/textfield_background_color", 1),
     (textfield_border_color, "avm1/textfield_border_color", 1),
     (textfield_variable, "avm1/textfield_variable", 8),
     (error, "avm1/error", 1),

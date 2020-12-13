@@ -122,6 +122,7 @@ pub fn create_proto<'gc>(
     with_text_field_props!(
         object, gc_context, fn_proto,
         "autoSize" => [auto_size, set_auto_size],
+        "backgroundColor" => [background_color, set_background_color],
         "border" => [border, set_border],
         "borderColor" => [border_color, set_border_color],
         "embedFonts" => [embed_fonts, set_embed_fonts],
@@ -351,6 +352,25 @@ pub fn set_html_text<'gc>(
     let text = value.coerce_to_string(activation)?;
     let _ = this.set_html_text(text.to_string(), &mut activation.context);
     // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
+    Ok(())
+}
+
+pub fn background_color<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.background_color().into())
+}
+
+pub fn set_background_color<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if let Ok(rgb) = value.coerce_to_u32(activation) {
+        this.set_background_color(activation.context.gc_context, rgb & 0xFFFFFF);
+        // TODO: check if can be transparent
+    }
     Ok(())
 }
 
