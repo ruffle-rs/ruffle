@@ -709,6 +709,40 @@ export class RufflePlayer extends HTMLElement {
         }
         this.panicked = true;
 
+        let errorText = "# Error Info\n";
+
+        if (error instanceof Error) {
+            errorText += `Error name: ${error.name}\n`;
+            errorText += `Error message: ${error.message}\n`;
+            if (error.stack) {
+                errorText += `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`;
+            }
+        } else {
+            errorText += `Error: ${error}\n`;
+        }
+
+        errorText += "\n# Player Info\n";
+        errorText += this.debugPlayerInfo();
+
+        errorText += "\n# Page Info\n";
+        errorText += `Page URL: ${document.location.href}\n`;
+
+        errorText += "\n# Browser Info\n";
+        errorText += `Useragent: ${window.navigator.userAgent}\n`;
+        errorText += `OS: ${window.navigator.platform}\n`;
+
+        errorText += "\n# Ruffle Info\n";
+        errorText += `Version: %VERSION_NUMBER%\n`;
+        errorText += `Name: %VERSION_NAME%\n`;
+        errorText += `Channel: %VERSION_CHANNEL%\n`;
+        errorText += `Built: %BUILD_DATE%\n`;
+        errorText += `Commit: %COMMIT_HASH%\n`;
+
+        let issueTitle = `Ruffle Error on ${document.location.href}`;
+        let issueLink = "https://github.com/ruffle-rs/ruffle/issues/new?title="
+            + encodeURIComponent(issueTitle)
+            + "&body=" + encodeURIComponent(errorText);
+
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         this.container.innerHTML = `
             <div id="panic">
@@ -719,7 +753,7 @@ export class RufflePlayer extends HTMLElement {
                 </div>
                 <div id="panic-footer">
                     <ul>
-                        <li><a href="https://github.com/ruffle-rs/ruffle/issues/new">Report Bug</a></li>
+                        <li><a href=${issueLink}>Report Bug</a></li>
                         <li><a href="#" id="panic-view-details">View Error Details</a></li>
                     </ul>
                 </div>
@@ -728,35 +762,6 @@ export class RufflePlayer extends HTMLElement {
         (<HTMLLinkElement>(
             this.container.querySelector("#panic-view-details")
         )).onclick = () => {
-            let errorText = "# Error Info\n";
-
-            if (error instanceof Error) {
-                errorText += `Error name: ${error.name}\n`;
-                errorText += `Error message: ${error.message}\n`;
-                if (error.stack) {
-                    errorText += `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`;
-                }
-            } else {
-                errorText += `Error: ${error}\n`;
-            }
-
-            errorText += "\n# Player Info\n";
-            errorText += this.debugPlayerInfo();
-
-            errorText += "\n# Page Info\n";
-            errorText += `Page URL: ${document.location.href}\n`;
-
-            errorText += "\n# Browser Info\n";
-            errorText += `Useragent: ${window.navigator.userAgent}\n`;
-            errorText += `OS: ${window.navigator.platform}\n`;
-
-            errorText += "\n# Ruffle Info\n";
-            errorText += `Version: %VERSION_NUMBER%\n`;
-            errorText += `Name: %VERSION_NAME%\n`;
-            errorText += `Channel: %VERSION_CHANNEL%\n`;
-            errorText += `Built: %BUILD_DATE%\n`;
-            errorText += `Commit: %COMMIT_HASH%\n`;
-
             this.container.querySelector(
                 "#panic-body"
             )!.innerHTML = `<textarea>${errorText}</textarea>`;
