@@ -143,6 +143,7 @@ web: Fix incorrect rendering of gradients (close #23)
    * `avm1:`
    * `docs:`
    * `chore:`
+   * `tests:`
  * Capitalize the first letter following the tag
  * Limit line length to 72 characters
  * Use the present tense and imperative mood ("fix", not "fixed" nor "fixes")
