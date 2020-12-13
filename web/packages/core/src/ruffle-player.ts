@@ -407,7 +407,10 @@ export class RufflePlayer extends HTMLElement {
 
                 if ("url" in options) {
                     console.log("Loading SWF file " + options.url);
-                    this.swfUrl = new URL(options.url, document.location.href).href;
+                    this.swfUrl = new URL(
+                        options.url,
+                        document.location.href
+                    ).href;
 
                     const parameters = {
                         ...sanitizeParameters(
@@ -728,8 +731,7 @@ export class RufflePlayer extends HTMLElement {
 
         errorText += "\n# Page Info\n";
         errorText += `Page URL: ${document.location.href}\n`;
-        if (this.swfUrl)
-            errorText += `SWF URL: ${this.swfUrl}\n`;
+        if (this.swfUrl) errorText += `SWF URL: ${this.swfUrl}\n`;
 
         errorText += "\n# Browser Info\n";
         errorText += `Useragent: ${window.navigator.userAgent}\n`;
@@ -743,9 +745,11 @@ export class RufflePlayer extends HTMLElement {
         errorText += `Commit: %COMMIT_HASH%\n`;
 
         let issueTitle = `Ruffle Error on ${document.location.href}`;
-        let issueLink = "https://github.com/ruffle-rs/ruffle/issues/new?title="
-            + encodeURIComponent(issueTitle)
-            + "&body=" + encodeURIComponent(errorText);
+        let issueLink =
+            "https://github.com/ruffle-rs/ruffle/issues/new?title=" +
+            encodeURIComponent(issueTitle) +
+            "&body=" +
+            encodeURIComponent(errorText);
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         this.container.innerHTML = `
