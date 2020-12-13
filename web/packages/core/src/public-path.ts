@@ -33,7 +33,8 @@ export function publicPath(config: Config, source_name: string): string {
     } else if (
         document.currentScript !== undefined &&
         document.currentScript !== null &&
-        "src" in document.currentScript
+        "src" in document.currentScript &&
+        document.currentScript.src !== ""
     ) {
         // Default to the directory where this script resides.
         try {

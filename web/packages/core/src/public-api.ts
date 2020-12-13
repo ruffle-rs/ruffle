@@ -62,19 +62,15 @@ export class PublicAPI {
         this.conflict = null;
 
         if (prev !== undefined && prev !== null) {
-            if (
-                prev instanceof PublicAPI ||
-                ("version" in prev && prev.version == this.version)
-            ) {
+            if (prev instanceof PublicAPI) {
                 /// We're upgrading from a previous API to a new one.
-                const previous = <PublicAPI>prev;
-                this.sources = previous.sources;
-                this.config = previous.config;
-                this.invoked = previous.invoked;
-                this.conflict = previous.conflict;
-                this.newestName = previous.newestName;
+                this.sources = prev.sources;
+                this.config = prev.config;
+                this.invoked = prev.invoked;
+                this.conflict = prev.conflict;
+                this.newestName = prev.newestName;
 
-                previous.superseded();
+                prev.superseded();
             } else if (
                 prev.constructor === Object &&
                 prev.config instanceof Object
@@ -282,8 +278,8 @@ export class PublicAPI {
         sourceAPI: SourceAPI | undefined
     ): PublicAPI {
         let publicAPI: PublicAPI;
-        if (prevRuffle?.constructor.name === PublicAPI.name) {
-            publicAPI = <PublicAPI>prevRuffle;
+        if (prevRuffle instanceof PublicAPI) {
+            publicAPI = prevRuffle;
         } else {
             publicAPI = new PublicAPI(prevRuffle);
         }

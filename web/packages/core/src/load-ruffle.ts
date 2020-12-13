@@ -18,19 +18,19 @@ import { Ruffle } from "../pkg/ruffle_web";
  */
 async function fetchRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
     try {
-        //If runtime_path is defined then we are executing inside the extension
-        //closure. In that case, we configure our local Webpack instance
-        __webpack_public_path__ = runtime_path + "dist/";
+        // If ruffleRuntimePath is defined then we are executing inside the extension
+        // closure. In that case, we configure our local Webpack instance.
+        __webpack_public_path__ = ruffleRuntimePath + "dist/";
     } catch (e) {
-        //Checking an undefined closure variable usually throws ReferencError,
-        //so we need to catch it here and continue onward.
+        // Checking an undefined closure variable usually throws ReferencError,
+        // so we need to catch it here and continue onward.
         if (!(e instanceof ReferenceError)) {
             throw e;
         }
     }
 
-    //We currently assume that if we are not executing inside the extension,
-    //then we can use webpack to get Ruffle.
+    // We currently assume that if we are not executing inside the extension,
+    // then we can use webpack to get Ruffle.
     const module = await import("../pkg/ruffle_web");
     return module.Ruffle;
 }
