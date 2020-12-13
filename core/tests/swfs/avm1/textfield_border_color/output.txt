@@ -1,0 +1,11 @@
+// tf.borderColor:
+0
+// tf.borderColor = 0x404040 (4210752):
+// tf.borderColor:
+4210752
+// tf.borderColor = -1:
+// tf.borderColor:
+16777215
+// tf.borderColor = 0x80FFFFFF:
+// tf.borderColor:
+16777215

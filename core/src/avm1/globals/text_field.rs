@@ -123,6 +123,7 @@ pub fn create_proto<'gc>(
         object, gc_context, fn_proto,
         "autoSize" => [auto_size, set_auto_size],
         "border" => [border, set_border],
+        "borderColor" => [border_color, set_border_color],
         "embedFonts" => [embed_fonts, set_embed_fonts],
         "html" => [html, set_html],
         "htmlText" => [html_text, set_html_text],
@@ -367,6 +368,24 @@ pub fn set_border<'gc>(
 ) -> Result<(), Error<'gc>> {
     let has_border = value.as_bool(activation.current_swf_version());
     this.set_has_border(activation.context.gc_context, has_border);
+    Ok(())
+}
+
+pub fn border_color<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.border_color().into())
+}
+
+pub fn set_border_color<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if let Ok(rgb) = value.coerce_to_u32(activation) {
+        this.set_border_color(activation.context.gc_context, rgb & 0xFFFFFF);
+    }
     Ok(())
 }
 
