@@ -88,6 +88,9 @@ pub struct EditTextData<'gc> {
     /// If the text field should have a border.
     has_border: bool,
 
+    /// The color of the border.
+    border_color: u32,
+
     /// If the text field is required to use device fonts only.
     is_device_font: bool,
 
@@ -175,6 +178,7 @@ impl<'gc> EditText<'gc> {
         );
 
         let has_border = swf_tag.has_border;
+        let border_color = 0; // Default is black
         let is_device_font = swf_tag.is_device_font;
 
         let mut base = DisplayObjectBase::default();
@@ -206,6 +210,7 @@ impl<'gc> EditText<'gc> {
                 is_editable,
                 is_word_wrap,
                 has_border,
+                border_color,
                 is_device_font,
                 is_html,
                 drawing: Drawing::new(),
@@ -461,6 +466,15 @@ impl<'gc> EditText<'gc> {
         self.redraw_border(context);
     }
 
+    pub fn border_color(self) -> u32 {
+        self.0.read().border_color
+    }
+
+    pub fn set_border_color(self, context: MutationContext<'gc, '_>, border_color: u32) {
+        self.0.write(context).border_color = border_color;
+        self.redraw_border(context);
+    }
+
     pub fn is_device_font(self) -> bool {
         self.0.read().is_device_font
     }
@@ -587,19 +601,15 @@ impl<'gc> EditText<'gc> {
 
         if write.has_border {
             let bounds = write.bounds.clone();
+            let border_color = write.border_color;
 
             write.drawing.set_line_style(Some(swf::LineStyle::new_v1(
                 Twips::new(1),
-                swf::Color::from_rgb(0, 0xFF),
+                swf::Color::from_rgb(border_color, 0xFF),
             )));
-            write
-                .drawing
-                .set_fill_style(Some(swf::FillStyle::Color(Color {
-                    r: 255,
-                    g: 255,
-                    b: 255,
-                    a: 255,
-                })));
+            write.drawing.set_fill_style(Some(swf::FillStyle::Color(
+                swf::Color::from_rgb(0xFFFFFF, 0xFF), //background color
+            )));
             write.drawing.draw_command(DrawCommand::MoveTo {
                 x: Twips::new(0),
                 y: Twips::new(0),
