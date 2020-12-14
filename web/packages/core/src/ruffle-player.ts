@@ -91,6 +91,7 @@ export class RufflePlayer extends HTMLElement {
     private playButton: HTMLElement;
     private unmuteOverlay: HTMLElement;
     private rightClickMenu: HTMLElement;
+    private swfUrl?: string;
     private instance: Ruffle | null;
     private _trace_observer: ((message: string) => void) | null;
 
@@ -409,6 +410,14 @@ export class RufflePlayer extends HTMLElement {
 
                 if ("url" in options) {
                     console.log("Loading SWF file " + options.url);
+                    try {
+                        this.swfUrl = new URL(
+                            options.url,
+                            document.location.href
+                        ).href;
+                    } catch {
+                        this.swfUrl = options.url;
+                    }
 
                     const parameters = {
                         ...sanitizeParameters(
@@ -712,6 +721,43 @@ export class RufflePlayer extends HTMLElement {
         }
         this.panicked = true;
 
+        let errorText = "# Error Info\n";
+
+        if (error instanceof Error) {
+            errorText += `Error name: ${error.name}\n`;
+            errorText += `Error message: ${error.message}\n`;
+            if (error.stack) {
+                errorText += `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`;
+            }
+        } else {
+            errorText += `Error: ${error}\n`;
+        }
+
+        errorText += "\n# Player Info\n";
+        errorText += this.debugPlayerInfo();
+
+        errorText += "\n# Page Info\n";
+        errorText += `Page URL: ${document.location.href}\n`;
+        if (this.swfUrl) errorText += `SWF URL: ${this.swfUrl}\n`;
+
+        errorText += "\n# Browser Info\n";
+        errorText += `Useragent: ${window.navigator.userAgent}\n`;
+        errorText += `OS: ${window.navigator.platform}\n`;
+
+        errorText += "\n# Ruffle Info\n";
+        errorText += `Version: %VERSION_NUMBER%\n`;
+        errorText += `Name: %VERSION_NAME%\n`;
+        errorText += `Channel: %VERSION_CHANNEL%\n`;
+        errorText += `Built: %BUILD_DATE%\n`;
+        errorText += `Commit: %COMMIT_HASH%\n`;
+
+        const issueTitle = `Ruffle Error on ${document.location.href}`;
+        const issueLink =
+            "https://github.com/ruffle-rs/ruffle/issues/new?title=" +
+            encodeURIComponent(issueTitle) +
+            "&body=" +
+            encodeURIComponent(errorText);
+
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         this.container.innerHTML = `
             <div id="panic">
@@ -722,7 +768,7 @@ export class RufflePlayer extends HTMLElement {
                 </div>
                 <div id="panic-footer">
                     <ul>
-                        <li><a href="https://github.com/ruffle-rs/ruffle/issues/new">Report Bug</a></li>
+                        <li><a href=${issueLink}>Report Bug</a></li>
                         <li><a href="#" id="panic-view-details">View Error Details</a></li>
                     </ul>
                 </div>
@@ -731,35 +777,6 @@ export class RufflePlayer extends HTMLElement {
         (<HTMLLinkElement>(
             this.container.querySelector("#panic-view-details")
         )).onclick = () => {
-            let errorText = "# Error Info\n";
-
-            if (error instanceof Error) {
-                errorText += `Error name: ${error.name}\n`;
-                errorText += `Error message: ${error.message}\n`;
-                if (error.stack) {
-                    errorText += `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`;
-                }
-            } else {
-                errorText += `Error: ${error}\n`;
-            }
-
-            errorText += "\n# Player Info\n";
-            errorText += this.debugPlayerInfo();
-
-            errorText += "\n# Page Info\n";
-            errorText += `Page URL: ${document.location.href}\n`;
-
-            errorText += "\n# Browser Info\n";
-            errorText += `Useragent: ${window.navigator.userAgent}\n`;
-            errorText += `OS: ${window.navigator.platform}\n`;
-
-            errorText += "\n# Ruffle Info\n";
-            errorText += `Version: %VERSION_NUMBER%\n`;
-            errorText += `Name: %VERSION_NAME%\n`;
-            errorText += `Channel: %VERSION_CHANNEL%\n`;
-            errorText += `Built: %BUILD_DATE%\n`;
-            errorText += `Commit: %COMMIT_HASH%\n`;
-
             this.container.querySelector(
                 "#panic-body"
             )!.innerHTML = `<textarea>${errorText}</textarea>`;
