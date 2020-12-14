@@ -1,7 +1,7 @@
 //! `flash.events.Event` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{EventObject, Object, TObject};
@@ -267,6 +267,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     );
 
     let mut write = class.write(mc);
+
+    write.set_attributes(ClassAttributes::Sealed.into());
 
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public_namespace(), "bubbles"),
