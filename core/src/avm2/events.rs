@@ -5,7 +5,7 @@ use crate::avm2::string::AvmString;
 use gc_arena::Collect;
 
 /// Which phase of event dispatch is currently occurring.
-#[derive(Copy, Clone, Collect, Debug)]
+#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
 #[collect(require_static)]
 pub enum EventPhase {
     /// The event has yet to be fired on the target and is descending the
@@ -31,7 +31,7 @@ impl Into<u32> for EventPhase {
 }
 
 /// How this event is allowed to propagate.
-#[derive(Copy, Clone, Collect, Debug)]
+#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
 #[collect(require_static)]
 pub enum PropagationMode {
     /// Propagate events normally.
@@ -132,17 +132,17 @@ impl<'gc> Event<'gc> {
     }
 
     pub fn is_propagation_stopped(&self) -> bool {
-        !matches!(self.propagation, PropagationMode::AllowPropagation)
+        self.propagation != PropagationMode::AllowPropagation
     }
 
     pub fn stop_propagation(&mut self) {
-        if !matches!(self.propagation, PropagationMode::StopImmediatePropagation) {
+        if self.propagation != PropagationMode::StopImmediatePropagation {
             self.propagation = PropagationMode::StopPropagation;
         }
     }
 
     pub fn is_propagation_stopped_immediately(&self) -> bool {
-        matches!(self.propagation, PropagationMode::StopImmediatePropagation)
+        self.propagation == PropagationMode::StopImmediatePropagation
     }
 
     pub fn stop_immediate_propagation(&mut self) {
