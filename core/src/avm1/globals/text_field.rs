@@ -369,7 +369,6 @@ pub fn set_background_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     if let Ok(rgb) = value.coerce_to_u32(activation) {
         this.set_background_color(activation.context.gc_context, rgb & 0xFFFFFF);
-        // TODO: check if can be transparent
     }
     Ok(())
 }
