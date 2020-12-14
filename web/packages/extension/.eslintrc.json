@@ -4,6 +4,6 @@
         "webextensions": true
     },
     "globals": {
-        "obfuscated_event_prefix": true
+        "obfuscatedEventPrefix": true
     }
 }
