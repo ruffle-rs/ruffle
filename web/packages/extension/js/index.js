@@ -6,9 +6,9 @@ window.RufflePlayer = PublicAPI.negotiate(
     new SourceAPI("extension")
 );
 
-if (obfuscated_event_prefix) {
+if (obfuscatedEventPrefix) {
     document.addEventListener(
-        obfuscated_event_prefix + "_request",
+        obfuscatedEventPrefix + "_request",
         function (e) {
             let body = JSON.parse(e.detail);
             let response = {};
@@ -17,7 +17,7 @@ if (obfuscated_event_prefix) {
                 //response.page_options = page_options;
             }
 
-            let event = new CustomEvent(obfuscated_event_prefix + "_response", {
+            let event = new CustomEvent(obfuscatedEventPrefix + "_response", {
                 detail: JSON.stringify(response),
             });
             document.dispatchEvent(event);
