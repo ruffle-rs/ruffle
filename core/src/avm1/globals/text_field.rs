@@ -322,14 +322,13 @@ pub fn set_text_color<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Ok(rgb) = value.coerce_to_u32(activation) {
-        let tf = TextFormat {
-            color: Some(swf::Color::from_rgb(rgb, 0xFF)),
-            ..TextFormat::default()
-        };
-        this.set_text_format(0, this.text_length(), tf.clone(), &mut activation.context);
-        this.set_new_text_format(tf, &mut activation.context);
-    }
+    let rgb = value.coerce_to_u32(activation)?;
+    let tf = TextFormat {
+        color: Some(swf::Color::from_rgb(rgb, 0xFF)),
+        ..TextFormat::default()
+    };
+    this.set_text_format(0, this.text_length(), tf.clone(), &mut activation.context);
+    this.set_new_text_format(tf, &mut activation.context);
     Ok(())
 }
 
