@@ -89,6 +89,9 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   <a href="https://www.nytimes.com/">
     <img src="https://ruffle.rs/assets/sponsors/nyt.png" alt="The New York Times">
   </a>
+  <a href="https://www.armorgames.com/">
+    <img src="https://ruffle.rs/assets/sponsors/armorgames.png" alt="Armor Games">
+  </a>
 </p>
 
 ## License
