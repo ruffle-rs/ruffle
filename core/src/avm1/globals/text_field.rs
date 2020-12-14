@@ -367,9 +367,8 @@ pub fn set_background_color<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Ok(rgb) = value.coerce_to_u32(activation) {
-        this.set_background_color(activation.context.gc_context, rgb & 0xFFFFFF);
-    }
+    let rgb = value.coerce_to_u32(activation)?;
+    this.set_background_color(activation.context.gc_context, rgb & 0xFFFFFF);
     Ok(())
 }
 
@@ -402,9 +401,8 @@ pub fn set_border_color<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Ok(rgb) = value.coerce_to_u32(activation) {
-        this.set_border_color(activation.context.gc_context, rgb & 0xFFFFFF);
-    }
+    let rgb = value.coerce_to_u32(activation)?;
+    this.set_border_color(activation.context.gc_context, rgb & 0xFFFFFF);
     Ok(())
 }
 
