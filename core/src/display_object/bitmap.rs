@@ -23,6 +23,7 @@ pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, BitmapStatic>,
     bitmap_data: Option<GcCell<'gc, crate::avm1::object::bitmap_data::BitmapData>>,
+    smoothing: bool,
 }
 
 impl<'gc> Bitmap<'gc> {
@@ -33,6 +34,7 @@ impl<'gc> Bitmap<'gc> {
         width: u16,
         height: u16,
         bitmap_data: Option<GcCell<'gc, crate::avm1::object::bitmap_data::BitmapData>>,
+        smoothing: bool,
     ) -> Self {
         Bitmap(GcCell::allocate(
             context.gc_context,
@@ -48,6 +50,7 @@ impl<'gc> Bitmap<'gc> {
                     },
                 ),
                 bitmap_data,
+                smoothing,
             },
         ))
     }
@@ -59,7 +62,7 @@ impl<'gc> Bitmap<'gc> {
         width: u16,
         height: u16,
     ) -> Self {
-        Self::new_with_bitmap_data(context, id, bitmap_handle, width, height, None)
+        Self::new_with_bitmap_data(context, id, bitmap_handle, width, height, None, true)
     }
 
     #[allow(dead_code)]
@@ -117,9 +120,11 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
         context.transform_stack.push(&*self.transform());
 
+        let bitmap_data = self.0.read();
         context.renderer.render_bitmap(
-            self.0.read().static_data.bitmap_handle,
+            bitmap_data.static_data.bitmap_handle,
             context.transform_stack.transform(),
+            bitmap_data.smoothing,
         );
 
         context.transform_stack.pop();

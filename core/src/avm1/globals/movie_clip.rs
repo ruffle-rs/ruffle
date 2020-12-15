@@ -239,6 +239,17 @@ fn attach_bitmap<'gc>(
                     .write(activation.context.gc_context)
                     .bitmap_handle(activation.context.renderer);
 
+                // TODO: Implement pixel snapping
+                let _pixel_snapping = args
+                    .get(2)
+                    .unwrap_or(&Value::Undefined)
+                    .as_bool(activation.current_swf_version());
+
+                let smoothing = args
+                    .get(3)
+                    .unwrap_or(&Value::Undefined)
+                    .as_bool(activation.current_swf_version());
+
                 if let Some(bitmap_handle) = bitmap_handle {
                     //TODO: do attached BitmapDatas have character ids?
                     let display_object = Bitmap::new_with_bitmap_data(
@@ -248,6 +259,7 @@ fn attach_bitmap<'gc>(
                         bitmap_data.read().width() as u16,
                         bitmap_data.read().height() as u16,
                         Some(bitmap_data),
+                        smoothing,
                     );
                     movie_clip.replace_at_depth(
                         &mut activation.context,

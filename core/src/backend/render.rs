@@ -34,7 +34,7 @@ pub trait RenderBackend: Downcast {
     ) -> Result<BitmapInfo, Error>;
 
     fn begin_frame(&mut self, clear: Color);
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform);
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool);
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
     fn draw_rect(&mut self, color: Color, matrix: &Matrix);
     fn end_frame(&mut self);
@@ -155,7 +155,7 @@ impl RenderBackend for NullRenderer {
     }
     fn begin_frame(&mut self, _clear: Color) {}
     fn end_frame(&mut self) {}
-    fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform) {}
+    fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform, _smoothing: bool) {}
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
     fn draw_rect(&mut self, _color: Color, _matrix: &Matrix) {}
     fn draw_letterbox(&mut self, _letterbox: Letterbox) {}
