@@ -933,32 +933,111 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
-        // TODO: Might be better to make this separate code to render the bitmap
-        // instead of going through render_shape. But render_shape already handles
-        // masking etc.
-        if let Some((Some(id), bitmap)) = self.textures.get(bitmap.0) {
+        self.set_stencil_state();
+        if let Some((_, bitmap)) = self.textures.get(bitmap.0) {
+            let texture = &bitmap.texture;
             // Adjust the quad draw to use the target bitmap.
-            let mesh = &mut self.meshes[self.quad_shape.0];
-            let draw = &mut mesh.draws[0];
+            let mesh = &self.meshes[self.quad_shape.0];
+            let draw = &mesh.draws[0];
             let width = bitmap.width as f32;
             let height = bitmap.height as f32;
-            if let DrawType::Bitmap(BitmapDraw { id: draw_id, .. }) = &mut draw.draw_type {
-                *draw_id = *id;
-            }
-
-            // Scale the quad to the bitmap's dimensions.
-            let scale_transform = Transform {
-                matrix: transform.matrix
-                    * Matrix {
-                        a: width,
-                        d: height,
-                        ..Default::default()
-                    },
-                ..*transform
+            let bitmap_matrix = if let DrawType::Bitmap(BitmapDraw { matrix, .. }) = &draw.draw_type
+            {
+                matrix
+            } else {
+                unreachable!()
             };
 
-            // Render the quad.
-            self.render_shape(self.quad_shape, &scale_transform);
+            // Scale the quad to the bitmap's dimensions.
+            let matrix = transform.matrix
+                * Matrix {
+                    a: width,
+                    d: height,
+                    ..Default::default()
+                };
+
+            let world_matrix = [
+                [matrix.a, matrix.b, 0.0, 0.0],
+                [matrix.c, matrix.d, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [
+                    matrix.tx.to_pixels() as f32,
+                    matrix.ty.to_pixels() as f32,
+                    0.0,
+                    1.0,
+                ],
+            ];
+
+            let mult_color = [
+                transform.color_transform.r_mult,
+                transform.color_transform.g_mult,
+                transform.color_transform.b_mult,
+                transform.color_transform.a_mult,
+            ];
+
+            let add_color = [
+                transform.color_transform.r_add,
+                transform.color_transform.g_add,
+                transform.color_transform.b_add,
+                transform.color_transform.a_add,
+            ];
+
+            self.bind_vertex_array(Some(&draw.vao));
+
+            let (program, src_blend, dst_blend) =
+                (&self.bitmap_program, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA);
+
+            // Set common render state, while minimizing unnecessary state changes.
+            // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
+            // are in the same location between shaders, and avoid changing them unless necessary.
+            if program as *const ShaderProgram != self.active_program {
+                self.gl.use_program(Some(&program.program));
+                self.active_program = program as *const ShaderProgram;
+
+                program.uniform_matrix4fv(&self.gl, ShaderUniform::ViewMatrix, &self.view_matrix);
+
+                self.mult_color = None;
+                self.add_color = None;
+
+                if (src_blend, dst_blend) != self.blend_func {
+                    self.gl.blend_func(src_blend, dst_blend);
+                    self.blend_func = (src_blend, dst_blend);
+                }
+            }
+
+            program.uniform_matrix4fv(&self.gl, ShaderUniform::WorldMatrix, &world_matrix);
+            if Some(mult_color) != self.mult_color {
+                program.uniform4fv(&self.gl, ShaderUniform::MultColor, &mult_color);
+                self.mult_color = Some(mult_color);
+            }
+            if Some(add_color) != self.add_color {
+                program.uniform4fv(&self.gl, ShaderUniform::AddColor, &add_color);
+                self.add_color = Some(add_color);
+            }
+
+            program.uniform_matrix3fv(&self.gl, ShaderUniform::TextureMatrix, &bitmap_matrix);
+
+            // Bind texture.
+            self.gl.active_texture(Gl::TEXTURE0);
+            self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+            program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
+
+            // Set texture parameters.
+            let filter = Gl::LINEAR as i32;
+            self.gl
+                .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, filter);
+            self.gl
+                .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, filter);
+
+            let wrap = Gl::CLAMP_TO_EDGE as i32;
+            self.gl
+                .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, wrap);
+            self.gl
+                .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, wrap);
+
+            // Draw the triangles.
+            self.gl
+                .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_SHORT, 0);
         }
     }
 
