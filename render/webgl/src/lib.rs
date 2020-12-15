@@ -681,7 +681,7 @@ impl WebGlRenderBackend {
     ) -> Result<BitmapInfo, Error> {
         let texture = self.gl.create_texture().unwrap();
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
-        match bitmap.clone().data {
+        match &bitmap.data {
             BitmapFormat::Rgb(data) => self
                 .gl
                 .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
@@ -693,7 +693,7 @@ impl WebGlRenderBackend {
                     0,
                     Gl::RGB,
                     Gl::UNSIGNED_BYTE,
-                    Some(&data),
+                    Some(data),
                 )
                 .into_js_result()?,
             BitmapFormat::Rgba(data) => self
@@ -707,7 +707,7 @@ impl WebGlRenderBackend {
                     0,
                     Gl::RGBA,
                     Gl::UNSIGNED_BYTE,
-                    Some(&data),
+                    Some(data),
                 )
                 .into_js_result()?,
         }
@@ -723,21 +723,23 @@ impl WebGlRenderBackend {
             .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
 
         let handle = BitmapHandle(self.textures.len());
-        self.bitmap_registry.insert(handle, bitmap.clone());
+        let width = bitmap.width;
+        let height = bitmap.height;
+        self.bitmap_registry.insert(handle, bitmap);
 
         self.textures.push((
             id,
             Texture {
                 texture,
-                width: bitmap.width,
-                height: bitmap.height,
+                width,
+                height,
             },
         ));
 
         Ok(BitmapInfo {
             handle,
-            width: bitmap.width as u16,
-            height: bitmap.height as u16,
+            width: width as u16,
+            height: height as u16,
         })
     }
 }

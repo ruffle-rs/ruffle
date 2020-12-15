@@ -9,7 +9,7 @@ use ruffle_core::backend::render::{
     RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::{DistilledShape, DrawPath};
-use std::convert::TryInto;
+use std::borrow::Cow;
 use swf::{CharacterId, DefineBitsLossless, Glyph, GradientInterpolation};
 
 use bytemuck::{Pod, Zeroable};
@@ -693,8 +693,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             depth: 1,
         };
 
-        let data = match bitmap.data.clone() {
-            BitmapFormat::Rgba(data) => data,
+        let data: Cow<[u8]> = match &bitmap.data {
+            BitmapFormat::Rgba(data) => Cow::Borrowed(data),
             BitmapFormat::Rgb(data) => {
                 // Expand to RGBA.
                 let mut as_rgba =
@@ -705,7 +705,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                     as_rgba.push(data[i + 2]);
                     as_rgba.push(255);
                 }
-                as_rgba
+                Cow::Owned(as_rgba)
             }
         };
 
@@ -739,20 +739,23 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         );
 
         let handle = BitmapHandle(self.textures.len());
-        self.bitmap_registry.insert(handle, bitmap.clone());
+        let width = bitmap.width;
+        let height = bitmap.height;
+
+        self.bitmap_registry.insert(handle, bitmap);
         self.textures.push((
             id,
             Texture {
                 texture,
-                width: bitmap.width,
-                height: bitmap.height,
+                width,
+                height,
             },
         ));
 
         BitmapInfo {
             handle,
-            width: bitmap.width.try_into().unwrap(),
-            height: bitmap.height.try_into().unwrap(),
+            width: width as u16,
+            height: height as u16,
         }
     }
 
