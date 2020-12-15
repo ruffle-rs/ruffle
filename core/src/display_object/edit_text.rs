@@ -10,6 +10,7 @@ use crate::font::{round_down_to_pixel, Glyph};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
+use crate::string_utils;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
@@ -1023,11 +1024,7 @@ impl<'gc> EditText<'gc> {
                             && local_position.1 <= params.height()
                         {
                             if local_position.0 >= x + (advance / 2) {
-                                let mut idx = pos + 1;
-                                while !text.is_char_boundary(idx) {
-                                    idx += 1;
-                                }
-                                result = Some(idx);
+                                result = Some(string_utils::next_char_boundary(text, pos));
                             } else {
                                 result = Some(pos);
                             }
@@ -1065,10 +1062,7 @@ impl<'gc> EditText<'gc> {
                     if selection.start() > 0 {
                         // Delete previous character
                         let text = self.text();
-                        let mut start = selection.start() - 1;
-                        while !text.is_char_boundary(start) {
-                            start -= 1;
-                        }
+                        let start = string_utils::prev_char_boundary(&text, selection.start());
                         self.replace_text(start, selection.start(), "", context);
                         self.set_selection(
                             Some(TextSelection::for_position(start)),
@@ -1082,10 +1076,7 @@ impl<'gc> EditText<'gc> {
                     if selection.end() < self.text_length() {
                         // Delete next character
                         let text = self.text();
-                        let mut end = selection.start() + 1;
-                        while !text.is_char_boundary(end) {
-                            end += 1;
-                        }
+                        let end = string_utils::next_char_boundary(&text, selection.start());
                         self.replace_text(selection.start(), end, "", context);
                         // No need to change selection
                         changed = true;
@@ -1450,19 +1441,13 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                     let length = text.len();
                     match key_code {
                         ButtonKeyCode::Left if selection.to > 0 => {
-                            selection.to -= 1;
-                            while !text.is_char_boundary(selection.to) {
-                                selection.to -= 1;
-                            }
+                            selection.to = string_utils::prev_char_boundary(text, selection.to);
                             if !context.input.is_key_down(KeyCode::Shift) {
                                 selection.from = selection.to;
                             }
                         }
                         ButtonKeyCode::Right if selection.to < length => {
-                            selection.to += 1;
-                            while !text.is_char_boundary(selection.to) {
-                                selection.to += 1;
-                            }
+                            selection.to = string_utils::next_char_boundary(text, selection.to);
                             if !context.input.is_key_down(KeyCode::Shift) {
                                 selection.from = selection.to;
                             }

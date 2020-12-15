@@ -7,6 +7,7 @@ use crate::font::{EvalParameters, Font};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::shape_utils::DrawCommand;
+use crate::string_utils;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cmp::{max, min};
@@ -720,16 +721,10 @@ impl<'gc> LayoutBox<'gc> {
 
                             // This ensures that the space causing the line break
                             // is included in the line it broke.
-                            let next_breakpoint = if last_breakpoint + breakpoint + 1 >= text.len()
-                            {
-                                text.len()
-                            } else {
-                                let mut nb = last_breakpoint + breakpoint + 1;
-                                while !text.is_char_boundary(nb) {
-                                    nb += 1;
-                                }
-                                nb
-                            };
+                            let next_breakpoint = string_utils::next_char_boundary(
+                                text,
+                                last_breakpoint + breakpoint,
+                            );
 
                             layout_context.append_text(
                                 &text[last_breakpoint..next_breakpoint],
