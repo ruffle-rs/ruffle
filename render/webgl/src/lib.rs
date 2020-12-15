@@ -1383,7 +1383,12 @@ impl RenderBackend for WebGlRenderBackend {
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
-        let texture = self.gl.create_texture().unwrap();
+        let texture = if let Some((_id, bitmap)) = self.textures.get(handle.0) {
+            &bitmap.texture
+        } else {
+            return Err("update_texture: Bitmap is not regsitered".into());
+        };
+
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
 
         self.gl
@@ -1399,44 +1404,6 @@ impl RenderBackend for WebGlRenderBackend {
                 Some(&rgba),
             )
             .into_js_result()?;
-
-        // You must set the texture parameters for non-power-of-2 textures to function in WebGL1.
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
-
-        let bitmap = Bitmap {
-            width,
-            height,
-            data: BitmapFormat::Rgba(rgba),
-        };
-
-        self.bitmap_registry.insert(handle, bitmap);
-
-        let old_texture = self.textures.get(handle.0);
-
-        if let Some((id, old_texture)) = old_texture {
-            let id = *id;
-
-            self.gl.delete_texture(Some(&old_texture.texture));
-
-            self.textures.insert(
-                handle.0,
-                (
-                    id,
-                    Texture {
-                        texture,
-                        width,
-                        height,
-                    },
-                ),
-            );
-        }
 
         Ok(handle)
     }
