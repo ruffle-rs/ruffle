@@ -1524,10 +1524,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
-        let bitmap = Bitmap {
-            height,
-            width,
-            data: BitmapFormat::Rgba(rgba.clone()),
+        let texture = if let Some((_id, texture)) = self.textures.get(handle.0) {
+            &texture.texture
+        } else {
+            return Err("update_texture: Bitmap not registered".into());
         };
 
         let extent = wgpu::Extent3d {
@@ -1535,20 +1535,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             height,
             depth: 1,
         };
-
-        let texture_label = create_debug_label!("Bitmap {:?} updated", handle);
-        let texture = self
-            .descriptors
-            .device
-            .create_texture(&wgpu::TextureDescriptor {
-                label: texture_label.as_deref(),
-                size: extent,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8Unorm,
-                usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
-            });
 
         self.descriptors.queue.write_texture(
             wgpu::TextureCopyView {
@@ -1564,24 +1550,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             },
             extent,
         );
-
-        self.bitmap_registry.insert(handle, bitmap.clone());
-
-        let old_texture = self.textures.get(handle.0);
-        if let Some((old_character_id, _tex)) = old_texture {
-            let old_character_id = *old_character_id;
-            self.textures.insert(
-                handle.0,
-                (
-                    old_character_id,
-                    Texture {
-                        texture,
-                        width: bitmap.width,
-                        height: bitmap.height,
-                    },
-                ),
-            );
-        }
 
         Ok(handle)
     }
