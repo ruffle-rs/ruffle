@@ -9,7 +9,8 @@ use crate::backend::locale::LocaleBackend;
 use crate::backend::navigator::{NavigatorBackend, RequestOptions};
 use crate::backend::storage::StorageBackend;
 use crate::backend::{
-    audio::AudioBackend, log::LogBackend, render::Letterbox, render::RenderBackend,
+    audio::AudioBackend, dialog::DialogBackend, log::LogBackend, render::Letterbox,
+    render::RenderBackend,
 };
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{EditText, MorphShape, MovieClip};
@@ -134,6 +135,7 @@ type Input = Box<dyn InputBackend>;
 type Storage = Box<dyn StorageBackend>;
 type Locale = Box<dyn LocaleBackend>;
 type Log = Box<dyn LogBackend>;
+type Dialog = Box<dyn DialogBackend>;
 
 pub struct Player {
     /// The version of the player we're emulating.
@@ -159,6 +161,7 @@ pub struct Player {
     input: Input,
     locale: Locale,
     log: Log,
+    dialog: Dialog,
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
@@ -214,6 +217,7 @@ impl Player {
         storage: Storage,
         locale: Locale,
         log: Log,
+        dialog: Dialog,
     ) -> Result<Arc<Mutex<Self>>, Error> {
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
         let movie_width = 550;
@@ -280,6 +284,7 @@ impl Player {
             input,
             locale,
             log,
+            dialog,
             self_reference: None,
             system: SystemProperties::default(),
             instance_counter: 0,
@@ -305,10 +310,10 @@ impl Player {
 
         player.build_matrices();
         player.audio.set_frame_rate(frame_rate);
-
         let player_box = Arc::new(Mutex::new(player));
         let mut player_lock = player_box.lock().unwrap();
         player_lock.self_reference = Some(Arc::downgrade(&player_box));
+
         std::mem::drop(player_lock);
 
         Ok(player_box)
@@ -627,7 +632,7 @@ impl Player {
             });
         }
 
-        // Propagte clip events.
+        // Propagate clip events.
         self.mutate_with_update_context(|context| {
             let (clip_event, listener) = match event {
                 PlayerEvent::KeyDown { .. } => {

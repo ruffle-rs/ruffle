@@ -2,6 +2,7 @@
 
 mod audio;
 mod custom_event;
+mod dialog;
 mod executor;
 mod input;
 mod locale;
@@ -222,6 +223,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
             .unwrap_or_default()
             .as_ref(),
     ));
+    let dialog = Box::new(dialog::DesktopDialogBackend::new());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
     let player = Player::new(
         renderer,
@@ -231,6 +233,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         storage,
         locale,
         Box::new(NullLogBackend::new()),
+        dialog,
     )?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
     player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.

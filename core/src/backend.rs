@@ -1,4 +1,5 @@
 pub mod audio;
+pub mod dialog;
 pub mod input;
 pub mod locale;
 pub mod log;

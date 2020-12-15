@@ -3,6 +3,7 @@
 //! Trace output can be compared with correct output from the official Flash Payer.
 
 use approx::assert_relative_eq;
+use ruffle_core::backend::dialog::NullDialogBackend;
 use ruffle_core::backend::locale::NullLocaleBackend;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
@@ -674,6 +675,7 @@ fn run_swf(
         Box::new(MemoryStorageBackend::default()),
         Box::new(NullLocaleBackend::new()),
         Box::new(TestLogBackend::new(trace_output.clone())),
+        Box::new(NullDialogBackend::new()),
     )?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
     player

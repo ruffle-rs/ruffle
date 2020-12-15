@@ -2,6 +2,7 @@
 
 //! Ruffle web frontend.
 mod audio;
+mod dialog;
 mod input;
 mod locale;
 mod log_adapter;
@@ -16,6 +17,7 @@ use crate::{
 };
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Function, Object, Uint8Array};
+use ruffle_core::backend::dialog::DialogBackend;
 use ruffle_core::backend::input::InputBackend;
 use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
@@ -316,7 +318,7 @@ impl Ruffle {
 
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
         let log = Box::new(WebLogBackend::new(trace_observer.clone()));
-
+        let dialog = Box::new(dialog::WebDialogBackend::new());
         let core = ruffle_core::Player::new(
             renderer,
             audio,
@@ -325,6 +327,7 @@ impl Ruffle {
             local_storage,
             locale,
             log,
+            dialog,
         )?;
 
         // Create instance.
