@@ -13,8 +13,8 @@ impl DesktopDialogBackend {
 }
 
 impl DialogBackend for DesktopDialogBackend {
-    fn message(&self, title: &str, message: &str) {
-        message_box_ok(title, message, MessageBoxIcon::Info)
+    fn message(&self, message: &str) {
+        message_box_ok("Message", message, MessageBoxIcon::Info)
     }
 
     fn yes_no(&self, message: &str) -> bool {

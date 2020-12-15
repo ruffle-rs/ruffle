@@ -24,7 +24,7 @@ use crate::prelude::*;
 use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
-use crate::vminterface::Instantiator;
+use crate::vminterface::{AvmType, Instantiator};
 use enumset::EnumSet;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
@@ -161,7 +161,7 @@ pub struct Player {
     input: Input,
     locale: Locale,
     log: Log,
-    dialog: Dialog,
+    pub dialog: Dialog,
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
@@ -807,6 +807,7 @@ impl Player {
     /// This should only be called once. Further movie loads should preload the
     /// specific `MovieClip` referenced.
     fn preload(&mut self) {
+        let mut is_action_script_3 = false;
         self.mutate_with_update_context(|context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
             let root = *context.levels.get(&0).expect("root level");
@@ -814,15 +815,20 @@ impl Player {
                 .unwrap()
                 .preload(context, &mut morph_shapes);
 
+            let lib = context
+                .library
+                .library_for_movie_mut(root.as_movie_clip().unwrap().movie().unwrap());
+
+            is_action_script_3 = lib.avm_type() == AvmType::Avm2;
             // Finalize morph shapes.
             for (id, static_data) in morph_shapes {
                 let morph_shape = MorphShape::new(context.gc_context, static_data);
-                context
-                    .library
-                    .library_for_movie_mut(root.as_movie_clip().unwrap().movie().unwrap())
-                    .register_character(id, crate::character::Character::MorphShape(morph_shape));
+                lib.register_character(id, crate::character::Character::MorphShape(morph_shape));
             }
         });
+        if is_action_script_3 {
+            self.dialog.message("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
+        }
     }
 
     pub fn run_frame(&mut self) {

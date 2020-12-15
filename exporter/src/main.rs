@@ -3,6 +3,7 @@ use futures::executor::block_on;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use ruffle_core::backend::audio::NullAudioBackend;
+use ruffle_core::backend::dialog::NullDialogBackend;
 use ruffle_core::backend::input::NullInputBackend;
 use ruffle_core::backend::locale::NullLocaleBackend;
 use ruffle_core::backend::log::NullLogBackend;
@@ -111,6 +112,7 @@ fn take_screenshot(
         Box::new(MemoryStorageBackend::default()),
         Box::new(NullLocaleBackend::new()),
         Box::new(NullLogBackend::new()),
+        Box::new(NullDialogBackend::new()),
     )?;
 
     player
