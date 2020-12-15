@@ -564,7 +564,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         // Noop
     }
 
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, _smoothing: bool) {
         if self.deactivating_mask {
             return;
         }

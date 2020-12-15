@@ -932,7 +932,7 @@ impl RenderBackend for WebGlRenderBackend {
         }
     }
 
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
         self.set_stencil_state();
         if let Some((_, bitmap)) = self.textures.get(bitmap.0) {
             let texture = &bitmap.texture;
@@ -1023,7 +1023,11 @@ impl RenderBackend for WebGlRenderBackend {
             program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
 
             // Set texture parameters.
-            let filter = Gl::LINEAR as i32;
+            let filter = if smoothing {
+                Gl::LINEAR as i32
+            } else {
+                Gl::NEAREST as i32
+            };
             self.gl
                 .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, filter);
             self.gl

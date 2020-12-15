@@ -928,7 +928,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         }
     }
 
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
         if let Some((_id, texture)) = self.textures.get(bitmap.0) {
             let (frame_output, encoder) =
                 if let Some((frame_output, encoder)) = &mut self.current_frame {
@@ -1070,7 +1070,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             render_pass.set_bind_group(2, &bitmap_bind_group, &[]);
             render_pass.set_bind_group(
                 3,
-                self.descriptors.bitmap_samplers.get_bind_group(false, true),
+                self.descriptors
+                    .bitmap_samplers
+                    .get_bind_group(false, smoothing),
                 &[],
             );
             render_pass.set_vertex_buffer(0, self.quad_vbo.slice(..));
