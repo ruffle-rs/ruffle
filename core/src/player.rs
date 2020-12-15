@@ -208,6 +208,7 @@ pub struct Player {
     self_reference: Option<Weak<Mutex<Self>>>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl Player {
     pub fn new(
         renderer: Renderer,
