@@ -675,6 +675,7 @@ impl<'gc> LayoutBox<'gc> {
                 for text in span_text.split(&['\n', '\r', '\t'][..]) {
                     let slice_start = text.as_ptr() as usize - span_text.as_ptr() as usize;
                     let delimiter = if slice_start > 0 {
+                        // -1 is ok here since '\n','\r','\t' are all 1 byte
                         span_text
                             .get(slice_start - 1..)
                             .and_then(|s| s.chars().next())
@@ -719,7 +720,16 @@ impl<'gc> LayoutBox<'gc> {
 
                             // This ensures that the space causing the line break
                             // is included in the line it broke.
-                            let next_breakpoint = min(last_breakpoint + breakpoint + 1, text.len());
+                            let next_breakpoint = if last_breakpoint + breakpoint + 1 >= text.len()
+                            {
+                                text.len()
+                            } else {
+                                let mut nb = last_breakpoint + breakpoint + 1;
+                                while !text.is_char_boundary(nb) {
+                                    nb += 1;
+                                }
+                                nb
+                            };
 
                             layout_context.append_text(
                                 &text[last_breakpoint..next_breakpoint],

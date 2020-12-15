@@ -24,7 +24,8 @@ fn process_html_entity(src: &str) -> Cow<str> {
 
         let src = &src[amp_index..];
         let mut entity_start = None;
-        for (i, ch) in src.char_indices() {
+        let mut char_indices = src.char_indices().peekable();
+        while let Some((i, ch)) = char_indices.next() {
             if let Some(start) = entity_start {
                 if ch == ';' {
                     let s = src[start + 1..i].to_ascii_lowercase();
@@ -52,11 +53,21 @@ fn process_html_entity(src: &str) -> Cow<str> {
                                 }
                             } else {
                                 // Invalid entity; output text as is.
-                                result_str.push_str(&src[start..i + 1]);
+                                if let Some((next_idx, _)) = char_indices.peek() {
+                                    result_str.push_str(&src[start..*next_idx]);
+                                } else {
+                                    result_str.push_str(&src[start..]);
+                                }
                             }
                         }
                         // Invalid entity; output text as is.
-                        _ => result_str.push_str(&src[start..i + 1]),
+                        _ => {
+                            if let Some((next_idx, _)) = char_indices.peek() {
+                                result_str.push_str(&src[start..*next_idx]);
+                            } else {
+                                result_str.push_str(&src[start..]);
+                            }
+                        }
                     };
 
                     entity_start = None;
@@ -1610,6 +1621,7 @@ impl FormatSpans {
                 } else {
                     let line_start = line.as_ptr() as usize - text.as_ptr() as usize;
                     let line_with_newline = if line_start > 0 {
+                        // -1/+1 is ok here since it's referring to '\n'
                         text.get(line_start - 1..line.len() + 1).unwrap_or(line)
                     } else {
                         line
