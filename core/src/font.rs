@@ -232,15 +232,15 @@ impl<'gc> Font<'gc> {
 
         transform.matrix.a = scale;
         transform.matrix.d = scale;
-        let mut chars = text.chars().peekable();
+        let mut char_indices = text.char_indices().peekable();
         let has_kerning_info = self.has_kerning_info();
-        let mut pos = 0;
         let mut x = Twips::zero();
-        while let Some(c) = chars.next() {
+        while let Some((pos, c)) = char_indices.next() {
             if let Some(glyph) = self.get_glyph_for_char(c) {
                 let mut advance = Twips::new(glyph.advance);
                 if has_kerning_info && params.kerning {
-                    advance += self.get_kerning_offset(c, chars.peek().cloned().unwrap_or('\0'));
+                    let next_char = char_indices.peek().cloned().unwrap_or((0, '\0')).1;
+                    advance += self.get_kerning_offset(c, next_char);
                 }
                 let twips_advance =
                     Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing;
@@ -251,7 +251,6 @@ impl<'gc> Font<'gc> {
                 transform.matrix.tx += twips_advance;
                 x += twips_advance;
             }
-            pos += 1;
         }
     }
 
@@ -319,6 +318,7 @@ impl<'gc> Font<'gc> {
             let word_end = word_start + word.len();
 
             let measure = self.measure(
+                // +1 is fine because ' ' is 1 byte
                 text.get(word_start..word_end + 1).unwrap_or(word),
                 params,
                 false,
@@ -327,14 +327,27 @@ impl<'gc> Font<'gc> {
             if is_start_of_line && measure.0 > remaining_width {
                 //Failsafe for if we get a word wider than the field.
                 let mut last_passing_breakpoint = (Twips::new(0), Twips::new(0));
-                let mut frag_end = word_start;
+
+                let cur_slice = &text[word_start..];
+                let mut char_iter = cur_slice.char_indices();
+                let mut prev_char_index = word_start;
+                let mut prev_frag_end = 0;
+
+                char_iter.next(); // No need to check cur_slice[0..0]
                 while last_passing_breakpoint.0 < remaining_width {
-                    frag_end += 1;
-                    last_passing_breakpoint =
-                        self.measure(&text[word_start..frag_end], params, false);
+                    prev_char_index = word_start + prev_frag_end;
+
+                    if let Some((frag_end, _)) = char_iter.next() {
+                        last_passing_breakpoint =
+                            self.measure(&cur_slice[..frag_end], params, false);
+
+                        prev_frag_end = frag_end;
+                    } else {
+                        break;
+                    }
                 }
 
-                return Some(frag_end - 1);
+                return Some(prev_char_index);
             } else if measure.0 > remaining_width {
                 //The word is wider than our remaining width, return the end of
                 //the line.

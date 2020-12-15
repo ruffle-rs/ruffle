@@ -402,6 +402,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text_format(self, from: usize, to: usize) -> TextFormat {
+        // TODO: Convert to byte indices
         self.0.read().text_spans.get_text_format(from, to)
     }
 
@@ -412,6 +413,7 @@ impl<'gc> EditText<'gc> {
         tf: TextFormat,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
+        // TODO: Convert to byte indices
         self.0
             .write(context.gc_context)
             .text_spans
@@ -1021,7 +1023,11 @@ impl<'gc> EditText<'gc> {
                             && local_position.1 <= params.height()
                         {
                             if local_position.0 >= x + (advance / 2) {
-                                result = Some(pos + 1);
+                                let mut idx = pos + 1;
+                                while !text.is_char_boundary(idx) {
+                                    idx += 1;
+                                }
+                                result = Some(idx);
                             } else {
                                 result = Some(pos);
                             }
@@ -1058,9 +1064,14 @@ impl<'gc> EditText<'gc> {
                     // Backspace with caret
                     if selection.start() > 0 {
                         // Delete previous character
-                        self.replace_text(selection.start() - 1, selection.start(), "", context);
+                        let text = self.text();
+                        let mut start = selection.start() - 1;
+                        while !text.is_char_boundary(start) {
+                            start -= 1;
+                        }
+                        self.replace_text(start, selection.start(), "", context);
                         self.set_selection(
-                            Some(TextSelection::for_position(selection.start() - 1)),
+                            Some(TextSelection::for_position(start)),
                             context.gc_context,
                         );
                         changed = true;
@@ -1070,22 +1081,26 @@ impl<'gc> EditText<'gc> {
                     // Delete with caret
                     if selection.end() < self.text_length() {
                         // Delete next character
-                        self.replace_text(selection.start(), selection.start() + 1, "", context);
+                        let text = self.text();
+                        let mut end = selection.start() + 1;
+                        while !text.is_char_boundary(end) {
+                            end += 1;
+                        }
+                        self.replace_text(selection.start(), end, "", context);
                         // No need to change selection
                         changed = true;
                     }
                 }
-                32..=126 => {
-                    // ASCII
-                    // TODO: Make this actually good and not basic ASCII :)
+                code if !(code as char).is_control() => {
                     self.replace_text(
                         selection.start(),
                         selection.end(),
                         &character.to_string(),
                         context,
                     );
+                    let new_start = selection.start() + character.len_utf8();
                     self.set_selection(
-                        Some(TextSelection::for_position(selection.start() + 1)),
+                        Some(TextSelection::for_position(new_start)),
                         context.gc_context,
                     );
                     changed = true;
@@ -1428,31 +1443,34 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 ClipEventResult::Handled
             }
             ClipEvent::KeyPress { key_code } => {
-                let mut text = self.0.write(context.gc_context);
-                let selection = text.selection;
+                let mut edit_text = self.0.write(context.gc_context);
+                let selection = edit_text.selection;
                 if let Some(mut selection) = selection {
-                    let length = text.text_spans.text().len();
+                    let text = edit_text.text_spans.text();
+                    let length = text.len();
                     match key_code {
                         ButtonKeyCode::Left if selection.to > 0 => {
-                            if context.input.is_key_down(KeyCode::Shift) {
+                            selection.to -= 1;
+                            while !text.is_char_boundary(selection.to) {
                                 selection.to -= 1;
-                            } else {
-                                selection.to -= 1;
+                            }
+                            if !context.input.is_key_down(KeyCode::Shift) {
                                 selection.from = selection.to;
                             }
                         }
                         ButtonKeyCode::Right if selection.to < length => {
-                            if context.input.is_key_down(KeyCode::Shift) {
+                            selection.to += 1;
+                            while !text.is_char_boundary(selection.to) {
                                 selection.to += 1;
-                            } else {
-                                selection.to += 1;
+                            }
+                            if !context.input.is_key_down(KeyCode::Shift) {
                                 selection.from = selection.to;
                             }
                         }
                         _ => {}
                     }
                     selection.clamp(length);
-                    text.selection = Some(selection);
+                    edit_text.selection = Some(selection);
                     ClipEventResult::Handled
                 } else {
                     ClipEventResult::NotHandled
