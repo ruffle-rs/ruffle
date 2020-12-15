@@ -8,6 +8,7 @@ mod locale;
 mod navigator;
 mod storage;
 mod task;
+mod ui;
 
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
@@ -215,6 +216,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let storage = Box::new(DiskStorageBackend::new());
+    let user_interface = Box::new(ui::DesktopUiBackend::new());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
     let player = Player::new(
         renderer,
@@ -224,6 +226,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         storage,
         locale,
         Box::new(NullLogBackend::new()),
+        user_interface,
     )?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
     player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.

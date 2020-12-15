@@ -25,7 +25,8 @@ ruffleShadowTemplate.innerHTML = `
         #play_button,
         #unmute_overlay,
         #unmute_overlay .background,
-        #panic {
+        #panic,
+        #message_overlay {
             width: inherit;
             height: inherit;
         }
@@ -120,6 +121,39 @@ ruffleShadowTemplate.innerHTML = `
 
         #panic li {
             padding: 10px 50px;
+        }
+
+        #message_overlay {
+            position: absolute;
+            background-color: #37528C;
+            color: #FFAD33;
+            opacity: 1.0;
+            z-index: 2;
+            text-align: center;
+        }
+        
+        #message_overlay .message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            padding: 20px;
+            transform: translate(-50%, -50%);
+        }
+        
+        #continue-btn {
+             cursor: pointer;
+             background-color: #37528C;
+             color: #FFAD33;
+             border: 2px solid #FFAD33;
+             font-weight: bold;
+             font-size: 20px;
+             border-radius: 20px;
+             padding: 10px;
+        }
+        
+        #continue-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
         }
 
         #right_click_menu {
