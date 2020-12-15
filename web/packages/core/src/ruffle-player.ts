@@ -790,6 +790,25 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    displayMessage(message: string): void {
+        // Show a dismissible message in front of the player
+        const div = document.createElement("div");
+        div.id = "message_overlay";
+        div.innerHTML = `<div class="message">
+            <div>
+                <p>${message}</p>
+            </div>
+            <div>
+                <button id="continue-btn">continue</button>
+            </div>`;
+        this.container.prepend(div);
+        (<HTMLButtonElement>(
+            this.container.querySelector("#continue-btn")
+        )).onclick = () => {
+            div.remove();
+        };
+    }
+
     protected debugPlayerInfo(): string {
         return `Allows script access: ${this.allowScriptAccess}\n`;
     }

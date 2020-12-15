@@ -7,6 +7,7 @@ mod locale;
 mod log_adapter;
 mod navigator;
 mod storage;
+mod ui;
 
 use crate::log_adapter::WebLogBackend;
 use crate::storage::LocalStorageBackend;
@@ -96,6 +97,9 @@ extern "C" {
 
     #[wasm_bindgen(method)]
     fn panic(this: &JavascriptPlayer, error: &JsError);
+
+    #[wasm_bindgen(method, js_name = "displayMessage")]
+    fn display_message(this: &JavascriptPlayer, message: &str);
 }
 
 struct JavascriptInterface {
@@ -317,7 +321,7 @@ impl Ruffle {
 
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
         let log = Box::new(WebLogBackend::new(trace_observer.clone()));
-
+        let user_interface = Box::new(ui::WebUiBackend::new(js_player.clone()));
         let core = ruffle_core::Player::new(
             renderer,
             audio,
@@ -326,6 +330,7 @@ impl Ruffle {
             local_storage,
             locale,
             log,
+            user_interface,
         )?;
 
         // Create instance.
