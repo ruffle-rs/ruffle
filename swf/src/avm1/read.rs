@@ -282,7 +282,7 @@ impl<'a> Reader<'a> {
 
     fn read_push(&mut self, length: usize) -> Result<Action<'a>> {
         let end_pos = self.pos() + length;
-        let mut values = Vec::with_capacity(end_pos);
+        let mut values = Vec::with_capacity(4);
         while self.pos() < end_pos {
             values.push(self.read_push_value()?);
         }
