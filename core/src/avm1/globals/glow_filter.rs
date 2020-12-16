@@ -13,77 +13,14 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let color = args
-        .get(0)
-        .unwrap_or(&0xFF0000.into())
-        .coerce_to_i32(activation)
-        .map(|x| x.max(1).min(0xFFFFFF))?;
-
-    let alpha = args
-        .get(1)
-        .unwrap_or(&1.into())
-        .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(1.0))?;
-
-    let blur_x = args
-        .get(2)
-        .unwrap_or(&6.into())
-        .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
-
-    let blur_y = args
-        .get(3)
-        .unwrap_or(&6.into())
-        .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
-
-    let strength = args
-        .get(4)
-        .unwrap_or(&2.into())
-        .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
-
-    let quality = args
-        .get(5)
-        .unwrap_or(&1.into())
-        .coerce_to_i32(activation)
-        .map(|x| x.max(0).min(15))?;
-
-    let glow_filter = this.as_glow_filter_object().unwrap();
-
-    glow_filter.set_color(activation.context.gc_context, color);
-    glow_filter.set_alpha(activation.context.gc_context, alpha);
-    glow_filter.set_blur_x(activation.context.gc_context, blur_x);
-    glow_filter.set_blur_y(activation.context.gc_context, blur_y);
-    glow_filter.set_strength(activation.context.gc_context, strength);
-    glow_filter.set_quality(activation.context.gc_context, quality);
+    set_color(activation, this, args.get(0..1).unwrap_or(&[]))?;
+    set_alpha(activation, this, args.get(1..2).unwrap_or(&[]))?;
+    set_blur_x(activation, this, args.get(2..3).unwrap_or(&[]))?;
+    set_blur_y(activation, this, args.get(3..4).unwrap_or(&[]))?;
+    set_strength(activation, this, args.get(4..5).unwrap_or(&[]))?;
+    set_quality(activation, this, args.get(5..6).unwrap_or(&[]))?;
 
     Ok(Value::Undefined)
-}
-
-pub fn clone<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let proto = activation.context.avm1.prototypes.glow_filter_constructor;
-
-    let color = this.get("color", activation)?;
-    let alpha = this.get("alpha", activation)?;
-    let blur_x = this.get("blurX", activation)?;
-    let blur_y = this.get("blurY", activation)?;
-    let strength = this.get("strength", activation)?;
-    let quality = this.get("quality", activation)?;
-    let inner = this.get("inner", activation)?;
-    let knockout = this.get("knockout", activation)?;
-
-    let cloned = proto.construct(
-        activation,
-        &[
-            color, alpha, blur_x, blur_y, strength, quality, inner, knockout,
-        ],
-    )?;
-    Ok(cloned.into())
 }
 
 pub fn get_alpha<'gc>(
@@ -299,9 +236,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let glow_filter = GlowFilterObject::empty_object(gc_context, Some(proto));
-    let mut object = glow_filter.as_script_object().unwrap();
-
-    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), Some(fn_proto));
+    let object = glow_filter.as_script_object().unwrap();
 
     object.add_property(
         gc_context,
