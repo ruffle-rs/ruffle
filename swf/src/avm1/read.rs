@@ -4,7 +4,6 @@ use crate::avm1::opcode::OpCode;
 use crate::avm1::types::*;
 use crate::error::{Error, Result};
 use crate::read::SwfRead;
-use smallvec::SmallVec;
 use std::io::Cursor;
 
 #[allow(dead_code)]
@@ -283,7 +282,7 @@ impl<'a> Reader<'a> {
 
     fn read_push(&mut self, length: usize) -> Result<Action<'a>> {
         let end_pos = self.pos() + length;
-        let mut values = SmallVec::new();
+        let mut values = Vec::with_capacity(4);
         while self.pos() < end_pos {
             values.push(self.read_push_value()?);
         }
@@ -391,21 +390,12 @@ impl<'a> Reader<'a> {
 pub mod tests {
     use super::*;
     use crate::test_data;
-    use smallvec::smallvec;
 
     #[test]
     fn read_action() {
         for (swf_version, expected_action, action_bytes) in test_data::avm1_tests() {
-            // TODO: Limitations in SmallVec prevent this from compiling when it should be safe.
-            // SmallVec is invariant over T, when it should be covariant.
-            // This code works with Vec, which is properly covariant.
-            // see https://github.com/servo/rust-smallvec/issues/146
-            // This should be fixed when const generics are stable.
-            // This code should be safe and it's just for testing.
-            let expected_action: Action<'_> = unsafe { std::mem::transmute(expected_action) };
-
             let mut reader = Reader::new(&action_bytes[..], swf_version);
-            let parsed_action: Action<'_> = reader.read_action().unwrap().unwrap();
+            let parsed_action = reader.read_action().unwrap().unwrap();
             if parsed_action != expected_action {
                 // Failed, result doesn't match.
                 panic!(
@@ -421,8 +411,7 @@ pub mod tests {
     fn read_parse_error() {
         let action_bytes = [0xff, 0xff, 0xff, 0x00, 0x00];
         let mut reader = Reader::new(&action_bytes[..], 5);
-        let action = reader.read_action();
-        match action {
+        match reader.read_action() {
             Err(crate::error::Error::Avm1ParseError { .. }) => (),
             result => {
                 panic!("Expected Avm1ParseError, got {:?}", result);
@@ -451,7 +440,7 @@ pub mod tests {
         if let Action::DefineFunction { actions, .. } = action {
             let mut reader = Reader::new(actions, 5);
             let action = reader.read_action().unwrap().unwrap();
-            assert_eq!(action, Action::Push(smallvec![Value::Str("test")]));
+            assert_eq!(action, Action::Push(vec![Value::Str("test")]));
         }
     }
 
@@ -462,9 +451,6 @@ pub mod tests {
         let action_bytes = [0x96, 2, 0, 2, 3, 3]; // Extra 3 at the end shouldn't be read.
         let mut reader = Reader::new(&action_bytes[..], 5);
         let action = reader.read_action().unwrap().unwrap();
-        assert_eq!(
-            action,
-            Action::Push(smallvec![Value::Null, Value::Undefined])
-        );
+        assert_eq!(action, Action::Push(vec![Value::Null, Value::Undefined]));
     }
 }
