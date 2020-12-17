@@ -21,6 +21,7 @@ pub enum Namespace<'gc> {
     StaticProtected(AvmString<'gc>),
     Private(AvmString<'gc>),
     Any,
+    RufflePrivate(AvmString<'gc>),
 }
 
 impl<'gc> Namespace<'gc> {
@@ -74,6 +75,12 @@ impl<'gc> Namespace<'gc> {
         Namespace::Package(package_name.into())
     }
 
+    /// Construct a Ruffle-only namespace that user code cannot access, name,
+    /// or enumerate.
+    pub fn ruffle_private(name: impl Into<AvmString<'gc>>) -> Self {
+        Namespace::RufflePrivate(name.into())
+    }
+
     pub fn is_public(&self) -> bool {
         *self == Self::Package("".into())
     }
@@ -103,6 +110,7 @@ impl<'gc> Namespace<'gc> {
             Self::StaticProtected(s) => *s,
             Self::Private(s) => *s,
             Self::Any => "".into(),
+            Self::RufflePrivate(_) => "".into(),
         }
     }
 }
