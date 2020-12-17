@@ -149,6 +149,14 @@ export interface BaseLoadOptions {
      * @default LogLevel.Error
      */
     logLevel?: LogLevel;
+
+    /**
+     * Whether or not to show a context menu when right-clicking
+     * a Ruffle instance.
+     *
+     * @default true
+     */
+    showContextMenu?: boolean;
 }
 
 /**

@@ -3,7 +3,6 @@ import { Ruffle } from "../pkg/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
-import { Config } from "./config";
 import {
     BaseLoadOptions,
     DataLoadOptions,
@@ -108,6 +107,7 @@ export class RufflePlayer extends HTMLElement {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private ruffleConstructor: Promise<{ new (...args: any[]): Ruffle }>;
     private panicked = false;
+    private hasContextMenu = false;
 
     /**
      * If set to true, the movie is allowed to interact with the page through
@@ -116,12 +116,6 @@ export class RufflePlayer extends HTMLElement {
      * This should only be enabled for movies you trust.
      */
     allowScriptAccess: boolean;
-
-    /**
-     * Any configuration that should apply to this specific player.
-     * This will be defaulted with any global configuration.
-     */
-    config: Config = {};
 
     /**
      * Constructs a new Ruffle flash player for insertion onto the page.
@@ -151,12 +145,10 @@ export class RufflePlayer extends HTMLElement {
         );
 
         this.rightClickMenu = this.shadow.getElementById("right_click_menu")!;
-
         this.addEventListener(
             "contextmenu",
             this.openRightClickMenu.bind(this)
         );
-
         window.addEventListener("click", this.hideRightClickMenu.bind(this));
 
         this.instance = null;
@@ -435,51 +427,52 @@ export class RufflePlayer extends HTMLElement {
             throw error;
         }
 
-        //TODO: Actually stream files...
+        if (!this.isConnected || this.isUnusedFallbackObject()) {
+            console.warn(
+                "Ignoring attempt to play a disconnected or suspended Ruffle element"
+            );
+            return;
+        }
+
         try {
-            if (this.isConnected && !this.isUnusedFallbackObject()) {
-                const config: BaseLoadOptions = {
-                    ...(window.RufflePlayer?.config ?? {}),
-                    ...this.config,
-                    ...options,
+            const config: BaseLoadOptions = {
+                ...(window.RufflePlayer?.config ?? {}),
+                ...options,
+            };
+
+            this.hasContextMenu = config.showContextMenu !== false;
+
+            // Pre-emptively set background color of container while Ruffle/SWF loads.
+            if (config.backgroundColor) {
+                this.container.style.backgroundColor = config.backgroundColor;
+            }
+
+            await this.ensureFreshInstance(config);
+
+            if ("url" in options) {
+                console.log(`Loading SWF file ${options.url}`);
+                try {
+                    this.swfUrl = new URL(
+                        options.url,
+                        document.location.href
+                    ).href;
+                } catch {
+                    this.swfUrl = options.url;
+                }
+
+                const parameters = {
+                    ...sanitizeParameters(
+                        options.url.substring(options.url.indexOf("?"))
+                    ),
+                    ...sanitizeParameters(options.parameters),
                 };
 
-                // Pre-emptively set background color of container while Ruffle/SWF loads.
-                if (config.backgroundColor) {
-                    this.container.style.backgroundColor =
-                        config.backgroundColor;
-                }
-
-                await this.ensureFreshInstance(config);
-
-                if ("url" in options) {
-                    console.log(`Loading SWF file ${options.url}`);
-                    try {
-                        this.swfUrl = new URL(
-                            options.url,
-                            document.location.href
-                        ).href;
-                    } catch {
-                        this.swfUrl = options.url;
-                    }
-
-                    const parameters = {
-                        ...sanitizeParameters(
-                            options.url.substring(options.url.indexOf("?"))
-                        ),
-                        ...sanitizeParameters(options.parameters),
-                    };
-                    this.instance!.stream_from(options.url, parameters);
-                } else if ("data" in options) {
-                    console.log("Loading SWF data");
-                    this.instance!.load_data(
-                        new Uint8Array(options.data),
-                        sanitizeParameters(options.parameters)
-                    );
-                }
-            } else {
-                console.warn(
-                    "Ignoring attempt to play a disconnected or suspended Ruffle element"
+                this.instance!.stream_from(options.url, parameters);
+            } else if ("data" in options) {
+                console.log("Loading SWF data");
+                this.instance!.load_data(
+                    new Uint8Array(options.data),
+                    sanitizeParameters(options.parameters)
                 );
             }
         } catch (err) {
@@ -577,6 +570,10 @@ export class RufflePlayer extends HTMLElement {
 
     private openRightClickMenu(e: MouseEvent): void {
         e.preventDefault();
+
+        if (!this.hasContextMenu) {
+            return;
+        }
 
         // Clear all `right_click_menu` items.
         while (this.rightClickMenu.firstChild) {
