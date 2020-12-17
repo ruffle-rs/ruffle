@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::events::Event;
+use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::scope::Scope;
@@ -20,6 +20,7 @@ use std::fmt::Debug;
 
 mod array_object;
 mod custom_object;
+mod dispatch_object;
 mod domain_object;
 mod event_object;
 mod function_object;
@@ -29,6 +30,7 @@ mod script_object;
 mod stage_object;
 
 pub use crate::avm2::object::array_object::ArrayObject;
+pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::DomainObject;
 pub use crate::avm2::object::event_object::EventObject;
 pub use crate::avm2::object::function_object::{implicit_deriver, FunctionObject};
@@ -51,6 +53,7 @@ pub use crate::avm2::object::stage_object::StageObject;
         StageObject(StageObject<'gc>),
         DomainObject(DomainObject<'gc>),
         EventObject(EventObject<'gc>),
+        DispatchObject(DispatchObject<'gc>)
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -860,6 +863,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object as a mutable event.
     fn as_event_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<Event<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a list of event handlers.
+    fn as_dispatch(&self) -> Option<Ref<DispatchList<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a mutable list of event handlers.
+    fn as_dispatch_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<DispatchList<'gc>>> {
         None
     }
 }
