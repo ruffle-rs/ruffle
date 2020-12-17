@@ -80,21 +80,10 @@ impl SwfMovie {
         // Sometimes SWFs will have an incorrectly compressed stream,
         // but will otherwise decompress fine up to the End tag.
         // So just warn on this case and try to continue gracefully.
-        let data = if header.compression == swf::Compression::Lzma {
-            // TODO: The LZMA decoder is still funky.
-            // It always errors, and doesn't return all the data if you use read_to_end,
-            // but read_exact at least returns the data... why?
-            // Does the decoder need to be flushed somehow?
-            let mut data = vec![0u8; swf_stream.uncompressed_length];
-            let _ = reader.get_mut().read_exact(&mut data);
-            data
-        } else {
-            let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
-            if let Err(e) = reader.get_mut().read_to_end(&mut data) {
-                return Err(format!("Error decompressing SWF, may be corrupt: {}", e).into());
-            }
-            data
-        };
+        let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
+        if let Err(e) = reader.get_mut().read_to_end(&mut data) {
+            return Err(format!("Error decompressing SWF, may be corrupt: {}", e).into());
+        }
 
         Ok(Self {
             header,

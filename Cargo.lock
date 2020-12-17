@@ -291,6 +291,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "build_const"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39092a32794787acd8525ee150305ff051b0aa6cc2abaf193924f5ab05425f39"
+
+[[package]]
 name = "bumpalo"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -792,6 +798,15 @@ dependencies = [
  "thiserror",
  "web-sys",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "crc"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d663548de7f5cca343f1e0a48d14dcfb0e9eb4e079ec58883b7251539fa10aeb"
+dependencies = [
+ "build_const",
 ]
 
 [[package]]
@@ -2232,14 +2247,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "lzma-sys"
-version = "0.1.17"
+name = "lzma-rs"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdb4b7c3eddad11d3af9e86c487607d2d2442d185d848575365c4856ba96d619"
+checksum = "adc181f57e3b64bb860c476fe5751eb6f60e9fcf588b1447e24c0757c1c3101f"
 dependencies = [
- "cc",
- "libc",
- "pkg-config",
+ "byteorder",
+ "crc",
 ]
 
 [[package]]
@@ -3844,10 +3858,10 @@ dependencies = [
  "flate2",
  "libflate 1.0.3",
  "log",
+ "lzma-rs",
  "num-derive",
  "num-traits",
  "smallvec 1.5.1",
- "xz2",
 ]
 
 [[package]]
@@ -4789,12 +4803,3 @@ name = "xml-rs"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b07db065a5cf61a7e4ba64f29e67db906fb1787316516c4e6e5ff0fea1efcd8a"
-
-[[package]]
-name = "xz2"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c179869f34fc7c01830d3ce7ea2086bc3a07e0d35289b667d0a8bf910258926c"
-dependencies = [
- "lzma-sys",
-]

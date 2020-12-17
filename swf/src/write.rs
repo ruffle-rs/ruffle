@@ -72,7 +72,11 @@ pub fn write_swf<W: Write>(swf: &Swf, mut output: W) -> Result<()> {
         // SWF format has a mangled LZMA header, so we have to do some magic to convert the
         // standard LZMA header to SWF format.
         // https://adobe.ly/2s8oYzn
-        Compression::Lzma => write_lzma_swf(&mut output, &swf_body)?,
+        Compression::Lzma => {
+            write_lzma_swf(&mut output, &swf_body)?;
+            // 5 bytes of garbage data?
+            //output.write_all(&[0xFF, 0xB5, 0xE6, 0xF8, 0xCB])?;
+        }
     };
 
     Ok(())
@@ -105,19 +109,16 @@ fn write_zlib_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
 }
 
 #[cfg(feature = "lzma")]
-fn write_lzma_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
-    use xz2::{
-        stream::{Action, LzmaOptions, Stream},
-        write::XzEncoder,
-    };
-    let mut stream = Stream::new_lzma_encoder(&LzmaOptions::new_preset(9).unwrap()).unwrap();
-    let mut lzma_header = [0; 13];
-    stream.process(&[], &mut lzma_header, Action::Run).unwrap();
-    // Compressed length. We just write out a dummy value.
-    output.write_u32::<LittleEndian>(0xffffffff)?;
-    output.write_all(&lzma_header[0..5])?; // LZMA property bytes.
-    let mut encoder = XzEncoder::new_stream(&mut output, stream);
-    encoder.write_all(&swf_body)?;
+fn write_lzma_swf<W: Write>(mut output: W, mut swf_body: &[u8]) -> Result<()> {
+    // Compress data using LZMA.
+    let mut data = vec![];
+    lzma_rs::lzma_compress(&mut swf_body, &mut data)?;
+
+    // Flash uses a mangled LZMA header, so we have to massage it into the SWF format.
+    // https://helpx.adobe.com/flash-player/kb/exception-thrown-you-decompress-lzma-compressed.html
+    output.write_u32::<LittleEndian>(data.len() as u32 - 13)?; // Compressed length (- 13 to not include lzma header)
+    output.write_all(&data[0..5])?; // LZMA properties
+    output.write_all(&data[13..])?; // Data
     Ok(())
 }
 

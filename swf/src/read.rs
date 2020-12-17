@@ -156,11 +156,9 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     mut input: R,
     uncompressed_length: u32,
 ) -> Result<Box<dyn Read + 'a>> {
-    use byteorder::WriteBytesExt;
-    use std::io::{Cursor, Write};
-    use xz2::{
-        read::XzDecoder,
-        stream::{Action, Stream},
+    use lzma_rs::{
+        decompress::{Options, UnpackedSize},
+        lzma_decompress_with_options,
     };
     // Flash uses a mangled LZMA header, so we have to massage it into the normal format.
     // https://helpx.adobe.com/flash-player/kb/exception-thrown-you-decompress-lzma-compressed.html
@@ -174,27 +172,24 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     // LZMA standard header
     // Bytes 0..5: LZMA properties
     // Bytes 5..13: Uncompressed length
+    //
+    // To deal with the mangled header, use lzma_rs options to anually provide uncompressed length.
 
-    // Read compressed length
+    // Read compressed length (ignored)
     let _ = input.read_u32::<LittleEndian>()?;
 
-    // Read LZMA propreties to decoder
-    let mut lzma_properties = [0u8; 5];
-    input.read_exact(&mut lzma_properties)?;
+    // TODO: Switch to lzma-rs streaming API when stable.
+    let mut output = Vec::with_capacity(uncompressed_length as usize);
+    lzma_decompress_with_options(
+        &mut io::BufReader::new(input),
+        &mut output,
+        &Options {
+            unpacked_size: UnpackedSize::UseProvided(Some(uncompressed_length.into())),
+        },
+    )
+    .map_err(|_| Error::invalid_data("Unable to decompress LZMA SWF."))?;
 
-    // Rearrange above into LZMA format
-    let mut lzma_header = Cursor::new(Vec::with_capacity(13));
-    lzma_header.write_all(&lzma_properties)?;
-    lzma_header.write_u64::<LittleEndian>(uncompressed_length.into())?;
-
-    // Create LZMA decoder stream and write header
-    let mut lzma_stream = Stream::new_lzma_decoder(u64::max_value()).unwrap();
-    lzma_stream
-        .process(&lzma_header.into_inner(), &mut [0u8; 1], Action::Run)
-        .unwrap();
-
-    // Decoder is ready
-    Ok(Box::new(XzDecoder::new_stream(input, lzma_stream)))
+    Ok(Box::new(io::Cursor::new(output)))
 }
 
 #[cfg(not(feature = "lzma"))]
