@@ -18,7 +18,8 @@ use gc_arena::{Collect, Gc, GcCell};
 #[collect(no_drop)]
 pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, BitmapStatic>,
@@ -131,25 +132,12 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for BitmapData<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.base.trace(cc);
-        self.static_data.trace(cc);
-    }
-}
-
 /// Static data shared between all instances of a bitmap.
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 struct BitmapStatic {
     id: CharacterId,
     bitmap_handle: BitmapHandle,
     width: u16,
     height: u16,
-}
-
-unsafe impl<'gc> gc_arena::Collect for BitmapStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        true
-    }
 }
