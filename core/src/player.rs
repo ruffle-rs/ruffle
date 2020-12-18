@@ -391,10 +391,7 @@ impl Player {
                     }
                 };
 
-            context
-                .library
-                .library_for_movie_mut(context.swf.clone())
-                .set_device_font(device_font);
+            context.library.set_device_font(device_font);
 
             // Set the version parameter on the root.
             let mut activation = Activation::from_stub(
