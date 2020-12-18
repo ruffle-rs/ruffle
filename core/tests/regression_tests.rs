@@ -459,6 +459,7 @@ swf_tests! {
     (as3_function_call_via_apply, "avm2/function_call_via_apply", 1),
     (as3_function_call_arguments, "avm2/function_call_arguments", 1),
     (as3_function_call_rest, "avm2/function_call_rest", 1),
+    (as3_eventdispatcher_haseventlistener, "avm2/eventdispatcher_haseventlistener", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
