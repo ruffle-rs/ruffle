@@ -8,6 +8,7 @@ use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.events.EventDispatcher`'s instance constructor.
@@ -165,6 +166,73 @@ pub fn has_event_listener<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Retrieve the parent of a given `EventDispatcher`.
+///
+/// `EventDispatcher` does not provide a generic way for it's subclasses to
+/// indicate ancestry. Instead, only specific event targets provide a hierarchy
+/// to traverse. If no hierarchy is available, this returns `None`, as if the
+/// target had no parent.
+fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
+    if let Some(dobj) = target.as_display_object() {
+        if let Some(dparent) = dobj.parent() {
+            if let Value::Object(parent) = dparent.object2() {
+                return Some(parent);
+            }
+        }
+    }
+
+    None
+}
+
+/// Implements `EventDispatcher.willTrigger`.
+pub fn will_trigger<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut this) = this {
+        let dispatch_list = this
+            .get_property(
+                this,
+                &QName::new(
+                    Namespace::ruffle_private("EventDispatcher"),
+                    "dispatch_list",
+                ),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+        let event_type = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+
+        if dispatch_list
+            .as_dispatch_mut(activation.context.gc_context)
+            .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
+            .has_event_listener(event_type)
+        {
+            return Ok(true.into());
+        }
+
+        let target = this
+            .get_property(
+                this,
+                &QName::new(Namespace::ruffle_private("EventDispatcher"), "target"),
+                activation,
+            )?
+            .coerce_to_object(activation)
+            .ok()
+            .unwrap_or(this);
+
+        if let Some(parent) = parent_of(target) {
+            return will_trigger(activation, Some(parent), args);
+        }
+    }
+
+    Ok(false.into())
+}
+
 /// Implements `flash.events.EventDispatcher`'s class constructor.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -199,6 +267,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "hasEventListener"),
         Method::from_builtin(has_event_listener),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "willTrigger"),
+        Method::from_builtin(will_trigger),
     ));
 
     write.define_instance_trait(Trait::from_slot(
