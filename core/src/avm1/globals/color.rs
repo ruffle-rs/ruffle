@@ -137,6 +137,7 @@ fn set_rgb<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(target) = target(activation, this)? {
+        target.set_transformed_by_script(activation.context.gc_context, true);
         let mut color_transform = target.color_transform_mut(activation.context.gc_context);
         let rgb = args
             .get(0)
@@ -197,6 +198,7 @@ fn set_transform<'gc>(
     }
 
     if let Some(target) = target(activation, this)? {
+        target.set_transformed_by_script(activation.context.gc_context, true);
         let mut color_transform = target.color_transform_mut(activation.context.gc_context);
         let transform = args
             .get(0)
