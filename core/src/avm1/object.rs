@@ -27,6 +27,7 @@ use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::borrow::Cow;
 use std::fmt::Debug;
+use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
 
 pub mod bevel_filter;
 pub mod bitmap_data;
@@ -45,6 +46,7 @@ pub mod value_object;
 pub mod xml_attributes_object;
 pub mod xml_idmap_object;
 pub mod xml_object;
+pub mod drop_shadow_filter;
 
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
@@ -67,6 +69,7 @@ pub mod xml_object;
         BlurFilterObject(BlurFilterObject<'gc>),
         BevelFilterObject(BevelFilterObject<'gc>),
         GlowFilterObject(GlowFilterObject<'gc>),
+        DropShadowFilterObject(DropShadowFilterObject<'gc>),
         DateObject(DateObject<'gc>),
         BitmapData(BitmapDataObject<'gc>),
     }
@@ -457,6 +460,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `GlowFilterObject`, if it exists
     fn as_glow_filter_object(&self) -> Option<GlowFilterObject<'gc>> {
+        None
+    }
+    /// Get the underlying `DropShadowFilterObject`, if it exists
+    fn as_drop_shadow_filter_object(&self) -> Option<DropShadowFilterObject<'gc>> {
         None
     }
 

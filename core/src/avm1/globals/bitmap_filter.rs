@@ -5,6 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
+use crate::avm1::globals::bevel_filter::get_knockout;
 
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -75,13 +76,46 @@ pub fn clone<'gc>(
         let blur_y = this.get("blurY", activation)?;
         let strength = this.get("strength", activation)?;
         let quality = this.get("quality", activation)?;
-        let inner = this.get("inner", activation)?;
-        let knockout = this.get("knockout", activation)?;
 
         let cloned = proto.construct(
             activation,
             &[
-                color, alpha, blur_x, blur_y, strength, quality, inner, knockout,
+                //TODO: why inner and kncokout
+                color, alpha, blur_x, blur_y, strength, quality
+            ],
+        )?;
+        return Ok(cloned.into());
+    }
+
+    if let Some(this) = this.as_drop_shadow_filter_object() {
+        let proto = activation.context.avm1.prototypes.drop_shadow_filter_constructor;
+
+        let distance = this.get("distance", activation)?;
+        let angle = this.get("angle", activation)?;
+        let color = this.get("color", activation)?;
+        let alpha = this.get("alpha", activation)?;
+        let blur_x = this.get("blurX", activation)?;
+        let blur_y = this.get("blurY", activation)?;
+        let strength = this.get("strength", activation)?;
+        let quality = this.get("quality", activation)?;
+        let inner = this.get("inner", activation)?;
+        let knockout = this.get("knockout", activation)?;
+        let hide_object = this.get("hide_object", activation)?;
+
+        let cloned = proto.construct(
+            activation,
+            &[
+                distance,
+                angle,
+                color,
+                alpha,
+                blur_x,
+                blur_y,
+                strength,
+                quality,
+                inner,
+                knockout,
+                hide_object,
             ],
         )?;
         return Ok(cloned.into());
