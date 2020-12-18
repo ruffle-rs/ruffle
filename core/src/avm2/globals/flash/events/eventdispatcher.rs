@@ -17,6 +17,8 @@ pub fn instance_init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(mut this) = this {
+        activation.super_init(this, &[])?;
+
         let target = args.get(0).cloned().unwrap_or(Value::Null);
         let dispatch_list = DispatchObject::empty_list(activation.context.gc_context);
 
