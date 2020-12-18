@@ -16,10 +16,14 @@ use swf::Twips;
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        activation.super_init(this, &[])?;
+    }
+
     Ok(Value::Undefined)
 }
 

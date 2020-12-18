@@ -23,6 +23,8 @@ pub fn instance_init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
+        activation.super_init(this, &[])?;
+
         if this.as_display_object().is_none() {
             let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
             let new_do = MovieClip::new(SwfSlice::empty(movie), activation.context.gc_context);
