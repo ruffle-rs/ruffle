@@ -46,14 +46,14 @@ impl fmt::Debug for GlowFilterObject<'_> {
 
 impl<'gc> GlowFilterObject<'gc> {
     add_field_accessors!(
-        [set_alpha, get_alpha, alpha, f64],
-        [set_blur_x, get_blur_x, blur_x, f64],
-        [set_blur_y, get_blur_y, blur_y, f64],
-        [set_color, get_color, color, i32],
-        [set_inner, get_inner, inner, bool],
-        [set_knockout, get_knockout, knockout, bool],
-        [set_quality, get_quality, quality, i32],
-        [set_strength, get_strength, strength, f64],
+        [set_alpha, alpha, alpha, f64],
+        [set_blur_x, blur_x, blur_x, f64],
+        [set_blur_y, blur_y, blur_y, f64],
+        [set_color, color, color, i32],
+        [set_inner, inner, inner, bool],
+        [set_knockout, knockout, knockout, bool],
+        [set_quality, quality, quality, i32],
+        [set_strength, strength, strength, f64],
     );
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {

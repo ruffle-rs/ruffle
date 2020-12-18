@@ -23,12 +23,16 @@ pub fn constructor<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn get_alpha<'gc>(
+pub fn alpha<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.as_glow_filter_object().unwrap().get_alpha().into())
+    if let Some(filter) = this.as_glow_filter_object() {
+        return Ok(filter.alpha().into());
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_alpha<'gc>(
@@ -42,19 +46,23 @@ pub fn set_alpha<'gc>(
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(1.0))?;
 
-    this.as_glow_filter_object()
-        .unwrap()
-        .set_alpha(activation.context.gc_context, alpha);
+    if let Some(filter) = this.as_glow_filter_object() {
+        filter.set_alpha(activation.context.gc_context, alpha);
+    }
 
     Ok(Value::Undefined)
 }
 
-pub fn get_blur_x<'gc>(
+pub fn blur_x<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.as_glow_filter_object().unwrap().get_blur_x().into())
+    if let Some(filter) = this.as_glow_filter_object() {
+        return Ok(filter.blur_x().into());
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_blur_x<'gc>(
@@ -68,19 +76,23 @@ pub fn set_blur_x<'gc>(
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 
-    this.as_glow_filter_object()
-        .unwrap()
-        .set_blur_x(activation.context.gc_context, blur_x);
+    if let Some(filter) = this.as_glow_filter_object() {
+        filter.set_blur_x(activation.context.gc_context, blur_x);
+    }
 
     Ok(Value::Undefined)
 }
 
-pub fn get_blur_y<'gc>(
+pub fn blur_y<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.as_glow_filter_object().unwrap().get_blur_y().into())
+    if let Some(filter) = this.as_glow_filter_object() {
+        return Ok(filter.blur_y().into());
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_blur_y<'gc>(
@@ -94,19 +106,23 @@ pub fn set_blur_y<'gc>(
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 
-    this.as_glow_filter_object()
-        .unwrap()
-        .set_blur_y(activation.context.gc_context, blur_y);
+    if let Some(filter) = this.as_glow_filter_object() {
+        filter.set_blur_y(activation.context.gc_context, blur_y);
+    }
 
     Ok(Value::Undefined)
 }
 
-pub fn get_color<'gc>(
+pub fn color<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.as_glow_filter_object().unwrap().get_color().into())
+    if let Some(filter) = this.as_glow_filter_object() {
+        return Ok(filter.color().into());
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_color<'gc>(
@@ -120,19 +136,23 @@ pub fn set_color<'gc>(
         .coerce_to_i32(activation)
         .map(|x| x.max(1).min(0xFFFFFF))?;
 
-    this.as_glow_filter_object()
-        .unwrap()
-        .set_color(activation.context.gc_context, color);
+    if let Some(filter) = this.as_glow_filter_object() {
+        filter.set_color(activation.context.gc_context, color);
+    }
 
     Ok(Value::Undefined)
 }
 
-pub fn get_inner<'gc>(
+pub fn inner<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.as_glow_filter_object().unwrap().get_inner().into())
+    if let Some(filter) = this.as_glow_filter_object() {
+        return Ok(filter.inner().into());
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_inner<'gc>(
@@ -145,19 +165,23 @@ pub fn set_inner<'gc>(
         .unwrap_or(&Value::Undefined)
         .as_bool(activation.current_swf_version());
 
-    this.as_glow_filter_object()
-        .unwrap()
-        .set_inner(activation.context.gc_context, inner);
+    if let Some(filter) = this.as_glow_filter_object() {
+        filter.set_inner(activation.context.gc_context, inner);
+    }
 
     Ok(Value::Undefined)
 }
 
-pub fn get_knockout<'gc>(
+pub fn knockout<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.as_glow_filter_object().unwrap().get_knockout().into())
+    if let Some(filter) = this.as_glow_filter_object() {
+        return Ok(filter.knockout().into());
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_knockout<'gc>(
@@ -170,19 +194,23 @@ pub fn set_knockout<'gc>(
         .unwrap_or(&Value::Undefined)
         .as_bool(activation.current_swf_version());
 
-    this.as_glow_filter_object()
-        .unwrap()
-        .set_knockout(activation.context.gc_context, knockout);
+    if let Some(filter) = this.as_glow_filter_object() {
+        filter.set_knockout(activation.context.gc_context, knockout);
+    }
 
     Ok(Value::Undefined)
 }
 
-pub fn get_quality<'gc>(
+pub fn quality<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.as_glow_filter_object().unwrap().get_quality().into())
+    if let Some(filter) = this.as_glow_filter_object() {
+        return Ok(filter.quality().into());
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_quality<'gc>(
@@ -190,25 +218,29 @@ pub fn set_quality<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let blur_y = args
+    let quality = args
         .get(0)
         .unwrap_or(&Value::Number(1.0))
         .coerce_to_i32(activation)
         .map(|x| x.max(0).min(15))?;
 
-    this.as_glow_filter_object()
-        .unwrap()
-        .set_quality(activation.context.gc_context, blur_y);
+    if let Some(filter) = this.as_glow_filter_object() {
+        filter.set_quality(activation.context.gc_context, quality);
+    }
 
     Ok(Value::Undefined)
 }
 
-pub fn get_strength<'gc>(
+pub fn strength<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.as_glow_filter_object().unwrap().get_strength().into())
+    if let Some(filter) = this.as_glow_filter_object() {
+        return Ok(filter.strength().into());
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_strength<'gc>(
@@ -222,9 +254,9 @@ pub fn set_strength<'gc>(
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 
-    this.as_glow_filter_object()
-        .unwrap()
-        .set_strength(activation.context.gc_context, strength);
+    if let Some(filter) = this.as_glow_filter_object() {
+        filter.set_strength(activation.context.gc_context, strength);
+    }
 
     Ok(Value::Undefined)
 }
@@ -242,7 +274,7 @@ pub fn create_proto<'gc>(
         "alpha",
         FunctionObject::function(
             gc_context,
-            Executable::Native(get_alpha),
+            Executable::Native(alpha),
             Some(fn_proto),
             fn_proto,
         ),
@@ -260,7 +292,7 @@ pub fn create_proto<'gc>(
         "blurX",
         FunctionObject::function(
             gc_context,
-            Executable::Native(get_blur_x),
+            Executable::Native(blur_x),
             Some(fn_proto),
             fn_proto,
         ),
@@ -278,7 +310,7 @@ pub fn create_proto<'gc>(
         "blurY",
         FunctionObject::function(
             gc_context,
-            Executable::Native(get_blur_y),
+            Executable::Native(blur_y),
             Some(fn_proto),
             fn_proto,
         ),
@@ -296,7 +328,7 @@ pub fn create_proto<'gc>(
         "color",
         FunctionObject::function(
             gc_context,
-            Executable::Native(get_color),
+            Executable::Native(color),
             Some(fn_proto),
             fn_proto,
         ),
@@ -314,7 +346,7 @@ pub fn create_proto<'gc>(
         "inner",
         FunctionObject::function(
             gc_context,
-            Executable::Native(get_inner),
+            Executable::Native(inner),
             Some(fn_proto),
             fn_proto,
         ),
@@ -332,7 +364,7 @@ pub fn create_proto<'gc>(
         "knockout",
         FunctionObject::function(
             gc_context,
-            Executable::Native(get_knockout),
+            Executable::Native(knockout),
             Some(fn_proto),
             fn_proto,
         ),
@@ -350,7 +382,7 @@ pub fn create_proto<'gc>(
         "quality",
         FunctionObject::function(
             gc_context,
-            Executable::Native(get_quality),
+            Executable::Native(quality),
             Some(fn_proto),
             fn_proto,
         ),
@@ -368,7 +400,7 @@ pub fn create_proto<'gc>(
         "strength",
         FunctionObject::function(
             gc_context,
-            Executable::Native(get_strength),
+            Executable::Native(strength),
             Some(fn_proto),
             fn_proto,
         ),
