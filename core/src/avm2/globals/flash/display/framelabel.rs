@@ -28,6 +28,8 @@ pub fn instance_init<'gc>(
         .coerce_to_i32(activation)?;
 
     if let Some(mut this) = this {
+        activation.super_init(this, &[])?;
+
         this.set_property(
             this,
             &QName::new(Namespace::Private("ruffle".into()), "name"),

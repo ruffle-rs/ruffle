@@ -87,7 +87,11 @@ impl<'gc> Executable<'gc> {
     ) -> Result<Value<'gc>, Error> {
         match self {
             Executable::Native(nf, receiver) => {
-                nf(activation, receiver.or(unbound_reciever), arguments)
+                let receiver = receiver.or(unbound_reciever);
+                let mut activation =
+                    Activation::from_builtin(activation.context.reborrow(), receiver, base_proto)?;
+
+                nf(&mut activation, receiver, arguments)
             }
             Executable::Action(bm) => {
                 let receiver = bm.receiver.or(unbound_reciever);

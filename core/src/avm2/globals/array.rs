@@ -22,6 +22,8 @@ pub fn instance_init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
+        activation.super_init(this, &[])?;
+
         if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
             if args.len() == 1 {
                 if let Some(expected_len) = args

@@ -259,6 +259,32 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(activation)
     }
 
+    /// Construct an activation for the execution of a builtin method.
+    ///
+    /// It is a logic error to attempt to execute builtins within the same
+    /// activation as the method or script that called them. You must use this
+    /// function to construct a new activation for the builtin so that it can
+    /// properly supercall.
+    pub fn from_builtin(
+        context: UpdateContext<'a, 'gc, 'gc_context>,
+        this: Option<Object<'gc>>,
+        base_proto: Option<Object<'gc>>,
+    ) -> Result<Self, Error> {
+        let local_registers = GcCell::allocate(context.gc_context, RegisterSet::new(0));
+
+        Ok(Self {
+            this,
+            arguments: None,
+            is_executing: false,
+            local_registers,
+            return_value: None,
+            local_scope: ScriptObject::bare_object(context.gc_context),
+            scope: None,
+            base_proto,
+            context,
+        })
+    }
+
     /// Execute a script initializer.
     pub fn run_stack_frame_for_script(&mut self, script: Script<'gc>) -> Result<(), Error> {
         let init = script.init().0.into_bytecode()?;
@@ -266,6 +292,28 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.run_actions(init)?;
 
         Ok(())
+    }
+
+    /// Call the superclass's instance initializer.
+    pub fn super_init(
+        &mut self,
+        receiver: Object<'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error> {
+        let name = QName::new(Namespace::public_namespace(), "constructor");
+        let base_proto: Result<Object<'gc>, Error> =
+            self.base_proto().and_then(|p| p.proto()).ok_or_else(|| {
+                "Attempted to call super constructor without a superclass."
+                    .to_string()
+                    .into()
+            });
+        let mut base_proto = base_proto?;
+
+        let function = base_proto
+            .get_property(receiver, &name, self)?
+            .coerce_to_object(self)?;
+
+        function.call(Some(receiver), &args, self, Some(base_proto))
     }
 
     /// Attempts to lock the activation frame for execution.
@@ -1348,20 +1396,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_construct_super(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
-        let name = QName::new(Namespace::public_namespace(), "constructor");
-        let base_proto: Result<Object<'gc>, Error> =
-            self.base_proto().and_then(|p| p.proto()).ok_or_else(|| {
-                "Attempted to call super constructor without a superclass."
-                    .to_string()
-                    .into()
-            });
-        let mut base_proto = base_proto?;
 
-        let function = base_proto
-            .get_property(receiver, &name, self)?
-            .coerce_to_object(self)?;
-
-        function.call(Some(receiver), &args, self, Some(base_proto))?;
+        self.super_init(receiver, &args)?;
 
         Ok(FrameControl::Continue)
     }

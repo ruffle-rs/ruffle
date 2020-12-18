@@ -18,25 +18,29 @@ pub fn instance_init<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut evt) = this.unwrap().as_event_mut(activation.context.gc_context) {
-        evt.set_event_type(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_string(activation)?,
-        );
-        evt.set_bubbles(
-            args.get(1)
-                .cloned()
-                .unwrap_or(Value::Bool(false))
-                .coerce_to_boolean(),
-        );
-        evt.set_cancelable(
-            args.get(2)
-                .cloned()
-                .unwrap_or(Value::Bool(false))
-                .coerce_to_boolean(),
-        );
+    if let Some(this) = this {
+        activation.super_init(this, &[])?;
+
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            evt.set_event_type(
+                args.get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_string(activation)?,
+            );
+            evt.set_bubbles(
+                args.get(1)
+                    .cloned()
+                    .unwrap_or(Value::Bool(false))
+                    .coerce_to_boolean(),
+            );
+            evt.set_cancelable(
+                args.get(2)
+                    .cloned()
+                    .unwrap_or(Value::Bool(false))
+                    .coerce_to_boolean(),
+            );
+        }
     }
 
     Ok(Value::Undefined)
