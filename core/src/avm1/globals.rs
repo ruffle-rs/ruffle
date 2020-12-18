@@ -216,6 +216,64 @@ pub fn get_nan<'gc>(
     }
 }
 
+pub fn parse_float<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let s = if let Some(val) = args.get(0) {
+        val.coerce_to_string(activation)?
+    } else {
+        return Ok(f64::NAN.into());
+    };
+
+    let s = s.trim_start().bytes();
+    let mut out_str = String::with_capacity(s.len());
+
+    // TODO: Implementing this in a very janky way for now,
+    // feeding the string to Rust's float parser.
+    // Flash's parser is much more lenient, so we have to massage
+    // the string into an acceptable format.
+    let mut allow_dot = true;
+    let mut allow_exp = true;
+    let mut allow_sign = true;
+    for c in s {
+        match c {
+            b'0'..=b'9' => {
+                allow_sign = false;
+                out_str.push(c.into());
+            }
+            b'+' | b'-' if allow_sign => {
+                // Sign allowed at first char and following e
+                allow_sign = false;
+                out_str.push(c.into());
+            }
+            b'.' if allow_exp => {
+                // Flash allows multiple . except after e
+                allow_sign = false;
+                if allow_dot {
+                    allow_dot = false;
+                    out_str.push(c.into());
+                } else {
+                    allow_exp = false;
+                }
+            }
+            b'e' | b'E' if allow_exp => {
+                allow_sign = true;
+                allow_exp = false;
+                allow_dot = false;
+                out_str.push(c.into());
+            }
+
+            // Invalid char, `parseFloat` ignores all trailing garbage.
+            _ => break,
+        };
+    }
+
+    let n = out_str.parse::<f64>().unwrap_or(f64::NAN);
+    Ok(n.into())
+}
+
 pub fn set_interval<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 
@@ -778,6 +836,13 @@ pub fn create_globals<'gc>(
     globals.force_set_function(
         "parseInt",
         parse_int,
+        gc_context,
+        DontEnum,
+        Some(function_proto),
+    );
+    globals.force_set_function(
+        "parseFloat",
+        parse_float,
         gc_context,
         DontEnum,
         Some(function_proto),
