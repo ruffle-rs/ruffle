@@ -888,7 +888,7 @@ mod tests {
                 player_version: 32,
                 swf: &swf,
                 levels: &mut levels,
-                rng: &mut SmallRng::from_seed([0u8; 16]),
+                rng: &mut SmallRng::from_seed([0u8; 32]),
                 action_queue: &mut crate::context::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),
                 input: &mut NullInputBackend::new(),

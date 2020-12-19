@@ -214,5 +214,5 @@ pub fn random<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Ok(activation.context.rng.gen_range(0.0f64, 1.0f64).into())
+    Ok(activation.context.rng.gen_range(0.0f64..1.0f64).into())
 }

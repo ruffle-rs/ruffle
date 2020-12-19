@@ -183,6 +183,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "base-x"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4521f3e3d031370679b3b140beb36dfe4801b09ac77e30c61941f97df3ef28b"
+
+[[package]]
 name = "base64"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -794,7 +800,7 @@ dependencies = [
  "nix 0.15.0",
  "oboe",
  "parking_lot 0.11.1",
- "stdweb",
+ "stdweb 0.1.3",
  "thiserror",
  "web-sys",
  "winapi 0.3.9",
@@ -1127,6 +1133,12 @@ dependencies = [
  "redox_users",
  "winapi 0.3.9",
 ]
+
+[[package]]
+name = "discard"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "212d0f5754cb6769937f4501cc0e67f4f4483c8d2c3e1e922ee9edbe4ab4c7c0"
 
 [[package]]
 name = "dispatch"
@@ -1558,6 +1570,19 @@ dependencies = [
  "cfg-if 0.1.10",
  "libc",
  "wasi 0.9.0+wasi-snapshot-preview1",
+]
+
+[[package]]
+name = "getrandom"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee8025cf36f917e6a52cce185b7c7177689b838b7ec138364e50cc2277a56cf4"
+dependencies = [
+ "cfg-if 0.1.10",
+ "libc",
+ "stdweb 0.4.20",
+ "wasi 0.9.0+wasi-snapshot-preview1",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -3122,23 +3147,20 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.7.3"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a6b1679d49b24bbfe0c803429aa1874472f50d9b363131f0e89fc356b544d03"
+checksum = "a76330fb486679b4ace3670f117bbc9e16204005c4bde9c4bd372f45bed34f12"
 dependencies = [
- "getrandom",
  "libc",
  "rand_chacha",
  "rand_core",
- "rand_hc",
- "rand_pcg",
 ]
 
 [[package]]
 name = "rand_chacha"
-version = "0.2.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4c8ed856279c9737206bf725bf36935d8666ead7aa69b52be55af369d193402"
+checksum = "e12735cf05c9e10bf21534da50a147b924d555dc7a547c42e6bb2d5b6017ae0d"
 dependencies = [
  "ppv-lite86",
  "rand_core",
@@ -3146,29 +3168,11 @@ dependencies = [
 
 [[package]]
 name = "rand_core"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90bde5296fc891b0cef12a6d03ddccc162ce7b2aff54160af9338f8d40df6d19"
+checksum = "a8b34ba8cfb21243bd8df91854c830ff0d785fff2e82ebd4434c2644cb9ada18"
 dependencies = [
- "getrandom",
-]
-
-[[package]]
-name = "rand_hc"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
-dependencies = [
- "rand_core",
-]
-
-[[package]]
-name = "rand_pcg"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
-dependencies = [
- "rand_core",
+ "getrandom 0.2.0",
 ]
 
 [[package]]
@@ -3223,7 +3227,7 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de0737333e7a9502c789a36d7c7fa6092a49895d4faa31ca5df163857ded2e9d"
 dependencies = [
- "getrandom",
+ "getrandom 0.1.15",
  "redox_syscall",
  "rust-argon2",
 ]
@@ -3445,6 +3449,7 @@ dependencies = [
  "console_log",
  "fnv",
  "generational-arena",
+ "getrandom 0.2.0",
  "js-sys",
  "log",
  "ruffle_core",
@@ -3633,6 +3638,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_json"
+version = "1.0.60"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1500e84d27fe482ed1dc791a56eddc2f230046a040fa908c08bda1d9fb615779"
+dependencies = [
+ "itoa",
+ "ryu",
+ "serde",
+]
+
+[[package]]
+name = "sha1"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d"
+
+[[package]]
 name = "shlex"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3795,6 +3817,55 @@ name = "stdweb"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef5430c8e36b713e13b48a9f709cc21e046723fe44ce34587b73a830203b533e"
+
+[[package]]
+name = "stdweb"
+version = "0.4.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d022496b16281348b52d0e30ae99e01a73d737b2f45d38fed4edf79f9325a1d5"
+dependencies = [
+ "discard",
+ "rustc_version",
+ "stdweb-derive",
+ "stdweb-internal-macros",
+ "stdweb-internal-runtime",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "stdweb-derive"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c87a60a40fccc84bef0652345bbbbbe20a605bf5d0ce81719fc476f5c03b50ef"
+dependencies = [
+ "proc-macro2 1.0.24",
+ "quote 1.0.7",
+ "serde",
+ "serde_derive",
+ "syn",
+]
+
+[[package]]
+name = "stdweb-internal-macros"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58fa5ff6ad0d98d1ffa8cb115892b6e69d67799f6763e162a1c9db421dc22e11"
+dependencies = [
+ "base-x",
+ "proc-macro2 1.0.24",
+ "quote 1.0.7",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha1",
+ "syn",
+]
+
+[[package]]
+name = "stdweb-internal-runtime"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "213701ba3370744dcd1a12960caa4843b3d68b4d1c0a5d575e0d65b2ee9d16c0"
 
 [[package]]
 name = "storage-map"

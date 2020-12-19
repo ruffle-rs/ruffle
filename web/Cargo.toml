@@ -35,6 +35,7 @@ url = "2.2.0"
 wasm-bindgen = "0.2.69"
 wasm-bindgen-futures = "0.4.19"
 chrono = { version = "0.4", features = ["wasmbind"] }
+getrandom = { version = "0.2", features = ["js"] }
 
 [dependencies.ruffle_core]
 path = "../core"

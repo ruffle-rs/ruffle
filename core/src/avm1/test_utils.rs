@@ -49,7 +49,7 @@ where
             player_version: 32,
             swf: &swf,
             levels: &mut levels,
-            rng: &mut SmallRng::from_seed([0u8; 16]),
+            rng: &mut SmallRng::from_seed([0u8; 32]),
             audio: &mut NullAudioBackend::new(),
             input: &mut NullInputBackend::new(),
             action_queue: &mut ActionQueue::new(),
