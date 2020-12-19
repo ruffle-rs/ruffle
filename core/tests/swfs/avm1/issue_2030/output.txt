@@ -1,0 +1,4 @@
+// mc._width
+10
+// mc._height
+10
