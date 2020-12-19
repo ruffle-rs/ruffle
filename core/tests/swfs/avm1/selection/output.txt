@@ -416,3 +416,40 @@ _level0.text_non_selectable
 
 false
 
+// Selection.setFocus(text_input)
+! - onSetFocus
+// oldFocus
+_level0.text_non_selectable
+
+// newFocus
+_level0.text_input
+
+// Selection.getBeginIndex()
+-1
+
+// Selection.getCaretIndex()
+-1
+
+// Selection.getEndIndex()
+-1
+
+// Selection.getFocus()
+_level0.text_input
+
+
+
+false
+
+// Selection.setSelection(1, 3)
+// text_input.text
+Input text
+
+// text_input.replaceSel('blah')
+
+// text_input.text
+Iblahut text
+
+// text_input.replaceSel('blah')
+// text_input.text
+Iblahblahut text
+
