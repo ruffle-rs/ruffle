@@ -108,7 +108,10 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
             mc,
             format!(
                 "[Event type=\"{}\" bubbles={} cancelable={} eventPhase={}]",
-                event_type, bubbles, cancelable, phase
+                event_type,
+                bubbles,
+                cancelable,
+                phase - 1
             ),
         )
         .into())

@@ -25,9 +25,9 @@ pub enum EventPhase {
 impl Into<u32> for EventPhase {
     fn into(self) -> u32 {
         match self {
-            Self::Capturing => 0,
-            Self::AtTarget => 1,
-            Self::Bubbling => 2,
+            Self::Capturing => 1,
+            Self::AtTarget => 2,
+            Self::Bubbling => 3,
         }
     }
 }
