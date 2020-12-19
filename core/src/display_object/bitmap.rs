@@ -91,8 +91,8 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         BoundingBox {
             x_min: Twips::new(0),
             y_min: Twips::new(0),
-            x_max: Twips::new(Bitmap::width(*self)),
-            y_max: Twips::new(Bitmap::height(*self)),
+            x_max: Twips::from_pixels(Bitmap::width(*self).into()),
+            y_max: Twips::from_pixels(Bitmap::height(*self).into()),
             valid: true,
         }
     }
