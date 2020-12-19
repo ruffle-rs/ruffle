@@ -198,6 +198,9 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// The immutable value of `this`.
     this: Object<'gc>,
 
+    /// The function object being called.
+    pub callee: Option<Object<'gc>>,
+
     /// The arguments this function was called by.
     pub arguments: Option<Object<'gc>>,
 
@@ -252,6 +255,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         constant_pool: GcCell<'gc, Vec<String>>,
         base_clip: DisplayObject<'gc>,
         this: Object<'gc>,
+        callee: Option<Object<'gc>>,
         arguments: Option<Object<'gc>>,
     ) -> Self {
         avm_debug!(context.avm1, "START {}", id);
@@ -265,6 +269,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             target_clip: Some(base_clip),
             base_clip_unloaded: base_clip.removed(),
             this,
+            callee,
             arguments,
             local_registers: None,
             actions_since_timeout_check: 0,
@@ -289,6 +294,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             target_clip: self.target_clip,
             base_clip_unloaded: self.base_clip_unloaded,
             this: self.this,
+            callee: self.callee,
             arguments: self.arguments,
             local_registers: self.local_registers,
             actions_since_timeout_check: 0,
@@ -324,6 +330,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             target_clip: Some(base_clip),
             base_clip_unloaded: base_clip.removed(),
             this: globals,
+            callee: None,
             arguments: None,
             local_registers: None,
             actions_since_timeout_check: 0,
@@ -381,6 +388,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             active_clip,
             clip_obj,
             None,
+            None,
         );
         child_activation.run_actions(code)
     }
@@ -417,6 +425,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             constant_pool,
             active_clip,
             clip_obj,
+            None,
             None,
         );
         function(&mut activation)
@@ -2262,6 +2271,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     self.constant_pool,
                     self.base_clip,
                     self.this,
+                    self.callee,
                     self.arguments,
                 );
 
