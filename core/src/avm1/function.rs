@@ -254,6 +254,13 @@ impl<'gc> Executable<'gc> {
                     callee.into(),
                     DontEnum.into(),
                 );
+                // The caller is the previous callee.
+                arguments.define_value(
+                    activation.context.gc_context,
+                    "caller",
+                    activation.callee.map(Value::from).unwrap_or(Value::Null),
+                    DontEnum.into(),
+                );
 
                 if !af.suppress_arguments {
                     for i in 0..args.len() {
@@ -316,6 +323,7 @@ impl<'gc> Executable<'gc> {
                     af.constant_pool,
                     af.base_clip,
                     this,
+                    Some(callee),
                     Some(argcell),
                 );
 
