@@ -265,8 +265,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// activation as the method or script that called them. You must use this
     /// function to construct a new activation for the builtin so that it can
     /// properly supercall.
+    ///
+    /// The `scope` provided here should be the scope of the builtin's caller
+    /// (for now), so that it may access global scope and propagate it to
+    /// called methods.
     pub fn from_builtin(
         context: UpdateContext<'a, 'gc, 'gc_context>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<Self, Error> {
@@ -279,7 +284,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             local_registers,
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
-            scope: None,
+            scope,
             base_proto,
             context,
         })
@@ -292,6 +297,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.run_actions(init)?;
 
         Ok(())
+    }
+
+    pub fn global_scope(&self) -> Value<'gc> {
+        let mut scope = self.scope();
+
+        while let Some(this_scope) = scope {
+            let parent = this_scope.read().parent_cell();
+            if parent.is_none() {
+                break;
+            }
+
+            scope = parent;
+        }
+
+        scope
+            .map(|s| s.read().locals().clone().into())
+            .unwrap_or(Value::Undefined)
     }
 
     /// Call the superclass's instance initializer.
@@ -1220,22 +1242,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_get_global_scope(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let mut scope = self.scope();
-
-        while let Some(this_scope) = scope {
-            let parent = this_scope.read().parent_cell();
-            if parent.is_none() {
-                break;
-            }
-
-            scope = parent;
-        }
-
-        self.context.avm2.push(
-            scope
-                .map(|s| s.read().locals().clone().into())
-                .unwrap_or(Value::Undefined),
-        );
+        self.context.avm2.push(self.global_scope());
 
         Ok(FrameControl::Continue)
     }
