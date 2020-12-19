@@ -1,0 +1,251 @@
+//var s1 = this.symbol_1;
+//var s2 = this.symbol_1.symbol_2;
+//this.addEventListener('test', handler_one, false, 0);
+//this.addEventListener('test', handler_one, true, 0);
+//this.addEventListener('test', handler_two, false, 5);
+//this.addEventListener('test', handler_two, true, 5);
+//this.addEventListener('test', handler_three, false, 0);
+//this.addEventListener('test', handler_three, true, 0);
+//this.symbol_1.addEventListener('test', handler_one, false, 0);
+//this.symbol_1.addEventListener('test', handler_one, true, 0);
+//this.symbol_1.addEventListener('test', handler_two, false, -5);
+//this.symbol_1.addEventListener('test', handler_two, true, -5);
+//this.symbol_1.addEventListener('test', handler_three, false, 0);
+//this.symbol_1.addEventListener('test', handler_three, true, 0);
+//this.symbol_1.symbol_2.addEventListener('test', handler_one, false, 0);
+//this.symbol_1.symbol_2.addEventListener('test', handler_one, true, 0);
+//this.symbol_1.symbol_2.addEventListener('test', handler_two, false, -5);
+//this.symbol_1.symbol_2.addEventListener('test', handler_two, true, 5);
+//this.symbol_1.symbol_2.addEventListener('test', handler_three, false, 0);
+//this.symbol_1.symbol_2.addEventListener('test', handler_three, true, 0);
+//this.dispatchEvent(new Event('test'));
+//(handler_two called...)
+//event.eventPhase;
+2
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//this.symbol_1.dispatchEvent(new Event('test'));
+//(handler_two called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+1
+//(handler_three called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+2
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test'));
+//(handler_two called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+1
+//(handler_three called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+1
+//(handler_three called...)
+//event.eventPhase;
+1
+//(handler_two called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+2
+//this.dispatchEvent(new Event('test', true));
+//(handler_two called...)
+//event.eventPhase;
+2
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//this.symbol_1.dispatchEvent(new Event('test', true));
+//(handler_two called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+1
+//(handler_three called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+3
+//(handler_one called...)
+//event.eventPhase;
+3
+//(handler_three called...)
+//event.eventPhase;
+3
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test', true));
+//(handler_two called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+1
+//(handler_three called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+1
+//(handler_three called...)
+//event.eventPhase;
+1
+//(handler_two called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+2
+//(handler_one called...)
+//event.eventPhase;
+3
+//(handler_three called...)
+//event.eventPhase;
+3
+//(handler_two called...)
+//event.eventPhase;
+3
+//(handler_two called...)
+//event.eventPhase;
+3
+//(handler_one called...)
+//event.eventPhase;
+3
+//(handler_three called...)
+//event.eventPhase;
+3
+//this.symbol_1.symbol_2.removeEventListener('test', handler_three, true);
+this.removeChild(s1);
+//s1.dispatchEvent(new Event('test'));
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+2
+//s1.symbol_2.dispatchEvent(new Event('test'));
+//(handler_one called...)
+//event.eventPhase;
+1
+//(handler_three called...)
+//event.eventPhase;
+1
+//(handler_two called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+2
+//s1.dispatchEvent(new Event('test', true));
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+2
+//s1.symbol_2.dispatchEvent(new Event('test', true));
+//(handler_one called...)
+//event.eventPhase;
+1
+//(handler_three called...)
+//event.eventPhase;
+1
+//(handler_two called...)
+//event.eventPhase;
+1
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+2
+//(handler_one called...)
+//event.eventPhase;
+3
+//(handler_three called...)
+//event.eventPhase;
+3
+//(handler_two called...)
+//event.eventPhase;
+3
+s1.removeChild(s2);
+//s2.dispatchEvent(new Event('test'));
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+2
+//s2.dispatchEvent(new Event('test', true));
+//(handler_one called...)
+//event.eventPhase;
+2
+//(handler_three called...)
+//event.eventPhase;
+2
+//(handler_two called...)
+//event.eventPhase;
+2

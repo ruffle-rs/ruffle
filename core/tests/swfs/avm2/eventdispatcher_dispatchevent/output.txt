@@ -1,0 +1,12 @@
+//var evtd = new EventDispatcher();
+//evtd.addEventListener('test', introspect_event, false, 0);
+//evtd.dispatchEvent('test');
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === evtd
+true
+//event.currentTarget === evtd
+true

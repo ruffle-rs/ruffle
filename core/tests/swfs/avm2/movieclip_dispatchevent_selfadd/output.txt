@@ -1,0 +1,80 @@
+//var s1 = this.symbol_1;
+//var s2 = this.symbol_1.symbol_2;
+//this.addEventListener('test', selfadd_handler, true, 0);
+//this.symbol_1.addEventListener('test', selfadd_handler, true, 0);
+//this.symbol_1.symbol_2.addEventListener('test', selfadd_handler, false, 0);
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test', true));
+//(adding bubbling handler to current target...)
+//(adding capturing handler to current target...)
+//(adding bubbling handler to first child of current target...)
+//(adding capturing handler to first child of current target...)
+//event.eventPhase
+1
+//event.currentTarget === this
+true
+//event.currentTarget === this.symbol_1
+false
+//event.currentTarget === this.symbol_1.symbol_2
+false
+//(adding bubbling handler to parent of current target...)
+//(adding capturing handler to parent of current target...)
+//(adding bubbling handler to current target...)
+//(adding capturing handler to current target...)
+//(adding bubbling handler to first child of current target...)
+//(adding capturing handler to first child of current target...)
+//event.eventPhase
+1
+//event.currentTarget === this
+false
+//event.currentTarget === this.symbol_1
+true
+//event.currentTarget === this.symbol_1.symbol_2
+false
+//(added_handler called)
+//event.eventPhase
+1
+//event.currentTarget === this
+false
+//event.currentTarget === this.symbol_1
+true
+//event.currentTarget === this.symbol_1.symbol_2
+false
+//(adding bubbling handler to parent of current target...)
+//(adding capturing handler to parent of current target...)
+//(adding bubbling handler to current target...)
+//(adding capturing handler to current target...)
+//event.eventPhase
+2
+//event.currentTarget === this
+false
+//event.currentTarget === this.symbol_1
+false
+//event.currentTarget === this.symbol_1.symbol_2
+true
+//(added_handler called)
+//event.eventPhase
+2
+//event.currentTarget === this
+false
+//event.currentTarget === this.symbol_1
+false
+//event.currentTarget === this.symbol_1.symbol_2
+true
+//(added_handler called)
+//event.eventPhase
+3
+//event.currentTarget === this
+false
+//event.currentTarget === this.symbol_1
+true
+//event.currentTarget === this.symbol_1.symbol_2
+false
+//(added_handler called)
+//event.eventPhase
+3
+//event.currentTarget === this
+true
+//event.currentTarget === this.symbol_1
+false
+//event.currentTarget === this.symbol_1.symbol_2
+false
