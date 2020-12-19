@@ -297,10 +297,10 @@ impl BitmapData {
         for x in 0..self.width() {
             for y in 0..self.height() {
                 let pixel_color = if gray_scale {
-                    let gray = rng.gen_range(low, high);
+                    let gray = rng.gen_range(low..high);
                     Color::argb(
                         if channel_options.alpha() {
-                            rng.gen_range(low, high)
+                            rng.gen_range(low..high)
                         } else {
                             255
                         },
@@ -311,22 +311,22 @@ impl BitmapData {
                 } else {
                     Color::argb(
                         if channel_options.alpha() {
-                            rng.gen_range(low, high)
+                            rng.gen_range(low..high)
                         } else {
                             255
                         },
                         if channel_options.red() {
-                            rng.gen_range(low, high)
+                            rng.gen_range(low..high)
                         } else {
                             0
                         },
                         if channel_options.green() {
-                            rng.gen_range(low, high)
+                            rng.gen_range(low..high)
                         } else {
                             0
                         },
                         if channel_options.blue() {
-                            rng.gen_range(low, high)
+                            rng.gen_range(low..high)
                         } else {
                             0
                         },

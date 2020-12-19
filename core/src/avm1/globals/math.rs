@@ -130,7 +130,7 @@ pub fn random<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.rng.gen_range(0.0f64, 1.0f64).into())
+    Ok(activation.context.rng.gen_range(0.0f64..1.0f64).into())
 }
 
 pub fn create<'gc>(

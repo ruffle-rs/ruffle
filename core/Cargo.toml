@@ -34,14 +34,11 @@ chrono = "0.4"
 num-traits = "0.2"
 instant = "0.1"
 encoding_rs = "0.8.26"
+rand = { version = "0.8.0", features = ["std", "small_rng"], default-features = false }
 
 [dependencies.jpeg-decoder]
 version = "0.1.20"
 default-features = false # can't use rayon on web
-
-[dependencies.rand]
-version = "0.7.3"
-features = ["small_rng"]
 
 [dev-dependencies]
 approx = "0.4.0"
