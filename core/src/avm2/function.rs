@@ -88,8 +88,13 @@ impl<'gc> Executable<'gc> {
         match self {
             Executable::Native(nf, receiver) => {
                 let receiver = receiver.or(unbound_reciever);
-                let mut activation =
-                    Activation::from_builtin(activation.context.reborrow(), receiver, base_proto)?;
+                let scope = activation.scope();
+                let mut activation = Activation::from_builtin(
+                    activation.context.reborrow(),
+                    scope,
+                    receiver,
+                    base_proto,
+                )?;
 
                 nf(&mut activation, receiver, arguments)
             }
