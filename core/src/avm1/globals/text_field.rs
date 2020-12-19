@@ -5,7 +5,9 @@ use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_REMOVE_
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
-use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{
+    AutoSizeMode, EditText, TDisplayObject, TDisplayObjectContainer, TextSelection,
+};
 use crate::html::TextFormat;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -115,6 +117,7 @@ pub fn create_proto<'gc>(
         "setNewTextFormat" => set_new_text_format,
         "getTextFormat" => get_text_format,
         "setTextFormat" => set_text_format,
+        "replaceSel" => replace_sel,
         "replaceText" => replace_text,
         "removeTextField" => remove_text_field
     );
@@ -215,6 +218,38 @@ fn set_text_format<'gc>(
 
         text_field.set_text_format(from, to, tf_parsed, &mut activation.context);
     }
+
+    Ok(Value::Undefined)
+}
+
+fn replace_sel<'gc>(
+    text_field: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let text = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
+
+    // TODO: The AS2 reference says that this only works if you first call TextField.focus(),
+    // but that doesn't seem to be the case; seems to default to inserting at the start of the text.
+    // Verify the exact behavior.
+    let selection = text_field
+        .selection()
+        .unwrap_or_else(|| TextSelection::for_position(0));
+    text_field.replace_text(
+        selection.start(),
+        selection.end(),
+        &text,
+        &mut activation.context,
+    );
+    text_field.set_selection(
+        Some(TextSelection::for_position(selection.start() + text.len())),
+        activation.context.gc_context,
+    );
+
+    text_field.propagate_text_binding(activation);
 
     Ok(Value::Undefined)
 }
