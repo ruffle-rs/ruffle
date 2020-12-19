@@ -1,0 +1,102 @@
+//var s1 = this.symbol_1;
+//var s2 = this.symbol_1.symbol_2;
+//this.addEventListener('test', nocancel_event, false, 0);
+//this.addEventListener('test', cancel_event, false, 5);
+//this.addEventListener('test', stop_event, false, 10);
+//this.symbol_1.addEventListener('test', nocancel_event, false, 0);
+//this.symbol_1.addEventListener('test', cancel_event, false, 5);
+//this.symbol_1.addEventListener('test', stop_event, false, 10);
+//this.symbol_1.symbol_2.addEventListener('test', nocancel_event, false, 0);
+//this.symbol_1.symbol_2.addEventListener('test', cancel_event, false, 5);
+//this.symbol_1.symbol_2.addEventListener('test', stop_event, false, 10);
+//this.dispatchEvent(new Event('test'));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.symbol_1.dispatchEvent(new Event('test'));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test'));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.dispatchEvent(new Event('test', true));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.symbol_1.dispatchEvent(new Event('test', true));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test', true));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.addEventListener('test', nocancel_event, true, 0);
+//this.addEventListener('test', cancel_event, true, 5);
+//this.addEventListener('test', stop_event, true, 10);
+//this.symbol_1.addEventListener('test', nocancel_event, true, 0);
+//this.symbol_1.addEventListener('test', cancel_event, true, 5);
+//this.symbol_1.addEventListener('test', stop_event, true, 10);
+//this.symbol_1.symbol_2.addEventListener('test', nocancel_event, true, 0);
+//this.symbol_1.symbol_2.addEventListener('test', cancel_event, true, 5);
+//this.symbol_1.symbol_2.addEventListener('test', stop_event, true, 10);
+//this.dispatchEvent(new Event('test'));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.symbol_1.dispatchEvent(new Event('test'));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test'));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.dispatchEvent(new Event('test', true));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.symbol_1.dispatchEvent(new Event('test', true));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test', true));
+//(stop_event handler)
+//(cancel_event handler)
+//(nocancel_event handler)
+true
+//this.addEventListener('test', stop_immediate_event, false, 15);
+//this.addEventListener('test', stop_immediate_event, true, 15);
+//this.symbol_1.addEventListener('test', stop_immediate_event, false, 15);
+//this.symbol_1.addEventListener('test', stop_immediate_event, true, 15);
+//this.dispatchEvent(new Event('test'));
+//(stop_immediate_event handler)
+true
+//this.symbol_1.dispatchEvent(new Event('test'));
+//(stop_immediate_event handler)
+true
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test'));
+//(stop_immediate_event handler)
+true
+//this.dispatchEvent(new Event('test', true));
+//(stop_immediate_event handler)
+true
+//this.symbol_1.dispatchEvent(new Event('test', true));
+//(stop_immediate_event handler)
+true
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test', true));
+//(stop_immediate_event handler)
+true

@@ -1,0 +1,22 @@
+//var evtd = new EventDispatcher();
+//evtd.addEventListener('test', handler_one, false, 0);
+//evtd.addEventListener('test', handler_two, false, 5);
+//evtd.addEventListener('test', handler_three, false, 0);
+//evtd.dispatchEvent('test');
+//(handler_two executed...)
+//(handler_one executed...)
+//(handler_three executed...)
+//evtd.removeEventListener('test', handler_two);
+//evtd.dispatchEvent('test');
+//(handler_one executed...)
+//(handler_three executed...)
+//evtd.addEventListener('test', handler_two, true, 5);
+//evtd.addEventListener('test2', handler_two, false, 5);
+//evtd.dispatchEvent('test');
+//(handler_one executed...)
+//(handler_three executed...)
+//evtd.addEventListener('test', handler_two, false, -5);
+//evtd.dispatchEvent('test');
+//(handler_one executed...)
+//(handler_three executed...)
+//(handler_two executed...)

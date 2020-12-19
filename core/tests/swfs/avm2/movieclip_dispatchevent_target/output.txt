@@ -1,0 +1,899 @@
+//var s1 = this.symbol_1;
+//var s2 = this.symbol_1.symbol_2;
+//this.addEventListener('test', introspect_event, false, 0);
+//this.addEventListener('test', introspect_event, true, 0);
+//this.symbol_1.addEventListener('test', introspect_event, false, 0);
+//this.symbol_1.addEventListener('test', introspect_event, true, 0);
+//this.symbol_1.symbol_2.addEventListener('test', introspect_event, false, 0);
+//this.symbol_1.symbol_2.addEventListener('test', introspect_event, true, 0);
+//var evtd = new EventDispatcher(this);
+//evtd.addEventListener('test', introspect_event, false, 0);
+//evtd.addEventListener('test', introspect_event, true, 0);
+//var evtd_s1 = new EventDispatcher(this.symbol_1);
+//evtd_s1.addEventListener('test', introspect_event, false, 0);
+//evtd_s1.addEventListener('test', introspect_event, true, 0);
+//var evtd_s2 = new EventDispatcher(this.symbol_1.symbol_2);
+//evtd_s2.addEventListener('test', introspect_event, false, 0);
+//evtd_s2.addEventListener('test', introspect_event, true, 0);
+//evtd.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+true
+//event.target === s1
+false
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//evtd_s1.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//evtd_s2.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+true
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//evtd.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+true
+//event.target === s1
+false
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//evtd_s1.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+3
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//evtd_s2.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+true
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+3
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+3
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//this.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+true
+//event.target === s1
+false
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//this.symbol_1.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+true
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//this.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+true
+//event.target === s1
+false
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//this.symbol_1.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+3
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+true
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+3
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+3
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.target === evtd
+false
+//event.target === evtd_s1
+false
+//event.target === evtd_s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//event.currentTarget === evtd
+false
+//event.currentTarget === evtd_s1
+false
+//event.currentTarget === evtd_s2
+false

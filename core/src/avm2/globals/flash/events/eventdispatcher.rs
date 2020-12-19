@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
+use crate::avm2::events::EventPhase;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{DispatchObject, Object, TObject};
@@ -233,6 +234,141 @@ pub fn will_trigger<'gc>(
     Ok(false.into())
 }
 
+/// Call all of the event handlers on a given target.
+///
+/// The `target` is the current target of the `event`. `event` must be a valid
+/// `EventObject`, or this function will panic. You must have already set the
+/// event's phase to match what targets you are dispatching to, or you will
+/// call the wrong handlers.
+pub fn dispatch_event_to_target<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    mut target: Object<'gc>,
+    event: Object<'gc>,
+) -> Result<(), Error> {
+    let dispatch_list = target
+        .get_property(
+            target,
+            &QName::new(
+                Namespace::ruffle_private("EventDispatcher"),
+                "dispatch_list",
+            ),
+            activation,
+        )?
+        .coerce_to_object(activation)?;
+
+    let mut evtmut = event.as_event_mut(activation.context.gc_context).unwrap();
+    let name = evtmut.event_type();
+    let use_capture = evtmut.phase() == EventPhase::Capturing;
+
+    evtmut.set_current_target(target);
+
+    drop(evtmut);
+
+    let handlers: Vec<Object<'gc>> = dispatch_list
+        .as_dispatch_mut(activation.context.gc_context)
+        .ok_or_else(|| Error::from("Internal dispatch list is missing during dispatch!"))?
+        .iter_event_handlers(name, use_capture)
+        .collect();
+
+    for handler in handlers.iter() {
+        if event
+            .as_event()
+            .unwrap()
+            .is_propagation_stopped_immediately()
+        {
+            break;
+        }
+
+        handler.call(
+            activation.global_scope().coerce_to_object(activation).ok(),
+            &[event.into()],
+            activation,
+            None,
+        )?;
+    }
+
+    Ok(())
+}
+
+/// Implements `EventDispatcher.dispatchEvent`.
+pub fn dispatch_event<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let event = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_object(activation)?;
+
+    if event.as_event().is_none() {
+        return Err("Dispatched Events must be subclasses of Event.".into());
+    }
+
+    if let Some(mut this) = this {
+        let target = this
+            .get_property(
+                this,
+                &QName::new(Namespace::ruffle_private("EventDispatcher"), "target"),
+                activation,
+            )?
+            .coerce_to_object(activation)
+            .ok()
+            .unwrap_or(this);
+
+        let mut ancestor_list = Vec::new();
+        let mut parent = parent_of(target);
+        while let Some(par) = parent {
+            ancestor_list.push(par);
+            parent = parent_of(par);
+        }
+
+        let mut evtmut = event.as_event_mut(activation.context.gc_context).unwrap();
+
+        evtmut.set_phase(EventPhase::Capturing);
+        evtmut.set_target(target);
+
+        drop(evtmut);
+
+        for ancestor in ancestor_list.iter().rev() {
+            if event.as_event().unwrap().is_propagation_stopped() {
+                break;
+            }
+
+            dispatch_event_to_target(activation, *ancestor, event)?;
+        }
+
+        event
+            .as_event_mut(activation.context.gc_context)
+            .unwrap()
+            .set_phase(EventPhase::AtTarget);
+
+        if !event.as_event().unwrap().is_propagation_stopped() {
+            dispatch_event_to_target(activation, target, event)?;
+        }
+
+        event
+            .as_event_mut(activation.context.gc_context)
+            .unwrap()
+            .set_phase(EventPhase::Bubbling);
+
+        if event.as_event().unwrap().is_bubbling() {
+            for ancestor in ancestor_list.iter() {
+                if event.as_event().unwrap().is_propagation_stopped() {
+                    break;
+                }
+
+                dispatch_event_to_target(activation, *ancestor, event)?;
+            }
+        }
+    }
+
+    let was_not_cancelled = !event.as_event().unwrap().is_cancelled();
+
+    Ok(was_not_cancelled.into())
+}
+
 /// Implements `flash.events.EventDispatcher`'s class constructor.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -271,6 +407,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public_namespace(), "willTrigger"),
         Method::from_builtin(will_trigger),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public_namespace(), "dispatchEvent"),
+        Method::from_builtin(dispatch_event),
     ));
 
     write.define_instance_trait(Trait::from_slot(

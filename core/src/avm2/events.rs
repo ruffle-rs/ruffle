@@ -155,12 +155,24 @@ impl<'gc> Event<'gc> {
         self.event_phase
     }
 
+    pub fn set_phase(&mut self, phase: EventPhase) {
+        self.event_phase = phase;
+    }
+
     pub fn target(&self) -> Option<Object<'gc>> {
         self.target
     }
 
+    pub fn set_target(&mut self, target: Object<'gc>) {
+        self.target = Some(target)
+    }
+
     pub fn current_target(&self) -> Option<Object<'gc>> {
         self.current_target
+    }
+
+    pub fn set_current_target(&mut self, current_target: Object<'gc>) {
+        self.current_target = Some(current_target)
     }
 }
 
@@ -266,6 +278,27 @@ impl<'gc> DispatchList<'gc> {
         }
 
         false
+    }
+
+    /// Yield the event handlers on this dispatch list for a given event.
+    ///
+    /// Event handlers will be yielded in the order they are intended to be
+    /// executed.
+    ///
+    /// `use_capture` indicates if you want handlers that execute during the
+    /// capture phase, or handlers that execute during the bubble and target
+    /// phases.
+    pub fn iter_event_handlers<'a>(
+        &'a mut self,
+        event: impl Into<AvmString<'gc>>,
+        use_capture: bool,
+    ) -> impl 'a + Iterator<Item = Object<'gc>> {
+        self.get_event_mut(event)
+            .iter()
+            .rev()
+            .flat_map(|(_p, v)| v.iter())
+            .filter(move |eh| eh.use_capture == use_capture)
+            .map(|eh| eh.handler)
     }
 }
 
