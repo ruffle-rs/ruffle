@@ -90,7 +90,7 @@ impl<'gc> Namespace<'gc> {
     }
 
     pub fn is_private(&self) -> bool {
-        matches!(self, Self::Private(_))
+        matches!(self, Self::Private(_)) || matches!(self, Self::RufflePrivate(_))
     }
 
     pub fn is_dynamic(&self) -> bool {
