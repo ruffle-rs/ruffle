@@ -17,6 +17,12 @@ true
 // arguments.callee === dump
 true
 
+// arguments.caller
+null
+
+// arguments.caller === indirectDump
+false
+
 
 
 // dump("a")
@@ -37,6 +43,12 @@ true
 
 // arguments.callee === dump
 true
+
+// arguments.caller
+null
+
+// arguments.caller === indirectDump
+false
 
 // arguments[0]
 a
@@ -61,6 +73,12 @@ true
 
 // arguments.callee === dump
 true
+
+// arguments.caller
+null
+
+// arguments.caller === indirectDump
+false
 
 // arguments[1]
 b
@@ -88,6 +106,12 @@ true
 [type Function]
 
 // arguments.callee === dump
+true
+
+// arguments.caller
+[type Function]
+
+// arguments.caller === indirectDump
 true
 
 // arguments[3]
