@@ -6,6 +6,8 @@
 
 import { Ruffle } from "../pkg/ruffle_web";
 
+import { setArrayPrototypeReduce } from "./js-polyfills";
+
 /**
  * Load ruffle from an automatically-detected location.
  *
@@ -17,12 +19,21 @@ import { Ruffle } from "../pkg/ruffle_web";
  * instances.
  */
 async function fetchRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
+    if (
+        typeof Array.prototype.reduce !== "function" ||
+        Array.prototype.reduce.toString().indexOf("[native code]") === -1
+    ) {
+        // Some external libraries override the `Array.prototype.reduce` method in a way
+        // that causes Webpack to crash (#1507, #1865), so we need to override it again.
+        setArrayPrototypeReduce();
+    }
+
     try {
         // If ruffleRuntimePath is defined then we are executing inside the extension
         // closure. In that case, we configure our local Webpack instance.
         __webpack_public_path__ = ruffleRuntimePath + "dist/";
     } catch (e) {
-        // Checking an undefined closure variable usually throws ReferencError,
+        // Checking an undefined closure variable usually throws ReferenceError,
         // so we need to catch it here and continue onward.
         if (!(e instanceof ReferenceError)) {
             throw e;
