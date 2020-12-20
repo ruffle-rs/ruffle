@@ -13,6 +13,7 @@ use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::blur_filter::BlurFilterObject;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::avm1::object::date_object::DateObject;
+use crate::avm1::object::glow_filter::GlowFilterObject;
 use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
 use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
@@ -33,6 +34,7 @@ pub mod blur_filter;
 pub mod color_transform_object;
 mod custom_object;
 pub mod date_object;
+pub mod glow_filter;
 pub mod script_object;
 pub mod shared_object;
 pub mod sound_object;
@@ -64,6 +66,7 @@ pub mod xml_object;
         TransformObject(TransformObject<'gc>),
         BlurFilterObject(BlurFilterObject<'gc>),
         BevelFilterObject(BevelFilterObject<'gc>),
+        GlowFilterObject(GlowFilterObject<'gc>),
         DateObject(DateObject<'gc>),
         BitmapData(BitmapDataObject<'gc>),
     }
@@ -449,6 +452,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `BevelFilterObject`, if it exists
     fn as_bevel_filter_object(&self) -> Option<BevelFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `GlowFilterObject`, if it exists
+    fn as_glow_filter_object(&self) -> Option<GlowFilterObject<'gc>> {
         None
     }
 

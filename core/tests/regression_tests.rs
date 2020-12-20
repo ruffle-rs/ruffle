@@ -270,6 +270,7 @@ swf_tests! {
     (parse_int, "avm1/parse_int", 1),
     (bitmap_filter, "avm1/bitmap_filter", 1),
     (blur_filter, "avm1/blur_filter", 1),
+    (glow_filter, "avm1/glow_filter", 1),
     (date_constructor, "avm1/date/constructor", 1),
     (removed_clip_halts_script, "avm1/removed_clip_halts_script", 13),
     (date_utc, "avm1/date/UTC", 1),
