@@ -214,14 +214,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         opt.upgrade_to_https,
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
-    let storage = Box::new(DiskStorageBackend::new(
-        movie_url
-            .to_file_path()
-            .unwrap_or_default()
-            .file_name()
-            .unwrap_or_default()
-            .as_ref(),
-    ));
+    let storage = Box::new(DiskStorageBackend::new());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
     let player = Player::new(
         renderer,
