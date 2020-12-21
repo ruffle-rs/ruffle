@@ -1,5 +1,11 @@
 /* eslint @typescript-eslint/no-explicit-any: "off" */
 
+declare global {
+    interface Window {
+        Prototype?: any;
+    }
+}
+
 /**
  * Polyfills the `Array.prototype.reduce` method.
  *
@@ -8,9 +14,19 @@
  * https://tc39.github.io/ecma262/#sec-array.prototype.reduce
  *
  */
-export function setArrayPrototypeReduce(): void {
+export function setArrayPrototypeReduce(): any {
     Object.defineProperty(Array.prototype, "reduce", {
         value: function (...args: any) {
+            if (
+                args.length === 0 &&
+                window.Prototype &&
+                window.Prototype.Version &&
+                window.Prototype.Version < "1.6.1"
+            ) {
+                // Off-spec: compatibility with prototype.js
+                return this.length > 1 ? this : this[0];
+            }
+
             const callback = args[0];
             if (this === null) {
                 throw new TypeError(
