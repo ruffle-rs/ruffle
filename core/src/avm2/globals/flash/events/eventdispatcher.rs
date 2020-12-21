@@ -1,7 +1,7 @@
 //! `flash.events.EventDispatcher` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::events::EventPhase;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
@@ -389,6 +389,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     );
 
     let mut write = class.write(mc);
+
+    write.set_attributes(ClassAttributes::Sealed.into());
 
     write.implements(QName::new(Namespace::package("flash.events"), "IEventDispatcher").into());
 
