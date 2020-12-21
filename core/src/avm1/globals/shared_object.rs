@@ -3,6 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::avm_warn;
+use crate::display_object::TDisplayObject;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
@@ -159,20 +160,92 @@ pub fn get_local<'gc>(
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .to_owned()
         .coerce_to_string(activation)?
         .to_string();
 
-    //Check if this is referencing an existing shared object
-    if let Some(so) = activation.context.shared_objects.get(&name) {
-        return Ok(Value::Object(*so));
+    const INVALID_CHARS: &str = "~%&\\;:\"',<>?# ";
+    if name.contains(|c| INVALID_CHARS.contains(c)) {
+        log::error!("SharedObject::get_local: Invalid character in name");
+        return Ok(Value::Null);
     }
 
-    if args.len() > 1 {
-        avm_warn!(
-            activation,
-            "SharedObject.getLocal() doesn't support localPath or secure yet"
+    let movie = if let Some(movie) = activation.base_clip().movie() {
+        movie
+    } else {
+        log::error!("SharedObject::get_local: Movie was None");
+        return Ok(Value::Null);
+    };
+
+    let mut movie_url = if let Some(url) = movie.url().and_then(|url| url::Url::parse(url).ok()) {
+        url
+    } else {
+        log::error!("SharedObject::get_local: Unable to parse movie URL");
+        return Ok(Value::Null);
+    };
+    movie_url.set_query(None);
+    movie_url.set_fragment(None);
+
+    let secure = args
+        .get(2)
+        .unwrap_or(&Value::Undefined)
+        .as_bool(activation.current_swf_version());
+
+    // Secure paramter disallows using the shared object from non-HTTPS.
+    if secure && movie_url.scheme() != "https" {
+        log::warn!(
+            "SharedObject.get_local: Tried to load a secure shared object from non-HTTPS origin"
         );
+        return Ok(Value::Null);
+    }
+
+    // Shared objects are sandboxed per-domain.
+    // By default, they are keyed based on the SWF URL, but the `localHost` parameter can modify this path.
+    let mut movie_path = movie_url.path();
+    // Remove leading/trailing slashes.
+    movie_path = movie_path.strip_prefix("/").unwrap_or(movie_path);
+    movie_path = movie_path.strip_suffix("/").unwrap_or(movie_path);
+
+    let movie_host = if movie_url.scheme() == "file" {
+        // Remove drive letter on Windows (TODO: move this logic into DiskStorageBackend?)
+        if let [_, b':', b'/', ..] = movie_path.as_bytes() {
+            movie_path = &movie_path[3..];
+        }
+        "localhost"
+    } else {
+        movie_url.host_str().unwrap_or_default()
+    };
+
+    let local_path = if let Some(Value::String(local_path)) = args.get(1) {
+        // Empty local path always fails.
+        if local_path.is_empty() {
+            return Ok(Value::Null);
+        }
+
+        // Remove leading/trailing slashes.
+        let mut local_path = local_path.as_str().strip_prefix("/").unwrap_or(local_path);
+        local_path = local_path.strip_suffix("/").unwrap_or(local_path);
+
+        // Verify that local_path is a prefix of the SWF path.
+        if movie_path.starts_with(&local_path)
+            && (local_path.is_empty()
+                || movie_path.len() == local_path.len()
+                || movie_path[local_path.len()..].starts_with('/'))
+        {
+            local_path
+        } else {
+            log::warn!("SharedObject.get_local: localPath parameter does not match SWF path");
+            return Ok(Value::Null);
+        }
+    } else {
+        movie_path
+    };
+
+    // Final SO path: foo.com/folder/game.swf/SOName
+    let full_name = format!("{}/{}/{}", movie_host, local_path, name);
+
+    // Check if this is referencing an existing shared object
+    if let Some(so) = activation.context.shared_objects.get(&full_name) {
+        return Ok(Value::Object(*so));
     }
 
     // Data property only should exist when created with getLocal/Remote
@@ -181,13 +254,13 @@ pub fn get_local<'gc>(
 
     // Set the internal name
     let obj_so = this.as_shared_object().unwrap();
-    obj_so.set_name(activation.context.gc_context, name.to_string());
+    obj_so.set_name(activation.context.gc_context, full_name.clone());
 
     let prototype = activation.context.avm1.prototypes.object;
     let mut data = Value::Undefined;
 
     // Load the data object from storage if it existed prior
-    if let Some(saved) = activation.context.storage.get_string(&name) {
+    if let Some(saved) = activation.context.storage.get_string(&full_name) {
         if let Ok(json_data) = json::parse(&saved) {
             data = recursive_deserialize(json_data, activation);
         }

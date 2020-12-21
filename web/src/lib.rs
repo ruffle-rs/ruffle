@@ -307,12 +307,8 @@ impl Ruffle {
         let input = Box::new(WebInputBackend::new(&canvas));
         let locale = Box::new(WebLocaleBackend::new());
 
-        let current_domain = window.location().href().unwrap();
-
         let local_storage = match window.local_storage() {
-            Ok(Some(s)) => {
-                Box::new(LocalStorageBackend::new(s, current_domain)) as Box<dyn StorageBackend>
-            }
+            Ok(Some(s)) => Box::new(LocalStorageBackend::new(s)) as Box<dyn StorageBackend>,
             err => {
                 log::warn!("Unable to use localStorage: {:?}\nData will not save.", err);
                 Box::new(MemoryStorageBackend::default())
