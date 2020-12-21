@@ -234,7 +234,7 @@ impl<'gc> DispatchList<'gc> {
         handler: Object<'gc>,
         use_capture: bool,
     ) {
-        let new_handler = (handler, use_capture).into();
+        let new_handler = EventHandler::new(handler, use_capture);
 
         if let Some(event_sheaf) = self.get_event(event.clone()) {
             for (_other_prio, other_set) in event_sheaf.iter() {
@@ -258,7 +258,7 @@ impl<'gc> DispatchList<'gc> {
         handler: Object<'gc>,
         use_capture: bool,
     ) {
-        let old_handler: EventHandler<'gc> = (handler, use_capture).into();
+        let old_handler = EventHandler::new(handler, use_capture);
 
         for (_prio, set) in self.get_event_mut(event).iter_mut() {
             if let Some(pos) = set.iter().position(|h| *h == old_handler) {
@@ -315,11 +315,11 @@ struct EventHandler<'gc> {
     use_capture: bool,
 }
 
-impl<'gc> From<(Object<'gc>, bool)> for EventHandler<'gc> {
-    fn from(parts: (Object<'gc>, bool)) -> Self {
+impl<'gc> EventHandler<'gc> {
+    fn new(handler: Object<'gc>, use_capture: bool) -> Self {
         Self {
-            handler: parts.0,
-            use_capture: parts.1,
+            handler,
+            use_capture,
         }
     }
 }
