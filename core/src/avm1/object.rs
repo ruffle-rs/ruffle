@@ -13,6 +13,7 @@ use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::blur_filter::BlurFilterObject;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::avm1::object::date_object::DateObject;
+use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
 use crate::avm1::object::glow_filter::GlowFilterObject;
 use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
@@ -27,7 +28,6 @@ use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::borrow::Cow;
 use std::fmt::Debug;
-use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
 
 pub mod bevel_filter;
 pub mod bitmap_data;
@@ -35,6 +35,7 @@ pub mod blur_filter;
 pub mod color_transform_object;
 mod custom_object;
 pub mod date_object;
+pub mod drop_shadow_filter;
 pub mod glow_filter;
 pub mod script_object;
 pub mod shared_object;
@@ -46,7 +47,6 @@ pub mod value_object;
 pub mod xml_attributes_object;
 pub mod xml_idmap_object;
 pub mod xml_object;
-pub mod drop_shadow_filter;
 
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.

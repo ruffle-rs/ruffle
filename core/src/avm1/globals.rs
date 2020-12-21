@@ -23,6 +23,7 @@ pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
 mod date;
 pub(crate) mod display_object;
+pub mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
 mod function;
@@ -51,7 +52,6 @@ pub(crate) mod text_field;
 mod text_format;
 mod transform;
 mod xml;
-pub mod drop_shadow_filter;
 
 pub fn random<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,

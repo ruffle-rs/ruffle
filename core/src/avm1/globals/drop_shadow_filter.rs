@@ -3,10 +3,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
 use crate::avm1::{Object, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
-use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -34,7 +34,7 @@ pub fn alpha<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.alpha().into())
+        return Ok(object.alpha().into());
     }
 
     Ok(Value::Undefined)
@@ -64,7 +64,7 @@ pub fn distance<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.distance().into())
+        return Ok(object.distance().into());
     }
 
     Ok(Value::Undefined)
@@ -93,7 +93,7 @@ pub fn angle<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.angle().into())
+        return Ok(object.angle().into());
     }
 
     Ok(Value::Undefined)
@@ -128,7 +128,7 @@ pub fn blur_x<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.blur_x().into())
+        return Ok(object.blur_x().into());
     }
 
     Ok(Value::Undefined)
@@ -158,7 +158,7 @@ pub fn blur_y<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.blur_y().into())
+        return Ok(object.blur_y().into());
     }
 
     Ok(Value::Undefined)
@@ -188,7 +188,7 @@ pub fn color<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.color().into())
+        return Ok(object.color().into());
     }
 
     Ok(Value::Undefined)
@@ -217,7 +217,7 @@ pub fn hide_object<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.hide_object().into())
+        return Ok(object.hide_object().into());
     }
 
     Ok(Value::Undefined)
@@ -246,7 +246,7 @@ pub fn inner<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.inner().into())
+        return Ok(object.inner().into());
     }
 
     Ok(Value::Undefined)
@@ -275,7 +275,7 @@ pub fn knockout<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.knockout().into())
+        return Ok(object.knockout().into());
     }
 
     Ok(Value::Undefined)
@@ -304,7 +304,7 @@ pub fn quality<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.quality().into())
+        return Ok(object.quality().into());
     }
 
     Ok(Value::Undefined)
@@ -334,7 +334,7 @@ pub fn strength<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_drop_shadow_filter_object() {
-        return Ok(object.strength().into())
+        return Ok(object.strength().into());
     }
 
     Ok(Value::Undefined)
@@ -473,7 +473,7 @@ pub fn create_proto<'gc>(
         )),
         EnumSet::empty(),
     );
-    
+
     object.add_property(
         gc_context,
         "hideObject",

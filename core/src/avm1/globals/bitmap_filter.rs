@@ -5,7 +5,6 @@ use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
-use crate::avm1::globals::bevel_filter::get_knockout;
 
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -79,16 +78,17 @@ pub fn clone<'gc>(
 
         let cloned = proto.construct(
             activation,
-            &[
-                //TODO: why inner and kncokout
-                color, alpha, blur_x, blur_y, strength, quality
-            ],
+            &[color, alpha, blur_x, blur_y, strength, quality],
         )?;
         return Ok(cloned.into());
     }
 
     if let Some(this) = this.as_drop_shadow_filter_object() {
-        let proto = activation.context.avm1.prototypes.drop_shadow_filter_constructor;
+        let proto = activation
+            .context
+            .avm1
+            .prototypes
+            .drop_shadow_filter_constructor;
 
         let distance = this.get("distance", activation)?;
         let angle = this.get("angle", activation)?;

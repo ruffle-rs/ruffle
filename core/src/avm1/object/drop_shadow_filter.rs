@@ -28,7 +28,7 @@ pub struct DropShadowFilterData<'gc> {
     inner: bool,
     knockout: bool,
     quality: i32,
-    strength: f64
+    strength: f64,
 }
 
 impl fmt::Debug for DropShadowFilterObject<'_> {
@@ -81,7 +81,6 @@ impl<'gc> DropShadowFilterObject<'gc> {
                 quality: 1,
                 inner: false,
                 knockout: false,
-
             },
         ))
     }
