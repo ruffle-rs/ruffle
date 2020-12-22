@@ -101,7 +101,7 @@ impl<'gc> TObject<'gc> for DropShadowFilterObject<'gc> {
             value,
             activation,
             (*self).into(),
-            Some(activation.context.avm1.prototypes.blur_filter),
+            Some(activation.context.avm1.prototypes.drop_shadow_filter),
         )
     }
 
