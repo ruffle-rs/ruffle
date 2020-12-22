@@ -23,6 +23,7 @@ pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
 mod date;
 pub(crate) mod display_object;
+pub mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
 mod function;
@@ -407,6 +408,8 @@ pub struct SystemPrototypes<'gc> {
     pub bevel_filter_constructor: Object<'gc>,
     pub glow_filter: Object<'gc>,
     pub glow_filter_constructor: Object<'gc>,
+    pub drop_shadow_filter: Object<'gc>,
+    pub drop_shadow_filter_constructor: Object<'gc>,
     pub date: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub bitmap_data_constructor: Object<'gc>,
@@ -639,6 +642,15 @@ pub fn create_globals<'gc>(
         glow_filter_proto,
     );
 
+    let drop_shadow_filter_proto =
+        drop_shadow_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
+    let drop_shadow_filter = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(drop_shadow_filter::constructor),
+        Some(function_proto),
+        drop_shadow_filter_proto,
+    );
+
     filters.define_value(
         gc_context,
         "BitmapFilter",
@@ -661,6 +673,12 @@ pub fn create_globals<'gc>(
         gc_context,
         "GlowFilter",
         glow_filter.into(),
+        EnumSet::empty(),
+    );
+    filters.define_value(
+        gc_context,
+        "DropShadowFilter",
+        drop_shadow_filter.into(),
         EnumSet::empty(),
     );
 
@@ -967,6 +985,8 @@ pub fn create_globals<'gc>(
             bevel_filter_constructor: bevel_filter,
             glow_filter: glow_filter_proto,
             glow_filter_constructor: glow_filter,
+            drop_shadow_filter: drop_shadow_filter_proto,
+            drop_shadow_filter_constructor: drop_shadow_filter,
             date: date_proto,
             bitmap_data: bitmap_data_proto,
             bitmap_data_constructor: bitmap_data,

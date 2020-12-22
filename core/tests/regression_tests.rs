@@ -292,6 +292,7 @@ swf_tests! {
     (date_set_year, "avm1/date/setYear", 1),
     (this_scoping, "avm1/this_scoping", 1),
     (bevel_filter, "avm1/bevel_filter", 1),
+    (drop_shadow_filter, "avm1/drop_shadow_filter", 1),
     (bitmap_data, "avm1/bitmap_data", 1),
     (as3_hello_world, "avm2/hello_world", 1),
     (as3_function_call, "avm2/function_call", 1),
