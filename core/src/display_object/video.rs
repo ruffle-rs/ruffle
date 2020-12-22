@@ -99,10 +99,17 @@ impl<'gc> Video<'gc> {
             }
         }
     }
+
+    /// Seek to a particular frame in the video stream.
+    pub fn seek(&self, _context: &mut UpdateContext<'_, 'gc, '_>, _frame: u16) {}
 }
 
 impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     impl_display_object!(base);
+
+    fn as_video(self) -> Option<Video<'gc>> {
+        Some(self)
+    }
 
     fn id(&self) -> CharacterId {
         match (*self.0.read().source_stream.read()).borrow() {
