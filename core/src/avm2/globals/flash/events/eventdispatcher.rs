@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::events::EventPhase;
+use crate::avm2::globals::NS_RUFFLE_INTERNAL;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{DispatchObject, Object, TObject};
@@ -11,6 +12,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
+
+const NS_EVENT_DISPATCHER: &str = "https://ruffle.rs/AS3/impl/EventDispatcher/";
 
 /// Implements `flash.events.EventDispatcher`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -26,16 +29,13 @@ pub fn instance_init<'gc>(
 
         this.init_property(
             this,
-            &QName::new(Namespace::ruffle_private("EventDispatcher"), "target"),
+            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
             target,
             activation,
         )?;
         this.init_property(
             this,
-            &QName::new(
-                Namespace::ruffle_private("EventDispatcher"),
-                "dispatch_list",
-            ),
+            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
             dispatch_list.into(),
             activation,
         )?;
@@ -54,10 +54,7 @@ pub fn add_event_listener<'gc>(
         let dispatch_list = this
             .get_property(
                 this,
-                &QName::new(
-                    Namespace::ruffle_private("EventDispatcher"),
-                    "dispatch_list",
-                ),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -102,10 +99,7 @@ pub fn remove_event_listener<'gc>(
         let dispatch_list = this
             .get_property(
                 this,
-                &QName::new(
-                    Namespace::ruffle_private("EventDispatcher"),
-                    "dispatch_list",
-                ),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -144,10 +138,7 @@ pub fn has_event_listener<'gc>(
         let dispatch_list = this
             .get_property(
                 this,
-                &QName::new(
-                    Namespace::ruffle_private("EventDispatcher"),
-                    "dispatch_list",
-                ),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -195,10 +186,7 @@ pub fn will_trigger<'gc>(
         let dispatch_list = this
             .get_property(
                 this,
-                &QName::new(
-                    Namespace::ruffle_private("EventDispatcher"),
-                    "dispatch_list",
-                ),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -219,7 +207,7 @@ pub fn will_trigger<'gc>(
         let target = this
             .get_property(
                 this,
-                &QName::new(Namespace::ruffle_private("EventDispatcher"), "target"),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
                 activation,
             )?
             .coerce_to_object(activation)
@@ -248,10 +236,7 @@ pub fn dispatch_event_to_target<'gc>(
     let dispatch_list = target
         .get_property(
             target,
-            &QName::new(
-                Namespace::ruffle_private("EventDispatcher"),
-                "dispatch_list",
-            ),
+            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
             activation,
         )?
         .coerce_to_object(activation)?;
@@ -310,7 +295,7 @@ pub fn dispatch_event<'gc>(
         let target = this
             .get_property(
                 this,
-                &QName::new(Namespace::ruffle_private("EventDispatcher"), "target"),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
                 activation,
             )?
             .coerce_to_object(activation)
@@ -416,16 +401,13 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ));
 
     write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::ruffle_private("EventDispatcher"), "target"),
-        QName::new(Namespace::ruffle_private(""), "BareObject").into(),
+        QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
+        QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "BareObject").into(),
         None,
     ));
     write.define_instance_trait(Trait::from_slot(
-        QName::new(
-            Namespace::ruffle_private("EventDispatcher"),
-            "dispatch_list",
-        ),
-        QName::new(Namespace::ruffle_private(""), "BareObject").into(),
+        QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
+        QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "BareObject").into(),
         None,
     ));
 

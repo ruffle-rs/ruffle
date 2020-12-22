@@ -31,6 +31,8 @@ mod object;
 mod string;
 mod r#uint;
 
+const NS_RUFFLE_INTERNAL: &str = "https://ruffle.rs/AS3/impl/";
+
 fn trace<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
