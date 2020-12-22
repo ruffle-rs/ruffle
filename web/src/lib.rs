@@ -35,8 +35,8 @@ use std::sync::{Arc, Mutex};
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{
-    AddEventListenerOptions, Element, EventTarget, HtmlCanvasElement, HtmlElement, KeyboardEvent,
-    PointerEvent, WheelEvent,
+    AddEventListenerOptions, Element, Event, EventTarget, HtmlCanvasElement, HtmlElement,
+    KeyboardEvent, PointerEvent, WheelEvent,
 };
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
@@ -71,6 +71,7 @@ struct RuffleInstance {
     mouse_wheel_callback: Option<Closure<dyn FnMut(WheelEvent)>>,
     key_down_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
     key_up_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
+    before_unload_callback: Option<Closure<dyn FnMut(Event)>>,
     has_focus: bool,
     trace_observer: Arc<RefCell<JsValue>>,
 }
@@ -201,7 +202,10 @@ impl Ruffle {
             instance.canvas.remove();
 
             // Stop all audio playing from the instance
-            instance.core.lock().unwrap().audio_mut().stop_all_sounds();
+            let mut player = instance.core.lock().unwrap();
+            player.audio_mut().stop_all_sounds();
+            player.flush_shared_objects();
+            drop(player);
 
             // Clean up all event listeners.
             instance.key_down_callback = None;
@@ -211,6 +215,7 @@ impl Ruffle {
             instance.mouse_up_callback = None;
             instance.player_mouse_down_callback = None;
             instance.window_mouse_down_callback = None;
+            instance.before_unload_callback = None;
 
             // Cancel the animation handler, if it's still active.
             if let Some(id) = instance.animation_handler_id {
@@ -345,6 +350,7 @@ impl Ruffle {
             mouse_wheel_callback: None,
             key_down_callback: None,
             key_up_callback: None,
+            before_unload_callback: None,
             timestamp: None,
             has_focus: false,
             trace_observer,
@@ -655,6 +661,28 @@ impl Ruffle {
                     .unwrap();
                 let mut instance = instances.get(index).unwrap().borrow_mut();
                 instance.key_up_callback = Some(key_up_callback);
+            }
+
+            {
+                let before_unload_callback = Closure::wrap(Box::new(move |_| {
+                    INSTANCES.with(|instances| {
+                        if let Some(instance) = instances.borrow().get(index) {
+                            let instance = instance.borrow();
+                            let mut player = instance.core.lock().unwrap();
+                            player.flush_shared_objects();
+                        }
+                    });
+                })
+                    as Box<dyn FnMut(Event)>);
+
+                window
+                    .add_event_listener_with_callback(
+                        "beforeunload",
+                        before_unload_callback.as_ref().unchecked_ref(),
+                    )
+                    .unwrap();
+                let mut instance = instances.get(index).unwrap().borrow_mut();
+                instance.before_unload_callback = Some(before_unload_callback);
             }
 
             ruffle
