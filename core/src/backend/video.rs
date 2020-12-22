@@ -4,6 +4,10 @@ use crate::backend::render::{BitmapInfo, RenderBackend};
 use generational_arena::{Arena, Index};
 use swf::{VideoCodec, VideoDeblocking};
 
+mod software;
+
+pub use crate::backend::video::software::SoftwareVideoBackend;
+
 pub type VideoStreamHandle = Index;
 
 pub type Error = Box<dyn std::error::Error>;

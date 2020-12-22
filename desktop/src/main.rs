@@ -28,6 +28,7 @@ use std::time::Instant;
 use tinyfiledialogs::open_file_dialog;
 use url::Url;
 
+use ruffle_core::backend::video;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::io::Read;
@@ -243,7 +244,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     )); //TODO: actually implement this backend type
     let storage = Box::new(storage::DiskStorageBackend::new());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
-    let video = Box::new(NullVideoBackend::new());
+    let video = Box::new(video::SoftwareVideoBackend::new());
     let log = Box::new(ruffle_core::backend::log::NullLogBackend::new());
     let ui = Box::new(ui::DesktopUiBackend::new(window.clone()));
     let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
