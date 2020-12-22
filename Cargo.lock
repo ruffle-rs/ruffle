@@ -1706,6 +1706,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "h263-rs-yuv"
+version = "0.1.0"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=837f075d280680abc8dd3fc3d47656d5a770c48e#837f075d280680abc8dd3fc3d47656d5a770c48e"
+
+[[package]]
 name = "hashbrown"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3039,6 +3044,7 @@ dependencies = [
  "generational-arena",
  "gif",
  "h263-rs",
+ "h263-rs-yuv",
  "indexmap",
  "instant",
  "jpeg-decoder",
