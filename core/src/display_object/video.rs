@@ -202,6 +202,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         write.stream = stream;
         drop(write);
 
+        self.seek(context, 0);
+
         if run_frame {
             self.run_frame(context);
         }
