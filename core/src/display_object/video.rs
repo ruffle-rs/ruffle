@@ -157,7 +157,7 @@ impl<'gc> Video<'gc> {
 
                 self.0.write(context.gc_context).decoded_frame = Some(CollectWrapper(bitmap))
             }
-            Err(e) => log::error!("Got error when seeking video: {}", e),
+            Err(e) => log::error!("Got error when seeking to video frame {}: {}", frame_id, e),
         }
     }
 }
