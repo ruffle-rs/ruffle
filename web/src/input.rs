@@ -195,6 +195,11 @@ impl InputBackend for WebInputBackend {
         self.update_mouse_cursor();
     }
 
+    fn clipboard_content(&mut self) -> String {
+        log::warn!("get clipboard not implemented");
+        "".to_string()
+    }
+
     fn set_clipboard_content(&mut self, _content: String) {
         log::warn!("set clipboard not implemented");
     }

@@ -212,6 +212,12 @@ impl InputBackend for WinitInputBackend {
         self.window.set_cursor_icon(icon);
     }
 
+    fn clipboard_content(&mut self) -> String {
+        self.clipboard
+            .get_contents()
+            .unwrap_or_else(|_| "".to_string())
+    }
+
     fn set_clipboard_content(&mut self, content: String) {
         self.clipboard.set_contents(content).unwrap();
     }
