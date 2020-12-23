@@ -982,8 +982,8 @@ pub trait TDisplayObject<'gc>:
             if let Some(ratio) = place_object.ratio {
                 if let Some(mut morph_shape) = self.as_morph_shape() {
                     morph_shape.set_ratio(context.gc_context, ratio);
-                } else if let Some(mut video) = self.as_video() {
-                    video.seek(context, ratio);
+                } else if let Some(video) = self.as_video() {
+                    video.seek(context, ratio.into());
                 }
             }
             // Clip events only apply to movie clips.

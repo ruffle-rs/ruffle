@@ -15,14 +15,14 @@ pub type Error = Box<dyn std::error::Error>;
 /// An encoded video frame of some video codec.
 pub struct EncodedFrame<'a> {
     /// The codec used to encode the frame.
-    codec: VideoCodec,
+    pub codec: VideoCodec,
 
     /// The raw bitstream data to funnel into the codec.
-    data: &'a [u8],
+    pub data: &'a [u8],
 
     /// A caller-specified frame ID. Frame IDs must be consistent between
     /// subsequent uses of the same data stream.
-    frame_id: u32,
+    pub frame_id: u32,
 }
 
 impl<'a> EncodedFrame<'a> {
