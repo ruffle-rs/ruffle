@@ -181,6 +181,7 @@ impl<'gc> MovieLibrary<'gc> {
             Character::MovieClip(movie_clip) => Ok(movie_clip.instantiate(gc_context)),
             Character::Button(button) => Ok(button.instantiate(gc_context)),
             Character::Text(text) => Ok(text.instantiate(gc_context)),
+            Character::Video(video) => Ok(video.instantiate(gc_context)),
             _ => Err("Not a DisplayObject".into()),
         }
     }
