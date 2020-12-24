@@ -762,6 +762,12 @@ impl<'gc> EditText<'gc> {
             None
         };
 
+        let start = if let LayoutContent::Text { start, .. } = &lbox.content() {
+            *start
+        } else {
+            0
+        };
+
         // If the font can't be found or has no glyph information, use the "device font" instead.
         // We're cheating a bit and not actually rendering text using the OS/web.
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
@@ -778,7 +784,7 @@ impl<'gc> EditText<'gc> {
                 |pos, transform, glyph: &Glyph, advance, x| {
                     // If it's highlighted, override the color.
                     match selection {
-                        Some(selection) if selection.contains(pos) => {
+                        Some(selection) if selection.contains(start + pos) => {
                             // Draw black selection rect
                             let selection_box = context.transform_stack.transform().matrix
                                 * Matrix::create_box(
