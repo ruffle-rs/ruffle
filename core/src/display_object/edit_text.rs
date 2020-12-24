@@ -773,7 +773,7 @@ impl<'gc> EditText<'gc> {
                 font.get_baseline_for_height(params.height()) - params.height();
             font.evaluate(
                 text,
-                self.text_transform(color, baseline_adjustmnet),
+                self.text_transform(color.clone(), baseline_adjustmnet),
                 params,
                 |pos, transform, glyph: &Glyph, advance, x| {
                     // If it's highlighted, override the color.
@@ -817,9 +817,7 @@ impl<'gc> EditText<'gc> {
                                     x + Twips::from_pixels(-1.0),
                                     Twips::from_pixels(2.0),
                                 );
-                            context
-                                .renderer
-                                .draw_rect(Color::from_rgb(0x000000, 0xFF), &caret);
+                            context.renderer.draw_rect(color.clone(), &caret);
                         } else if pos == length - 1 && caret_pos == length {
                             let caret = context.transform_stack.transform().matrix
                                 * Matrix::create_box(
@@ -829,9 +827,7 @@ impl<'gc> EditText<'gc> {
                                     x + advance,
                                     Twips::from_pixels(2.0),
                                 );
-                            context
-                                .renderer
-                                .draw_rect(Color::from_rgb(0x000000, 0xFF), &caret);
+                            context.renderer.draw_rect(color.clone(), &caret);
                         }
                     }
                 },
