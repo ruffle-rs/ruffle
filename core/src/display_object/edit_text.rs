@@ -769,11 +769,11 @@ impl<'gc> EditText<'gc> {
         if let Some((text, _tf, font, params, color)) =
             lbox.as_renderable_text(edit_text.text_spans.text())
         {
-            let baseline_adjustmnet =
+            let baseline_adjustment =
                 font.get_baseline_for_height(params.height()) - params.height();
             font.evaluate(
                 text,
-                self.text_transform(color.clone(), baseline_adjustmnet),
+                self.text_transform(color.clone(), baseline_adjustment),
                 params,
                 |pos, transform, glyph: &Glyph, advance, x| {
                     // If it's highlighted, override the color.
