@@ -1447,15 +1447,29 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                     let text = edit_text.text_spans.text();
                     let length = text.len();
                     match key_code {
-                        ButtonKeyCode::Left if selection.to > 0 => {
-                            selection.to = string_utils::prev_char_boundary(text, selection.to);
-                            if !context.input.is_key_down(KeyCode::Shift) {
+                        ButtonKeyCode::Left => {
+                            if (context.input.is_key_down(KeyCode::Shift) || selection.is_caret())
+                                && selection.to > 0
+                            {
+                                selection.to = string_utils::prev_char_boundary(text, selection.to);
+                                if !context.input.is_key_down(KeyCode::Shift) {
+                                    selection.from = selection.to;
+                                }
+                            } else if !context.input.is_key_down(KeyCode::Shift) {
+                                selection.to = selection.start();
                                 selection.from = selection.to;
                             }
                         }
-                        ButtonKeyCode::Right if selection.to < length => {
-                            selection.to = string_utils::next_char_boundary(text, selection.to);
-                            if !context.input.is_key_down(KeyCode::Shift) {
+                        ButtonKeyCode::Right => {
+                            if (context.input.is_key_down(KeyCode::Shift) || selection.is_caret())
+                                && selection.to < length
+                            {
+                                selection.to = string_utils::next_char_boundary(text, selection.to);
+                                if !context.input.is_key_down(KeyCode::Shift) {
+                                    selection.from = selection.to;
+                                }
+                            } else if !context.input.is_key_down(KeyCode::Shift) {
+                                selection.to = selection.end();
                                 selection.from = selection.to;
                             }
                         }
