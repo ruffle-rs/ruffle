@@ -777,23 +777,34 @@ impl<'gc> EditText<'gc> {
                 params,
                 |pos, transform, glyph: &Glyph, advance, x| {
                     // If it's highlighted, override the color.
-                    // TODO: We should draw a black background and change the color to white,
-                    //  but for now let's just change it to be slightly different colour.
                     match selection {
                         Some(selection) if selection.contains(pos) => {
+                            // Draw black selection rect
+                            let selection_box = context.transform_stack.transform().matrix
+                                * Matrix::create_box(
+                                    advance.to_pixels() as f32,
+                                    params.height().to_pixels() as f32,
+                                    0.0,
+                                    x + Twips::from_pixels(-1.0),
+                                    Twips::from_pixels(2.0),
+                                );
+                            context
+                                .renderer
+                                .draw_rect(Color::from_rgb(0x000000, 0xFF), &selection_box);
+
+                            // Set text color to white
                             context.transform_stack.push(&Transform {
                                 matrix: transform.matrix,
-                                color_transform: transform.color_transform
-                                    * ColorTransform {
-                                        r_mult: 0.75,
-                                        g_mult: 0.75,
-                                        b_mult: 0.75,
-                                        a_mult: 1.0,
-                                        r_add: 0.0,
-                                        g_add: 0.0,
-                                        b_add: 1.0,
-                                        a_add: 0.0,
-                                    },
+                                color_transform: ColorTransform {
+                                    r_mult: 1.0,
+                                    g_mult: 1.0,
+                                    b_mult: 1.0,
+                                    a_mult: 1.0,
+                                    r_add: 0.0,
+                                    g_add: 0.0,
+                                    b_add: 0.0,
+                                    a_add: 0.0,
+                                },
                             });
                         }
                         _ => {
