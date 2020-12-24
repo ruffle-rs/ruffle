@@ -240,6 +240,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             context
                 .renderer
                 .render_bitmap(bitmap.0, context.transform_stack.transform(), false);
+        } else {
+            log::warn!("Video has no decoded frame to render.");
         }
 
         context.transform_stack.pop();
