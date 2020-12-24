@@ -121,6 +121,19 @@ pub fn clone<'gc>(
         return Ok(cloned.into());
     }
 
+    if let Some(this) = this.as_color_matrix_filter_object() {
+        let proto = activation
+            .context
+            .system_prototypes
+            .color_matrix_filter_constructor;
+
+        let matrix = this.get("matrix", activation)?;
+
+        let cloned = proto.construct(activation, &[matrix])?;
+
+        return Ok(cloned.into());
+    }
+
     Ok(Value::Undefined)
 }
 
