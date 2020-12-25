@@ -106,6 +106,10 @@ impl<'gc> Video<'gc> {
             } => {
                 let subslice = SwfSlice::from(movie.clone()).to_unbounded_subslice(tag.data);
 
+                if frames.contains_key(&tag.frame_num.into()) {
+                    log::warn!("Duplicate frame {}", tag.frame_num);
+                }
+
                 if let Some(subslice) = subslice {
                     frames.insert(tag.frame_num.into(), (subslice.start, subslice.end));
                 } else {
