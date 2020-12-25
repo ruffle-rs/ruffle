@@ -81,6 +81,9 @@ struct Opt {
     /// (Optional) Replace all embedded http URLs with https
     #[clap(long, case_insensitive = true, takes_value = false)]
     upgrade_to_https: bool,
+
+    #[clap(long, case_insensitive = true, takes_value = false)]
+    timedemo: bool,
 }
 
 #[cfg(feature = "render_trace")]
@@ -105,7 +108,11 @@ fn main() {
 
     let opt = Opt::parse();
 
-    let ret = run_player(opt);
+    let ret = if opt.timedemo {
+        run_timedemo(opt)
+    } else {
+        run_player(opt)
+    };
 
     if let Err(e) = ret {
         eprintln!("Fatal error:\n{}", e);
@@ -113,16 +120,13 @@ fn main() {
     }
 }
 
-fn load_movie_from_path(
-    movie_url: Url,
-    proxy: Option<Url>,
-) -> Result<SwfMovie, Box<dyn std::error::Error>> {
+fn load_movie_from_path(movie_url: Url, opt: &Opt) -> Result<SwfMovie, Box<dyn std::error::Error>> {
     if movie_url.scheme() == "file" {
         if let Ok(path) = movie_url.to_file_path() {
             return SwfMovie::from_path(path);
         }
     }
-    let proxy = proxy.and_then(|url| url.as_str().parse().ok());
+    let proxy = opt.proxy.as_ref().and_then(|url| url.as_str().parse().ok());
     let builder = HttpClient::builder()
         .proxy(proxy)
         .redirect_policy(RedirectPolicy::Follow);
@@ -130,7 +134,22 @@ fn load_movie_from_path(
     let res = client.get(movie_url.to_string())?;
     let mut buffer: Vec<u8> = Vec::new();
     res.into_body().read_to_end(&mut buffer)?;
-    SwfMovie::from_data(&buffer, Some(movie_url.to_string()))
+
+    let mut movie = SwfMovie::from_data(&buffer, Some(movie_url.to_string()))?;
+
+    // Set query parameters.
+    for parameter in &opt.parameters {
+        let mut split = parameter.splitn(2, '=');
+        if let (Some(key), Some(value)) = (split.next(), split.next()) {
+            movie.parameters_mut().insert(key, value.to_string(), true);
+        } else {
+            movie
+                .parameters_mut()
+                .insert(&parameter, "".to_string(), true);
+        }
+    }
+
+    Ok(movie)
 }
 
 fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
@@ -161,19 +180,8 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let mut movie = load_movie_from_path(movie_url.to_owned(), opt.proxy.to_owned())?;
+    let movie = load_movie_from_path(movie_url.to_owned(), &opt)?;
     let movie_size = LogicalSize::new(movie.width(), movie.height());
-
-    for parameter in &opt.parameters {
-        let mut split = parameter.splitn(2, '=');
-        if let (Some(key), Some(value)) = (split.next(), split.next()) {
-            movie.parameters_mut().insert(key, value.to_string(), true);
-        } else {
-            movie
-                .parameters_mut()
-                .insert(&parameter, "".to_string(), true);
-        }
-    }
 
     let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
     let icon = Icon::from_rgba(icon_bytes.to_vec(), 32, 32)?;
@@ -239,6 +247,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
     let mut next_frame_time = Instant::now();
+
     loop {
         // Poll UI events
         event_loop.run(move |event, _window_target, control_flow| {
@@ -359,6 +368,77 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
             }
         });
     }
+}
+
+fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
+    let movie_url = match &opt.input_path {
+        Some(path) => {
+            if path.exists() {
+                let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
+                Url::from_file_path(absolute_path)
+                    .map_err(|_| "Path must be absolute and cannot be a URL")?
+            } else {
+                Url::parse(path.to_str().unwrap_or_default())
+                    .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
+            }
+        }
+        None => return Err("Input file necessary for timedemo".into()),
+    };
+
+    let movie = load_movie_from_path(movie_url, &opt)?;
+    let movie_frames = Some(movie.header().num_frames);
+
+    let viewport_width = 1920;
+    let viewport_height = 1080;
+
+    let renderer = Box::new(WgpuRenderBackend::for_offscreen(
+        (viewport_width, viewport_height),
+        opt.graphics.into(),
+        opt.power.into(),
+        trace_path(&opt),
+    )?);
+    let audio: Box<dyn AudioBackend> = Box::new(NullAudioBackend::new());
+    let navigator = Box::new(ruffle_core::backend::navigator::NullNavigatorBackend::new());
+    let input = Box::new(ruffle_core::backend::input::NullInputBackend::new());
+    let storage = Box::new(ruffle_core::backend::storage::MemoryStorageBackend::default());
+    let user_interface = Box::new(ruffle_core::backend::ui::NullUiBackend::new());
+    let locale = Box::new(locale::DesktopLocaleBackend::new());
+    let log = Box::new(NullLogBackend::new());
+    let player = Player::new(
+        renderer,
+        audio,
+        navigator,
+        input,
+        storage,
+        locale,
+        log,
+        user_interface,
+    )?;
+    player.lock().unwrap().set_root_movie(Arc::new(movie));
+    player.lock().unwrap().set_is_playing(true);
+
+    player
+        .lock()
+        .unwrap()
+        .set_viewport_dimensions(viewport_width, viewport_height);
+
+    println!("Running {}...", opt.input_path.unwrap().to_string_lossy(),);
+
+    let start = Instant::now();
+    let mut num_frames = 0;
+    const MAX_FRAMES: u32 = 5000;
+    let mut player = player.lock().unwrap();
+    while num_frames < MAX_FRAMES && player.current_frame() < movie_frames {
+        player.run_frame();
+        player.render();
+        num_frames += 1;
+    }
+    let end = Instant::now();
+    let duration = end.duration_since(start);
+
+    println!("Ran {} frames in {}s.", num_frames, duration.as_secs_f32());
+
+    Ok(())
 }
 
 /// Hides the Win32 console if we were not launched from the command line.
