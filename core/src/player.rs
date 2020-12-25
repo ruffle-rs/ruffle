@@ -205,6 +205,10 @@ pub struct Player {
     /// contexts to other parts of the player. It can be used to ensure the
     /// player lives across `await` calls in async code.
     self_reference: Option<Weak<Mutex<Self>>>,
+
+    /// The current frame of the main timeline, if available.
+    /// The first frame is frame 1.
+    current_frame: Option<u16>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -291,6 +295,7 @@ impl Player {
             time_til_next_timer: None,
             storage,
             max_execution_duration: Duration::from_secs(15),
+            current_frame: None,
         };
 
         player.mutate_with_update_context(|context| {
@@ -882,6 +887,12 @@ impl Player {
         self.needs_render = false;
     }
 
+    /// The current frame of the main timeline, if available.
+    /// The first frame is frame 1.
+    pub fn current_frame(&self) -> Option<u16> {
+        self.current_frame
+    }
+
     pub fn audio(&self) -> &Audio {
         &self.audio
     }
@@ -1097,6 +1108,7 @@ impl Player {
             logging,
             needs_render,
             max_execution_duration,
+            current_frame,
         ) = (
             self.player_version,
             &self.swf,
@@ -1117,6 +1129,7 @@ impl Player {
             self.log.deref_mut(),
             &mut self.needs_render,
             self.max_execution_duration,
+            &mut self.current_frame,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -1176,8 +1189,15 @@ impl Player {
 
             let ret = f(&mut update_context);
 
+            *current_frame = update_context
+                .levels
+                .get(&0)
+                .and_then(|root| root.as_movie_clip())
+                .map(|clip| clip.current_frame());
+
             // Hovered object may have been updated; copy it back to the GC root.
             root_data.mouse_hovered_object = update_context.mouse_hovered_object;
+
             ret
         })
     }

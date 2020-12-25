@@ -11,6 +11,7 @@ use ruffle_core::backend::render::{
 use ruffle_core::shape_utils::{DistilledShape, DrawPath};
 use std::borrow::Cow;
 use swf::{CharacterId, DefineBitsLossless, Glyph, GradientInterpolation};
+use target::TextureTarget;
 
 use bytemuck::{Pod, Zeroable};
 use futures::executor::block_on;
@@ -178,36 +179,37 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-
         let instance = wgpu::Instance::new(backend);
-
         let surface = unsafe { instance.create_surface(window) };
-
-        let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+        let descriptors = Self::build_descriptors(
+            backend,
+            instance,
+            Some(&surface),
             power_preference,
-            compatible_surface: Some(&surface),
-        }))
-        .ok_or_else(|| {
-            let names = get_backend_names(backend);
-            if names.is_empty() {
-                "Ruffle requires hardware acceleration, but no compatible graphics device was found (no backend provided?)".to_string()
-            } else {
-                format!("Ruffle requires hardware acceleration, but no compatible graphics device was found supporting {}", format_list(&names, "or"))
-            }
-        })?;
-
-        let (device, queue) = block_on(adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                features: Default::default(),
-                limits: wgpu::Limits::default(),
-                shader_validation: false,
-            },
             trace_path,
-        ))?;
-        let descriptors = Descriptors::new(device, queue)?;
-
+        )?;
         let target = SwapChainTarget::new(surface, size, &descriptors.device);
+        Self::new(descriptors, target)
+    }
+}
+
+impl WgpuRenderBackend<TextureTarget> {
+    pub fn for_offscreen(
+        size: (u32, u32),
+        backend: wgpu::BackendBit,
+        power_preference: wgpu::PowerPreference,
+        trace_path: Option<&Path>,
+    ) -> Result<Self, Error> {
+        if wgpu::BackendBit::SECONDARY.contains(backend) {
+            log::warn!(
+                "{} graphics backend support may not be fully supported.",
+                format_list(&get_backend_names(backend), "and")
+            );
+        }
+        let instance = wgpu::Instance::new(backend);
+        let descriptors =
+            Self::build_descriptors(backend, instance, None, power_preference, trace_path)?;
+        let target = TextureTarget::new(&descriptors.device, size);
         Self::new(descriptors, target)
     }
 }
@@ -273,6 +275,43 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             quad_tex_transforms,
             bitmap_registry: HashMap::new(),
         })
+    }
+
+    pub fn build_descriptors(
+        backend: wgpu::BackendBit,
+        instance: wgpu::Instance,
+        surface: Option<&wgpu::Surface>,
+        power_preference: wgpu::PowerPreference,
+        trace_path: Option<&Path>,
+    ) -> Result<Descriptors, Error> {
+        let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference,
+            compatible_surface: surface,
+        }))
+        .ok_or_else(|| {
+            let names = get_backend_names(backend);
+            if names.is_empty() {
+                "Ruffle requires hardware acceleration, but no compatible graphics device was found (no backend provided?)".to_string()
+            } else {
+                format!("Ruffle requires hardware acceleration, but no compatible graphics device was found supporting {}", format_list(&names, "or"))
+            }
+        })?;
+
+        let (device, queue) = block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::PUSH_CONSTANTS,
+                limits: wgpu::Limits {
+                    max_push_constant_size: (std::mem::size_of::<Transforms>()
+                        + std::mem::size_of::<ColorAdjustments>())
+                        as u32,
+                    ..Default::default()
+                },
+                shader_validation: false,
+            },
+            trace_path,
+        ))?;
+        Descriptors::new(device, queue)
     }
 
     pub fn descriptors(self) -> Descriptors {

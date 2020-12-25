@@ -1,5 +1,4 @@
 use clap::Clap;
-use futures::executor::block_on;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use ruffle_core::backend::audio::NullAudioBackend;
@@ -374,24 +373,13 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
 fn main() -> Result<(), Box<dyn Error>> {
     let opt: Opt = Opt::parse();
     let instance = wgpu::Instance::new(opt.graphics.into());
-    let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: opt.power.into(),
-        compatible_surface: None,
-    }))
-    .ok_or(
-        "This tool requires hardware acceleration, but no compatible graphics device was found.",
-    )?;
-
-    let (device, queue) = block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            label: None,
-            features: Default::default(),
-            limits: wgpu::Limits::default(),
-            shader_validation: false,
-        },
+    let descriptors = WgpuRenderBackend::<TextureTarget>::build_descriptors(
+        opt.graphics.into(),
+        instance,
+        None,
+        opt.power.into(),
         trace_path(&opt),
-    ))?;
-    let descriptors = Descriptors::new(device, queue)?;
+    )?;
 
     if opt.swf.is_file() {
         capture_single_swf(descriptors, &opt)?;
