@@ -747,6 +747,32 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let width = bitmap.width;
         let height = bitmap.height;
 
+        // Make bind group for bitmap quad.
+        let texture_view = texture.create_view(&Default::default());
+        let bind_group = self
+            .descriptors
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &self.descriptors.pipelines.bitmap_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &self.quad_tex_transforms,
+                            offset: 0,
+                            size: wgpu::BufferSize::new(
+                                std::mem::size_of::<TextureTransforms>() as u64
+                            ),
+                        },
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                    },
+                ],
+                label: create_debug_label!("Bitmap {} bind group", handle.0).as_deref(),
+            });
+
         self.bitmap_registry.insert(handle, bitmap);
         self.textures.push((
             id,
@@ -754,6 +780,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 texture,
                 width,
                 height,
+                bind_group,
             },
         ));
 
@@ -974,36 +1001,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 ],
             ];
 
-            let texture_view = texture.texture.create_view(&Default::default());
-
-            let bitmap_bind_group_label = create_debug_label!("Bitmap {} bind group", bitmap.0);
-            let bitmap_bind_group =
-                self.descriptors
-                    .device
-                    .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.descriptors.pipelines.bitmap_layout,
-                        entries: &[
-                            wgpu::BindGroupEntry {
-                                binding: 0,
-                                resource: wgpu::BindingResource::Buffer {
-                                    buffer: &self.quad_tex_transforms,
-                                    offset: 0,
-                                    size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<TextureTransforms>() as u64,
-                                    ),
-                                },
-                            },
-                            wgpu::BindGroupEntry {
-                                binding: 1,
-                                resource: wgpu::BindingResource::TextureView(&texture_view),
-                            },
-                        ],
-                        label: bitmap_bind_group_label.as_deref(),
-                    });
-
             frame.render_pass.set_pipeline(
-                &self
-                    .descriptors
+                self.descriptors
                     .pipelines
                     .bitmap_pipelines
                     .pipeline_for(self.mask_state),
@@ -1021,7 +1020,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             frame
                 .render_pass
                 .set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
-            frame.render_pass.set_bind_group(1, &bitmap_bind_group, &[]);
+            frame
+                .render_pass
+                .set_bind_group(1, &texture.bind_group, &[]);
             frame.render_pass.set_bind_group(
                 2,
                 self.descriptors
@@ -1495,6 +1496,7 @@ struct Texture {
     width: u32,
     height: u32,
     texture: wgpu::Texture,
+    bind_group: wgpu::BindGroup,
 }
 
 struct RuffleVertexCtor {
