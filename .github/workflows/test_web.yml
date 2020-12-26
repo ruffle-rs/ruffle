@@ -17,7 +17,8 @@ jobs:
         # We most likely don't care about rust versions here, we'll catch those issues in "test rust"
         node_version: ['10', '12']
         rust_version: ['stable']
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        # MIKE: Turning off macOS-latest for now (flaky tests on CI)
+        os: [ubuntu-latest, windows-latest]
 
     steps:
     - uses: actions/checkout@v1
