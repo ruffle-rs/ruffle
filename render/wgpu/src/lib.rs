@@ -327,7 +327,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         as u32,
                     ..Default::default()
                 },
-                shader_validation: false,
             },
             trace_path,
         ))?;
@@ -958,6 +957,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     store: true,
                 }),
             }),
+            label: None,
         });
 
         // Since RenderPass holds a reference to the CommandEncoder, we cast the lifetime
@@ -1033,7 +1033,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             frame
                 .render_pass
                 .set_vertex_buffer(0, self.quad_vbo.slice(..));
-            frame.render_pass.set_index_buffer(self.quad_ibo.slice(..));
+            frame
+                .render_pass
+                .set_index_buffer(self.quad_ibo.slice(..), wgpu::IndexFormat::Uint16);
 
             match self.mask_state {
                 MaskState::NoMask => (),
@@ -1136,7 +1138,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 .set_vertex_buffer(0, draw.vertex_buffer.slice(..));
             frame
                 .render_pass
-                .set_index_buffer(draw.index_buffer.slice(..));
+                .set_index_buffer(draw.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
             match self.mask_state {
                 MaskState::NoMask => (),
@@ -1209,7 +1211,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         frame
             .render_pass
             .set_vertex_buffer(0, self.quad_vbo.slice(..));
-        frame.render_pass.set_index_buffer(self.quad_ibo.slice(..));
+        frame
+            .render_pass
+            .set_index_buffer(self.quad_ibo.slice(..), wgpu::IndexFormat::Uint16);
 
         match self.mask_state {
             MaskState::NoMask => (),
