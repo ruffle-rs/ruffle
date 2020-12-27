@@ -149,3 +149,14 @@ false
 (a=0.1220703125, b=0, c=0, d=0.18310546875, tx=100, ty=150)
 
 
+/// transformPoint
+// matrix = new Matrix(2, 3, 5, 7, 11, 13);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+
+// matrix.transformPoint();
+(x=NaN, y=NaN)
+
+// matrix.transformPoint(new Point(1, 1));
+(x=18, y=23)
+
+
