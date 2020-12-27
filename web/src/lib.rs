@@ -72,7 +72,7 @@ struct RuffleInstance {
     mouse_wheel_callback: Option<Closure<dyn FnMut(WheelEvent)>>,
     key_down_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
     key_up_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
-    before_unload_callback: Option<Closure<dyn FnMut(Event)>>,
+    unload_callback: Option<Closure<dyn FnMut(Event)>>,
     has_focus: bool,
     trace_observer: Arc<RefCell<JsValue>>,
 }
@@ -219,7 +219,7 @@ impl Ruffle {
             instance.mouse_up_callback = None;
             instance.player_mouse_down_callback = None;
             instance.window_mouse_down_callback = None;
-            instance.before_unload_callback = None;
+            instance.unload_callback = None;
 
             // Cancel the animation handler, if it's still active.
             if let Some(id) = instance.animation_handler_id {
@@ -351,7 +351,7 @@ impl Ruffle {
             mouse_wheel_callback: None,
             key_down_callback: None,
             key_up_callback: None,
-            before_unload_callback: None,
+            unload_callback: None,
             timestamp: None,
             has_focus: false,
             trace_observer,
@@ -665,7 +665,7 @@ impl Ruffle {
             }
 
             {
-                let before_unload_callback = Closure::wrap(Box::new(move |_| {
+                let unload_callback = Closure::wrap(Box::new(move |_| {
                     INSTANCES.with(|instances| {
                         if let Some(instance) = instances.borrow().get(index) {
                             let instance = instance.borrow();
@@ -673,17 +673,16 @@ impl Ruffle {
                             player.flush_shared_objects();
                         }
                     });
-                })
-                    as Box<dyn FnMut(Event)>);
+                }) as Box<dyn FnMut(Event)>);
 
                 window
                     .add_event_listener_with_callback(
-                        "beforeunload",
-                        before_unload_callback.as_ref().unchecked_ref(),
+                        "unload",
+                        unload_callback.as_ref().unchecked_ref(),
                     )
                     .unwrap();
                 let mut instance = instances.get(index).unwrap().borrow_mut();
-                instance.before_unload_callback = Some(before_unload_callback);
+                instance.unload_callback = Some(unload_callback);
             }
 
             ruffle
