@@ -171,7 +171,10 @@ impl TextureTarget {
                 }
 
                 let bgra = BgraImage::from_raw(self.size.width, self.size.height, buffer);
-                bgra.map(|image| image.convert())
+                let ret = bgra.map(|image| image.convert());
+                drop(map);
+                self.buffer.unmap();
+                ret
             }
             Err(e) => {
                 log::error!("Unknown error reading capture buffer: {:?}", e);
