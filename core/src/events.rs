@@ -106,6 +106,11 @@ impl ClipEvent {
         )
     }
 
+    /// Indicates whether this is a keyboard event type (keyUp, keyDown, keyPress).
+    pub fn is_key_event(self) -> bool {
+        matches!(self, Self::KeyDown | Self::KeyUp | Self::KeyPress { .. })
+    }
+
     /// Returns the method name of the event handler for this event.
     pub fn method_name(self) -> Option<&'static str> {
         match self {

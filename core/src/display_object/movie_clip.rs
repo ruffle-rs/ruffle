@@ -2056,15 +2056,18 @@ impl<'gc> MovieClipData<'gc> {
                 // (e.g., clip.onEnterFrame = foo).
                 if context.swf.version() >= 6 {
                     if let Some(name) = event.method_name() {
-                        context.action_queue.queue_actions(
-                            self_display_object,
-                            ActionType::Method {
-                                object,
-                                name,
-                                args: vec![],
-                            },
-                            event == ClipEvent::Unload,
-                        );
+                        // Keyboard events don't fire their methods unless the movieclip has focus (#2120).
+                        if !event.is_key_event() || self.has_focus {
+                            context.action_queue.queue_actions(
+                                self_display_object,
+                                ActionType::Method {
+                                    object,
+                                    name,
+                                    args: vec![],
+                                },
+                                event == ClipEvent::Unload,
+                            );
+                        }
                     }
                 }
             }
