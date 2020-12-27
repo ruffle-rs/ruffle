@@ -32,15 +32,15 @@ impl Pipelines {
         globals_layout: &wgpu::BindGroupLayout,
     ) -> Result<Self, Error> {
         let color_vs =
-            device.create_shader_module(wgpu::include_spirv!("../shaders/color.vert.spv"));
+            device.create_shader_module(&wgpu::include_spirv!("../shaders/color.vert.spv"));
         let color_fs =
-            device.create_shader_module(wgpu::include_spirv!("../shaders/color.frag.spv"));
+            device.create_shader_module(&wgpu::include_spirv!("../shaders/color.frag.spv"));
         let texture_vs =
-            device.create_shader_module(wgpu::include_spirv!("../shaders/texture.vert.spv"));
+            device.create_shader_module(&wgpu::include_spirv!("../shaders/texture.vert.spv"));
         let gradient_fs =
-            device.create_shader_module(wgpu::include_spirv!("../shaders/gradient.frag.spv"));
+            device.create_shader_module(&wgpu::include_spirv!("../shaders/gradient.frag.spv"));
         let bitmap_fs =
-            device.create_shader_module(wgpu::include_spirv!("../shaders/bitmap.frag.spv"));
+            device.create_shader_module(&wgpu::include_spirv!("../shaders/bitmap.frag.spv"));
 
         let vertex_buffers_description = [wgpu::VertexBufferDescriptor {
             stride: std::mem::size_of::<GPUVertex>() as u64,
@@ -185,7 +185,7 @@ fn create_pipeline_descriptor<'a>(
         sample_mask: !0,
         alpha_to_coverage_enabled: false,
         vertex_state: wgpu::VertexStateDescriptor {
-            index_format: wgpu::IndexFormat::Uint16,
+            index_format: Some(wgpu::IndexFormat::Uint16),
             vertex_buffers: vertex_buffers_description,
         },
     }
