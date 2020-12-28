@@ -52,6 +52,18 @@ fn trace<'gc>(
     Ok(Value::Undefined)
 }
 
+fn is_nan<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(val) = args.get(0) {
+        Ok(val.coerce_to_number(activation)?.is_nan().into())
+    } else {
+        Ok(true.into())
+    }
+}
+
 /// This structure represents all system builtins' prototypes.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -403,6 +415,7 @@ pub fn load_player_globals<'gc>(
     activation.context.avm2.system_prototypes = Some(sp);
 
     function(mc, "", "trace", trace, fn_proto, domain, script)?;
+    function(mc, "", "isNaN", is_nan, fn_proto, domain, script)?;
     constant(mc, "", "undefined", Value::Undefined, domain, script)?;
     constant(mc, "", "null", Value::Null, domain, script)?;
     constant(mc, "", "NaN", NAN.into(), domain, script)?;
