@@ -546,7 +546,7 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let navigator = Box::new(NullNavigatorBackend::new());
     let storage = Box::new(MemoryStorageBackend::default());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
-    let video = Box::new(video::NullVideoBackend::new());
+    let video = Box::new(video::SoftwareVideoBackend::new());
     let log = Box::new(log_backend::NullLogBackend::new());
     let ui = Box::new(NullUiBackend::new());
     let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
