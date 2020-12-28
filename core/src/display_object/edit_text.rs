@@ -1352,6 +1352,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             }
         }
 
+        context.transform_stack.pop();
+
         context.renderer.deactivate_mask();
         context.renderer.draw_rect(
             Color::from_rgb(0, 0xff),
@@ -1359,7 +1361,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         );
         context.renderer.pop_mask();
 
-        context.transform_stack.pop();
         context.transform_stack.pop();
         context.transform_stack.pop();
     }
