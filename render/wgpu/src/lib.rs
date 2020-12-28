@@ -909,7 +909,13 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             Ok(frame) => frame,
             Err(e) => {
                 log::warn!("Couldn't begin new render frame: {}", e);
-                panic!();
+                // Attemp to recreate the swap chain in this case.
+                self.target.resize(
+                    &self.descriptors.device,
+                    self.target.width(),
+                    self.target.height(),
+                );
+                return;
             }
         };
 
