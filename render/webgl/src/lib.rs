@@ -55,7 +55,8 @@ pub struct WebGlRenderBackend {
     textures: Vec<(Option<swf::CharacterId>, Texture)>,
     meshes: Vec<Mesh>,
 
-    quad_shape: ShapeHandle,
+    color_quad_shape: ShapeHandle,
+    bitmap_quad_shape: ShapeHandle,
 
     mask_state: MaskState,
     num_masks: u32,
@@ -195,7 +196,8 @@ impl WebGlRenderBackend {
             shape_tessellator: ShapeTessellator::new(),
 
             meshes: vec![],
-            quad_shape: ShapeHandle(0),
+            color_quad_shape: ShapeHandle(0),
+            bitmap_quad_shape: ShapeHandle(1),
             textures: vec![],
             renderbuffer_width: 1,
             renderbuffer_height: 1,
@@ -214,14 +216,16 @@ impl WebGlRenderBackend {
             bitmap_registry: HashMap::new(),
         };
 
-        let quad_mesh = renderer.build_quad_mesh()?;
-        renderer.meshes.push(quad_mesh);
+        let color_quad_mesh = renderer.build_quad_mesh(&renderer.color_program)?;
+        renderer.meshes.push(color_quad_mesh);
+        let bitmap_quad_mesh = renderer.build_quad_mesh(&renderer.bitmap_program)?;
+        renderer.meshes.push(bitmap_quad_mesh);
         renderer.set_viewport_dimensions(1, 1);
 
         Ok(renderer)
     }
 
-    fn build_quad_mesh(&mut self) -> Result<Mesh, Error> {
+    fn build_quad_mesh(&self, program: &ShaderProgram) -> Result<Mesh, Error> {
         let vao = self.create_vertex_array()?;
 
         let vertex_buffer = self.gl.create_buffer().unwrap();
@@ -270,7 +274,6 @@ impl WebGlRenderBackend {
             (vertex_buffer, index_buffer)
         };
 
-        let program = &self.bitmap_program;
         if program.vertex_position_location != 0xffff_ffff {
             self.gl.vertex_attrib_pointer_with_i32(
                 program.vertex_position_location,
@@ -296,19 +299,24 @@ impl WebGlRenderBackend {
             self.gl
                 .enable_vertex_attrib_array(program.vertex_color_location as u32);
         }
+        self.bind_vertex_array(None);
         for i in program.num_vertex_attributes..NUM_VERTEX_ATTRIBUTES {
             self.gl.disable_vertex_attrib_array(i);
         }
 
         let quad_mesh = Mesh {
             draws: vec![Draw {
-                draw_type: DrawType::Bitmap(BitmapDraw {
-                    matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
-                    id: 0,
+                draw_type: if program.program == self.bitmap_program.program {
+                    DrawType::Bitmap(BitmapDraw {
+                        matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                        id: 0,
 
-                    is_smoothed: true,
-                    is_repeating: false,
-                }),
+                        is_smoothed: true,
+                        is_repeating: false,
+                    })
+                } else {
+                    DrawType::Color
+                },
                 vao,
                 vertex_buffer,
                 index_buffer,
@@ -923,7 +931,7 @@ impl RenderBackend for WebGlRenderBackend {
             program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
 
             // Render the quad.
-            let quad = &self.meshes[self.quad_shape.0];
+            let quad = &self.meshes[self.bitmap_quad_shape.0];
             self.bind_vertex_array(Some(&quad.draws[0].vao));
             self.gl.draw_elements_with_i32(
                 Gl::TRIANGLES,
@@ -939,7 +947,7 @@ impl RenderBackend for WebGlRenderBackend {
         if let Some((_, bitmap)) = self.textures.get(bitmap.0) {
             let texture = &bitmap.texture;
             // Adjust the quad draw to use the target bitmap.
-            let mesh = &self.meshes[self.quad_shape.0];
+            let mesh = &self.meshes[self.bitmap_quad_shape.0];
             let draw = &mesh.draws[0];
             let width = bitmap.width as f32;
             let height = bitmap.height as f32;
@@ -1273,7 +1281,7 @@ impl RenderBackend for WebGlRenderBackend {
             self.add_color = Some(add_color);
         }
 
-        let quad = &self.meshes[self.quad_shape.0];
+        let quad = &self.meshes[self.color_quad_shape.0];
         self.bind_vertex_array(Some(&quad.draws[0].vao));
 
         self.gl.draw_elements_with_i32(
