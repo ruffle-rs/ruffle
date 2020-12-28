@@ -247,7 +247,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
     let mut next_frame_time = Instant::now();
-
+    let mut minimized = false;
     loop {
         // Poll UI events
         event_loop.run(move |event, _window_target, control_flow| {
@@ -273,10 +273,18 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 // Render
-                winit::event::Event::RedrawRequested(_) => player.lock().unwrap().render(),
+                winit::event::Event::RedrawRequested(_) => {
+                    // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
+                    if !minimized {
+                        player.lock().unwrap().render();
+                    }
+                }
 
                 winit::event::Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(size) => {
+                        // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
+                        minimized = size.width == 0 && size.height == 0;
+
                         let mut player_lock = player.lock().unwrap();
                         player_lock.set_viewport_dimensions(size.width, size.height);
                         player_lock
