@@ -52,6 +52,18 @@ fn trace<'gc>(
     Ok(Value::Undefined)
 }
 
+fn is_finite<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(val) = args.get(0) {
+        Ok(val.coerce_to_number(activation)?.is_finite().into())
+    } else {
+        Ok(false.into())
+    }
+}
+
 fn is_nan<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
@@ -415,6 +427,7 @@ pub fn load_player_globals<'gc>(
     activation.context.avm2.system_prototypes = Some(sp);
 
     function(mc, "", "trace", trace, fn_proto, domain, script)?;
+    function(mc, "", "isFinite", is_finite, fn_proto, domain, script)?;
     function(mc, "", "isNaN", is_nan, fn_proto, domain, script)?;
     constant(mc, "", "undefined", Value::Undefined, domain, script)?;
     constant(mc, "", "null", Value::Null, domain, script)?;

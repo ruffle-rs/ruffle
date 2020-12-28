@@ -327,6 +327,7 @@ swf_tests! {
     (as3_if_strictne, "avm2/if_strictne", 1),
     (as3_strict_equality, "avm2/strict_equality", 1),
     (as3_es4_interfaces, "avm2/es4_interfaces", 1),
+    (as3_is_finite, "avm2/is_finite", 1),
     (as3_is_nan, "avm2/is_nan", 1),
     (as3_istype, "avm2/istype", 1),
     (as3_instanceof, "avm2/instanceof", 1),
