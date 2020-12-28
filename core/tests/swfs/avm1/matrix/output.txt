@@ -160,3 +160,14 @@ false
 (x=18, y=23)
 
 
+/// deltaTransformPoint
+// matrix = new Matrix(2, 3, 5, 7, 11, 13);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+
+// matrix.deltaTransformPoint();
+(x=NaN, y=NaN)
+
+// matrix.deltaTransformPoint(new Point(1, 1));
+(x=7, y=10)
+
+
