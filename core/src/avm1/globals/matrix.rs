@@ -358,6 +358,23 @@ fn transform_point<'gc>(
     Ok(object.into())
 }
 
+fn delta_transform_point<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let matrix = object_to_matrix(this, activation)?;
+    let point = value_to_point(
+        args.get(0).unwrap_or(&Value::Undefined).to_owned(),
+        activation,
+    )?;
+
+    let x = point.0 * matrix.a as f64 + point.1 * matrix.c as f64;
+    let y = point.0 * matrix.b as f64 + point.1 * matrix.d as f64;
+    let object = point_to_object((x, y), activation)?;
+    Ok(object.into())
+}
+
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -476,6 +493,14 @@ pub fn create_proto<'gc>(
     object.force_set_function(
         "transformPoint",
         transform_point,
+        gc_context,
+        EnumSet::empty(),
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "deltaTransformPoint",
+        delta_transform_point,
         gc_context,
         EnumSet::empty(),
         Some(fn_proto),
