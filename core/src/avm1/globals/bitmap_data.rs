@@ -656,13 +656,26 @@ pub fn pixel_dissolve<'gc>(
 }
 
 pub fn scroll<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            log::warn!("BitmapData.scroll - not yet implemented");
+            let x = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_i32(activation)?;
+            let y = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_i32(activation)?;
+
+            bitmap_data
+                .bitmap_data()
+                .write(activation.context.gc_context)
+                .scroll(x, y);
+
             return Ok(Value::Undefined);
         }
     }
