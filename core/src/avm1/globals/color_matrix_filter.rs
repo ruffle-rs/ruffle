@@ -57,7 +57,6 @@ pub fn set_matrix<'gc>(
             *item = elem;
         }
 
-
         if let Some(filter) = this.as_color_matrix_filter_object() {
             filter.set_matrix(activation.context.gc_context, arr);
         }
