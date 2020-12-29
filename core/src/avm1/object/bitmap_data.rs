@@ -481,6 +481,48 @@ impl BitmapData {
 
         (x, y, w, h)
     }
+
+    pub fn scroll(&mut self, x: i32, y: i32) {
+        let width = self.width() as i32;
+        let height = self.height() as i32;
+
+        if (x == 0 && y == 0) || x.abs() >= width || y.abs() >= height {
+            return; // no-op
+        }
+
+        // since this is an "in-place copy", we have to iterate from bottom to top
+        // when scrolling downwards - so if y is positive
+        let reverse_y = y > 0;
+        // and if only scrolling horizontally, we have to iterate from right to left
+        // when scrolling right - so if x is positive
+        let reverse_x = y == 0 && x > 0;
+
+        // iteration ranges to use as source for the copy, from is inclusive, to is exclusive
+        let y_from = if reverse_y { height - y - 1 } else { -y };
+        let y_to = if reverse_y { -1 } else { height };
+        let dy = if reverse_y { -1 } else { 1 };
+
+        let x_from = if reverse_x {
+            // we know x > 0
+            width - x - 1
+        } else {
+            // x can be any sign
+            (-x).max(0)
+        };
+        let x_to = if reverse_x { -1 } else { width.min(width - x) };
+        let dx = if reverse_x { -1 } else { 1 };
+
+        let mut src_y = y_from;
+        while src_y != y_to {
+            let mut src_x = x_from;
+            while src_x != x_to {
+                let color = self.get_pixel_raw(src_x as u32, src_y as u32).unwrap();
+                self.set_pixel32_raw((src_x + x) as u32, (src_y + y) as u32, color);
+                src_x += dx;
+            }
+            src_y += dy;
+        }
+    }
 }
 
 /// A BitmapData
