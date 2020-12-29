@@ -18,6 +18,7 @@ mod blur_filter;
 pub(crate) mod boolean;
 pub(crate) mod button;
 mod color;
+pub mod color_matrix_filter;
 mod color_transform;
 pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
@@ -410,6 +411,8 @@ pub struct SystemPrototypes<'gc> {
     pub glow_filter_constructor: Object<'gc>,
     pub drop_shadow_filter: Object<'gc>,
     pub drop_shadow_filter_constructor: Object<'gc>,
+    pub color_matrix_filter: Object<'gc>,
+    pub color_matrix_filter_constructor: Object<'gc>,
     pub date: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub bitmap_data_constructor: Object<'gc>,
@@ -651,6 +654,15 @@ pub fn create_globals<'gc>(
         drop_shadow_filter_proto,
     );
 
+    let color_matrix_filter_proto =
+        color_matrix_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
+    let color_matrix_filter = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(color_matrix_filter::constructor),
+        Some(function_proto),
+        color_matrix_filter_proto,
+    );
+
     filters.define_value(
         gc_context,
         "BitmapFilter",
@@ -679,6 +691,12 @@ pub fn create_globals<'gc>(
         gc_context,
         "DropShadowFilter",
         drop_shadow_filter.into(),
+        EnumSet::empty(),
+    );
+    filters.define_value(
+        gc_context,
+        "ColorMatrixFilter",
+        color_matrix_filter.into(),
         EnumSet::empty(),
     );
 
@@ -987,6 +1005,8 @@ pub fn create_globals<'gc>(
             glow_filter_constructor: glow_filter,
             drop_shadow_filter: drop_shadow_filter_proto,
             drop_shadow_filter_constructor: drop_shadow_filter,
+            color_matrix_filter: color_matrix_filter_proto,
+            color_matrix_filter_constructor: color_matrix_filter,
             date: date_proto,
             bitmap_data: bitmap_data_proto,
             bitmap_data_constructor: bitmap_data,
