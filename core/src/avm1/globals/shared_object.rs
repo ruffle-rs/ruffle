@@ -176,11 +176,16 @@ pub fn get_local<'gc>(
         return Ok(Value::Null);
     };
 
-    let mut movie_url = if let Some(url) = movie.url().and_then(|url| url::Url::parse(url).ok()) {
-        url
+    let mut movie_url = if let Some(url) = movie.url() {
+        if let Ok(url) = url::Url::parse(url) {
+            url
+        } else {
+            log::error!("SharedObject::get_local: Unable to parse movie URL");
+            return Ok(Value::Null);
+        }
     } else {
-        log::error!("SharedObject::get_local: Unable to parse movie URL");
-        return Ok(Value::Null);
+        // No URL (loading local data). Use a dummy URL to allow SharedObjects to work.
+        url::Url::parse("file://localhost").unwrap()
     };
     movie_url.set_query(None);
     movie_url.set_fragment(None);
