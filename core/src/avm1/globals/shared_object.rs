@@ -278,7 +278,7 @@ pub fn get_local<'gc>(
         EnumSet::empty(),
     );
 
-    activation.context.shared_objects.insert(name, this);
+    activation.context.shared_objects.insert(full_name, this);
 
     Ok(this.into())
 }
