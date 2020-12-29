@@ -326,7 +326,7 @@ export class RufflePlayer extends HTMLElement {
         // bit before checking if autoplay is supported and applying the instance config.
         if (this.audioState() !== "running") {
             this.container.style.visibility = "hidden";
-            await new Promise((resolve) => {
+            await new Promise<void>((resolve) => {
                 window.setTimeout(() => {
                     resolve();
                 }, 200);

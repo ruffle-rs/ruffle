@@ -114,7 +114,7 @@ async function injectRuffle(
 ): Promise<void> {
     // The document is supposed to be completely loaded when this function is run.
     // As Chrome may be unable to access the document properties, we have to delay the execution a little bit.
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
         window.setTimeout(() => {
             resolve();
         }, 100);
