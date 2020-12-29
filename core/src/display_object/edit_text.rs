@@ -869,8 +869,9 @@ impl<'gc> EditText<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         set_initial_value: bool,
     ) -> bool {
-        let mut bound = false;
         if let Some(var_path) = self.variable() {
+            let mut bound = false;
+
             // Any previous binding should have been cleared.
             debug_assert!(self.0.read().bound_stage_object.is_none());
 
@@ -930,9 +931,11 @@ impl<'gc> EditText<'gc> {
                     }
                 },
             );
+            bound
+        } else {
+            // No variable for this text field; success by default
+            true
         }
-
-        bound
     }
 
     /// Unsets a bound display object from this text field.
