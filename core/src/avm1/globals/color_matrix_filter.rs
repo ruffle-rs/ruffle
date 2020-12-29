@@ -48,7 +48,7 @@ pub fn set_matrix<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let matrix = args.get(0).unwrap_or(&Value::Undefined);
 
-    let array = if let Value::Object(obj) = matrix {
+    if let Value::Object(obj) = matrix {
         let arr_len = obj.length().min(20);
         let mut arr = [0.0; 4 * 5];
 
@@ -57,16 +57,10 @@ pub fn set_matrix<'gc>(
             *item = elem;
         }
 
-        arr
-    } else {
-        [
-            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0,
-        ]
-    };
 
-    if let Some(filter) = this.as_color_matrix_filter_object() {
-        filter.set_matrix(activation.context.gc_context, array);
+        if let Some(filter) = this.as_color_matrix_filter_object() {
+            filter.set_matrix(activation.context.gc_context, arr);
+        }
     }
 
     Ok(Value::Undefined)
