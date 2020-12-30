@@ -227,6 +227,7 @@ impl<'gc> XMLNode<'gc> {
         mc: MutationContext<'gc, '_>,
         data: &str,
         process_entity: bool,
+        ignore_white: bool,
     ) -> Result<(), Error> {
         let mut parser = Reader::from_str(data);
         let mut buf = Vec::new();
@@ -257,7 +258,9 @@ impl<'gc> XMLNode<'gc> {
                 }
                 Event::Text(bt) => {
                     let child = XMLNode::text_from_text_event(mc, bt, document, process_entity)?;
-                    if child.node_value().as_deref() != Some("") {
+                    if child.node_value().as_deref() != Some("")
+                        && (!ignore_white || !child.is_whitespace_text())
+                    {
                         self.add_child_to_tree(mc, &mut open_tags, child)?;
                     }
                 }
@@ -948,6 +951,12 @@ impl<'gc> XMLNode<'gc> {
     /// Check if this XML node constitutes text.
     pub fn is_text(self) -> bool {
         matches!(*self.0.read(), XMLNodeData::Text { .. })
+    }
+
+    // Check if this XML node is constitutes text and only contains whitespace.
+    pub fn is_whitespace_text(self) -> bool {
+        const WHITESPACE_CHARS: &[u8] = &[b' ', b'\t', b'\r', b'\n'];
+        matches!(&*self.0.read(), XMLNodeData::Text { contents, .. } if contents.bytes().all(|c| WHITESPACE_CHARS.contains(&c)))
     }
 
     /// Check if this XML node constitutes text.

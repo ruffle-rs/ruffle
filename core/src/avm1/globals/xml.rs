@@ -795,9 +795,16 @@ pub fn xml_constructor<'gc>(
             let mut xmlnode = xmldoc.as_node();
             xmlnode.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlnode);
+            let ignore_whitespace = this
+                .get("ignoreWhite", activation)?
+                .as_bool(activation.current_swf_version());
 
-            if let Err(e) = this_node.replace_with_str(activation.context.gc_context, string, true)
-            {
+            if let Err(e) = this_node.replace_with_str(
+                activation.context.gc_context,
+                string,
+                true,
+                ignore_whitespace,
+            ) {
                 avm_warn!(
                     activation,
                     "Couldn't replace_with_str inside of XML constructor: {}",
@@ -899,7 +906,16 @@ pub fn xml_parse_xml<'gc>(
             }
         }
 
-        let result = node.replace_with_str(activation.context.gc_context, &xmlstring, true);
+        let ignore_whitespace = this
+            .get("ignoreWhite", activation)?
+            .as_bool(activation.current_swf_version());
+
+        let result = node.replace_with_str(
+            activation.context.gc_context,
+            &xmlstring,
+            true,
+            ignore_whitespace,
+        );
         if let Err(e) = result {
             avm_warn!(activation, "XML parsing error: {}", e);
         }
@@ -1077,6 +1093,7 @@ pub fn create_xml_proto<'gc>(
         None,
         ReadOnly.into(),
     );
+    xml_proto.define_value(gc_context, "ignoreWhite", false.into(), EnumSet::empty());
     xml_proto.add_property(
         gc_context,
         "xmlDecl",

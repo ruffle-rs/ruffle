@@ -159,7 +159,7 @@ impl<'gc> EditText<'gc> {
         if is_html {
             let _ = document
                 .as_node()
-                .replace_with_str(context.gc_context, &text, false);
+                .replace_with_str(context.gc_context, &text, false, false);
             text_spans.lower_from_html(document);
         } else {
             text_spans.replace_text(0, text_spans.text().len(), &text, Some(&default_format));
@@ -350,7 +350,7 @@ impl<'gc> EditText<'gc> {
             if let Err(err) =
                 document
                     .as_node()
-                    .replace_with_str(context.gc_context, &html_string, false)
+                    .replace_with_str(context.gc_context, &html_string, false, false)
             {
                 log::warn!("Parsing error when setting TextField.htmlText: {}", err);
             }
