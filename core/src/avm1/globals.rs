@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::Collect;
 use gc_arena::MutationContext;
@@ -363,6 +363,33 @@ pub fn update_after_event<'gc>(
     *activation.context.needs_render = true;
 
     Ok(Value::Undefined)
+}
+
+pub fn escape<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let s = if let Some(val) = args.get(0) {
+        val.coerce_to_string(activation)?
+    } else {
+        return Ok(Value::Undefined);
+    };
+
+    let mut buffer = String::new();
+    for c in s.bytes() {
+        match c {
+            // ECMA-262 violation: @*_+-./ are not unescaped chars.
+            b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' => {
+                buffer.push(c.into());
+            }
+            // ECMA-262 violation: Avm1 does not support unicode escapes.
+            _ => {
+                buffer.push_str(&format!("%{:02X}", c));
+            }
+        };
+    }
+    Ok(AvmString::new(activation.context.gc_context, buffer).into())
 }
 
 /// This structure represents all system builtins that are used regardless of
@@ -937,6 +964,7 @@ pub fn create_globals<'gc>(
         DontEnum,
         Some(function_proto),
     );
+    globals.force_set_function("escape", escape, gc_context, DontEnum, Some(function_proto));
 
     globals.add_property(
         gc_context,
