@@ -830,7 +830,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_call_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let method_name = self.context.avm1.pop();
+        let method = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
         let num_args = self.context.avm1.pop().coerce_to_f64(self)? as i64; // TODO(Herschel): max arg count?
         let mut args = Vec::new();
@@ -846,31 +846,28 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let object = value_object::ValueObject::boxed(self, object_val);
 
-        match method_name {
-            Value::Undefined | Value::Null => {
-                let this = self.target_clip_or_root()?.object().coerce_to_object(self);
-                let result = object.call("[Anonymous]", self, this, None, &args)?;
-                self.context.avm1.push(result);
-                self.continue_if_base_clip_exists()
+        let method_name = if method != Value::Undefined {
+            let name = method.coerce_to_string(self)?;
+            if name.is_empty() {
+                None
+            } else {
+                Some(name)
             }
-            Value::String(name) => {
-                if name.is_empty() {
-                    let result = object.call("[Anonymous]", self, object, None, &args)?;
-                    self.context.avm1.push(result);
-                } else {
-                    let result = object.call_method(&name, &args, self)?;
-                    self.context.avm1.push(result);
-                }
-                self.continue_if_base_clip_exists()
-            }
-            Value::Number(_) | Value::Bool(_) | Value::Object(_) => {
-                let name = method_name.coerce_to_string(self)?;
-                let result = object.call_method(&name.as_str(), &args, self)?;
-                self.context.avm1.push(result);
+        } else {
+            None
+        };
 
-                self.continue_if_base_clip_exists()
-            }
-        }
+        let result = if let Some(method_name) = method_name {
+            // Call `this[method_name]`
+            object.call_method(&method_name.as_str(), &args, self)?
+        } else {
+            // Undefined/empty method name; call `this` as a function
+            let this = self.target_clip_or_root()?.object().coerce_to_object(self);
+            object.call("[Anonymous]", self, this, None, &args)?
+        };
+
+        self.context.avm1.push(result);
+        self.continue_if_base_clip_exists()
     }
 
     fn action_cast_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
