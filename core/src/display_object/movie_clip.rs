@@ -2172,7 +2172,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> DecodeResult {
         // Certain backends may have to preload morph shape frames, so defer registering until the end.
         let swf_shape = reader.read_define_morph_shape(version)?;
-        let morph_shape = MorphShapeStatic::from_swf_tag(context.renderer, &swf_shape);
+        let morph_shape = MorphShapeStatic::from_swf_tag(context, &swf_shape, self.movie());
         morph_shapes.insert(swf_shape.id, morph_shape);
         Ok(())
     }
@@ -2186,7 +2186,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> DecodeResult {
         let swf_shape = reader.read_define_shape(version)?;
         let id = swf_shape.id;
-        let graphic = Graphic::from_swf_tag(context, swf_shape);
+        let graphic = Graphic::from_swf_tag(context, swf_shape, self.movie());
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -2215,7 +2215,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 if let Some(morph_shape) = morph_shapes.get_mut(&id) {
                     ids.insert(place_object.depth.into(), id);
                     if let Some(ratio) = place_object.ratio {
-                        morph_shape.register_ratio(context.renderer, ratio);
+                        morph_shape.register_ratio(context, ratio);
                     }
                 }
             }
@@ -2224,7 +2224,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     if let Some(morph_shape) = morph_shapes.get_mut(&id) {
                         ids.insert(place_object.depth.into(), id);
                         if let Some(ratio) = place_object.ratio {
-                            morph_shape.register_ratio(context.renderer, ratio);
+                            morph_shape.register_ratio(context, ratio);
                         }
                     }
                 }
@@ -2233,7 +2233,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 if let Some(morph_shape) = morph_shapes.get_mut(&id) {
                     ids.insert(place_object.depth.into(), id);
                     if let Some(ratio) = place_object.ratio {
-                        morph_shape.register_ratio(context.renderer, ratio);
+                        morph_shape.register_ratio(context, ratio);
                     }
                 } else {
                     ids.remove(&place_object.depth.into());
@@ -2295,7 +2295,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let mut jpeg_data = Vec::with_capacity(data_len);
         reader.get_mut().read_to_end(&mut jpeg_data)?;
         let bitmap_info = context.renderer.register_bitmap_jpeg(
-            id,
             &jpeg_data,
             context
                 .library
@@ -2328,7 +2327,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let data_len = tag_len - 2;
         let mut jpeg_data = Vec::with_capacity(data_len);
         reader.get_mut().read_to_end(&mut jpeg_data)?;
-        let bitmap_info = context.renderer.register_bitmap_jpeg_2(id, &jpeg_data)?;
+        let bitmap_info = context.renderer.register_bitmap_jpeg_2(&jpeg_data)?;
         let bitmap = crate::display_object::Bitmap::new(
             context,
             id,
@@ -2366,7 +2365,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .read_to_end(&mut alpha_data)?;
         let bitmap_info = context
             .renderer
-            .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data)?;
+            .register_bitmap_jpeg_3(&jpeg_data, &alpha_data)?;
         let bitmap = Bitmap::new(
             context,
             id,
@@ -2405,7 +2404,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .read_to_end(&mut alpha_data)?;
         let bitmap_info = context
             .renderer
-            .register_bitmap_jpeg_3(id, &jpeg_data, &alpha_data)?;
+            .register_bitmap_jpeg_3(&jpeg_data, &alpha_data)?;
         let bitmap = Bitmap::new(
             context,
             id,

@@ -1,6 +1,6 @@
 use ruffle_core::backend::render::swf;
 use ruffle_core::backend::render::{
-    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox,
+    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox, MovieLibrary,
     RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
@@ -52,7 +52,7 @@ pub struct WebGlRenderBackend {
 
     shape_tessellator: ShapeTessellator,
 
-    textures: Vec<(Option<swf::CharacterId>, Texture)>,
+    textures: Vec<Texture>,
     meshes: Vec<Mesh>,
 
     color_quad_shape: ShapeHandle,
@@ -309,7 +309,7 @@ impl WebGlRenderBackend {
                 draw_type: if program.program == self.bitmap_program.program {
                     DrawType::Bitmap(BitmapDraw {
                         matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
-                        id: 0,
+                        handle: BitmapHandle(0),
 
                         is_smoothed: true,
                         is_repeating: false,
@@ -458,15 +458,22 @@ impl WebGlRenderBackend {
         Ok(())
     }
 
-    fn register_shape_internal(&mut self, shape: DistilledShape) -> Mesh {
+    fn register_shape_internal(
+        &mut self,
+        shape: DistilledShape,
+        library: Option<&MovieLibrary<'_>>,
+    ) -> Mesh {
         use ruffle_render_common_tess::DrawType as TessDrawType;
 
         let textures = &self.textures;
         let lyon_mesh = self.shape_tessellator.tessellate_shape(shape, |id| {
-            textures
-                .iter()
-                .find(|(other_id, _tex)| *other_id == Some(id))
-                .map(|tex| (tex.1.width, tex.1.height))
+            library
+                .and_then(|lib| lib.get_bitmap(id))
+                .and_then(|bitmap| {
+                    let handle = bitmap.bitmap_handle();
+                    textures.get(handle.0).map(|texture| (texture, handle))
+                })
+                .map(|(texture, handle)| (texture.width, texture.height, handle))
         });
 
         let mut draws = Vec::with_capacity(lyon_mesh.len());
@@ -563,7 +570,7 @@ impl WebGlRenderBackend {
                     Draw {
                         draw_type: DrawType::Bitmap(BitmapDraw {
                             matrix: bitmap.matrix,
-                            id: bitmap.id,
+                            handle: bitmap.bitmap,
                             is_smoothed: bitmap.is_smoothed,
                             is_repeating: bitmap.is_repeating,
                         }),
@@ -682,11 +689,7 @@ impl WebGlRenderBackend {
         }
     }
 
-    fn register_bitmap(
-        &mut self,
-        id: Option<swf::CharacterId>,
-        bitmap: Bitmap,
-    ) -> Result<BitmapInfo, Error> {
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapInfo, Error> {
         let texture = self.gl.create_texture().unwrap();
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
         match &bitmap.data {
@@ -735,14 +738,11 @@ impl WebGlRenderBackend {
         let height = bitmap.height;
         self.bitmap_registry.insert(handle, bitmap);
 
-        self.textures.push((
-            id,
-            Texture {
-                texture,
-                width,
-                height,
-            },
-        ));
+        self.textures.push(Texture {
+            texture,
+            width,
+            height,
+        });
 
         Ok(BitmapInfo {
             handle,
@@ -770,54 +770,57 @@ impl RenderBackend for WebGlRenderBackend {
             .viewport(0, 0, self.renderbuffer_width, self.renderbuffer_height);
     }
 
-    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
+    fn register_shape(
+        &mut self,
+        shape: DistilledShape,
+        library: Option<&MovieLibrary<'_>>,
+    ) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal(shape);
+        let mesh = self.register_shape_internal(shape, library);
         self.meshes.push(mesh);
         handle
     }
 
-    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
-        let mesh = self.register_shape_internal(shape);
+    fn replace_shape(
+        &mut self,
+        shape: DistilledShape,
+        library: Option<&MovieLibrary<'_>>,
+        handle: ShapeHandle,
+    ) {
+        let mesh = self.register_shape_internal(shape, library);
         self.meshes[handle.0] = mesh;
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal((&shape).into());
+        let mesh = self.register_shape_internal((&shape).into(), None);
         self.meshes.push(mesh);
         handle
     }
 
     fn register_bitmap_jpeg(
         &mut self,
-        id: swf::CharacterId,
         data: &[u8],
         jpeg_tables: Option<&[u8]>,
     ) -> Result<BitmapInfo, Error> {
         let data = ruffle_core::backend::render::glue_tables_to_jpeg(data, jpeg_tables);
-        self.register_bitmap_jpeg_2(id, &data[..])
+        self.register_bitmap_jpeg_2(&data[..])
     }
 
-    fn register_bitmap_jpeg_2(
-        &mut self,
-        id: swf::CharacterId,
-        data: &[u8],
-    ) -> Result<BitmapInfo, Error> {
+    fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
-        self.register_bitmap(Some(id), bitmap)
+        self.register_bitmap(bitmap)
     }
 
     fn register_bitmap_jpeg_3(
         &mut self,
-        id: swf::CharacterId,
         jpeg_data: &[u8],
         alpha_data: &[u8],
     ) -> Result<BitmapInfo, Error> {
         let bitmap =
             ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        self.register_bitmap(Some(id), bitmap)
+        self.register_bitmap(bitmap)
     }
 
     fn register_bitmap_png(
@@ -825,7 +828,7 @@ impl RenderBackend for WebGlRenderBackend {
         swf_tag: &swf::DefineBitsLossless,
     ) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
-        self.register_bitmap(Some(swf_tag.id), bitmap)
+        self.register_bitmap(bitmap)
     }
 
     fn begin_frame(&mut self, clear: Color) {
@@ -944,7 +947,7 @@ impl RenderBackend for WebGlRenderBackend {
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
         self.set_stencil_state();
-        if let Some((_, bitmap)) = self.textures.get(bitmap.0) {
+        if let Some(bitmap) = self.textures.get(bitmap.0) {
             let texture = &bitmap.texture;
             // Adjust the quad draw to use the target bitmap.
             let mesh = &self.meshes[self.bitmap_quad_shape.0];
@@ -1171,12 +1174,8 @@ impl RenderBackend for WebGlRenderBackend {
                     );
                 }
                 DrawType::Bitmap(bitmap) => {
-                    let texture = if let Some(texture) = self
-                        .textures
-                        .iter()
-                        .find(|(id, _tex)| *id == Some(bitmap.id))
-                    {
-                        &texture.1
+                    let texture = if let Some(texture) = self.textures.get(bitmap.handle.0) {
+                        texture
                     } else {
                         // Bitmap not registered
                         continue;
@@ -1379,14 +1378,11 @@ impl RenderBackend for WebGlRenderBackend {
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
         Ok(self
-            .register_bitmap(
-                None,
-                Bitmap {
-                    data: BitmapFormat::Rgba(rgba),
-                    width,
-                    height,
-                },
-            )?
+            .register_bitmap(Bitmap {
+                data: BitmapFormat::Rgba(rgba),
+                width,
+                height,
+            })?
             .handle)
     }
 
@@ -1397,13 +1393,13 @@ impl RenderBackend for WebGlRenderBackend {
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
-        let texture = if let Some((_id, bitmap)) = self.textures.get(handle.0) {
-            &bitmap.texture
+        let texture = if let Some(texture) = self.textures.get(handle.0) {
+            texture
         } else {
             return Err("update_texture: Bitmap is not regsitered".into());
         };
 
-        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture.texture));
 
         self.gl
             .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
@@ -1444,7 +1440,7 @@ struct Gradient {
 #[derive(Clone, Debug)]
 struct BitmapDraw {
     matrix: [[f32; 3]; 3],
-    id: swf::CharacterId,
+    handle: BitmapHandle,
     is_repeating: bool,
     is_smoothed: bool,
 }

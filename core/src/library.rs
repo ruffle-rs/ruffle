@@ -1,7 +1,7 @@
 use crate::avm2::Domain as Avm2Domain;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{Bitmap, TDisplayObject};
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use crate::property_map::{Entry, PropertyMap};
@@ -140,6 +140,14 @@ impl<'gc> MovieLibrary<'gc> {
             Character::Button(button) => Ok(button.instantiate(gc_context)),
             Character::Text(text) => Ok(text.instantiate(gc_context)),
             _ => Err("Not a DisplayObject".into()),
+        }
+    }
+
+    pub fn get_bitmap(&self, id: CharacterId) -> Option<Bitmap<'gc>> {
+        if let Some(&Character::Bitmap(bitmap)) = self.characters.get(&id) {
+            Some(bitmap)
+        } else {
+            None
         }
     }
 

@@ -2,8 +2,10 @@ use crate::backend::render::ShapeHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use gc_arena::{Collect, GcCell};
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -16,11 +18,18 @@ pub struct GraphicData<'gc> {
 }
 
 impl<'gc> Graphic<'gc> {
-    pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, swf_shape: swf::Shape) -> Self {
+    pub fn from_swf_tag(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        swf_shape: swf::Shape,
+        movie: Arc<SwfMovie>,
+    ) -> Self {
+        let library = context.library.library_for_movie(movie);
         let static_data = GraphicStatic {
             id: swf_shape.id,
             bounds: swf_shape.shape_bounds.clone().into(),
-            render_handle: context.renderer.register_shape((&swf_shape).into()),
+            render_handle: context
+                .renderer
+                .register_shape((&swf_shape).into(), library),
             shape: swf_shape,
         };
         Graphic(GcCell::allocate(

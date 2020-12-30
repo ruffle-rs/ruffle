@@ -5,7 +5,7 @@ use lyon::tessellation::{
 };
 use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
-    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox,
+    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox, MovieLibrary,
     RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::{DistilledShape, DrawPath};
@@ -92,7 +92,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     viewport_width: f32,
     viewport_height: f32,
     mask_state: MaskState,
-    textures: Vec<(Option<swf::CharacterId>, Texture)>,
+    textures: Vec<Texture>,
     num_masks: u32,
     quad_vbo: wgpu::Buffer,
     quad_ibo: wgpu::Buffer,
@@ -338,7 +338,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     }
 
     #[allow(clippy::cognitive_complexity)]
-    fn register_shape_internal(&mut self, shape: DistilledShape) -> Mesh {
+    fn register_shape_internal(
+        &mut self,
+        shape: DistilledShape,
+        library: Option<&MovieLibrary<'_>>,
+    ) -> Mesh {
         use lyon::tessellation::{FillOptions, StrokeOptions};
 
         let mut draws = Vec::new();
@@ -574,37 +578,32 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             continue;
                         }
 
-                        let texture = match self
-                            .textures
-                            .iter()
-                            .find(|(other_id, _tex)| *other_id == Some(*id))
+                        if let Some(texture) = library
+                            .and_then(|lib| lib.get_bitmap(*id))
+                            .and_then(|bitmap| self.textures.get(bitmap.bitmap_handle().0))
                         {
-                            None => {
-                                log::error!("Couldn't fill shape with unknown bitmap {}", id);
-                                continue;
-                            }
-                            Some(t) => &t.1,
-                        };
-                        let texture_view = texture.texture.create_view(&Default::default());
+                            let texture_view = texture.texture.create_view(&Default::default());
 
-                        flush_draw(
-                            shape.id,
-                            IncompleteDrawType::Bitmap {
-                                texture_transform: swf_bitmap_to_gl_matrix(
-                                    *matrix,
-                                    texture.width,
-                                    texture.height,
-                                ),
-                                is_smoothed: *is_smoothed,
-                                is_repeating: *is_repeating,
-                                texture_view,
-                                id: *id,
-                            },
-                            &mut draws,
-                            &mut lyon_mesh,
-                            &self.descriptors.device,
-                            &self.descriptors.pipelines,
-                        );
+                            flush_draw(
+                                shape.id,
+                                IncompleteDrawType::Bitmap {
+                                    texture_transform: swf_bitmap_to_gl_matrix(
+                                        *matrix,
+                                        texture.width,
+                                        texture.height,
+                                    ),
+                                    is_smoothed: *is_smoothed,
+                                    is_repeating: *is_repeating,
+                                    texture_view,
+                                },
+                                &mut draws,
+                                &mut lyon_mesh,
+                                &self.descriptors.device,
+                                &self.descriptors.pipelines,
+                            );
+                        } else {
+                            log::error!("Couldn't fill shape with unknown bitmap {}", id);
+                        }
                     }
                 },
                 DrawPath::Stroke {
@@ -685,12 +684,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         }
     }
 
-    fn register_bitmap(
-        &mut self,
-        id: Option<swf::CharacterId>,
-        bitmap: Bitmap,
-        debug_str: &str,
-    ) -> BitmapInfo {
+    fn register_bitmap(&mut self, bitmap: Bitmap, debug_str: &str) -> BitmapInfo {
         let extent = wgpu::Extent3d {
             width: bitmap.width,
             height: bitmap.height,
@@ -713,7 +707,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             }
         };
 
-        let texture_label = create_debug_label!("{} Texture {:?}", debug_str, id);
+        let texture_label = create_debug_label!("{} Texture", debug_str);
         let texture = self
             .descriptors
             .device
@@ -773,15 +767,12 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             });
 
         self.bitmap_registry.insert(handle, bitmap);
-        self.textures.push((
-            id,
-            Texture {
-                texture,
-                width,
-                height,
-                bind_group,
-            },
-        ));
+        self.textures.push(Texture {
+            texture,
+            width,
+            height,
+            bind_group,
+        });
 
         BitmapInfo {
             handle,
@@ -850,55 +841,62 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.descriptors.globals.set_resolution(width, height);
     }
 
-    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
+    fn register_shape(
+        &mut self,
+        shape: DistilledShape,
+        library: Option<&MovieLibrary<'_>>,
+    ) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal(shape);
+        let mesh = self.register_shape_internal(shape, library);
         self.meshes.push(mesh);
         handle
     }
 
-    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
-        let mesh = self.register_shape_internal(shape);
+    fn replace_shape(
+        &mut self,
+        shape: DistilledShape,
+        library: Option<&MovieLibrary<'_>>,
+        handle: ShapeHandle,
+    ) {
+        let mesh = self.register_shape_internal(shape, library);
         self.meshes[handle.0] = mesh;
     }
 
     fn register_glyph_shape(&mut self, glyph: &Glyph) -> ShapeHandle {
         let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal((&shape).into());
+        let mesh = self.register_shape_internal((&shape).into(), None);
         self.meshes.push(mesh);
         handle
     }
 
     fn register_bitmap_jpeg(
         &mut self,
-        id: u16,
         data: &[u8],
         jpeg_tables: Option<&[u8]>,
     ) -> Result<BitmapInfo, Error> {
         let data = ruffle_core::backend::render::glue_tables_to_jpeg(data, jpeg_tables);
-        self.register_bitmap_jpeg_2(id, &data[..])
+        self.register_bitmap_jpeg_2(&data[..])
     }
 
-    fn register_bitmap_jpeg_2(&mut self, id: u16, data: &[u8]) -> Result<BitmapInfo, Error> {
+    fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
-        Ok(self.register_bitmap(Some(id), bitmap, "JPEG2"))
+        Ok(self.register_bitmap(bitmap, "JPEG2"))
     }
 
     fn register_bitmap_jpeg_3(
         &mut self,
-        id: u16,
         jpeg_data: &[u8],
         alpha_data: &[u8],
     ) -> Result<BitmapInfo, Error> {
         let bitmap =
             ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        Ok(self.register_bitmap(Some(id), bitmap, "JPEG3"))
+        Ok(self.register_bitmap(bitmap, "JPEG3"))
     }
 
     fn register_bitmap_png(&mut self, swf_tag: &DefineBitsLossless) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
-        Ok(self.register_bitmap(Some(swf_tag.id), bitmap, "PNG"))
+        Ok(self.register_bitmap(bitmap, "PNG"))
     }
 
     fn begin_frame(&mut self, clear: Color) {
@@ -978,7 +976,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
-        if let Some((_id, texture)) = self.textures.get(bitmap.0) {
+        if let Some(texture) = self.textures.get(bitmap.0) {
             let frame = if let Some(frame) = &mut self.current_frame {
                 frame.get()
             } else {
@@ -1360,7 +1358,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     ) -> Result<BitmapHandle, Error> {
         Ok(self
             .register_bitmap(
-                None,
                 Bitmap {
                     height,
                     width,
@@ -1378,7 +1375,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
-        let texture = if let Some((_id, texture)) = self.textures.get(handle.0) {
+        let texture = if let Some(texture) = self.textures.get(handle.0) {
             &texture.texture
         } else {
             return Err("update_texture: Bitmap not registered".into());

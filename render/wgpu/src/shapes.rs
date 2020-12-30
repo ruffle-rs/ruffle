@@ -45,7 +45,6 @@ pub enum DrawType {
     Bitmap {
         texture_transforms: wgpu::Buffer,
         texture_view: wgpu::TextureView,
-        id: CharacterId,
         is_smoothed: bool,
         is_repeating: bool,
         bind_group: wgpu::BindGroup,
@@ -65,7 +64,6 @@ pub enum IncompleteDrawType {
         is_smoothed: bool,
         is_repeating: bool,
         texture_view: wgpu::TextureView,
-        id: CharacterId,
     },
 }
 
@@ -167,7 +165,6 @@ impl IncompleteDrawType {
                 is_smoothed,
                 is_repeating,
                 texture_view,
-                id,
             } => {
                 let tex_transforms_ubo = create_buffer_with_data(
                     device,
@@ -207,7 +204,6 @@ impl IncompleteDrawType {
                     draw_type: DrawType::Bitmap {
                         texture_transforms: tex_transforms_ubo,
                         texture_view,
-                        id,
                         is_smoothed,
                         is_repeating,
                         bind_group,
