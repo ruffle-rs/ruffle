@@ -191,6 +191,7 @@ swf_tests! {
     (xml_to_string_comment, "avm1/xml_to_string_comment", 1),
     (xml_idmap, "avm1/xml_idmap", 1),
     (xml_ignore_comments, "avm1/xml_ignore_comments", 1),
+    (xml_ignore_white, "avm1/xml_ignore_white", 1),
     (xml_inspect_doctype, "avm1/xml_inspect_doctype", 1),
     #[ignore] (xml_inspect_xmldecl, "avm1/xml_inspect_xmldecl", 1),
     (xml_inspect_createmethods, "avm1/xml_inspect_createmethods", 1),
