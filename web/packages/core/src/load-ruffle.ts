@@ -6,7 +6,7 @@
 
 import { Ruffle } from "../pkg/ruffle_web";
 
-import { setArrayPrototypeReduce } from "./js-polyfills";
+import { setPolyfillsOnLoad } from "./js-polyfills";
 
 /**
  * Load ruffle from an automatically-detected location.
@@ -19,14 +19,9 @@ import { setArrayPrototypeReduce } from "./js-polyfills";
  * instances.
  */
 async function fetchRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
-    if (
-        typeof Array.prototype.reduce !== "function" ||
-        Array.prototype.reduce.toString().indexOf("[native code]") === -1
-    ) {
-        // Some external libraries override the `Array.prototype.reduce` method in a way
-        // that causes Webpack to crash (#1507, #1865), so we need to override it again.
-        setArrayPrototypeReduce();
-    }
+    // Apply some pure JavaScript polyfills to prevent conflicts with external
+    // libraries, if needed.
+    setPolyfillsOnLoad();
 
     try {
         // If ruffleRuntimePath is defined then we are executing inside the extension
