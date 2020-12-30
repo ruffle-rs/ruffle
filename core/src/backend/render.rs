@@ -1,5 +1,5 @@
 use crate::shape_utils::DistilledShape;
-pub use crate::{transform::Transform, Color};
+pub use crate::{library::MovieLibrary, transform::Transform, Color};
 use downcast_rs::Downcast;
 use gc_arena::Collect;
 use std::io::Read;
@@ -8,23 +8,26 @@ use swf::Matrix;
 
 pub trait RenderBackend: Downcast {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32);
-    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle;
-    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle);
+    fn register_shape(
+        &mut self,
+        shape: DistilledShape,
+        library: Option<&MovieLibrary<'_>>,
+    ) -> ShapeHandle;
+    fn replace_shape(
+        &mut self,
+        shape: DistilledShape,
+        library: Option<&MovieLibrary<'_>>,
+        handle: ShapeHandle,
+    );
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
     fn register_bitmap_jpeg(
         &mut self,
-        id: swf::CharacterId,
         data: &[u8],
         jpeg_tables: Option<&[u8]>,
     ) -> Result<BitmapInfo, Error>;
-    fn register_bitmap_jpeg_2(
-        &mut self,
-        id: swf::CharacterId,
-        data: &[u8],
-    ) -> Result<BitmapInfo, Error>;
+    fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error>;
     fn register_bitmap_jpeg_3(
         &mut self,
-        id: swf::CharacterId,
         jpeg_data: &[u8],
         alpha_data: &[u8],
     ) -> Result<BitmapInfo, Error>;
@@ -101,16 +104,25 @@ impl Default for NullRenderer {
 
 impl RenderBackend for NullRenderer {
     fn set_viewport_dimensions(&mut self, _width: u32, _height: u32) {}
-    fn register_shape(&mut self, _shape: DistilledShape) -> ShapeHandle {
+    fn register_shape(
+        &mut self,
+        _shape: DistilledShape,
+        _library: Option<&MovieLibrary<'_>>,
+    ) -> ShapeHandle {
         ShapeHandle(0)
     }
-    fn replace_shape(&mut self, _shape: DistilledShape, _handle: ShapeHandle) {}
+    fn replace_shape(
+        &mut self,
+        _shape: DistilledShape,
+        _library: Option<&MovieLibrary<'_>>,
+        _handle: ShapeHandle,
+    ) {
+    }
     fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
         ShapeHandle(0)
     }
     fn register_bitmap_jpeg(
         &mut self,
-        _id: swf::CharacterId,
         _data: &[u8],
         _jpeg_tables: Option<&[u8]>,
     ) -> Result<BitmapInfo, Error> {
@@ -120,11 +132,7 @@ impl RenderBackend for NullRenderer {
             height: 0,
         })
     }
-    fn register_bitmap_jpeg_2(
-        &mut self,
-        _id: swf::CharacterId,
-        _data: &[u8],
-    ) -> Result<BitmapInfo, Error> {
+    fn register_bitmap_jpeg_2(&mut self, _data: &[u8]) -> Result<BitmapInfo, Error> {
         Ok(BitmapInfo {
             handle: BitmapHandle(0),
             width: 0,
@@ -133,7 +141,6 @@ impl RenderBackend for NullRenderer {
     }
     fn register_bitmap_jpeg_3(
         &mut self,
-        _id: swf::CharacterId,
         _data: &[u8],
         _alpha_data: &[u8],
     ) -> Result<BitmapInfo, Error> {

@@ -181,10 +181,10 @@ impl Drawing {
             };
 
             if let Some(handle) = self.render_handle.get() {
-                context.renderer.replace_shape(shape, handle);
+                context.renderer.replace_shape(shape, None, handle);
             } else {
                 self.render_handle
-                    .set(Some(context.renderer.register_shape(shape)));
+                    .set(Some(context.renderer.register_shape(shape, None)));
             }
         }
 
