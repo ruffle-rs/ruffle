@@ -1,9 +1,9 @@
 //! flash.display.BitmapData object
 
-use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::bitmap_data::{BitmapDataObject, ChannelOptions, Color};
+use crate::avm1::{activation::Activation, object::bitmap_data::BitmapData};
 use crate::avm1::{Object, TObject, Value};
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
@@ -613,13 +613,127 @@ pub fn hit_test<'gc>(
 }
 
 pub fn copy_pixels<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            log::warn!("BitmapData.copyPixels - not yet implemented");
+            let source_bitmap = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let source_rect = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let src_min_x = source_rect
+                .get("x", activation)?
+                .coerce_to_i32(activation)?;
+            let src_min_y = source_rect
+                .get("y", activation)?
+                .coerce_to_i32(activation)?;
+            let src_width = source_rect
+                .get("width", activation)?
+                .coerce_to_i32(activation)?;
+            let src_height = source_rect
+                .get("height", activation)?
+                .coerce_to_i32(activation)?;
+
+            let dest_point = args
+                .get(2)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let dest_x = dest_point.get("x", activation)?.coerce_to_i32(activation)?;
+            let dest_y = dest_point.get("y", activation)?.coerce_to_i32(activation)?;
+
+            if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
+                if !src_bitmap.disposed() {
+                    // dealing with object aliasing...
+                    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
+                    let src_bitmap_data_cell = src_bitmap.bitmap_data();
+                    let src_bitmap_gc_ref; // only initialized if source is a different object than self
+                    let source_bitmap_ref = // holds the reference to either of the ones above
+                        if GcCell::ptr_eq(src_bitmap.bitmap_data(), bitmap_data.bitmap_data()) {
+                            src_bitmap_clone = src_bitmap_data_cell.read().clone();
+                            &src_bitmap_clone
+                        } else {
+                            src_bitmap_gc_ref = src_bitmap_data_cell.read();
+                            &src_bitmap_gc_ref
+                        };
+
+                    if args.len() >= 5 {
+                        let alpha_point = args
+                            .get(4)
+                            .unwrap_or(&Value::Undefined)
+                            .coerce_to_object(activation);
+
+                        let alpha_x = alpha_point
+                            .get("x", activation)?
+                            .coerce_to_i32(activation)?;
+
+                        let alpha_y = alpha_point
+                            .get("y", activation)?
+                            .coerce_to_i32(activation)?;
+
+                        let alpha_bitmap = args
+                            .get(3)
+                            .unwrap_or(&Value::Undefined)
+                            .coerce_to_object(activation);
+
+                        if let Some(alpha_bitmap) = alpha_bitmap.as_bitmap_data_object() {
+                            if !alpha_bitmap.disposed() {
+                                // dealing with aliasing the same way as for the source
+                                let alpha_bitmap_clone: BitmapData;
+                                let alpha_bitmap_data_cell = alpha_bitmap.bitmap_data();
+                                let alpha_bitmap_gc_ref;
+                                let alpha_bitmap_ref = if GcCell::ptr_eq(
+                                    alpha_bitmap.bitmap_data(),
+                                    bitmap_data.bitmap_data(),
+                                ) {
+                                    alpha_bitmap_clone = alpha_bitmap_data_cell.read().clone();
+                                    &alpha_bitmap_clone
+                                } else {
+                                    alpha_bitmap_gc_ref = alpha_bitmap_data_cell.read();
+                                    &alpha_bitmap_gc_ref
+                                };
+
+                                let merge_alpha = if args.len() >= 6 {
+                                    args.get(5)
+                                        .unwrap_or(&Value::Undefined)
+                                        .as_bool(activation.swf_version())
+                                } else {
+                                    true
+                                };
+
+                                bitmap_data
+                                    .bitmap_data()
+                                    .write(activation.context.gc_context)
+                                    .copy_pixels(
+                                        source_bitmap_ref,
+                                        (src_min_x, src_min_y, src_width, src_height),
+                                        (dest_x, dest_y),
+                                        Some((alpha_bitmap_ref, (alpha_x, alpha_y), merge_alpha)),
+                                    );
+                            }
+                        }
+                    } else {
+                        bitmap_data
+                            .bitmap_data()
+                            .write(activation.context.gc_context)
+                            .copy_pixels(
+                                source_bitmap_ref,
+                                (src_min_x, src_min_y, src_width, src_height),
+                                (dest_x, dest_y),
+                                None,
+                            );
+                    }
+                }
+            }
+
             return Ok(Value::Undefined);
         }
     }
