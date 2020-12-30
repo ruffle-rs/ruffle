@@ -10,7 +10,7 @@ fn parse_single_element() {
     rootless_arena(|mc| {
         let xml = XMLDocument::new(mc);
         xml.as_node()
-            .replace_with_str(mc, "<test></test>", true)
+            .replace_with_str(mc, "<test></test>", true, false)
             .expect("Parsed document");
         let mut roots = xml
             .as_node()
@@ -38,6 +38,7 @@ fn double_ended_children() {
                 mc,
                 "<test></test><test2></test2><test3></test3><test4></test4><test5></test5>",
                 true,
+                false,
             )
             .expect("Parsed document");
 
@@ -82,6 +83,7 @@ fn walk() {
                 mc,
                 "<test><test2></test2></test><test3>test</test3><test4><test5></test5></test4>",
                 true,
+                false,
             )
             .expect("Parsed document");
 
@@ -163,7 +165,7 @@ fn round_trip_tostring() {
     rootless_arena(|mc| {
         let xml = XMLDocument::new(mc);
         xml.as_node()
-            .replace_with_str(mc, test_string, true)
+            .replace_with_str(mc, test_string, true, false)
             .expect("Parsed document");
 
         let result = xml
@@ -183,7 +185,7 @@ fn round_trip_filtered_tostring() {
     rootless_arena(|mc| {
         let xml = XMLDocument::new(mc);
         xml.as_node()
-            .replace_with_str(mc, test_string, true)
+            .replace_with_str(mc, test_string, true, false)
             .expect("Parsed document");
 
         let result = xml
@@ -192,5 +194,56 @@ fn round_trip_filtered_tostring() {
             .expect("Successful toString");
 
         assert_eq!("<test>This is a text node</test>", result);
+    })
+}
+
+/// Tests ignoring whitespace nodes.
+#[test]
+fn ignore_white() {
+    rootless_arena(|mc| {
+        let xml = XMLDocument::new(mc);
+        xml.as_node()
+            .replace_with_str(
+                mc,
+                "<test>   <test2>   <test3> foo </test3>   </test2>   </test>",
+                true,
+                true,
+            )
+            .expect("Parsed document");
+
+        let mut root = xml
+            .as_node()
+            .children()
+            .expect("Parsed document should be capable of having child nodes");
+
+        let mut node = root.next().expect("Should have root");
+        assert_eq!(node.node_type(), xml::ELEMENT_NODE);
+        assert_eq!(node.tag_name(), Some(XMLName::from_str("test")));
+
+        node = node
+            .children()
+            .expect("Should have children")
+            .next()
+            .expect("Should have children");
+        assert_eq!(node.node_type(), xml::ELEMENT_NODE);
+        assert_eq!(node.tag_name(), Some(XMLName::from_str("test2")));
+
+        node = node
+            .children()
+            .expect("Should have children")
+            .next()
+            .expect("Should have children");
+        assert_eq!(node.node_type(), xml::ELEMENT_NODE);
+        assert_eq!(node.tag_name(), Some(XMLName::from_str("test3")));
+
+        node = node
+            .children()
+            .expect("Should have children")
+            .next()
+            .expect("Should have text");
+        assert_eq!(node.node_type(), xml::TEXT_NODE);
+        assert_eq!(node.node_value(), Some(" foo ".to_string()));
+
+        assert!(root.next().is_none());
     })
 }
