@@ -64,6 +64,16 @@ impl Color {
     pub fn with_alpha(&self, alpha: u8) -> Color {
         Color::argb(alpha, self.red(), self.green(), self.blue())
     }
+
+    pub fn blend_over(&self, source: &Self) -> Self {
+        let sa = source.alpha();
+
+        let r = source.red() + ((self.red() as u16 * (255 - sa as u16)) >> 8) as u8;
+        let g = source.green() + ((self.green() as u16 * (255 - sa as u16)) >> 8) as u8;
+        let b = source.blue() + ((self.blue() as u16 * (255 - sa as u16)) >> 8) as u8;
+        let a = source.alpha() + ((self.alpha() as u16 * (255 - sa as u16)) >> 8) as u8;
+        Color::argb(a, r, g, b)
+    }
 }
 
 impl std::fmt::Display for Color {
@@ -480,6 +490,91 @@ impl BitmapData {
         let h = (max_y - min_y) as u32;
 
         (x, y, w, h)
+    }
+
+    pub fn copy_pixels(
+        &mut self,
+        source_bitmap: &Self,
+        src_rect: (i32, i32, i32, i32),
+        dest_point: (i32, i32),
+        alpha_source: Option<(&Self, (i32, i32), bool)>,
+    ) {
+        let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+        let (dest_min_x, dest_min_y) = dest_point;
+
+        for src_y in src_min_y..(src_min_y + src_height) {
+            for src_x in src_min_x..(src_min_x + src_width) {
+                let dest_x = src_x - src_min_x + dest_min_x;
+                let dest_y = src_y - src_min_y + dest_min_y;
+
+                if !source_bitmap.is_point_in_bounds(src_x, src_y)
+                    || !self.is_point_in_bounds(dest_x, dest_y)
+                {
+                    continue;
+                }
+
+                let source_color = source_bitmap
+                    .get_pixel_raw(src_x as u32, src_y as u32)
+                    .unwrap();
+
+                let mut dest_color = self.get_pixel_raw(dest_x as u32, dest_y as u32).unwrap();
+
+                if let Some((alpha_bitmap, (alpha_min_x, alpha_min_y), merge_alpha)) = alpha_source
+                {
+                    let alpha_x = src_x - src_min_x + alpha_min_x;
+                    let alpha_y = src_y - src_min_y + alpha_min_y;
+
+                    if alpha_bitmap.transparency
+                        && !alpha_bitmap.is_point_in_bounds(alpha_x, alpha_y)
+                    {
+                        continue;
+                    }
+
+                    let final_alpha = if alpha_bitmap.transparency {
+                        let a = alpha_bitmap
+                            .get_pixel_raw(alpha_x as u32, alpha_y as u32)
+                            .unwrap()
+                            .alpha();
+
+                        if source_bitmap.transparency {
+                            ((a as u16 * source_color.alpha() as u16) >> 8) as u8
+                        } else {
+                            a
+                        }
+                    } else if source_bitmap.transparency {
+                        source_color.alpha()
+                    } else {
+                        255
+                    };
+
+                    // there could be a faster or more accurate way to do this,
+                    // (without converting to floats and back, twice),
+                    // but for now this should suffice
+                    let intermediate_color = source_color
+                        .to_un_multiplied_alpha()
+                        .with_alpha(final_alpha)
+                        .to_premultiplied_alpha(true);
+
+                    // there are some interesting conditions in the following
+                    // lines, these are a result of comparing the output in
+                    // many parameter combinations with that of Adobe's player,
+                    // and finding patterns in the differences.
+                    dest_color = if merge_alpha || !self.transparency {
+                        dest_color.blend_over(&intermediate_color)
+                    } else {
+                        intermediate_color
+                    };
+                } else {
+                    dest_color = if source_bitmap.transparency && !self.transparency {
+                        dest_color.blend_over(&source_color)
+                    } else {
+                        source_color
+                    };
+                }
+
+                self.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);
+            }
+        }
     }
 
     pub fn scroll(&mut self, x: i32, y: i32) {
