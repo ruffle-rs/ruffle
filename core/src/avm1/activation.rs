@@ -863,14 +863,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
                 self.continue_if_base_clip_exists()
             }
-            _ => {
-                self.context.avm1.push(Value::Undefined);
-                avm_warn!(
-                    self,
-                    "Invalid method name, expected string but found {:?}",
-                    method_name
-                );
-                Ok(FrameControl::Continue)
+            Value::Number(_) | Value::Bool(_) | Value::Object(_) => {
+                let name = method_name.coerce_to_string(self)?;
+                let result = object.call_method(&name.as_str(), &args, self)?;
+                self.context.avm1.push(result);
+
+                self.continue_if_base_clip_exists()
             }
         }
     }
