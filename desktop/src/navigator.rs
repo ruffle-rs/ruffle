@@ -115,7 +115,13 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
     fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
-        let full_url = self.movie_url.clone().join(url).unwrap();
+        let full_url = match self.movie_url.clone().join(url) {
+            Ok(url) => url,
+            Err(e) => {
+                let msg = format!("Invalid URL {}: {}", url, e);
+                return Box::pin(async move { Err(Error::FetchError(msg)) });
+            }
+        };
 
         let processed_url = self.pre_process_url(full_url);
 
