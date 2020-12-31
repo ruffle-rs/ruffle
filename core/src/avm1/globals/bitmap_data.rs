@@ -101,7 +101,7 @@ pub fn get_rectangle<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            let proto = activation.context.system_prototypes.rectangle_constructor;
+            let proto = activation.context.avm1.prototypes.rectangle_constructor;
             let rect = proto.construct(
                 activation,
                 &[
@@ -331,7 +331,7 @@ pub fn clone<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            let proto = activation.context.system_prototypes.bitmap_data_constructor;
+            let proto = activation.context.avm1.prototypes.bitmap_data_constructor;
             let new_bitmap_data = proto.construct(
                 activation,
                 &[
@@ -554,7 +554,7 @@ pub fn get_color_bounds_rect<'gc>(
                     .read()
                     .color_bounds_rect(find_color, mask, color);
 
-                let proto = activation.context.system_prototypes.rectangle_constructor;
+                let proto = activation.context.avm1.prototypes.rectangle_constructor;
                 let rect =
                     proto.construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
                 return Ok(rect.into());
@@ -908,7 +908,7 @@ pub fn load_bitmap<'gc>(
 
     if let Some(Character::Bitmap(bitmap_object)) = character {
         if let Some(bitmap) = renderer.get_bitmap_pixels(bitmap_object.bitmap_handle()) {
-            let proto = activation.context.system_prototypes.bitmap_data_constructor;
+            let proto = activation.context.avm1.prototypes.bitmap_data_constructor;
             let new_bitmap =
                 proto.construct(activation, &[bitmap.width.into(), bitmap.height.into()])?;
             let new_bitmap_object = new_bitmap.as_bitmap_data_object().unwrap();

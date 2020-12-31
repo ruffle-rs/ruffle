@@ -1165,7 +1165,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             let object = StageObject::for_display_object(
                 context.gc_context,
                 display_object,
-                Some(context.system_prototypes.text_field),
+                Some(context.avm1.prototypes().text_field),
             )
             .into();
 
