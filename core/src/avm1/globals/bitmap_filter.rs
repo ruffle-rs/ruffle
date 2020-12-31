@@ -124,7 +124,8 @@ pub fn clone<'gc>(
     if let Some(this) = this.as_color_matrix_filter_object() {
         let proto = activation
             .context
-            .system_prototypes
+            .avm1
+            .prototypes
             .color_matrix_filter_constructor;
 
         let matrix = this.get("matrix", activation)?;

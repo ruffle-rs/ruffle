@@ -1167,7 +1167,6 @@ impl Player {
                 mouse_position,
                 drag_object,
                 stage_size: (stage_width, stage_height),
-                system_prototypes: avm1.prototypes().clone(),
                 player,
                 load_manager,
                 system: system_properties,

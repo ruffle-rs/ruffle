@@ -903,7 +903,6 @@ mod tests {
                 renderer: &mut NullRenderer::new(),
                 locale: &mut NullLocaleBackend::new(),
                 log: &mut NullLogBackend::new(),
-                system_prototypes: avm1.prototypes().clone(),
                 mouse_hovered_object: None,
                 mouse_position: &(Twips::new(0), Twips::new(0)),
                 drag_object: &mut None,

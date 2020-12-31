@@ -461,8 +461,8 @@ fn equals<'gc>(
         let other_y = other.get("y", activation)?;
         let other_width = other.get("width", activation)?;
         let other_height = other.get("height", activation)?;
-        let proto = activation.context.system_prototypes.rectangle;
-        let constructor = activation.context.system_prototypes.rectangle_constructor;
+        let proto = activation.context.avm1.prototypes.rectangle;
+        let constructor = activation.context.avm1.prototypes.rectangle_constructor;
         return Ok((this_x == other_x
             && this_y == other_y
             && this_width == other_width

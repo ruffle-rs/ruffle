@@ -1448,7 +1448,7 @@ impl<'gc> MovieClip<'gc> {
             let object: Avm1Object<'gc> = StageObject::for_display_object(
                 context.gc_context,
                 display_object,
-                Some(context.system_prototypes.movie_clip),
+                Some(context.avm1.prototypes().movie_clip),
             )
             .into();
             if let Some(init_object) = init_object {
