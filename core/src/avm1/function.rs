@@ -376,15 +376,18 @@ impl<'gc> Executable<'gc> {
                     frame.set_local_register(preload_r, global);
                 }
 
+                // Any unassigned args are set to undefined to prevent assignments from leaking to the parent scope (#2166)
+                let args_iter = args
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::repeat(Value::Undefined));
+
                 //TODO: What happens if the argument registers clash with the
                 //preloaded registers? What gets done last?
-                for i in 0..args.len() {
-                    match (args.get(i), af.params.get(i)) {
-                        (Some(arg), Some((Some(argreg), _argname))) => {
-                            frame.set_local_register(*argreg, arg.clone())
-                        }
-                        (Some(arg), Some((None, argname))) => frame.define(argname, arg.clone()),
-                        _ => {}
+                for (param, value) in af.params.iter().zip(args_iter) {
+                    match param {
+                        (Some(argreg), _argname) => frame.set_local_register(*argreg, value),
+                        (None, argname) => frame.define(argname, value),
                     }
                 }
 
