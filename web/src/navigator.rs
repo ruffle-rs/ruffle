@@ -140,7 +140,8 @@ impl NavigatorBackend for WebNavigatorBackend {
                 init.body(Some(&datablob));
             }
 
-            let request = Request::new_with_str_and_init(&url, &init).unwrap();
+            let request = Request::new_with_str_and_init(&url, &init)
+                .map_err(|_| Error::FetchError(format!("Unable to create request for {}", url)))?;
 
             let window = web_sys::window().unwrap();
             let fetchval = JsFuture::from(window.fetch_with_request(&request)).await;
