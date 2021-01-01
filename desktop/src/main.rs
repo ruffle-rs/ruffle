@@ -13,8 +13,7 @@ mod ui;
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use clap::Clap;
-use isahc::config::RedirectPolicy;
-use isahc::prelude::*;
+use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
     Player,

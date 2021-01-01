@@ -1,8 +1,7 @@
 //! Navigator backend for web
 
 use crate::custom_event::RuffleEvent;
-use isahc::config::RedirectPolicy;
-use isahc::prelude::*;
+use isahc::{config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request};
 use ruffle_core::backend::navigator::{
     NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
@@ -10,7 +9,6 @@ use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
 use std::fs;
-use std::io::Read;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
@@ -144,12 +142,17 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     .body(body_data)
                     .map_err(|e| Error::FetchError(e.to_string()))?;
 
-                let response = client
+                let mut response = client
                     .send_async(body)
                     .await
                     .map_err(|e| Error::FetchError(e.to_string()))?;
 
-                response_to_bytes(response).map_err(|e| Error::FetchError(e.to_string()))
+                let mut buffer = vec![];
+                response
+                    .copy_to(&mut buffer)
+                    .await
+                    .map_err(|e| Error::FetchError(e.to_string()))?;
+                Ok(buffer)
             }),
         }
     }
@@ -183,10 +186,4 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         }
         url
     }
-}
-
-fn response_to_bytes(res: Response<Body>) -> Result<Vec<u8>, std::io::Error> {
-    let mut buffer: Vec<u8> = Vec::new();
-    res.into_body().read_to_end(&mut buffer)?;
-    Ok(buffer)
 }
