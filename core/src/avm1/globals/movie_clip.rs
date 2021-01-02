@@ -929,7 +929,7 @@ pub fn remove_movie_clip<'gc>(
     // Generally this prevents you from removing non-dynamically created clips,
     // although you can get around it with swapDepths.
     // TODO: Figure out the derivation of this range.
-    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH {
+    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !movie_clip.removed() {
         // Need a parent to remove from.
         let mut parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
             parent
@@ -977,6 +977,10 @@ fn swap_depths<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
 
+    if movie_clip.removed() {
+        return Ok(Value::Undefined);
+    }
+
     let mut parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
         parent
     } else {
@@ -990,7 +994,7 @@ fn swap_depths<'gc>(
         activation.resolve_target_display_object(movie_clip.into(), arg, false)?
     {
         if let Some(target_parent) = target.parent() {
-            if DisplayObject::ptr_eq(target_parent, parent.into()) {
+            if DisplayObject::ptr_eq(target_parent, parent.into()) && !target.removed() {
                 depth = Some(target.depth())
             } else {
                 avm_warn!(
