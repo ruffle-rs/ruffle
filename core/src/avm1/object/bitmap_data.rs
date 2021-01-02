@@ -551,7 +551,7 @@ impl fmt::Debug for BitmapDataObject<'_> {
 impl<'gc> BitmapDataObject<'gc> {
     add_field_accessors!(
         [disposed, bool, get => disposed],
-        [data, GcCell<'gc, BitmapData>, get => bitmap_data],
+        [data, GcCell<'gc, BitmapData>, set => set_bitmap_data, get => bitmap_data],
     );
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {

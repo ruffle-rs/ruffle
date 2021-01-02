@@ -135,6 +135,41 @@ pub fn clone<'gc>(
         return Ok(cloned.into());
     }
 
+    if let Some(this) = this.as_displacement_map_filter_object() {
+        let proto = activation
+            .context
+            .avm1
+            .prototypes
+            .displacement_map_filter_constructor;
+
+        let map_bitmap = this.get("mapBitmap", activation)?;
+        let map_point = this.get("mapPoint", activation)?;
+        let component_x = this.get("componentX", activation)?;
+        let component_y = this.get("componentY", activation)?;
+        let scale_x = this.get("scaleX", activation)?;
+        let scale_y = this.get("scaleY", activation)?;
+        let mode = this.get("mode", activation)?;
+        let color = this.get("color", activation)?;
+        let alpha = this.get("alpha", activation)?;
+
+        let cloned = proto.construct(
+            activation,
+            &[
+                map_bitmap,
+                map_point,
+                component_x,
+                component_y,
+                scale_x,
+                scale_y,
+                mode,
+                color,
+                alpha,
+            ],
+        )?;
+
+        return Ok(cloned.into());
+    }
+
     Ok(Value::Undefined)
 }
 

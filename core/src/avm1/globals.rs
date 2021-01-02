@@ -23,6 +23,7 @@ mod color_transform;
 pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
 mod date;
+pub mod displacement_map_filter;
 pub(crate) mod display_object;
 pub mod drop_shadow_filter;
 pub(crate) mod error;
@@ -440,6 +441,8 @@ pub struct SystemPrototypes<'gc> {
     pub drop_shadow_filter_constructor: Object<'gc>,
     pub color_matrix_filter: Object<'gc>,
     pub color_matrix_filter_constructor: Object<'gc>,
+    pub displacement_map_filter: Object<'gc>,
+    pub displacement_map_filter_constructor: Object<'gc>,
     pub date: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub bitmap_data_constructor: Object<'gc>,
@@ -690,6 +693,15 @@ pub fn create_globals<'gc>(
         color_matrix_filter_proto,
     );
 
+    let displacement_map_filter_proto =
+        displacement_map_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
+    let displacement_map_filter = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(displacement_map_filter::constructor),
+        Some(function_proto),
+        displacement_map_filter_proto,
+    );
+
     filters.define_value(
         gc_context,
         "BitmapFilter",
@@ -724,6 +736,12 @@ pub fn create_globals<'gc>(
         gc_context,
         "ColorMatrixFilter",
         color_matrix_filter.into(),
+        EnumSet::empty(),
+    );
+    filters.define_value(
+        gc_context,
+        "DisplacementMapFilter",
+        displacement_map_filter.into(),
         EnumSet::empty(),
     );
 
@@ -1035,6 +1053,8 @@ pub fn create_globals<'gc>(
             drop_shadow_filter_constructor: drop_shadow_filter,
             color_matrix_filter: color_matrix_filter_proto,
             color_matrix_filter_constructor: color_matrix_filter,
+            displacement_map_filter: displacement_map_filter_proto,
+            displacement_map_filter_constructor: displacement_map_filter,
             date: date_proto,
             bitmap_data: bitmap_data_proto,
             bitmap_data_constructor: bitmap_data,
