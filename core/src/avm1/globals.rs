@@ -8,6 +8,8 @@ use gc_arena::Collect;
 use gc_arena::MutationContext;
 use rand::Rng;
 use std::f64;
+use std::str;
+use std::u8;
 
 mod array;
 pub(crate) mod as_broadcaster;
@@ -391,6 +393,58 @@ pub fn escape<'gc>(
         };
     }
     Ok(AvmString::new(activation.context.gc_context, buffer).into())
+}
+
+pub fn unescape<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let s = if let Some(val) = args.get(0) {
+        val.coerce_to_string(activation)?
+    } else {
+        return Ok(Value::Undefined);
+    };
+
+    let s = s.bytes();
+    let mut out_bytes = Vec::<u8>::with_capacity(s.len());
+
+    let mut remain = 0;
+    let mut hex_chars = Vec::<u8>::with_capacity(2);
+
+    for c in s {
+        match c {
+            b'%' => {
+                remain = 2;
+            }
+            b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F' if remain > 0 => {
+                remain -= 1;
+                hex_chars.push(c);
+
+                if remain == 0 {
+                    if let Some(b) = str::from_utf8(&hex_chars)
+                        .ok()
+                        .and_then(|s| u8::from_str_radix(s, 16).ok())
+                    {
+                        out_bytes.push(b);
+                    }
+                    hex_chars.clear();
+                }
+            }
+            _ if remain > 0 => {
+                remain = 0;
+                hex_chars.clear();
+            }
+            _ => {
+                out_bytes.push(c);
+            }
+        }
+    }
+    Ok(AvmString::new(
+        activation.context.gc_context,
+        String::from_utf8_lossy(&out_bytes),
+    )
+    .into())
 }
 
 /// This structure represents all system builtins that are used regardless of
@@ -983,6 +1037,13 @@ pub fn create_globals<'gc>(
         Some(function_proto),
     );
     globals.force_set_function("escape", escape, gc_context, DontEnum, Some(function_proto));
+    globals.force_set_function(
+        "unescape",
+        unescape,
+        gc_context,
+        DontEnum,
+        Some(function_proto),
+    );
 
     globals.add_property(
         gc_context,
