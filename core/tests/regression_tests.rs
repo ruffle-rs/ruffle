@@ -160,6 +160,7 @@ swf_tests! {
     (equals2_swf6, "avm1/equals2_swf6", 1),
     (equals2_swf7, "avm1/equals2_swf7", 1),
     (escape, "avm1/escape", 1),
+    (unescape, "avm1/unescape", 1),
     (register_class, "avm1/register_class", 1),
     (register_and_init_order, "avm1/register_and_init_order", 1),
     (on_construct, "avm1/on_construct", 1),
