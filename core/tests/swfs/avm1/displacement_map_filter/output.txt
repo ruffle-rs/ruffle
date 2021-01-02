@@ -78,6 +78,8 @@ color
 wrap
 // x.mapPoint (after .x += 10)
 (x=-1000, y=-1000)
+// test.mapBitmap.getPixel32(0, 0) after setPixel32(0, 0, 0xff0000ff)
+-16776961
 // test.mapBitmap.width
 10
 // test.mapBitmap.width (after dispose)
