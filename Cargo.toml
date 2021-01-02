@@ -26,3 +26,9 @@ panic = "abort"
 
 [profile.release]
 panic = "abort"
+
+[profile.dev.package.h263-rs]
+opt-level = 3
+
+[profile.dev.package.h263-rs-yuv]
+opt-level = 3
