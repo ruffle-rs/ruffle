@@ -173,7 +173,15 @@ pub struct Player {
     background_color: Color,
 
     frame_rate: f64,
+
+    /// A time budget for executing frames.
+    /// Gained by passage of time between host frames, spent by executing SWF frames.
+    /// This is how we support custom SWF framerates
+    /// and compensate for small lags by "catching up" (up to MAX_FRAMES_PER_TICK).
     frame_accumulator: f64,
+
+    /// Faked time passage for fooling hand-written busy-loop FPS limiters.
+    time_offset: u32,
 
     viewport_width: u32,
     viewport_height: u32,
@@ -271,6 +279,7 @@ impl Player {
 
             frame_rate,
             frame_accumulator: 0.0,
+            time_offset: 0,
 
             movie_width,
             movie_height,
@@ -443,7 +452,24 @@ impl Player {
                 self.frame_accumulator -= frame_time;
                 self.run_frame();
                 frame += 1;
+
+                // The script probably tried implementing an FPS limiter with a busy loop.
+                // We fooled the busy loop by pretending that more time has passed that actually did.
+                // Then we need to actually pass this time, by decreasing frame_accumulator
+                // to delay the future frame.
+                if self.time_offset > 0 {
+                    self.frame_accumulator -= self.time_offset as f64;
+                }
             }
+
+            // Now that we're done running code,
+            // we can stop pretending that more time passed than actually did.
+            // Note: update_timers(dt) doesn't need to see this either.
+            // Timers will run at correct times and see correct time.
+            // Also note that in Flash, a blocking busy loop would delay setTimeout
+            // and cancel some setInterval callbacks, but here busy loops don't block
+            // so timer callbacks won't get cancelled/delayed.
+            self.time_offset = 0;
 
             // Sanity: If we had too many frames to tick, just reset the accumulator
             // to prevent running at turbo speed.
@@ -1109,6 +1135,7 @@ impl Player {
             needs_render,
             max_execution_duration,
             current_frame,
+            time_offset,
         ) = (
             self.player_version,
             &self.swf,
@@ -1130,6 +1157,7 @@ impl Player {
             &mut self.needs_render,
             self.max_execution_duration,
             &mut self.current_frame,
+            &mut self.time_offset,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -1184,6 +1212,8 @@ impl Player {
                 update_start: Instant::now(),
                 max_execution_duration,
                 focus_tracker,
+                times_get_time_called: 0,
+                time_offset,
             };
 
             let ret = f(&mut update_context);
