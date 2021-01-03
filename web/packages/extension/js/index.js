@@ -12,7 +12,7 @@ if (obfuscatedEventPrefix) {
         let response = {};
 
         if (body.action === "get_page_options") {
-            //response.page_options = page_options;
+            //response.pageOptions = pageOptions;
         }
 
         let event = new CustomEvent(obfuscatedEventPrefix + "_response", {

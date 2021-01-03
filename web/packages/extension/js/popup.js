@@ -1,93 +1,95 @@
 const {
-    get_i18n_string,
-    set_sync_storage,
-    get_sync_storage,
-    add_storage_change_listener,
-    reload_tab,
-    dict_equality,
-    tab_query,
-    tab_sendmessage,
-    open_settings_page,
+    getI18nString,
+    setSyncStorage,
+    getSyncStorage,
+    addStorageChangeListener,
+    reloadTab,
+    dictEquality,
+    tabQuery,
+    tabSendmessage,
+    openSettingsPage,
+    camelize,
 } = require("./util.js");
 
-let settings_dict = {},
-    tab_settings = {},
-    reload_button,
-    active_tab;
+let settingsDict = {},
+    tabSettings = {},
+    reloadButton,
+    activeTab;
 
-function on_settings_change_intent() {
-    let is_different = !dict_equality(settings_dict, tab_settings);
+function onSettingsChangeIntent() {
+    let isDifferent = !dictEquality(settingsDict, tabSettings);
 
-    if (reload_button !== undefined) {
-        reload_button.disabled = !is_different;
+    if (reloadButton !== undefined) {
+        reloadButton.disabled = !isDifferent;
     }
 }
 
-function bind_boolean_setting(checkbox_elem) {
-    let name = checkbox_elem.name,
-        label = checkbox_elem.nextSibling;
+function bindBooleanSetting(checkboxElem) {
+    let name = checkboxElem.name,
+        label = checkboxElem.nextSibling;
 
-    label.textContent = get_i18n_string("settings_" + name);
+    label.textContent = getI18nString("settings_" + name);
+    name = camelize(name);
 
-    get_sync_storage(name, function (items) {
-        checkbox_elem.checked = items[name];
-        settings_dict[name] = items[name];
-        on_settings_change_intent();
+    getSyncStorage(name, function (items) {
+        checkboxElem.checked = items[name];
+        settingsDict[name] = items[name];
+        onSettingsChangeIntent();
     });
 
-    add_storage_change_listener(function (changes) {
+    addStorageChangeListener(function (changes) {
         if (Object.prototype.hasOwnProperty.call(changes, name)) {
-            checkbox_elem.checked = changes[name].newValue;
-            settings_dict[name] = changes[name].newValue;
-            on_settings_change_intent();
+            checkboxElem.checked = changes[name].newValue;
+            settingsDict[name] = changes[name].newValue;
+            onSettingsChangeIntent();
         }
     });
 
-    checkbox_elem.addEventListener("click", function () {
+    checkboxElem.addEventListener("click", function () {
         let setting = {};
-        setting[name] = checkbox_elem.checked;
-        settings_dict[name] = setting[name];
-        on_settings_change_intent();
+        setting[name] = checkboxElem.checked;
+        settingsDict[name] = setting[name];
+        onSettingsChangeIntent();
 
-        set_sync_storage(setting);
+        setSyncStorage(setting);
     });
 }
 
-function bind_settings_apply_button(elem) {
-    elem.textContent = get_i18n_string("action_" + elem.id);
+function bindSettingsApplyButton(elem) {
+    elem.textContent = getI18nString("action_" + elem.id);
     elem.disabled = true;
 
     elem.addEventListener("click", function () {
-        reload_tab(active_tab.id, function () {
-            window.setInterval(query_current_tab, 1000);
+        reloadTab(activeTab.id, function () {
+            window.setInterval(queryCurrentTab, 1000);
         });
     });
 
-    reload_button = elem;
+    reloadButton = elem;
 }
 
-let got_status = false;
+let gotStatus = false;
 
-async function query_current_tab() {
-    let ruffle_status = document.getElementById("ruffle_status");
-    if (ruffle_status === null) {
+async function queryCurrentTab() {
+    let ruffleStatus = document.getElementById("ruffle_status");
+    if (ruffleStatus === null) {
         /*debugger;*/
     }
 
-    if (!got_status) {
-        ruffle_status.textContent = get_i18n_string("status_init");
+    if (!gotStatus) {
+        ruffleStatus.textContent = getI18nString("status_init");
     }
 
     let tabs = null;
 
     try {
-        tabs = await tab_query({
+        tabs = await tabQuery({
             currentWindow: true,
             active: true,
         });
 
         if (tabs.length < 1) {
-            ruffle_status.textContent = get_i18n_string("status_no_tabs");
+            ruffleStatus.textContent = getI18nString("status_no_tabs");
             return;
         }
 
@@ -97,55 +99,53 @@ async function query_current_tab() {
             );
         }
     } catch (e) {
-        ruffle_status.textContent = get_i18n_string("status_tabs_error");
+        ruffleStatus.textContent = getI18nString("status_tabs_error");
         throw e;
     }
 
     try {
-        active_tab = tabs[0];
+        activeTab = tabs[0];
 
-        ruffle_status.textContent = get_i18n_string("status_message_init");
+        ruffleStatus.textContent = getI18nString("status_message_init");
 
-        let resp = await tab_sendmessage(active_tab.id, {
+        let resp = await tabSendmessage(activeTab.id, {
             action: "get_page_options",
         });
 
-        tab_settings = resp.tab_settings;
-        on_settings_change_intent();
+        tabSettings = resp.tabSettings;
+        onSettingsChangeIntent();
 
         if (resp !== undefined && resp.loaded) {
-            ruffle_status.textContent = get_i18n_string(
-                "status_result_running"
-            );
+            ruffleStatus.textContent = getI18nString("status_result_running");
         } else if (resp !== undefined && !resp.loaded) {
-            if (tab_settings.ruffle_enable) {
-                ruffle_status.textContent = get_i18n_string(
+            if (tabSettings.ruffleEnable) {
+                ruffleStatus.textContent = getI18nString(
                     "status_result_optout"
                 );
             } else {
-                ruffle_status.textContent = get_i18n_string(
+                ruffleStatus.textContent = getI18nString(
                     "status_result_disabled"
                 );
             }
         } else {
-            ruffle_status.textContent = get_i18n_string("status_result_error");
+            ruffleStatus.textContent = getI18nString("status_result_error");
         }
     } catch (e) {
-        ruffle_status.textContent = get_i18n_string("status_result_protected");
-        if (reload_button) {
-            reload_button.disabled = true;
+        ruffleStatus.textContent = getI18nString("status_result_protected");
+        if (reloadButton) {
+            reloadButton.disabled = true;
         }
         throw e;
     }
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    var settings_button = document.getElementById("settingsbutton");
-    bind_boolean_setting(document.getElementById("ruffle_enable"));
-    bind_boolean_setting(document.getElementById("ignore_optout"));
-    bind_settings_apply_button(document.getElementById("reload"));
-    settings_button.innerHTML = get_i18n_string("open_settings_page");
-    settings_button.onclick = open_settings_page;
+    var settingsButton = document.getElementById("settingsbutton");
+    bindBooleanSetting(document.getElementById("ruffle_enable"));
+    bindBooleanSetting(document.getElementById("ignore_optout"));
+    bindSettingsApplyButton(document.getElementById("reload"));
+    settingsButton.innerHTML = getI18nString("open_settings_page");
+    settingsButton.onclick = openSettingsPage;
 
-    query_current_tab();
+    queryCurrentTab();
 });
