@@ -156,6 +156,21 @@ impl Ruffle {
         Ok(())
     }
 
+    fn load_from_file_dialog(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let result = open_file_dialog("Load a Flash File", "", Some((&["*.swf"], ".swf")));
+
+        let selected = match result {
+            Some(file_path) => PathBuf::from(file_path),
+            None => return Ok(()),
+        };
+
+        let absolute_path = selected
+            .canonicalize()
+            .unwrap_or_else(|_| selected.to_owned());
+
+        self.load(&absolute_path)
+    }
+
     fn ensure_player(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         if self.movie.is_none() {
             return Ok(());
@@ -254,21 +269,39 @@ impl Ruffle {
             event_loop.run(move |event, _window_target, control_flow| {
                 if self.player.is_none() {
                     *control_flow = ControlFlow::Wait;
-                    match event {
-                        winit::event::Event::WindowEvent { event, .. } => match event {
-                            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                            WindowEvent::DroppedFile(path) => {
-                                // TODO: handle errors
-                                self.load(&path).unwrap();
-                            }
-                            _ => (),
-                        },
-                        _ => (),
-                    }
-                    return;
                 }
 
-                let player = self.player.as_ref().unwrap();
+                match &event {
+                    winit::event::Event::WindowEvent { event, .. } => match event {
+                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                        WindowEvent::KeyboardInput {
+                            input:
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::O),
+                                    modifiers: m, // TODO: Use WindowEvent::ModifiersChanged.
+                                    ..
+                                },
+                            ..
+                        } => {
+                            if m.ctrl() {
+                                let _ = self.load_from_file_dialog();
+                                return;
+                            }
+                        }
+                        WindowEvent::DroppedFile(path) => {
+                            let _ = self.load(&path);
+                        }
+                        _ => (),
+                    },
+                    _ => (),
+                }
+
+                let player = if let Some(player) = self.player.as_ref() {
+                    player
+                } else {
+                    return;
+                };
                 let window = self.window.as_ref().unwrap();
                 // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
                 #[allow(deprecated)]
@@ -428,10 +461,6 @@ impl Ruffle {
                                     window.request_redraw();
                                 }
                             }
-                        }
-                        WindowEvent::DroppedFile(path) => {
-                            // TODO: handle errors
-                            self.load(&path).unwrap();
                         }
                         _ => (),
                     },
