@@ -14,6 +14,7 @@ pub struct AdpcmDecoder<R: Read> {
     right_sample: i32,
     right_step_index: i16,
     right_step: i32,
+    decoder: fn(i32, i32) -> i32,
 }
 
 impl<R: Read> AdpcmDecoder<R> {
@@ -33,6 +34,59 @@ impl<R: Read> AdpcmDecoder<R> {
         29794, 32767,
     ];
 
+    const SAMPLE_DELTA_CALCULATOR: [fn(i32, i32) -> i32; 4] = [
+        // 2 bits
+        |step: i32, magnitude: i32| {
+            let mut delta = step >> 1;
+            if magnitude & 1 != 0 {
+                delta += step;
+            };
+            delta
+        },
+        // 3 bits
+        |step: i32, magnitude: i32| {
+            let mut delta = step >> 2;
+            if magnitude & 1 != 0 {
+                delta += step >> 1;
+            }
+            if magnitude & 2 != 0 {
+                delta += step;
+            }
+            delta
+        },
+        // 4 bits
+        |step: i32, magnitude: i32| {
+            let mut delta = step >> 3;
+            if magnitude & 1 != 0 {
+                delta += step >> 2;
+            }
+            if magnitude & 2 != 0 {
+                delta += step >> 1;
+            }
+            if magnitude & 4 != 0 {
+                delta += step;
+            }
+            delta
+        },
+        // 5 bits
+        |step: i32, magnitude: i32| {
+            let mut delta = step >> 4;
+            if magnitude & 1 != 0 {
+                delta += step >> 3;
+            }
+            if magnitude & 2 != 0 {
+                delta += step >> 2;
+            }
+            if magnitude & 4 != 0 {
+                delta += step >> 1;
+            }
+            if magnitude & 8 != 0 {
+                delta += step;
+            }
+            delta
+        },
+    ];
+
     pub fn new(inner: R, is_stereo: bool, sample_rate: u16) -> Self {
         let mut reader = BitReader::new(inner);
         let bits_per_sample = reader.read::<u8>(2).unwrap_or_else(|e| {
@@ -47,6 +101,8 @@ impl<R: Read> AdpcmDecoder<R> {
         let right_sample = 0;
         let right_step_index = 0;
         let right_step = 0;
+        let decoder = Self::SAMPLE_DELTA_CALCULATOR[bits_per_sample - 2];
+
         Self {
             inner: reader,
             sample_rate,
@@ -59,6 +115,7 @@ impl<R: Read> AdpcmDecoder<R> {
             right_sample,
             right_step,
             right_step_index,
+            decoder,
         }
     }
 
@@ -85,17 +142,17 @@ impl<R: Read> AdpcmDecoder<R> {
         // TODO(Herschel): Other implementations use some bit-tricks for this.
         let sign_mask = 1 << (self.bits_per_sample - 1);
         let magnitude = data & !sign_mask;
-        let delta = (2 * magnitude + 1) * self.left_step / sign_mask;
+        let delta = (self.decoder)(self.left_step, magnitude);
 
         if (data & sign_mask) != 0 {
             self.left_sample -= delta;
         } else {
             self.left_sample += delta;
         }
-        if self.left_sample < -32767 {
-            self.left_sample = -32767;
-        } else if self.left_sample > 32767 {
-            self.left_sample = 32767;
+        if self.left_sample < (i16::MIN as i32) {
+            self.left_sample = i16::MIN as i32;
+        } else if self.left_sample > (i16::MAX as i32) {
+            self.left_sample = i16::MAX as i32;
         }
 
         let i = magnitude as usize;
@@ -112,17 +169,17 @@ impl<R: Read> AdpcmDecoder<R> {
 
             let sign_mask = 1 << (self.bits_per_sample - 1);
             let magnitude = data & !sign_mask;
-            let delta = (2 * magnitude + 1) * self.right_step / sign_mask;
+            let delta = (self.decoder)(self.right_step, magnitude);
 
             if (data & sign_mask) != 0 {
                 self.right_sample -= delta;
             } else {
                 self.right_sample += delta;
             }
-            if self.right_sample < -32767 {
-                self.right_sample = -32767;
-            } else if self.right_sample > 32767 {
-                self.right_sample = 32767;
+            if self.right_sample < (i16::MIN as i32) {
+                self.right_sample = i16::MIN as i32;
+            } else if self.right_sample > (i16::MAX as i32) {
+                self.right_sample = i16::MAX as i32;
             }
 
             let i = magnitude as usize;
