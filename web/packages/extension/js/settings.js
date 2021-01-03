@@ -1,32 +1,28 @@
-const {
-    get_sync_storage,
-    get_i18n_string,
-    set_sync_storage,
-} = require("./util.js");
+const { getSyncStorage, getI18nString, setSyncStorage } = require("./util.js");
 
-get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
-    var play_flash_message = get_i18n_string("settings_ruffle_enable");
-    var ignore_optout_message = get_i18n_string("settings_page_ignore_optout");
-    var title_text = get_i18n_string("settings_page");
-    var save_text = get_i18n_string("save_settings");
-    var play_flash_label = document.getElementById("enablelabel");
-    var ignore_optout_label = document.getElementById("ignorelabel");
-    var play_flash_checkbox = document.getElementById("enable");
-    var ignore_optout_checkbox = document.getElementById("ignoreoptout");
-    var save_button = document.getElementById("save");
+getSyncStorage(["ruffleEnable", "ignoreOptout"], function (data) {
+    var playFlashMessage = getI18nString("settings_ruffle_enable");
+    var ignoreOptoutMessage = getI18nString("settings_page_ignore_optout");
+    var titleText = getI18nString("settings_page");
+    var saveText = getI18nString("save_settings");
+    var playFlashLabel = document.getElementById("enablelabel");
+    var ignoreOptoutLabel = document.getElementById("ignorelabel");
+    var playFlashCheckbox = document.getElementById("enable");
+    var ignoreOptoutCheckbox = document.getElementById("ignoreoptout");
+    var saveButton = document.getElementById("save");
     var title = document.getElementById("title");
-    title.innerHTML = title_text;
-    document.title = title_text;
-    play_flash_label.innerHTML = play_flash_message + "<br />";
-    ignore_optout_label.innerHTML = ignore_optout_message + "<br />";
-    save_button.value = save_text;
-    play_flash_checkbox.checked = data.ruffle_enable;
-    ignore_optout_checkbox.checked = data.ignore_optout;
-    save_button.onclick = function () {
-        set_sync_storage({
-            ruffle_enable: play_flash_checkbox.checked,
-            ignore_optout: ignore_optout_checkbox.checked,
+    title.innerHTML = titleText;
+    document.title = titleText;
+    playFlashLabel.innerHTML = playFlashMessage + "<br />";
+    ignoreOptoutLabel.innerHTML = ignoreOptoutMessage + "<br />";
+    saveButton.value = saveText;
+    playFlashCheckbox.checked = data.ruffleEnable;
+    ignoreOptoutCheckbox.checked = data.ignoreOptout;
+    saveButton.onclick = function () {
+        setSyncStorage({
+            ruffleEnable: playFlashCheckbox.checked,
+            ignoreOptout: ignoreOptoutCheckbox.checked,
         });
-        alert(get_i18n_string("settings_saved"));
+        alert(getI18nString("settings_saved"));
     };
 });

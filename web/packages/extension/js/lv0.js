@@ -20,12 +20,12 @@
  * foolproof, but is designed to
  */
 const {
-    get_sync_storage,
-    set_message_listener,
-    get_extension_url,
+    getSyncStorage,
+    setMessageListener,
+    getExtensionUrl,
 } = require("./util.js");
 
-get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
+getSyncStorage(["ruffleEnable", "ignoreOptout"], function (data) {
     let pageOptout = document.documentElement.hasAttribute(
         "data-ruffle-optout"
     );
@@ -53,8 +53,8 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
 
     if (data) {
         shouldLoadUntrustedWorld =
-            data.ruffle_enable &&
-            !((pageOptout && !data.ignore_optout) || window.RufflePlayer);
+            data.ruffleEnable &&
+            !((pageOptout && !data.ignoreOptout) || window.RufflePlayer);
     } else {
         console.log("Couldn't read settings.");
     }
@@ -107,16 +107,16 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
         return JSON.parse(respEvent.detail);
     }
 
-    set_message_listener(function (request, sender, responseCallback) {
+    setMessageListener(function (request, sender, responseCallback) {
         if (shouldLoadUntrustedWorld) {
             let responsePromise = marshalMessageIntoUntrustedWorld(request);
             responsePromise
                 .then(function (response) {
                     responseCallback({
                         loaded: true,
-                        tab_settings: data,
+                        tabSettings: data,
                         optout: pageOptout,
-                        untrusted_response: response,
+                        untrustedResponse: response,
                     });
                 })
                 .catch(function (e) {
@@ -131,7 +131,7 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
         } else {
             responseCallback({
                 loaded: false,
-                tab_settings: data,
+                tabSettings: data,
                 optout: pageOptout,
             });
 
@@ -139,7 +139,7 @@ get_sync_storage(["ruffle_enable", "ignore_optout"], function (data) {
         }
     });
 
-    const extPath = get_extension_url();
+    const extPath = getExtensionUrl();
 
     if (shouldLoadUntrustedWorld) {
         // We must run the plugin polyfill before any flash detection scripts.

@@ -1,24 +1,25 @@
 module.exports = {
-    get_i18n_string,
-    set_sync_storage,
-    get_sync_storage,
-    reload_tab,
-    dict_equality,
-    tab_query,
-    tab_sendmessage,
-    add_storage_change_listener,
-    open_settings_page,
-    set_message_listener,
-    get_extension_url,
+    getI18nString,
+    setSyncStorage,
+    getSyncStorage,
+    reloadTab,
+    dictEquality,
+    tabQuery,
+    tabSendmessage,
+    addStorageChangeListener,
+    openSettingsPage,
+    setMessageListener,
+    getExtensionUrl,
+    camelize,
 };
 
 // List of defaults for all settings.
 const DEFAULT_SETTINGS = {
-    ruffle_enable: true,
-    ignore_output: false,
+    ruffleEnable: true,
+    ignoreOptout: false,
 };
 
-function get_i18n_string(key) {
+function getI18nString(key) {
     if (chrome && chrome.i18n && chrome.i18n.getMessage) {
         return chrome.i18n.getMessage(key);
     } else if (browser && browser.i18n && browser.i18n.getMessage) {
@@ -28,7 +29,7 @@ function get_i18n_string(key) {
     }
 }
 
-function set_sync_storage(key) {
+function setSyncStorage(key) {
     if (
         chrome &&
         chrome.storage &&
@@ -48,11 +49,11 @@ function set_sync_storage(key) {
     }
 }
 
-function get_sync_storage(key, callback) {
+function getSyncStorage(key, callback) {
     // Create array of keys so that we can grab the defaults, if necessary.
-    let data_type = typeof key;
+    let dataType = typeof key;
     let keys;
-    if (data_type == "string") {
+    if (dataType == "string") {
         keys = [key];
     } else if (Array.isArray(key)) {
         keys = key;
@@ -61,7 +62,7 @@ function get_sync_storage(key, callback) {
     }
 
     // Copy over default settings if they don't exist yet.
-    let callback_with_default = (data) => {
+    let callbackWithDefault = (data) => {
         for (const k of keys) {
             if (data[k] === undefined) {
                 data[k] = DEFAULT_SETTINGS[k];
@@ -76,20 +77,20 @@ function get_sync_storage(key, callback) {
         chrome.storage.sync &&
         chrome.storage.sync.get
     ) {
-        chrome.storage.sync.get(key, callback_with_default);
+        chrome.storage.sync.get(key, callbackWithDefault);
     } else if (
         browser &&
         browser.storage &&
         browser.storage.sync &&
         browser.storage.sync.get
     ) {
-        browser.storage.sync.get(key, callback_with_default);
+        browser.storage.sync.get(key, callbackWithDefault);
     } else {
         console.error("Couldn't read setting: " + key);
     }
 }
 
-function add_storage_change_listener(listener) {
+function addStorageChangeListener(listener) {
     if (
         chrome &&
         chrome.storage &&
@@ -109,7 +110,7 @@ function add_storage_change_listener(listener) {
     }
 }
 
-function reload_tab(tab, callback) {
+function reloadTab(tab, callback) {
     if (chrome && chrome.tabs && chrome.tabs.reload) {
         chrome.tabs.reload(tab, callback);
     } else if (browser && browser.tabs && browser.tabs.reload) {
@@ -119,22 +120,22 @@ function reload_tab(tab, callback) {
     }
 }
 
-function dict_equality(dict1, dict2) {
-    let is_equal = true;
+function dictEquality(dict1, dict2) {
+    let isEqual = true;
 
     for (var k in dict1) {
         if (Object.prototype.hasOwnProperty.call(dict1, k)) {
-            is_equal = is_equal && dict1[k] === dict2[k];
+            isEqual = isEqual && dict1[k] === dict2[k];
         }
     }
 
     for (let k in dict2) {
         if (Object.prototype.hasOwnProperty.call(dict2, k)) {
-            is_equal = is_equal && dict1[k] === dict2[k];
+            isEqual = isEqual && dict1[k] === dict2[k];
         }
     }
 
-    return is_equal;
+    return isEqual;
 }
 
 /**
@@ -143,44 +144,44 @@ function dict_equality(dict1, dict2) {
  * Mozilla does this by default in `browser.tabs` but Chrome is behind on this
  * sort of thing. Chrome won't even let us check if we're running in
  */
-function tab_query() {
-    let my_args = arguments;
+function tabQuery() {
+    let myArgs = arguments;
 
     if (window.browser && browser.tabs && browser.tabs.query) {
         return browser.tabs.query.apply(this, arguments);
     }
 
     return new Promise(function (resolve) {
-        let new_arguments = Array.prototype.slice.call(my_args);
-        new_arguments.push(resolve);
-        chrome.tabs.query.apply(this, new_arguments);
+        let newArguments = Array.prototype.slice.call(myArgs);
+        newArguments.push(resolve);
+        chrome.tabs.query.apply(this, newArguments);
     });
 }
 
 /**
  * Promise-based version of `chrome.tabs.sendMessage`.
  */
-function tab_sendmessage() {
-    let my_args = arguments;
+function tabSendmessage() {
+    let myArgs = arguments;
 
     if (window.browser && browser.tabs && browser.tabs.sendMessage) {
         return browser.tabs.sendMessage.apply(this, arguments);
     }
 
     return new Promise(function (resolve, reject) {
-        let new_arguments = Array.prototype.slice.call(my_args);
-        new_arguments.push(function (response) {
+        let newArguments = Array.prototype.slice.call(myArgs);
+        newArguments.push(function (response) {
             if (chrome.runtime.lastError !== undefined) {
                 reject(chrome.runtime.lastError.message);
             }
 
             resolve(response);
         });
-        chrome.tabs.sendMessage.apply(this, new_arguments);
+        chrome.tabs.sendMessage.apply(this, newArguments);
     });
 }
 
-function open_settings_page() {
+function openSettingsPage() {
     if (chrome && chrome.tabs && chrome.tabs.create) {
         chrome.tabs.create({ url: "/settings.htm" });
         /* Open the settings page manually */
@@ -192,7 +193,7 @@ function open_settings_page() {
     }
 }
 
-function set_message_listener(listener) {
+function setMessageListener(listener) {
     if (
         chrome &&
         chrome.runtime &&
@@ -212,7 +213,7 @@ function set_message_listener(listener) {
     }
 }
 
-function get_extension_url() {
+function getExtensionUrl() {
     if (chrome && chrome.extension && chrome.extension.getURL) {
         return chrome.extension
             .getURL("dist/ruffle.js")
@@ -224,4 +225,10 @@ function get_extension_url() {
     } else {
         console.error("Couldn't get extension URL");
     }
+}
+
+function camelize(str) {
+    return str.toLowerCase().replace(/[^a-zA-Z0-9]+(.)/g, (m, chr) => {
+        return chr.toUpperCase();
+    });
 }
