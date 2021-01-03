@@ -15,7 +15,7 @@ module.exports = (env, argv) => {
     return {
         entry: {
             ruffle: path.resolve(__dirname, "js/index.js"),
-            popup: path.resolve(__dirname, "js/popup.js"),
+            main: path.resolve(__dirname, "js/main.js"),
             settings: path.resolve(__dirname, "js/settings.js"),
             lv0: path.resolve(__dirname, "js/lv0.js"),
         },
