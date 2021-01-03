@@ -103,8 +103,9 @@ impl VideoBackend for SoftwareVideoBackend {
                     .format()
                     .into_width_and_height()
                     .ok_or("H.263 decoder error!")?;
+                let chroma_width = picture.chroma_samples_per_row();
                 let (y, b, r) = picture.as_yuv();
-                let rgba = yuv420_to_rgba(y, b, r, width.into());
+                let rgba = yuv420_to_rgba(y, b, r, width.into(), chroma_width);
 
                 let handle = renderer.register_bitmap_raw(width.into(), height.into(), rgba)?;
 
