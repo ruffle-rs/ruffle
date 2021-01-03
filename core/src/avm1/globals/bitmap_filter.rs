@@ -170,6 +170,41 @@ pub fn clone<'gc>(
         return Ok(cloned.into());
     }
 
+    if let Some(this) = this.as_convolution_filter_object() {
+        let proto = activation
+            .context
+            .avm1
+            .prototypes
+            .convolution_filter_constructor;
+
+        let matrix_x = this.get("matrixX", activation)?;
+        let matrix_y = this.get("matrixY", activation)?;
+        let matrix = this.get("matrix", activation)?;
+        let divisor = this.get("divisor", activation)?;
+        let bias = this.get("bias", activation)?;
+        let preserve_alpha = this.get("preserveAlpha", activation)?;
+        let clamp = this.get("clamp", activation)?;
+        let color = this.get("color", activation)?;
+        let alpha = this.get("alpha", activation)?;
+
+        let cloned = proto.construct(
+            activation,
+            &[
+                matrix_x,
+                matrix_y,
+                matrix,
+                divisor,
+                bias,
+                preserve_alpha,
+                clamp,
+                color,
+                alpha,
+            ],
+        )?;
+
+        return Ok(cloned.into());
+    }
+
     Ok(Value::Undefined)
 }
 

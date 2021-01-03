@@ -24,6 +24,7 @@ pub mod color_matrix_filter;
 mod color_transform;
 pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
+pub mod convolution_filter;
 mod date;
 pub mod displacement_map_filter;
 pub(crate) mod display_object;
@@ -497,6 +498,8 @@ pub struct SystemPrototypes<'gc> {
     pub color_matrix_filter_constructor: Object<'gc>,
     pub displacement_map_filter: Object<'gc>,
     pub displacement_map_filter_constructor: Object<'gc>,
+    pub convolution_filter: Object<'gc>,
+    pub convolution_filter_constructor: Object<'gc>,
     pub date: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub bitmap_data_constructor: Object<'gc>,
@@ -756,6 +759,15 @@ pub fn create_globals<'gc>(
         displacement_map_filter_proto,
     );
 
+    let convolution_filter_proto =
+        convolution_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
+    let convolution_filter = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(convolution_filter::constructor),
+        Some(function_proto),
+        convolution_filter_proto,
+    );
+
     filters.define_value(
         gc_context,
         "BitmapFilter",
@@ -796,6 +808,12 @@ pub fn create_globals<'gc>(
         gc_context,
         "DisplacementMapFilter",
         displacement_map_filter.into(),
+        EnumSet::empty(),
+    );
+    filters.define_value(
+        gc_context,
+        "ConvolutionFilter",
+        convolution_filter.into(),
         EnumSet::empty(),
     );
 
@@ -1116,6 +1134,8 @@ pub fn create_globals<'gc>(
             color_matrix_filter_constructor: color_matrix_filter,
             displacement_map_filter: displacement_map_filter_proto,
             displacement_map_filter_constructor: displacement_map_filter,
+            convolution_filter: convolution_filter_proto,
+            convolution_filter_constructor: convolution_filter,
             date: date_proto,
             bitmap_data: bitmap_data_proto,
             bitmap_data_constructor: bitmap_data,
