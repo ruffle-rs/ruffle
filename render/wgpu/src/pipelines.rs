@@ -185,7 +185,7 @@ fn create_pipeline_descriptor<'a>(
         sample_mask: !0,
         alpha_to_coverage_enabled: false,
         vertex_state: wgpu::VertexStateDescriptor {
-            index_format: Some(wgpu::IndexFormat::Uint16),
+            index_format: Some(wgpu::IndexFormat::Uint32),
             vertex_buffers: vertex_buffers_description,
         },
     }

@@ -260,10 +260,10 @@ impl WebGlRenderBackend {
             let index_buffer = self.gl.create_buffer().unwrap();
             self.gl
                 .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
-            let indices = [0u16, 1, 2, 0, 2, 3];
+            let indices = [0u32, 1, 2, 0, 2, 3];
             let indices_bytes = std::slice::from_raw_parts(
                 indices.as_ptr() as *const u8,
-                std::mem::size_of::<u16>() * indices.len(),
+                std::mem::size_of::<u32>() * indices.len(),
             );
             self.gl.buffer_data_with_u8_array(
                 Gl::ELEMENT_ARRAY_BUFFER,
@@ -493,13 +493,12 @@ impl WebGlRenderBackend {
                 self.gl
                     .buffer_data_with_u8_array(Gl::ARRAY_BUFFER, verts_bytes, Gl::STATIC_DRAW);
 
-                let indices: Vec<_> = draw.indices.into_iter().map(|n| n as u16).collect();
                 let index_buffer = self.gl.create_buffer().unwrap();
                 self.gl
                     .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
                 let indices_bytes = std::slice::from_raw_parts(
-                    indices.as_ptr() as *const u8,
-                    indices.len() * std::mem::size_of::<u16>(),
+                    draw.indices.as_ptr() as *const u8,
+                    draw.indices.len() * std::mem::size_of::<u32>(),
                 );
                 self.gl.buffer_data_with_u8_array(
                     Gl::ELEMENT_ARRAY_BUFFER,
@@ -939,7 +938,7 @@ impl RenderBackend for WebGlRenderBackend {
             self.gl.draw_elements_with_i32(
                 Gl::TRIANGLES,
                 quad.draws[0].num_indices,
-                Gl::UNSIGNED_SHORT,
+                Gl::UNSIGNED_INT,
                 0,
             );
         }
@@ -1054,7 +1053,7 @@ impl RenderBackend for WebGlRenderBackend {
 
             // Draw the triangles.
             self.gl
-                .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_SHORT, 0);
+                .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_INT, 0);
         }
     }
 
@@ -1217,7 +1216,7 @@ impl RenderBackend for WebGlRenderBackend {
 
             // Draw the triangles.
             self.gl
-                .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_SHORT, 0);
+                .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_INT, 0);
         }
     }
 
@@ -1285,7 +1284,7 @@ impl RenderBackend for WebGlRenderBackend {
         self.gl.draw_elements_with_i32(
             Gl::TRIANGLES,
             quad.draws[0].num_indices,
-            Gl::UNSIGNED_SHORT,
+            Gl::UNSIGNED_INT,
             0,
         );
     }
