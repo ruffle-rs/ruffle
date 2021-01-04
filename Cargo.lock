@@ -240,9 +240,9 @@ checksum = "614aa3f2bac03707e62a84d18a48dd3d9ea6171313fd5e6a53b5054d8ae74601"
 
 [[package]]
 name = "bitstream-io"
-version = "0.9.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71b66dc4e6b6d83f3afd41eb3006cd332a60d4e18496a31f2caa4069914d773f"
+checksum = "03539c739e37dab2c322ce07b1990089ca1fc7ad14b813e1538bf11bef98fe06"
 
 [[package]]
 name = "blake2b_simd"
@@ -2984,7 +2984,7 @@ name = "ruffle_core"
 version = "0.1.0"
 dependencies = [
  "approx",
- "bitstream-io 0.9.0",
+ "bitstream-io 1.0.0",
  "chrono",
  "downcast-rs",
  "encoding_rs",

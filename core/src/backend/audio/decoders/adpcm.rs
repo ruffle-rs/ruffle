@@ -1,5 +1,5 @@
 use super::{Decoder, SeekableDecoder};
-use bitstream_io::{BigEndian, BitReader};
+use bitstream_io::{BigEndian, BitRead, BitReader};
 use std::io::{Cursor, Read};
 
 pub struct AdpcmDecoder<R: Read> {
