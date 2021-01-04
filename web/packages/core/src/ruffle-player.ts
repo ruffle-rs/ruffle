@@ -815,6 +815,38 @@ export class RufflePlayer extends HTMLElement {
 }
 
 /**
+ * Returns whether a SWF file can call JavaScript code in the surrounding HTML file.
+ *
+ * @param access The value of the `allowScriptAccess` attribute.
+ * @param url The URL of the SWF file.
+ * @returns True if script access is allowed.
+ */
+export function isScriptAccessAllowed(
+    access: string | null,
+    url: string
+): boolean {
+    if (!access) {
+        access = "sameDomain";
+    }
+    switch (access.toLowerCase()) {
+        case "always":
+            return true;
+        case "never":
+            return false;
+        case "samedomain":
+        default:
+            try {
+                return (
+                    new URL(window.location.href).origin ===
+                    new URL(url, window.location.href).origin
+                );
+            } catch {
+                return false;
+            }
+    }
+}
+
+/**
  * Returns whether the given filename ends in a known flash extension.
  *
  * @param filename The filename to test.

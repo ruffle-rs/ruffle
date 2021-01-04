@@ -4,6 +4,7 @@ import {
     FLASH7_AND_8_MIMETYPE,
     FLASH_MOVIE_MIMETYPE,
     FLASH_ACTIVEX_CLASSID,
+    isScriptAccessAllowed,
     isSwfFilename,
     RufflePlayer,
 } from "./ruffle-player";
@@ -89,7 +90,7 @@ export class RuffleObject extends RufflePlayer {
         const allowScriptAccess = findCaseInsensitive(
             this.params,
             "allowScriptAccess",
-            "sameDomain"
+            null
         );
         let url = null;
 
@@ -106,15 +107,12 @@ export class RuffleObject extends RufflePlayer {
         );
 
         if (url) {
-            this.allowScriptAccess = !!(
-                allowScriptAccess &&
-                (allowScriptAccess.toLowerCase() === "always" ||
-                    (allowScriptAccess.toLowerCase() === "samedomain" &&
-                        new URL(window.location.href).origin ===
-                            new URL(url, window.location.href).origin))
+            this.allowScriptAccess = isScriptAccessAllowed(
+                allowScriptAccess,
+                url
             );
 
-            //Kick off the SWF download.
+            // Kick off the SWF download.
             const options: URLLoadOptions = { url };
             if (parameters) {
                 options.parameters = parameters;

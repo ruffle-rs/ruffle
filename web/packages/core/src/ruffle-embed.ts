@@ -3,6 +3,7 @@ import {
     FUTURESPLASH_MIMETYPE,
     FLASH7_AND_8_MIMETYPE,
     FLASH_MOVIE_MIMETYPE,
+    isScriptAccessAllowed,
     isSwfFilename,
     RufflePlayer,
 } from "./ruffle-player";
@@ -34,12 +35,21 @@ export class RuffleEmbed extends RufflePlayer {
     connectedCallback(): void {
         super.connectedCallback();
         let parameters;
+
         const flashvars = this.attributes.getNamedItem("flashvars");
         if (flashvars) {
             parameters = flashvars.value;
         }
+
+        const allowScriptAccess =
+            this.attributes.getNamedItem("allowScriptAccess")?.value ?? null;
+
         const src = this.attributes.getNamedItem("src");
         if (src) {
+            this.allowScriptAccess = isScriptAccessAllowed(
+                allowScriptAccess,
+                src.value
+            );
             this.load({ url: src.value, parameters });
         }
     }
