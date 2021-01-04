@@ -1190,8 +1190,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_get_time(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.context.times_get_time_called += 1;
+        // heuristic to detect busy loops used for delays and slowly progress fake time
+        if self.context.times_get_time_called >= 20 && self.context.times_get_time_called % 5 == 0 {
+            *self.context.time_offset += 1;
+        }
+
         let time = self.context.navigator.time_since_launch().as_millis() as u32;
-        self.context.avm1.push(time);
+        self.context
+            .avm1
+            .push(time.wrapping_add(*self.context.time_offset));
         Ok(FrameControl::Continue)
     }
 

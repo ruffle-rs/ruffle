@@ -141,6 +141,12 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// A tracker for the current keyboard focused element
     pub focus_tracker: FocusTracker<'gc>,
+
+    /// How many times getTimer() was called so far. Used to detect busy-loops.
+    pub times_get_time_called: u32,
+
+    /// This frame's current fake time offset, used to pretend passage of time in time functions
+    pub time_offset: &'a mut u32,
 }
 
 unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context> {
@@ -219,6 +225,8 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             update_start: self.update_start,
             max_execution_duration: self.max_execution_duration,
             focus_tracker: self.focus_tracker,
+            times_get_time_called: self.times_get_time_called,
+            time_offset: self.time_offset,
         }
     }
 }
