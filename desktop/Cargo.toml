@@ -16,7 +16,7 @@ generational-arena = "0.2.8"
 image = "0.23.12"
 jpeg-decoder = "0.1.20"
 log = "0.4"
-lyon = "0.16.2"
+lyon = "0.17.1"
 dasp = {version = "0.11.0", git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = ["interpolate", "interpolate-linear", "signal"]}
 winit = "0.24.0"
 webbrowser = "0.5.5"
