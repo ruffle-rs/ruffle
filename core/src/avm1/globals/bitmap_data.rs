@@ -8,7 +8,7 @@ use crate::avm1::{Object, TObject, Value};
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use enumset::EnumSet;
-use gc_arena::MutationContext;
+use gc_arena::{GcCell, MutationContext};
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -269,16 +269,30 @@ pub fn copy_channel<'gc>(
 
                 let src_bitmap_data = source_bitmap.bitmap_data();
 
-                bitmap_data
-                    .bitmap_data()
-                    .write(activation.context.gc_context)
-                    .copy_channel(
-                        (min_x, min_y),
-                        (src_min_x, src_min_y, src_max_x, src_max_y),
-                        &src_bitmap_data.read(),
-                        source_channel,
-                        dest_channel,
-                    );
+                if GcCell::ptr_eq(bitmap_data.bitmap_data(), src_bitmap_data) {
+                    let src_bitmap_data_clone = src_bitmap_data.read().clone();
+                    bitmap_data
+                        .bitmap_data()
+                        .write(activation.context.gc_context)
+                        .copy_channel(
+                            (min_x, min_y),
+                            (src_min_x, src_min_y, src_max_x, src_max_y),
+                            &src_bitmap_data_clone,
+                            source_channel,
+                            dest_channel,
+                        );
+                } else {
+                    bitmap_data
+                        .bitmap_data()
+                        .write(activation.context.gc_context)
+                        .copy_channel(
+                            (min_x, min_y),
+                            (src_min_x, src_min_y, src_max_x, src_max_y),
+                            &src_bitmap_data.read(),
+                            source_channel,
+                            dest_channel,
+                        );
+                }
             }
 
             return Ok(Value::Undefined);
