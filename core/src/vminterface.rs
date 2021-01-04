@@ -54,11 +54,11 @@ impl Instantiator {
     }
 }
 
-impl Into<Option<AvmType>> for Instantiator {
-    fn into(self) -> Option<AvmType> {
-        match self {
-            Self::Avm1 => Some(AvmType::Avm1),
-            Self::Avm2 => Some(AvmType::Avm2),
+impl From<Instantiator> for Option<AvmType> {
+    fn from(instantiator: Instantiator) -> Option<AvmType> {
+        match instantiator {
+            Instantiator::Avm1 => Some(AvmType::Avm1),
+            Instantiator::Avm2 => Some(AvmType::Avm2),
             _ => None,
         }
     }
