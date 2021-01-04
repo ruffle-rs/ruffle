@@ -80,8 +80,8 @@ impl From<f64> for Degrees {
     }
 }
 
-impl Into<f64> for Degrees {
-    fn into(self) -> f64 {
-        self.0
+impl From<Degrees> for f64 {
+    fn from(degrees: Degrees) -> Self {
+        degrees.0
     }
 }

@@ -22,12 +22,12 @@ pub enum EventPhase {
     Bubbling,
 }
 
-impl Into<u32> for EventPhase {
-    fn into(self) -> u32 {
-        match self {
-            Self::Capturing => 1,
-            Self::AtTarget => 2,
-            Self::Bubbling => 3,
+impl From<EventPhase> for u32 {
+    fn from(event: EventPhase) -> u32 {
+        match event {
+            EventPhase::Capturing => 1,
+            EventPhase::AtTarget => 2,
+            EventPhase::Bubbling => 3,
         }
     }
 }
