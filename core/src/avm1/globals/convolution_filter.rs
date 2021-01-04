@@ -13,15 +13,15 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    set_matrix_x(activation, this, args.get(0..1).unwrap_or(&[]))?;
-    set_matrix_y(activation, this, args.get(1..2).unwrap_or(&[]))?;
-    set_matrix(activation, this, args.get(2..3).unwrap_or(&[]))?;
-    set_divisor(activation, this, args.get(3..4).unwrap_or(&[]))?;
-    set_bias(activation, this, args.get(4..5).unwrap_or(&[]))?;
-    set_preserve_alpha(activation, this, args.get(5..6).unwrap_or(&[]))?;
-    set_clamp(activation, this, args.get(6..7).unwrap_or(&[]))?;
-    set_color(activation, this, args.get(7..8).unwrap_or(&[]))?;
-    set_alpha(activation, this, args.get(8..9).unwrap_or(&[]))?;
+    set_matrix_x(activation, this, args.get(0..1).unwrap_or_default())?;
+    set_matrix_y(activation, this, args.get(1..2).unwrap_or_default())?;
+    set_matrix(activation, this, args.get(2..3).unwrap_or_default())?;
+    set_divisor(activation, this, args.get(3..4).unwrap_or_default())?;
+    set_bias(activation, this, args.get(4..5).unwrap_or_default())?;
+    set_preserve_alpha(activation, this, args.get(5..6).unwrap_or_default())?;
+    set_clamp(activation, this, args.get(6..7).unwrap_or_default())?;
+    set_color(activation, this, args.get(7..8).unwrap_or_default())?;
+    set_alpha(activation, this, args.get(8..9).unwrap_or_default())?;
 
     Ok(Value::Undefined)
 }
