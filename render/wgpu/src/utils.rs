@@ -77,17 +77,7 @@ pub fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> 
     while let Some(cmd) = cmds.next() {
         match cmd {
             DrawCommand::MoveTo { x, y } => {
-                // Lyon (incorrectly?) will make a 0-length line segment if you have consecutive MoveTos.
-                // Filter out consecutive MoveTos, only committing the last one.
-                let mut cursor_pos = (x, y);
-                while let Some(DrawCommand::MoveTo { x, y }) = cmds.peek() {
-                    cursor_pos = (*x, *y);
-                    cmds.next();
-                }
-
-                if cmds.peek().is_some() {
-                    builder.move_to(point(cursor_pos.0, cursor_pos.1));
-                }
+                builder.begin(point(x, y));
             }
             DrawCommand::LineTo { x, y } => {
                 builder.line_to(point(x, y));
@@ -96,10 +86,16 @@ pub fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> 
                 builder.quadratic_bezier_to(point(x1, y1), point(x2, y2));
             }
         }
+
+        if let Some(DrawCommand::MoveTo { .. }) = cmds.peek() {
+            builder.end(false);
+        }
     }
 
     if is_closed {
         builder.close();
+    } else {
+        builder.end(false);
     }
 
     builder.build()
