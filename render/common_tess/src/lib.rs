@@ -2,7 +2,7 @@ use lyon::path::Path;
 use lyon::tessellation::{
     self,
     geometry_builder::{BuffersBuilder, FillVertexConstructor, VertexBuffers},
-    FillAttributes, FillTessellator, StrokeAttributes, StrokeTessellator, StrokeVertexConstructor,
+    FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
 use ruffle_core::backend::render::{
@@ -412,17 +412,7 @@ fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> Path
     while let Some(cmd) = cmds.next() {
         match cmd {
             DrawCommand::MoveTo { x, y } => {
-                // Lyon (incorrectly?) will make a 0-length line segment if you have consecutive MoveTos.
-                // Filter out consecutive MoveTos, only committing the last one.
-                let mut cursor_pos = (x, y);
-                while let Some(DrawCommand::MoveTo { x, y }) = cmds.peek() {
-                    cursor_pos = (*x, *y);
-                    cmds.next();
-                }
-
-                if cmds.peek().is_some() {
-                    builder.move_to(point(cursor_pos.0, cursor_pos.1));
-                }
+                builder.begin(point(x, y));
             }
             DrawCommand::LineTo { x, y } => {
                 builder.line_to(point(x, y));
@@ -431,10 +421,16 @@ fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> Path
                 builder.quadratic_bezier_to(point(x1, y1), point(x2, y2));
             }
         }
+
+        if let Some(DrawCommand::MoveTo { .. }) = cmds.peek() {
+            builder.end(false);
+        }
     }
 
     if is_closed {
         builder.close();
+    } else {
+        builder.end(false);
     }
 
     builder.build()
@@ -445,18 +441,18 @@ struct RuffleVertexCtor {
 }
 
 impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, position: lyon::math::Point, _: FillAttributes) -> Vertex {
+    fn new_vertex(&mut self, vertex: FillVertex) -> Vertex {
         Vertex {
-            position: [position.x, position.y],
+            position: [vertex.position().x, vertex.position().y],
             color: self.color,
         }
     }
 }
 
 impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, position: lyon::math::Point, _: StrokeAttributes) -> Vertex {
+    fn new_vertex(&mut self, vertex: StrokeVertex) -> Vertex {
         Vertex {
-            position: [position.x, position.y],
+            position: [vertex.position().x, vertex.position().y],
             color: self.color,
         }
     }

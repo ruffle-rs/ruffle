@@ -1,7 +1,7 @@
 use lyon::tessellation::{
     self,
     geometry_builder::{BuffersBuilder, FillVertexConstructor, VertexBuffers},
-    FillAttributes, FillTessellator, StrokeAttributes, StrokeTessellator, StrokeVertexConstructor,
+    FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
@@ -1511,18 +1511,18 @@ struct RuffleVertexCtor {
 }
 
 impl FillVertexConstructor<GPUVertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, position: lyon::math::Point, _: FillAttributes) -> GPUVertex {
+    fn new_vertex(&mut self, vertex: FillVertex) -> GPUVertex {
         GPUVertex {
-            position: [position.x, position.y],
+            position: [vertex.position().x, vertex.position().y],
             color: self.color,
         }
     }
 }
 
 impl StrokeVertexConstructor<GPUVertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, position: lyon::math::Point, _: StrokeAttributes) -> GPUVertex {
+    fn new_vertex(&mut self, vertex: StrokeVertex) -> GPUVertex {
         GPUVertex {
-            position: [position.x, position.y],
+            position: [vertex.position().x, vertex.position().y],
             color: self.color,
         }
     }
