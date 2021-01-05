@@ -95,6 +95,7 @@ pub struct SystemPrototypes<'gc> {
     pub scene: Object<'gc>,
     pub application_domain: Object<'gc>,
     pub event: Object<'gc>,
+    pub video: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -128,6 +129,7 @@ impl<'gc> SystemPrototypes<'gc> {
             scene: empty,
             application_domain: empty,
             event: empty,
+            video: empty,
         }
     }
 }
@@ -549,6 +551,21 @@ pub fn load_player_globals<'gc>(
         .scene = class(
         activation,
         flash::display::scene::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
+
+    // package `flash.media`
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
+        .video = class(
+        activation,
+        flash::media::video::create_class(mc),
         implicit_deriver,
         domain,
         script,
