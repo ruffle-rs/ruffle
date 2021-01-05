@@ -37,11 +37,11 @@ pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
         // It always errors, and doesn't return all the data if you use read_to_end,
         // but read_exact at least returns the data... why?
         // Does the decoder need to be flushed somehow?
-        let mut data = vec![0u8; swf_stream.uncompressed_length];
+        let mut data = vec![0u8; header.uncompressed_length.try_into().unwrap()];
         let _ = reader.get_mut().read_exact(&mut data);
         data
     } else {
-        let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
+        let mut data = Vec::with_capacity(header.uncompressed_length.try_into().unwrap());
         if let Err(e) = reader.get_mut().read_to_end(&mut data) {
             log::error!("Error decompressing SWF, may be corrupt: {}", e);
         }
@@ -57,7 +57,7 @@ pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
     if let Err(e) = reader.get_mut().read_to_end(&mut data) {
         log::warn!("Error decompressing SWF stream, may be corrupt: {}", e);
     }
-    if data.len() != swf_stream.uncompressed_length {
+    if data.len() != header.uncompressed_length.try_into().unwrap() {
         log::warn!("SWF length doesn't match header, may be corrupt");
     }
     let mut reader = Reader::new(&data[..], version);
@@ -84,10 +84,7 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
     // Read SWF header.
     let compression = Reader::read_compression_type(&mut input)?;
     let version = input.read_u8()?;
-
-    // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
-    // subtract it here.
-    let uncompressed_length = input.read_u32::<LittleEndian>()? - 8;
+    let uncompressed_length = input.read_u32::<LittleEndian>()?;
 
     // Now the SWF switches to a compressed stream.
     let decompressed_input: Box<dyn Read> = match compression {
@@ -108,7 +105,9 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
                     version
                 );
             }
-            make_lzma_reader(input, uncompressed_length)?
+            // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
+            // subtract it here.
+            make_lzma_reader(input, uncompressed_length - 8)?
         }
     };
 
@@ -117,17 +116,14 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
     let frame_rate = reader.read_fixed8()?;
     let num_frames = reader.read_u16()?;
     let header = Header {
-        version,
         compression,
+        version,
+        uncompressed_length,
         stage_size,
         frame_rate,
         num_frames,
     };
-    Ok(SwfStream {
-        header,
-        uncompressed_length: uncompressed_length.try_into().unwrap(),
-        reader,
-    })
+    Ok(SwfStream { header, reader })
 }
 
 #[cfg(feature = "flate2")]

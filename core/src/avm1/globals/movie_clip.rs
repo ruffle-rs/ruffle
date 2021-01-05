@@ -794,7 +794,10 @@ fn get_bytes_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok((movie_clip.movie().unwrap().data().len() + 20).into())
+    Ok(movie_clip
+        .movie()
+        .map(|mv| (mv.header().uncompressed_length).into())
+        .unwrap_or(Value::Undefined))
 }
 
 fn get_bytes_total<'gc>(
@@ -802,7 +805,10 @@ fn get_bytes_total<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok((movie_clip.movie().unwrap().data().len() + 20).into())
+    Ok(movie_clip
+        .movie()
+        .map(|mv| (mv.header().uncompressed_length).into())
+        .unwrap_or(Value::Undefined))
 }
 
 fn get_next_highest_depth<'gc>(

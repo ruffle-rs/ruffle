@@ -1,6 +1,7 @@
 use crate::backend::navigator::url_from_relative_path;
 use crate::property_map::PropertyMap;
 use gc_arena::Collect;
+use std::convert::TryInto;
 use std::path::Path;
 use std::sync::Arc;
 use swf::{Header, TagCode};
@@ -32,8 +33,9 @@ impl SwfMovie {
     pub fn empty(swf_version: u8) -> Self {
         Self {
             header: Header {
-                version: swf_version,
                 compression: swf::Compression::None,
+                version: swf_version,
+                uncompressed_length: 0,
                 stage_size: swf::Rectangle::default(),
                 frame_rate: 1.0,
                 num_frames: 0,
@@ -80,7 +82,7 @@ impl SwfMovie {
         // Sometimes SWFs will have an incorrectly compressed stream,
         // but will otherwise decompress fine up to the End tag.
         // So just warn on this case and try to continue gracefully.
-        let mut data = Vec::with_capacity(swf_stream.uncompressed_length);
+        let mut data = Vec::with_capacity(header.uncompressed_length.try_into().unwrap());
         if let Err(e) = reader.get_mut().read_to_end(&mut data) {
             return Err(format!("Error decompressing SWF, may be corrupt: {}", e).into());
         }

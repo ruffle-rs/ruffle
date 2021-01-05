@@ -3,8 +3,9 @@ use swf::*;
 fn main() {
     let swf = Swf {
         header: Header {
-            version: 6,
             compression: Compression::Zlib,
+            version: 6,
+            uncompressed_length: 29,
             stage_size: Rectangle {
                 x_min: Twips::from_pixels(0.0),
                 x_max: Twips::from_pixels(400.0),
