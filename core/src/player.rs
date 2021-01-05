@@ -8,9 +8,7 @@ use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::locale::LocaleBackend;
 use crate::backend::navigator::{NavigatorBackend, RequestOptions};
 use crate::backend::storage::StorageBackend;
-use crate::backend::{
-    audio::AudioBackend, log::LogBackend, render::Letterbox, render::RenderBackend, ui::UiBackend,
-};
+use crate::backend::{audio::AudioBackend, log::LogBackend, render::RenderBackend, ui::UiBackend};
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{EditText, MorphShape, MovieClip};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
@@ -187,7 +185,6 @@ pub struct Player {
     viewport_height: u32,
     movie_width: u32,
     movie_height: u32,
-    letterbox: Letterbox,
 
     mouse_pos: (Twips, Twips),
     is_mouse_down: bool,
@@ -285,7 +282,6 @@ impl Player {
             movie_height,
             viewport_width: movie_width,
             viewport_height: movie_height,
-            letterbox: Letterbox::None,
 
             mouse_pos: (Twips::new(0), Twips::new(0)),
             is_mouse_down: false,
@@ -908,7 +904,7 @@ impl Player {
         });
         transform_stack.pop();
 
-        self.renderer.draw_letterbox(self.letterbox);
+        self.draw_letterbox();
         self.renderer.end_frame();
         self.needs_render = false;
     }
@@ -1070,7 +1066,7 @@ impl Player {
     }
 
     fn build_matrices(&mut self) {
-        // Create  view matrix to scale stage into viewport area.
+        // Create view matrix to scale stage into viewport area.
         let (movie_width, movie_height) = (self.movie_width as f32, self.movie_height as f32);
         let (viewport_width, viewport_height) =
             (self.viewport_width as f32, self.viewport_height as f32);
@@ -1093,17 +1089,6 @@ impl Player {
         };
         self.inverse_view_matrix = self.view_matrix;
         self.inverse_view_matrix.invert();
-
-        // Calculate letterbox dimensions.
-        // TODO: Letterbox should be an option; the original Flash Player defaults to showing content
-        // in the extra margins.
-        self.letterbox = if margin_width > 0.0 {
-            Letterbox::Pillarbox(margin_width)
-        } else if margin_height > 0.0 {
-            Letterbox::Letterbox(margin_height)
-        } else {
-            Letterbox::None
-        };
     }
 
     /// Runs the closure `f` with an `UpdateContext`.
@@ -1329,6 +1314,58 @@ impl Player {
 
     pub fn set_max_execution_duration(&mut self, max_execution_duration: Duration) {
         self.max_execution_duration = max_execution_duration
+    }
+
+    fn draw_letterbox(&mut self) {
+        let black = Color::from_rgb(0, 255);
+        let viewport_width = self.viewport_width as f32;
+        let viewport_height = self.viewport_height as f32;
+
+        let margin_width = self.view_matrix.tx.to_pixels() as f32;
+        let margin_height = self.view_matrix.ty.to_pixels() as f32;
+        if margin_height > 0.0 {
+            self.renderer.draw_rect(
+                black.clone(),
+                &Matrix::create_box(
+                    viewport_width,
+                    margin_height,
+                    0.0,
+                    Twips::default(),
+                    Twips::default(),
+                ),
+            );
+            self.renderer.draw_rect(
+                black,
+                &Matrix::create_box(
+                    viewport_width,
+                    margin_height,
+                    0.0,
+                    Twips::default(),
+                    Twips::from_pixels((viewport_height - margin_height) as f64),
+                ),
+            );
+        } else if margin_width > 0.0 {
+            self.renderer.draw_rect(
+                black.clone(),
+                &Matrix::create_box(
+                    margin_width,
+                    viewport_height,
+                    0.0,
+                    Twips::default(),
+                    Twips::default(),
+                ),
+            );
+            self.renderer.draw_rect(
+                black,
+                &Matrix::create_box(
+                    margin_width,
+                    viewport_height,
+                    0.0,
+                    Twips::from_pixels((viewport_width - margin_width) as f64),
+                    Twips::default(),
+                ),
+            );
+        }
     }
 }
 
