@@ -1,6 +1,7 @@
 //! Video player display object
 
 use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
+use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
 use crate::backend::render::BitmapHandle;
 use crate::backend::video::{EncodedFrame, VideoStreamHandle};
 use crate::bounding_box::BoundingBox;
@@ -215,7 +216,13 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             let library = context.library.library_for_movie_mut(movie);
             let vm_type = library.avm_type();
             if vm_type == AvmType::Avm2 {
-                //TODO: AVM2 me, cap'n.
+                let object: Avm2Object<'_> = Avm2StageObject::for_display_object(
+                    context.gc_context,
+                    display_object,
+                    context.avm2.prototypes().video,
+                )
+                .into();
+                write.object = Some(object.into());
             } else if vm_type == AvmType::Avm1 {
                 let object: Avm1Object<'_> = Avm1StageObject::for_display_object(
                     context.gc_context,
