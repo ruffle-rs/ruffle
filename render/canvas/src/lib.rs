@@ -1,6 +1,6 @@
 use ruffle_core::backend::render::{
     swf::{self, CharacterId, GradientInterpolation, GradientSpread},
-    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, JpegTagFormat, Letterbox, MovieLibrary,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, JpegTagFormat, MovieLibrary,
     RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
@@ -638,35 +638,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.context.fill_rect(0.0, 0.0, 1.0, 1.0);
 
         self.clear_color_filter();
-    }
-
-    fn draw_letterbox(&mut self, letterbox: Letterbox) {
-        self.context.reset_transform().unwrap();
-        self.context.set_fill_style(&"black".into());
-
-        match letterbox {
-            Letterbox::None => (),
-            Letterbox::Letterbox(margin_height) => {
-                self.context
-                    .fill_rect(0.0, 0.0, self.viewport_width.into(), margin_height.into());
-                self.context.fill_rect(
-                    0.0,
-                    (self.viewport_height as f32 - margin_height).into(),
-                    self.viewport_width.into(),
-                    self.viewport_height.into(),
-                );
-            }
-            Letterbox::Pillarbox(margin_width) => {
-                self.context
-                    .fill_rect(0.0, 0.0, margin_width.into(), self.viewport_height.into());
-                self.context.fill_rect(
-                    (self.viewport_width as f32 - margin_width).into(),
-                    0.0,
-                    margin_width.into(),
-                    self.viewport_height.into(),
-                );
-            }
-        }
     }
 
     fn push_mask(&mut self) {

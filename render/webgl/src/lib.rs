@@ -1,6 +1,6 @@
 use ruffle_core::backend::render::swf;
 use ruffle_core::backend::render::{
-    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox, MovieLibrary,
+    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary,
     RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
@@ -868,7 +868,9 @@ impl RenderBackend for WebGlRenderBackend {
     fn end_frame(&mut self) {
         // Resolve MSAA, if we're using it (WebGL2).
         if let (Some(ref gl), Some(ref msaa_buffers)) = (&self.gl2, &self.msaa_buffers) {
+            // Disable any remaining masking state.
             self.gl.disable(Gl::STENCIL_TEST);
+            self.gl.color_mask(true, true, true, true);
 
             // Resolve the MSAA in the render buffer.
             gl.bind_framebuffer(
@@ -1293,50 +1295,6 @@ impl RenderBackend for WebGlRenderBackend {
             Gl::UNSIGNED_INT,
             0,
         );
-    }
-
-    fn draw_letterbox(&mut self, letterbox: Letterbox) {
-        self.set_stencil_state();
-
-        self.gl.clear_color(0.0, 0.0, 0.0, 0.0);
-
-        match letterbox {
-            Letterbox::None => (),
-            Letterbox::Letterbox(margin_height) => {
-                let margin_height = f32::ceil(
-                    margin_height * self.renderbuffer_height as f32 / self.view_height as f32,
-                ) as i32;
-                self.gl.enable(Gl::SCISSOR_TEST);
-                self.gl
-                    .scissor(0, 0, self.renderbuffer_width, margin_height);
-                self.gl.clear(Gl::COLOR_BUFFER_BIT);
-                self.gl.scissor(
-                    0,
-                    self.renderbuffer_height - margin_height,
-                    self.renderbuffer_width,
-                    margin_height,
-                );
-                self.gl.clear(Gl::COLOR_BUFFER_BIT);
-                self.gl.disable(Gl::SCISSOR_TEST);
-            }
-            Letterbox::Pillarbox(margin_width) => {
-                let margin_width = f32::ceil(
-                    margin_width * self.renderbuffer_width as f32 / self.view_width as f32,
-                ) as i32;
-                self.gl.enable(Gl::SCISSOR_TEST);
-                self.gl
-                    .scissor(0, 0, margin_width, self.renderbuffer_height);
-                self.gl.clear(Gl::COLOR_BUFFER_BIT);
-                self.gl.scissor(
-                    self.renderbuffer_width - margin_width,
-                    0,
-                    margin_width,
-                    self.renderbuffer_height,
-                );
-                self.gl.clear(Gl::COLOR_BUFFER_BIT);
-                self.gl.disable(Gl::SCISSOR_TEST);
-            }
-        }
     }
 
     fn push_mask(&mut self) {

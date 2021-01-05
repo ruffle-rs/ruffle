@@ -41,7 +41,6 @@ pub trait RenderBackend: Downcast {
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
     fn draw_rect(&mut self, color: Color, matrix: &Matrix);
     fn end_frame(&mut self);
-    fn draw_letterbox(&mut self, letterbox: Letterbox);
     fn push_mask(&mut self);
     fn activate_mask(&mut self);
     fn deactivate_mask(&mut self);
@@ -79,13 +78,6 @@ pub struct BitmapInfo {
     pub handle: BitmapHandle,
     pub width: u16,
     pub height: u16,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum Letterbox {
-    None,
-    Letterbox(f32),
-    Pillarbox(f32),
 }
 
 pub struct NullRenderer;
@@ -165,7 +157,6 @@ impl RenderBackend for NullRenderer {
     fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform, _smoothing: bool) {}
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
     fn draw_rect(&mut self, _color: Color, _matrix: &Matrix) {}
-    fn draw_letterbox(&mut self, _letterbox: Letterbox) {}
     fn push_mask(&mut self) {}
     fn activate_mask(&mut self) {}
     fn deactivate_mask(&mut self) {}

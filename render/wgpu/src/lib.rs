@@ -5,7 +5,7 @@ use lyon::tessellation::{
 };
 use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
-    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, Letterbox, MovieLibrary,
+    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary,
     RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::{DistilledShape, DrawPath};
@@ -43,7 +43,7 @@ pub mod clap;
 
 use crate::bitmaps::BitmapSamplers;
 use crate::globals::Globals;
-use ruffle_core::swf::{Matrix, Twips};
+use ruffle_core::swf::Matrix;
 use std::collections::HashMap;
 use std::path::Path;
 pub use wgpu;
@@ -1245,76 +1245,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 &self.descriptors.queue,
                 vec![draw_encoder.finish()],
             );
-        }
-    }
-
-    fn draw_letterbox(&mut self, letterbox: Letterbox) {
-        match letterbox {
-            Letterbox::None => {}
-            Letterbox::Letterbox(margin) => {
-                self.draw_rect(
-                    Color {
-                        r: 0,
-                        g: 0,
-                        b: 0,
-                        a: 255,
-                    },
-                    &Matrix::create_box(
-                        self.viewport_width,
-                        margin,
-                        0.0,
-                        Twips::zero(),
-                        Twips::zero(),
-                    ),
-                );
-                self.draw_rect(
-                    Color {
-                        r: 0,
-                        g: 0,
-                        b: 0,
-                        a: 255,
-                    },
-                    &Matrix::create_box(
-                        self.viewport_width,
-                        margin,
-                        0.0,
-                        Twips::zero(),
-                        Twips::from_pixels((self.viewport_height - margin) as f64),
-                    ),
-                );
-            }
-            Letterbox::Pillarbox(margin) => {
-                self.draw_rect(
-                    Color {
-                        r: 0,
-                        g: 0,
-                        b: 0,
-                        a: 255,
-                    },
-                    &Matrix::create_box(
-                        margin,
-                        self.viewport_height,
-                        0.0,
-                        Twips::zero(),
-                        Twips::zero(),
-                    ),
-                );
-                self.draw_rect(
-                    Color {
-                        r: 0,
-                        g: 0,
-                        b: 0,
-                        a: 255,
-                    },
-                    &Matrix::create_box(
-                        margin,
-                        self.viewport_height,
-                        0.0,
-                        Twips::from_pixels((self.viewport_width - margin) as f64),
-                        Twips::zero(),
-                    ),
-                );
-            }
         }
     }
 
