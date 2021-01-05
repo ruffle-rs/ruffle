@@ -20,8 +20,9 @@ use std::io::{self, Write};
 ///
 /// let swf = Swf {
 ///     header: Header {
-///         version: 6,
 ///         compression: Compression::Zlib,
+///         version: 6,
+///         uncompressed_length: 1024,
 ///         stage_size: Rectangle { x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0), y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0) },
 ///         frame_rate: 60.0,
 ///         num_frames: 1,
@@ -2760,8 +2761,9 @@ mod tests {
     fn new_swf() -> Swf {
         Swf {
             header: Header {
-                version: 13,
                 compression: Compression::Zlib,
+                version: 13,
+                uncompressed_length: 1024,
                 stage_size: Rectangle {
                     x_min: Twips::from_pixels(0.0),
                     x_max: Twips::from_pixels(640.0),
