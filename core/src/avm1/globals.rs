@@ -33,6 +33,7 @@ pub(crate) mod error;
 mod external_interface;
 mod function;
 mod glow_filter;
+pub mod gradient_bevel_filter;
 mod key;
 mod load_vars;
 mod math;
@@ -500,6 +501,8 @@ pub struct SystemPrototypes<'gc> {
     pub displacement_map_filter_constructor: Object<'gc>,
     pub convolution_filter: Object<'gc>,
     pub convolution_filter_constructor: Object<'gc>,
+    pub gradient_bevel_filter: Object<'gc>,
+    pub gradient_bevel_filter_constructor: Object<'gc>,
     pub date: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub bitmap_data_constructor: Object<'gc>,
@@ -768,6 +771,15 @@ pub fn create_globals<'gc>(
         convolution_filter_proto,
     );
 
+    let gradient_bevel_filter_proto =
+        gradient_bevel_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
+    let gradient_bevel_filter = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(gradient_bevel_filter::constructor),
+        Some(function_proto),
+        gradient_bevel_filter_proto,
+    );
+
     filters.define_value(
         gc_context,
         "BitmapFilter",
@@ -814,6 +826,13 @@ pub fn create_globals<'gc>(
         gc_context,
         "ConvolutionFilter",
         convolution_filter.into(),
+            EnumSet::empty(),
+    );
+
+    filters.define_value(
+        gc_context,
+        "GradientBevelFilter",
+        gradient_bevel_filter.into(),
         EnumSet::empty(),
     );
 
@@ -1136,6 +1155,8 @@ pub fn create_globals<'gc>(
             displacement_map_filter_constructor: displacement_map_filter,
             convolution_filter: convolution_filter_proto,
             convolution_filter_constructor: convolution_filter,
+            gradient_bevel_filter: gradient_bevel_filter_proto,
+            gradient_bevel_filter_constructor: gradient_bevel_filter,
             date: date_proto,
             bitmap_data: bitmap_data_proto,
             bitmap_data_constructor: bitmap_data,

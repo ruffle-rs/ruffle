@@ -13,12 +13,12 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    set_color(activation, this, args.get(0..1).unwrap_or(&[]))?;
-    set_alpha(activation, this, args.get(1..2).unwrap_or(&[]))?;
-    set_blur_x(activation, this, args.get(2..3).unwrap_or(&[]))?;
-    set_blur_y(activation, this, args.get(3..4).unwrap_or(&[]))?;
-    set_strength(activation, this, args.get(4..5).unwrap_or(&[]))?;
-    set_quality(activation, this, args.get(5..6).unwrap_or(&[]))?;
+    set_color(activation, this, args.get(0..1).unwrap_or_default())?;
+    set_alpha(activation, this, args.get(1..2).unwrap_or_default())?;
+    set_blur_x(activation, this, args.get(2..3).unwrap_or_default())?;
+    set_blur_y(activation, this, args.get(3..4).unwrap_or_default())?;
+    set_strength(activation, this, args.get(4..5).unwrap_or_default())?;
+    set_quality(activation, this, args.get(5..6).unwrap_or_default())?;
 
     Ok(Value::Undefined)
 }

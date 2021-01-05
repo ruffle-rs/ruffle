@@ -13,15 +13,15 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    set_map_bitmap(activation, this, args.get(0..1).unwrap_or(&[]))?;
-    set_map_point(activation, this, args.get(1..2).unwrap_or(&[]))?;
-    set_component_x(activation, this, args.get(2..3).unwrap_or(&[]))?;
-    set_component_y(activation, this, args.get(3..4).unwrap_or(&[]))?;
-    set_scale_x(activation, this, args.get(4..5).unwrap_or(&[]))?;
-    set_scale_y(activation, this, args.get(5..6).unwrap_or(&[]))?;
-    set_mode(activation, this, args.get(6..7).unwrap_or(&[]))?;
-    set_color(activation, this, args.get(7..8).unwrap_or(&[]))?;
-    set_alpha(activation, this, args.get(8..9).unwrap_or(&[]))?;
+    set_map_bitmap(activation, this, args.get(0..1).unwrap_or_default())?;
+    set_map_point(activation, this, args.get(1..2).unwrap_or_default())?;
+    set_component_x(activation, this, args.get(2..3).unwrap_or_default())?;
+    set_component_y(activation, this, args.get(3..4).unwrap_or_default())?;
+    set_scale_x(activation, this, args.get(4..5).unwrap_or_default())?;
+    set_scale_y(activation, this, args.get(5..6).unwrap_or_default())?;
+    set_mode(activation, this, args.get(6..7).unwrap_or_default())?;
+    set_color(activation, this, args.get(7..8).unwrap_or_default())?;
+    set_alpha(activation, this, args.get(8..9).unwrap_or_default())?;
 
     Ok(Value::Undefined)
 }
@@ -51,8 +51,6 @@ pub fn set_alpha<'gc>(
 
     if let Some(filter) = this.as_displacement_map_filter_object() {
         filter.set_alpha(activation.context.gc_context, alpha);
-
-        return Ok(filter.alpha().into());
     }
 
     Ok(Value::Undefined)
@@ -234,7 +232,7 @@ pub fn set_mode<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let component = args
+    let mode = args
         .get(0)
         .unwrap_or(&Value::String(AvmString::new(
             activation.context.gc_context,
@@ -243,7 +241,7 @@ pub fn set_mode<'gc>(
         .coerce_to_string(activation)?;
 
     if let Some(object) = this.as_displacement_map_filter_object() {
-        object.set_mode(activation.context.gc_context, component.as_str().into());
+        object.set_mode(activation.context.gc_context, mode.as_str().into());
     }
 
     Ok(Value::Undefined)
