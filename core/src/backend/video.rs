@@ -108,6 +108,9 @@ pub trait VideoBackend {
     /// `RenderBackend`. `VideoBackend` implementations are allowed to return
     /// an error if a drawable bitmap cannot be produced for the given
     /// renderer.
+    ///
+    /// Any previously returned bitmaps may be updated, invalidated, or
+    /// reclaimed by whatever means the decoder implementation chooses.
     fn decode_video_stream_frame(
         &mut self,
         stream: VideoStreamHandle,
