@@ -13,6 +13,7 @@ use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::blur_filter::BlurFilterObject;
 use crate::avm1::object::color_matrix_filter::ColorMatrixFilterObject;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
+use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
 use crate::avm1::object::date_object::DateObject;
 use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
 use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
@@ -36,6 +37,7 @@ pub mod bitmap_data;
 pub mod blur_filter;
 pub mod color_matrix_filter;
 pub mod color_transform_object;
+pub mod convolution_filter;
 mod custom_object;
 pub mod date_object;
 pub mod displacement_map_filter;
@@ -76,6 +78,7 @@ pub mod xml_object;
         DropShadowFilterObject(DropShadowFilterObject<'gc>),
         ColorMatrixFilterObject(ColorMatrixFilterObject<'gc>),
         DisplacementMapFilterObject(DisplacementMapFilterObject<'gc>),
+        ConvolutionFilterObject(ConvolutionFilterObject<'gc>),
         DateObject(DateObject<'gc>),
         BitmapData(BitmapDataObject<'gc>),
     }
@@ -481,6 +484,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `DisplacementMapFilterObject`, if it exists
     fn as_displacement_map_filter_object(&self) -> Option<DisplacementMapFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `ConvolutionFilterObject`, if it exists
+    fn as_convolution_filter_object(&self) -> Option<ConvolutionFilterObject<'gc>> {
         None
     }
 

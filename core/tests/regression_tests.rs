@@ -301,6 +301,7 @@ swf_tests! {
     (drop_shadow_filter, "avm1/drop_shadow_filter", 1),
     (color_matrix_filter, "avm1/color_matrix_filter", 1),
     (displacement_map_filter, "avm1/displacement_map_filter", 1),
+    (convolution_filter, "avm1/convolution_filter", 1),
     (bitmap_data, "avm1/bitmap_data", 1),
     (array_call_method, "avm1/array_call_method", 1),
     (as3_hello_world, "avm2/hello_world", 1),
