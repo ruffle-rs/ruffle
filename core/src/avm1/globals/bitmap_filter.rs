@@ -199,6 +199,35 @@ pub fn clone<'gc>(
                 clamp,
                 color,
                 alpha,
+            ])?;
+
+        return Ok(cloned.into());
+    }
+
+    if let Some(this) = this.as_gradient_bevel_filter_object() {
+        let proto = activation
+            .context
+            .avm1
+            .prototypes
+            .gradient_bevel_filter_constructor;
+
+        let distance = this.get("distance", activation)?;
+        let angle = this.get("angle", activation)?;
+        let colors = this.get("colors", activation)?;
+        let alphas = this.get("alphas", activation)?;
+        let ratios = this.get("ratios", activation)?;
+        let blur_x = this.get("blurX", activation)?;
+        let blur_y = this.get("blurY", activation)?;
+        let strength = this.get("strength", activation)?;
+        let quality = this.get("quality", activation)?;
+        let type_ = this.get("type", activation)?;
+        let knockout = this.get("knockout", activation)?;
+
+        let cloned = proto.construct(
+            activation,
+            &[
+                distance, angle, colors, alphas, ratios, blur_x, blur_y, strength, quality, type_,
+                knockout,
             ],
         )?;
 

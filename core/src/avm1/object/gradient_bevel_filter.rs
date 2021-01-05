@@ -5,120 +5,105 @@ use crate::impl_custom_object_without_set;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 use crate::avm1::activation::Activation;
+use crate::avm1::object::bevel_filter::BevelFilterType;
 use std::fmt;
 
-#[derive(Copy, Clone, Debug, Collect)]
-#[collect(no_drop)]
-pub enum BevelFilterType {
-    Inner,
-    Outer,
-    Full,
-}
-
-impl From<&str> for BevelFilterType {
-    fn from(value: &str) -> Self {
-        match value {
-            "inner" => BevelFilterType::Inner,
-            "outer" => BevelFilterType::Outer,
-            "full" => BevelFilterType::Full,
-            _ => BevelFilterType::Full,
-        }
-    }
-}
-
-impl From<BevelFilterType> for &str {
-    fn from(v: BevelFilterType) -> Self {
-        match v {
-            BevelFilterType::Inner => "inner",
-            BevelFilterType::Outer => "outer",
-            BevelFilterType::Full => "full",
-        }
-    }
-}
-
-/// A BevelFilter
+/// A GradientBevelFilter
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct BevelFilterObject<'gc>(GcCell<'gc, BevelFilterData<'gc>>);
+pub struct GradientBevelFilterObject<'gc>(GcCell<'gc, GradientBevelFilterData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct BevelFilterData<'gc> {
+pub struct GradientBevelFilterData<'gc> {
     /// The underlying script object.
     base: ScriptObject<'gc>,
 
+    alphas: Vec<f64>,
     angle: f64,
     blur_x: f64,
     blur_y: f64,
+    colors: Vec<u32>,
     distance: f64,
-    highlight_alpha: f64,
-    highlight_color: u32,
     knockout: bool,
     quality: i32,
-    shadow_alpha: f64,
-    shadow_color: u32,
+    ratios: Vec<u8>,
     strength: f64,
     type_: BevelFilterType,
 }
 
-impl fmt::Debug for BevelFilterObject<'_> {
+impl fmt::Debug for GradientBevelFilterObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let this = self.0.read();
-        f.debug_struct("BevelFilter")
+        f.debug_struct("GradientBevelFilter")
+            .field("alphas", &this.alphas)
             .field("angle", &this.angle)
             .field("blurX", &this.blur_x)
             .field("blurY", &this.blur_y)
+            .field("colors", &this.colors)
             .field("distance", &this.distance)
-            .field("highlightAlpha", &this.highlight_alpha)
-            .field("highlightColor", &this.highlight_color)
             .field("knockout", &this.knockout)
             .field("quality", &this.quality)
-            .field("shadowAlpha", &this.shadow_alpha)
+            .field("ratios", &this.ratios)
             .field("strength", &this.strength)
-            .field("type", &this.type_)
+            .field("type_", &this.type_)
             .finish()
     }
 }
 
-impl<'gc> BevelFilterObject<'gc> {
+impl<'gc> GradientBevelFilterObject<'gc> {
     add_field_accessors!(
         [set_angle, angle, angle, f64],
         [set_blur_x, blur_x, blur_x, f64],
         [set_blur_y, blur_y, blur_y, f64],
         [set_distance, distance, distance, f64],
-        [set_highlight_alpha, highlight_alpha, highlight_alpha, f64],
-        [set_highlight_color, highlight_color, highlight_color, u32],
         [set_knockout, knockout, knockout, bool],
         [set_quality, quality, quality, i32],
-        [set_shadow_alpha, shadow_alpha, shadow_alpha, f64],
-        [set_shadow_color, shadow_color, shadow_color, u32],
         [set_strength, strength, strength, f64],
-        [set_type, get_type, type_, BevelFilterType],
+        [set_type, type_, type_, BevelFilterType],
     );
 
+    //TODO: combine with above
+    add_field_accessors!(
+        [alphas, Vec<f64>, set => set_alphas],
+        [colors, Vec<u32>, set => set_colors],
+        [ratios, Vec<u8>, set => set_ratios],
+    );
+
+    pub fn alphas(&self) -> Vec<f64> {
+        self.0.read().alphas.clone()
+    }
+
+    pub fn colors(&self) -> Vec<u32> {
+        self.0.read().colors.clone()
+    }
+
+    pub fn ratios(&self) -> Vec<u8> {
+        self.0.read().ratios.clone()
+    }
+
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
-        BevelFilterObject(GcCell::allocate(
+        GradientBevelFilterObject(GcCell::allocate(
             gc_context,
-            BevelFilterData {
+            GradientBevelFilterData {
                 base: ScriptObject::object(gc_context, proto),
-                angle: 44.9999999772279,
-                blur_x: 4.0,
-                blur_y: 4.0,
-                distance: 4.0,
-                highlight_alpha: 1.0,
-                highlight_color: 0xFFFFFF,
+                alphas: vec![],
+                angle: 0.0,
+                blur_x: 0.0,
+                blur_y: 0.0,
+                colors: vec![],
+                distance: 0.0,
                 knockout: false,
-                quality: 1,
-                shadow_alpha: 1.0,
-                shadow_color: 0x000000,
-                strength: 1.0,
+                quality: 0,
+                ratios: vec![],
+                strength: 0.0,
                 type_: BevelFilterType::Inner,
             },
         ))
     }
 }
 
-impl<'gc> TObject<'gc> for BevelFilterObject<'gc> {
+impl<'gc> TObject<'gc> for GradientBevelFilterObject<'gc> {
     impl_custom_object_without_set!(base);
 
     fn set(
@@ -133,11 +118,11 @@ impl<'gc> TObject<'gc> for BevelFilterObject<'gc> {
             value,
             activation,
             (*self).into(),
-            Some(activation.context.avm1.prototypes.bevel_filter),
+            Some(activation.context.avm1.prototypes.gradient_bevel_filter),
         )
     }
 
-    fn as_bevel_filter_object(&self) -> Option<BevelFilterObject<'gc>> {
+    fn as_gradient_bevel_filter_object(&self) -> Option<GradientBevelFilterObject<'gc>> {
         Some(*self)
     }
 
@@ -146,9 +131,9 @@ impl<'gc> TObject<'gc> for BevelFilterObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(BevelFilterObject::empty_object(
+        Ok(GradientBevelFilterObject::empty_object(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.bevel_filter),
+            Some(activation.context.avm1.prototypes.gradient_bevel_filter),
         )
         .into())
     }

@@ -1,0 +1,188 @@
+// new GradientBevelFilter
+[object Object]
+// x.clone()
+[object Object]
+// x.clone() == x
+false
+// x.alphas
+
+// x.angle
+44.9999999772279
+// x.blurX
+4
+// x.blurY
+4
+// x.colors
+
+// x.distance
+4
+// x.knockout
+false
+// x.quality
+1
+// x.ratios
+
+// x.strength
+1
+// x.type
+inner
+// x.alphas
+
+// x.colors
+
+// x.ratios
+
+// x.alphas
+0
+// x.colors
+0
+// x.ratios
+0
+// x.alphas
+1
+// x.colors
+1
+// x.ratios
+0
+// x.alphas
+1
+// x.colors
+1
+// x.ratios
+0
+// x.alphas
+
+// x.colors
+
+// x.ratios
+
+// x.alphas
+1
+// x.colors
+65535
+// x.ratios
+1
+// x.alphas
+0.4
+// x.colors
+65535
+// x.ratios
+1
+// x.alphas
+0
+// x.colors
+65535
+// x.ratios
+1
+// x.alphas
+0.4
+// x.colors
+65535
+// x.ratios
+1
+// x.alphas
+0.4
+// x.colors
+65535
+// x.ratios
+1
+// x.alphas
+1
+// x.colors
+16777215
+// x.ratios
+255
+// x.alphas
+0
+// x.colors
+1
+// x.ratios
+0
+// x.alphas (after set to null)
+0.4
+// x.colors (after set to null)
+65535
+// x.ratios (after set to null)
+1
+// x.angle (after set to 1000)
+280
+// x.blurX (after set to 1000)
+255
+// x.blurY (after set to 1000)
+4
+// x.distance (after set to 1000)
+1000
+// x.quality (after set to 1000)
+15
+// x.strength (after set to 1000)
+255
+// x.type (after set to null)
+full
+// x.angle (after set to -1000)
+-280
+// x.blurX (after set to -1000)
+0
+// x.blurY (after set to -1000)
+4
+// x.distance (after set to -1000)
+-1000
+// x.quality (after set to -1000)
+0
+// x.strength (after set to -1000)
+0
+// x.angle (after set to 1.5)
+1.5
+// x.blurX (after set to 1.5)
+1.5
+// x.blurY (after set to 1.5)
+4
+// x.distance (after set to 1.5)
+1.5
+// x.quality (after set to 1.5)
+1
+// x.strength (after set to 1.5)
+0
+// oob_over.alphas
+
+// oob_over.angle
+280
+// oob_over.blurX
+255
+// oob_over.blurY
+255
+// oob_over.colors
+
+// oob_over.distance
+1000
+// oob_over.knockout
+false
+// oob_over.quality
+15
+// oob_over.ratios
+
+// oob_over.strength
+255
+// oob_over.type
+full
+// oob_under.alphas
+
+// oob_under.angle
+-280
+// oob_under.blurX
+0
+// oob_under.blurY
+0
+// oob_under.colors
+
+// oob_under.distance
+-1000
+// oob_under.knockout
+false
+// oob_under.quality
+0
+// oob_under.ratios
+
+// oob_under.strength
+0
+// oob_under.type
+full

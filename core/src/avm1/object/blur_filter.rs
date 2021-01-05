@@ -36,9 +36,9 @@ impl fmt::Debug for BlurFilterObject<'_> {
 
 impl<'gc> BlurFilterObject<'gc> {
     add_field_accessors!(
-        [set_blur_x, get_blur_x, blur_x, f64],
-        [set_blur_y, get_blur_y, blur_y, f64],
-        [set_quality, get_quality, quality, i32],
+        [set_blur_x, blur_x, blur_x, f64],
+        [set_blur_y, blur_y, blur_y, f64],
+        [set_quality, quality, quality, i32],
     );
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
