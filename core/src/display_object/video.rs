@@ -1,6 +1,6 @@
 //! Video player display object
 
-use crate::avm1::Object as Avm1Object;
+use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
 use crate::backend::render::BitmapHandle;
 use crate::backend::video::{EncodedFrame, VideoStreamHandle};
 use crate::bounding_box::BoundingBox;
@@ -10,7 +10,7 @@ use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::types::{Degrees, Percent};
-use crate::vminterface::Instantiator;
+use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::{Borrow, BorrowMut};
 use std::collections::BTreeMap;
@@ -40,6 +40,9 @@ pub struct VideoData<'gc> {
 
     /// The last decoded frame in the video stream.
     decoded_frame: Option<CollectWrapper<BitmapHandle>>,
+
+    /// AVM representation of this video player.
+    object: Option<AvmObject<'gc>>,
 }
 
 #[derive(Clone, Debug, Collect)]
@@ -83,6 +86,7 @@ impl<'gc> Video<'gc> {
                 source,
                 stream: None,
                 decoded_frame: None,
+                object: None,
             },
         ))
     }
@@ -176,15 +180,17 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        _display_object: DisplayObject<'gc>,
+        display_object: DisplayObject<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
         let mut write = self.0.write(context.gc_context);
 
-        let stream = match &*write.source.read() {
-            VideoSource::SWF { streamdef, .. } => {
+        let (stream, movie) = match &*write.source.read() {
+            VideoSource::SWF {
+                streamdef, movie, ..
+            } => {
                 let stream = context.video.register_video_stream(
                     streamdef.num_frames.into(),
                     (streamdef.width, streamdef.height),
@@ -199,11 +205,28 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                     return;
                 }
 
-                Some(CollectWrapper(stream.unwrap()))
+                (Some(CollectWrapper(stream.unwrap())), movie.clone())
             }
         };
 
         write.stream = stream;
+
+        if write.object.is_none() {
+            let library = context.library.library_for_movie_mut(movie);
+            let vm_type = library.avm_type();
+            if vm_type == AvmType::Avm2 {
+                //TODO: AVM2 me, cap'n.
+            } else if vm_type == AvmType::Avm1 {
+                let object: Avm1Object<'_> = Avm1StageObject::for_display_object(
+                    context.gc_context,
+                    display_object,
+                    Some(context.avm1.prototypes().video),
+                )
+                .into();
+                write.object = Some(object.into());
+            }
+        }
+
         drop(write);
 
         self.seek(context, 0);
