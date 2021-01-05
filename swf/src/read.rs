@@ -85,9 +85,7 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
     let compression = Reader::read_compression_type(&mut input)?;
     let version = input.read_u8()?;
 
-    // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
-    // subtract it here.
-    let uncompressed_length = input.read_u32::<LittleEndian>()? - 8;
+    let uncompressed_length = input.read_u32::<LittleEndian>()?;
 
     // Now the SWF switches to a compressed stream.
     let decompressed_input: Box<dyn Read> = match compression {
@@ -108,7 +106,9 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
                     version
                 );
             }
-            make_lzma_reader(input, uncompressed_length)?
+            // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
+            // subtract it here.
+            make_lzma_reader(input, uncompressed_length - 8)?
         }
     };
 

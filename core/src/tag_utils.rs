@@ -17,6 +17,9 @@ pub struct SwfMovie {
     /// The SWF header parsed from the data stream.
     header: Header,
 
+    /// The entire length of the uncompressed movie in bytes, including the header.
+    total_bytes: usize,
+
     /// Uncompressed SWF data.
     data: Vec<u8>,
 
@@ -38,6 +41,7 @@ impl SwfMovie {
                 frame_rate: 1.0,
                 num_frames: 0,
             },
+            total_bytes: 13,
             data: vec![],
             url: None,
             parameters: PropertyMap::new(),
@@ -52,6 +56,7 @@ impl SwfMovie {
     pub fn from_movie_and_subdata(&self, data: Vec<u8>, source: &SwfMovie) -> Self {
         Self {
             header: self.header.clone(),
+            total_bytes: self.total_bytes - self.data.len() + data.len(),
             data,
             url: source.url.clone(),
             parameters: source.parameters.clone(),
@@ -87,6 +92,7 @@ impl SwfMovie {
 
         Ok(Self {
             header,
+            total_bytes: swf_stream.uncompressed_length,
             data,
             url,
             parameters: PropertyMap::new(),
@@ -100,6 +106,10 @@ impl SwfMovie {
     /// Get the version of the SWF.
     pub fn version(&self) -> u8 {
         self.header.version
+    }
+
+    pub fn total_bytes(&self) -> usize {
+        self.total_bytes
     }
 
     pub fn data(&self) -> &[u8] {
