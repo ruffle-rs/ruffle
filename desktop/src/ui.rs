@@ -11,6 +11,11 @@ impl DesktopUiBackend {
 }
 
 impl UiBackend for DesktopUiBackend {
+    fn is_fullscreen(&self) -> bool {
+        // TODO: Return proper value when fullscreen implemented on desktop.
+        false
+    }
+
     fn message(&self, message: &str) {
         message_box_ok("Ruffle", message, MessageBoxIcon::Info)
     }

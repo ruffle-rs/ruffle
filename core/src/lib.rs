@@ -48,6 +48,6 @@ pub mod external;
 pub use chrono;
 pub use events::PlayerEvent;
 pub use indexmap;
-pub use player::Player;
+pub use player::{Letterbox, Player};
 pub use swf;
 pub use swf::Color;

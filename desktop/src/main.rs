@@ -16,7 +16,7 @@ use clap::Clap;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use ruffle_core::{
     backend::audio::{AudioBackend, NullAudioBackend},
-    Player,
+    Letterbox, Player,
 };
 use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::{Path, PathBuf};
@@ -235,13 +235,13 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         Box::new(NullLogBackend::new()),
         user_interface,
     )?;
-    player.lock().unwrap().set_root_movie(Arc::new(movie));
-    player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.
-
-    player
-        .lock()
-        .unwrap()
-        .set_viewport_dimensions(viewport_size.width, viewport_size.height);
+    {
+        let mut player = player.lock().unwrap();
+        player.set_root_movie(Arc::new(movie));
+        player.set_is_playing(true); // Desktop player will auto-play.
+        player.set_letterbox(Letterbox::On);
+        player.set_viewport_dimensions(viewport_size.width, viewport_size.height);
+    }
 
     let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
