@@ -210,6 +210,7 @@ swf_tests! {
     (loadmovienum, "avm1/loadmovienum", 2),
     (loadmovie_registerclass, "avm1/loadmovie_registerclass", 2),
     (loadmovie_method, "avm1/loadmovie_method", 2),
+    (loadmovie_fail, "avm1/loadmovie_fail", 1),
     (unloadmovie, "avm1/unloadmovie", 11),
     (unloadmovienum, "avm1/unloadmovienum", 11),
     (unloadmovie_method, "avm1/unloadmovie_method", 11),

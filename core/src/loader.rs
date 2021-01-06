@@ -153,7 +153,7 @@ impl<'gc> LoadManager<'gc> {
             self_handle: None,
             target_clip,
             target_broadcaster,
-            load_complete: false,
+            loader_status: LoaderStatus::Pending,
         };
         let handle = self.add_loader(loader);
 
@@ -258,6 +258,17 @@ impl<'gc> Default for LoadManager<'gc> {
     }
 }
 
+/// The completion status of a `Loader` loading a movie.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum LoaderStatus {
+    /// The movie hasn't been loaded yet.
+    Pending,
+    /// The movie loaded successfully.
+    Succeeded,
+    /// An error occurred while loading the movie.
+    Failed,
+}
+
 /// A struct that holds garbage-collected pointers for asynchronous code.
 pub enum Loader<'gc> {
     /// Loader that is loading the root movie of a player.
@@ -278,7 +289,7 @@ pub enum Loader<'gc> {
         /// into.
         target_broadcaster: Option<Object<'gc>>,
 
-        /// Indicates that the load has completed.
+        /// Indicates the completion status of this loader.
         ///
         /// This flag exists to prevent a situation in which loading a movie
         /// into a clip that has not yet fired its Load event causes the
@@ -286,7 +297,7 @@ pub enum Loader<'gc> {
         /// the movie has been replaced (and thus Load events can be trusted)
         /// or an error has occurred (in which case we don't care about the
         /// loader anymore).
-        load_complete: bool,
+        loader_status: LoaderStatus,
     },
 
     /// Loader that is loading form data into an AVM1 object scope.
@@ -536,10 +547,10 @@ impl<'gc> Loader<'gc> {
                             );
                         }
 
-                        if let Some(Loader::Movie { load_complete, .. }) =
+                        if let Some(Loader::Movie { loader_status, .. }) =
                             uc.load_manager.get_loader_mut(handle)
                         {
-                            *load_complete = true;
+                            *loader_status = LoaderStatus::Succeeded;
                         };
 
                         Ok(())
@@ -579,10 +590,10 @@ impl<'gc> Loader<'gc> {
                             );
                         }
 
-                        if let Some(Loader::Movie { load_complete, .. }) =
+                        if let Some(Loader::Movie { loader_status, .. }) =
                             uc.load_manager.get_loader_mut(handle)
                         {
-                            *load_complete = true;
+                            *loader_status = LoaderStatus::Failed;
                         };
 
                         Ok(())
@@ -704,35 +715,40 @@ impl<'gc> Loader<'gc> {
         queue: &mut ActionQueue<'gc>,
         _gc_context: MutationContext<'gc, '_>,
     ) -> bool {
-        let (clip, broadcaster, load_complete) = match self {
+        let (clip, broadcaster, loader_status) = match self {
             Loader::Movie {
                 target_clip,
                 target_broadcaster,
-                load_complete,
+                loader_status,
                 ..
-            } => (*target_clip, *target_broadcaster, *load_complete),
+            } => (*target_clip, *target_broadcaster, *loader_status),
             _ => return false,
         };
 
-        if DisplayObject::ptr_eq(loaded_clip, clip) && load_complete {
-            if let Some(broadcaster) = broadcaster {
-                queue.queue_actions(
-                    clip,
-                    ActionType::Method {
-                        object: broadcaster,
-                        name: "broadcastMessage",
-                        args: vec![
-                            "onLoadInit".into(),
-                            clip_object.map(|co| co.into()).unwrap_or(Value::Undefined),
-                        ],
-                    },
-                    false,
-                );
-            }
+        if !DisplayObject::ptr_eq(loaded_clip, clip) {
+            return false;
+        }
 
-            true
-        } else {
-            false
+        match loader_status {
+            LoaderStatus::Pending => false,
+            LoaderStatus::Failed => true,
+            LoaderStatus::Succeeded => {
+                if let Some(broadcaster) = broadcaster {
+                    queue.queue_actions(
+                        clip,
+                        ActionType::Method {
+                            object: broadcaster,
+                            name: "broadcastMessage",
+                            args: vec![
+                                "onLoadInit".into(),
+                                clip_object.map(|co| co.into()).unwrap_or(Value::Undefined),
+                            ],
+                        },
+                        false,
+                    );
+                }
+                true
+            }
         }
     }
 
