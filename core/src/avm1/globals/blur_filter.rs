@@ -26,7 +26,7 @@ pub fn blur_x<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_blur_filter_object() {
-        return Ok(filter.blur_x().into())
+        return Ok(filter.blur_x().into());
     }
 
     Ok(Value::Undefined)
@@ -56,7 +56,7 @@ pub fn get_blur_y<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_blur_filter_object() {
-        return Ok(filter.blur_y().into())
+        return Ok(filter.blur_y().into());
     }
 
     Ok(Value::Undefined)
@@ -86,7 +86,7 @@ pub fn get_quality<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_blur_filter_object() {
-        return Ok(filter.quality().into())
+        return Ok(filter.quality().into());
     }
 
     Ok(Value::Undefined)
