@@ -2895,7 +2895,10 @@ impl<'gc, 'a> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
-        *context.background_color = reader.read_rgb()?;
+        let background_color = reader.read_rgb()?;
+        if self.parent().is_none() {
+            *context.background_color = background_color;
+        }
         Ok(())
     }
 
