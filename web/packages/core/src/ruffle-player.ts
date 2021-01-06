@@ -303,7 +303,7 @@ export class RufflePlayer extends HTMLElement {
                         </div>
                         <div id="panic-footer">
                             <ul>
-                                <li><a href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-mime-type">View Ruffle Wiki</a></li>
+                                <li><a href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type">View Ruffle Wiki</a></li>
                             </ul>
                         </div>
                     </div>
@@ -331,11 +331,19 @@ export class RufflePlayer extends HTMLElement {
                     resolve();
                 }, 200);
             });
-            this.container.style.visibility = "visible";
+            this.container.style.visibility = "";
         }
 
-        const autoplay = config.autoplay ?? AutoPlay.Auto;
-        const unmuteVisibility = config.unmuteOverlay ?? UnmuteOverlay.Visible;
+        const autoplay = Object.values(Object(AutoPlay)).includes(
+            config.autoplay
+        )
+            ? config.autoplay
+            : AutoPlay.Auto;
+        const unmuteVisibility = Object.values(Object(UnmuteOverlay)).includes(
+            config.unmuteOverlay
+        )
+            ? config.unmuteOverlay
+            : UnmuteOverlay.Visible;
 
         if (
             autoplay == AutoPlay.On ||
@@ -353,7 +361,7 @@ export class RufflePlayer extends HTMLElement {
                         const style = (<ElementCSSInlineStyle>node).style;
                         style.visibility =
                             unmuteVisibility == UnmuteOverlay.Visible
-                                ? "visible"
+                                ? ""
                                 : "hidden";
                     }
                 });
@@ -768,7 +776,7 @@ export class RufflePlayer extends HTMLElement {
                 </div>
                 <div id="panic-footer">
                     <ul>
-                        <li><a href=${issueLink}>Report Bug</a></li>
+                        <li><a href="${issueLink}">Report Bug</a></li>
                         <li><a href="#" id="panic-view-details">View Error Details</a></li>
                     </ul>
                 </div>
