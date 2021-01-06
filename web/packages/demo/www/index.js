@@ -20,6 +20,11 @@ let localFileInput = document.getElementById("local-file");
 let animOptGroup = document.getElementById("anim-optgroup");
 let gamesOptGroup = document.getElementById("games-optgroup");
 
+// Default config used by the player.
+let config = {
+    letterbox: "on",
+};
+
 window.addEventListener("DOMContentLoaded", () => {
     ruffle = window.RufflePlayer.newest();
     player = ruffle.createPlayer();
@@ -97,16 +102,14 @@ function localFileSelected() {
     if (file) {
         let fileReader = new FileReader();
         fileReader.onload = () => {
-            player.load({ data: fileReader.result });
+            player.load({ data: fileReader.result, ...config });
         };
         fileReader.readAsArrayBuffer(file);
     }
 }
 
 function loadRemoteFile(url) {
-    fetch(url).then((response) => {
-        response.arrayBuffer().then((data) => player.load({ data }));
-    });
+    player.load({ url, ...config });
 }
 
 function replacePlayer() {
