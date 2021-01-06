@@ -28,8 +28,9 @@ use ruffle_core::external::{
 };
 use ruffle_core::property_map::PropertyMap;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::PlayerEvent;
+use ruffle_core::{Letterbox, PlayerEvent};
 use ruffle_web_common::JsResult;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Once;
 use std::sync::{Arc, Mutex};
@@ -109,6 +110,12 @@ struct JavascriptInterface {
     js_player: JavascriptPlayer,
 }
 
+#[derive(Default, Serialize, Deserialize)]
+pub struct Config {
+    #[serde(default)]
+    letterbox: Letterbox,
+}
+
 /// An opaque handle to a `RuffleInstance` inside the pool.
 ///
 /// This type is exported to JS, and is used to interact with the library.
@@ -124,6 +131,7 @@ impl Ruffle {
         js_player: JavascriptPlayer,
         allow_script_access: bool,
         upgrade_to_https: bool,
+        config: &JsValue,
     ) -> Result<Ruffle, JsValue> {
         if RUFFLE_GLOBAL_PANIC.is_completed() {
             // If an actual panic happened, then we can't trust the state it left us in.
@@ -131,8 +139,17 @@ impl Ruffle {
             return Err("Ruffle is panicking!".into());
         }
         set_panic_handler();
-        Ruffle::new_internal(parent, js_player, allow_script_access, upgrade_to_https)
-            .map_err(|_| "Error creating player".into())
+
+        let config: Config = config.into_serde().unwrap_or_default();
+
+        Ruffle::new_internal(
+            parent,
+            js_player,
+            allow_script_access,
+            upgrade_to_https,
+            config,
+        )
+        .map_err(|_| "Error creating player".into())
     }
 
     /// Stream an arbitrary movie file from (presumably) the Internet.
@@ -298,6 +315,7 @@ impl Ruffle {
         js_player: JavascriptPlayer,
         allow_script_access: bool,
         upgrade_to_https: bool,
+        config: Config,
     ) -> Result<Ruffle, Box<dyn Error>> {
         let _ = console_log::init_with_level(log::Level::Trace);
 
@@ -335,6 +353,7 @@ impl Ruffle {
             log,
             user_interface,
         )?;
+        core.lock().unwrap().set_letterbox(config.letterbox);
 
         // Create instance.
         let instance = RuffleInstance {

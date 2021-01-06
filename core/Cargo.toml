@@ -35,6 +35,7 @@ num-traits = "0.2"
 instant = "0.1"
 encoding_rs = "0.8.26"
 rand = { version = "0.8.1", features = ["std", "small_rng"], default-features = false }
+serde = { version = "1.0.118", features = ["derive"], optional = true }
 
 [dependencies.jpeg-decoder]
 version = "0.1.20"
@@ -45,7 +46,7 @@ approx = "0.4.0"
 pretty_assertions = "0.6.1"
 
 [features]
-default = ["minimp3"]
+default = ["minimp3", "serde"]
 lzma = ["swf/lzma"]
 wasm-bindgen = [ "instant/wasm-bindgen" ]
 avm_debug = []
