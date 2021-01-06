@@ -146,6 +146,12 @@ impl WebGlRenderBackend {
                     .into_js_result()?
                     .ok_or("VAO extension not found")?
                     .unchecked_into::<OesVertexArrayObject>();
+
+                // On WebGL1, we need to explicitly request support for u32 index buffers.
+                let _ext = gl
+                    .get_extension("OES_element_index_uint")
+                    .into_js_result()?
+                    .ok_or("OES_element_index_uint extension not available")?;
                 (gl, None, vao, 1)
             } else {
                 return Err("Unable to create WebGL rendering context".into());
