@@ -783,7 +783,6 @@ pub fn create_globals<'gc>(
         gradient_bevel_filter_proto,
     );
 
-    //TODO: are there any differnces
     let gradient_glow_filter_proto =
         gradient_glow_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
     let gradient_glow_filter = FunctionObject::constructor(
@@ -839,7 +838,7 @@ pub fn create_globals<'gc>(
         gc_context,
         "ConvolutionFilter",
         convolution_filter.into(),
-            EnumSet::empty(),
+        EnumSet::empty(),
     );
 
     filters.define_value(
