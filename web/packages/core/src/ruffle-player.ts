@@ -316,8 +316,6 @@ export class RufflePlayer extends HTMLElement {
             this.container,
             this,
             this.allowScriptAccess,
-            config.upgradeToHttps !== false &&
-                window.location.protocol === "https:",
             config
         );
         console.log("New Ruffle instance created.");

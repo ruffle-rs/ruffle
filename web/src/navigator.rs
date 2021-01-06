@@ -23,6 +23,10 @@ impl WebNavigatorBackend {
         let window = web_sys::window().expect("window()");
         let performance = window.performance().expect("window.performance()");
 
+        // Upgarde to HTTPS takes effect if the current page is hosted on HTTPS.
+        let upgrade_to_https =
+            upgrade_to_https && window.location().protocol().unwrap_or_default() == "https:";
+
         WebNavigatorBackend {
             start_time: performance.now(),
             performance,

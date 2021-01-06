@@ -9,6 +9,7 @@ use crate::backend::locale::LocaleBackend;
 use crate::backend::navigator::{NavigatorBackend, RequestOptions};
 use crate::backend::storage::StorageBackend;
 use crate::backend::{audio::AudioBackend, log::LogBackend, render::RenderBackend, ui::UiBackend};
+use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{EditText, MorphShape, MovieClip};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
@@ -27,8 +28,6 @@ use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
 use std::ops::DerefMut;
@@ -1401,25 +1400,5 @@ pub struct DragObject<'gc> {
 unsafe impl<'gc> gc_arena::Collect for DragObject<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.display_object.trace(cc);
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename = "letterbox"))]
-pub enum Letterbox {
-    #[cfg_attr(feature = "serde", serde(rename = "off"))]
-    Off,
-
-    #[cfg_attr(feature = "serde", serde(rename = "fullscreen"))]
-    Fullscreen,
-
-    #[cfg_attr(feature = "serde", serde(rename = "on"))]
-    On,
-}
-
-impl Default for Letterbox {
-    fn default() -> Self {
-        Letterbox::Fullscreen
     }
 }

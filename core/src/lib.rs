@@ -43,11 +43,12 @@ mod vminterface;
 mod xml;
 
 pub mod backend;
+pub mod config;
 pub mod external;
 
 pub use chrono;
 pub use events::PlayerEvent;
 pub use indexmap;
-pub use player::{Letterbox, Player};
+pub use player::Player;
 pub use swf;
 pub use swf::Color;
