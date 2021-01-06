@@ -1,10 +1,10 @@
-//! flash.filter.GradientBevelFilter object
+//! flash.filter.GradientGlowFilter object
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::bevel_filter::BevelFilterType;
-use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
+use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -34,7 +34,7 @@ pub fn distance<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         return Ok(object.distance().into());
     }
 
@@ -51,7 +51,7 @@ pub fn set_distance<'gc>(
         .unwrap_or(&4.0.into())
         .coerce_to_f64(activation)?;
 
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         object.set_distance(activation.context.gc_context, distance);
     }
 
@@ -63,7 +63,7 @@ pub fn angle<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         return Ok(object.angle().into());
     }
 
@@ -86,7 +86,7 @@ pub fn set_angle<'gc>(
         angle % 360.0
     };
 
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         object.set_angle(activation.context.gc_context, clamped_angle);
     }
 
@@ -98,7 +98,7 @@ pub fn colors<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_gradient_bevel_filter_object() {
+    if let Some(filter) = this.as_gradient_glow_filter_object() {
         let array = ScriptObject::array(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes.array),
@@ -124,7 +124,7 @@ pub fn set_colors<'gc>(
     let colors = args.get(0).unwrap_or(&Value::Undefined);
 
     if let Value::Object(obj) = colors {
-        if let Some(filter) = this.as_gradient_bevel_filter_object() {
+        if let Some(filter) = this.as_gradient_glow_filter_object() {
             let arr_len = obj.length();
             let mut colors_arr = Vec::with_capacity(arr_len);
 
@@ -162,7 +162,7 @@ pub fn alphas<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_gradient_bevel_filter_object() {
+    if let Some(filter) = this.as_gradient_glow_filter_object() {
         let array = ScriptObject::array(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes.array),
@@ -188,7 +188,7 @@ pub fn set_alphas<'gc>(
     let alphas = args.get(0).unwrap_or(&Value::Undefined);
 
     if let Value::Object(obj) = alphas {
-        if let Some(filter) = this.as_gradient_bevel_filter_object() {
+        if let Some(filter) = this.as_gradient_glow_filter_object() {
             let arr_len = obj.length().min(filter.colors().len());
             let mut arr = Vec::with_capacity(arr_len);
 
@@ -219,7 +219,7 @@ pub fn ratios<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_gradient_bevel_filter_object() {
+    if let Some(filter) = this.as_gradient_glow_filter_object() {
         let array = ScriptObject::array(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes.array),
@@ -245,7 +245,7 @@ pub fn set_ratios<'gc>(
     let ratios = args.get(0).unwrap_or(&Value::Undefined);
 
     if let Value::Object(obj) = ratios {
-        if let Some(filter) = this.as_gradient_bevel_filter_object() {
+        if let Some(filter) = this.as_gradient_glow_filter_object() {
             let arr_len = obj.length().min(filter.colors().len());
             let mut arr = Vec::with_capacity(arr_len);
 
@@ -276,7 +276,7 @@ pub fn blur_x<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         return Ok(object.blur_x().into());
     }
 
@@ -294,7 +294,7 @@ pub fn set_blur_x<'gc>(
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         object.set_blur_x(activation.context.gc_context, blur_x);
     }
 
@@ -306,7 +306,7 @@ pub fn blur_y<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         return Ok(object.blur_y().into());
     }
 
@@ -324,7 +324,7 @@ pub fn set_blur_y<'gc>(
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         object.set_blur_y(activation.context.gc_context, blur_y);
     }
 
@@ -336,7 +336,7 @@ pub fn strength<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         return Ok(object.strength().into());
     }
 
@@ -354,7 +354,7 @@ pub fn set_strength<'gc>(
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         object.set_strength(activation.context.gc_context, strength);
     }
 
@@ -366,7 +366,7 @@ pub fn quality<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         return Ok(object.quality().into());
     }
 
@@ -384,7 +384,7 @@ pub fn set_quality<'gc>(
         .coerce_to_i32(activation)
         .map(|x| x.max(0).min(15))?;
 
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         object.set_quality(activation.context.gc_context, quality);
     }
 
@@ -396,7 +396,7 @@ pub fn get_type<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(filter) = this.as_gradient_bevel_filter_object() {
+    if let Some(filter) = this.as_gradient_glow_filter_object() {
         let type_: &str = filter.get_type().into();
         return Ok(AvmString::new(activation.context.gc_context, type_.to_string()).into());
     }
@@ -418,7 +418,7 @@ pub fn set_type<'gc>(
         .coerce_to_string(activation)
         .map(|s| s.as_str().into())?;
 
-    if let Some(filter) = this.as_gradient_bevel_filter_object() {
+    if let Some(filter) = this.as_gradient_glow_filter_object() {
         filter.set_type(activation.context.gc_context, type_);
     }
 
@@ -430,7 +430,7 @@ pub fn knockout<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         return Ok(object.knockout().into());
     }
 
@@ -447,7 +447,7 @@ pub fn set_knockout<'gc>(
         .unwrap_or(&false.into())
         .as_bool(activation.current_swf_version());
 
-    if let Some(object) = this.as_gradient_bevel_filter_object() {
+    if let Some(object) = this.as_gradient_glow_filter_object() {
         object.set_knockout(activation.context.gc_context, knockout);
     }
 
@@ -459,7 +459,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let color_matrix_filter = GradientBevelFilterObject::empty_object(gc_context, Some(proto));
+    let color_matrix_filter = GradientGlowFilterObject::empty_object(gc_context, Some(proto));
     let object = color_matrix_filter.as_script_object().unwrap();
 
     object.add_property(

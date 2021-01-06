@@ -8,14 +8,14 @@ use crate::avm1::activation::Activation;
 use crate::avm1::object::bevel_filter::BevelFilterType;
 use std::fmt;
 
-/// A GradientBevelFilter
+/// A GradientGlowFilter
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct GradientBevelFilterObject<'gc>(GcCell<'gc, GradientBevelFilterData<'gc>>);
+pub struct GradientGlowFilterObject<'gc>(GcCell<'gc, GradientGlowFilterData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct GradientBevelFilterData<'gc> {
+pub struct GradientGlowFilterData<'gc> {
     /// The underlying script object.
     base: ScriptObject<'gc>,
 
@@ -32,10 +32,10 @@ pub struct GradientBevelFilterData<'gc> {
     type_: BevelFilterType,
 }
 
-impl fmt::Debug for GradientBevelFilterObject<'_> {
+impl fmt::Debug for GradientGlowFilterObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let this = self.0.read();
-        f.debug_struct("GradientBevelFilter")
+        f.debug_struct("GradientGlowFilter")
             .field("alphas", &this.alphas)
             .field("angle", &this.angle)
             .field("blurX", &this.blur_x)
@@ -51,7 +51,7 @@ impl fmt::Debug for GradientBevelFilterObject<'_> {
     }
 }
 
-impl<'gc> GradientBevelFilterObject<'gc> {
+impl<'gc> GradientGlowFilterObject<'gc> {
     add_field_accessors!(
         [angle, f64, set => set_angle, get => angle],
         [blur_x, f64, set => set_blur_x, get => blur_x],
@@ -79,9 +79,9 @@ impl<'gc> GradientBevelFilterObject<'gc> {
     }
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
-        GradientBevelFilterObject(GcCell::allocate(
+        GradientGlowFilterObject(GcCell::allocate(
             gc_context,
-            GradientBevelFilterData {
+            GradientGlowFilterData {
                 base: ScriptObject::object(gc_context, proto),
                 alphas: vec![],
                 angle: 0.0,
@@ -99,7 +99,7 @@ impl<'gc> GradientBevelFilterObject<'gc> {
     }
 }
 
-impl<'gc> TObject<'gc> for GradientBevelFilterObject<'gc> {
+impl<'gc> TObject<'gc> for GradientGlowFilterObject<'gc> {
     impl_custom_object_without_set!(base);
 
     fn set(
@@ -114,11 +114,11 @@ impl<'gc> TObject<'gc> for GradientBevelFilterObject<'gc> {
             value,
             activation,
             (*self).into(),
-            Some(activation.context.avm1.prototypes.gradient_bevel_filter),
+            Some(activation.context.avm1.prototypes.gradient_glow_filter),
         )
     }
 
-    fn as_gradient_bevel_filter_object(&self) -> Option<GradientBevelFilterObject<'gc>> {
+    fn as_gradient_glow_filter_object(&self) -> Option<GradientGlowFilterObject<'gc>> {
         Some(*self)
     }
 
@@ -127,9 +127,9 @@ impl<'gc> TObject<'gc> for GradientBevelFilterObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(GradientBevelFilterObject::empty_object(
+        Ok(GradientGlowFilterObject::empty_object(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.gradient_bevel_filter),
+            Some(activation.context.avm1.prototypes.gradient_glow_filter),
         )
         .into())
     }
