@@ -26,6 +26,30 @@ export enum AutoPlay {
 }
 
 /**
+ * Controls whether the content is letterboxed or pillarboxed when the
+ * player's aspect ratio does not match the movie's aspect ratio.
+ *
+ * When letterboxed, black bars will be rendered around the exterior
+ * margins of the content.
+ */
+export enum Letterbox {
+    /**
+     * The content will never be letterboxed.
+     */
+    Off = "off",
+
+    /**
+     * The content will only be letterboxed if the content is running fullscreen.
+     */
+    Fullscreen = "fullscreen",
+
+    /**
+     * The content will always be letterboxed.
+     */
+    On = "on",
+}
+
+/**
  * When the player is muted, this controls whether or not Ruffle will show a
  * "click to unmute" overlay on top of the movie.
  */
@@ -61,6 +85,14 @@ export interface BaseLoadOptions {
      * @default AutoPlay.Auto
      */
     autoplay?: AutoPlay;
+
+    /**
+     * Controls letterbox behavior when the Flash container size does not
+     * match the movie size.
+     *
+     * @default Letterbox.Fullscreen
+     */
+    letterbox?: Letterbox;
 
     /**
      * Controls the visibility of the unmute overlay when the player

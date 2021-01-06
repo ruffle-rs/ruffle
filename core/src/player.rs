@@ -27,6 +27,8 @@ use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
 use std::ops::DerefMut;
@@ -1403,8 +1405,21 @@ unsafe impl<'gc> gc_arena::Collect for DragObject<'gc> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename = "letterbox"))]
 pub enum Letterbox {
+    #[cfg_attr(feature = "serde", serde(rename = "off"))]
     Off,
+
+    #[cfg_attr(feature = "serde", serde(rename = "fullscreen"))]
     Fullscreen,
+
+    #[cfg_attr(feature = "serde", serde(rename = "on"))]
     On,
+}
+
+impl Default for Letterbox {
+    fn default() -> Self {
+        Letterbox::Fullscreen
+    }
 }
