@@ -199,7 +199,8 @@ pub fn clone<'gc>(
                 clamp,
                 color,
                 alpha,
-            ])?;
+            ],
+        )?;
 
         return Ok(cloned.into());
     }
