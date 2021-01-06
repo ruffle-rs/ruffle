@@ -21,6 +21,7 @@ use ruffle_core::backend::input::InputBackend;
 use ruffle_core::backend::render::RenderBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::storage::StorageBackend;
+use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{KeyCode, MouseWheelDelta};
 use ruffle_core::external::{
@@ -28,7 +29,7 @@ use ruffle_core::external::{
 };
 use ruffle_core::property_map::PropertyMap;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Letterbox, PlayerEvent};
+use ruffle_core::PlayerEvent;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -110,10 +111,22 @@ struct JavascriptInterface {
     js_player: JavascriptPlayer,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(default = "Default::default")]
 pub struct Config {
-    #[serde(default)]
     letterbox: Letterbox,
+
+    #[serde(rename = "upgradeToHttps")]
+    upgrade_to_https: bool,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            letterbox: Default::default(),
+            upgrade_to_https: true,
+        }
+    }
 }
 
 /// An opaque handle to a `RuffleInstance` inside the pool.
@@ -130,7 +143,6 @@ impl Ruffle {
         parent: HtmlElement,
         js_player: JavascriptPlayer,
         allow_script_access: bool,
-        upgrade_to_https: bool,
         config: &JsValue,
     ) -> Result<Ruffle, JsValue> {
         if RUFFLE_GLOBAL_PANIC.is_completed() {
@@ -142,14 +154,8 @@ impl Ruffle {
 
         let config: Config = config.into_serde().unwrap_or_default();
 
-        Ruffle::new_internal(
-            parent,
-            js_player,
-            allow_script_access,
-            upgrade_to_https,
-            config,
-        )
-        .map_err(|_| "Error creating player".into())
+        Ruffle::new_internal(parent, js_player, allow_script_access, config)
+            .map_err(|_| "Error creating player".into())
     }
 
     /// Stream an arbitrary movie file from (presumably) the Internet.
@@ -314,7 +320,6 @@ impl Ruffle {
         parent: HtmlElement,
         js_player: JavascriptPlayer,
         allow_script_access: bool,
-        upgrade_to_https: bool,
         config: Config,
     ) -> Result<Ruffle, Box<dyn Error>> {
         let _ = console_log::init_with_level(log::Level::Trace);
@@ -328,7 +333,7 @@ impl Ruffle {
             .into_js_result()?;
 
         let audio = Box::new(WebAudioBackend::new()?);
-        let navigator = Box::new(WebNavigatorBackend::new(upgrade_to_https));
+        let navigator = Box::new(WebNavigatorBackend::new(config.upgrade_to_https));
         let input = Box::new(WebInputBackend::new(&canvas));
         let locale = Box::new(WebLocaleBackend::new());
 
