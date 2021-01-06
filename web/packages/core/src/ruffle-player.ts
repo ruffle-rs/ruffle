@@ -334,16 +334,16 @@ export class RufflePlayer extends HTMLElement {
             this.container.style.visibility = "";
         }
 
-        const autoplay =
-            Object.values(Object(AutoPlay)).indexOf(config.autoplay) >= 0
-                ? config.autoplay
-                : AutoPlay.Auto;
-        const unmuteVisibility =
-            Object.values(Object(UnmuteOverlay)).indexOf(
-                config.unmuteOverlay
-            ) >= 0
-                ? config.unmuteOverlay
-                : UnmuteOverlay.Visible;
+        const autoplay = Object.values(Object(AutoPlay)).includes(
+            config.autoplay
+        )
+            ? config.autoplay
+            : AutoPlay.Auto;
+        const unmuteVisibility = Object.values(Object(UnmuteOverlay)).includes(
+            config.unmuteOverlay
+        )
+            ? config.unmuteOverlay
+            : UnmuteOverlay.Visible;
 
         if (
             autoplay == AutoPlay.On ||
