@@ -185,6 +185,7 @@ pub struct Player {
     viewport_height: u32,
     movie_width: u32,
     movie_height: u32,
+    letterbox: Letterbox,
 
     mouse_pos: (Twips, Twips),
     is_mouse_down: bool,
@@ -282,6 +283,7 @@ impl Player {
             movie_height,
             viewport_width: movie_width,
             viewport_height: movie_height,
+            letterbox: Letterbox::Fullscreen,
 
             mouse_pos: (Twips::new(0), Twips::new(0)),
             is_mouse_down: false,
@@ -515,6 +517,14 @@ impl Player {
 
     pub fn needs_render(&self) -> bool {
         self.needs_render
+    }
+
+    pub fn letterbox(&self) -> Letterbox {
+        self.letterbox
+    }
+
+    pub fn set_letterbox(&mut self, letterbox: Letterbox) {
+        self.letterbox = letterbox
     }
 
     pub fn movie_width(&self) -> u32 {
@@ -1317,6 +1327,12 @@ impl Player {
     }
 
     fn draw_letterbox(&mut self) {
+        if self.letterbox == Letterbox::Off
+            || (self.letterbox == Letterbox::Fullscreen && !self.user_interface.is_fullscreen())
+        {
+            return;
+        }
+
         let black = Color::from_rgb(0, 255);
         let viewport_width = self.viewport_width as f32;
         let viewport_height = self.viewport_height as f32;
@@ -1384,4 +1400,11 @@ unsafe impl<'gc> gc_arena::Collect for DragObject<'gc> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
         self.display_object.trace(cc);
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Letterbox {
+    Off,
+    Fullscreen,
+    On,
 }

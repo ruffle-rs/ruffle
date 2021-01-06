@@ -12,6 +12,10 @@ impl WebUiBackend {
 }
 
 impl UiBackend for WebUiBackend {
+    fn is_fullscreen(&self) -> bool {
+        self.js_player.is_fullscreen()
+    }
+
     fn message(&self, message: &str) {
         self.js_player.display_message(message);
     }

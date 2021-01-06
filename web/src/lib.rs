@@ -100,6 +100,9 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "displayMessage")]
     fn display_message(this: &JavascriptPlayer, message: &str);
+
+    #[wasm_bindgen(method, getter, js_name = "isFullscreen")]
+    fn is_fullscreen(this: &JavascriptPlayer) -> bool;
 }
 
 struct JavascriptInterface {

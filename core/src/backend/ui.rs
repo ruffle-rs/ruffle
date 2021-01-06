@@ -1,4 +1,5 @@
 pub trait UiBackend {
+    fn is_fullscreen(&self) -> bool;
     fn message(&self, message: &str);
 }
 
@@ -12,6 +13,9 @@ impl NullUiBackend {
 }
 
 impl UiBackend for NullUiBackend {
+    fn is_fullscreen(&self) -> bool {
+        false
+    }
     fn message(&self, _message: &str) {}
 }
 
