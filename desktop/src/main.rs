@@ -15,7 +15,7 @@ mod task;
 mod ui;
 
 use crate::custom_event::RuffleEvent;
-use crate::executor::GlutinAsyncExecutor;
+// use crate::executor::GlutinAsyncExecutor;
 use clap::Clap;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use ruffle_core::{
@@ -271,6 +271,8 @@ impl Ruffle {
                     *control_flow = ControlFlow::Wait;
                 }
 
+                // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
+                #[allow(deprecated)]
                 match &event {
                     winit::event::Event::WindowEvent { event, .. } => match event {
                         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
@@ -279,15 +281,13 @@ impl Ruffle {
                                 KeyboardInput {
                                     state: ElementState::Pressed,
                                     virtual_keycode: Some(VirtualKeyCode::O),
-                                    modifiers: m, // TODO: Use WindowEvent::ModifiersChanged.
+                                    modifiers, // TODO: Use WindowEvent::ModifiersChanged.
                                     ..
                                 },
                             ..
-                        } => {
-                            if m.ctrl() {
-                                let _ = self.load_from_file_dialog();
-                                return;
-                            }
+                        } if modifiers.ctrl() => {
+                            let _ = self.load_from_file_dialog();
+                            return;
                         }
                         WindowEvent::DroppedFile(path) => {
                             let _ = self.load(&path);
