@@ -224,7 +224,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let storage = Box::new(DiskStorageBackend::new());
-    let user_interface = Box::new(ui::DesktopUiBackend::new());
+    let user_interface = Box::new(ui::DesktopUiBackend::new(window.clone()));
     let locale = Box::new(locale::DesktopLocaleBackend::new());
     let player = Player::new(
         renderer,
