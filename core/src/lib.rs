@@ -47,7 +47,6 @@ pub mod config;
 pub mod external;
 
 pub use chrono;
-pub use events::KeyCode;
 pub use events::PlayerEvent;
 pub use indexmap;
 pub use player::Player;

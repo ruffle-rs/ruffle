@@ -33,9 +33,11 @@ use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::io::Read;
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
-use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
+use winit::event::{
+    ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent,
+};
 use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::{Icon, WindowBuilder};
+use winit::window::{Fullscreen, Icon, WindowBuilder};
 
 #[derive(Clap, Debug)]
 #[clap(
@@ -251,6 +253,8 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         // Poll UI events
         event_loop.run(move |event, _window_target, control_flow| {
+            // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
+            #[allow(deprecated)]
             match event {
                 winit::event::Event::LoopDestroyed => {
                     player.lock().unwrap().flush_shared_objects();
@@ -347,6 +351,21 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Return),
+                                modifiers, // TODO: Use WindowEvent::ModifiersChanged.
+                                ..
+                            },
+                        ..
+                    } if modifiers.alt() => {
+                        window.set_fullscreen(match window.fullscreen() {
+                            None => Some(Fullscreen::Borderless(None)),
+                            Some(_) => None,
+                        });
+                    }
                     WindowEvent::KeyboardInput { .. } | WindowEvent::ReceivedCharacter(_) => {
                         let mut player_lock = player.lock().unwrap();
                         if let Some(event) = player_lock
@@ -355,25 +374,9 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                             .unwrap()
                             .handle_event(event)
                         {
-                            match event {
-                                ruffle_core::PlayerEvent::KeyDown {
-                                    key_code: ruffle_core::KeyCode::Return,
-                                } if player_lock.input().is_key_down(ruffle_core::KeyCode::Alt) => {
-                                    if window.fullscreen().is_none() {
-                                        window.set_fullscreen(Some(
-                                            winit::window::Fullscreen::Borderless(None),
-                                        ));
-                                    } else {
-                                        window.set_fullscreen(None)
-                                    }
-                                    window.request_redraw();
-                                }
-                                _ => {
-                                    player_lock.handle_event(event);
-                                    if player_lock.needs_render() {
-                                        window.request_redraw();
-                                    }
-                                }
+                            player_lock.handle_event(event);
+                            if player_lock.needs_render() {
+                                window.request_redraw();
                             }
                         }
                     }
