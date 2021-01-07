@@ -1,28 +1,24 @@
-use tinyfiledialogs::{message_box_ok, MessageBoxIcon};
-
 use ruffle_core::backend::ui::UiBackend;
+use std::rc::Rc;
+use tinyfiledialogs::{message_box_ok, MessageBoxIcon};
+use winit::window::Window;
 
-pub struct DesktopUiBackend {}
+pub struct DesktopUiBackend {
+    window: Rc<Window>,
+}
 
 impl DesktopUiBackend {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(window: Rc<Window>) -> Self {
+        Self { window }
     }
 }
 
 impl UiBackend for DesktopUiBackend {
     fn is_fullscreen(&self) -> bool {
-        // TODO: Return proper value when fullscreen implemented on desktop.
-        false
+        self.window.fullscreen().is_some()
     }
 
     fn message(&self, message: &str) {
         message_box_ok("Ruffle", message, MessageBoxIcon::Info)
-    }
-}
-
-impl Default for DesktopUiBackend {
-    fn default() -> Self {
-        DesktopUiBackend::new()
     }
 }
