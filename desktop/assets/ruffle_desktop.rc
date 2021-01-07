@@ -1,3 +1,38 @@
-#define IDI_ICON 0x101
+#include "winres.h"
 
+#define IDI_ICON 0x101
 IDI_ICON ICON "assets/favicon.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1,0,0,1
+PRODUCTVERSION 1,0,0,1
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+FILEFLAGS VS_FF_DEBUG
+#else
+FILEFLAGS 0
+#endif
+FILEOS VOS__WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE VFT2_UNKNOWN
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904b0"
+        {
+            VALUE "CompanyName", "Ruffle"
+            VALUE "FileDescription", "Ruffle"
+            VALUE "FileVersion", "1.0.0.1"
+            VALUE "InternalName", "ruffle_desktop.exe"
+            VALUE "LegalCopyright", "Copyright (C) 2021"
+            VALUE "OriginalFilename", "ruffle_desktop.exe"
+            VALUE "ProductName", "Ruffle"
+            VALUE "ProductVersion", "1.0.0.1"
+        }
+    }
+
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x409, 1200
+    }
+}
