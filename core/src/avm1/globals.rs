@@ -705,6 +705,7 @@ pub fn create_globals<'gc>(
     let video = FunctionObject::constructor(
         gc_context,
         Executable::Native(video::constructor),
+        constructor_to_fn!(video::constructor),
         Some(function_proto),
         video_proto,
     );
