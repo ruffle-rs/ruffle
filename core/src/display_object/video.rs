@@ -3,7 +3,7 @@
 use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
 use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
 use crate::backend::render::BitmapHandle;
-use crate::backend::video::{EncodedFrame, VideoStreamHandle};
+use crate::backend::video::{EncodedFrame, FrameDependency, VideoStreamHandle};
 use crate::bounding_box::BoundingBox;
 use crate::collect::CollectWrapper;
 use crate::context::{RenderContext, UpdateContext};
@@ -14,7 +14,7 @@ use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::{Borrow, BorrowMut};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use swf::{CharacterId, DefineVideoStream, VideoFrame};
 
@@ -40,10 +40,18 @@ pub struct VideoData<'gc> {
     stream: Option<CollectWrapper<VideoStreamHandle>>,
 
     /// The last decoded frame in the video stream.
-    decoded_frame: Option<CollectWrapper<BitmapHandle>>,
+    decoded_frame: Option<(u32, CollectWrapper<BitmapHandle>)>,
 
     /// AVM representation of this video player.
     object: Option<AvmObject<'gc>>,
+
+    /// List of frames which can be independently seeked to.
+    ///
+    /// Frames outside of this set must be decoded by playing each frame from
+    /// the last keyframe in order. Any out-of-order seeking will be snapped to
+    /// the prior keyframe. The first frame in the stream will always be
+    /// treated as a keyframe regardless of it being flagged as one.
+    keyframes: BTreeSet<u32>,
 }
 
 #[derive(Clone, Debug, Collect)]
@@ -88,6 +96,7 @@ impl<'gc> Video<'gc> {
                 stream: None,
                 decoded_frame: None,
                 object: None,
+                keyframes: BTreeSet::new(),
             },
         ))
     }
@@ -125,7 +134,7 @@ impl<'gc> Video<'gc> {
     }
 
     /// Seek to a particular frame in the video stream.
-    pub fn seek(self, context: &mut UpdateContext<'_, 'gc, '_>, frame_id: u32) {
+    pub fn seek(self, context: &mut UpdateContext<'_, 'gc, '_>, mut frame_id: u32) {
         let read = self.0.read();
         let source = read.source;
         let stream = if let Some(stream) = &read.stream {
@@ -134,6 +143,17 @@ impl<'gc> Video<'gc> {
             log::error!("Attempted to sync uninstantiated video stream!");
             return;
         };
+        let last_frame = read.decoded_frame.as_ref().map(|(lf, _)| *lf);
+        let is_unordered_seek = frame_id != 0 && Some(frame_id) != last_frame.map(|lf| lf + 1);
+        if is_unordered_seek {
+            frame_id = read
+                .keyframes
+                .range(..=frame_id)
+                .rev()
+                .next()
+                .copied()
+                .unwrap_or(0);
+        }
 
         let res = match &*source.read() {
             VideoSource::SWF {
@@ -164,7 +184,8 @@ impl<'gc> Video<'gc> {
             Ok(bitmapinfo) => {
                 let bitmap = bitmapinfo.handle;
 
-                self.0.write(context.gc_context).decoded_frame = Some(CollectWrapper(bitmap))
+                self.0.write(context.gc_context).decoded_frame =
+                    Some((frame_id, CollectWrapper(bitmap)));
             }
             Err(e) => log::error!("Got error when seeking to video frame {}: {}", frame_id, e),
         }
@@ -188,9 +209,11 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     ) {
         let mut write = self.0.write(context.gc_context);
 
-        let (stream, movie) = match &*write.source.read() {
+        let (stream, movie, keyframes) = match &*write.source.read() {
             VideoSource::SWF {
-                streamdef, movie, ..
+                streamdef,
+                movie,
+                frames,
             } => {
                 let stream = context.video.register_video_stream(
                     streamdef.num_frames.into(),
@@ -206,11 +229,36 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                     return;
                 }
 
-                (Some(CollectWrapper(stream.unwrap())), movie.clone())
+                let stream = stream.unwrap();
+                let mut keyframes = BTreeSet::new();
+
+                for (frame_id, (frame_start, frame_end)) in frames {
+                    let dep = context.video.preload_video_stream_frame(
+                        stream,
+                        EncodedFrame {
+                            codec: streamdef.codec,
+                            data: &movie.data()[*frame_start..*frame_end],
+                            frame_id: *frame_id,
+                        },
+                    );
+
+                    match dep {
+                        Ok(FrameDependency::Keyframe) => {
+                            keyframes.insert(*frame_id);
+                        }
+                        Ok(_) => {}
+                        Err(e) => {
+                            log::error!("Got error when pre-loading video frame: {}", e);
+                        }
+                    }
+                }
+
+                (Some(CollectWrapper(stream)), movie.clone(), keyframes)
             }
         };
 
         write.stream = stream;
+        write.keyframes = keyframes;
 
         if write.object.is_none() {
             let library = context.library.library_for_movie_mut(movie);
@@ -270,7 +318,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
         context.transform_stack.push(&*self.transform());
 
-        if let Some(ref bitmap) = self.0.read().decoded_frame {
+        if let Some((_frame_id, ref bitmap)) = self.0.read().decoded_frame {
             context
                 .renderer
                 .render_bitmap(bitmap.0, context.transform_stack.transform(), false);
