@@ -728,42 +728,63 @@ export class RufflePlayer extends HTMLElement {
         }
         this.panicked = true;
 
-        let errorText = "# Error Info\n";
+        const errorArray: Array<string | null> & {
+            stackIndex: number;
+        } = Object.assign([], {
+            stackIndex: -1,
+        });
+
+        errorArray.push("# Error Info\n");
 
         if (error instanceof Error) {
-            errorText += `Error name: ${error.name}\n`;
-            errorText += `Error message: ${error.message}\n`;
+            errorArray.push(`Error name: ${error.name}\n`);
+            errorArray.push(`Error message: ${error.message}\n`);
             if (error.stack) {
-                errorText += `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`;
+                const stackIndex =
+                    errorArray.push(
+                        `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`
+                    ) - 1;
+                errorArray.stackIndex = stackIndex;
             }
         } else {
-            errorText += `Error: ${error}\n`;
+            errorArray.push(`Error: ${error}\n`);
         }
 
-        errorText += "\n# Player Info\n";
-        errorText += this.debugPlayerInfo();
+        errorArray.push("\n# Player Info\n");
+        errorArray.push(this.debugPlayerInfo());
 
-        errorText += "\n# Page Info\n";
-        errorText += `Page URL: ${document.location.href}\n`;
-        if (this.swfUrl) errorText += `SWF URL: ${this.swfUrl}\n`;
+        errorArray.push("\n# Page Info\n");
+        errorArray.push(`Page URL: ${document.location.href}\n`);
+        if (this.swfUrl) errorArray.push(`SWF URL: ${this.swfUrl}\n`);
 
-        errorText += "\n# Browser Info\n";
-        errorText += `Useragent: ${window.navigator.userAgent}\n`;
-        errorText += `OS: ${window.navigator.platform}\n`;
+        errorArray.push("\n# Browser Info\n");
+        errorArray.push(`Useragent: ${window.navigator.userAgent}\n`);
+        errorArray.push(`OS: ${window.navigator.platform}\n`);
 
-        errorText += "\n# Ruffle Info\n";
-        errorText += `Version: %VERSION_NUMBER%\n`;
-        errorText += `Name: %VERSION_NAME%\n`;
-        errorText += `Channel: %VERSION_CHANNEL%\n`;
-        errorText += `Built: %BUILD_DATE%\n`;
-        errorText += `Commit: %COMMIT_HASH%\n`;
+        errorArray.push("\n# Ruffle Info\n");
+        errorArray.push(`Version: %VERSION_NUMBER%\n`);
+        errorArray.push(`Name: %VERSION_NAME%\n`);
+        errorArray.push(`Channel: %VERSION_CHANNEL%\n`);
+        errorArray.push(`Built: %BUILD_DATE%\n`);
+        errorArray.push(`Commit: %COMMIT_HASH%\n`);
 
-        const issueTitle = `Ruffle Error on ${document.location.href}`;
-        const issueLink =
-            "https://github.com/ruffle-rs/ruffle/issues/new?title=" +
-            encodeURIComponent(issueTitle) +
-            "&body=" +
-            encodeURIComponent(errorText);
+        const errorText = errorArray.join("");
+
+        const issueTitle = `Error on ${document.location.href}`;
+        let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
+            issueTitle
+        )}&body=`;
+        let issueParameters = encodeURIComponent(errorText);
+        if (
+            errorArray.stackIndex > -1 &&
+            String(issueLink + issueParameters).length > 8195
+        ) {
+            // Strip the stack error from the array when the produced URL is way too long.
+            // This should prevent "414 Request-URI Too Large" errors on Github.
+            errorArray[errorArray.stackIndex] = null;
+            issueParameters = encodeURIComponent(errorArray.join(""));
+        }
+        issueLink += issueParameters;
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         this.container.innerHTML = `
