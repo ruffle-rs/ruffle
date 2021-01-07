@@ -163,6 +163,7 @@ pub struct Player {
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
+    view_bounds: BoundingBox,
 
     storage: Storage,
 
@@ -252,6 +253,7 @@ impl Player {
             transform_stack: TransformStack::new(),
             view_matrix: Default::default(),
             inverse_view_matrix: Default::default(),
+            view_bounds: Default::default(),
 
             rng: SmallRng::seed_from_u64(chrono::Utc::now().timestamp_millis() as u64),
 
@@ -526,6 +528,11 @@ impl Player {
 
     pub fn set_letterbox(&mut self, letterbox: Letterbox) {
         self.letterbox = letterbox
+    }
+
+    fn should_letterbox(&self) -> bool {
+        self.letterbox == Letterbox::On
+            || (self.letterbox == Letterbox::Fullscreen && self.user_interface.is_fullscreen())
     }
 
     pub fn movie_width(&self) -> u32 {
@@ -882,14 +889,6 @@ impl Player {
     }
 
     pub fn render(&mut self) {
-        let view_bounds = BoundingBox {
-            x_min: Twips::new(0),
-            y_min: Twips::new(0),
-            x_max: Twips::from_pixels(self.movie_width.into()),
-            y_max: Twips::from_pixels(self.movie_height.into()),
-            valid: true,
-        };
-
         self.renderer.begin_frame(self.background_color.clone());
 
         let (renderer, transform_stack) = (&mut self.renderer, &mut self.transform_stack);
@@ -898,6 +897,8 @@ impl Player {
             matrix: self.view_matrix,
             ..Default::default()
         });
+
+        let view_bounds = self.view_bounds.clone();
         self.gc_arena.mutate(|_gc_context, gc_root| {
             let root_data = gc_root.0.read();
             let mut render_context = RenderContext {
@@ -915,7 +916,10 @@ impl Player {
         });
         transform_stack.pop();
 
-        self.draw_letterbox();
+        if self.should_letterbox() {
+            self.draw_letterbox();
+        }
+
         self.renderer.end_frame();
         self.needs_render = false;
     }
@@ -1100,6 +1104,28 @@ impl Player {
         };
         self.inverse_view_matrix = self.view_matrix;
         self.inverse_view_matrix.invert();
+
+        self.view_bounds = if self.should_letterbox() {
+            // No letterbox: movie area
+            BoundingBox {
+                x_min: Twips::new(0),
+                y_min: Twips::new(0),
+                x_max: Twips::from_pixels(f64::from(self.movie_width)),
+                y_max: Twips::from_pixels(f64::from(self.movie_height)),
+                valid: true,
+            }
+        } else {
+            // No letterbox: full visible stage area
+            let margin_width = f64::from(margin_width / scale);
+            let margin_height = f64::from(margin_height / scale);
+            BoundingBox {
+                x_min: Twips::from_pixels(-margin_width),
+                y_min: Twips::from_pixels(-margin_height),
+                x_max: Twips::from_pixels(f64::from(self.movie_width) + margin_width),
+                y_max: Twips::from_pixels(f64::from(self.movie_height) + margin_height),
+                valid: true,
+            }
+        };
     }
 
     /// Runs the closure `f` with an `UpdateContext`.
@@ -1328,12 +1354,6 @@ impl Player {
     }
 
     fn draw_letterbox(&mut self) {
-        if self.letterbox == Letterbox::Off
-            || (self.letterbox == Letterbox::Fullscreen && !self.user_interface.is_fullscreen())
-        {
-            return;
-        }
-
         let black = Color::from_rgb(0, 255);
         let viewport_width = self.viewport_width as f32;
         let viewport_height = self.viewport_height as f32;
