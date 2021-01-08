@@ -250,6 +250,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let mut time = Instant::now();
     let mut next_frame_time = Instant::now();
     let mut minimized = false;
+    let mut fullscreen_down = false;
     loop {
         // Poll UI events
         event_loop.run(move |event, _window_target, control_flow| {
@@ -361,10 +362,24 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                             },
                         ..
                     } if modifiers.alt() => {
-                        window.set_fullscreen(match window.fullscreen() {
-                            None => Some(Fullscreen::Borderless(None)),
-                            Some(_) => None,
-                        });
+                        if !fullscreen_down {
+                            window.set_fullscreen(match window.fullscreen() {
+                                None => Some(Fullscreen::Borderless(None)),
+                                Some(_) => None,
+                            });
+                        }
+                        fullscreen_down = true;
+                    }
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: ElementState::Released,
+                                virtual_keycode: Some(VirtualKeyCode::Return),
+                                ..
+                            },
+                        ..
+                    } if fullscreen_down => {
+                        fullscreen_down = false;
                     }
                     WindowEvent::KeyboardInput {
                         input:
