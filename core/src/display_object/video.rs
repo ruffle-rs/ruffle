@@ -170,20 +170,25 @@ impl<'gc> Video<'gc> {
                     context
                         .video
                         .decode_video_stream_frame(stream.0, encframe, context.renderer)
+                        .map(|bi| bi.handle)
                 }
-                None => Err(Box::from(format!(
-                    "Attempted to seek to unknown frame {}",
-                    frame_id
-                ))),
+                None => {
+                    if let Some((_old_id, old_frame)) = &read.decoded_frame {
+                        Ok(old_frame.0)
+                    } else {
+                        Err(Box::from(format!(
+                            "Attempted to seek to omitted frame {} without prior decoded frame",
+                            frame_id
+                        )))
+                    }
+                }
             },
         };
 
         drop(read);
 
         match res {
-            Ok(bitmapinfo) => {
-                let bitmap = bitmapinfo.handle;
-
+            Ok(bitmap) => {
                 self.0.write(context.gc_context).decoded_frame =
                     Some((frame_id, CollectWrapper(bitmap)));
             }
