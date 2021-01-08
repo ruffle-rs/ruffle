@@ -366,6 +366,17 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                             Some(_) => None,
                         });
                     }
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                ..
+                            },
+                        ..
+                    } => {
+                        window.set_fullscreen(None);
+                    }
                     WindowEvent::KeyboardInput { .. } | WindowEvent::ReceivedCharacter(_) => {
                         let mut player_lock = player.lock().unwrap();
                         if let Some(event) = player_lock
