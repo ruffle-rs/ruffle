@@ -21,7 +21,7 @@ canvas = ["ruffle_render_canvas"]
 webgl = ["ruffle_render_webgl"]
 
 [dependencies]
-byteorder = "1.3.4"
+byteorder = "1.4.2"
 console_error_panic_hook = { version = "0.1.1", optional = true }
 console_log = { version = "0.2", optional = true }
 fnv = "1.0.7"
