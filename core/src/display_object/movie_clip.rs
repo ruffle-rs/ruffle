@@ -2352,7 +2352,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
         use std::io::Read;
         let id = reader.read_u16()?;
         let jpeg_len = reader.read_u32()? as usize;
-        let alpha_len = tag_len - 6 - jpeg_len;
+        let alpha_len = tag_len
+            .checked_sub(jpeg_len + 6)
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "Invalid jpeg length"))?;
         let mut jpeg_data = Vec::with_capacity(jpeg_len);
         let mut alpha_data = Vec::with_capacity(alpha_len);
         reader
@@ -2391,7 +2393,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let id = reader.read_u16()?;
         let jpeg_len = reader.read_u32()? as usize;
         let _deblocking = reader.read_u16()?;
-        let alpha_len = tag_len - 6 - jpeg_len;
+        let alpha_len = tag_len
+            .checked_sub(jpeg_len + 6)
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "Invalid jpeg length"))?;
         let mut jpeg_data = Vec::with_capacity(jpeg_len);
         let mut alpha_data = Vec::with_capacity(alpha_len);
         reader
