@@ -18,7 +18,7 @@ ruffleShadowTemplate.innerHTML = `
             -webkit-tap-highlight-color: transparent;
             position: relative;
         }
-        
+
         /* All of these use the dimensions specified by the embed */
         #container,
         #container canvas,
@@ -42,13 +42,13 @@ ruffleShadowTemplate.innerHTML = `
             cursor: pointer;
             display: none;
         }
-        
+
         #unmute_overlay .background {
             position: absolute;
             background-color: #000;
             opacity: 0.7;
         }
-        
+
         #play_button .icon,
         #unmute_overlay .icon {
             position: absolute;
@@ -80,7 +80,7 @@ ruffleShadowTemplate.innerHTML = `
             color: #37528C;
             font-weight: bold;
         }
-        
+
         #panic > div {
             position: absolute;
         }
@@ -131,7 +131,7 @@ ruffleShadowTemplate.innerHTML = `
             z-index: 2;
             text-align: center;
         }
-        
+
         #message_overlay .message {
             position: absolute;
             top: 50%;
@@ -140,7 +140,7 @@ ruffleShadowTemplate.innerHTML = `
             padding: 20px;
             transform: translate(-50%, -50%);
         }
-        
+
         #continue-btn {
              cursor: pointer;
              background-color: #37528C;
@@ -151,7 +151,7 @@ ruffleShadowTemplate.innerHTML = `
              border-radius: 20px;
              padding: 10px;
         }
-        
+
         #continue-btn:hover {
             background-color: rgba(255, 255, 255, 0.3);
         }
@@ -203,7 +203,7 @@ ruffleShadowTemplate.innerHTML = `
         #right_click_menu > :last-child {
             border-bottom-right-radius: 5px;
             border-bottom-left-radius: 5px;
-        } 
+        }
     </style>
     <style id="dynamic_styles"></style>
 
