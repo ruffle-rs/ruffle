@@ -150,6 +150,8 @@ pub struct Player {
 
     swf: Arc<SwfMovie>,
 
+    warn_on_unsupported_content: bool,
+
     is_playing: bool,
     needs_render: bool,
 
@@ -240,6 +242,8 @@ impl Player {
             player_version: NEWEST_PLAYER_VERSION,
 
             swf: fake_movie.clone(),
+
+            warn_on_unsupported_content: true,
 
             is_playing: false,
             needs_render: true,
@@ -533,6 +537,14 @@ impl Player {
     fn should_letterbox(&self) -> bool {
         self.letterbox == Letterbox::On
             || (self.letterbox == Letterbox::Fullscreen && self.user_interface.is_fullscreen())
+    }
+
+    pub fn warn_on_unsupported_content(&self) -> bool {
+        self.warn_on_unsupported_content
+    }
+
+    pub fn set_warn_on_unsupported_content(&mut self, warn_on_unsupported_content: bool) {
+        self.warn_on_unsupported_content = warn_on_unsupported_content
     }
 
     pub fn movie_width(&self) -> u32 {
@@ -868,7 +880,7 @@ impl Player {
                 lib.register_character(id, crate::character::Character::MorphShape(morph_shape));
             }
         });
-        if is_action_script_3 {
+        if is_action_script_3 && self.warn_on_unsupported_content {
             self.user_interface.message("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
         }
     }

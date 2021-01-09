@@ -114,6 +114,14 @@ export interface BaseLoadOptions {
      * @default true
      */
     upgradeToHttps?: boolean;
+
+    /**
+     * Whether or not to display an overlay with a warning when
+     * loading a movie with unsupported content.
+     *
+     * @default true
+     */
+    warnOnUnsupportedContent?: boolean;
 }
 
 /**
