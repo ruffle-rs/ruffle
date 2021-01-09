@@ -43,61 +43,91 @@ impl NavigatorBackend for WebNavigatorBackend {
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
         if let Some(window) = window() {
-            let url = if let Ok(parsed_url) = Url::parse(&url) {
-                self.pre_process_url(parsed_url).to_string()
+            let document = match window.document() {
+                Some(document) => document,
+                None => return,
+            };
+            let body = match document.body() {
+                Some(body) => body,
+                None => return,
+            };
+
+            if url.trim().starts_with("javascript:") {
+                let target = window_spec.unwrap_or_else(|| "".to_string());
+
+                if target == "" || target == "_self" || target == "undefined" {
+                    let code = url.replacen("javascript:", "", 1);
+
+                    let script = document.create_element("script").unwrap();
+                    script.set_inner_html(&code);
+
+                    let _append = body.append_child(&script);
+                    let _remove = body.remove_child(&script);
+                }
             } else {
-                url.to_string()
-            };
+                let window_url = if url.is_empty() {
+                    "".to_string()
+                } else if url.trim().is_empty() {
+                    "./".to_string()
+                } else {
+                    url.to_string()
+                };
 
-            //TODO: Should we return a result for failed opens? Does Flash care?
-            #[allow(unused_must_use)]
-            match (vars_method, window_spec) {
-                (Some((navmethod, formvars)), window_spec) => {
-                    let document = match window.document() {
-                        Some(document) => document,
-                        None => return,
-                    };
+                let form_url = if let Ok(parsed_url) = Url::parse(&url) {
+                    self.pre_process_url(parsed_url).to_string()
+                } else {
+                    url.to_string()
+                };
 
-                    let form = document
-                        .create_element("form")
-                        .unwrap()
-                        .dyn_into::<web_sys::HtmlFormElement>()
-                        .unwrap();
+                //TODO: Should we return a result for failed opens? Does Flash care?
+                #[allow(unused_must_use)]
+                match (vars_method, window_spec) {
+                    (Some((navmethod, formvars)), window_spec) => {
+                        let form = document
+                            .create_element("form")
+                            .unwrap()
+                            .dyn_into::<web_sys::HtmlFormElement>()
+                            .unwrap();
 
-                    form.set_attribute(
-                        "method",
-                        match navmethod {
-                            NavigationMethod::GET => "get",
-                            NavigationMethod::POST => "post",
-                        },
-                    );
+                        form.set_attribute(
+                            "method",
+                            match navmethod {
+                                NavigationMethod::GET => "get",
+                                NavigationMethod::POST => "post",
+                            },
+                        );
 
-                    form.set_attribute("action", &url);
+                        form.set_attribute("action", &form_url);
 
-                    if let Some(target) = window_spec {
-                        form.set_attribute("target", &target);
+                        if let Some(target) = window_spec {
+                            form.set_attribute("target", &target);
+                        }
+
+                        for (k, v) in formvars.iter() {
+                            let hidden = document.create_element("input").unwrap();
+
+                            hidden.set_attribute("type", "hidden");
+                            hidden.set_attribute("name", k);
+                            hidden.set_attribute("value", v);
+
+                            form.append_child(&hidden);
+                        }
+
+                        body.append_child(&form);
+                        form.submit();
                     }
-
-                    for (k, v) in formvars.iter() {
-                        let hidden = document.create_element("hidden").unwrap();
-
-                        hidden.set_attribute("type", "hidden");
-                        hidden.set_attribute("name", k);
-                        hidden.set_attribute("value", v);
-
-                        form.append_child(&hidden);
+                    (_, Some(ref window_name)) if !window_name.is_empty() => {
+                        if !window_url.is_empty() {
+                            window.open_with_url_and_target(&window_url, window_name);
+                        }
                     }
-
-                    document.body().unwrap().append_child(&form);
-                    form.submit();
-                }
-                (_, Some(ref window_name)) if !window_name.is_empty() => {
-                    window.open_with_url_and_target(&url, window_name);
-                }
-                _ => {
-                    window.location().assign(&url);
-                }
-            };
+                    _ => {
+                        if !window_url.is_empty() {
+                            window.location().assign(&window_url);
+                        }
+                    }
+                };
+            }
         }
     }
 
