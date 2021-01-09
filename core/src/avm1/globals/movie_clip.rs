@@ -191,7 +191,6 @@ pub fn create_proto<'gc>(
         "nextFrame" => next_frame,
         "play" => play,
         "prevFrame" => prev_frame,
-        "removeMovieClip" => remove_movie_clip,
         "startDrag" => start_drag,
         "stop" => stop,
         "stopDrag" => stop_drag,
@@ -206,6 +205,14 @@ pub fn create_proto<'gc>(
         "lineStyle" => line_style,
         "clear" => clear,
         "attachBitmap" => attach_bitmap
+    );
+
+    object.force_set_function(
+        "removeMovieClip",
+        remove_movie_clip,
+        gc_context,
+        DontDelete | ReadOnly | DontEnum,
+        Some(fn_proto),
     );
 
     with_movie_clip_props!(
@@ -925,26 +932,17 @@ fn prev_frame<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn remove_movie_clip<'gc>(
-    movie_clip: MovieClip<'gc>,
+fn remove_movie_clip<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let depth = movie_clip.depth().wrapping_sub(0);
-    // Can only remove positive depths (when offset by the AVM depth bias).
-    // Generally this prevents you from removing non-dynamically created clips,
-    // although you can get around it with swapDepths.
-    // TODO: Figure out the derivation of this range.
-    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !movie_clip.removed() {
-        // Need a parent to remove from.
-        let mut parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
-            parent
-        } else {
-            return Ok(Value::Undefined);
-        };
-
-        parent.remove_child(&mut activation.context, movie_clip.into(), EnumSet::all());
+    // `removeMovieClip` can remove all types of display object,
+    // e.g. `MovieClip.prototype.removeMovieClip.apply(textField);`
+    if let Some(this) = this.as_display_object() {
+        crate::avm1::globals::display_object::remove_display_object(this, activation);
     }
+
     Ok(Value::Undefined)
 }
 

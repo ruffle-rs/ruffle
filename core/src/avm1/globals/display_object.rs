@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use enumset::EnumSet;
 use gc_arena::MutationContext;
 
@@ -202,4 +202,21 @@ pub fn overwrite_parent<'gc>(
     );
 
     Ok(Value::Undefined)
+}
+
+pub fn remove_display_object<'gc>(
+    this: DisplayObject<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) {
+    let depth = this.depth().wrapping_sub(0);
+    // Can only remove positive depths (when offset by the AVM depth bias).
+    // Generally this prevents you from removing non-dynamically created clips,
+    // although you can get around it with swapDepths.
+    // TODO: Figure out the derivation of this range.
+    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !this.removed() {
+        // Need a parent to remove from.
+        if let Some(mut parent) = this.parent().and_then(|o| o.as_movie_clip()) {
+            parent.remove_child(&mut activation.context, this, EnumSet::all());
+        }
+    }
 }

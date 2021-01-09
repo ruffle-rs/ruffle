@@ -1823,10 +1823,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let start_clip = self.target_clip_or_root()?;
         let target_clip = self.resolve_target_display_object(start_clip, target, true)?;
 
-        if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
-            let _ = globals::movie_clip::remove_movie_clip(target_clip, self, &[]);
+        if let Some(target_clip) = target_clip {
+            crate::avm1::globals::display_object::remove_display_object(target_clip, self);
         } else {
-            avm_warn!(self, "RemoveSprite: Source is not a movie clip");
+            avm_warn!(self, "RemoveSprite: Source is not a display object");
         }
         Ok(FrameControl::Continue)
     }
