@@ -1,15 +1,12 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_REMOVE_DEPTH};
+use crate::avm1::globals::display_object;
 use crate::avm1::property::Attribute::*;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
-use crate::display_object::{
-    AutoSizeMode, EditText, TDisplayObject, TDisplayObjectContainer, TextSelection,
-};
+use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 macro_rules! with_text_field {
@@ -281,24 +278,12 @@ fn replace_text<'gc>(
     Ok(Value::Undefined)
 }
 
-fn remove_text_field<'gc>(
+pub fn remove_text_field<'gc>(
     text_field: EditText<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let depth = text_field.depth();
-
-    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH {
-        // Need a parent to remove from.
-        let mut parent = if let Some(parent) = text_field.parent().and_then(|o| o.as_movie_clip()) {
-            parent
-        } else {
-            return Ok(Value::Undefined);
-        };
-
-        parent.remove_child(&mut activation.context, text_field.into(), EnumSet::all());
-    }
-
+    display_object::remove_display_object(text_field.into(), activation);
     Ok(Value::Undefined)
 }
 
