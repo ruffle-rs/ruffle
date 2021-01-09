@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html data-ruffle-optout>
     <head>
         <meta charset="utf-8" />
@@ -7,11 +8,10 @@
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato" />
         <link rel="stylesheet" href="./index.css" />
     </head>
-
     <body>
         <div id="nav">
             <div id="title">
-                <a href="https://ruffle.rs" target="_blank">
+                <a href="https://ruffle.rs/" target="_blank">
                     <img
                         src="https://ruffle.rs/assets/logo.png"
                         alt="Ruffle"
@@ -21,7 +21,7 @@
             </div>
             <div id="file-picker">
                 <div id="local-file-container">
-                    Local SWF:
+                    <span>Local SWF:</span>
                     <input type="file" accept=".swf,.spl" id="local-file" />
                 </div>
                 <div id="sample-swfs-container">
@@ -29,11 +29,11 @@
                     <select id="sample-swfs">
                         <option value="none">None</option>
                         <optgroup id="anim-optgroup" label="Animations"></optgroup>
-                        <optgroup id="games-optgroup" label="Games"> </optgroup>
+                        <optgroup id="games-optgroup" label="Games"></optgroup>
                     </select>
-                    <span id="author-container">
-                        Author: <a href="#" target="_blank" id="author"></a>
-                    </span>
+                    <div id="author-container">
+                        <span>Author: </span><a href="#" target="_blank" id="author"></a>
+                    </div>
                 </div>
             </div>
         </div>
