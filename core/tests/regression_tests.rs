@@ -94,6 +94,7 @@ swf_tests! {
     (point, "avm1/point", 1),
     (rectangle, "avm1/rectangle", 1),
     (date_is_special, "avm1/date_is_special", 1),
+    (get_bytes_total, "avm1/get_bytes_total", 1),
     (goto_advance1, "avm1/goto_advance1", 2),
     (goto_advance2, "avm1/goto_advance2", 2),
     (goto_both_ways1, "avm1/goto_both_ways1", 2),
