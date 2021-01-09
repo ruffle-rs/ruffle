@@ -118,6 +118,9 @@ pub struct Config {
 
     #[serde(rename = "upgradeToHttps")]
     upgrade_to_https: bool,
+
+    #[serde(rename = "warnOnUnsupportedContent")]
+    warn_on_unsupported_content: bool,
 }
 
 impl Default for Config {
@@ -125,6 +128,7 @@ impl Default for Config {
         Self {
             letterbox: Default::default(),
             upgrade_to_https: true,
+            warn_on_unsupported_content: true,
         }
     }
 }
@@ -359,6 +363,9 @@ impl Ruffle {
             user_interface,
         )?;
         core.lock().unwrap().set_letterbox(config.letterbox);
+        core.lock()
+            .unwrap()
+            .set_warn_on_unsupported_content(config.warn_on_unsupported_content);
 
         // Create instance.
         let instance = RuffleInstance {
