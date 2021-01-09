@@ -1,3 +1,5 @@
+import "./index.css";
+
 const { SourceAPI, PublicAPI } = require("ruffle-core");
 
 window.RufflePlayer = PublicAPI.negotiate(
