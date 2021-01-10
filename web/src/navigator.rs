@@ -55,7 +55,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             if url.trim().starts_with("javascript:") {
                 let target = window_spec.unwrap_or_else(|| "".to_string());
 
-                if target == "" || target == "_self" || target == "undefined" {
+                if target.is_empty() || target == "_self" || target == "undefined" {
                     let code = url.replacen("javascript:", "", 1);
 
                     let script = document.create_element("script").unwrap();
