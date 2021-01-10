@@ -200,7 +200,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
             .with_inner_size(movie_size)
             .build(&event_loop)?,
     );
-    let viewport_size = movie_size.to_physical(window.scale_factor());
+    let viewport_size = window.inner_size();
 
     let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
         Ok(audio) => Box::new(audio),
