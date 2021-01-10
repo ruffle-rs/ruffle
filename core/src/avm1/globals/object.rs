@@ -5,7 +5,6 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute::{self, *};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
-use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use enumset::EnumSet;
 use gc_arena::MutationContext;
@@ -147,36 +146,35 @@ pub fn register_class<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(class_name) = args.get(0).cloned() {
-        let class_name = class_name.coerce_to_string(activation)?;
-        if let Some(movie) = activation.base_clip().movie() {
-            if let Some(Character::MovieClip(movie_clip)) = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
-                .get_character_by_export_name(&class_name)
-            {
-                if let Some(constructor) = args.get(1) {
-                    movie_clip.set_avm1_constructor(
-                        activation.context.gc_context,
-                        Some(constructor.coerce_to_object(activation)),
-                    );
-                } else {
-                    movie_clip.set_avm1_constructor(activation.context.gc_context, None);
-                }
-            } else {
-                log::warn!(
-                    "Tried to register_class on an unknown export {}",
-                    class_name
-                );
-            }
-        } else {
-            log::warn!("Tried to register_class on an unknown movie");
+    let (class_name, constructor) = match args {
+        [class_name, constructor, ..] => (class_name, constructor),
+        _ => return Ok(Value::Bool(false)),
+    };
+
+    let constructor = match constructor {
+        Value::Null | Value::Undefined => None,
+        Value::Object(Object::FunctionObject(func)) => Some(*func),
+        _ => return Ok(Value::Bool(false)),
+    };
+
+    let class_name = class_name.coerce_to_string(activation)?;
+
+    let registry = activation
+        .base_clip()
+        .movie()
+        .map(|movie| activation.context.library.library_for_movie_mut(movie))
+        .and_then(|library| library.get_avm1_constructor_registry());
+
+    match registry {
+        Some(registry) => {
+            registry.set(&class_name, constructor, activation.context.gc_context);
+            Ok(Value::Bool(true))
         }
-    } else {
-        log::warn!("Tried to register_class with an unknown class");
+        None => {
+            log::warn!("Can't register_class without a constructor registry");
+            Ok(Value::Bool(false))
+        }
     }
-    Ok(Value::Undefined)
 }
 
 /// Implements `Object.prototype.watch`
