@@ -368,7 +368,7 @@ swf_tests! {
     (button_children, "avm1/button_children", 1),
     (transform, "avm1/transform", 1),
     (target_path, "avm1/target_path", 1),
-    (remove_movie_clip, "avm1/remove_movie_clip", 1),
+    (remove_movie_clip, "avm1/remove_movie_clip", 2),
     (as3_add, "avm2/add", 1),
     (as3_bitand, "avm2/bitand", 1),
     (as3_bitnot, "avm2/bitnot", 1),
