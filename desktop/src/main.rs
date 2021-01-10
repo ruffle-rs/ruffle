@@ -197,9 +197,10 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         WindowBuilder::new()
             .with_title(format!("Ruffle - {}", window_title))
             .with_window_icon(Some(icon))
-            .with_inner_size(movie_size)
+            .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
             .build(&event_loop)?,
     );
+    window.set_inner_size(movie_size);
     let viewport_size = window.inner_size();
 
     let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
