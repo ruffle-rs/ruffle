@@ -893,7 +893,7 @@ mod tests {
                 audio: &mut NullAudioBackend::new(),
                 input: &mut NullInputBackend::new(),
                 background_color: &mut None,
-                library: &mut Library::default(),
+                library: &mut Library::empty(gc_context),
                 navigator: &mut NullNavigatorBackend::new(),
                 renderer: &mut NullRenderer::new(),
                 locale: &mut NullLocaleBackend::new(),

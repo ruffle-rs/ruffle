@@ -27,7 +27,7 @@ use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
-use std::cell::Ref;
+use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -58,7 +58,7 @@ pub struct MovieClipData<'gc> {
     frame_scripts: Vec<Avm2FrameScript<'gc>>,
     has_button_clip_event: bool,
     flags: EnumSet<MovieClipFlags>,
-    avm_constructor: Option<AvmObject<'gc>>,
+    avm2_constructor: Option<Avm2Object<'gc>>,
     drawing: Drawing,
     is_focusable: bool,
     has_focus: bool,
@@ -72,7 +72,7 @@ unsafe impl<'gc> Collect for MovieClipData<'gc> {
         self.base.trace(cc);
         self.static_data.trace(cc);
         self.object.trace(cc);
-        self.avm_constructor.trace(cc);
+        self.avm2_constructor.trace(cc);
         self.frame_scripts.trace(cc);
     }
 }
@@ -94,7 +94,7 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts: Vec::new(),
                 has_button_clip_event: false,
                 flags: EnumSet::empty(),
-                avm_constructor: None,
+                avm2_constructor: None,
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
@@ -115,14 +115,7 @@ impl<'gc> MovieClip<'gc> {
                 base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
-                    MovieClipStatic {
-                        id,
-                        swf,
-                        total_frames: num_frames,
-                        audio_stream_info: None,
-                        frame_labels: HashMap::new(),
-                        scene_labels: HashMap::new(),
-                    },
+                    MovieClipStatic::with_data(id, swf, num_frames),
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -133,7 +126,7 @@ impl<'gc> MovieClip<'gc> {
                 frame_scripts: Vec::new(),
                 has_button_clip_event: false,
                 flags: MovieClipFlags::Playing.into(),
-                avm_constructor: None,
+                avm2_constructor: None,
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
@@ -840,42 +833,13 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().static_data.total_frames
     }
 
-    pub fn set_avm1_constructor(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        prototype: Option<Avm1Object<'gc>>,
-    ) {
-        let mut write = self.0.write(gc_context);
-
-        if write
-            .avm_constructor
-            .map(|c| c.is_avm2_object())
-            .unwrap_or(false)
-        {
-            log::error!("Blocked attempt to set AVM1 constructor on AVM2 object");
-            return;
-        }
-
-        write.avm_constructor = prototype.map(|o| o.into());
-    }
-
     pub fn set_avm2_constructor(
         self,
         gc_context: MutationContext<'gc, '_>,
         prototype: Option<Avm2Object<'gc>>,
     ) {
         let mut write = self.0.write(gc_context);
-
-        if write
-            .avm_constructor
-            .map(|c| c.is_avm1_object())
-            .unwrap_or(false)
-        {
-            log::error!("Blocked attempt to set AVM2 constructor on AVM1 object");
-            return;
-        }
-
-        write.avm_constructor = prototype.map(|o| o.into());
+        write.avm2_constructor = prototype;
     }
 
     pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
@@ -1399,10 +1363,11 @@ impl<'gc> MovieClip<'gc> {
         if self.0.read().object.is_none() {
             let version = context.swf.version();
             let globals = context.avm1.global_object_cell();
+            let avm1_constructor = self.0.read().get_registered_avm1_constructor(context);
 
             // If we are running within the AVM, this must be an immediate action.
             // If we are not, then this must be queued to be ran first-thing
-            if instantiated_by.is_avm() && self.0.read().avm_constructor.is_some() {
+            if let Some(constructor) = avm1_constructor.filter(|_| instantiated_by.is_avm()) {
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Construct]"),
@@ -1411,13 +1376,6 @@ impl<'gc> MovieClip<'gc> {
                     self.into(),
                 );
 
-                let constructor = self
-                    .0
-                    .read()
-                    .avm_constructor
-                    .unwrap()
-                    .as_avm1_object()
-                    .unwrap();
                 if let Ok(prototype) = constructor
                     .get("prototype", &mut activation)
                     .map(|v| v.coerce_to_object(&mut activation))
@@ -1488,7 +1446,7 @@ impl<'gc> MovieClip<'gc> {
             context.action_queue.queue_actions(
                 display_object,
                 ActionType::Construct {
-                    constructor: mc.avm_constructor.map(|a| a.as_avm1_object().unwrap()),
+                    constructor: avm1_constructor,
                     events,
                 },
                 false,
@@ -1515,7 +1473,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
-        let constructor = self.0.read().avm_constructor.unwrap_or_else(|| {
+        let mut constructor = self.0.read().avm2_constructor.unwrap_or_else(|| {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             let mut mc_proto = activation.context.avm2.prototypes().movieclip;
             mc_proto
@@ -1527,39 +1485,34 @@ impl<'gc> MovieClip<'gc> {
                 .unwrap()
                 .coerce_to_object(&mut activation)
                 .unwrap()
-                .into()
         });
 
-        if let AvmObject::Avm2(mut constr) = constructor {
-            let mut constr_thing = || {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                let proto = constr
-                    .get_property(
-                        constr,
-                        &Avm2QName::new(Avm2Namespace::public_namespace(), "prototype"),
-                        &mut activation,
-                    )?
-                    .coerce_to_object(&mut activation)?;
-                let object = Avm2StageObject::for_display_object(
-                    activation.context.gc_context,
-                    display_object,
-                    proto,
-                )
-                .into();
+        let mut constr_thing = || {
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let proto = constructor
+                .get_property(
+                    constructor,
+                    &Avm2QName::new(Avm2Namespace::public_namespace(), "prototype"),
+                    &mut activation,
+                )?
+                .coerce_to_object(&mut activation)?;
+            let object = Avm2StageObject::for_display_object(
+                activation.context.gc_context,
+                display_object,
+                proto,
+            )
+            .into();
 
-                constr.call(Some(object), &[], &mut activation, Some(proto))?;
+            constructor.call(Some(object), &[], &mut activation, Some(proto))?;
 
-                Ok(object)
-            };
-            let result: Result<Avm2Object<'gc>, Avm2Error> = constr_thing();
+            Ok(object)
+        };
+        let result: Result<Avm2Object<'gc>, Avm2Error> = constr_thing();
 
-            if let Ok(object) = result {
-                self.0.write(context.gc_context).object = Some(object.into());
-            } else if let Err(e) = result {
-                log::error!("Got {} when constructing AVM2 side of display object", e);
-            }
-        } else {
-            log::error!("Attempted to construct AVM2 movieclip with AVM1 constructor!");
+        if let Ok(object) = result {
+            self.0.write(context.gc_context).object = Some(object.into());
+        } else if let Err(e) = result {
+            log::error!("Got {} when constructing AVM2 side of display object", e);
         }
     }
 
@@ -1928,14 +1881,7 @@ impl<'gc> MovieClipData<'gc> {
         self.base.reset_for_movie_load();
         self.static_data = Gc::allocate(
             gc_context,
-            MovieClipStatic {
-                id: 0,
-                swf: movie.into(),
-                total_frames,
-                audio_stream_info: None,
-                frame_labels: HashMap::new(),
-                scene_labels: HashMap::new(),
-            },
+            MovieClipStatic::with_data(0, movie.into(), total_frames),
         );
         self.tag_stream_pos = 0;
         self.flags = MovieClipFlags::Playing.into();
@@ -2128,6 +2074,21 @@ impl<'gc> MovieClipData<'gc> {
         if let Some(audio_stream) = self.audio_stream.take() {
             context.audio.stop_stream(audio_stream);
         }
+    }
+
+    /// Fetch the avm1 constructor associated with this MovieClip by `Object.registerClass`.
+    /// Return `None` if this MovieClip isn't exported, or if no constructor is associated
+    /// to its symbol name.
+    fn get_registered_avm1_constructor(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Option<Avm1Object<'gc>> {
+        let symbol_name = self.static_data.exported_name.borrow();
+        let symbol_name = symbol_name.as_ref()?;
+        let library = context.library.library_for_movie_mut(self.movie());
+        let registry = library.get_avm1_constructor_registry()?;
+        let ctor = registry.get(symbol_name)?;
+        Some(Avm1Object::FunctionObject(ctor))
     }
 
     pub fn movie(&self) -> Arc<SwfMovie> {
@@ -2711,10 +2672,15 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> DecodeResult {
         let exports = reader.read_export_assets()?;
         for export in exports {
-            context
+            let character = context
                 .library
                 .library_for_movie_mut(self.movie())
                 .register_export(export.id, &export.name);
+
+            // TODO: do other types of Character need to know their exported name?
+            if let Some(Character::MovieClip(movie_clip)) = character {
+                *movie_clip.0.read().static_data.exported_name.borrow_mut() = Some(export.name);
+            }
         }
         Ok(())
     }
@@ -2997,7 +2963,8 @@ impl Default for Scene {
 
 /// Static data shared between all instances of a movie clip.
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(require_static)]
 struct MovieClipStatic {
     id: CharacterId,
     swf: SwfSlice,
@@ -3005,25 +2972,26 @@ struct MovieClipStatic {
     scene_labels: HashMap<String, Scene>,
     audio_stream_info: Option<swf::SoundStreamHead>,
     total_frames: FrameNumber,
+    /// The last known symbol name under which this movie clip was exported.
+    /// Used for looking up constructors registered with `Object.registerClass`.
+    exported_name: RefCell<Option<String>>,
 }
 
 impl MovieClipStatic {
     fn empty(swf: SwfSlice) -> Self {
+        Self::with_data(0, swf, 1)
+    }
+
+    fn with_data(id: CharacterId, swf: SwfSlice, total_frames: FrameNumber) -> Self {
         Self {
-            id: 0,
+            id,
             swf,
-            total_frames: 1,
+            total_frames,
             frame_labels: HashMap::new(),
             scene_labels: HashMap::new(),
             audio_stream_info: None,
+            exported_name: RefCell::new(None),
         }
-    }
-}
-
-unsafe impl<'gc> Collect for MovieClipStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
     }
 }
 

@@ -260,7 +260,7 @@ impl Player {
                 GcRoot(GcCell::allocate(
                     gc_context,
                     GcRootData {
-                        library: Library::default(),
+                        library: Library::empty(gc_context),
                         levels: BTreeMap::new(),
                         mouse_hovered_object: None,
                         drag_object: None,
