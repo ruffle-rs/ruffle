@@ -598,6 +598,63 @@ impl BitmapData {
         }
     }
 
+    pub fn merge(
+        &mut self,
+        source_bitmap: &Self,
+        src_rect: (i32, i32, i32, i32),
+        dest_point: (i32, i32),
+        rgba_mult: (u16, u16, u16, u16),
+    ) {
+        let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+        let (dest_min_x, dest_min_y) = dest_point;
+
+        for src_y in src_min_y..(src_min_y + src_height) {
+            for src_x in src_min_x..(src_min_x + src_width) {
+                let dest_x = src_x - src_min_x + dest_min_x;
+                let dest_y = src_y - src_min_y + dest_min_y;
+
+                if !self.is_point_in_bounds(dest_x, dest_y)
+                    || !source_bitmap.is_point_in_bounds(src_x, src_y)
+                {
+                    continue;
+                }
+
+                let source_color = source_bitmap
+                    .get_pixel_raw(src_x as u32, src_y as u32)
+                    .unwrap()
+                    .to_un_multiplied_alpha();
+
+                let dest_color = self
+                    .get_pixel_raw(dest_x as u32, dest_y as u32)
+                    .unwrap()
+                    .to_un_multiplied_alpha();
+
+                let (red_mult, green_mult, blue_mult, alpha_mult) = rgba_mult;
+
+                let red = (source_color.red() as u16 * red_mult
+                    + dest_color.red() as u16 * (256 - red_mult))
+                    / 256;
+                let green = (source_color.green() as u16 * green_mult
+                    + dest_color.green() as u16 * (256 - green_mult))
+                    / 256;
+                let blue = (source_color.blue() as u16 * blue_mult
+                    + dest_color.blue() as u16 * (256 - blue_mult))
+                    / 256;
+                let alpha = (source_color.alpha() as u16 * alpha_mult
+                    + dest_color.alpha() as u16 * (256 - alpha_mult))
+                    / 256;
+
+                let mix_color = Color::argb(alpha as u8, red as u8, green as u8, blue as u8);
+
+                self.set_pixel32_raw(
+                    dest_x as u32,
+                    dest_y as u32,
+                    mix_color.to_premultiplied_alpha(self.transparency),
+                );
+            }
+        }
+    }
+
     // Unlike `copy_channel` and `copy_pixels`, this function seems to
     // operate "in-place" if the source bitmap is the same object as `self`.
     // This means that we can't resolve this aliasing issue in Rust by a
