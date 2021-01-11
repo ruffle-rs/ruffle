@@ -437,6 +437,10 @@ impl<'gc> Avm1<'gc> {
         self.max_recursion_depth = max_recursion_depth
     }
 
+    pub fn broadcaster_functions(&self) -> BroadcasterFunctions<'gc> {
+        self.broadcaster_functions
+    }
+
     #[cfg(feature = "avm_debug")]
     #[inline]
     pub fn show_debug_output(&self) -> bool {

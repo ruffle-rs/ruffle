@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute::*;
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{search_prototype, Object, ScriptObject, Value};
 use gc_arena::{Collect, MutationContext};
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -130,7 +130,12 @@ pub fn broadcast_internal<'gc>(
             let listener = listeners.array_element(i);
 
             if let Value::Object(listener) = listener {
-                listener.call_method(method_name, call_args, activation)?;
+                let (callback, base_proto) =
+                    search_prototype(Some(listener), method_name, activation, listener)?;
+
+                // .call does nothing if the method is undefined, as opposed to emitting a warning
+                // This is a good thing since not all listeners will have all methods
+                callback.call(method_name, activation, listener, base_proto, call_args)?;
             }
         }
 
