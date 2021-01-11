@@ -13,10 +13,14 @@ use std::borrow::Cow;
 
 /// Implements `Object` constructor
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = match args.get(0) {
+        None | Some(Value::Null) | Some(Value::Undefined) => this,
+        Some(val) => val.coerce_to_object(activation),
+    };
     Ok(this.into())
 }
 
@@ -26,11 +30,13 @@ pub fn object_function<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(val) = args.get(0) {
-        Ok(val.coerce_to_object(activation).into())
-    } else {
-        Ok(ScriptObject::object(activation.context.gc_context, None).into())
-    }
+    let obj = match args.get(0) {
+        None | Some(Value::Null) | Some(Value::Undefined) => {
+            Object::from(ScriptObject::object(activation.context.gc_context, None))
+        }
+        Some(val) => val.coerce_to_object(activation),
+    };
+    Ok(obj.into())
 }
 
 /// Implements `Object.prototype.addProperty`
