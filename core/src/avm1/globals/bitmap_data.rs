@@ -800,13 +800,90 @@ pub fn copy_pixels<'gc>(
 }
 
 pub fn merge<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            log::warn!("BitmapData.merge - not yet implemented");
+            let source_bitmap = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let source_rect = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let src_min_x = source_rect
+                .get("x", activation)?
+                .coerce_to_i32(activation)?;
+            let src_min_y = source_rect
+                .get("y", activation)?
+                .coerce_to_i32(activation)?;
+            let src_width = source_rect
+                .get("width", activation)?
+                .coerce_to_i32(activation)?;
+            let src_height = source_rect
+                .get("height", activation)?
+                .coerce_to_i32(activation)?;
+
+            let dest_point = args
+                .get(2)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let dest_x = dest_point.get("x", activation)?.coerce_to_i32(activation)?;
+            let dest_y = dest_point.get("y", activation)?.coerce_to_i32(activation)?;
+
+            let red_mult = args
+                .get(3)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u16(activation)?;
+
+            let green_mult = args
+                .get(4)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u16(activation)?;
+
+            let blue_mult = args
+                .get(5)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u16(activation)?;
+
+            let alpha_mult = args
+                .get(6)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u16(activation)?;
+
+            if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
+                if !src_bitmap.disposed() {
+                    // dealing with object aliasing...
+                    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
+                    let src_bitmap_data_cell = src_bitmap.bitmap_data();
+                    let src_bitmap_gc_ref; // only initialized if source is a different object than self
+                    let source_bitmap_ref = // holds the reference to either of the ones above
+                        if GcCell::ptr_eq(src_bitmap.bitmap_data(), bitmap_data.bitmap_data()) {
+                            src_bitmap_clone = src_bitmap_data_cell.read().clone();
+                            &src_bitmap_clone
+                        } else {
+                            src_bitmap_gc_ref = src_bitmap_data_cell.read();
+                            &src_bitmap_gc_ref
+                        };
+
+                    bitmap_data
+                        .bitmap_data()
+                        .write(activation.context.gc_context)
+                        .merge(
+                            source_bitmap_ref,
+                            (src_min_x, src_min_y, src_width, src_height),
+                            (dest_x, dest_y),
+                            (red_mult, green_mult, blue_mult, alpha_mult),
+                        );
+                }
+            }
+
             return Ok(Value::Undefined);
         }
     }
