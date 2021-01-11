@@ -83,7 +83,7 @@ pub fn constructor<'gc>(
     map_defined_to_number("indent", this, activation, args.get(11).cloned())?;
     map_defined_to_number("leading", this, activation, args.get(12).cloned())?;
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// `TextFormat.prototype` constructor

@@ -1680,7 +1680,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             //TODO: What happens if you `ActionNewMethod` without a method name?
 
             let this = match constructor.construct(self, &args) {
-                Ok(x) => Ok(Value::Object(x)),
+                Ok(x) => Ok(x),
                 Err(Error::ConstructorFailure) => Ok(Value::Undefined),
                 Err(e) => Err(e),
             }?;
@@ -1711,7 +1711,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let constructor = name_value.coerce_to_object(self);
 
         let this = match constructor.construct(self, &args) {
-            Ok(x) => Ok(Value::Object(x)),
+            Ok(x) => Ok(x),
             Err(Error::ConstructorFailure) => Ok(Value::Undefined),
             Err(e) => Err(e),
         }?;

@@ -60,7 +60,7 @@ impl<'gc> TObject<'gc> for TransformObject<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let prototype = self
             .get("prototype", activation)?
             .coerce_to_object(activation);
@@ -80,7 +80,7 @@ impl<'gc> TObject<'gc> for TransformObject<'gc> {
             // TODO: This should return an unboxed undefined.
             Value::Undefined.coerce_to_object(activation)
         };
-        Ok(this)
+        Ok(this.into())
     }
 
     #[allow(clippy::new_ret_no_self)]

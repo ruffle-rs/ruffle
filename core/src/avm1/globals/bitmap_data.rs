@@ -49,7 +49,7 @@ pub fn constructor<'gc>(
             .init_pixels(width as u32, height as u32, fill_color, transparency);
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn height<'gc>(
@@ -111,7 +111,7 @@ pub fn get_rectangle<'gc>(
                     bitmap_data.bitmap_data().read().height().into(),
                 ],
             )?;
-            return Ok(rect.into());
+            return Ok(rect);
         }
     }
 
@@ -355,14 +355,17 @@ pub fn clone<'gc>(
                     0xFFFFFF.into(),
                 ],
             )?;
-            let new_bitmap_data_object = new_bitmap_data.as_bitmap_data_object().unwrap();
+            let new_bitmap_data_object = new_bitmap_data
+                .coerce_to_object(activation)
+                .as_bitmap_data_object()
+                .unwrap();
 
             new_bitmap_data_object
                 .bitmap_data()
                 .write(activation.context.gc_context)
                 .set_pixels(bitmap_data.bitmap_data().read().pixels().to_vec());
 
-            return Ok(new_bitmap_data.into());
+            return Ok(new_bitmap_data);
         }
     }
 
@@ -571,7 +574,7 @@ pub fn get_color_bounds_rect<'gc>(
                 let proto = activation.context.avm1.prototypes.rectangle_constructor;
                 let rect =
                     proto.construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
-                return Ok(rect.into());
+                return Ok(rect);
             }
         }
     }
@@ -938,7 +941,10 @@ pub fn load_bitmap<'gc>(
             let proto = activation.context.avm1.prototypes.bitmap_data_constructor;
             let new_bitmap =
                 proto.construct(activation, &[bitmap.width.into(), bitmap.height.into()])?;
-            let new_bitmap_object = new_bitmap.as_bitmap_data_object().unwrap();
+            let new_bitmap_object = new_bitmap
+                .coerce_to_object(activation)
+                .as_bitmap_data_object()
+                .unwrap();
 
             let pixels: Vec<i32> = bitmap.data.into();
 
@@ -947,7 +953,7 @@ pub fn load_bitmap<'gc>(
                 .write(activation.context.gc_context)
                 .set_pixels(pixels.into_iter().map(|p| p.into()).collect());
 
-            return Ok(new_bitmap.into());
+            return Ok(new_bitmap);
         }
     }
 
@@ -962,6 +968,7 @@ pub fn create_bitmap_data_object<'gc>(
     let object = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
+        constructor_to_fn!(constructor),
         fn_proto,
         bitmap_data_proto,
     );

@@ -27,7 +27,7 @@ pub fn constructor<'gc>(
         EnumSet::empty(),
     );
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn create_proto<'gc>(

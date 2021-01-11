@@ -43,7 +43,7 @@ fn constructor<'gc>(
         )?;
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 fn to_string<'gc>(
@@ -77,6 +77,7 @@ pub fn create_rectangle_object<'gc>(
     FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
+        constructor_to_fn!(constructor),
         fn_proto,
         rectangle_proto,
     )
@@ -117,7 +118,7 @@ fn clone<'gc>(
     ];
     let constructor = activation.context.avm1.prototypes.rectangle_constructor;
     let cloned = constructor.construct(activation, &args)?;
-    Ok(cloned.into())
+    Ok(cloned)
 }
 
 fn contains<'gc>(
@@ -291,7 +292,7 @@ fn union<'gc>(
     ];
     let constructor = activation.context.avm1.prototypes.rectangle_constructor;
     let result = constructor.construct(activation, &args)?;
-    Ok(result.into())
+    Ok(result)
 }
 
 fn inflate<'gc>(
@@ -444,7 +445,7 @@ fn intersection<'gc>(
     ];
     let constructor = activation.context.avm1.prototypes.rectangle_constructor;
     let result = constructor.construct(activation, &args)?;
-    Ok(result.into())
+    Ok(result)
 }
 
 fn equals<'gc>(
@@ -586,7 +587,7 @@ fn get_size<'gc>(
     let width = this.get("width", activation)?;
     let height = this.get("height", activation)?;
     let point = construct_new_point(&[width, height], activation)?;
-    Ok(point.into())
+    Ok(point)
 }
 
 fn set_size<'gc>(
@@ -614,7 +615,7 @@ fn get_top_left<'gc>(
     let x = this.get("x", activation)?;
     let y = this.get("y", activation)?;
     let point = construct_new_point(&[x, y], activation)?;
-    Ok(point.into())
+    Ok(point)
 }
 
 fn set_top_left<'gc>(
@@ -658,7 +659,7 @@ fn get_bottom_right<'gc>(
     let width = this.get("width", activation)?.coerce_to_f64(activation)?;
     let height = this.get("height", activation)?.coerce_to_f64(activation)?;
     let point = point_to_object((x + width, y + height), activation)?;
-    Ok(point.into())
+    Ok(point)
 }
 
 fn set_bottom_right<'gc>(

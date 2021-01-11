@@ -51,7 +51,7 @@ pub fn constructor<'gc>(
     this.set("enabled", enabled.into(), activation)?;
     this.set("visible", visible.into(), activation)?;
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn copy<'gc>(
@@ -94,7 +94,7 @@ pub fn copy<'gc>(
         ],
     )?;
 
-    Ok(copy.into())
+    Ok(copy)
 }
 
 pub fn create_proto<'gc>(

@@ -560,7 +560,7 @@ fn constructor<'gc>(
     let this = if let Some(object) = this.as_date_object() {
         object
     } else {
-        return Ok(Value::Undefined);
+        return Ok(this.into());
     };
 
     let timestamp = args.get(0).unwrap_or(&Value::Undefined);
@@ -603,7 +603,7 @@ fn constructor<'gc>(
         )
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 fn create_utc<'gc>(

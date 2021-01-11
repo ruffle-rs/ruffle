@@ -74,7 +74,7 @@ pub fn constructor<'gc>(
     ct.set_blue_offset(activation.context.gc_context, blue_offset);
     ct.set_alpha_offset(activation.context.gc_context, alpha_offset);
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn object_to_color_transform<'gc>(
@@ -125,7 +125,7 @@ pub fn object_to_color_transform<'gc>(
 pub fn color_transform_to_object<'gc>(
     color_transform: ColorTransform,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
         color_transform.r_mult.into(),
         color_transform.g_mult.into(),

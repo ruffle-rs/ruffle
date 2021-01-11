@@ -23,7 +23,7 @@ pub fn constructor<'gc>(
     set_color(activation, this, args.get(7..8).unwrap_or_default())?;
     set_alpha(activation, this, args.get(8..9).unwrap_or_default())?;
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn alpha<'gc>(

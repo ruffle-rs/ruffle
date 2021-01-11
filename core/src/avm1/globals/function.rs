@@ -10,10 +10,10 @@ use gc_arena::MutationContext;
 /// Implements `new Function()`
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// Implements `Function()`

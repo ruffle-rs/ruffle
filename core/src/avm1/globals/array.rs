@@ -30,10 +30,10 @@ pub fn create_array_object<'gc>(
     array_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let array = FunctionObject::function_and_constructor(
+    let array = FunctionObject::constructor(
         gc_context,
-        Executable::Native(array_function),
         Executable::Native(constructor),
+        Executable::Native(array_function),
         fn_proto,
         array_proto,
     );
@@ -107,7 +107,7 @@ pub fn constructor<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// Implements `Array` function

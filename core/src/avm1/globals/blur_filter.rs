@@ -17,7 +17,7 @@ pub fn constructor<'gc>(
     set_blur_y(activation, this, args.get(1..2).unwrap_or_default())?;
     set_quality(activation, this, args.get(2..3).unwrap_or_default())?;
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn blur_x<'gc>(
@@ -29,7 +29,7 @@ pub fn blur_x<'gc>(
         return Ok(filter.blur_x().into());
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn set_blur_x<'gc>(

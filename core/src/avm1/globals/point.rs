@@ -12,7 +12,7 @@ use std::f64::NAN;
 pub fn point_to_object<'gc>(
     point: (f64, f64),
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let args = [point.0.into(), point.1.into()];
     construct_new_point(&args, activation)
 }
@@ -20,7 +20,7 @@ pub fn point_to_object<'gc>(
 pub fn construct_new_point<'gc>(
     args: &[Value<'gc>],
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let constructor = activation.context.avm1.prototypes.point_constructor;
     let object = constructor.construct(activation, &args)?;
     Ok(object)
@@ -71,7 +71,7 @@ fn constructor<'gc>(
         )?;
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 fn clone<'gc>(
@@ -83,7 +83,7 @@ fn clone<'gc>(
     let constructor = activation.context.avm1.prototypes.point_constructor;
     let cloned = constructor.construct(activation, &args)?;
 
-    Ok(cloned.into())
+    Ok(cloned)
 }
 
 fn equals<'gc>(
@@ -115,7 +115,7 @@ fn add<'gc>(
         activation,
     )?;
     let object = point_to_object((this_x + other.0, this_y + other.1), activation)?;
-    Ok(object.into())
+    Ok(object)
 }
 
 fn subtract<'gc>(
@@ -130,7 +130,7 @@ fn subtract<'gc>(
         activation,
     )?;
     let object = point_to_object((this_x - other.0, this_y - other.1), activation)?;
-    Ok(object.into())
+    Ok(object)
 }
 
 fn distance<'gc>(
@@ -167,7 +167,7 @@ fn polar<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_f64(activation)?;
     let point = point_to_object((length * angle.cos(), length * angle.sin()), activation)?;
-    Ok(point.into())
+    Ok(point)
 }
 
 fn interpolate<'gc>(
@@ -176,14 +176,14 @@ fn interpolate<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 3 {
-        return Ok(point_to_object((NAN, NAN), activation)?.into());
+        return Ok(point_to_object((NAN, NAN), activation)?);
     }
 
     let a = value_to_point(args.get(0).unwrap().to_owned(), activation)?;
     let b = value_to_point(args.get(1).unwrap().to_owned(), activation)?;
     let f = args.get(2).unwrap().coerce_to_f64(activation)?;
     let result = (b.0 - (b.0 - a.0) * f, b.1 - (b.1 - a.1) * f);
-    Ok(point_to_object(result, activation)?.into())
+    Ok(point_to_object(result, activation)?)
 }
 
 fn to_string<'gc>(
@@ -272,6 +272,7 @@ pub fn create_point_object<'gc>(
     let point = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
+        constructor_to_fn!(constructor),
         fn_proto,
         point_proto,
     );

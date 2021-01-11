@@ -28,10 +28,10 @@ use swf::{
 /// Implements `MovieClip`
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 macro_rules! with_movie_clip {
@@ -1251,7 +1251,7 @@ fn transform<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let constructor = activation.context.avm1.prototypes.transform_constructor;
     let cloned = constructor.construct(activation, &[this.object()])?;
-    Ok(cloned.into())
+    Ok(cloned)
 }
 
 fn set_transform<'gc>(

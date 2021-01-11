@@ -19,7 +19,7 @@ pub fn constructor<'gc>(
         this.set("message", message, activation)?;
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn create_proto<'gc>(

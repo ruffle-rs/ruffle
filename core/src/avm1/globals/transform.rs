@@ -84,7 +84,7 @@ pub fn constructor<'gc>(
         transform.set_clip(activation.context.gc_context, clip);
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn create_proto<'gc>(
@@ -118,7 +118,7 @@ fn concatenated_color_transform<'gc>(
         node = display_object.parent();
     }
     let color_transform = color_transform::color_transform_to_object(color_transform, activation)?;
-    Ok(color_transform.into())
+    Ok(color_transform)
 }
 
 fn concatenated_matrix<'gc>(
@@ -126,7 +126,7 @@ fn concatenated_matrix<'gc>(
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let matrix = matrix::matrix_to_object(clip.local_to_global_matrix(), activation)?;
-    Ok(matrix.into())
+    Ok(matrix)
 }
 
 fn color_transform<'gc>(
@@ -135,7 +135,7 @@ fn color_transform<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let color_transform =
         color_transform::color_transform_to_object(*clip.color_transform(), activation)?;
-    Ok(color_transform.into())
+    Ok(color_transform)
 }
 
 fn set_color_transform<'gc>(
@@ -160,7 +160,7 @@ fn matrix<'gc>(
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let matrix = matrix::matrix_to_object(*clip.matrix(), activation)?;
-    Ok(matrix.into())
+    Ok(matrix)
 }
 
 fn set_matrix<'gc>(
@@ -199,7 +199,7 @@ fn pixel_bounds<'gc>(
     ];
     let constructor = activation.context.avm1.prototypes.rectangle_constructor;
     let result = constructor.construct(activation, &args)?;
-    Ok(result.into())
+    Ok(result)
 }
 
 pub fn apply_to_display_object<'gc>(

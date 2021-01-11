@@ -144,10 +144,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Calling this on something other than a constructor will return a new Undefined object.
     fn construct(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
         _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(Value::Undefined.coerce_to_object(activation))
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        Ok(Value::Undefined)
     }
 
     /// Takes an already existing object and performs this constructor (if valid) on it.

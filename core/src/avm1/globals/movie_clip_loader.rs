@@ -29,7 +29,7 @@ pub fn constructor<'gc>(
     );
     listeners.set_array_element(0, Value::Object(this), activation.context.gc_context);
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn load_clip<'gc>(

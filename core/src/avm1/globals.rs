@@ -579,6 +579,7 @@ pub fn create_globals<'gc>(
     let movie_clip_loader = FunctionObject::constructor(
         gc_context,
         Executable::Native(movie_clip_loader::constructor),
+        constructor_to_fn!(movie_clip_loader::constructor),
         Some(function_proto),
         movie_clip_loader_proto,
     );
@@ -594,37 +595,42 @@ pub fn create_globals<'gc>(
     let button = FunctionObject::constructor(
         gc_context,
         Executable::Native(button::constructor),
+        constructor_to_fn!(button::constructor),
         Some(function_proto),
         button_proto,
     );
     let color = FunctionObject::constructor(
         gc_context,
         Executable::Native(color::constructor),
+        constructor_to_fn!(color::constructor),
         Some(function_proto),
         color_proto,
     );
     let error = FunctionObject::constructor(
         gc_context,
         Executable::Native(error::constructor),
+        constructor_to_fn!(error::constructor),
         Some(function_proto),
         error_proto,
     );
-    let function = FunctionObject::function_and_constructor(
+    let function = FunctionObject::constructor(
         gc_context,
-        Executable::Native(function::function),
         Executable::Native(function::constructor),
+        Executable::Native(function::function),
         Some(function_proto),
         function_proto,
     );
     let load_vars = FunctionObject::constructor(
         gc_context,
         Executable::Native(load_vars::constructor),
+        constructor_to_fn!(load_vars::constructor),
         Some(function_proto),
         load_vars_proto,
     );
     let movie_clip = FunctionObject::constructor(
         gc_context,
         Executable::Native(movie_clip::constructor),
+        constructor_to_fn!(movie_clip::constructor),
         Some(function_proto),
         movie_clip_proto,
     );
@@ -632,18 +638,21 @@ pub fn create_globals<'gc>(
     let sound = FunctionObject::constructor(
         gc_context,
         Executable::Native(sound::constructor),
+        constructor_to_fn!(sound::constructor),
         Some(function_proto),
         sound_proto,
     );
     let text_field = FunctionObject::constructor(
         gc_context,
         Executable::Native(text_field::constructor),
+        constructor_to_fn!(text_field::constructor),
         Some(function_proto),
         text_field_proto,
     );
     let text_format = FunctionObject::constructor(
         gc_context,
         Executable::Native(text_format::constructor),
+        constructor_to_fn!(text_format::constructor),
         Some(function_proto),
         text_format_proto,
     );
@@ -651,12 +660,14 @@ pub fn create_globals<'gc>(
     let xmlnode = FunctionObject::constructor(
         gc_context,
         Executable::Native(xml::xmlnode_constructor),
+        constructor_to_fn!(xml::xmlnode_constructor),
         Some(function_proto),
         xmlnode_proto,
     );
     let xml = FunctionObject::constructor(
         gc_context,
         Executable::Native(xml::xml_constructor),
+        constructor_to_fn!(xml::xml_constructor),
         Some(function_proto),
         xml_proto,
     );
@@ -675,15 +686,17 @@ pub fn create_globals<'gc>(
     let point = point::create_point_object(gc_context, point_proto, Some(function_proto));
     let rectangle =
         rectangle::create_rectangle_object(gc_context, rectangle_proto, Some(function_proto));
-    let color_transform = FunctionObject::function(
+    let color_transform = FunctionObject::constructor(
         gc_context,
         Executable::Native(color_transform::constructor),
+        constructor_to_fn!(color_transform::constructor),
         Some(function_proto),
         color_transform_proto,
     );
-    let transform = FunctionObject::function(
+    let transform = FunctionObject::constructor(
         gc_context,
         Executable::Native(transform::constructor),
+        constructor_to_fn!(transform::constructor),
         Some(function_proto),
         transform_proto,
     );
@@ -707,6 +720,7 @@ pub fn create_globals<'gc>(
     let bitmap_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(bitmap_filter::constructor),
+        constructor_to_fn!(bitmap_filter::constructor),
         Some(function_proto),
         bitmap_filter_proto,
     );
@@ -716,6 +730,7 @@ pub fn create_globals<'gc>(
     let blur_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(blur_filter::constructor),
+        constructor_to_fn!(blur_filter::constructor),
         Some(function_proto),
         blur_filter_proto,
     );
@@ -725,6 +740,7 @@ pub fn create_globals<'gc>(
     let bevel_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(bevel_filter::constructor),
+        constructor_to_fn!(bevel_filter::constructor),
         Some(function_proto),
         bevel_filter_proto,
     );
@@ -734,6 +750,7 @@ pub fn create_globals<'gc>(
     let glow_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(glow_filter::constructor),
+        constructor_to_fn!(glow_filter::constructor),
         Some(function_proto),
         glow_filter_proto,
     );
@@ -743,6 +760,7 @@ pub fn create_globals<'gc>(
     let drop_shadow_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(drop_shadow_filter::constructor),
+        constructor_to_fn!(drop_shadow_filter::constructor),
         Some(function_proto),
         drop_shadow_filter_proto,
     );
@@ -752,6 +770,7 @@ pub fn create_globals<'gc>(
     let color_matrix_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(color_matrix_filter::constructor),
+        constructor_to_fn!(color_matrix_filter::constructor),
         Some(function_proto),
         color_matrix_filter_proto,
     );
@@ -761,6 +780,7 @@ pub fn create_globals<'gc>(
     let displacement_map_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(displacement_map_filter::constructor),
+        constructor_to_fn!(displacement_map_filter::constructor),
         Some(function_proto),
         displacement_map_filter_proto,
     );
@@ -770,6 +790,7 @@ pub fn create_globals<'gc>(
     let convolution_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(convolution_filter::constructor),
+        constructor_to_fn!(convolution_filter::constructor),
         Some(function_proto),
         convolution_filter_proto,
     );
@@ -779,6 +800,7 @@ pub fn create_globals<'gc>(
     let gradient_bevel_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(gradient_bevel_filter::constructor),
+        constructor_to_fn!(gradient_bevel_filter::constructor),
         Some(function_proto),
         gradient_bevel_filter_proto,
     );
@@ -788,6 +810,7 @@ pub fn create_globals<'gc>(
     let gradient_glow_filter = FunctionObject::constructor(
         gc_context,
         Executable::Native(gradient_glow_filter::constructor),
+        constructor_to_fn!(gradient_glow_filter::constructor),
         Some(function_proto),
         gradient_glow_filter_proto,
     );
@@ -934,6 +957,7 @@ pub fn create_globals<'gc>(
     let context_menu = FunctionObject::constructor(
         gc_context,
         Executable::Native(context_menu::constructor),
+        constructor_to_fn!(context_menu::constructor),
         Some(function_proto),
         context_menu_proto,
     );
@@ -956,6 +980,7 @@ pub fn create_globals<'gc>(
     let context_menu_item = FunctionObject::constructor(
         gc_context,
         Executable::Native(context_menu_item::constructor),
+        constructor_to_fn!(context_menu_item::constructor),
         Some(function_proto),
         context_menu_item_proto,
     );
