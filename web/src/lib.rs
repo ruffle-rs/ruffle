@@ -337,7 +337,10 @@ impl Ruffle {
             .into_js_result()?;
 
         let audio = Box::new(WebAudioBackend::new()?);
-        let navigator = Box::new(WebNavigatorBackend::new(config.upgrade_to_https));
+        let navigator = Box::new(WebNavigatorBackend::new(
+            allow_script_access,
+            config.upgrade_to_https,
+        ));
         let input = Box::new(WebInputBackend::new(&canvas));
         let locale = Box::new(WebLocaleBackend::new());
 

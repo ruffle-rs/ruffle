@@ -15,11 +15,12 @@ use web_sys::{window, Blob, BlobPropertyBag, Performance, Request, RequestInit, 
 pub struct WebNavigatorBackend {
     performance: Performance,
     start_time: f64,
+    allow_script_access: bool,
     upgrade_to_https: bool,
 }
 
 impl WebNavigatorBackend {
-    pub fn new(upgrade_to_https: bool) -> Self {
+    pub fn new(allow_script_access: bool, upgrade_to_https: bool) -> Self {
         let window = web_sys::window().expect("window()");
         let performance = window.performance().expect("window.performance()");
 
@@ -30,6 +31,7 @@ impl WebNavigatorBackend {
         WebNavigatorBackend {
             start_time: performance.now(),
             performance,
+            allow_script_access,
             upgrade_to_https,
         }
     }
@@ -125,15 +127,10 @@ impl NavigatorBackend for WebNavigatorBackend {
     }
 
     fn run_script(&self, js_code: &str) {
-        if let Some(window) = window() {
-            let document = match window.document() {
-                Some(document) => document,
-                None => return,
-            };
-            let body = match document.body() {
-                Some(body) => body,
-                None => return,
-            };
+        if self.allow_script_access {
+            let window = web_sys::window().expect("window()");
+            let document = window.document().expect("document()");
+            let body = document.body().expect("body()");
 
             let script = document.create_element("script").unwrap();
             script.set_inner_html(&js_code);
