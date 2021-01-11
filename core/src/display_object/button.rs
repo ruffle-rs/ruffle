@@ -301,6 +301,13 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     ) -> Option<DisplayObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
         if self.visible() {
+            for child in self.iter_render_list().rev() {
+                let result = child.mouse_pick(context, child, point);
+                if result.is_some() {
+                    return result;
+                }
+            }
+
             for child in self.0.read().hit_area.values() {
                 if child.hit_test_shape(context, point) {
                     return Some(self_node);
