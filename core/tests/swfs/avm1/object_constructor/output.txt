@@ -1,0 +1,34 @@
+// new Object()
+[object Object]
+
+// new Object({a: 5, b: 3})
+[object Object]
+5
+3
+true
+
+// new Object(_root)
+_level0
+10
+true
+
+// new Object(5)
+5
+object
+
+// new Object('hello')
+hello
+object
+
+// new Object(true)
+true
+object
+
+// new Object(null)
+[object Object]
+object
+
+// new Object(undefined)
+[object Object]
+object
+
