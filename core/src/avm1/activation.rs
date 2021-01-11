@@ -1678,13 +1678,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let constructor = object.get(&method_name.coerce_to_string(self)?, self)?;
         if let Value::Object(constructor) = constructor {
             //TODO: What happens if you `ActionNewMethod` without a method name?
-
-            let this = match constructor.construct(self, &args) {
-                Ok(x) => Ok(x),
-                Err(Error::ConstructorFailure) => Ok(Value::Undefined),
-                Err(e) => Err(e),
-            }?;
-
+            let this = constructor.construct(self, &args)?;
             self.context.avm1.push(this);
         } else {
             avm_warn!(
@@ -1709,13 +1703,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let name_value: Value<'gc> = self.resolve(&fn_name)?.into();
         let constructor = name_value.coerce_to_object(self);
-
-        let this = match constructor.construct(self, &args) {
-            Ok(x) => Ok(x),
-            Err(Error::ConstructorFailure) => Ok(Value::Undefined),
-            Err(e) => Err(e),
-        }?;
-
+        let this = constructor.construct(self, &args)?;
         self.context.avm1.push(this);
 
         self.continue_if_base_clip_exists()
