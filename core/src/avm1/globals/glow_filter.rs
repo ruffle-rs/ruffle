@@ -20,7 +20,7 @@ pub fn constructor<'gc>(
     set_strength(activation, this, args.get(4..5).unwrap_or_default())?;
     set_quality(activation, this, args.get(5..6).unwrap_or_default())?;
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn alpha<'gc>(

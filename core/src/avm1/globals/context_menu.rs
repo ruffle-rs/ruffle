@@ -35,9 +35,9 @@ pub fn constructor<'gc>(
     let constructor = activation.context.avm1.prototypes.array_constructor;
     let custom_items = constructor.construct(activation, &[])?;
 
-    this.set("customItems", custom_items.into(), activation)?;
+    this.set("customItems", custom_items, activation)?;
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn copy<'gc>(
@@ -50,7 +50,9 @@ pub fn copy<'gc>(
         .coerce_to_object(activation);
 
     let constructor = activation.context.avm1.prototypes.context_menu_constructor;
-    let copy = constructor.construct(activation, &[callback.into()])?;
+    let copy = constructor
+        .construct(activation, &[callback.into()])?
+        .coerce_to_object(activation);
 
     let built_in = this
         .get("builtInItems", activation)?

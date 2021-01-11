@@ -25,7 +25,7 @@ pub fn constructor<'gc>(
         vbox.replace_value(activation.context.gc_context, cons_value);
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// `Boolean` function
@@ -50,10 +50,10 @@ pub fn create_boolean_object<'gc>(
     boolean_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    FunctionObject::function_and_constructor(
+    FunctionObject::constructor(
         gc_context,
-        Executable::Native(boolean_function),
         Executable::Native(constructor),
+        Executable::Native(boolean_function),
         fn_proto,
         boolean_proto,
     )

@@ -70,7 +70,7 @@ pub fn xmlnode_constructor<'gc>(
         _ => {}
     };
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn xmlnode_append_child<'gc>(
@@ -822,7 +822,7 @@ pub fn xml_constructor<'gc>(
         _ => {}
     };
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn xml_create_element<'gc>(

@@ -28,7 +28,7 @@ pub fn string<'gc>(
         vbox.replace_value(activation.context.gc_context, value.clone().into());
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// `String` function
@@ -51,10 +51,10 @@ pub fn create_string_object<'gc>(
     string_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let string = FunctionObject::function_and_constructor(
+    let string = FunctionObject::constructor(
         gc_context,
-        Executable::Native(string_function),
         Executable::Native(string),
+        Executable::Native(string_function),
         fn_proto,
         string_proto,
     );

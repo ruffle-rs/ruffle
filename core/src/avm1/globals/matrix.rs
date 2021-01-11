@@ -89,7 +89,7 @@ pub fn object_to_matrix<'gc>(
 pub fn matrix_to_object<'gc>(
     matrix: Matrix,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
         matrix.a.into(),
         matrix.b.into(),
@@ -145,7 +145,7 @@ fn constructor<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 fn identity<'gc>(
@@ -172,7 +172,7 @@ fn clone<'gc>(
     ];
     let constructor = activation.context.avm1.prototypes.matrix_constructor;
     let cloned = constructor.construct(activation, &args)?;
-    Ok(cloned.into())
+    Ok(cloned)
 }
 
 fn scale<'gc>(
@@ -355,7 +355,7 @@ fn transform_point<'gc>(
     let x = point.0 * matrix.a as f64 + point.1 * matrix.c as f64 + matrix.tx.to_pixels();
     let y = point.0 * matrix.b as f64 + point.1 * matrix.d as f64 + matrix.ty.to_pixels();
     let object = point_to_object((x, y), activation)?;
-    Ok(object.into())
+    Ok(object)
 }
 
 fn delta_transform_point<'gc>(
@@ -372,7 +372,7 @@ fn delta_transform_point<'gc>(
     let x = point.0 * matrix.a as f64 + point.1 * matrix.c as f64;
     let y = point.0 * matrix.b as f64 + point.1 * matrix.d as f64;
     let object = point_to_object((x, y), activation)?;
-    Ok(object.into())
+    Ok(object)
 }
 
 fn to_string<'gc>(
@@ -410,6 +410,7 @@ pub fn create_matrix_object<'gc>(
     FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
+        constructor_to_fn!(constructor),
         fn_proto,
         matrix_proto,
     )

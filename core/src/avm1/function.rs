@@ -501,27 +501,11 @@ impl<'gc> FunctionObject<'gc> {
         Self::allocate_function(context, Some(function), none, fn_proto, prototype)
     }
 
-    /// Construct a constructor function from an executable and associated protos.
+    /// Construct a regular and constructor function from an executable and associated protos.
     pub fn constructor(
         context: MutationContext<'gc, '_>,
-        constructor: impl Into<Executable<'gc>> + std::clone::Clone,
-        fn_proto: Option<Object<'gc>>,
-        prototype: Object<'gc>,
-    ) -> Object<'gc> {
-        Self::allocate_function(
-            context,
-            Some(constructor.clone()),
-            Some(constructor),
-            fn_proto,
-            prototype,
-        )
-    }
-
-    /// Construct a regular and constructor function from an executable and associated protos.
-    pub fn function_and_constructor(
-        context: MutationContext<'gc, '_>,
-        function: impl Into<Executable<'gc>>,
         constructor: impl Into<Executable<'gc>>,
+        function: impl Into<Executable<'gc>>,
         fn_proto: Option<Object<'gc>>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
@@ -619,13 +603,45 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let prototype = self
             .get("prototype", activation)?
             .coerce_to_object(activation);
         let this = prototype.create_bare_object(activation, prototype)?;
-        self.construct_on_existing(activation, this, args)?;
-        Ok(this)
+
+        this.set("__constructor__", (*self).into(), activation)?;
+        this.set_attributes(
+            activation.context.gc_context,
+            Some("__constructor__"),
+            Attribute::DontEnum.into(),
+            EnumSet::empty(),
+        );
+        if activation.current_swf_version() < 7 {
+            this.set("constructor", (*self).into(), activation)?;
+            this.set_attributes(
+                activation.context.gc_context,
+                Some("constructor"),
+                Attribute::DontEnum.into(),
+                EnumSet::empty(),
+            );
+        }
+        if let Some(exec) = &self.data.read().constructor {
+            // Native constructors will return the constructed `this`.
+            // This allows for `new Object` etc. returning different types.
+            let this = exec.exec(
+                "[ctor]",
+                activation,
+                this,
+                None,
+                args,
+                ExecutionReason::FunctionCall,
+                (*self).into(),
+            )?;
+            Ok(this)
+        } else {
+            let _ = self.call("[ctor]", activation, this, None, args)?;
+            Ok(this.into())
+        }
     }
 
     fn call_setter(
@@ -815,4 +831,23 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
         self.base.delete_array_element(index, gc_context)
     }
+}
+
+/// Turns a simple built-in constructor into a function that discards
+/// the constructor return value.
+/// Use with `FunctionObject::constructor` when defining constructor of
+/// built-in objects.
+#[macro_export]
+macro_rules! constructor_to_fn {
+    ($f:expr) => {{
+        fn _constructor_fn<'gc>(
+            activation: &mut crate::avm1::activation::Activation<'_, 'gc, '_>,
+            this: crate::avm1::Object<'gc>,
+            args: &[crate::avm1::Value<'gc>],
+        ) -> Result<crate::avm1::Value<'gc>, crate::avm1::error::Error<'gc>> {
+            let _ = $f(activation, this, args)?;
+            Ok(crate::avm1::Value::Undefined)
+        }
+        crate::avm1::function::Executable::Native(_constructor_fn)
+    }};
 }

@@ -127,7 +127,7 @@ fn deserialize_array<'gc>(
         .get("length")
         .and_then(JsonValue::as_i32)
         .unwrap_or_default();
-    if let Ok(obj) = array_constructor.construct(activation, &[len.into()]) {
+    if let Ok(Value::Object(obj)) = array_constructor.construct(activation, &[len.into()]) {
         // Remove length and proto meta-properties.
         json_obj.remove("length");
         json_obj.remove("__proto__");
@@ -255,7 +255,9 @@ pub fn get_local<'gc>(
 
     // Data property only should exist when created with getLocal/Remote
     let constructor = activation.context.avm1.prototypes.shared_object_constructor;
-    let this = constructor.construct(activation, &[])?;
+    let this = constructor
+        .construct(activation, &[])?
+        .coerce_to_object(activation);
 
     // Set the internal name
     let obj_so = this.as_shared_object().unwrap();
@@ -332,6 +334,7 @@ pub fn create_shared_object_object<'gc>(
     let shared_obj = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
+        constructor_to_fn!(constructor),
         fn_proto,
         shared_object_proto,
     );
@@ -559,8 +562,8 @@ pub fn create_proto<'gc>(
 
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
+    Ok(this.into())
 }

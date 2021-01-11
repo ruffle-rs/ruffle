@@ -14,10 +14,10 @@ use std::borrow::Cow;
 /// Implements `Object` constructor
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// Implements `Object` function
@@ -381,10 +381,10 @@ pub fn create_object_object<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object_function = FunctionObject::function_and_constructor(
+    let object_function = FunctionObject::constructor(
         gc_context,
-        Executable::Native(object_function),
         Executable::Native(constructor),
+        Executable::Native(object_function),
         Some(fn_proto),
         proto,
     );

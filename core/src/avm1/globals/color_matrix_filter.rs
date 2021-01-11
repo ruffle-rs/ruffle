@@ -15,7 +15,7 @@ pub fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     set_matrix(activation, this, args.get(0..1).unwrap_or_default())?;
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn matrix<'gc>(

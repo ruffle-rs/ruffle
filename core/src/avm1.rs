@@ -18,6 +18,7 @@ mod callable_value;
 pub mod debug;
 pub mod error;
 mod fscommand;
+#[macro_use]
 pub mod function;
 pub mod globals;
 pub mod object;

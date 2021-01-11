@@ -26,7 +26,7 @@ pub fn number<'gc>(
         vbox.replace_value(activation.context.gc_context, value.into());
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// `Number` function
@@ -50,10 +50,10 @@ pub fn create_number_object<'gc>(
     number_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let number = FunctionObject::function_and_constructor(
+    let number = FunctionObject::constructor(
         gc_context,
-        Executable::Native(number_function),
         Executable::Native(number),
+        Executable::Native(number_function),
         fn_proto,
         number_proto,
     );

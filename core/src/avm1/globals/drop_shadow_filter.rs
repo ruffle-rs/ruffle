@@ -25,7 +25,7 @@ pub fn constructor<'gc>(
     set_knockout(activation, this, args.get(9..10).unwrap_or_default())?;
     set_hide_object(activation, this, args.get(10..11).unwrap_or_default())?;
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn alpha<'gc>(
