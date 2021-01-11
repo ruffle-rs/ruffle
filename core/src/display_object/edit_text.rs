@@ -315,6 +315,7 @@ impl<'gc> EditText<'gc> {
         drop(edit_text);
 
         self.relayout(context);
+        self.on_changed(context);
 
         Ok(())
     }
@@ -385,6 +386,7 @@ impl<'gc> EditText<'gc> {
         drop(write);
 
         self.relayout(context);
+        self.on_changed(context);
     }
 
     pub fn text_length(self) -> usize {
@@ -525,6 +527,7 @@ impl<'gc> EditText<'gc> {
             .text_spans
             .replace_text(from, to, text, None);
         self.relayout(context);
+        self.on_changed(context);
     }
 
     /// Construct a base text transform for a particular `EditText` span.
@@ -1129,6 +1132,42 @@ impl<'gc> EditText<'gc> {
             }
         }
     }
+
+    fn initialize_as_broadcaster(&self, activation: &mut Activation<'_, 'gc, '_>) {
+        let write = self.0.write(activation.context.gc_context);
+        let object = write.object.unwrap();
+        activation.context.avm1.broadcaster_functions().initialize(
+            activation.context.gc_context,
+            object,
+            activation.context.avm1.prototypes().array,
+        );
+
+        if let Value::Object(listeners) = object.get("_listeners", activation).unwrap() {
+            if listeners.length() == 0 {
+                // Add the TextField as its own listener to match Flash's behavior
+                // This makes it so that the TextField's handlers are called before other listeners'.
+                listeners.set_array_element(0, object.into(), activation.context.gc_context);
+            } else {
+                log::warn!(
+                    "_listeners should be empty, but its length is {}",
+                    listeners.length()
+                );
+            }
+        }
+    }
+
+    fn on_changed(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let object = self.0.write(context.gc_context).object.unwrap();
+
+        Avm1::run_stack_frame_for_method(
+            (*self).into(),
+            object,
+            context.swf.version(),
+            context,
+            "broadcastMessage",
+            &["onChanged".into(), object.into()],
+        );
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
@@ -1184,17 +1223,19 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
         drop(text);
 
-        // If this text field has a variable set, initialize text field binding.
         Avm1::run_with_stack_frame_for_display_object(
             (*self).into(),
             context.swf.version(),
             context,
             |activation| {
+                // If this text field has a variable set, initialize text field binding.
                 if !self.try_bind_text_field_variable(activation, true) {
                     activation.context.unbound_text_fields.push(*self);
                 }
                 // People can bind to properties of TextFields the same as other display objects.
                 self.bind_text_field_variables(activation);
+
+                self.initialize_as_broadcaster(activation);
             },
         );
 
