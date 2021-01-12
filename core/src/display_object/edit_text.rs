@@ -315,7 +315,6 @@ impl<'gc> EditText<'gc> {
         drop(edit_text);
 
         self.relayout(context);
-        self.on_changed(context);
 
         Ok(())
     }
@@ -386,7 +385,6 @@ impl<'gc> EditText<'gc> {
         drop(write);
 
         self.relayout(context);
-        self.on_changed(context);
     }
 
     pub fn text_length(self) -> usize {
@@ -527,7 +525,6 @@ impl<'gc> EditText<'gc> {
             .text_spans
             .replace_text(from, to, text, None);
         self.relayout(context);
-        self.on_changed(context);
     }
 
     /// Construct a base text transform for a particular `EditText` span.
@@ -1129,44 +1126,43 @@ impl<'gc> EditText<'gc> {
                     self.into(),
                 );
                 self.propagate_text_binding(&mut activation);
+                self.on_changed(&mut activation);
             }
         }
     }
 
     fn initialize_as_broadcaster(&self, activation: &mut Activation<'_, 'gc, '_>) {
         let write = self.0.write(activation.context.gc_context);
-        let object = write.object.unwrap();
-        activation.context.avm1.broadcaster_functions().initialize(
-            activation.context.gc_context,
-            object,
-            activation.context.avm1.prototypes().array,
-        );
+        if let Some(object) = write.object {
+            activation.context.avm1.broadcaster_functions().initialize(
+                activation.context.gc_context,
+                object,
+                activation.context.avm1.prototypes().array,
+            );
 
-        if let Value::Object(listeners) = object.get("_listeners", activation).unwrap() {
-            if listeners.length() == 0 {
-                // Add the TextField as its own listener to match Flash's behavior
-                // This makes it so that the TextField's handlers are called before other listeners'.
-                listeners.set_array_element(0, object.into(), activation.context.gc_context);
-            } else {
-                log::warn!(
-                    "_listeners should be empty, but its length is {}",
-                    listeners.length()
-                );
+            if let Ok(Value::Object(listeners)) = object.get("_listeners", activation) {
+                if listeners.length() == 0 {
+                    // Add the TextField as its own listener to match Flash's behavior
+                    // This makes it so that the TextField's handlers are called before other listeners'.
+                    listeners.set_array_element(0, object.into(), activation.context.gc_context);
+                } else {
+                    log::warn!(
+                        "_listeners should be empty, but its length is {}",
+                        listeners.length()
+                    );
+                }
             }
         }
     }
 
-    fn on_changed(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let object = self.0.write(context.gc_context).object.unwrap();
-
-        Avm1::run_stack_frame_for_method(
-            (*self).into(),
-            object,
-            context.swf.version(),
-            context,
-            "broadcastMessage",
-            &["onChanged".into(), object.into()],
-        );
+    fn on_changed(&self, activation: &mut Activation<'_, 'gc, '_>) {
+        if let Some(object) = self.0.read().object {
+            let _ = object.call_method(
+                "broadcastMessage",
+                &["onChanged".into(), object.into()],
+                activation,
+            );
+        }
     }
 }
 
