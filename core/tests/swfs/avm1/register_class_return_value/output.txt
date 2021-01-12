@@ -1,0 +1,16 @@
+// not enough args
+false
+// too many args
+true
+// register a constructor
+true
+// unregister a constructor
+true
+// weird symbols names
+true
+true
+true
+// wrong types
+false
+false
+false
