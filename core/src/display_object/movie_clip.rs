@@ -535,9 +535,7 @@ impl<'gc> MovieClip<'gc> {
                             //TODO: This assumes only the root movie has `SymbolClass` tags.
                             self.set_avm2_constructor(activation.context.gc_context, Some(proto));
                             self.construct_as_avm2_object(&mut activation.context, self.into());
-                        } else if let Some(Character::MovieClip(mc)) =
-                            library.get_character_by_id(id)
-                        {
+                        } else if let Some(Character::MovieClip(mc)) = library.character_by_id(id) {
                             mc.set_avm2_constructor(activation.context.gc_context, Some(proto))
                         } else {
                             log::warn!(
@@ -2086,7 +2084,7 @@ impl<'gc> MovieClipData<'gc> {
         let symbol_name = self.static_data.exported_name.borrow();
         let symbol_name = symbol_name.as_ref()?;
         let library = context.library.library_for_movie_mut(self.movie());
-        let registry = library.get_avm1_constructor_registry()?;
+        let registry = library.avm1_constructor_registry()?;
         let ctor = registry.get(symbol_name)?;
         Some(Avm1Object::FunctionObject(ctor))
     }
@@ -2435,7 +2433,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         if let Some(button) = context
             .library
             .library_for_movie_mut(self.movie())
-            .get_character_by_id(button_colors.id)
+            .character_by_id(button_colors.id)
         {
             if let Character::Button(button) = button {
                 button.set_colors(context.gc_context, &button_colors.color_transforms[..]);
@@ -2464,7 +2462,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         if let Some(button) = context
             .library
             .library_for_movie_mut(self.movie())
-            .get_character_by_id(button_sounds.id)
+            .character_by_id(button_sounds.id)
         {
             if let Character::Button(button) = button {
                 button.set_sounds(context.gc_context, button_sounds);

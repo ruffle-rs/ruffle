@@ -131,16 +131,16 @@ impl<'gc> MovieLibrary<'gc> {
     }
 
     #[allow(dead_code)]
-    pub fn get_character_by_id(&self, id: CharacterId) -> Option<&Character<'gc>> {
+    pub fn character_by_id(&self, id: CharacterId) -> Option<&Character<'gc>> {
         self.characters.get(&id)
     }
 
     #[allow(dead_code)]
-    pub fn get_character_by_export_name(&self, name: &str) -> Option<&Character<'gc>> {
+    pub fn character_by_export_name(&self, name: &str) -> Option<&Character<'gc>> {
         self.export_characters.get(name, false)
     }
 
-    pub fn get_avm1_constructor_registry(&self) -> Option<Gc<'gc, Avm1ConstructorRegistry<'gc>>> {
+    pub fn avm1_constructor_registry(&self) -> Option<Gc<'gc, Avm1ConstructorRegistry<'gc>>> {
         self.avm1_constructor_registry
     }
 
