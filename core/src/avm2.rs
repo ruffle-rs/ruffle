@@ -2,6 +2,7 @@
 
 use crate::avm2::globals::SystemPrototypes;
 use crate::avm2::method::Method;
+use crate::avm2::object::EventObject;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
@@ -40,6 +41,7 @@ mod value;
 
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::domain::Domain;
+pub use crate::avm2::events::Event;
 pub use crate::avm2::names::{Namespace, QName};
 pub use crate::avm2::object::{Object, StageObject, TObject};
 pub use crate::avm2::value::Value;
@@ -113,6 +115,22 @@ impl<'gc> Avm2<'gc> {
         };
 
         Ok(())
+    }
+
+    /// Dispatch an event on an object.
+    ///
+    /// The `bool` parameter reads true if the event was cancelled.
+    pub fn dispatch_event(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: Event<'gc>,
+        target: Object<'gc>,
+    ) -> Result<bool, Error> {
+        use crate::avm2::events::dispatch_event;
+        let event_proto = context.avm2.system_prototypes.as_ref().unwrap().event;
+        let event_object = EventObject::from_event(context.gc_context, Some(event_proto), event);
+        let mut activation = Activation::from_nothing(context.reborrow());
+
+        dispatch_event(&mut activation, target, event_object)
     }
 
     pub fn run_stack_frame_for_callable(
