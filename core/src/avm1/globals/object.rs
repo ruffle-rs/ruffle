@@ -348,17 +348,24 @@ pub fn as_set_prop_flags<'gc>(
         }
     };
 
-    let set_attributes = EnumSet::<Attribute>::from_u128(
-        args.get(2)
-            .unwrap_or(&Value::Number(0.0))
-            .coerce_to_f64(activation)? as u128,
-    );
+    let set_flags = args
+        .get(2)
+        .unwrap_or(&Value::Number(0.0))
+        .coerce_to_f64(activation)? as u128;
+    let clear_flags = args
+        .get(2)
+        .unwrap_or(&Value::Number(0.0))
+        .coerce_to_f64(activation)? as u128;
 
-    let clear_attributes = EnumSet::<Attribute>::from_u128(
-        args.get(3)
-            .unwrap_or(&Value::Number(0.0))
-            .coerce_to_f64(activation)? as u128,
-    );
+    if set_flags > 0b111 || clear_flags > 0b111 {
+        avm_warn!(
+            activation,
+            "ASSetPropFlags: Unimplemented support for flags > 7"
+        );
+    }
+
+    let set_attributes = EnumSet::<Attribute>::from_u128(set_flags & 0b111);
+    let clear_attributes = EnumSet::<Attribute>::from_u128(clear_flags & 0b111);
 
     match properties {
         Some(properties) => {
