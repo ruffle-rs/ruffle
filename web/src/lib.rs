@@ -29,7 +29,7 @@ use ruffle_core::external::{
 };
 use ruffle_core::property_map::PropertyMap;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::PlayerEvent;
+use ruffle_core::{Color, PlayerEvent};
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -114,6 +114,9 @@ struct JavascriptInterface {
 #[derive(Serialize, Deserialize)]
 #[serde(default = "Default::default")]
 pub struct Config {
+    #[serde(rename = "backgroundColor")]
+    background_color: Option<String>,
+
     letterbox: Letterbox,
 
     #[serde(rename = "upgradeToHttps")]
@@ -126,6 +129,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            background_color: Default::default(),
             letterbox: Default::default(),
             upgrade_to_https: true,
             warn_on_unsupported_content: true,
@@ -365,10 +369,14 @@ impl Ruffle {
             log,
             user_interface,
         )?;
-        core.lock().unwrap().set_letterbox(config.letterbox);
-        core.lock()
-            .unwrap()
-            .set_warn_on_unsupported_content(config.warn_on_unsupported_content);
+        {
+            let mut core = core.lock().unwrap();
+            if let Some(color) = config.background_color.and_then(parse_html_color) {
+                core.set_background_color(Some(color));
+            }
+            core.set_letterbox(config.letterbox);
+            core.set_warn_on_unsupported_content(config.warn_on_unsupported_content);
+        }
 
         // Create instance.
         let instance = RuffleInstance {
@@ -1033,4 +1041,30 @@ fn populate_movie_parameters(input: &JsValue, output: &mut PropertyMap<String>) 
             }
         }
     }
+}
+
+fn parse_html_color(color: impl AsRef<str>) -> Option<Color> {
+    // Parse classic HTML hex color (XXXXXX or #XXXXXX), attempting to match browser behavior.
+    // Optional leading #.
+    let mut color = color.as_ref();
+    color = color.strip_prefix('#').unwrap_or(color);
+
+    // Fail if less than 6 digits.
+    if color.len() < 6 {
+        return None;
+    }
+
+    // Each char represents 4-bits. Invalid hex digit is allowed (converts to 0).
+    let mut ret: u32 = 0;
+    for c in color[..6].bytes() {
+        let digit = match c {
+            b'0'..=b'9' => c - b'0',
+            b'a'..=b'f' => c - b'a' + 10,
+            b'A'..=b'F' => c - b'A' + 10,
+            _ => 0,
+        };
+        ret <<= 4;
+        ret |= u32::from(digit);
+    }
+    Some(Color::from_rgb(ret, 255))
 }

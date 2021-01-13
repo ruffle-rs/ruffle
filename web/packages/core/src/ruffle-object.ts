@@ -106,6 +106,12 @@ export class RuffleObject extends RufflePlayer {
             this.getAttribute("flashvars")
         );
 
+        const backgroundColor = findCaseInsensitive(
+            this.params,
+            "bgcolor",
+            this.getAttribute("bgcolor")
+        );
+
         if (url) {
             this.allowScriptAccess = isScriptAccessAllowed(
                 allowScriptAccess,
@@ -116,6 +122,9 @@ export class RuffleObject extends RufflePlayer {
             const options: URLLoadOptions = { url };
             if (parameters) {
                 options.parameters = parameters;
+            }
+            if (backgroundColor) {
+                options.backgroundColor = backgroundColor;
             }
             this.load(options);
         }

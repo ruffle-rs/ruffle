@@ -87,6 +87,15 @@ export interface BaseLoadOptions {
     autoplay?: AutoPlay;
 
     /**
+     * Controls the background color of the player.
+     * Must be an HTML color (e.g. "#FFFFFF"). CSS colors are not allowed.
+     * `null` uses the background color of the SWF file.
+     *
+     * @default null
+     */
+    backgroundColor?: string | null;
+
+    /**
      * Controls letterbox behavior when the Flash container size does not
      * match the movie size.
      *

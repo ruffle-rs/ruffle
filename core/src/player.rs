@@ -521,6 +521,14 @@ impl Player {
         self.needs_render
     }
 
+    pub fn background_color(&self) -> Option<Color> {
+        self.background_color.clone()
+    }
+
+    pub fn set_background_color(&mut self, color: Option<Color>) {
+        self.background_color = color
+    }
+
     pub fn letterbox(&self) -> Letterbox {
         self.letterbox
     }

@@ -413,6 +413,12 @@ export class RufflePlayer extends HTMLElement {
                     ...options,
                 };
 
+                // Pre-emptively set background color of container while Ruffle/SWF loads.
+                if (config.backgroundColor) {
+                    this.container.style.backgroundColor =
+                        config.backgroundColor;
+                }
+
                 await this.ensureFreshInstance(config);
 
                 if ("url" in options) {
