@@ -892,12 +892,7 @@ mod tests {
                 action_queue: &mut crate::context::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),
                 input: &mut NullInputBackend::new(),
-                background_color: &mut Color {
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    a: 0,
-                },
+                background_color: &mut None,
                 library: &mut Library::default(),
                 navigator: &mut NullNavigatorBackend::new(),
                 renderer: &mut NullRenderer::new(),

@@ -53,12 +53,7 @@ where
             audio: &mut NullAudioBackend::new(),
             input: &mut NullInputBackend::new(),
             action_queue: &mut ActionQueue::new(),
-            background_color: &mut Color {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0,
-            },
+            background_color: &mut None,
             library: &mut Library::default(),
             navigator: &mut NullNavigatorBackend::new(),
             renderer: &mut NullRenderer::new(),

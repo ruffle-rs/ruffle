@@ -2899,9 +2899,13 @@ impl<'gc, 'a> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<&'a [u8]>,
     ) -> DecodeResult {
+        // Set background color if none set
+        // bgcolor attribute on the HTML embed would override this
+        // Also note that a laoded child SWF could change background color only
+        // if parent SWF is missing SetBackgroundColor tag.
         let background_color = reader.read_rgb()?;
-        if self.parent().is_none() {
-            *context.background_color = background_color;
+        if context.background_color.is_none() {
+            *context.background_color = Some(background_color);
         }
         Ok(())
     }

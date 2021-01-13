@@ -35,7 +35,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The background color of the Stage. Changed by the `SetBackgroundColor` SWF tag.
     /// TODO: Move this into a `Stage` display object.
-    pub background_color: &'a mut Color,
+    pub background_color: &'a mut Option<Color>,
 
     /// The mutation context to allocate and mutate `GcCell` types.
     pub gc_context: MutationContext<'gc, 'gc_context>,
