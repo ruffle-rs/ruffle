@@ -97,6 +97,35 @@ impl<'gc> MovieClip<'gc> {
         ))
     }
 
+    pub fn new_with_avm2(
+        swf: SwfSlice,
+        this: Avm2Object<'gc>,
+        constr: Avm2Object<'gc>,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> Self {
+        MovieClip(GcCell::allocate(
+            gc_context,
+            MovieClipData {
+                base: Default::default(),
+                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(swf)),
+                tag_stream_pos: 0,
+                current_frame: 0,
+                audio_stream: None,
+                container: ChildContainer::new(),
+                object: Some(this.into()),
+                clip_actions: Vec::new(),
+                frame_scripts: Vec::new(),
+                has_button_clip_event: false,
+                flags: EnumSet::empty(),
+                avm2_constructor: Some(constr),
+                drawing: Drawing::new(),
+                is_focusable: false,
+                has_focus: false,
+                enabled: true,
+            },
+        ))
+    }
+
     pub fn new_with_data(
         gc_context: MutationContext<'gc, '_>,
         id: CharacterId,

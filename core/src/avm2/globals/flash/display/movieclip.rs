@@ -26,8 +26,19 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
+            let mut proto = this
+                .proto()
+                .ok_or("Attempted to construct bare-object MovieClip")?;
+            let constr = proto
+                .get_property(proto, &QName::dynamic_name("constructor"), activation)?
+                .coerce_to_object(activation)?;
             let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-            let new_do = MovieClip::new(SwfSlice::empty(movie), activation.context.gc_context);
+            let new_do = MovieClip::new_with_avm2(
+                SwfSlice::empty(movie),
+                this,
+                constr,
+                activation.context.gc_context,
+            );
 
             this.init_display_object(activation.context.gc_context, new_do.into());
         }
