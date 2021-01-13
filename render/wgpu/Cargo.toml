@@ -13,7 +13,7 @@ log = "0.4"
 lyon = "0.17.1"
 ruffle_core = { path = "../../core" }
 futures = "0.3.10"
-bytemuck = "1.4.1"
+bytemuck = "1.5.0"
 raw-window-handle = "0.3.3"
 clap = { version = "3.0.0-beta.2", optional = true }
 enum-map = "0.6.3"
