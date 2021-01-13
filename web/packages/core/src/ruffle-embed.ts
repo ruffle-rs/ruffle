@@ -34,23 +34,21 @@ export class RuffleEmbed extends RufflePlayer {
      */
     connectedCallback(): void {
         super.connectedCallback();
-        let parameters;
-
-        const flashvars = this.attributes.getNamedItem("flashvars");
-        if (flashvars) {
-            parameters = flashvars.value;
-        }
-
-        const allowScriptAccess =
-            this.attributes.getNamedItem("allowScriptAccess")?.value ?? null;
-
         const src = this.attributes.getNamedItem("src");
         if (src) {
+            const allowScriptAccess =
+                this.attributes.getNamedItem("allowScriptAccess")?.value ??
+                null;
+
             this.allowScriptAccess = isScriptAccessAllowed(
                 allowScriptAccess,
                 src.value
             );
-            this.load({ url: src.value, parameters });
+            this.load({
+                url: src.value,
+                parameters: this.attributes.getNamedItem("flashvars")?.value,
+                backgroundColor: this.attributes.getNamedItem("bgcolor")?.value,
+            });
         }
     }
 
