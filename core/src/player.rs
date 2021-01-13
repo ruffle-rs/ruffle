@@ -172,7 +172,7 @@ pub struct Player {
     rng: SmallRng,
 
     gc_arena: GcArena,
-    background_color: Color,
+    background_color: Option<Color>,
 
     frame_rate: f64,
 
@@ -248,12 +248,7 @@ impl Player {
             is_playing: false,
             needs_render: true,
 
-            background_color: Color {
-                r: 255,
-                g: 255,
-                b: 255,
-                a: 255,
-            },
+            background_color: None,
             transform_stack: TransformStack::new(),
             view_matrix: Default::default(),
             inverse_view_matrix: Default::default(),
@@ -901,7 +896,11 @@ impl Player {
     }
 
     pub fn render(&mut self) {
-        self.renderer.begin_frame(self.background_color.clone());
+        let background_color = self
+            .background_color
+            .clone()
+            .unwrap_or_else(|| Color::from_rgb(0xffffff, 255));
+        self.renderer.begin_frame(background_color);
 
         let (renderer, transform_stack) = (&mut self.renderer, &mut self.transform_stack);
 
