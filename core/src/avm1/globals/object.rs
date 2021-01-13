@@ -163,7 +163,7 @@ pub fn register_class<'gc>(
         .base_clip()
         .movie()
         .map(|movie| activation.context.library.library_for_movie_mut(movie))
-        .and_then(|library| library.get_avm1_constructor_registry());
+        .and_then(|library| library.avm1_constructor_registry());
 
     match registry {
         Some(registry) => {
