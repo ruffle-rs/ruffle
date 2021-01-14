@@ -95,7 +95,7 @@ impl<'gc> Event<'gc> {
             cancelled: false,
             propagation: PropagationMode::AllowPropagation,
             current_target: None,
-            event_phase: EventPhase::Bubbling,
+            event_phase: EventPhase::AtTarget,
             target: None,
             event_type: event_type.into(),
         }
