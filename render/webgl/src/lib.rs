@@ -1298,7 +1298,7 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn push_mask(&mut self) {
-        assert!(
+        debug_assert!(
             self.mask_state == MaskState::NoMask || self.mask_state == MaskState::DrawMaskedContent
         );
         self.num_masks += 1;
@@ -1307,19 +1307,19 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn activate_mask(&mut self) {
-        assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskStencil);
+        debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskStencil);
         self.mask_state = MaskState::DrawMaskedContent;
         self.mask_state_dirty = true;
     }
 
     fn deactivate_mask(&mut self) {
-        assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskedContent);
+        debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskedContent);
         self.mask_state = MaskState::ClearMaskStencil;
         self.mask_state_dirty = true;
     }
 
     fn pop_mask(&mut self) {
-        assert!(self.num_masks > 0 && self.mask_state == MaskState::ClearMaskStencil);
+        debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::ClearMaskStencil);
         self.num_masks -= 1;
         self.mask_state = if self.num_masks == 0 {
             MaskState::NoMask
