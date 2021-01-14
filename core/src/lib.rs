@@ -18,6 +18,7 @@ extern crate downcast_rs;
 #[macro_use]
 mod avm1;
 mod avm2;
+pub mod bitmap;
 mod bounding_box;
 mod character;
 mod collect;

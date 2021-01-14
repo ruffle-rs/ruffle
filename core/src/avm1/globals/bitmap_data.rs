@@ -582,14 +582,73 @@ pub fn get_color_bounds_rect<'gc>(
 }
 
 pub fn perlin_noise<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            log::warn!("BitmapData.perlinNoise - not yet implemented");
-            return Ok(Value::Undefined);
+            let base_x = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_f64(activation)?;
+            let base_y = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_f64(activation)?;
+            let num_octaves = args
+                .get(2)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u32(activation)? as usize;
+            let seed = args
+                .get(3)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_i32(activation)? as i64;
+            let stitch = args
+                .get(4)
+                .unwrap_or(&Value::Undefined)
+                .as_bool(activation.swf_version());
+            let fractal_noise = args
+                .get(5)
+                .unwrap_or(&Value::Undefined)
+                .as_bool(activation.swf_version());
+            let channel_options = args
+                .get(6)
+                .unwrap_or(&Value::Number((1 | 2 | 4) as f64))
+                .coerce_to_u16(activation)? as u8;
+            let grayscale = args
+                .get(7)
+                .unwrap_or(&Value::Undefined)
+                .as_bool(activation.swf_version());
+            let offsets = args
+                .get(8)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let mut octave_offsets = vec![];
+            for i in 0..num_octaves {
+                octave_offsets.push(if let Value::Object(e) = offsets.array_element(i) {
+                    let x = e.get("x", activation)?.coerce_to_f64(activation)?;
+                    let y = e.get("y", activation)?.coerce_to_f64(activation)?;
+                    (x, y)
+                } else {
+                    (0.0, 0.0)
+                });
+            }
+
+            bitmap_data
+                .bitmap_data()
+                .write(activation.context.gc_context)
+                .perlin_noise(
+                    (base_x, base_y),
+                    num_octaves,
+                    seed,
+                    stitch,
+                    fractal_noise,
+                    channel_options,
+                    grayscale,
+                    octave_offsets,
+                );
         }
     }
 

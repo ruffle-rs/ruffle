@@ -7,6 +7,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use crate::avm1::activation::Activation;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::backend::render::{BitmapHandle, RenderBackend};
+use crate::bitmap::turbulence::Turbulence;
 use downcast_rs::__std::fmt::Formatter;
 use std::fmt;
 use std::ops::Range;
@@ -601,6 +602,110 @@ impl BitmapData {
                 }
 
                 self.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);
+            }
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn perlin_noise(
+        &mut self,
+        base: (f64, f64),
+        num_octaves: usize,
+        random_seed: i64,
+        stitch: bool,
+        fractal_noise: bool,
+        channel_options: u8,
+        grayscale: bool,
+        offsets: Vec<(f64, f64)>, // must contain `num_octaves` values
+    ) {
+        let turb = Turbulence::from_seed(random_seed);
+
+        for y in 0..self.height() {
+            for x in 0..self.width() {
+                let px = x as f64;
+                let py = y as f64;
+
+                let mut noise = [0.0_f64; 4];
+
+                // grayscale mode is different enough to warrant its own branch
+                if grayscale {
+                    noise[0] = turb.turbulence(
+                        0,
+                        (px, py),
+                        (1.0 / base.0, 1.0 / base.1),
+                        num_octaves,
+                        fractal_noise,
+                        stitch,
+                        (0.0, 0.0),
+                        (self.width as f64, self.height as f64),
+                        &offsets,
+                    );
+
+                    noise[1] = noise[0];
+                    noise[2] = noise[0];
+
+                    noise[3] = if channel_options & 8 != 0 {
+                        turb.turbulence(
+                            1,
+                            (px, py),
+                            (1.0 / base.0, 1.0 / base.1),
+                            num_octaves,
+                            fractal_noise,
+                            stitch,
+                            (0.0, 0.0),
+                            (self.width as f64, self.height as f64),
+                            &offsets,
+                        )
+                    } else {
+                        1.0
+                    };
+                } else {
+                    // Flash seems to pass the `color_channel` parameter to `turbulence`
+                    // somewhat strangely. It's not always r=0, g=1, b=2, a=3; instead,
+                    // it skips incrementing the parameter after channels that are
+                    // not included in `channel_options`.
+                    let mut channel = 0;
+
+                    for (c, noise_c) in noise.iter_mut().enumerate() {
+                        // this will work both in fractal_sum and turbulence "modes",
+                        // because of the saturating conversion to u8
+                        *noise_c = if c == 3 { 1.0 } else { -1.0 };
+
+                        if (channel_options & (1 << c)) != 0 {
+                            *noise_c = turb.turbulence(
+                                channel,
+                                (px, py),
+                                (1.0 / base.0, 1.0 / base.1),
+                                num_octaves,
+                                fractal_noise,
+                                stitch,
+                                (0.0, 0.0),
+                                (self.width as f64, self.height as f64),
+                                &offsets,
+                            );
+                            channel += 1;
+                        }
+                    }
+                }
+
+                let mut color = [0_u8; 4];
+                for chan in 0..4 {
+                    // This is precisely how Adobe Flash converts the -1..1 or 0..1 floats to u8.
+                    // Please don't touch, it was difficult to figure out the exact method. :)
+                    color[chan] = (if fractal_noise {
+                        // Yes, the + 0.5 for correct (nearest) rounding is done before the division by 2.0,
+                        // making it technically less correct (I think), but this is how it is!
+                        ((noise[chan] * 255.0 + 255.0) + 0.5) / 2.0
+                    } else {
+                        (noise[chan] * 255.0) + 0.5
+                    }) as u8;
+                }
+
+                if !self.transparency {
+                    color[3] = 255;
+                }
+
+                self.set_pixel32_raw(x, y, Color::argb(color[3], color[0], color[1], color[2]));
             }
         }
     }
