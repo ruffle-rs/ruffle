@@ -68,9 +68,9 @@ struct RuffleInstance {
     #[allow(dead_code)]
     mouse_move_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
-    mouse_up_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     player_mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     window_mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
+    mouse_up_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     mouse_wheel_callback: Option<Closure<dyn FnMut(WheelEvent)>>,
     key_down_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
     key_up_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
@@ -239,21 +239,102 @@ impl Ruffle {
             let mut instance = instance.borrow_mut();
             instance.canvas.remove();
 
-            // Stop all audio playing from the instance
+            // Stop all audio playing from the instance.
             let mut player = instance.core.lock().unwrap();
             player.audio_mut().stop_all_sounds();
             player.flush_shared_objects();
             drop(player);
 
             // Clean up all event listeners.
-            instance.key_down_callback = None;
-            instance.key_up_callback = None;
-            instance.mouse_down_callback = None;
-            instance.mouse_move_callback = None;
-            instance.mouse_up_callback = None;
-            instance.player_mouse_down_callback = None;
-            instance.window_mouse_down_callback = None;
-            instance.unload_callback = None;
+            if let Some(window) = web_sys::window() {
+                if let Some(mouse_move_callback) = &instance.mouse_move_callback {
+                    let canvas_events: &EventTarget = instance.canvas.as_ref();
+                    canvas_events
+                        .remove_event_listener_with_callback(
+                            "pointermove",
+                            mouse_move_callback.as_ref().unchecked_ref(),
+                        )
+                        .unwrap();
+                    instance.mouse_move_callback = None;
+                }
+                if let Some(mouse_down_callback) = &instance.mouse_down_callback {
+                    let canvas_events: &EventTarget = instance.canvas.as_ref();
+                    canvas_events
+                        .remove_event_listener_with_callback(
+                            "pointerdown",
+                            mouse_down_callback.as_ref().unchecked_ref(),
+                        )
+                        .unwrap();
+                    instance.mouse_down_callback = None;
+                }
+                if let Some(player_mouse_down_callback) = &instance.player_mouse_down_callback {
+                    let js_player_events: &EventTarget = instance.js_player.as_ref();
+                    js_player_events
+                        .remove_event_listener_with_callback(
+                            "pointerdown",
+                            player_mouse_down_callback.as_ref().unchecked_ref(),
+                        )
+                        .unwrap();
+                    instance.player_mouse_down_callback = None;
+                }
+                if let Some(window_mouse_down_callback) = &instance.window_mouse_down_callback {
+                    window
+                        .remove_event_listener_with_callback_and_bool(
+                            "pointerdown",
+                            window_mouse_down_callback.as_ref().unchecked_ref(),
+                            true,
+                        )
+                        .unwrap();
+                    instance.window_mouse_down_callback = None;
+                }
+                if let Some(mouse_up_callback) = &instance.mouse_up_callback {
+                    let canvas_events: &EventTarget = instance.canvas.as_ref();
+                    canvas_events
+                        .remove_event_listener_with_callback(
+                            "pointerup",
+                            mouse_up_callback.as_ref().unchecked_ref(),
+                        )
+                        .unwrap();
+                    instance.mouse_up_callback = None;
+                }
+                if let Some(mouse_wheel_callback) = &instance.mouse_wheel_callback {
+                    let canvas_events: &EventTarget = instance.canvas.as_ref();
+                    canvas_events
+                        .remove_event_listener_with_callback(
+                            "wheel",
+                            mouse_wheel_callback.as_ref().unchecked_ref(),
+                        )
+                        .unwrap();
+                    instance.mouse_wheel_callback = None;
+                }
+                if let Some(key_down_callback) = &instance.key_down_callback {
+                    window
+                        .remove_event_listener_with_callback(
+                            "keydown",
+                            key_down_callback.as_ref().unchecked_ref(),
+                        )
+                        .unwrap();
+                    instance.key_down_callback = None;
+                }
+                if let Some(key_up_callback) = &instance.key_up_callback {
+                    window
+                        .remove_event_listener_with_callback(
+                            "keyup",
+                            key_up_callback.as_ref().unchecked_ref(),
+                        )
+                        .unwrap();
+                    instance.key_up_callback = None;
+                }
+                if let Some(unload_callback) = &instance.unload_callback {
+                    window
+                        .remove_event_listener_with_callback(
+                            "unload",
+                            unload_callback.as_ref().unchecked_ref(),
+                        )
+                        .unwrap();
+                    instance.unload_callback = None;
+                }
+            }
 
             // Cancel the animation handler, if it's still active.
             if let Some(id) = instance.animation_handler_id {
@@ -675,6 +756,7 @@ impl Ruffle {
                 instance.borrow_mut().key_down_callback = Some(key_down_callback);
             }
 
+            // Create keyup event handler.
             {
                 let key_up_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
                     js_event.prevent_default();
