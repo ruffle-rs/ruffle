@@ -3,7 +3,7 @@ use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
-use crate::property_map::{Entry, PropertyMap};
+use crate::property_map::PropertyMap;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::AvmType;
 use crate::{avm1::function::FunctionObject, avm2::Domain as Avm2Domain};
@@ -104,38 +104,27 @@ impl<'gc> MovieLibrary<'gc> {
         export_name: &str,
     ) -> Option<&Character<'gc>> {
         if let Some(character) = self.characters.get(&id) {
-            match self.export_characters.entry(export_name, false) {
-                Entry::Vacant(e) => {
-                    e.insert(character.clone());
-                    return Some(character);
-                }
-                Entry::Occupied(_) => {
-                    log::warn!(
-                        "Can't register export {}: Export already exists",
-                        export_name
-                    );
-                }
-            }
+            self.export_characters
+                .insert(export_name, character.clone(), false);
+            Some(character)
         } else {
             log::warn!(
                 "Can't register export {}: Character ID {} doesn't exist",
                 export_name,
-                id
-            )
+                id,
+            );
+            None
         }
-        None
     }
 
     pub fn contains_character(&self, id: CharacterId) -> bool {
         self.characters.contains_key(&id)
     }
 
-    #[allow(dead_code)]
     pub fn character_by_id(&self, id: CharacterId) -> Option<&Character<'gc>> {
         self.characters.get(&id)
     }
 
-    #[allow(dead_code)]
     pub fn character_by_export_name(&self, name: &str) -> Option<&Character<'gc>> {
         self.export_characters.get(name, false)
     }
