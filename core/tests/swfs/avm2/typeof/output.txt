@@ -1,0 +1,30 @@
+// typeof undefined
+undefined
+// typeof null
+object
+// typeof s(false)
+boolean
+// typeof s(true)
+boolean
+// typeof a(10.5)
+number
+// typeof b(-10)
+number
+// typeof c(15)
+number
+// typeof {}
+object
+// typeof d('test')
+string
+// typeof test (function)
+function
+// typeof xml_obj (XML)
+xml
+// typeof listlist_obj (XMLList)
+xml
+Blah constructor
+object
+t1
+object
+t2
+object
