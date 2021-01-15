@@ -21,9 +21,6 @@ module.exports = (env, argv) => {
             chunkFilename: "core.ruffle.[contenthash].js",
         },
         mode: mode,
-        experiments: {
-            syncWebAssembly: true,
-        },
         devtool: "source-map",
         plugins: [
             new CleanWebpackPlugin(),
@@ -31,5 +28,13 @@ module.exports = (env, argv) => {
                 patterns: [{ from: "LICENSE*" }, { from: "README.md" }],
             }),
         ],
+        module: {
+            rules: [
+                {
+                    test: /\.wasm$/i,
+                    use: ["file-loader"],
+                },
+            ],
+        },
     };
 };

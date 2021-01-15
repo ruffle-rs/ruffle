@@ -11,6 +11,7 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
+        "file-loader": "^6.2.0",
         "webpack": "^5.1.3"
     }
 }
