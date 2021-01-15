@@ -116,7 +116,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_actions: Vec::new(),
                 frame_scripts: Vec::new(),
                 has_button_clip_event: false,
-                flags: EnumSet::empty(),
+                flags: MovieClipFlags::empty(),
                 avm2_constructor: Some(constr),
                 drawing: Drawing::new(),
                 is_focusable: false,

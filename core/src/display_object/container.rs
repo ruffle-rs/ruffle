@@ -1,5 +1,6 @@
 //! Container mix-in for display objects
 
+use crate::avm2::{Avm2, Event as Avm2Event, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::button::Button;
 use crate::display_object::movie_clip::MovieClip;
@@ -12,6 +13,40 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::ops::RangeBounds;
+
+/// Dispatch the `removed` event on a child and log any errors encountered
+/// whilst doing so.
+pub fn dispatch_removed_event<'gc>(
+    child: DisplayObject<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+) {
+    if let Avm2Value::Object(object) = child.object2() {
+        let mut removed_evt = Avm2Event::new("removed");
+        removed_evt.set_bubbles(true);
+        removed_evt.set_cancelable(false);
+
+        if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
+            log::error!("Encountered AVM2 error when dispatching event: {}", e);
+        }
+    }
+}
+
+/// Dispatch the `added` event on a child and log any errors encountered
+/// whilst doing so.
+pub fn dispatch_added_event<'gc>(
+    child: DisplayObject<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+) {
+    if let Avm2Value::Object(object) = child.object2() {
+        let mut removed_evt = Avm2Event::new("added");
+        removed_evt.set_bubbles(true);
+        removed_evt.set_cancelable(false);
+
+        if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
+            log::error!("Encountered AVM2 error when dispatching event: {}", e);
+        }
+    }
+}
 
 bitflags! {
     /// The three lists that a display object container is supposed to maintain.
@@ -160,7 +195,7 @@ pub trait TDisplayObjectContainer<'gc>:
         R: RangeBounds<usize>;
 
     /// Clear all three lists in the container.
-    fn clear(&mut self, context: MutationContext<'gc, '_>);
+    fn clear(&mut self, context: &mut UpdateContext<'_, 'gc, '_>);
 
     /// Determine if the container is empty.
     fn is_empty(self) -> bool;
@@ -270,6 +305,12 @@ macro_rules! impl_display_object_container {
             child: DisplayObject<'gc>,
             depth: Depth,
         ) -> Option<DisplayObject<'gc>> {
+            use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
+            dispatch_added_event(child, context);
+            if let Some(to_remove) = self.0.read().$field.get_depth(depth) {
+                dispatch_removed_event(to_remove, context);
+            }
+
             let mut write = self.0.write(context.gc_context);
 
             let prev_child = write.$field.insert_child_into_depth_list(depth, child);
@@ -363,11 +404,15 @@ macro_rules! impl_display_object_container {
             child: DisplayObject<'gc>,
             index: usize,
         ) {
+            use crate::display_object::container::dispatch_added_event;
+
             if let Some(old_parent) = child.parent() {
                 if !DisplayObject::ptr_eq(old_parent, (*self).into()) {
                     if let Some(mut old_parent) = old_parent.as_container() {
                         old_parent.remove_child(context, child, Lists::all());
                     }
+                } else {
+                    return;
                 }
             }
 
@@ -378,6 +423,8 @@ macro_rules! impl_display_object_container {
                 .write(context.gc_context)
                 .$field
                 .insert_at_id(context, child, index);
+
+            dispatch_added_event(child, context);
         }
 
         fn swap_at_index(
@@ -402,6 +449,9 @@ macro_rules! impl_display_object_container {
                 child.parent().unwrap(),
                 (*self).into()
             ));
+
+            use crate::display_object::container::dispatch_removed_event;
+            dispatch_removed_event(child, context);
 
             let mut write = self.0.write(context.gc_context);
 
@@ -432,11 +482,25 @@ macro_rules! impl_display_object_container {
         where
             R: RangeBounds<usize>,
         {
+            let removed_list: Vec<DisplayObject<'gc>> = self
+                .0
+                .read()
+                .$field
+                .iter_render_list()
+                .enumerate()
+                .filter(|(i, _)| range.contains(i))
+                .map(|(_, child)| child)
+                .collect();
+
+            use crate::display_object::container::dispatch_removed_event;
+            for removed in removed_list.iter() {
+                dispatch_removed_event(*removed, context);
+            }
+
             let mut write = self.0.write(context.gc_context);
-            let removed_list: Vec<DisplayObject<'gc>> =
-                write.$field.drain_render_range(range).collect();
 
             for removed in removed_list {
+                write.$field.remove_child_from_render_list(removed);
                 write.$field.remove_child_from_depth_list(removed);
                 write.$field.remove_child_from_exec_list(context, removed);
 
@@ -452,8 +516,18 @@ macro_rules! impl_display_object_container {
             }
         }
 
-        fn clear(&mut self, gc_context: MutationContext<'gc, '_>) {
-            self.0.write(gc_context).$field.clear(gc_context)
+        fn clear(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+            use crate::display_object::container::dispatch_removed_event;
+            let removed_children: Vec<DisplayObject<'gc>> =
+                self.0.read().$field.iter_render_list().collect();
+            for removed in removed_children {
+                dispatch_removed_event(removed, context);
+            }
+
+            self.0
+                .write(context.gc_context)
+                .$field
+                .clear(context.gc_context)
         }
 
         fn is_empty(self) -> bool {
@@ -835,17 +909,6 @@ impl<'gc> ChildContainer<'gc> {
     /// Yield children in the order they are rendered.
     pub fn iter_render_list<'a>(&'a self) -> impl 'a + Iterator<Item = DisplayObject<'gc>> {
         self.render_list.iter().copied()
-    }
-
-    /// Remove children from the render list and yield them.
-    pub fn drain_render_range<'a, R>(
-        &'a mut self,
-        range: R,
-    ) -> impl 'a + Iterator<Item = DisplayObject<'gc>>
-    where
-        R: RangeBounds<usize>,
-    {
-        self.render_list.drain(range)
     }
 }
 
