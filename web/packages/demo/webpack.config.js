@@ -20,9 +20,6 @@ module.exports = (env, argv) => {
             filename: "index.js",
         },
         mode: mode,
-        experiments: {
-            syncWebAssembly: true,
-        },
         devtool: "source-map",
         plugins: [
             new CleanWebpackPlugin(),
@@ -46,6 +43,10 @@ module.exports = (env, argv) => {
                 {
                     test: /\.css$/i,
                     use: ["style-loader", "css-loader"],
+                },
+                {
+                    test: /\.wasm$/i,
+                    use: ["file-loader"],
                 },
             ],
         },

@@ -13,6 +13,14 @@ module.exports = (env, argv) => {
     console.log(`Building ${mode}...`);
 
     return {
+        module: {
+            rules: [
+                {
+                    test: /\.wasm$/i,
+                    use: ["file-loader"],
+                },
+            ],
+        },
         entry: {
             ruffle: path.resolve(__dirname, "js/index.js"),
             main: path.resolve(__dirname, "js/main.js"),
@@ -26,9 +34,6 @@ module.exports = (env, argv) => {
             chunkFilename: "core.ruffle.js",
         },
         mode: mode,
-        experiments: {
-            syncWebAssembly: true,
-        },
         plugins: [
             new CleanWebpackPlugin(),
             new CopyPlugin({
