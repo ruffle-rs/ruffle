@@ -8,7 +8,7 @@
 use crate::error::{Error, Result};
 use crate::types::*;
 use byteorder::{LittleEndian, ReadBytesExt};
-use enumset::EnumSet;
+use big_enum_set::BigEnumSet;
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::io::{self, Read};
@@ -2291,9 +2291,9 @@ impl<R: Read> Reader<R> {
         }
     }
 
-    fn read_clip_event_flags(&mut self) -> Result<EnumSet<ClipEventFlag>> {
+    fn read_clip_event_flags(&mut self) -> Result<BigEnumSet<ClipEventFlag>> {
         // TODO: Switch to a bitset.
-        let mut event_list = EnumSet::new();
+        let mut event_list = BigEnumSet::new();
         if self.read_bit()? {
             event_list.insert(ClipEventFlag::KeyUp);
         }

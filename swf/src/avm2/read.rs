@@ -101,9 +101,9 @@ impl<R: Read> Reader<R> {
     }
 
     fn read_i24(&mut self) -> Result<i32> {
-        Ok(i32::from(self.read_u8()? as i8)
-            | (i32::from(self.read_u8()? as i8) << 8)
-            | (i32::from(self.read_u8()? as i8) << 16))
+        Ok(i32::from(self.read_i8()?)
+            | (i32::from(self.read_i8()?) << 8)
+            | (i32::from(self.read_i8()?) << 16))
     }
     fn read_i32(&mut self) -> Result<i32> {
         let mut n: i32 = 0;
@@ -199,7 +199,23 @@ impl<R: Read> Reader<R> {
             0x1c => Multiname::MultinameLA {
                 namespace_set: self.read_index()?,
             },
-            _ => return Err(Error::invalid_data("Invalid multiname kind")),
+            0x1D => Multiname::GenericName {
+                name: self.read_index()?,
+                parameters: {
+                    let len = self.read_u30()?;
+                    let mut params = Vec::with_capacity(len as usize);
+                    for _ in 0..len {
+                        params.push(self.read_index()?);
+                    }
+                    params
+                },
+            },
+            _ => {
+                return Err(Error::invalid_data(format!(
+                    "Invalid multiname kind: {}",
+                    kind
+                )))
+            }
         })
     }
 

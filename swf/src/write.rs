@@ -9,7 +9,7 @@ use crate::error::{Error, Result};
 use crate::tag_code::TagCode;
 use crate::types::*;
 use byteorder::{LittleEndian, WriteBytesExt};
-use enumset::EnumSet;
+use big_enum_set::BigEnumSet;
 use std::cmp::max;
 use std::io::{self, Write};
 
@@ -2195,7 +2195,7 @@ impl<W: Write> Writer<W> {
     fn write_clip_actions(&mut self, clip_actions: &[ClipAction]) -> Result<()> {
         self.write_u16(0)?; // Reserved
         {
-            let mut all_events = EnumSet::new();
+            let mut all_events = BigEnumSet::new();
             for action in clip_actions {
                 all_events |= action.events;
             }
@@ -2219,7 +2219,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_clip_event_flags(&mut self, clip_events: EnumSet<ClipEventFlag>) -> Result<()> {
+    fn write_clip_event_flags(&mut self, clip_events: BigEnumSet<ClipEventFlag>) -> Result<()> {
         // TODO: Assert proper version.
         self.write_bit(clip_events.contains(ClipEventFlag::KeyUp))?;
         self.write_bit(clip_events.contains(ClipEventFlag::KeyDown))?;

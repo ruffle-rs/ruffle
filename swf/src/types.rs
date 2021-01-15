@@ -3,7 +3,7 @@
 //! These structures are documented in the Adobe SWF File Format Specification
 //! version 19 (henceforth SWF19):
 //! https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf
-use enumset::{EnumSet, EnumSetType};
+use big_enum_set::{BigEnumSet, BigEnumSetType};
 use std::collections::HashSet;
 
 mod matrix;
@@ -417,7 +417,7 @@ pub enum BlendMode {
 /// [SWF19 pp.37-38 ClipActionRecord](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=37)
 #[derive(Debug, Clone, PartialEq)]
 pub struct ClipAction {
-    pub events: EnumSet<ClipEventFlag>,
+    pub events: BigEnumSet<ClipEventFlag>,
     pub key_code: Option<KeyCode>,
     pub action_data: Vec<u8>,
 }
@@ -426,7 +426,7 @@ pub struct ClipAction {
 /// an `onClipEvent` or `on` block.
 ///
 /// [SWF19 pp.48-50 ClipEvent](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=38)
-#[derive(Debug, EnumSetType)]
+#[derive(Debug, BigEnumSetType)]
 pub enum ClipEventFlag {
     Construct,
     Data,
