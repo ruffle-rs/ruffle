@@ -1,0 +1,3 @@
+attachMovie("test", "mc", 1);
+trace(mc._width);
+141

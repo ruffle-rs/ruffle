@@ -1,6 +1,6 @@
 //! Tests running SWFs in a headless Ruffle instance.
 //!
-//! Trace output can be compared with correct output from the official Flash Payer.
+//! Trace output can be compared with correct output from the official Flash Player.
 
 use approx::assert_relative_eq;
 use ruffle_core::backend::locale::NullLocaleBackend;
@@ -88,6 +88,7 @@ swf_tests! {
     (execution_order1, "avm1/execution_order1", 3),
     (execution_order2, "avm1/execution_order2", 15),
     (execution_order3, "avm1/execution_order3", 5),
+    (export_assets, "avm1/export_assets", 1),
     (single_frame, "avm1/single_frame", 2),
     (looping, "avm1/looping", 6),
     (matrix, "avm1/matrix", 1),
