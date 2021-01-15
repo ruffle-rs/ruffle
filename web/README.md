@@ -44,15 +44,29 @@ We do not have a Minimum Supported Rust Version policy. If it fails to build, it
 to update to the latest stable version of rust. You may run `rustup update` to do this (if you installed
 rust using the above instructions).
 
+For the compiler to be able to output WebAssembly, an additional target has to be added to it: `rustup target add wasm32-unknown-unknown`
+
 #### Node.js
 
 Follow the instructions [to install node.js](https://nodejs.org/en/) on your machine.
 
 We recommend using the currently active LTS 12, but we do also run tests with maintenance LTS 10.
 
-#### wasm-pack
+#### wasm-bindgen
 
-Follow the instructions [to install wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) on your machine.
+This can be installed with `cargo install wasm-bindgen-cli`.
+
+#### Binaryen
+
+This is optional, used to further optimize the built WebAssembly module.
+Some ways to install Binaryen:
+ - download one of the [prebuilt releases](https://github.com/WebAssembly/binaryen/releases/)
+ - using your Linux distribution's package manager (`sudo apt install binaryen`, `sudo dnf install binaryen`)
+ - from [Homebrew](https://formulae.brew.sh/formula/binaryen)
+ - from [Anaconda](https://anaconda.org/conda-forge/binaryen)
+ - [compile it yourself](https://github.com/WebAssembly/binaryen#building)
+
+Just make sure the `wasm-opt` program is in `$PATH`, and that it works.
 
 ### Building
 
