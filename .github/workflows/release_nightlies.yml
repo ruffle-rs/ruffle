@@ -104,7 +104,17 @@ jobs:
           npm run build
           npm run docs
 
-      - name: Build desktop
+      - name: Build Windows desktop
+        if: matrix.os == 'windows-latest'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+        env:
+          RUSTFLAGS: -Ctarget-feature=+crt-static
+
+      - name: Build Mac / Ubuntu
+        if: matrix.os != 'windows-latest'
         uses: actions-rs/cargo@v1
         with:
           command: build
