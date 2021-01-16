@@ -219,9 +219,13 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Iterates over the children of this display object in render order. This
     /// is different than execution or depth order.
     ///
-    /// This yields an iterator that *does* lock the parent and cannot be
+    /// This yields an iterator that does *not* lock the parent and can be
     /// safely held in situations where display objects need to be unlocked.
-    /// It's concrete type is stated here due to Rust language limitations.
+    /// This means that unexpected but legal and defined items may be yielded
+    /// due to intended or unintended list manipulation by the caller.
+    ///
+    /// The iterator's concrete type is stated here due to Rust language
+    /// limitations.
     fn iter_render_list(self) -> RenderIter<'gc> {
         RenderIter::from_container(self.into())
     }
