@@ -379,7 +379,10 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.preload_root {
-                    frame.set_local_register(preload_r, af.base_clip.avm1_root()?.object());
+                    frame.set_local_register(
+                        preload_r,
+                        af.base_clip.avm1_root(&frame.context)?.object(),
+                    );
                     preload_r += 1;
                 }
 

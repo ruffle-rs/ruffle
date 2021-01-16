@@ -1102,7 +1102,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Obtain the top-most parent of the display tree hierarchy, if a suitable
     /// object exists.
-    fn root(&self) -> Option<DisplayObject<'gc>> {
+    fn root(&self, context: &UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
         let mut parent = if self.lock_root() {
             None
         } else {
@@ -1127,7 +1127,11 @@ pub trait TDisplayObject<'gc>:
             if let Avm1Value::Object(object) = self.object() {
                 object.as_display_object()
             } else if let Avm2Value::Object(object) = self.object2() {
-                object.as_display_object()
+                if self.is_on_stage(context) {
+                    object.as_display_object()
+                } else {
+                    None
+                }
             } else {
                 None
             }
@@ -1135,7 +1139,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Determine if this display object is currently on the stage.
-    fn is_on_stage(self, context: &mut UpdateContext<'_, 'gc, '_>) -> bool {
+    fn is_on_stage(self, context: &UpdateContext<'_, 'gc, '_>) -> bool {
         let mut ancestor = self.parent();
         while let Some(parent) = ancestor {
             if parent.parent().is_some() {
@@ -1158,8 +1162,12 @@ pub trait TDisplayObject<'gc>:
     /// AVM1 cannot normally access rootless display objects, so this will
     /// generate an AVM1 runtime error (which might also be unexpected, but
     /// less unexpected than a panic).
-    fn avm1_root(&self) -> Result<DisplayObject<'gc>, Avm1Error<'gc>> {
-        self.root().ok_or(Avm1Error::InvalidDisplayObjectHierarchy)
+    fn avm1_root(
+        &self,
+        context: &UpdateContext<'_, 'gc, '_>,
+    ) -> Result<DisplayObject<'gc>, Avm1Error<'gc>> {
+        self.root(context)
+            .ok_or(Avm1Error::InvalidDisplayObjectHierarchy)
     }
 
     /// Assigns a default instance name `instanceN` to this object.
