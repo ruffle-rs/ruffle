@@ -1134,6 +1134,24 @@ pub trait TDisplayObject<'gc>:
         })
     }
 
+    /// Determine if this display object is currently on the stage.
+    fn is_on_stage(self, context: &mut UpdateContext<'_, 'gc, '_>) -> bool {
+        let mut ancestor = self.parent();
+        while let Some(parent) = ancestor {
+            if parent.parent().is_some() {
+                ancestor = parent.parent();
+            } else {
+                break;
+            }
+        }
+
+        let ancestor = ancestor.unwrap_or_else(|| self.into());
+        context
+            .levels
+            .values()
+            .any(|o| DisplayObject::ptr_eq(*o, ancestor))
+    }
+
     /// Obtain the top-most parent of the display tree hierarchy, or some kind
     /// of an error.
     ///
