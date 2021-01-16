@@ -14,6 +14,29 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::ops::RangeBounds;
 
+/// Dispatch the `removedFromStage` event on a child and all of it's
+/// grandchildren, recursively.
+pub fn dispatch_removed_from_stage_event<'gc>(
+    child: DisplayObject<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+) {
+    if let Avm2Value::Object(object) = child.object2() {
+        let mut removed_evt = Avm2Event::new("removedFromStage");
+        removed_evt.set_bubbles(false);
+        removed_evt.set_cancelable(false);
+
+        if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
+            log::error!("Encountered AVM2 error when dispatching event: {}", e);
+        }
+    }
+
+    if let Some(child_container) = child.as_container() {
+        for grandchild in child_container.iter_render_list() {
+            dispatch_removed_from_stage_event(grandchild, context)
+        }
+    }
+}
+
 /// Dispatch the `removed` event on a child and log any errors encountered
 /// whilst doing so.
 pub fn dispatch_removed_event<'gc>(
@@ -28,13 +51,46 @@ pub fn dispatch_removed_event<'gc>(
         if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
             log::error!("Encountered AVM2 error when dispatching event: {}", e);
         }
+
+        if child.is_on_stage(context) {
+            dispatch_removed_from_stage_event(child, context)
+        }
+    }
+}
+
+/// Dispatch the `addedToStage` event on a child and all of it's grandchildren,
+/// recursively.
+pub fn dispatch_added_to_stage_event<'gc>(
+    child: DisplayObject<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+) {
+    if let Avm2Value::Object(object) = child.object2() {
+        let mut removed_evt = Avm2Event::new("addedToStage");
+        removed_evt.set_bubbles(false);
+        removed_evt.set_cancelable(false);
+
+        if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
+            log::error!("Encountered AVM2 error when dispatching event: {}", e);
+        }
+    }
+
+    if let Some(child_container) = child.as_container() {
+        for grandchild in child_container.iter_render_list() {
+            dispatch_added_to_stage_event(grandchild, context)
+        }
     }
 }
 
 /// Dispatch the `added` event on a child and log any errors encountered
 /// whilst doing so.
+///
+/// `child_was_on_stage` should be the result of calling `child.is_on_stage()`
+/// before any container manipulation has been made. The `added` event is
+/// generally fired after the container manipulation has been made.
 pub fn dispatch_added_event<'gc>(
+    parent: DisplayObject<'gc>,
     child: DisplayObject<'gc>,
+    child_was_on_stage: bool,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
@@ -45,6 +101,10 @@ pub fn dispatch_added_event<'gc>(
         if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
             log::error!("Encountered AVM2 error when dispatching event: {}", e);
         }
+    }
+
+    if parent.is_on_stage(context) && !child_was_on_stage {
+        dispatch_added_to_stage_event(child, context);
     }
 }
 
@@ -310,8 +370,10 @@ macro_rules! impl_display_object_container {
             depth: Depth,
         ) -> Option<DisplayObject<'gc>> {
             use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
-            dispatch_added_event(child, context);
-            if let Some(to_remove) = self.0.read().$field.get_depth(depth) {
+            let child_was_on_stage = child.is_on_stage(context);
+            dispatch_added_event(self.into(), child, child_was_on_stage, context);
+            let to_remove = self.0.read().$field.get_depth(depth);
+            if let Some(to_remove) = to_remove {
                 dispatch_removed_event(to_remove, context);
             }
 
@@ -409,7 +471,6 @@ macro_rules! impl_display_object_container {
             index: usize,
         ) {
             use crate::display_object::container::dispatch_added_event;
-
             if let Some(old_parent) = child.parent() {
                 if !DisplayObject::ptr_eq(old_parent, (*self).into()) {
                     if let Some(mut old_parent) = old_parent.as_container() {
@@ -420,6 +481,8 @@ macro_rules! impl_display_object_container {
                 }
             }
 
+            let child_was_on_stage = child.is_on_stage(context);
+
             child.set_place_frame(context.gc_context, 0);
             child.set_parent(context.gc_context, Some((*self).into()));
 
@@ -428,7 +491,12 @@ macro_rules! impl_display_object_container {
                 .$field
                 .insert_at_id(context, child, index);
 
-            dispatch_added_event(child, context);
+            dispatch_added_event(
+                DisplayObject::from(*self),
+                child,
+                child_was_on_stage,
+                context,
+            );
         }
 
         fn swap_at_index(
