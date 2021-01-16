@@ -500,6 +500,13 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
+    class(
+        activation,
+        flash::system::system::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
 
     // package `flash.events`
     activation
