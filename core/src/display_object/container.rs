@@ -471,15 +471,19 @@ macro_rules! impl_display_object_container {
             index: usize,
         ) {
             use crate::display_object::container::dispatch_added_event;
-            if let Some(old_parent) = child.parent() {
+            let parent_changed = if let Some(old_parent) = child.parent() {
                 if !DisplayObject::ptr_eq(old_parent, (*self).into()) {
                     if let Some(mut old_parent) = old_parent.as_container() {
                         old_parent.remove_child(context, child, Lists::all());
                     }
+
+                    true
                 } else {
-                    return;
+                    false
                 }
-            }
+            } else {
+                true
+            };
 
             let child_was_on_stage = child.is_on_stage(context);
 
@@ -491,12 +495,14 @@ macro_rules! impl_display_object_container {
                 .$field
                 .insert_at_id(context, child, index);
 
-            dispatch_added_event(
-                DisplayObject::from(*self),
-                child,
-                child_was_on_stage,
-                context,
-            );
+            if parent_changed {
+                dispatch_added_event(
+                    DisplayObject::from(*self),
+                    child,
+                    child_was_on_stage,
+                    context,
+                );
+            }
         }
 
         fn swap_at_index(
