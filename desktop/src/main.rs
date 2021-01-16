@@ -112,7 +112,7 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
     None
 }
 
-struct Ruffle {
+struct App {
     opt: Opt,
     movie: Option<Arc<SwfMovie>>,
     movie_url: Option<Url>,
@@ -120,7 +120,7 @@ struct Ruffle {
     player: Option<Arc<Mutex<Player>>>,
 }
 
-impl Ruffle {
+impl App {
     fn new(opt: Opt) -> Self {
         Self {
             opt,
@@ -138,12 +138,11 @@ impl Ruffle {
 
         if let Some(window) = self.window.as_ref() {
             let movie_url = self.movie_url.as_ref().unwrap();
-            let window_title = movie_url
+            let filename = movie_url
                 .path_segments()
                 .and_then(|segments| segments.last())
                 .unwrap_or_else(|| movie_url.as_str());
-            let title = format!("Ruffle - {}", window_title);
-            window.set_title(&title);
+            window.set_title(&format!("Ruffle - {}", filename));
 
             // TODO: stay maximized
             let movie = self.movie.as_ref().unwrap();
@@ -172,10 +171,6 @@ impl Ruffle {
     }
 
     fn ensure_player(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        if self.movie.is_none() {
-            return Ok(());
-        }
-
         let window = self.window.as_ref().unwrap();
         let movie = self.movie.as_ref().unwrap();
 
@@ -201,8 +196,7 @@ impl Ruffle {
             event_loop.create_proxy(),
             self.opt.proxy.clone(),
             self.opt.upgrade_to_https,
-        )));*/
-        // TODO: actually implement this backend type
+        )));*/ // TODO: actually implement this backend type
         let navigator = Box::new(NullNavigatorBackend::new());
         let storage = Box::new(storage::DiskStorageBackend::new());
         let locale = Box::new(locale::DesktopLocaleBackend::new());
@@ -225,12 +219,16 @@ impl Ruffle {
     }
 
     fn run(&'static mut self) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(path) = &self.opt.input_path.to_owned() {
+            self.load(&path)?;
+        }
+
         let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
         let icon = Icon::from_rgba(icon_bytes.to_vec(), 32, 32)?;
 
         let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
         let window = Rc::new(if let Some(movie) = self.movie.as_ref() {
-            let window_title = self
+            let filename = self
                 .movie_url
                 .as_ref()
                 .unwrap()
@@ -238,12 +236,10 @@ impl Ruffle {
                 .and_then(|segments| segments.last())
                 .unwrap_or_else(|| self.movie_url.as_ref().unwrap().as_str());
 
-            let movie_size = LogicalSize::new(movie.width(), movie.height());
-
             WindowBuilder::new()
                 .with_window_icon(Some(icon))
-                .with_title(format!("Ruffle - {}", window_title))
-                .with_inner_size(movie_size)
+                .with_title(format!("Ruffle - {}", filename))
+                .with_inner_size(LogicalSize::new(movie.width(), movie.height()))
                 .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
                 .build(&event_loop)?
         } else {
@@ -257,7 +253,9 @@ impl Ruffle {
         self.window = Some(window);
         // let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
 
-        self.ensure_player()?;
+        if self.movie.is_some() {
+            self.ensure_player()?;
+        }
 
         let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
         let mut time = Instant::now();
@@ -271,6 +269,8 @@ impl Ruffle {
                     *control_flow = ControlFlow::Wait;
                 }
 
+                let window = self.window.as_ref().unwrap();
+
                 // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
                 #[allow(deprecated)]
                 match &event {
@@ -280,8 +280,50 @@ impl Ruffle {
                             input:
                                 KeyboardInput {
                                     state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Return),
+                                    modifiers,
+                                    ..
+                                },
+                            ..
+                        } if modifiers.alt() => {
+                            if !fullscreen_down {
+                                window.set_fullscreen(match window.fullscreen() {
+                                    None => Some(Fullscreen::Borderless(None)),
+                                    Some(_) => None,
+                                });
+                            }
+                            fullscreen_down = true;
+                            return;
+                        }
+                        WindowEvent::KeyboardInput {
+                            input:
+                                KeyboardInput {
+                                    state: ElementState::Released,
+                                    virtual_keycode: Some(VirtualKeyCode::Return),
+                                    ..
+                                },
+                            ..
+                        } if fullscreen_down => {
+                            fullscreen_down = false;
+                        }
+                        WindowEvent::KeyboardInput {
+                            input:
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                                    ..
+                                },
+                            ..
+                        } => {
+                            window.set_fullscreen(None);
+                            return;
+                        }
+                        WindowEvent::KeyboardInput {
+                            input:
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
                                     virtual_keycode: Some(VirtualKeyCode::O),
-                                    modifiers, // TODO: Use WindowEvent::ModifiersChanged.
+                                    modifiers,
                                     ..
                                 },
                             ..
@@ -291,6 +333,7 @@ impl Ruffle {
                         }
                         WindowEvent::DroppedFile(path) => {
                             let _ = self.load(&path);
+                            return;
                         }
                         _ => (),
                     },
@@ -302,7 +345,7 @@ impl Ruffle {
                 } else {
                     return;
                 };
-                let window = self.window.as_ref().unwrap();
+
                 // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
                 #[allow(deprecated)]
                 match event {
@@ -407,47 +450,6 @@ impl Ruffle {
                                 window.request_redraw();
                             }
                         }
-                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                        WindowEvent::KeyboardInput {
-                            input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Return),
-                                    modifiers, // TODO: Use WindowEvent::ModifiersChanged.
-                                    ..
-                                },
-                            ..
-                        } if modifiers.alt() => {
-                            if !fullscreen_down {
-                                window.set_fullscreen(match window.fullscreen() {
-                                    None => Some(Fullscreen::Borderless(None)),
-                                    Some(_) => None,
-                                });
-                            }
-                            fullscreen_down = true;
-                        }
-                        WindowEvent::KeyboardInput {
-                            input:
-                                KeyboardInput {
-                                    state: ElementState::Released,
-                                    virtual_keycode: Some(VirtualKeyCode::Return),
-                                    ..
-                                },
-                            ..
-                        } if fullscreen_down => {
-                            fullscreen_down = false;
-                        }
-                        WindowEvent::KeyboardInput {
-                            input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
-                            ..
-                        } => {
-                            window.set_fullscreen(None);
-                        }
                         WindowEvent::KeyboardInput { .. } | WindowEvent::ReceivedCharacter(_) => {
                             let mut player_lock = player.lock().unwrap();
                             if let Some(event) = player_lock
@@ -495,22 +497,20 @@ fn load_movie_from_path(
             .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
     };
 
-    if movie_url.scheme() == "file" {
-        if let Ok(path) = movie_url.to_file_path() {
-            return Ok((SwfMovie::from_path(path, None)?, movie_url));
-        }
-    }
+    let mut movie = if movie_url.scheme() == "file" {
+        SwfMovie::from_path(movie_url.to_file_path().unwrap(), None)?
+    } else {
+        let proxy = opt.proxy.as_ref().and_then(|url| url.as_str().parse().ok());
+        let builder = HttpClient::builder()
+            .proxy(proxy)
+            .redirect_policy(RedirectPolicy::Follow);
+        let client = builder.build()?;
+        let res = client.get(movie_url.to_string())?;
+        let mut buffer: Vec<u8> = Vec::new();
+        res.into_body().read_to_end(&mut buffer)?;
 
-    let proxy = opt.proxy.as_ref().and_then(|url| url.as_str().parse().ok());
-    let builder = HttpClient::builder()
-        .proxy(proxy)
-        .redirect_policy(RedirectPolicy::Follow);
-    let client = builder.build()?;
-    let res = client.get(movie_url.to_string())?;
-    let mut buffer: Vec<u8> = Vec::new();
-    res.into_body().read_to_end(&mut buffer)?;
-
-    let mut movie = SwfMovie::from_data(&buffer, Some(movie_url.to_string()), None)?;
+        SwfMovie::from_data(&buffer, Some(movie_url.to_string()), None)?
+    };
 
     // Set query parameters.
     for parameter in &opt.parameters {
@@ -545,17 +545,16 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         opt.power.into(),
         trace_path(&opt),
     )?);
-    let audio: Box<dyn AudioBackend> = Box::new(NullAudioBackend::new());
+    let audio = Box::new(NullAudioBackend::new());
     let navigator = Box::new(NullNavigatorBackend::new());
     let storage = Box::new(MemoryStorageBackend::default());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
     let video = Box::new(video::NullVideoBackend::new());
     let log = Box::new(log_backend::NullLogBackend::new());
-    let ui = Box::new(ui::NullUiBackend::new());
+    let ui = Box::new(NullUiBackend::new());
     let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
     player.lock().unwrap().set_is_playing(true);
-
     player.lock().unwrap().set_viewport_dimensions(
         viewport_width,
         viewport_height,
@@ -581,14 +580,6 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
-    let ruffle = Box::leak(Box::new(Ruffle::new(opt)));
-    if let Some(path) = &ruffle.opt.input_path.to_owned() {
-        ruffle.load(&path)?;
-    }
-    ruffle.run()
-}
-
 fn main() {
     // When linked with the windows subsystem windows won't automatically attach
     // to the console of the parent process, so we do it explicitly. This fails
@@ -605,17 +596,21 @@ fn main() {
     let ret = if opt.timedemo {
         run_timedemo(opt)
     } else {
-        run_player(opt)
+        let app = Box::leak(Box::new(App::new(opt)));
+        app.run()
     };
 
-    if let Err(e) = ret {
+    if let Err(e) = &ret {
         eprintln!("Fatal error:\n{}", e);
-        std::process::exit(-1);
     }
 
     // Without explicitly detaching the console cmd won't redraw it's prompt.
     #[cfg(windows)]
     unsafe {
         winapi::um::wincon::FreeConsole();
+    }
+
+    if ret.is_err() {
+        std::process::exit(-1);
     }
 }
