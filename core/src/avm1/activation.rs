@@ -1901,7 +1901,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_set_target(&mut self, target: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
         let base_clip = self.base_clip();
         let new_target_clip;
-        let root = base_clip.avm1_root()?;
+        let root = base_clip.avm1_root(&self.context)?;
         let start = base_clip.object().coerce_to_object(self);
         if target.is_empty() {
             new_target_clip = Some(base_clip);
@@ -2476,7 +2476,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(None);
         }
 
-        let root = start.avm1_root()?;
+        let root = start.avm1_root(&self.context)?;
         let start = start.object().coerce_to_object(self);
         Ok(self
             .resolve_target_path(root, start, &path, false)?
@@ -2630,12 +2630,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
-                if let Some(object) = self.resolve_target_path(
-                    start.avm1_root()?,
-                    *scope.read().locals(),
-                    path,
-                    true,
-                )? {
+                let avm1_root = start.avm1_root(&self.context)?;
+                if let Some(object) =
+                    self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
+                {
                     return Ok(Some((object, var_name)));
                 }
                 current_scope = scope.read().parent_cell();
@@ -2701,12 +2699,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
-                if let Some(object) = self.resolve_target_path(
-                    start.avm1_root()?,
-                    *scope.read().locals(),
-                    path,
-                    true,
-                )? {
+                let avm1_root = start.avm1_root(&self.context)?;
+                if let Some(object) =
+                    self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
+                {
                     if object.has_property(self, var_name) {
                         return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
                     }
@@ -2722,12 +2718,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if has_slash {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
-                if let Some(object) = self.resolve_target_path(
-                    start.avm1_root()?,
-                    *scope.read().locals(),
-                    path,
-                    false,
-                )? {
+                let avm1_root = start.avm1_root(&self.context)?;
+                if let Some(object) =
+                    self.resolve_target_path(avm1_root, *scope.read().locals(), path, false)?
+                {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
                 current_scope = scope.read().parent_cell();
@@ -2784,12 +2778,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
-                if let Some(object) = self.resolve_target_path(
-                    start.avm1_root()?,
-                    *scope.read().locals(),
-                    path,
-                    true,
-                )? {
+                let avm1_root = start.avm1_root(&self.context)?;
+                if let Some(object) =
+                    self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
+                {
                     object.set(var_name, value, self)?;
                     return Ok(());
                 }
@@ -2841,12 +2833,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(target);
         }
 
-        self.base_clip().avm1_root()
+        self.base_clip().avm1_root(&self.context)
     }
 
     /// Obtain the value of `_root`.
     pub fn root_object(&self) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(self.base_clip().avm1_root()?.object())
+        Ok(self.base_clip().avm1_root(&self.context)?.object())
     }
 
     /// Get the currently executing SWF version.

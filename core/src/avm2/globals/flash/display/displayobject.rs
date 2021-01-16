@@ -362,13 +362,13 @@ pub fn parent<'gc>(
 
 /// Implements `root`.
 pub fn root<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
         return Ok(dobj
-            .root()
+            .root(&activation.context)
             .map(|root| root.object2())
             .unwrap_or(Value::Null));
     }
