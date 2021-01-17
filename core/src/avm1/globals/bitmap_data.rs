@@ -445,7 +445,7 @@ pub fn noise<'gc>(
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
             if let Some(random_seed_val) = args.get(0) {
-                let random_seed = random_seed_val.coerce_to_u32(activation)?;
+                let random_seed = random_seed_val.coerce_to_i32(activation)?;
                 bitmap_data
                     .bitmap_data()
                     .write(activation.context.gc_context)

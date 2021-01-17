@@ -268,20 +268,20 @@ ffc8c8c8
 ff434343
 // noise(-1) without transparency
 // bitmap.getPixel32(0, 0)
-ff4ee2b3
+ff4e4e4e
 // bitmap.getPixel32(0, 1)
-ff9b30ab
+ff545454
 // bitmap.getPixel32(0, 2)
-ff30a85e
+ffb0b0b0
 // bitmap.getPixel32(1, 0)
-ff54590
+ffe2e2e2
 // bitmap.getPixel32(1, 1)
-ff19c466
+ff555
 // bitmap.getPixel32(1, 2)
-ff235bb
+fffdfdfd
 // bitmap.getPixel32(2, 0)
-ffb0fd87
+ffb3b3b3
 // bitmap.getPixel32(2, 1)
-ff8f2f22
+ff909090
 // bitmap.getPixel32(2, 2)
-ffb1ebd6
+ff878787
