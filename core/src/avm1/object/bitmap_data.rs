@@ -8,9 +8,28 @@ use crate::avm1::activation::Activation;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::backend::render::{BitmapHandle, RenderBackend};
 use downcast_rs::__std::fmt::Formatter;
-use rand::prelude::SmallRng;
 use rand::Rng;
 use std::fmt;
+use std::ops::Range;
+
+pub struct MINSTDRng {
+    x: u32,
+}
+
+impl MINSTDRng {
+    pub fn with_seed(seed: u32) -> Self {
+        Self { x: seed }
+    }
+
+    pub fn gen(&mut self) -> u32 {
+        self.x = ((self.x as u64).overflowing_mul(16_807).0 % 2_147_483_647) as u32;
+        self.x
+    }
+
+    pub fn gen_range(&mut self, rng: Range<u8>) -> u8 {
+        rng.start + (self.gen() % ((rng.end - rng.start) as u32 + 1)) as u8
+    }
+}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Collect)]
 #[collect(no_drop)]
@@ -296,53 +315,72 @@ impl BitmapData {
 
     pub fn noise(
         &mut self,
-        rng: &mut SmallRng,
-        _seed: u32,
+        seed: u32,
         low: u8,
         high: u8,
         channel_options: ChannelOptions,
         gray_scale: bool,
     ) {
+        let true_seed = if seed == 0 {
+            1
+        } else {
+            seed
+        };
+
+        let mut rng = MINSTDRng::with_seed(true_seed);
+
         for x in 0..self.width() {
             for y in 0..self.height() {
                 let pixel_color = if gray_scale {
                     let gray = rng.gen_range(low..high);
-                    Color::argb(
-                        if channel_options.alpha() {
-                            rng.gen_range(low..high)
-                        } else {
-                            255
-                        },
-                        gray,
-                        gray,
-                        gray,
-                    )
+                    let alpha = if channel_options.alpha() {
+                        rng.gen_range(low..high)
+                    } else {
+                        255
+                    };
+
+                    if seed == 0 {
+                        rng.gen_range(low..high);
+                        rng.gen_range(low..high);
+                    }
+
+                    Color::argb(alpha, gray, gray, gray)
                 } else {
-                    Color::argb(
-                        if channel_options.alpha() {
-                            rng.gen_range(low..high)
-                        } else {
-                            255
-                        },
-                        if channel_options.red() {
-                            rng.gen_range(low..high)
-                        } else {
-                            0
-                        },
-                        if channel_options.green() {
-                            rng.gen_range(low..high)
-                        } else {
-                            0
-                        },
-                        if channel_options.blue() {
-                            rng.gen_range(low..high)
-                        } else {
-                            0
-                        },
-                    )
+                    let r = if channel_options.red() {
+                        rng.gen_range(low..high)
+                    } else {
+                        0
+                    };
+
+                    let g = if channel_options.green() {
+                        rng.gen_range(low..high)
+                    } else {
+                        0
+                    };
+
+                    let b = if channel_options.blue() {
+                        rng.gen_range(low..high)
+                    } else {
+                        0
+                    };
+
+                    let a = if channel_options.alpha() {
+                        rng.gen_range(low..high)
+                    } else {
+                        255
+                    };
+
+                    Color::argb(a, r, g, b)
                 };
 
                 self.set_pixel32_raw(x, y, pixel_color);
+            }
+
+            if seed == 0 {
+                rng = MINSTDRng::with_seed(true_seed);
+                for _ in 0..(x + 1) {
+                    rng.gen();
+                }
             }
         }
     }

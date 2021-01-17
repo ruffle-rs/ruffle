@@ -449,14 +449,7 @@ pub fn noise<'gc>(
                 bitmap_data
                     .bitmap_data()
                     .write(activation.context.gc_context)
-                    .noise(
-                        activation.context.rng,
-                        random_seed,
-                        low,
-                        high,
-                        channel_options.into(),
-                        gray_scale,
-                    )
+                    .noise(random_seed, low, high, channel_options.into(), gray_scale)
             }
 
             return Ok(Value::Undefined);
