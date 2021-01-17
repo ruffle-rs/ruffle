@@ -584,6 +584,14 @@ pub struct SymbolClassLink {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct ShapeContext {
+    pub swf_version: u8,
+    pub shape_version: u8,
+    pub num_fill_bits: u8,
+    pub num_line_bits: u8,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct Shape {
     pub version: u8,
     pub id: CharacterId,
