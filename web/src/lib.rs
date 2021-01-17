@@ -730,13 +730,17 @@ impl Ruffle {
 
                                 let key_code = input.last_key_code();
                                 let key_char = input.last_key_char();
+                                let text_control = input.last_text_control();
 
-                                if key_code != KeyCode::Unknown {
-                                    core.handle_event(PlayerEvent::KeyDown { key_code });
-                                }
-
-                                if let Some(codepoint) = key_char {
-                                    core.handle_event(PlayerEvent::TextInput { codepoint });
+                                if let Some(code) = text_control {
+                                    core.handle_event(PlayerEvent::TextControl { code });
+                                } else {
+                                    if key_code != KeyCode::Unknown {
+                                        core.handle_event(PlayerEvent::KeyDown { key_code });
+                                    }
+                                    if let Some(codepoint) = key_char {
+                                        core.handle_event(PlayerEvent::TextInput { codepoint });
+                                    }
                                 }
 
                                 js_event.prevent_default();

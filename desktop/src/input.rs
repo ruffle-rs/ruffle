@@ -1,6 +1,6 @@
 use clipboard::{ClipboardContext, ClipboardProvider};
 use ruffle_core::backend::input::{InputBackend, MouseCursor};
-use ruffle_core::events::{KeyCode, PlayerEvent};
+use ruffle_core::events::{KeyCode, PlayerEvent, TextControlCode};
 use std::collections::HashSet;
 use std::rc::Rc;
 use winit::event::{ElementState, ModifiersState, VirtualKeyCode, WindowEvent};
@@ -36,13 +36,19 @@ impl WinitInputBackend {
                 ElementState::Pressed => {
                     if let Some(key) = input.virtual_keycode {
                         self.keys_down.insert(key);
-                        self.last_char =
-                            winit_key_to_char(key, input.modifiers.contains(ModifiersState::SHIFT));
-                        if let Some(key_code) = winit_to_ruffle_key_code(key) {
-                            self.last_key = key_code;
-                            return Some(PlayerEvent::KeyDown { key_code });
+                        if let Some(code) = winit_to_ruffle_text_control(key, input.modifiers) {
+                            return Some(PlayerEvent::TextControl { code });
                         } else {
-                            self.last_key = KeyCode::Unknown;
+                            self.last_char = winit_key_to_char(
+                                key,
+                                input.modifiers.contains(ModifiersState::SHIFT),
+                            );
+                            if let Some(key_code) = winit_to_ruffle_key_code(key) {
+                                self.last_key = key_code;
+                                return Some(PlayerEvent::KeyDown { key_code });
+                            } else {
+                                self.last_key = KeyCode::Unknown;
+                            }
                         }
                     }
                 }
@@ -459,4 +465,25 @@ fn winit_key_to_char(key_code: VirtualKeyCode, is_shift_down: bool) -> Option<ch
         }
     };
     Some(out)
+}
+
+/// Converts a `VirtualKeyCode` and `ModifiersState` to a Ruffle `TextControlCode`.
+/// Returns `None` if there is no match.
+fn winit_to_ruffle_text_control(
+    key: VirtualKeyCode,
+    modifiers: ModifiersState,
+) -> Option<TextControlCode> {
+    let ctrl_cmd = modifiers.contains(ModifiersState::CTRL)
+        || (modifiers.contains(ModifiersState::LOGO) && cfg!(target_os = "macos"));
+    if ctrl_cmd {
+        match key {
+            VirtualKeyCode::A => Some(TextControlCode::SelectAll),
+            VirtualKeyCode::C => Some(TextControlCode::Copy),
+            VirtualKeyCode::V => Some(TextControlCode::Paste),
+            VirtualKeyCode::X => Some(TextControlCode::Cut),
+            _ => None,
+        }
+    } else {
+        None
+    }
 }

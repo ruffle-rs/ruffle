@@ -1,5 +1,5 @@
 use ruffle_core::backend::input::{InputBackend, MouseCursor};
-use ruffle_core::events::KeyCode;
+use ruffle_core::events::{KeyCode, TextControlCode};
 use ruffle_web_common::JsResult;
 use std::collections::HashSet;
 use web_sys::{HtmlCanvasElement, KeyboardEvent};
@@ -13,6 +13,7 @@ pub struct WebInputBackend {
     cursor: MouseCursor,
     last_key: KeyCode,
     last_char: Option<char>,
+    last_text_control: Option<TextControlCode>,
 }
 
 impl WebInputBackend {
@@ -24,23 +25,33 @@ impl WebInputBackend {
             cursor: MouseCursor::Arrow,
             last_key: KeyCode::Unknown,
             last_char: None,
+            last_text_control: None,
         }
     }
 
     /// Register a key press for a given code string.
     pub fn keydown(&mut self, event: &KeyboardEvent) {
         let code = event.code();
-        self.last_key = web_to_ruffle_key_code(&code).unwrap_or(KeyCode::Unknown);
-        self.keys_down.insert(code);
-        self.last_char = web_key_to_codepoint(&event.key());
+        self.keys_down.insert(code.clone());
+        let is_ctrl_cmd = event.ctrl_key(); // TODO: Use meta key if on MacOS
+        self.last_text_control = web_to_text_control(&event.key(), is_ctrl_cmd);
+        if self.last_text_control.is_none() {
+            self.last_key = web_to_ruffle_key_code(&code).unwrap_or(KeyCode::Unknown);
+            self.last_char = web_key_to_codepoint(&event.key());
+        }
     }
 
     /// Register a key release for a given code string.
     pub fn keyup(&mut self, event: &KeyboardEvent) {
         let code = event.code();
-        self.last_key = web_to_ruffle_key_code(&code).unwrap_or(KeyCode::Unknown);
         self.keys_down.remove(&code);
+        self.last_key = web_to_ruffle_key_code(&code).unwrap_or(KeyCode::Unknown);
         self.last_char = web_key_to_codepoint(&event.key());
+        self.last_text_control = None;
+    }
+
+    pub fn last_text_control(&self) -> Option<TextControlCode> {
+        self.last_text_control
     }
 
     fn update_mouse_cursor(&self) {
@@ -327,5 +338,28 @@ pub fn web_key_to_codepoint(key: &str) -> Option<char> {
             "Delete" => Some(127 as char),
             _ => None,
         }
+    }
+}
+
+pub fn web_to_text_control(key: &str, ctrl_key: bool) -> Option<TextControlCode> {
+    let mut chars = key.chars();
+    let (c1, c2) = (chars.next(), chars.next());
+    if c2.is_none() {
+        // Single character.
+        if ctrl_key {
+            match c1 {
+                // TODO: Extend this
+                Some('a') => Some(TextControlCode::SelectAll),
+                Some('c') => Some(TextControlCode::Copy),
+                Some('v') => Some(TextControlCode::Paste),
+                Some('x') => Some(TextControlCode::Cut),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    } else {
+        // TODO: Check for special characters.
+        None
     }
 }

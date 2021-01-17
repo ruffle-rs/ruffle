@@ -689,6 +689,14 @@ impl Player {
             });
         }
 
+        if let PlayerEvent::TextControl { code } = event {
+            self.mutate_with_update_context(|context| {
+                if let Some(text) = context.focus_tracker.get().and_then(|o| o.as_edit_text()) {
+                    text.text_control_input(code, context);
+                }
+            });
+        }
+
         // Propagate clip events.
         self.mutate_with_update_context(|context| {
             let (clip_event, listener) = match event {
