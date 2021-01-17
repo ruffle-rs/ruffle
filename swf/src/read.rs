@@ -271,17 +271,78 @@ pub trait SwfRead<R: Read> {
         // TODO: Verify ANSI for SWF 5 and earlier.
         String::from_utf8(bytes).map_err(|_| Error::invalid_data("Invalid string data"))
     }
+
+    fn bits(&mut self) -> BitReader<&mut R> {
+        BitReader {
+            input: self.get_inner(),
+            byte: 0,
+            bit_index: 0,
+        }
+    }
+}
+
+pub struct BitReader<R: Read> {
+    input: R,
+    byte: u8,
+    bit_index: u8,
+}
+
+impl<R: Read> BitReader<R> {
+    #[inline]
+    fn byte_align(&mut self) {
+        self.bit_index = 0;
+    }
+
+    #[inline]
+    fn read_bit(&mut self) -> io::Result<bool> {
+        if self.bit_index == 0 {
+            self.byte = self.input.read_u8()?;
+            self.bit_index = 8;
+        }
+        self.bit_index -= 1;
+        let val = self.byte & (1 << self.bit_index) != 0;
+        Ok(val)
+    }
+
+    #[inline]
+    fn read_ubits(&mut self, num_bits: u32) -> io::Result<u32> {
+        let mut val = 0u32;
+        for _ in 0..num_bits {
+            val <<= 1;
+            val |= if self.read_bit()? { 1 } else { 0 };
+        }
+        Ok(val)
+    }
+
+    #[inline]
+    fn read_sbits(&mut self, num_bits: u32) -> io::Result<i32> {
+        if num_bits > 0 {
+            self.read_ubits(num_bits)
+                .map(|n| (n as i32) << (32 - num_bits) >> (32 - num_bits))
+        } else {
+            Ok(0)
+        }
+    }
+
+    #[inline]
+    fn read_sbits_twips(&mut self, num_bits: u32) -> io::Result<Twips> {
+        self.read_sbits(num_bits).map(Twips::new)
+    }
+
+    #[inline]
+    fn read_fbits(&mut self, num_bits: u32) -> io::Result<f32> {
+        self.read_sbits(num_bits).map(|n| (n as f32) / 65536f32)
+    }
+
+    #[inline]
+    fn reader(&mut self) -> &mut R {
+        &mut self.input
+    }
 }
 
 pub struct Reader<R: Read> {
     input: R,
     version: u8,
-
-    byte: u8,
-    bit_index: u8,
-
-    num_fill_bits: u8,
-    num_line_bits: u8,
 }
 
 impl<R: Read> SwfRead<R> for Reader<R> {
@@ -290,56 +351,41 @@ impl<R: Read> SwfRead<R> for Reader<R> {
     }
 
     fn read_u8(&mut self) -> io::Result<u8> {
-        self.byte_align();
         self.input.read_u8()
     }
 
     fn read_u16(&mut self) -> io::Result<u16> {
-        self.byte_align();
         self.input.read_u16::<LittleEndian>()
     }
 
     fn read_u32(&mut self) -> io::Result<u32> {
-        self.byte_align();
         self.input.read_u32::<LittleEndian>()
     }
 
     fn read_i8(&mut self) -> io::Result<i8> {
-        self.byte_align();
         self.input.read_i8()
     }
 
     fn read_i16(&mut self) -> io::Result<i16> {
-        self.byte_align();
         self.input.read_i16::<LittleEndian>()
     }
 
     fn read_i32(&mut self) -> io::Result<i32> {
-        self.byte_align();
         self.input.read_i32::<LittleEndian>()
     }
 
     fn read_f32(&mut self) -> io::Result<f32> {
-        self.byte_align();
         self.input.read_f32::<LittleEndian>()
     }
 
     fn read_f64(&mut self) -> io::Result<f64> {
-        self.byte_align();
         self.input.read_f64::<LittleEndian>()
     }
 }
 
 impl<R: Read> Reader<R> {
     pub fn new(input: R, version: u8) -> Reader<R> {
-        Reader {
-            input,
-            version,
-            byte: 0,
-            bit_index: 0,
-            num_fill_bits: 0,
-            num_line_bits: 0,
-        }
+        Reader { input, version }
     }
 
     pub fn version(&self) -> u8 {
@@ -686,54 +732,14 @@ impl<R: Read> Reader<R> {
     }
 
     pub fn read_rectangle(&mut self) -> Result<Rectangle> {
-        self.byte_align();
-        let num_bits = self.read_ubits(5)? as usize;
+        let mut bits = self.bits();
+        let num_bits: u32 = bits.read_ubits(5)?;
         Ok(Rectangle {
-            x_min: self.read_sbits_twips(num_bits)?,
-            x_max: self.read_sbits_twips(num_bits)?,
-            y_min: self.read_sbits_twips(num_bits)?,
-            y_max: self.read_sbits_twips(num_bits)?,
+            x_min: bits.read_sbits_twips(num_bits)?,
+            x_max: bits.read_sbits_twips(num_bits)?,
+            y_min: bits.read_sbits_twips(num_bits)?,
+            y_max: bits.read_sbits_twips(num_bits)?,
         })
-    }
-
-    pub fn read_bit(&mut self) -> Result<bool> {
-        if self.bit_index == 0 {
-            self.byte = self.input.read_u8()?;
-            self.bit_index = 8;
-        }
-        self.bit_index -= 1;
-        let val = self.byte & (1 << self.bit_index) != 0;
-        Ok(val)
-    }
-
-    pub fn byte_align(&mut self) {
-        self.bit_index = 0;
-    }
-
-    pub fn read_ubits(&mut self, num_bits: usize) -> Result<u32> {
-        let mut val = 0u32;
-        for _ in 0..num_bits {
-            val <<= 1;
-            val |= if self.read_bit()? { 1 } else { 0 };
-        }
-        Ok(val)
-    }
-
-    pub fn read_sbits(&mut self, num_bits: usize) -> Result<i32> {
-        if num_bits > 0 {
-            self.read_ubits(num_bits)
-                .map(|n| (n as i32) << (32 - num_bits) >> (32 - num_bits))
-        } else {
-            Ok(0)
-        }
-    }
-
-    pub fn read_sbits_twips(&mut self, num_bits: usize) -> Result<Twips> {
-        self.read_sbits(num_bits).map(Twips::new)
-    }
-
-    pub fn read_fbits(&mut self, num_bits: usize) -> Result<f32> {
-        self.read_sbits(num_bits).map(|n| (n as f32) / 65536f32)
     }
 
     pub fn read_encoded_u32(&mut self) -> Result<u32> {
@@ -769,10 +775,10 @@ impl<R: Read> Reader<R> {
     }
 
     pub fn read_color_transform_no_alpha(&mut self) -> Result<ColorTransform> {
-        self.byte_align();
-        let has_add = self.read_bit()?;
-        let has_mult = self.read_bit()?;
-        let num_bits = self.read_ubits(4)? as usize;
+        let mut bits = self.bits();
+        let has_add = bits.read_bit()?;
+        let has_mult = bits.read_bit()?;
+        let num_bits = bits.read_ubits(4)?;
         let mut color_transform = ColorTransform {
             r_multiply: 1f32,
             g_multiply: 1f32,
@@ -784,23 +790,23 @@ impl<R: Read> Reader<R> {
             a_add: 0i16,
         };
         if has_mult {
-            color_transform.r_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.g_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.b_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.r_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.g_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.b_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
         }
         if has_add {
-            color_transform.r_add = self.read_sbits(num_bits)? as i16;
-            color_transform.g_add = self.read_sbits(num_bits)? as i16;
-            color_transform.b_add = self.read_sbits(num_bits)? as i16;
+            color_transform.r_add = bits.read_sbits(num_bits)? as i16;
+            color_transform.g_add = bits.read_sbits(num_bits)? as i16;
+            color_transform.b_add = bits.read_sbits(num_bits)? as i16;
         }
         Ok(color_transform)
     }
 
     fn read_color_transform(&mut self) -> Result<ColorTransform> {
-        self.byte_align();
-        let has_add = self.read_bit()?;
-        let has_mult = self.read_bit()?;
-        let num_bits = self.read_ubits(4)? as usize;
+        let mut bits = self.bits();
+        let has_add = bits.read_bit()?;
+        let has_mult = bits.read_bit()?;
+        let num_bits = bits.read_ubits(4)?;
         let mut color_transform = ColorTransform {
             r_multiply: 1f32,
             g_multiply: 1f32,
@@ -812,40 +818,39 @@ impl<R: Read> Reader<R> {
             a_add: 0i16,
         };
         if has_mult {
-            color_transform.r_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.g_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.b_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.a_multiply = self.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.r_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.g_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.b_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.a_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
         }
         if has_add {
-            color_transform.r_add = self.read_sbits(num_bits)? as i16;
-            color_transform.g_add = self.read_sbits(num_bits)? as i16;
-            color_transform.b_add = self.read_sbits(num_bits)? as i16;
-            color_transform.a_add = self.read_sbits(num_bits)? as i16;
+            color_transform.r_add = bits.read_sbits(num_bits)? as i16;
+            color_transform.g_add = bits.read_sbits(num_bits)? as i16;
+            color_transform.b_add = bits.read_sbits(num_bits)? as i16;
+            color_transform.a_add = bits.read_sbits(num_bits)? as i16;
         }
         Ok(color_transform)
     }
 
     fn read_matrix(&mut self) -> Result<Matrix> {
-        self.byte_align();
+        let mut bits = self.bits();
         let mut m = Matrix::identity();
         // Scale
-        if self.read_bit()? {
-            let num_bits = self.read_ubits(5)? as usize;
-            m.a = self.read_fbits(num_bits)?;
-            m.d = self.read_fbits(num_bits)?;
+        if bits.read_bit()? {
+            let num_bits = bits.read_ubits(5)?;
+            m.a = bits.read_fbits(num_bits)?;
+            m.d = bits.read_fbits(num_bits)?;
         }
         // Rotate/Skew
-        if self.read_bit()? {
-            let num_bits = self.read_ubits(5)? as usize;
-            m.b = self.read_fbits(num_bits)?;
-            m.c = self.read_fbits(num_bits)?;
+        if bits.read_bit()? {
+            let num_bits = bits.read_ubits(5)?;
+            m.b = bits.read_fbits(num_bits)?;
+            m.c = bits.read_fbits(num_bits)?;
         }
         // Translate (always present)
-        let num_bits = self.read_ubits(5)? as usize;
-        m.tx = self.read_sbits_twips(num_bits)?;
-        m.ty = self.read_sbits_twips(num_bits)?;
-        self.byte_align();
+        let num_bits = bits.read_ubits(5)?;
+        m.tx = bits.read_sbits_twips(num_bits)?;
+        m.ty = bits.read_sbits_twips(num_bits)?;
         Ok(m)
     }
 
@@ -1168,15 +1173,21 @@ impl<R: Read> Reader<R> {
                 self.read_u16()?;
             }
 
+            let swf_version = self.version;
             for _ in 0..num_glyphs {
                 let mut glyph = vec![];
-                self.num_fill_bits = self.read_ubits(4)? as u8;
-                self.num_line_bits = self.read_ubits(4)? as u8;
-                while let Some(record) = self.read_shape_record(1)? {
+                let num_bits = self.read_u8()?;
+                let mut shape_context = ShapeContext {
+                    swf_version,
+                    shape_version: 1,
+                    num_fill_bits: num_bits >> 4,
+                    num_line_bits: num_bits & 0b1111,
+                };
+                let mut bits = self.bits();
+                while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
                     glyph.push(record);
                 }
                 glyphs.push(glyph);
-                self.byte_align();
             }
         }
 
@@ -1249,13 +1260,19 @@ impl<R: Read> Reader<R> {
             }
 
             // ShapeTable
+            let swf_version = self.version;
             for glyph in &mut glyphs {
-                self.num_fill_bits = self.read_ubits(4)? as u8;
-                self.num_line_bits = self.read_ubits(4)? as u8;
-                while let Some(record) = self.read_shape_record(1)? {
+                let num_bits = self.read_u8()?;
+                let mut shape_context = ShapeContext {
+                    swf_version,
+                    shape_version: 1,
+                    num_fill_bits: num_bits >> 4,
+                    num_line_bits: num_bits & 0b1111,
+                };
+                let mut bits = self.bits();
+                while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
                     glyph.shape_records.push(record);
                 }
-                self.byte_align();
             }
 
             // CodeTable
@@ -1485,17 +1502,30 @@ impl<R: Read> Reader<R> {
         }
 
         // TODO(Herschel): Add read_shape
-        self.num_fill_bits = self.read_ubits(4)? as u8;
-        self.num_line_bits = self.read_ubits(4)? as u8;
+        let swf_version = self.version;
+        let mut bits = self.bits();
+        let mut shape_context = ShapeContext {
+            swf_version,
+            shape_version,
+            num_fill_bits: bits.read_ubits(4)? as u8,
+            num_line_bits: bits.read_ubits(4)? as u8,
+        };
         let mut start_shape = Vec::new();
-        while let Some(record) = self.read_shape_record(1)? {
+        while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
             start_shape.push(record);
         }
+        drop(bits);
 
-        self.byte_align();
         let mut end_shape = Vec::new();
         self.read_u8()?; // NumFillBits and NumLineBits are written as 0 for the end shape.
-        while let Some(record) = self.read_shape_record(1)? {
+        let mut shape_context = ShapeContext {
+            swf_version: self.version,
+            shape_version,
+            num_fill_bits: 0,
+            num_line_bits: 0,
+        };
+        let mut bits = self.bits();
+        while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
             end_shape.push(record);
         }
         Ok(DefineMorphShape {
@@ -1535,20 +1565,21 @@ impl<R: Read> Reader<R> {
             // MorphLineStyle2 in DefineMorphShape2.
             let start_width = Twips::new(self.read_u16()?);
             let end_width = Twips::new(self.read_u16()?);
-            let start_cap = match self.read_ubits(2)? {
+            let flags0 = self.read_u8()?;
+            let flags1 = self.read_u8()?;
+            let start_cap = match flags0 >> 6 {
                 0 => LineCapStyle::Round,
                 1 => LineCapStyle::None,
                 2 => LineCapStyle::Square,
                 _ => return Err(Error::invalid_data("Invalid line cap type.")),
             };
-            let join_style_id = self.read_ubits(2)?;
-            let has_fill = self.read_bit()?;
-            let allow_scale_x = !self.read_bit()?;
-            let allow_scale_y = !self.read_bit()?;
-            let is_pixel_hinted = self.read_bit()?;
-            self.read_ubits(5)?;
-            let allow_close = !self.read_bit()?;
-            let end_cap = match self.read_ubits(2)? {
+            let join_style_id = (flags0 >> 4) & 0b11;
+            let has_fill = (flags0 & 0b1000) != 0;
+            let allow_scale_x = (flags0 & 0b100) == 0;
+            let allow_scale_y = (flags0 & 0b10) == 0;
+            let is_pixel_hinted = (flags0 & 0b1) != 0;
+            let allow_close = (flags1 & 0b100) == 0;
+            let end_cap = match flags1 & 0b11 {
                 0 => LineCapStyle::Round,
                 1 => LineCapStyle::None,
                 2 => LineCapStyle::Square,
@@ -1732,9 +1763,16 @@ impl<R: Read> Reader<R> {
             } else {
                 (shape_bounds.clone(), false, true, false)
             };
-        let styles = self.read_shape_styles(version)?;
+        let (styles, num_fill_bits, num_line_bits) = self.read_shape_styles(version)?;
         let mut records = Vec::new();
-        while let Some(record) = self.read_shape_record(version)? {
+        let mut shape_context = ShapeContext {
+            swf_version: self.version,
+            shape_version: version,
+            num_fill_bits,
+            num_line_bits,
+        };
+        let mut bits = self.bits();
+        while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
             records.push(record);
         }
         Ok(Shape {
@@ -1786,7 +1824,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_shape_styles(&mut self, shape_version: u8) -> Result<ShapeStyles> {
+    fn read_shape_styles(&mut self, shape_version: u8) -> Result<(ShapeStyles, u8, u8)> {
         let num_fill_styles = match self.read_u8()? {
             0xff if shape_version >= 2 => self.read_u16()? as usize,
             n => n as usize,
@@ -1806,12 +1844,15 @@ impl<R: Read> Reader<R> {
             line_styles.push(self.read_line_style(shape_version)?);
         }
 
-        self.num_fill_bits = self.read_ubits(4)? as u8;
-        self.num_line_bits = self.read_ubits(4)? as u8;
-        Ok(ShapeStyles {
-            fill_styles,
-            line_styles,
-        })
+        let num_bits = self.read_u8()?;
+        Ok((
+            ShapeStyles {
+                fill_styles,
+                line_styles,
+            },
+            num_bits >> 4,
+            num_bits & 0b1111,
+        ))
     }
 
     fn read_fill_style(&mut self, shape_version: u8) -> Result<FillStyle> {
@@ -1870,20 +1911,21 @@ impl<R: Read> Reader<R> {
         } else {
             // LineStyle2 in DefineShape4
             let width = Twips::new(self.read_u16()?);
-            let start_cap = match self.read_ubits(2)? {
+            let flags0 = self.read_u8()?;
+            let flags1 = self.read_u8()?;
+            let start_cap = match flags0 >> 6 {
                 0 => LineCapStyle::Round,
                 1 => LineCapStyle::None,
                 2 => LineCapStyle::Square,
                 _ => return Err(Error::invalid_data("Invalid line cap type.")),
             };
-            let join_style_id = self.read_ubits(2)?;
-            let has_fill = self.read_bit()?;
-            let allow_scale_x = !self.read_bit()?;
-            let allow_scale_y = !self.read_bit()?;
-            let is_pixel_hinted = self.read_bit()?;
-            self.read_ubits(5)?;
-            let allow_close = !self.read_bit()?;
-            let end_cap = match self.read_ubits(2)? {
+            let join_style_id = (flags0 >> 4) & 0b11;
+            let has_fill = (flags0 & 0b1000) != 0;
+            let allow_scale_x = (flags0 & 0b100) == 0;
+            let allow_scale_y = (flags0 & 0b10) == 0;
+            let is_pixel_hinted = (flags0 & 0b1) != 0;
+            let allow_close = (flags1 & 0b100) == 0;
+            let end_cap = match flags1 & 0b11 {
                 0 => LineCapStyle::Round,
                 1 => LineCapStyle::None,
                 2 => LineCapStyle::Square,
@@ -1927,7 +1969,6 @@ impl<R: Read> Reader<R> {
 
     fn read_gradient(&mut self, shape_version: u8) -> Result<Gradient> {
         let matrix = self.read_matrix()?;
-        self.byte_align();
         let (num_records, spread, interpolation) = self.read_gradient_flags()?;
         let mut records = Vec::with_capacity(num_records);
         for _ in 0..num_records {
@@ -1965,42 +2006,45 @@ impl<R: Read> Reader<R> {
         Ok((num_records, spread, interpolation))
     }
 
-    fn read_shape_record(&mut self, shape_version: u8) -> Result<Option<ShapeRecord>> {
-        let is_edge_record = self.read_bit()?;
+    fn read_shape_record(
+        bits: &mut BitReader<&mut R>,
+        context: &mut ShapeContext,
+    ) -> Result<Option<ShapeRecord>> {
+        let is_edge_record = bits.read_bit()?;
         let shape_record = if is_edge_record {
-            let is_straight_edge = self.read_bit()?;
+            let is_straight_edge = bits.read_bit()?;
             if is_straight_edge {
                 // StraightEdge
-                let num_bits = self.read_ubits(4)? as usize + 2;
-                let is_axis_aligned = !self.read_bit()?;
-                let is_vertical = is_axis_aligned && self.read_bit()?;
+                let num_bits = bits.read_ubits(4)? + 2;
+                let is_axis_aligned = !bits.read_bit()?;
+                let is_vertical = is_axis_aligned && bits.read_bit()?;
                 let delta_x = if !is_axis_aligned || !is_vertical {
-                    self.read_sbits_twips(num_bits)?
+                    bits.read_sbits_twips(num_bits)?
                 } else {
                     Default::default()
                 };
                 let delta_y = if !is_axis_aligned || is_vertical {
-                    self.read_sbits_twips(num_bits)?
+                    bits.read_sbits_twips(num_bits)?
                 } else {
                     Default::default()
                 };
                 Some(ShapeRecord::StraightEdge { delta_x, delta_y })
             } else {
                 // CurvedEdge
-                let num_bits = self.read_ubits(4)? as usize + 2;
+                let num_bits = bits.read_ubits(4)? + 2;
                 Some(ShapeRecord::CurvedEdge {
-                    control_delta_x: self.read_sbits_twips(num_bits)?,
-                    control_delta_y: self.read_sbits_twips(num_bits)?,
-                    anchor_delta_x: self.read_sbits_twips(num_bits)?,
-                    anchor_delta_y: self.read_sbits_twips(num_bits)?,
+                    control_delta_x: bits.read_sbits_twips(num_bits)?,
+                    control_delta_y: bits.read_sbits_twips(num_bits)?,
+                    anchor_delta_x: bits.read_sbits_twips(num_bits)?,
+                    anchor_delta_y: bits.read_sbits_twips(num_bits)?,
                 })
             }
         } else {
-            let flags = self.read_ubits(5)?;
+            let flags = bits.read_ubits(5)?;
             if flags != 0 {
                 // StyleChange
-                let num_fill_bits = self.num_fill_bits as usize;
-                let num_line_bits = self.num_line_bits as usize;
+                let num_fill_bits = context.num_fill_bits as u32;
+                let num_line_bits = context.num_line_bits as u32;
                 let mut new_style = StyleChangeData {
                     move_to: None,
                     fill_style_0: None,
@@ -2010,26 +2054,31 @@ impl<R: Read> Reader<R> {
                 };
                 if (flags & 0b1) != 0 {
                     // move
-                    let num_bits = self.read_ubits(5)? as usize;
+                    let num_bits = bits.read_ubits(5)?;
                     new_style.move_to = Some((
-                        self.read_sbits_twips(num_bits)?,
-                        self.read_sbits_twips(num_bits)?,
+                        bits.read_sbits_twips(num_bits)?,
+                        bits.read_sbits_twips(num_bits)?,
                     ));
                 }
                 if (flags & 0b10) != 0 {
-                    new_style.fill_style_0 = Some(self.read_ubits(num_fill_bits)?);
+                    new_style.fill_style_0 = Some(bits.read_ubits(num_fill_bits)?);
                 }
                 if (flags & 0b100) != 0 {
-                    new_style.fill_style_1 = Some(self.read_ubits(num_fill_bits)?);
+                    new_style.fill_style_1 = Some(bits.read_ubits(num_fill_bits)?);
                 }
                 if (flags & 0b1000) != 0 {
-                    new_style.line_style = Some(self.read_ubits(num_line_bits)?);
+                    new_style.line_style = Some(bits.read_ubits(num_line_bits)?);
                 }
                 // The spec says that StyleChangeRecord can only occur in DefineShape2+,
                 // but SWFs in the wild exist with them in DefineShape1 (generated by third party tools),
                 // and these run correctly in the Flash Player.
                 if (flags & 0b10000) != 0 {
-                    let new_styles = self.read_shape_styles(shape_version)?;
+                    bits.byte_align();
+                    let mut reader = Reader::new(bits.reader(), context.swf_version);
+                    let (new_styles, num_fill_bits, num_line_bits) =
+                        reader.read_shape_styles(context.shape_version)?;
+                    context.num_fill_bits = num_fill_bits;
+                    context.num_line_bits = num_line_bits;
                     new_style.new_styles = Some(new_styles);
                 }
                 Some(ShapeRecord::StyleChange(new_style))
@@ -2295,28 +2344,29 @@ impl<R: Read> Reader<R> {
     fn read_clip_event_flags(&mut self) -> Result<EnumSet<ClipEventFlag>> {
         // TODO: Switch to a bitset.
         let mut event_list = EnumSet::new();
-        if self.read_bit()? {
+        let flags = self.read_u8()?;
+        if flags & 0b1000_0000 != 0 {
             event_list.insert(ClipEventFlag::KeyUp);
         }
-        if self.read_bit()? {
+        if flags & 0b0100_0000 != 0 {
             event_list.insert(ClipEventFlag::KeyDown);
         }
-        if self.read_bit()? {
+        if flags & 0b0010_0000 != 0 {
             event_list.insert(ClipEventFlag::MouseUp);
         }
-        if self.read_bit()? {
+        if flags & 0b0001_0000 != 0 {
             event_list.insert(ClipEventFlag::MouseDown);
         }
-        if self.read_bit()? {
+        if flags & 0b0000_1000 != 0 {
             event_list.insert(ClipEventFlag::MouseMove);
         }
-        if self.read_bit()? {
+        if flags & 0b0000_0100 != 0 {
             event_list.insert(ClipEventFlag::Unload);
         }
-        if self.read_bit()? {
+        if flags & 0b0000_0010 != 0 {
             event_list.insert(ClipEventFlag::EnterFrame);
         }
-        if self.read_bit()? {
+        if flags & 0b0000_0001 != 0 {
             event_list.insert(ClipEventFlag::Load);
         }
         if self.version < 6 {
@@ -2325,43 +2375,44 @@ impl<R: Read> Reader<R> {
             // This was expanded to 4 bytes in SWFv6.
             self.read_u8()?;
         } else {
-            if self.read_bit()? {
+            let flags = self.read_u8()?;
+            if flags & 0b1000_0000 != 0 {
                 event_list.insert(ClipEventFlag::DragOver);
             }
-            if self.read_bit()? {
+            if flags & 0b0100_0000 != 0 {
                 event_list.insert(ClipEventFlag::RollOut);
             }
-            if self.read_bit()? {
+            if flags & 0b0010_0000 != 0 {
                 event_list.insert(ClipEventFlag::RollOver);
             }
-            if self.read_bit()? {
+            if flags & 0b0001_0000 != 0 {
                 event_list.insert(ClipEventFlag::ReleaseOutside);
             }
-            if self.read_bit()? {
+            if flags & 0b0000_1000 != 0 {
                 event_list.insert(ClipEventFlag::Release);
             }
-            if self.read_bit()? {
+            if flags & 0b0000_0100 != 0 {
                 event_list.insert(ClipEventFlag::Press);
             }
-            if self.read_bit()? {
+            if flags & 0b0000_0010 != 0 {
                 event_list.insert(ClipEventFlag::Initialize);
             }
-            if self.read_bit()? {
+            if flags & 0b0000_0001 != 0 {
                 event_list.insert(ClipEventFlag::Data);
             }
             if self.version < 6 {
                 self.read_u16()?;
             } else {
-                self.read_ubits(5)?;
-                if self.read_bit()? {
+                let flags = self.read_u8()?;
+                if flags & 0b0000_0100 != 0 {
                     // Construct was only added in SWF7, but it's not version-gated;
                     // Construct events will still fire in SWF6 in a v7+ player. (#1424)
                     event_list.insert(ClipEventFlag::Construct);
                 }
-                if self.read_bit()? {
+                if flags & 0b0000_0010 != 0 {
                     event_list.insert(ClipEventFlag::KeyPress);
                 }
-                if self.read_bit()? {
+                if flags & 0b0000_0001 != 0 {
                     event_list.insert(ClipEventFlag::DragOut);
                 }
                 self.read_u8()?;
@@ -2371,46 +2422,71 @@ impl<R: Read> Reader<R> {
     }
 
     pub fn read_filter(&mut self) -> Result<Filter> {
-        self.byte_align();
         let filter = match self.read_u8()? {
-            0 => Filter::DropShadowFilter(Box::new(DropShadowFilter {
-                color: self.read_rgba()?,
-                blur_x: self.read_fixed16()?,
-                blur_y: self.read_fixed16()?,
-                angle: self.read_fixed16()?,
-                distance: self.read_fixed16()?,
-                strength: self.read_fixed8()?,
-                is_inner: self.read_bit()?,
-                is_knockout: self.read_bit()?,
-                num_passes: self.read_ubits(6)? as u8 & 0b011111,
-            })),
+            0 => {
+                let color = self.read_rgba()?;
+                let blur_x = self.read_fixed16()?;
+                let blur_y = self.read_fixed16()?;
+                let angle = self.read_fixed16()?;
+                let distance = self.read_fixed16()?;
+                let strength = self.read_fixed8()?;
+                let flags = self.read_u8()?;
+                Filter::DropShadowFilter(Box::new(DropShadowFilter {
+                    color,
+                    blur_x,
+                    blur_y,
+                    angle,
+                    distance,
+                    strength,
+                    is_inner: flags & 0b1000_0000 != 0,
+                    is_knockout: flags & 0b0100_0000 != 0,
+                    num_passes: flags & 0b0001_1111,
+                }))
+            }
             1 => Filter::BlurFilter(Box::new(BlurFilter {
                 blur_x: self.read_fixed16()?,
                 blur_y: self.read_fixed16()?,
-                num_passes: self.read_ubits(5)? as u8,
+                num_passes: (self.read_u8()? & 0b1111_1000) >> 3,
             })),
-            2 => Filter::GlowFilter(Box::new(GlowFilter {
-                color: self.read_rgba()?,
-                blur_x: self.read_fixed16()?,
-                blur_y: self.read_fixed16()?,
-                strength: self.read_fixed8()?,
-                is_inner: self.read_bit()?,
-                is_knockout: self.read_bit()?,
-                num_passes: self.read_ubits(6)? as u8 & 0b011111,
-            })),
-            3 => Filter::BevelFilter(Box::new(BevelFilter {
-                shadow_color: self.read_rgba()?,
-                highlight_color: self.read_rgba()?,
-                blur_x: self.read_fixed16()?,
-                blur_y: self.read_fixed16()?,
-                angle: self.read_fixed16()?,
-                distance: self.read_fixed16()?,
-                strength: self.read_fixed8()?,
-                is_inner: self.read_bit()?,
-                is_knockout: self.read_bit()?,
-                is_on_top: (self.read_ubits(2)? & 0b1) != 0,
-                num_passes: self.read_ubits(4)? as u8 & 0b011111,
-            })),
+            2 => {
+                let color = self.read_rgba()?;
+                let blur_x = self.read_fixed16()?;
+                let blur_y = self.read_fixed16()?;
+                let strength = self.read_fixed8()?;
+                let flags = self.read_u8()?;
+                Filter::GlowFilter(Box::new(GlowFilter {
+                    color,
+                    blur_x,
+                    blur_y,
+                    strength,
+                    is_inner: flags & 0b1000_0000 != 0,
+                    is_knockout: flags & 0b0100_0000 != 0,
+                    num_passes: flags & 0b0001_1111,
+                }))
+            }
+            3 => {
+                let shadow_color = self.read_rgba()?;
+                let highlight_color = self.read_rgba()?;
+                let blur_x = self.read_fixed16()?;
+                let blur_y = self.read_fixed16()?;
+                let angle = self.read_fixed16()?;
+                let distance = self.read_fixed16()?;
+                let strength = self.read_fixed8()?;
+                let flags = self.read_u8()?;
+                Filter::BevelFilter(Box::new(BevelFilter {
+                    shadow_color,
+                    highlight_color,
+                    blur_x,
+                    blur_y,
+                    angle,
+                    distance,
+                    strength,
+                    is_inner: flags & 0b1000_0000 != 0,
+                    is_knockout: flags & 0b0100_0000 != 0,
+                    is_on_top: flags & 0b0001_0000 != 0,
+                    num_passes: flags & 0b0000_1111,
+                }))
+            }
             4 => {
                 let num_colors = self.read_u8()?;
                 let mut colors = Vec::with_capacity(num_colors as usize);
@@ -2424,17 +2500,23 @@ impl<R: Read> Reader<R> {
                         ratio: self.read_u8()?,
                     });
                 }
+                let blur_x = self.read_fixed16()?;
+                let blur_y = self.read_fixed16()?;
+                let angle = self.read_fixed16()?;
+                let distance = self.read_fixed16()?;
+                let strength = self.read_fixed8()?;
+                let flags = self.read_u8()?;
                 Filter::GradientGlowFilter(Box::new(GradientGlowFilter {
                     colors: gradient_records,
-                    blur_x: self.read_fixed16()?,
-                    blur_y: self.read_fixed16()?,
-                    angle: self.read_fixed16()?,
-                    distance: self.read_fixed16()?,
-                    strength: self.read_fixed8()?,
-                    is_inner: self.read_bit()?,
-                    is_knockout: self.read_bit()?,
-                    is_on_top: (self.read_ubits(2)? & 0b1) != 0,
-                    num_passes: self.read_ubits(4)? as u8,
+                    blur_x,
+                    blur_y,
+                    angle,
+                    distance,
+                    strength,
+                    is_inner: flags & 0b1000_0000 != 0,
+                    is_knockout: flags & 0b0100_0000 != 0,
+                    is_on_top: flags & 0b0001_0000 != 0,
+                    num_passes: flags & 0b0000_1111,
                 }))
             }
             5 => {
@@ -2480,22 +2562,27 @@ impl<R: Read> Reader<R> {
                         ratio: self.read_u8()?,
                     });
                 }
+                let blur_x = self.read_fixed16()?;
+                let blur_y = self.read_fixed16()?;
+                let angle = self.read_fixed16()?;
+                let distance = self.read_fixed16()?;
+                let strength = self.read_fixed8()?;
+                let flags = self.read_u8()?;
                 Filter::GradientBevelFilter(Box::new(GradientBevelFilter {
                     colors: gradient_records,
-                    blur_x: self.read_fixed16()?,
-                    blur_y: self.read_fixed16()?,
-                    angle: self.read_fixed16()?,
-                    distance: self.read_fixed16()?,
-                    strength: self.read_fixed8()?,
-                    is_inner: self.read_bit()?,
-                    is_knockout: self.read_bit()?,
-                    is_on_top: (self.read_ubits(2)? & 0b1) != 0,
-                    num_passes: self.read_ubits(4)? as u8 & 0b011111,
+                    blur_x,
+                    blur_y,
+                    angle,
+                    distance,
+                    strength,
+                    is_inner: flags & 0b1000_0000 != 0,
+                    is_knockout: flags & 0b0100_0000 != 0,
+                    is_on_top: flags & 0b0001_0000 != 0,
+                    num_passes: flags & 0b0000_1111,
                 }))
             }
             _ => return Err(Error::invalid_data("Invalid filter type")),
         };
-        self.byte_align();
         Ok(filter)
     }
 
@@ -2647,10 +2734,11 @@ impl<R: Read> Reader<R> {
         // TODO(Herschel): font_id and height are tied together. Merge them into a struct?
         let num_glyphs = self.read_u8()?;
         let mut glyphs = Vec::with_capacity(num_glyphs as usize);
+        let mut bits = self.bits();
         for _ in 0..num_glyphs {
             glyphs.push(GlyphEntry {
-                index: self.read_ubits(num_glyph_bits as usize)?,
-                advance: self.read_sbits(num_advance_bits as usize)?,
+                index: bits.read_ubits(num_glyph_bits.into())?,
+                advance: bits.read_sbits(num_advance_bits.into())?,
             });
         }
 
@@ -2988,9 +3076,10 @@ pub mod tests {
     fn read_bit() {
         let mut buf: &[u8] = &[0b01010101, 0b00100101];
         let mut reader = Reader::new(&mut buf, 1);
+        let mut bits = reader.bits();
         assert_eq!(
             (0..16)
-                .map(|_| reader.read_bit().unwrap())
+                .map(|_| bits.read_bit().unwrap())
                 .collect::<Vec<_>>(),
             [
                 false, true, false, true, false, true, false, true, false, false, true, false,
@@ -3003,9 +3092,10 @@ pub mod tests {
     fn read_ubits() {
         let mut buf: &[u8] = &[0b01010101, 0b00100101];
         let mut reader = Reader::new(&mut buf, 1);
+        let mut bits = reader.bits();
         assert_eq!(
             (0..8)
-                .map(|_| reader.read_ubits(2).unwrap())
+                .map(|_| bits.read_ubits(2).unwrap())
                 .collect::<Vec<_>>(),
             [1, 1, 1, 1, 0, 2, 1, 1]
         );
@@ -3015,9 +3105,10 @@ pub mod tests {
     fn read_sbits() {
         let mut buf: &[u8] = &[0b01010101, 0b00100101];
         let mut reader = Reader::new(&mut buf, 1);
+        let mut bits = reader.bits();
         assert_eq!(
             (0..8)
-                .map(|_| reader.read_sbits(2).unwrap())
+                .map(|_| bits.read_sbits(2).unwrap())
                 .collect::<Vec<_>>(),
             [1, 1, 1, 1, 0, -2, 1, 1]
         );
@@ -3025,15 +3116,17 @@ pub mod tests {
 
     #[test]
     fn read_fbits() {
-        assert_eq!(Reader::new(&[0][..], 1).read_fbits(5).unwrap(), 0f32);
+        assert_eq!(Reader::new(&[0][..], 1).bits().read_fbits(5).unwrap(), 0f32);
         assert_eq!(
             Reader::new(&[0b01000000, 0b00000000, 0b0_0000000][..], 1)
+                .bits()
                 .read_fbits(17)
                 .unwrap(),
             0.5f32
         );
         assert_eq!(
             Reader::new(&[0b10000000, 0b00000000][..], 1)
+                .bits()
                 .read_fbits(16)
                 .unwrap(),
             -0.5f32
@@ -3253,7 +3346,19 @@ pub mod tests {
 
     #[test]
     fn read_shape_record() {
-        let read = |buf: &[u8]| reader(buf).read_shape_record(2).unwrap().unwrap();
+        let read = |buf: &[u8]| {
+            let mut reader = reader(buf);
+            let mut context = ShapeContext {
+                swf_version: reader.version,
+                shape_version: 2,
+                num_fill_bits: 1,
+                num_line_bits: 1,
+            };
+            let mut bits = reader.bits();
+            Reader::read_shape_record(&mut bits, &mut context)
+                .unwrap()
+                .unwrap()
+        };
 
         let shape_record = ShapeRecord::StraightEdge {
             delta_x: Twips::from_pixels(1.0),
