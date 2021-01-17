@@ -374,6 +374,7 @@ swf_tests! {
     (conflicting_instance_names, "avm1/conflicting_instance_names", 6),
     (button_children, "avm1/button_children", 1),
     (transform, "avm1/transform", 1),
+    (target_clip_swf5, "avm1/target_clip_swf5", 2),
     (target_path, "avm1/target_path", 1),
     (remove_movie_clip, "avm1/remove_movie_clip", 2),
     (as3_add, "avm2/add", 1),
