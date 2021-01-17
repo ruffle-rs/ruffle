@@ -8,19 +8,22 @@ use crate::avm1::activation::Activation;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::backend::render::{BitmapHandle, RenderBackend};
 use downcast_rs::__std::fmt::Formatter;
-use rand::Rng;
 use std::fmt;
 use std::ops::Range;
 
-pub struct MINSTDRng {
+/// An implementation of the Lehmer/Park-Miller random number generator
+/// Uses the fixed parameters m = 2,147,483,647 and a = 16,807
+pub struct LehmerRNG {
     x: u32,
 }
 
-impl MINSTDRng {
+impl LehmerRNG {
     pub fn with_seed(seed: u32) -> Self {
         Self { x: seed }
     }
 
+    /// Generate the next value in the sequence via the following formula
+    /// X_(k+1) = a * X_k mod m
     pub fn gen(&mut self) -> u32 {
         self.x = ((self.x as u64).overflowing_mul(16_807).0 % 2_147_483_647) as u32;
         self.x
@@ -315,19 +318,19 @@ impl BitmapData {
 
     pub fn noise(
         &mut self,
-        seed: u32,
+        seed: i32,
         low: u8,
         high: u8,
         channel_options: ChannelOptions,
         gray_scale: bool,
     ) {
-        let true_seed = if seed == 0 {
-            1
+        let true_seed = if seed <= 0 {
+            (-seed + 1) as u32
         } else {
-            seed
+            seed as u32
         };
 
-        let mut rng = MINSTDRng::with_seed(true_seed);
+        let mut rng = LehmerRNG::with_seed(true_seed);
 
         for x in 0..self.width() {
             for y in 0..self.height() {
@@ -339,7 +342,7 @@ impl BitmapData {
                         255
                     };
 
-                    if seed == 0 {
+                    if seed <= 0 {
                         rng.gen_range(low..high);
                         rng.gen_range(low..high);
                     }
@@ -376,8 +379,8 @@ impl BitmapData {
                 self.set_pixel32_raw(x, y, pixel_color);
             }
 
-            if seed == 0 {
-                rng = MINSTDRng::with_seed(true_seed);
+            if seed <= 0 {
+                rng = LehmerRNG::with_seed(true_seed);
                 for _ in 0..(x + 1) {
                     rng.gen();
                 }
