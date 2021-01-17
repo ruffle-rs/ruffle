@@ -313,6 +313,7 @@ swf_tests! {
     (gradient_bevel_filter, "avm1/gradient_bevel_filter", 1),
     (gradient_glow_filter, "avm1/gradient_glow_filter", 1),
     (bitmap_data, "avm1/bitmap_data", 1),
+    (bitmap_data_noise, "avm1/bitmap_data_noise", 1),
     (array_call_method, "avm1/array_call_method", 1),
     (bad_swf_tag_past_eof, "avm1/bad_swf_tag_past_eof", 1),
     (as3_hello_world, "avm2/hello_world", 1),

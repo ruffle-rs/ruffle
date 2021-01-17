@@ -1,0 +1,287 @@
+// noise(1) without transparency
+// bitmap.getPixel32(0, 0)
+ffa7f1d9
+// noise(2) without transparency
+// bitmap.getPixel32(0, 0)
+ff4ee2b3
+// noise(1, 0, 255, 1, true) without transparency
+// bitmap.getPixel32(0, 0)
+ffa7a7a7
+// bitmap.getPixel32(0, 1)
+fff1f1f1
+// bitmap.getPixel32(0, 2)
+ffd9d9d9
+// bitmap.getPixel32(0, 3)
+ff2a2a2a
+// bitmap.getPixel32(0, 4)
+ff828282
+// bitmap.getPixel32(0, 5)
+ffc8c8c8
+// bitmap.getPixel32(0, 6)
+ffd8d8d8
+// bitmap.getPixel32(0, 7)
+fffefefe
+// bitmap.getPixel32(0, 8)
+ff434343
+// bitmap.getPixel32(0, 9)
+ff4d4d4d
+// noise(1, 0, 255, 1, true) with transparency
+// bitmap.getPixel32(0, 0)
+ffa7a7a7
+// bitmap.getPixel32(1, 0)
+fff1f1f1
+// bitmap.getPixel32(2, 0)
+ffd9d9d9
+// bitmap.getPixel32(3, 0)
+ff2a2a2a
+// bitmap.getPixel32(4, 0)
+ff828282
+// bitmap.getPixel32(5, 0)
+ffc8c8c8
+// bitmap.getPixel32(6, 0)
+ffd8d8d8
+// bitmap.getPixel32(7, 0)
+fffefefe
+// bitmap.getPixel32(8, 0)
+ff434343
+// bitmap.getPixel32(9, 0)
+ff4d4d4d
+// noise(1, 0, 255, 1, true) with transparency
+// bitmap.getPixel32(0, 0)
+ffa7a7a7
+// bitmap.getPixel32(1, 0)
+fff1f1f1
+// bitmap.getPixel32(2, 0)
+ffd9d9d9
+// bitmap.getPixel32(3, 0)
+ff2a2a2a
+// bitmap.getPixel32(4, 0)
+ff828282
+// bitmap.getPixel32(5, 0)
+ffc8c8c8
+// bitmap.getPixel32(6, 0)
+ffd8d8d8
+// bitmap.getPixel32(7, 0)
+fffefefe
+// bitmap.getPixel32(8, 0)
+ff434343
+// bitmap.getPixel32(9, 0)
+ff4d4d4d
+// bitmap.getPixel32(10, 0)
+ff989898
+// bitmap.getPixel32(11, 0)
+ff555555
+// bitmap.getPixel32(12, 0)
+ff8c8c8c
+// bitmap.getPixel32(13, 0)
+ffe2e2e2
+// bitmap.getPixel32(14, 0)
+ffb3b3b3
+// bitmap.getPixel32(15, 0)
+ff474747
+// bitmap.getPixel32(16, 0)
+ff171717
+// bitmap.getPixel32(17, 0)
+ff111111
+// bitmap.getPixel32(18, 0)
+ff989898
+// bitmap.getPixel32(19, 0)
+ff545454
+// bitmap.getPixel32(20, 0)
+ff2f2f2f
+// bitmap.getPixel32(21, 0)
+ff111111
+// bitmap.getPixel32(22, 0)
+ff2d2d2d
+// bitmap.getPixel32(23, 0)
+ff555
+// bitmap.getPixel32(24, 0)
+ff585858
+// bitmap.getPixel32(25, 0)
+fff5f5f5
+// bitmap.getPixel32(26, 0)
+ff6b6b6b
+// bitmap.getPixel32(27, 0)
+ffd6d6d6
+// bitmap.getPixel32(28, 0)
+ff888888
+// bitmap.getPixel32(29, 0)
+ff777
+// bitmap.getPixel32(30, 0)
+ff999999
+// bitmap.getPixel32(31, 0)
+ff929292
+// bitmap.getPixel32(32, 0)
+ff484848
+// bitmap.getPixel32(33, 0)
+ff333333
+// bitmap.getPixel32(34, 0)
+ff626262
+// bitmap.getPixel32(35, 0)
+ff414141
+// bitmap.getPixel32(36, 0)
+fff3f3f3
+// bitmap.getPixel32(37, 0)
+ffddd
+// bitmap.getPixel32(38, 0)
+ff232323
+// bitmap.getPixel32(39, 0)
+ffe5e5e5
+// bitmap.getPixel32(40, 0)
+ff5f5f5f
+// bitmap.getPixel32(41, 0)
+ff303030
+// bitmap.getPixel32(42, 0)
+ffd1d1d1
+// bitmap.getPixel32(43, 0)
+ffc8c8c8
+// bitmap.getPixel32(44, 0)
+ffededed
+// bitmap.getPixel32(45, 0)
+ff616161
+// bitmap.getPixel32(46, 0)
+ffccc
+// bitmap.getPixel32(47, 0)
+ff4b4b4b
+// bitmap.getPixel32(48, 0)
+ff222
+// bitmap.getPixel32(49, 0)
+ff353535
+// bitmap.getPixel32(50, 0)
+ff393939
+// bitmap.getPixel32(51, 0)
+ff818181
+// bitmap.getPixel32(52, 0)
+ff848484
+// bitmap.getPixel32(53, 0)
+ffb8b8b8
+// bitmap.getPixel32(54, 0)
+ff141414
+// bitmap.getPixel32(55, 0)
+ffa2a2a2
+// bitmap.getPixel32(56, 0)
+ff9c9c9c
+// bitmap.getPixel32(57, 0)
+ffb4b4b4
+// bitmap.getPixel32(58, 0)
+ff5a5a5a
+// bitmap.getPixel32(59, 0)
+ff676767
+// bitmap.getPixel32(60, 0)
+ff2a2a2a
+// bitmap.getPixel32(61, 0)
+ffcacaca
+// bitmap.getPixel32(62, 0)
+ffe5e5e5
+// bitmap.getPixel32(63, 0)
+ff484848
+// bitmap.getPixel32(64, 0)
+ffe9e9e9
+// bitmap.getPixel32(65, 0)
+ffc5c5c5
+// bitmap.getPixel32(66, 0)
+fff1f1f1
+// bitmap.getPixel32(67, 0)
+ffb0b0b0
+// bitmap.getPixel32(68, 0)
+ffc4c4c4
+// bitmap.getPixel32(69, 0)
+ff151515
+// bitmap.getPixel32(70, 0)
+ff8a8a8a
+// bitmap.getPixel32(71, 0)
+ffe5e5e5
+// bitmap.getPixel32(72, 0)
+ff9b9b9b
+// bitmap.getPixel32(73, 0)
+ff4d4d4d
+// bitmap.getPixel32(74, 0)
+ff393939
+// bitmap.getPixel32(75, 0)
+fff6f6f6
+// bitmap.getPixel32(76, 0)
+fff7f7f7
+// bitmap.getPixel32(77, 0)
+ffe8e8e8
+// bitmap.getPixel32(78, 0)
+ffa1a1a1
+// bitmap.getPixel32(79, 0)
+ff555
+// bitmap.getPixel32(80, 0)
+ffd3d3d3
+// bitmap.getPixel32(81, 0)
+fffefefe
+// bitmap.getPixel32(82, 0)
+ffededed
+// bitmap.getPixel32(83, 0)
+ffa5a5a5
+// bitmap.getPixel32(84, 0)
+ffd5d5d5
+// bitmap.getPixel32(85, 0)
+fff3f3f3
+// bitmap.getPixel32(86, 0)
+ffd9d9d9
+// bitmap.getPixel32(87, 0)
+ffe4e4e4
+// bitmap.getPixel32(88, 0)
+ff5b5b5b
+// bitmap.getPixel32(89, 0)
+fffafafa
+// bitmap.getPixel32(90, 0)
+ff6c6c6c
+// bitmap.getPixel32(91, 0)
+ffc3c3c3
+// bitmap.getPixel32(92, 0)
+ff515151
+// bitmap.getPixel32(93, 0)
+ffe2e2e2
+// bitmap.getPixel32(94, 0)
+ff202020
+// bitmap.getPixel32(95, 0)
+ffaeaeae
+// bitmap.getPixel32(96, 0)
+ffccc
+// bitmap.getPixel32(97, 0)
+ffe1e1e1
+// bitmap.getPixel32(98, 0)
+ff666
+// bitmap.getPixel32(99, 0)
+ff989898
+// noise(0)
+// bitmap.getPixel32(0, 0)
+ffa7a7a7
+// bitmap.getPixel32(0, 1)
+ff2a2a2a
+// bitmap.getPixel32(0, 2)
+ffd8d8d8
+// bitmap.getPixel32(1, 0)
+fff1f1f1
+// bitmap.getPixel32(1, 1)
+ff828282
+// bitmap.getPixel32(1, 2)
+fffefefe
+// bitmap.getPixel32(2, 0)
+ffd9d9d9
+// bitmap.getPixel32(2, 1)
+ffc8c8c8
+// bitmap.getPixel32(2, 2)
+ff434343
+// noise(-1) without transparency
+// bitmap.getPixel32(0, 0)
+ff4ee2b3
+// bitmap.getPixel32(0, 1)
+ff9b30ab
+// bitmap.getPixel32(0, 2)
+ff30a85e
+// bitmap.getPixel32(1, 0)
+ff54590
+// bitmap.getPixel32(1, 1)
+ff19c466
+// bitmap.getPixel32(1, 2)
+ff235bb
+// bitmap.getPixel32(2, 0)
+ffb0fd87
+// bitmap.getPixel32(2, 1)
+ff8f2f22
+// bitmap.getPixel32(2, 2)
+ffb1ebd6
