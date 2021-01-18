@@ -393,7 +393,7 @@ pub struct FontDescriptor {
 impl FontDescriptor {
     /// Obtain a font descriptor from a SWF font tag.
     pub fn from_swf_tag(val: &swf::Font) -> Self {
-        let mut name = val.name.clone();
+        let mut name = val.name.to_string();
 
         if let Some(first_null) = name.find('\0') {
             name.truncate(first_null);

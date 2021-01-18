@@ -189,7 +189,7 @@ impl TextFormat {
     /// This requires an `UpdateContext` as we will need to retrieve some font
     /// information from the actually-referenced font.
     pub fn from_swf_tag<'gc>(
-        et: swf::EditText,
+        et: swf::EditText<'_>,
         swf_movie: Arc<SwfMovie>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Self {
@@ -198,7 +198,7 @@ impl TextFormat {
         let font = et.font_id.and_then(|fid| movie_library.get_font(fid));
         let font_class = et
             .font_class_name
-            .clone()
+            .map(str::to_string)
             .or_else(|| font.map(|font| font.descriptor().class().to_string()))
             .unwrap_or_else(|| "Times New Roman".to_string());
         let align = et.layout.clone().map(|l| l.align);
@@ -211,7 +211,7 @@ impl TextFormat {
         // Times New Roman non-bold, non-italic. This will need to be revised
         // when we start supporting device fonts.
         Self {
-            font: Some(font_class),
+            font: Some(font_class.to_string()),
             size: et.height.map(|h| h.to_pixels()),
             color: et.color,
             align,

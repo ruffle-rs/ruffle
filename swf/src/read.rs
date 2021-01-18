@@ -11,7 +11,6 @@ use crate::types::*;
 use byteorder::{LittleEndian, ReadBytesExt};
 use enumset::EnumSet;
 use std::collections::HashSet;
-use std::convert::TryInto;
 use std::io::{self, Read};
 
 /// Convenience method to parse an SWF.
@@ -24,47 +23,26 @@ use std::io::{self, Read};
 /// ```
 /// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
 /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
-/// let swf = swf::read_swf(&data[..]).unwrap();
+/// let stream = swf::read_swf_header(&data[..]).unwrap();
+/// let swf = swf::read_swf(&stream).unwrap();
 /// println!("Number of frames: {}", swf.header.num_frames);
 /// ```
-pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
-    let swf_stream = read_swf_header(input)?;
-    let header = swf_stream.header;
-    let mut reader = swf_stream.reader;
-
-    // Decompress all of SWF into memory at once.
-    let mut data = if header.compression == Compression::Lzma {
-        // TODO: The LZMA decoder is still funky.
-        // It always errors, and doesn't return all the data if you use read_to_end,
-        // but read_exact at least returns the data... why?
-        // Does the decoder need to be flushed somehow?
-        let mut data = vec![0u8; header.uncompressed_length.try_into().unwrap()];
-        let _ = reader.get_mut().read_exact(&mut data);
-        data
-    } else {
-        let mut data = Vec::with_capacity(header.uncompressed_length.try_into().unwrap());
-        if let Err(e) = reader.get_mut().read_to_end(&mut data) {
-            log::error!("Error decompressing SWF, may be corrupt: {}", e);
-        }
-        data
-    };
-    let version = header.version;
-
-    // Some SWF streams may not be compressed correctly,
-    // (e.g. incorrect data length in the stream), so decompressing
-    // may throw an error even though the data otherwise comes
-    // through the stream.
-    // We'll still try to parse what we get if the full decompression fails.
-    if let Err(e) = reader.get_mut().read_to_end(&mut data) {
-        log::warn!("Error decompressing SWF stream, may be corrupt: {}", e);
-    }
-    if data.len() != header.uncompressed_length.try_into().unwrap() {
-        log::warn!("SWF length doesn't match header, may be corrupt");
-    }
-    let mut reader = Reader::new(&data[..], version);
+pub fn read_swf<'a>(swf_stream: &'a SwfStream) -> Result<Swf<'a>> {
+    // // Some SWF streams may not be compressed correctly,
+    // // (e.g. incorrect data length in the stream), so decompressing
+    // // may throw an error even though the data otherwise comes
+    // // through the stream.
+    // // We'll still try to parse what we get if the full decompression fails.
+    // if let Err(e) = reader.get_mut().read_to_end(&mut data) {
+    //     log::warn!("Error decompressing SWF stream, may be corrupt: {}", e);
+    // }
+    // if data.len() != header.uncompressed_length.try_into().unwrap() {
+    //     log::warn!("SWF length doesn't match header, may be corrupt");
+    // }
+    let mut reader = Reader::new(&swf_stream.data[..], swf_stream.header.version);
 
     Ok(Swf {
-        header,
+        header: swf_stream.header.clone(),
         tags: reader.read_tag_list()?,
     })
 }
@@ -81,15 +59,19 @@ pub fn read_swf<R: Read>(input: R) -> Result<Swf> {
 /// let swf_stream = swf::read_swf_header(&data[..]).unwrap();
 /// println!("FPS: {}", swf_stream.header.frame_rate);
 /// ```
-pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> {
+pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream> {
     // Read SWF header.
-    let compression = Reader::read_compression_type(&mut input)?;
+    let compression = read_compression_type(&mut input)?;
     let version = input.read_u8()?;
     let uncompressed_length = input.read_u32::<LittleEndian>()?;
 
     // Now the SWF switches to a compressed stream.
-    let decompressed_input: Box<dyn Read> = match compression {
-        Compression::None => Box::new(input),
+    let decompressed_input: Vec<u8> = match compression {
+        Compression::None => {
+            let mut data = Vec::with_capacity(uncompressed_length as usize);
+            input.read_to_end(&mut data)?;
+            data
+        }
         Compression::Zlib => {
             if version < 6 {
                 log::warn!(
@@ -97,7 +79,10 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
                     version
                 );
             }
-            make_zlib_reader(input)?
+            let mut reader = make_zlib_reader(input)?;
+            let mut data = Vec::with_capacity(uncompressed_length as usize);
+            reader.read_to_end(&mut data)?;
+            data
         }
         Compression::Lzma => {
             if version < 13 {
@@ -108,11 +93,14 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
             }
             // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
             // subtract it here.
-            make_lzma_reader(input, uncompressed_length - 8)?
+            let mut reader = make_lzma_reader(input, uncompressed_length - 8)?;
+            let mut data = Vec::with_capacity(uncompressed_length as usize);
+            reader.read_to_end(&mut data)?;
+            data
         }
     };
 
-    let mut reader = Reader::new(decompressed_input, version);
+    let mut reader = Reader::new(&decompressed_input, version);
     let stage_size = reader.read_rectangle()?;
     let frame_rate = reader.read_fixed8()?;
     let num_frames = reader.read_u16()?;
@@ -124,7 +112,8 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream<'a>> 
         frame_rate,
         num_frames,
     };
-    Ok(SwfStream { header, reader })
+    let data = reader.get_ref().to_vec();
+    Ok(SwfStream { header, data })
 }
 
 #[cfg(feature = "flate2")]
@@ -271,23 +260,15 @@ pub trait SwfRead<R: Read> {
         // TODO: Verify ANSI for SWF 5 and earlier.
         String::from_utf8(bytes).map_err(|_| Error::invalid_data("Invalid string data"))
     }
-
-    fn bits(&mut self) -> BitReader<&mut R> {
-        BitReader {
-            input: self.get_inner(),
-            byte: 0,
-            bit_index: 0,
-        }
-    }
 }
 
-pub struct BitReader<R: Read> {
-    input: R,
+pub struct BitReader<'a, 'b> {
+    input: &'b mut &'a [u8],
     byte: u8,
     bit_index: u8,
 }
 
-impl<R: Read> BitReader<R> {
+impl<'a, 'b> BitReader<'a, 'b> {
     #[inline]
     fn byte_align(&mut self) {
         self.bit_index = 0;
@@ -335,18 +316,18 @@ impl<R: Read> BitReader<R> {
     }
 
     #[inline]
-    fn reader(&mut self) -> &mut R {
+    fn reader(&mut self) -> &mut &'a [u8] {
         &mut self.input
     }
 }
 
-pub struct Reader<R: Read> {
-    input: R,
+pub struct Reader<'a> {
+    input: &'a [u8],
     version: u8,
 }
 
-impl<R: Read> SwfRead<R> for Reader<R> {
-    fn get_inner(&mut self) -> &mut R {
+impl<'a> SwfRead<&'a [u8]> for Reader<'a> {
+    fn get_inner(&mut self) -> &mut &'a [u8] {
         &mut self.input
     }
 
@@ -383,8 +364,8 @@ impl<R: Read> SwfRead<R> for Reader<R> {
     }
 }
 
-impl<R: Read> Reader<R> {
-    pub fn new(input: R, version: u8) -> Reader<R> {
+impl<'a> Reader<'a> {
+    pub fn new(input: &'a [u8], version: u8) -> Reader<'a> {
         Reader { input, version }
     }
 
@@ -393,14 +374,69 @@ impl<R: Read> Reader<R> {
     }
 
     /// Returns a reference to the underlying `Reader`.
-    pub fn get_ref(&self) -> &R {
-        &self.input
+    pub fn get_ref(&self) -> &'a [u8] {
+        self.input
+    }
+
+    fn bits<'b>(&'b mut self) -> BitReader<'a, 'b> {
+        BitReader {
+            input: self.get_inner(),
+            byte: 0,
+            bit_index: 0,
+        }
+    }
+
+    fn read_slice(&mut self, len: usize) -> io::Result<&'a [u8]> {
+        if self.input.len() >= len {
+            let slice = &self.input[..len];
+            self.input = &self.input[len..];
+            Ok(slice)
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "Not enough data for slice",
+            ))
+        }
+    }
+
+    fn read_slice_to_end(&mut self) -> &'a [u8] {
+        let len = self.input.len();
+        let slice = &self.input[..len];
+        self.input = &self.input[len..];
+        slice
+    }
+
+    fn read_string(&mut self) -> io::Result<SwfStr<'a>> {
+        let mut pos = 0;
+        loop {
+            let byte = *self.input.get(pos).ok_or(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "Not enough data for slice",
+            ))?;
+            if byte == 0 {
+                break;
+            }
+            pos += 1;
+        }
+        // TODO: There is probably a better way to do this.
+        // TODO: Verify ANSI for SWF 5 and earlier.
+        let s = unsafe { std::str::from_utf8_unchecked(&self.input.get_unchecked(..pos)) };
+        self.input = &self.input[pos + 1..];
+        Ok(s)
+    }
+
+    fn read_string_with_len(&mut self, len: usize) -> io::Result<SwfStr<'a>> {
+        // TODO: There is probably a better way to do this.
+        // TODO: Verify ANSI for SWF 5 and earlier.
+        let mut s = unsafe { std::str::from_utf8_unchecked(&self.read_slice(len)?) };
+        s = s.trim_end_matches('\0');
+        Ok(s)
     }
 
     /// Returns a mutable reference to the underlying `Reader`.
     ///
     /// Reading from this reference is not recommended.
-    pub fn get_mut(&mut self) -> &mut R {
+    pub fn get_mut(&mut self) -> &mut &'a [u8] {
         &mut self.input
     }
 
@@ -410,11 +446,12 @@ impl<R: Read> Reader<R> {
     /// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
     /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
     /// let mut swf_stream = swf::read_swf_header(&data[..]).unwrap();
-    /// while let Ok(tag) = swf_stream.reader.read_tag() {
+    /// let mut reader = swf::read::Reader::new(&swf_stream.data[..], swf_stream.header.version);
+    /// while let Ok(tag) = reader.read_tag() {
     ///     println!("Tag: {:?}", tag);
     /// }
     /// ```
-    pub fn read_tag(&mut self) -> Result<Tag> {
+    pub fn read_tag(&mut self) -> Result<Tag<'a>> {
         let (tag_code, length) = self.read_tag_code_and_length()?;
         let tag = self.read_tag_with_code(tag_code, length);
 
@@ -425,8 +462,8 @@ impl<R: Read> Reader<R> {
         tag
     }
 
-    fn read_tag_with_code(&mut self, tag_code: u16, length: usize) -> Result<Tag> {
-        let mut tag_reader = Reader::new(self.input.by_ref().take(length as u64), self.version);
+    fn read_tag_with_code(&mut self, tag_code: u16, length: usize) -> Result<Tag<'a>> {
+        let mut tag_reader = Reader::new(self.read_slice(length)?, self.version);
         use crate::tag_code::TagCode;
         let tag = match TagCode::from_u16(tag_code) {
             Some(TagCode::End) => Tag::End,
@@ -435,20 +472,17 @@ impl<R: Read> Reader<R> {
             Some(TagCode::DefineBinaryData) => {
                 let id = tag_reader.read_u16()?;
                 tag_reader.read_u32()?; // Reserved
-                let mut data = Vec::with_capacity(length - 6);
-                tag_reader.input.read_to_end(&mut data)?;
+                let data = tag_reader.read_slice_to_end();
                 Tag::DefineBinaryData { id, data }
             }
             Some(TagCode::DefineBits) => {
                 let id = tag_reader.read_u16()?;
-                let mut jpeg_data = Vec::with_capacity(length - 2);
-                tag_reader.input.read_to_end(&mut jpeg_data)?;
+                let jpeg_data = tag_reader.read_slice_to_end();
                 Tag::DefineBits { id, jpeg_data }
             }
             Some(TagCode::DefineBitsJpeg2) => {
                 let id = tag_reader.read_u16()?;
-                let mut jpeg_data = Vec::with_capacity(length - 2);
-                tag_reader.input.read_to_end(&mut jpeg_data)?;
+                let jpeg_data = tag_reader.read_slice_to_end();
                 Tag::DefineBitsJpeg2 { id, jpeg_data }
             }
             Some(TagCode::DefineBitsJpeg3) => tag_reader.read_define_bits_jpeg_3(3)?,
@@ -503,28 +537,26 @@ impl<R: Read> Reader<R> {
             Some(TagCode::EnableTelemetry) => {
                 tag_reader.read_u16()?; // Reserved
                 let password_hash = if length > 2 {
-                    let mut data = vec![0; 32];
-                    tag_reader.input.read_exact(&mut data)?;
-                    data
+                    tag_reader.read_slice(32)?
                 } else {
-                    vec![]
+                    &[]
                 };
                 Tag::EnableTelemetry { password_hash }
             }
             Some(TagCode::ImportAssets) => {
-                let url = tag_reader.read_c_string()?;
+                let url = tag_reader.read_string()?;
                 let num_imports = tag_reader.read_u16()?;
                 let mut imports = Vec::with_capacity(num_imports as usize);
                 for _ in 0..num_imports {
                     imports.push(ExportedAsset {
                         id: tag_reader.read_u16()?,
-                        name: tag_reader.read_c_string()?,
+                        name: tag_reader.read_string()?,
                     });
                 }
                 Tag::ImportAssets { url, imports }
             }
             Some(TagCode::ImportAssets2) => {
-                let url = tag_reader.read_c_string()?;
+                let url = tag_reader.read_string()?;
                 tag_reader.read_u8()?; // Reserved; must be 1
                 tag_reader.read_u8()?; // Reserved; must be 0
                 let num_imports = tag_reader.read_u16()?;
@@ -532,31 +564,23 @@ impl<R: Read> Reader<R> {
                 for _ in 0..num_imports {
                     imports.push(ExportedAsset {
                         id: tag_reader.read_u16()?,
-                        name: tag_reader.read_c_string()?,
+                        name: tag_reader.read_string()?,
                     });
                 }
                 Tag::ImportAssets { url, imports }
             }
 
             Some(TagCode::JpegTables) => {
-                let mut data = Vec::with_capacity(length);
-                tag_reader.input.read_to_end(&mut data)?;
+                let data = tag_reader.read_slice_to_end();
                 Tag::JpegTables(data)
             }
 
-            Some(TagCode::Metadata) => {
-                let mut s = String::with_capacity(length);
-                tag_reader.get_mut().read_to_string(&mut s)?;
-                // Remove trailing null bytes. There may or may not be a null byte.
-                s = s.trim_end_matches(char::from(0)).to_string();
-                Tag::Metadata(s)
-            }
+            Some(TagCode::Metadata) => Tag::Metadata(tag_reader.read_string()?),
 
             Some(TagCode::SetBackgroundColor) => Tag::SetBackgroundColor(tag_reader.read_rgb()?),
 
             Some(TagCode::SoundStreamBlock) => {
-                let mut data = Vec::with_capacity(length);
-                tag_reader.input.read_to_end(&mut data)?;
+                let data = tag_reader.read_slice_to_end();
                 Tag::SoundStreamBlock(data)
             }
 
@@ -572,7 +596,7 @@ impl<R: Read> Reader<R> {
             Some(TagCode::StartSound) => Tag::StartSound(tag_reader.read_start_sound_1()?),
 
             Some(TagCode::StartSound2) => Tag::StartSound2 {
-                class_name: tag_reader.read_c_string()?,
+                class_name: tag_reader.read_string()?,
                 sound_info: Box::new(tag_reader.read_sound_info()?),
             },
 
@@ -592,9 +616,8 @@ impl<R: Read> Reader<R> {
 
             Some(TagCode::DoAbc) => {
                 let flags = tag_reader.read_u32()?;
-                let name = tag_reader.read_c_string()?;
-                let mut abc_data = Vec::with_capacity(length - 4 - name.len());
-                tag_reader.input.read_to_end(&mut abc_data)?;
+                let name = tag_reader.read_string()?;
+                let abc_data = tag_reader.read_slice_to_end();
                 Tag::DoAbc(DoAbc {
                     name,
                     is_lazy_initialize: flags & 1 != 0,
@@ -603,22 +626,20 @@ impl<R: Read> Reader<R> {
             }
 
             Some(TagCode::DoAction) => {
-                let mut action_data = Vec::with_capacity(length);
-                tag_reader.input.read_to_end(&mut action_data)?;
+                let action_data = tag_reader.read_slice_to_end();
                 Tag::DoAction(action_data)
             }
 
             Some(TagCode::DoInitAction) => {
                 let id = tag_reader.read_u16()?;
-                let mut action_data = Vec::with_capacity(length);
-                tag_reader.input.read_to_end(&mut action_data)?;
+                let action_data = tag_reader.read_slice_to_end();
                 Tag::DoInitAction { id, action_data }
             }
 
-            Some(TagCode::EnableDebugger) => Tag::EnableDebugger(tag_reader.read_c_string()?),
+            Some(TagCode::EnableDebugger) => Tag::EnableDebugger(tag_reader.read_string()?),
             Some(TagCode::EnableDebugger2) => {
                 tag_reader.read_u16()?; // Reserved
-                Tag::EnableDebugger(tag_reader.read_c_string()?)
+                Tag::EnableDebugger(tag_reader.read_string()?)
             }
 
             Some(TagCode::ScriptLimits) => Tag::ScriptLimits {
@@ -637,7 +658,7 @@ impl<R: Read> Reader<R> {
                 for _ in 0..num_symbols {
                     symbols.push(SymbolClassLink {
                         id: tag_reader.read_u16()?,
-                        class_name: tag_reader.read_c_string()?,
+                        class_name: tag_reader.read_string()?,
                     });
                 }
                 Tag::SymbolClass(symbols)
@@ -652,7 +673,7 @@ impl<R: Read> Reader<R> {
             Some(TagCode::Protect) => {
                 Tag::Protect(if length > 0 {
                     tag_reader.read_u16()?; // TODO(Herschel): Two null bytes? Not specified in SWF19.
-                    Some(tag_reader.read_c_string()?)
+                    Some(tag_reader.read_string()?)
                 } else {
                     None
                 })
@@ -664,14 +685,7 @@ impl<R: Read> Reader<R> {
 
             Some(TagCode::FrameLabel) => Tag::FrameLabel(tag_reader.read_frame_label(length)?),
 
-            Some(TagCode::DefineSprite) => {
-                // TODO: There's probably a better way to prevent the infinite type recursion.
-                // Tags can only be nested one level deep, so perhaps I can implement
-                // read_tag_list for Reader<Take<R>> to enforce this.
-                let mut sprite_reader =
-                    Reader::new(&mut tag_reader.input as &mut dyn Read, self.version);
-                sprite_reader.read_define_sprite()?
-            }
+            Some(TagCode::DefineSprite) => tag_reader.read_define_sprite()?,
 
             Some(TagCode::PlaceObject) => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object(length)?))
@@ -693,14 +707,12 @@ impl<R: Read> Reader<R> {
             Some(TagCode::VideoFrame) => tag_reader.read_video_frame()?,
             Some(TagCode::ProductInfo) => Tag::ProductInfo(tag_reader.read_product_info()?),
             _ => {
-                let size = length as usize;
-                let mut data = vec![0; size];
-                tag_reader.input.read_exact(&mut data[..])?;
+                let data = tag_reader.read_slice_to_end();
                 Tag::Unknown { tag_code, data }
             }
         };
 
-        if tag_reader.read_u8().is_ok() {
+        if !tag_reader.input.is_empty() {
             // There should be no data remaining in the tag if we read it correctly.
             // If there is data remaining, the most likely scenario is we screwed up parsing.
             // But sometimes tools will export SWF tags that are larger than they should be.
@@ -711,24 +723,9 @@ impl<R: Read> Reader<R> {
                 TagCode::name(tag_code),
                 tag_code
             );
-
-            // Discard the rest of the data.
-            let _ = std::io::copy(&mut tag_reader.get_mut(), &mut io::sink());
         }
 
         Ok(tag)
-    }
-
-    pub fn read_compression_type(mut input: R) -> Result<Compression> {
-        let mut signature = [0u8; 3];
-        input.read_exact(&mut signature)?;
-        let compression = match &signature {
-            b"FWS" => Compression::None,
-            b"CWS" => Compression::Zlib,
-            b"ZWS" => Compression::Lzma,
-            _ => return Err(Error::invalid_data("Invalid SWF")),
-        };
-        Ok(compression)
     }
 
     pub fn read_rectangle(&mut self) -> Result<Rectangle> {
@@ -866,7 +863,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_tag_list(&mut self) -> Result<Vec<Tag>> {
+    fn read_tag_list(&mut self) -> Result<Vec<Tag<'a>>> {
         let mut tags = Vec::new();
         loop {
             match self.read_tag() {
@@ -892,14 +889,13 @@ impl<R: Read> Reader<R> {
         Ok((tag_code, length))
     }
 
-    pub fn read_define_button_1(&mut self) -> Result<Button> {
+    pub fn read_define_button_1(&mut self) -> Result<Button<'a>> {
         let id = self.read_u16()?;
         let mut records = Vec::new();
         while let Some(record) = self.read_button_record(1)? {
             records.push(record);
         }
-        let mut action_data = Vec::new();
-        self.input.read_to_end(&mut action_data)?;
+        let action_data = self.read_slice_to_end();
         Ok(Button {
             id,
             is_track_as_menu: false,
@@ -914,7 +910,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    pub fn read_define_button_2(&mut self) -> Result<Button> {
+    pub fn read_define_button_2(&mut self) -> Result<Button<'a>> {
         let id = self.read_u16()?;
         let flags = self.read_u8()?;
         let is_track_as_menu = (flags & 0b1) != 0;
@@ -950,7 +946,7 @@ impl<R: Read> Reader<R> {
 
         // We don't know how many color transforms this tag will contain, so read it into a buffer.
         let version = self.version;
-        let mut reader = Reader::new(self.get_inner().by_ref().take(tag_length as u64), version);
+        let mut reader = Reader::new(&mut self.read_slice(tag_length)?, version);
 
         let id = reader.read_character_id()?;
         let mut color_transforms = Vec::new();
@@ -1049,7 +1045,7 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    fn read_button_action(&mut self) -> Result<(ButtonAction, bool)> {
+    fn read_button_action(&mut self) -> Result<(ButtonAction<'a>, bool)> {
         let length = self.read_u16()?;
         let flags = self.read_u16()?;
         let mut conditions = HashSet::with_capacity(8);
@@ -1085,19 +1081,17 @@ impl<R: Read> Reader<R> {
         if key_code != 0 {
             conditions.insert(ButtonActionCondition::KeyPress);
         }
-        let mut action_data = Vec::with_capacity(length as usize);
-        if length >= 4 {
-            action_data.resize(length as usize - 4, 0);
-            self.input.read_exact(&mut action_data)?;
+        let action_data = if length >= 4 {
+            self.read_slice(length as usize - 4)?
         } else if length == 0 {
             // Last action, read to end.
-            self.input.read_to_end(&mut action_data)?;
+            self.read_slice_to_end()
         } else {
             // Some SWFs have phantom action records with an invalid length.
             // See 401799_pre_Scene_1.swf
             // TODO: How does Flash handle this?
             return Err(Error::invalid_data("Button action length is too short"));
-        }
+        };
         Ok((
             ButtonAction {
                 conditions,
@@ -1108,7 +1102,7 @@ impl<R: Read> Reader<R> {
         ))
     }
 
-    fn read_csm_text_settings(&mut self) -> Result<Tag> {
+    fn read_csm_text_settings(&mut self) -> Result<Tag<'a>> {
         let id = self.read_character_id()?;
         let flags = self.read_u8()?;
         let thickness = self.read_f32()?;
@@ -1128,8 +1122,8 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    pub fn read_frame_label(&mut self, length: usize) -> Result<FrameLabel> {
-        let label = self.read_c_string()?;
+    pub fn read_frame_label(&mut self, length: usize) -> Result<FrameLabel<'a>> {
+        let label = self.read_string()?;
         Ok(FrameLabel {
             is_anchor: self.version >= 6 && length > label.len() + 1 && self.read_u8()? != 0,
             label,
@@ -1138,13 +1132,13 @@ impl<R: Read> Reader<R> {
 
     pub fn read_define_scene_and_frame_label_data(
         &mut self,
-    ) -> Result<DefineSceneAndFrameLabelData> {
+    ) -> Result<DefineSceneAndFrameLabelData<'a>> {
         let num_scenes = self.read_encoded_u32()? as usize;
         let mut scenes = Vec::with_capacity(num_scenes);
         for _ in 0..num_scenes {
             scenes.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
-                label: self.read_c_string()?,
+                label: self.read_string()?,
             });
         }
 
@@ -1153,7 +1147,7 @@ impl<R: Read> Reader<R> {
         for _ in 0..num_frame_labels {
             frame_labels.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
-                label: self.read_c_string()?,
+                label: self.read_string()?,
             });
         }
 
@@ -1194,7 +1188,7 @@ impl<R: Read> Reader<R> {
         Ok(FontV1 { id, glyphs })
     }
 
-    pub fn read_define_font_2(&mut self, version: u8) -> Result<Font> {
+    pub fn read_define_font_2(&mut self, version: u8) -> Result<Font<'a>> {
         let id = self.read_character_id()?;
 
         let flags = self.read_u8()?;
@@ -1209,14 +1203,9 @@ impl<R: Read> Reader<R> {
 
         let language = self.read_language()?;
         let name_len = self.read_u8()?;
-        let mut name = String::with_capacity(name_len as usize);
-        self.input
-            .by_ref()
-            .take(name_len.into())
-            .read_to_string(&mut name)?;
-        // TODO: SWF19 states that the font name should not have a terminating null byte,
+        // SWF19 states that the font name should not have a terminating null byte,
         // but it often does (depends on Flash IDE version?)
-        // We should probably strip anything past the first null.
+        let name = self.read_string_with_len(name_len.into())?;
 
         let num_glyphs = self.read_u16()? as usize;
         let mut glyphs = Vec::with_capacity(num_glyphs);
@@ -1330,15 +1319,13 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    pub fn read_define_font_4(&mut self) -> Result<Font4> {
+    pub fn read_define_font_4(&mut self) -> Result<Font4<'a>> {
         let id = self.read_character_id()?;
         let flags = self.read_u8()?;
-        let name = self.read_c_string()?;
+        let name = self.read_string()?;
         let has_font_data = flags & 0b100 != 0;
         let data = if has_font_data {
-            let mut data = vec![];
-            self.input.read_to_end(&mut data)?;
-            Some(data)
+            Some(self.read_slice_to_end())
         } else {
             None
         };
@@ -1367,7 +1354,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_define_font_align_zones(&mut self) -> Result<Tag> {
+    fn read_define_font_align_zones(&mut self) -> Result<Tag<'a>> {
         let id = self.read_character_id()?;
         let thickness = match self.read_u8()? {
             0b00_000000 => FontThickness::Thin,
@@ -1398,15 +1385,11 @@ impl<R: Read> Reader<R> {
         Ok(zone)
     }
 
-    fn read_define_font_info(&mut self, version: u8) -> Result<Tag> {
+    fn read_define_font_info(&mut self, version: u8) -> Result<Tag<'a>> {
         let id = self.read_u16()?;
 
         let font_name_len = self.read_u8()?;
-        let mut font_name = String::with_capacity(font_name_len as usize);
-        self.input
-            .by_ref()
-            .take(font_name_len.into())
-            .read_to_string(&mut font_name)?;
+        let font_name = self.read_string_with_len(font_name_len.into())?;
 
         let flags = self.read_u8()?;
         let use_wide_codes = flags & 0b1 != 0; // TODO(Herschel): Warn if false for version 2.
@@ -1443,11 +1426,11 @@ impl<R: Read> Reader<R> {
         })))
     }
 
-    fn read_define_font_name(&mut self) -> Result<Tag> {
+    fn read_define_font_name(&mut self) -> Result<Tag<'a>> {
         Ok(Tag::DefineFontName {
             id: self.read_character_id()?,
-            name: self.read_c_string()?,
-            copyright_info: self.read_c_string()?,
+            name: self.read_string()?,
+            copyright_info: self.read_string()?,
         })
     }
 
@@ -1788,12 +1771,11 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    pub fn read_define_sound(&mut self) -> Result<Sound> {
+    pub fn read_define_sound(&mut self) -> Result<Sound<'a>> {
         let id = self.read_u16()?;
         let format = self.read_sound_format()?;
         let num_samples = self.read_u32()?;
-        let mut data = Vec::new();
-        self.input.read_to_end(&mut data)?;
+        let data = self.read_slice_to_end();
         Ok(Sound {
             id,
             format,
@@ -2007,7 +1989,7 @@ impl<R: Read> Reader<R> {
     }
 
     fn read_shape_record(
-        bits: &mut BitReader<&mut R>,
+        bits: &mut BitReader<'_, '_>,
         context: &mut ShapeContext,
     ) -> Result<Option<ShapeRecord>> {
         let is_edge_record = bits.read_bit()?;
@@ -2080,6 +2062,7 @@ impl<R: Read> Reader<R> {
                     context.num_fill_bits = num_fill_bits;
                     context.num_line_bits = num_line_bits;
                     new_style.new_styles = Some(new_styles);
+                    *bits.input = reader.input;
                 }
                 Some(ShapeRecord::StyleChange(new_style))
             } else {
@@ -2089,7 +2072,7 @@ impl<R: Read> Reader<R> {
         Ok(shape_record)
     }
 
-    pub fn read_define_sprite(&mut self) -> Result<Tag> {
+    pub fn read_define_sprite(&mut self) -> Result<Tag<'a>> {
         Ok(Tag::DefineSprite(Sprite {
             id: self.read_u16()?,
             num_frames: self.read_u16()?,
@@ -2108,19 +2091,19 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    pub fn read_export_assets(&mut self) -> Result<ExportAssets> {
+    pub fn read_export_assets(&mut self) -> Result<ExportAssets<'a>> {
         let num_exports = self.read_u16()?;
         let mut exports = Vec::with_capacity(num_exports.into());
         for _ in 0..num_exports {
             exports.push(ExportedAsset {
                 id: self.read_u16()?,
-                name: self.read_c_string()?,
+                name: self.read_string()?,
             });
         }
         Ok(exports)
     }
 
-    pub fn read_place_object(&mut self, tag_length: usize) -> Result<PlaceObject> {
+    pub fn read_place_object(&mut self, tag_length: usize) -> Result<PlaceObject<'a>> {
         // TODO: What's a best way to know if the tag has a color transform?
         // You only know if there is still data remaining after the matrix.
         // This sucks.
@@ -2152,7 +2135,10 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    pub fn read_place_object_2_or_3(&mut self, place_object_version: u8) -> Result<PlaceObject> {
+    pub fn read_place_object_2_or_3(
+        &mut self,
+        place_object_version: u8,
+    ) -> Result<PlaceObject<'a>> {
         let flags = if place_object_version >= 3 {
             self.read_u16()?
         } else {
@@ -2170,7 +2156,7 @@ impl<R: Read> Reader<R> {
         let has_character_id = (flags & 0b10) != 0;
         let has_class_name = (flags & 0b1000_00000000) != 0 || (is_image && !has_character_id);
         let class_name = if has_class_name {
-            Some(self.read_c_string()?)
+            Some(self.read_string()?)
         } else {
             None
         };
@@ -2197,7 +2183,7 @@ impl<R: Read> Reader<R> {
             None
         };
         let name = if (flags & 0b10_0000) != 0 {
-            Some(self.read_c_string()?)
+            Some(self.read_string()?)
         } else {
             None
         };
@@ -2245,9 +2231,7 @@ impl<R: Read> Reader<R> {
             None
         };
         let amf_data = if place_object_version >= 4 {
-            let mut amf = vec![];
-            self.input.read_to_end(&mut amf)?;
-            Some(amf)
+            Some(self.read_slice_to_end())
         } else {
             None
         };
@@ -2306,7 +2290,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_clip_actions(&mut self) -> Result<Vec<ClipAction>> {
+    fn read_clip_actions(&mut self) -> Result<Vec<ClipAction<'a>>> {
         self.read_u16()?; // Must be 0
         self.read_clip_event_flags()?; // All event flags
         let mut clip_actions = vec![];
@@ -2316,7 +2300,7 @@ impl<R: Read> Reader<R> {
         Ok(clip_actions)
     }
 
-    fn read_clip_action(&mut self) -> Result<Option<ClipAction>> {
+    fn read_clip_action(&mut self) -> Result<Option<ClipAction<'a>>> {
         let events = self.read_clip_event_flags()?;
         if events.is_empty() {
             Ok(None)
@@ -2329,9 +2313,7 @@ impl<R: Read> Reader<R> {
             } else {
                 None
             };
-
-            let mut action_data = vec![0; length as usize];
-            self.input.read_exact(&mut action_data)?;
+            let action_data = self.read_slice(length as usize)?;
 
             Ok(Some(ClipAction {
                 events,
@@ -2752,7 +2734,7 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    pub fn read_define_edit_text(&mut self) -> Result<EditText> {
+    pub fn read_define_edit_text(&mut self) -> Result<EditText<'a>> {
         let id = self.read_character_id()?;
         let bounds = self.read_rectangle()?;
         let flags = self.read_u8()?;
@@ -2763,7 +2745,7 @@ impl<R: Read> Reader<R> {
             None
         };
         let font_class_name = if flags2 & 0b10000000 != 0 {
-            Some(self.read_c_string()?)
+            Some(self.read_string()?)
         } else {
             None
         };
@@ -2799,9 +2781,9 @@ impl<R: Read> Reader<R> {
         } else {
             None
         };
-        let variable_name = self.read_c_string()?;
+        let variable_name = self.read_string()?;
         let initial_text = if flags & 0b10000000 != 0 {
-            Some(self.read_c_string()?)
+            Some(self.read_string()?)
         } else {
             None
         };
@@ -2829,7 +2811,7 @@ impl<R: Read> Reader<R> {
         })
     }
 
-    fn read_define_video_stream(&mut self) -> Result<Tag> {
+    fn read_define_video_stream(&mut self) -> Result<Tag<'a>> {
         let id = self.read_character_id()?;
         let num_frames = self.read_u16()?;
         let width = self.read_u16()?;
@@ -2862,11 +2844,10 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    fn read_video_frame(&mut self) -> Result<Tag> {
+    fn read_video_frame(&mut self) -> Result<Tag<'a>> {
         let stream_id = self.read_character_id()?;
         let frame_num = self.read_u16()?;
-        let mut data = vec![];
-        self.input.read_to_end(&mut data)?;
+        let data = self.read_slice_to_end();
         Ok(Tag::VideoFrame(VideoFrame {
             stream_id,
             frame_num,
@@ -2874,7 +2855,7 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<Tag> {
+    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<Tag<'a>> {
         let id = self.read_character_id()?;
         let data_size = self.read_u32()? as usize;
         let deblocking = if version >= 4 {
@@ -2882,11 +2863,8 @@ impl<R: Read> Reader<R> {
         } else {
             0.0
         };
-        let mut data = vec![];
-        data.resize(data_size, 0);
-        self.input.read_exact(&mut data)?;
-        let mut alpha_data = vec![];
-        self.input.read_to_end(&mut alpha_data)?;
+        let data = self.read_slice(data_size)?;
+        let alpha_data = self.read_slice_to_end();
         Ok(Tag::DefineBitsJpeg3(DefineBitsJpeg3 {
             version,
             id,
@@ -2896,7 +2874,7 @@ impl<R: Read> Reader<R> {
         }))
     }
 
-    pub fn read_define_bits_lossless(&mut self, version: u8) -> Result<DefineBitsLossless> {
+    pub fn read_define_bits_lossless(&mut self, version: u8) -> Result<DefineBitsLossless<'a>> {
         let id = self.read_character_id()?;
         let format = match self.read_u8()? {
             3 => BitmapFormat::ColorMap8,
@@ -2911,8 +2889,7 @@ impl<R: Read> Reader<R> {
         } else {
             0
         };
-        let mut data = Vec::new();
-        self.input.read_to_end(&mut data)?;
+        let data = self.read_slice_to_end();
         Ok(DefineBitsLossless {
             version,
             id,
@@ -2946,25 +2923,41 @@ impl<R: Read> Reader<R> {
     }
 }
 
+pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
+    let mut signature = [0u8; 3];
+    input.read_exact(&mut signature)?;
+    let compression = match &signature {
+        b"FWS" => Compression::None,
+        b"CWS" => Compression::Zlib,
+        b"ZWS" => Compression::Lzma,
+        _ => return Err(Error::invalid_data("Invalid SWF")),
+    };
+    Ok(compression)
+}
+
+// pub fn read_rectangle(mut input: R) -> Result<Rectangle> {
+//     let mut bits = self.bits();
+//     let num_bits: u32 = bits.read_ubits(5)?;
+//     Ok(Rectangle {
+//         x_min: bits.read_sbits_twips(num_bits)?,
+//         x_max: bits.read_sbits_twips(num_bits)?,
+//         y_min: bits.read_sbits_twips(num_bits)?,
+//         y_max: bits.read_sbits_twips(num_bits)?,
+//     })
+// }
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::tag_code::TagCode;
     use crate::test_data;
     use std::fs::File;
-    use std::io::{Cursor, Read};
+    use std::io::Read;
     use std::vec::Vec;
 
-    fn reader(data: &[u8]) -> Reader<&[u8]> {
+    fn reader<'a>(data: &'a [u8]) -> Reader<'a> {
         let default_version = 13;
         Reader::new(data, default_version)
-    }
-
-    fn read_from_file(path: &str) -> Swf {
-        let mut file = File::open(path).unwrap();
-        let mut data = Vec::new();
-        file.read_to_end(&mut data).unwrap();
-        read_swf(&data[..]).unwrap()
     }
 
     pub fn read_tag_bytes_from_file_with_index(
@@ -2982,22 +2975,25 @@ pub mod tests {
 
         // Halfway parse the SWF file until we find the tag we're searching for.
         let swf_stream = super::read_swf_header(&data[..]).unwrap();
-        let mut reader = swf_stream.reader;
+        let data = swf_stream.data;
 
-        let mut data = Vec::new();
-        reader.input.read_to_end(&mut data).unwrap();
-        let mut cursor = Cursor::new(data);
+        let mut pos = 0;
+        let mut tag_header_length;
+        dbg!(tag_code);
         loop {
-            let pos = cursor.position();
             let (swf_tag_code, length) = {
-                let mut tag_reader = Reader::new(&mut cursor, swf_stream.header.version);
-                tag_reader.read_tag_code_and_length().unwrap()
+                let mut tag_reader = Reader::new(&data[pos..], swf_stream.header.version);
+                let ret = tag_reader.read_tag_code_and_length().unwrap();
+                tag_header_length =
+                    tag_reader.get_ref().as_ptr() as usize - (pos + data.as_ptr() as usize);
+                dbg!(pos);
+                dbg!(tag_header_length);
+                dbg!(ret.0);
+                dbg!(ret.1);
+                ret
             };
-            let tag_header_length = cursor.position() - pos;
-            let mut data = Vec::new();
-            data.resize(length + tag_header_length as usize, 0);
-            cursor.set_position(pos);
-            cursor.read_exact(&mut data[..]).unwrap();
+            let tag_data = &data[pos..pos + length + tag_header_length];
+            pos += tag_header_length + length;
             if swf_tag_code == 0 {
                 panic!("Tag not found");
             } else if swf_tag_code == tag_code as u16 {
@@ -3008,6 +3004,7 @@ pub mod tests {
                     // minimum header necessary.
                     // We want to easily write new tests by exporting SWFs from the Flash
                     // software, so rewrite with a standard header to match swf-rs output.
+                    let mut data = tag_data.to_vec();
                     if length < 0b111111 && (data[0] & 0b111111) == 0b111111 {
                         let mut tag_data = Vec::with_capacity(length + 2);
                         tag_data.extend_from_slice(&data[0..2]);
@@ -3029,6 +3026,11 @@ pub mod tests {
 
     #[test]
     fn read_swfs() {
+        fn read_from_file(path: &str) -> SwfStream {
+            let data = std::fs::read(path).unwrap();
+            read_swf_header(&data[..]).unwrap()
+        }
+
         assert_eq!(
             read_from_file("tests/swfs/uncompressed.swf")
                 .header
@@ -3050,7 +3052,7 @@ pub mod tests {
     #[test]
     fn read_invalid_swf() {
         let junk = [0u8; 128];
-        let result = read_swf(&junk[..]);
+        let result = read_swf_header(&junk[..]);
         // TODO: Verify correct error.
         assert!(result.is_err());
     }
@@ -3058,18 +3060,18 @@ pub mod tests {
     #[test]
     fn read_compression_type() {
         assert_eq!(
-            Reader::read_compression_type(&b"FWS"[..]).unwrap(),
+            super::read_compression_type(&b"FWS"[..]).unwrap(),
             Compression::None
         );
         assert_eq!(
-            Reader::read_compression_type(&b"CWS"[..]).unwrap(),
+            super::read_compression_type(&b"CWS"[..]).unwrap(),
             Compression::Zlib
         );
         assert_eq!(
-            Reader::read_compression_type(&b"ZWS"[..]).unwrap(),
+            super::read_compression_type(&b"ZWS"[..]).unwrap(),
             Compression::Lzma
         );
-        assert!(Reader::read_compression_type(&b"ABC"[..]).is_err());
+        assert!(super::read_compression_type(&b"ABC"[..]).is_err());
     }
 
     #[test]
@@ -3253,16 +3255,16 @@ pub mod tests {
     }
 
     #[test]
-    fn read_c_string() {
+    fn read_string() {
         {
             let buf = b"Testing\0";
             let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_c_string().unwrap(), "Testing");
+            assert_eq!(reader.read_string().unwrap(), "Testing");
         }
         {
             let buf = "12🤖12\0".as_bytes();
             let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_c_string().unwrap(), "12🤖12");
+            assert_eq!(reader.read_string().unwrap(), "12🤖12");
         }
     }
 

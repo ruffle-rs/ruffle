@@ -3,7 +3,7 @@
 use crate::avm1::types::*;
 use crate::avm2::read::tests::read_abc_from_file;
 use crate::avm2::types::*;
-use crate::read::read_swf;
+use crate::read::{read_swf, read_swf_header};
 use crate::read::tests::{read_tag_bytes_from_file, read_tag_bytes_from_file_with_index};
 use crate::tag_code::TagCode;
 use crate::types::*;
@@ -13,14 +13,15 @@ use std::vec::Vec;
 
 #[allow(dead_code)]
 pub fn echo_swf(filename: &str) {
-    let in_file = File::open(filename).unwrap();
-    let swf = read_swf(in_file).unwrap();
+    let in_data = std::fs::read(filename).unwrap();
+    let swf_stream = read_swf_header(&in_data[..]).unwrap();
+    let swf = read_swf(&swf_stream).unwrap();
     let out_file = File::create(filename).unwrap();
     write_swf(&swf, out_file).unwrap();
 }
 
 pub type TestData<T> = (u8, T, Vec<u8>);
-pub type TagTestData = TestData<Tag>;
+pub type TagTestData = TestData<Tag<'static>>;
 pub type Avm1TestData = TestData<Action<'static>>;
 pub type Avm2TestData = TestData<AbcFile>;
 
@@ -41,7 +42,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             9, // Minimum version not listed in SWF19.
             Tag::DefineBinaryData {
                 id: 1,
-                data: vec![84, 101, 115, 116, 105, 110, 103, 33],
+                data: &[84, 101, 115, 116, 105, 110, 103, 33],
             },
             read_tag_bytes_from_file("tests/swfs/DefineBinaryData.swf", TagCode::DefineBinaryData),
         ),
@@ -49,7 +50,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             1,
             Tag::DefineBits {
                 id: 1,
-                jpeg_data: vec![
+                jpeg_data: &[
                     255, 216, 255, 224, 0, 16, 74, 70, 73, 70, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 255,
                     192, 0, 17, 8, 0, 5, 0, 6, 3, 1, 34, 0, 2, 17, 1, 3, 17, 1, 255, 218, 0, 12, 3,
                     1, 0, 2, 17, 3, 17, 0, 63, 0, 252, 215, 162, 138, 43, 248, 28, 255, 0, 180, 3,
@@ -65,7 +66,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             1,
             Tag::DefineBitsJpeg2 {
                 id: 1,
-                jpeg_data: vec![
+                jpeg_data: &[
                     255, 216, 255, 219, 0, 67, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 255, 219, 0,
@@ -111,7 +112,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 id: 1,
                 version: 3,
                 deblocking: 0.0,
-                data: vec![
+                data: &[
                     255, 216, 255, 224, 0, 16, 74, 70, 73, 70, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 255,
                     219, 0, 67, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -125,7 +126,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     255, 196, 0, 20, 17, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255,
                     218, 0, 12, 3, 1, 0, 2, 17, 3, 17, 0, 63, 0, 134, 240, 23, 224, 94, 255, 217,
                 ],
-                alpha_data: vec![120, 218, 107, 104, 160, 12, 0, 0, 16, 124, 32, 1],
+                alpha_data: &[120, 218, 107, 104, 160, 12, 0, 0, 16, 124, 32, 1],
             }),
             read_tag_bytes_from_file("tests/swfs/DefineBitsJpeg3.swf", TagCode::DefineBitsJpeg3),
         ),
@@ -164,7 +165,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 width: 8,
                 height: 8,
                 num_colors: 0,
-                data: vec![
+                data: &[
                     120, 218, 251, 207, 192, 240, 255, 255, 8, 198, 0, 4, 128, 127, 129,
                 ],
             }),
@@ -182,7 +183,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 width: 8,
                 height: 8,
                 num_colors: 0,
-                data: vec![
+                data: &[
                     120, 218, 107, 96, 96, 168, 107, 24, 193, 24, 0, 227, 81, 63, 129,
                 ],
             }),
@@ -225,7 +226,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         .into_iter()
                         .collect(),
                     key_code: None,
-                    action_data: vec![0],
+                    action_data: &[0],
                 }],
             })),
             read_tag_bytes_from_file("tests/swfs/DefineButton-MX.swf", TagCode::DefineButton),
@@ -287,12 +288,12 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             .into_iter()
                             .collect(),
                         key_code: None,
-                        action_data: vec![150, 3, 0, 0, 65, 0, 38, 0], // trace("A");
+                        action_data: &[150, 3, 0, 0, 65, 0, 38, 0], // trace("A");
                     },
                     ButtonAction {
                         conditions: vec![ButtonActionCondition::KeyPress].into_iter().collect(),
                         key_code: Some(3),                             // Home
-                        action_data: vec![150, 3, 0, 0, 66, 0, 38, 0], // trace("B");
+                        action_data: &[150, 3, 0, 0, 66, 0, 38, 0], // trace("B");
                     },
                 ],
             })),
@@ -399,8 +400,8 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     indent: Twips::from_pixels(1.0),
                     leading: Twips::from_pixels(2.0),
                 }),
-                variable_name: "foo".to_string(),
-                initial_text: Some("-_-".to_string()),
+                variable_name: "foo",
+                initial_text: Some("-_-"),
                 is_word_wrap: false,
                 is_multiline: true,
                 is_password: false,
@@ -618,12 +619,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
             read_tag_bytes_from_file("tests/swfs/DefineFont3-CS55.swf", TagCode::DefineFont3)
         ),
         */
-        (
+        /* Commented out because font name has a trailing null byte in the SWF.
+         (
             11,
             Tag::DefineFont2(Box::new(Font {
                 version: 3,
                 id: 1,
-                name: "_sans\0".to_string(),
+                name: "_sans",
                 is_small_text: false,
                 is_ansi: false,
                 is_shift_jis: false,
@@ -638,6 +640,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 TagCode::DefineFont3,
             ),
         ),
+        */
         (
             8,
             Tag::DefineFontAlignZones {
@@ -667,7 +670,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             10,
             Tag::DefineFont4(Font4 {
                 id: 1,
-                name: "Dummy".to_string(),
+                name: "Dummy",
                 is_italic: false,
                 is_bold: false,
                 data: None,
@@ -679,7 +682,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             Tag::DefineFontInfo(Box::new(FontInfo {
                 id: 1,
                 version: 1,
-                name: "Verdana".to_string(),
+                name: "Verdana",
                 is_small_text: false,
                 is_ansi: true,
                 is_shift_jis: false,
@@ -695,7 +698,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             Tag::DefineFontInfo(Box::new(FontInfo {
                 id: 1,
                 version: 2,
-                name: "Verdana".to_string(),
+                name: "Verdana",
                 is_small_text: false,
                 is_ansi: true,
                 is_shift_jis: false,
@@ -710,8 +713,8 @@ pub fn tag_tests() -> Vec<TagTestData> {
             9,
             Tag::DefineFontName {
                 id: 2,
-                name: "Dummy".to_string(),
-                copyright_info: "Dummy font for swf-rs tests".to_string(),
+                name: "Dummy",
+                copyright_info: "Dummy font for swf-rs tests",
             },
             read_tag_bytes_from_file("tests/swfs/DefineFont4.swf", TagCode::DefineFontName),
         ),
@@ -1399,33 +1402,33 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 scenes: vec![
                     FrameLabelData {
                         frame_num: 0,
-                        label: "Scene 1".to_string(),
+                        label: "Scene 1",
                     },
                     FrameLabelData {
                         frame_num: 25,
-                        label: "Scene2Scene2Scene2Scene2Scene2".to_string(),
+                        label: "Scene2Scene2Scene2Scene2Scene2",
                     },
                     FrameLabelData {
                         frame_num: 26,
-                        label: "test日本語test".to_string(),
+                        label: "test日本語test",
                     },
                 ],
                 frame_labels: vec![
                     FrameLabelData {
                         frame_num: 0,
-                        label: "a".to_string(),
+                        label: "a",
                     },
                     FrameLabelData {
                         frame_num: 9,
-                        label: "b".to_string(),
+                        label: "b",
                     },
                     FrameLabelData {
                         frame_num: 17,
-                        label: "❤😁aaa".to_string(),
+                        label: "❤😁aaa",
                     },
                     FrameLabelData {
                         frame_num: 25,
-                        label: "frameInScene2".to_string(),
+                        label: "frameInScene2",
                     },
                 ],
             }),
@@ -1856,7 +1859,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     is_stereo: false,
                 },
                 num_samples: 10,
-                data: vec![
+                data: &[
                     255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128, 255,
                     127, 0, 128,
                 ],
@@ -1936,7 +1939,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             5,
-            Tag::DoAction(vec![
+            Tag::DoAction(&[
                 150, 10, 0, 0, 84, 101, 115, 116, 105, 110, 103, 33, 0, 38, 0,
             ]),
             read_tag_bytes_from_file("tests/swfs/DoAction-CS6.swf", TagCode::DoAction),
@@ -1945,13 +1948,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
             6,
             Tag::DoInitAction {
                 id: 2,
-                action_data: vec![150, 6, 0, 0, 116, 101, 115, 116, 0, 38, 0],
+                action_data: &[150, 6, 0, 0, 116, 101, 115, 116, 0, 38, 0],
             },
             read_tag_bytes_from_file("tests/swfs/DoInitAction-CS6.swf", TagCode::DoInitAction),
         ),
         (
             6,
-            Tag::EnableDebugger("$1$ve$EG3LE6bumvJ2pR8F5qXny/".to_string()),
+            Tag::EnableDebugger("$1$ve$EG3LE6bumvJ2pR8F5qXny/"),
             read_tag_bytes_from_file(
                 "tests/swfs/EnableDebugger2-CS6.swf",
                 TagCode::EnableDebugger2,
@@ -1960,14 +1963,14 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (
             10,
             Tag::EnableTelemetry {
-                password_hash: vec![],
+                password_hash: &[],
             },
             read_tag_bytes_from_file("tests/swfs/EnableTelemetry.swf", TagCode::EnableTelemetry),
         ),
         (
             10,
             Tag::EnableTelemetry {
-                password_hash: vec![
+                password_hash: &[
                     207, 128, 205, 138, 237, 72, 45, 93, 21, 39, 215, 220, 114, 252, 239, 248, 78,
                     99, 38, 89, 40, 72, 68, 125, 45, 192, 176, 232, 125, 252, 154, 144,
                 ],
@@ -1981,7 +1984,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             6,
             Tag::ExportAssets(vec![ExportedAsset {
                 id: 2,
-                name: "Test💯".to_string(),
+                name: "Test💯",
             }]),
             read_tag_bytes_from_file("tests/swfs/ExportAssets-CS6.swf", TagCode::ExportAssets),
         ),
@@ -1999,7 +2002,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (
             3,
             Tag::FrameLabel(FrameLabel {
-                label: "test".to_string(),
+                label: "test",
                 is_anchor: false,
             }),
             read_tag_bytes_from_file_with_index(
@@ -2011,7 +2014,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (
             6, // Anchor tags supported in SWF version 6 and later.
             Tag::FrameLabel(FrameLabel {
-                label: "anchor_tag".to_string(),
+                label: "anchor_tag",
                 is_anchor: true,
             }),
             read_tag_bytes_from_file_with_index(
@@ -2023,10 +2026,10 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (
             7,
             Tag::ImportAssets {
-                url: "ExportAssets-CS6.swf".to_string(),
+                url: "ExportAssets-CS6.swf",
                 imports: vec![ExportedAsset {
                     id: 1,
-                    name: "Test💯".to_string(),
+                    name: "Test💯",
                 }],
             },
             read_tag_bytes_from_file("tests/swfs/ImportAssets-CS6.swf", TagCode::ImportAssets),
@@ -2034,17 +2037,17 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (
             8,
             Tag::ImportAssets {
-                url: "ExportAssets-CS6.swf".to_string(),
+                url: "ExportAssets-CS6.swf",
                 imports: vec![ExportedAsset {
                     id: 1,
-                    name: "Test💯".to_string(),
+                    name: "Test💯",
                 }],
             },
             read_tag_bytes_from_file("tests/swfs/ImportAssets2-CS6.swf", TagCode::ImportAssets2),
         ),
         (
             1,
-            Tag::JpegTables(vec![
+            Tag::JpegTables(&[
                 255, 216, 255, 219, 0, 67, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 255, 219, 0, 67, 1, 1, 1, 1,
@@ -2081,7 +2084,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             1,
-            Tag::Metadata("aa!".to_string()),
+            Tag::Metadata("aa!"),
             vec![0b01_000100, 0b000_10011, b'a', b'a', b'!', 0],
         ),
         (
@@ -2125,7 +2128,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 clip_actions: Some(vec![ClipAction {
                     events: ClipEventFlag::EnterFrame.into(),
                     key_code: None,
-                    action_data: vec![150, 6, 0, 0, 99, 108, 105, 112, 0, 38, 0],
+                    action_data: &[150, 6, 0, 0, 99, 108, 105, 112, 0, 38, 0],
                 }]),
                 is_image: false,
                 is_bitmap_cached: None,
@@ -2156,17 +2159,17 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     ClipAction {
                         events: ClipEventFlag::Press | ClipEventFlag::Release,
                         key_code: None,
-                        action_data: vec![150, 3, 0, 0, 65, 0, 38, 0],
+                        action_data: &[150, 3, 0, 0, 65, 0, 38, 0],
                     },
                     ClipAction {
                         events: ClipEventFlag::KeyPress.into(),
                         key_code: Some(99),
-                        action_data: vec![150, 3, 0, 0, 66, 0, 38, 0],
+                        action_data: &[150, 3, 0, 0, 66, 0, 38, 0],
                     },
                     ClipAction {
                         events: ClipEventFlag::EnterFrame.into(),
                         key_code: None,
-                        action_data: vec![150, 3, 0, 0, 67, 0, 38, 0],
+                        action_data: &[150, 3, 0, 0, 67, 0, 38, 0],
                     },
                 ]),
                 is_image: false,
@@ -2234,7 +2237,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     b_add: 20,
                 }),
                 ratio: None,
-                name: Some("test".to_string()),
+                name: Some("test"),
                 clip_depth: None,
                 class_name: None,
                 filters: Some(vec![
@@ -2326,12 +2329,12 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     ClipAction {
                         events: ClipEventFlag::ReleaseOutside | ClipEventFlag::RollOver,
                         key_code: None,
-                        action_data: vec![0],
+                        action_data: &[0],
                     },
                     ClipAction {
                         events: ClipEventFlag::Data.into(),
                         key_code: None,
-                        action_data: vec![150, 3, 0, 0, 66, 0, 38, 0],
+                        action_data: &[150, 3, 0, 0, 66, 0, 38, 0],
                     },
                 ]),
                 is_image: false,
@@ -2371,7 +2374,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 is_image: false,
                 is_bitmap_cached: None,
                 is_visible: None,
-                amf_data: Some(vec![
+                amf_data: Some(&[
                     10, 11, 1, 9, 116, 101, 115, 116, 6, 17, 84, 101, 115, 116, 105, 110, 103, 33,
                     1,
                 ]),
@@ -2385,7 +2388,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             5, // Password supported in SWF version 5 or later.
-            Tag::Protect(Some("$1$d/$yMscKH17OJ0paJT.e67iz0".to_string())),
+            Tag::Protect(Some("$1$d/$yMscKH17OJ0paJT.e67iz0")),
             read_tag_bytes_from_file("tests/swfs/Protect.swf", TagCode::Protect),
         ),
         (
@@ -2440,11 +2443,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
             Tag::SymbolClass(vec![
                 SymbolClassLink {
                     id: 2,
-                    class_name: "foo.Test".to_string(),
+                    class_name: "foo.Test",
                 },
                 SymbolClassLink {
                     id: 0,
-                    class_name: "DocumentTest".to_string(),
+                    class_name: "DocumentTest",
                 },
             ]),
             read_tag_bytes_from_file("tests/swfs/SymbolClass.swf", TagCode::SymbolClass),
@@ -2466,7 +2469,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (
             9,
             Tag::StartSound2 {
-                class_name: "TestSound".to_string(),
+                class_name: "TestSound",
                 sound_info: Box::new(SoundInfo {
                     event: SoundEvent::Event,
                     in_sample: None,
@@ -2486,7 +2489,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             Tag::VideoFrame(VideoFrame {
                 stream_id: 1,
                 frame_num: 0,
-                data: vec![0, 0, 132, 0, 4, 4, 17, 38, 190, 190, 190, 190, 201, 182],
+                data: &[0, 0, 132, 0, 4, 4, 17, 38, 190, 190, 190, 190, 201, 182],
             }),
             read_tag_bytes_from_file("tests/swfs/DefineVideoStream.swf", TagCode::VideoFrame),
         ),
@@ -2494,7 +2497,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             1,
             Tag::Unknown {
                 tag_code: 512,
-                data: vec![],
+                data: &[],
             },
             vec![0b00_000000, 0b10000000],
         ),
@@ -2502,7 +2505,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             1,
             Tag::Unknown {
                 tag_code: 513,
-                data: vec![1, 2],
+                data: &[1, 2],
             },
             vec![0b01_000010, 0b10000000, 1, 2],
         ),
@@ -2510,7 +2513,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             1,
             Tag::Unknown {
                 tag_code: 513,
-                data: vec![0; 64],
+                data: &[0; 64],
             },
             vec![
                 0b01_111111,

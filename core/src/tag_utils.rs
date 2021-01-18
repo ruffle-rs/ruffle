@@ -1,14 +1,13 @@
 use crate::backend::navigator::url_from_relative_path;
 use crate::property_map::PropertyMap;
 use gc_arena::Collect;
-use std::convert::TryInto;
 use std::path::Path;
 use std::sync::Arc;
 use swf::{Header, TagCode};
 
 pub type Error = Box<dyn std::error::Error>;
 pub type DecodeResult = Result<(), Error>;
-pub type SwfStream<R> = swf::read::Reader<std::io::Cursor<R>>;
+pub type SwfStream<'a> = swf::read::Reader<'a>;
 
 /// An open, fully parsed SWF movie ready to play back, either in a Player or a
 /// MovieClip.
@@ -75,21 +74,9 @@ impl SwfMovie {
     /// Construct a movie based on the contents of the SWF datastream.
     pub fn from_data(swf_data: &[u8], url: Option<String>) -> Result<Self, Error> {
         let swf_stream = swf::read::read_swf_header(&swf_data[..])?;
-        let header = swf_stream.header;
-        let mut reader = swf_stream.reader;
-
-        // Decompress the entire SWF in memory.
-        // Sometimes SWFs will have an incorrectly compressed stream,
-        // but will otherwise decompress fine up to the End tag.
-        // So just warn on this case and try to continue gracefully.
-        let mut data = Vec::with_capacity(header.uncompressed_length.try_into().unwrap());
-        if let Err(e) = reader.get_mut().read_to_end(&mut data) {
-            return Err(format!("Error decompressing SWF, may be corrupt: {}", e).into());
-        }
-
         Ok(Self {
-            header,
-            data,
+            header: swf_stream.header,
+            data: swf_stream.data,
             url,
             parameters: PropertyMap::new(),
         })
@@ -169,20 +156,6 @@ impl SwfSlice {
         }
     }
 
-    /// Construct a new slice with a given dataset only.
-    ///
-    /// This is used primarily for converting owned data back into a slice: we
-    /// reattach the SWF data to a fresh movie and return a new slice into it.
-    pub fn owned_subslice(&self, data: Vec<u8>, source: &SwfMovie) -> Self {
-        let len = data.len();
-
-        Self {
-            movie: Arc::new(self.movie.from_movie_and_subdata(data, source)),
-            start: 0,
-            end: len,
-        }
-    }
-
     /// Construct a new SwfSlice from a regular slice.
     ///
     /// This function returns None if the given slice is not a subslice of the
@@ -232,16 +205,15 @@ impl SwfSlice {
     /// If the resulting slice would be outside the bounds of the underlying
     /// movie, or the given reader refers to a different underlying movie, this
     /// function returns None.
-    pub fn resize_to_reader(&self, reader: &mut SwfStream<&[u8]>, size: usize) -> Option<SwfSlice> {
-        if self.movie.data().as_ptr() as usize <= reader.get_ref().get_ref().as_ptr() as usize
-            && (reader.get_ref().get_ref().as_ptr() as usize)
+    pub fn resize_to_reader(&self, reader: &mut SwfStream<'_>, size: usize) -> Option<SwfSlice> {
+        if self.movie.data().as_ptr() as usize <= reader.get_ref().as_ptr() as usize
+            && (reader.get_ref().as_ptr() as usize)
                 < self.movie.data().as_ptr() as usize + self.movie.data().len()
         {
             let outer_offset =
-                reader.get_ref().get_ref().as_ptr() as usize - self.movie.data().as_ptr() as usize;
-            let inner_offset = reader.get_ref().position() as usize;
-            let new_start = outer_offset + inner_offset;
-            let new_end = outer_offset + inner_offset + size;
+                reader.get_ref().as_ptr() as usize - self.movie.data().as_ptr() as usize;
+            let new_start = outer_offset;
+            let new_end = outer_offset + size;
 
             let len = self.movie.data().len();
 
@@ -289,29 +261,26 @@ impl SwfSlice {
     /// Construct a reader for this slice.
     ///
     /// The `from` parameter is the offset to start reading the slice from.
-    pub fn read_from(&self, from: u64) -> swf::read::Reader<std::io::Cursor<&[u8]>> {
-        let mut cursor = std::io::Cursor::new(self.data());
-        cursor.set_position(from);
-        swf::read::Reader::new(cursor, self.movie.version())
+    pub fn read_from(&self, from: u64) -> swf::read::Reader<'_> {
+        swf::read::Reader::new(&self.data()[from as usize..], self.movie.version())
     }
 }
 
-pub fn decode_tags<'a, R, F>(
-    reader: &'a mut SwfStream<R>,
+pub fn decode_tags<'a, F>(
+    reader: &mut SwfStream<'a>,
     mut tag_callback: F,
     stop_tag: TagCode,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
-    R: 'a + AsRef<[u8]>,
-    F: FnMut(&mut SwfStream<R>, TagCode, usize) -> DecodeResult,
+    F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode, usize) -> DecodeResult,
 {
-    use std::io::{Seek, SeekFrom};
     loop {
         let (tag_code, tag_len) = reader.read_tag_code_and_length()?;
-        let end_pos = reader.get_ref().position() + tag_len as u64;
-
         let tag = TagCode::from_u16(tag_code);
+        let tag_slice = &reader.get_ref()[..tag_len];
+        let end_slice = &reader.get_ref()[tag_len..];
         if let Some(tag) = tag {
+            *reader.get_mut() = tag_slice;
             let result = tag_callback(reader, tag, tag_len);
 
             if let Err(e) = result {
@@ -319,14 +288,14 @@ where
             }
 
             if stop_tag == tag {
-                reader.get_mut().seek(SeekFrom::Start(end_pos))?;
+                *reader.get_mut() = end_slice;
                 break;
             }
         } else {
             log::warn!("Unknown tag code: {:?}", tag_code);
         }
 
-        reader.get_mut().seek(SeekFrom::Start(end_pos))?;
+        *reader.get_mut() = end_slice;
     }
 
     Ok(())

@@ -212,8 +212,12 @@ pub trait SeekableDecoder: Decoder {
 /// `StreamTagReader` reads through the SWF tag data of a `MovieClip`, extracting
 /// audio data from the `SoundStreamBlock` tags. It can be used as an `Iterator` that
 /// will return consecutive slices of the underlying audio data.
+/// `StreamTagReader` reads through the SWF tag data of a `MovieClip`, extracting
+/// audio data from the `SoundStreamBlock` tags. It can be used as an `Iterator` that
+/// will return consecutive slices of the underlying audio data.
 struct StreamTagReader {
-    reader: swf::read::Reader<Cursor<SwfSlice>>,
+    swf_data: SwfSlice,
+    pos: usize,
     current_frame: u16,
     current_audio_data: SwfSlice,
     compression: AudioCompression,
@@ -224,10 +228,10 @@ impl StreamTagReader {
     /// `swf_data` should be the tag data of a MovieClip.
     fn new(compression: AudioCompression, swf_data: SwfSlice) -> Self {
         let current_audio_data = SwfSlice::empty(swf_data.movie.clone());
-        let version = swf_data.version();
         Self {
+            swf_data,
+            pos: 0,
             compression,
-            reader: swf::read::Reader::new(Cursor::new(swf_data), version),
             current_frame: 1,
             current_audio_data,
         }
@@ -250,40 +254,32 @@ impl Iterator for StreamTagReader {
             0
         };
 
-        let tag_callback =
-            |reader: &mut swf::read::Reader<Cursor<SwfSlice>>, tag_code, tag_len| match tag_code {
-                TagCode::ShowFrame => {
-                    *current_frame += 1;
-                    Ok(())
-                }
-                TagCode::SoundStreamBlock => {
-                    // TODO: Implement index ops on `SwfSlice`.
-                    let pos = reader.get_ref().position() as usize;
-                    let pos = reader.get_ref().get_ref().start + pos;
-                    found = true;
-                    if tag_len >= skip_len {
-                        *audio_data = SwfSlice {
-                            movie: std::sync::Arc::clone(&reader.get_ref().get_ref().movie),
-                            start: pos + skip_len,
-                            end: pos + tag_len,
-                        };
-                    } else {
-                        *audio_data = SwfSlice {
-                            movie: std::sync::Arc::clone(&reader.get_ref().get_ref().movie),
-                            start: pos,
-                            end: pos + tag_len,
-                        };
-                    };
-                    Ok(())
-                }
-                _ => Ok(()),
-            };
+        let swf_data = &self.swf_data;
+        let tag_callback = |reader: &mut swf::read::Reader<'_>, tag_code, tag_len| match tag_code {
+            TagCode::ShowFrame => {
+                *current_frame += 1;
+                Ok(())
+            }
+            TagCode::SoundStreamBlock => {
+                // TODO: Implement index ops on `SwfSlice`.
+                //let pos = reader.get_ref().as_ptr() as usize - swf_data.as_ref().as_ptr() as usize;
+                found = true;
+                if tag_len >= skip_len {
+                    *audio_data = swf_data
+                        .to_subslice(&reader.get_ref()[skip_len..tag_len])
+                        .unwrap()
+                } else {
+                    *audio_data = swf_data.to_subslice(&reader.get_ref()[..tag_len]).unwrap()
+                };
+                Ok(())
+            }
+            _ => Ok(()),
+        };
 
-        let _ = crate::tag_utils::decode_tags(
-            &mut self.reader,
-            tag_callback,
-            TagCode::SoundStreamBlock,
-        );
+        let version = swf_data.version();
+        let mut reader = swf::read::Reader::new(&self.swf_data.as_ref()[self.pos..], version);
+        let _ = crate::tag_utils::decode_tags(&mut reader, tag_callback, TagCode::SoundStreamBlock);
+        self.pos = reader.get_ref().as_ptr() as usize - swf_data.as_ref().as_ptr() as usize;
 
         if found {
             Some(self.current_audio_data.clone())

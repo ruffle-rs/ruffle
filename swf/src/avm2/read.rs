@@ -873,15 +873,12 @@ pub mod tests {
 
     pub fn read_abc_from_file(path: &str) -> Vec<u8> {
         use crate::types::Tag;
-        use std::fs::File;
-
-        let mut file = File::open(path).unwrap();
-        let mut data = Vec::new();
-        file.read_to_end(&mut data).unwrap();
-        let swf = crate::read_swf(&data[..]).unwrap();
+        let data = std::fs::read(path).unwrap();
+        let swf_stream = crate::read_swf_header(&data[..]).unwrap();
+        let swf = crate::read_swf(&swf_stream).unwrap();
         for tag in swf.tags {
             if let Tag::DoAbc(do_abc) = tag {
-                return do_abc.data;
+                return do_abc.data.to_vec();
             }
         }
         panic!("ABC tag not found in {}", path);
