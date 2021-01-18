@@ -11,6 +11,7 @@ description = "Read and write the Adobe Flash SWF file format."
 
 [dependencies]
 byteorder = "1.4"
+encoding_rs = "0.8.26"
 enumset = "1.0.1"
 num-derive = "0.3"
 num-traits = "0.2"

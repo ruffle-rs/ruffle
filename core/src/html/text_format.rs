@@ -198,7 +198,7 @@ impl TextFormat {
         let font = et.font_id.and_then(|fid| movie_library.get_font(fid));
         let font_class = et
             .font_class_name
-            .map(str::to_string)
+            .map(|s| s.to_string_lossy())
             .or_else(|| font.map(|font| font.descriptor().class().to_string()))
             .unwrap_or_else(|| "Times New Roman".to_string());
         let align = et.layout.clone().map(|l| l.align);

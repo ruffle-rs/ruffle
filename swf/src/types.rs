@@ -3,14 +3,13 @@
 //! These structures are documented in the Adobe SWF File Format Specification
 //! version 19 (henceforth SWF19):
 //! https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf
+use crate::string::SwfStr;
 use enumset::{EnumSet, EnumSetType};
 use std::collections::HashSet;
 
 mod matrix;
 
 pub use matrix::Matrix;
-
-pub type SwfStr<'a> = &'a str;
 
 /// A complete header and tags in the SWF file.
 /// This is returned by the `swf::read_swf` convenience method.

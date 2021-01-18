@@ -6,8 +6,11 @@
     clippy::unreadable_literal
 )]
 
-use crate::error::{Error, Result};
-use crate::types::*;
+use crate::{
+    error::{Error, Result},
+    string::SwfStr,
+    types::*,
+};
 use byteorder::{LittleEndian, ReadBytesExt};
 use enumset::EnumSet;
 use std::collections::HashSet;
@@ -246,20 +249,6 @@ pub trait SwfRead<R: Read> {
         num.swap(3, 7);
         (&num[..]).read_f64::<LittleEndian>()
     }
-
-    fn read_c_string(&mut self) -> Result<String> {
-        let mut bytes = Vec::new();
-        loop {
-            let byte = self.read_u8()?;
-            if byte == 0 {
-                break;
-            }
-            bytes.push(byte)
-        }
-        // TODO: There is probably a better way to do this.
-        // TODO: Verify ANSI for SWF 5 and earlier.
-        String::from_utf8(bytes).map_err(|_| Error::invalid_data("Invalid string data"))
-    }
 }
 
 pub struct BitReader<'a, 'b> {
@@ -324,6 +313,7 @@ impl<'a, 'b> BitReader<'a, 'b> {
 pub struct Reader<'a> {
     input: &'a [u8],
     version: u8,
+    encoding: &'static encoding_rs::Encoding,
 }
 
 impl<'a> SwfRead<&'a [u8]> for Reader<'a> {
@@ -366,7 +356,16 @@ impl<'a> SwfRead<&'a [u8]> for Reader<'a> {
 
 impl<'a> Reader<'a> {
     pub fn new(input: &'a [u8], version: u8) -> Reader<'a> {
-        Reader { input, version }
+        Reader {
+            input,
+            version,
+            encoding: if version > 5 {
+                encoding_rs::UTF_8
+            } else {
+                // TODO: Allow configurable encoding
+                encoding_rs::WINDOWS_1252
+            },
+        }
     }
 
     pub fn version(&self) -> u8 {
@@ -376,6 +375,13 @@ impl<'a> Reader<'a> {
     /// Returns a reference to the underlying `Reader`.
     pub fn get_ref(&self) -> &'a [u8] {
         self.input
+    }
+
+    /// Returns a mutable reference to the underlying `Reader`.
+    ///
+    /// Reading from this reference is not recommended.
+    pub fn get_mut(&mut self) -> &mut &'a [u8] {
+        &mut self.input
     }
 
     fn bits<'b>(&'b mut self) -> BitReader<'a, 'b> {
@@ -406,7 +412,7 @@ impl<'a> Reader<'a> {
         slice
     }
 
-    fn read_string(&mut self) -> io::Result<SwfStr<'a>> {
+    pub fn read_string(&mut self) -> io::Result<SwfStr<'a>> {
         let mut pos = 0;
         loop {
             let byte = *self.input.get(pos).ok_or(io::Error::new(
@@ -418,26 +424,17 @@ impl<'a> Reader<'a> {
             }
             pos += 1;
         }
-        // TODO: There is probably a better way to do this.
-        // TODO: Verify ANSI for SWF 5 and earlier.
-        let s = unsafe { std::str::from_utf8_unchecked(&self.input.get_unchecked(..pos)) };
+
+        let s = unsafe {
+            let slice = self.input.get_unchecked(..pos);
+            SwfStr::from_bytes_unchecked(slice, self.encoding)
+        };
         self.input = &self.input[pos + 1..];
         Ok(s)
     }
 
     fn read_string_with_len(&mut self, len: usize) -> io::Result<SwfStr<'a>> {
-        // TODO: There is probably a better way to do this.
-        // TODO: Verify ANSI for SWF 5 and earlier.
-        let mut s = unsafe { std::str::from_utf8_unchecked(&self.read_slice(len)?) };
-        s = s.trim_end_matches('\0');
-        Ok(s)
-    }
-
-    /// Returns a mutable reference to the underlying `Reader`.
-    ///
-    /// Reading from this reference is not recommended.
-    pub fn get_mut(&mut self) -> &mut &'a [u8] {
-        &mut self.input
+        Ok(SwfStr::from_bytes(&self.read_slice(len)?, self.encoding))
     }
 
     /// Reads the next SWF tag from the stream.

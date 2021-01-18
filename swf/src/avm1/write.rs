@@ -46,7 +46,7 @@ impl<W: Write> Writer<W> {
                 self.write_action_header(OpCode::ConstantPool, len)?;
                 self.write_u16(constants.len() as u16)?;
                 for constant in constants {
-                    self.write_c_string(constant)?;
+                    self.write_string(*constant)?;
                 }
             }
             Action::Decrement => self.write_action_header(OpCode::Decrement, 0)?,
@@ -60,10 +60,10 @@ impl<W: Write> Writer<W> {
                 let len =
                     name.len() + 1 + 2 + params.iter().map(|p| p.len() + 1).sum::<usize>() + 2;
                 self.write_action_header(OpCode::DefineFunction, len)?;
-                self.write_c_string(name)?;
+                self.write_string(*name)?;
                 self.write_u16(params.len() as u16)?;
                 for param in params {
-                    self.write_c_string(param)?;
+                    self.write_string(*param)?;
                 }
                 self.write_u16(actions.len() as u16)?;
                 self.inner.write_all(actions)?;
@@ -79,7 +79,7 @@ impl<W: Write> Writer<W> {
                         .sum::<usize>()
                     + 4;
                 self.write_action_header(OpCode::DefineFunction2, len)?;
-                self.write_c_string(&function.name)?;
+                self.write_string(function.name)?;
                 self.write_u16(function.params.len() as u16)?;
                 self.write_u8(function.register_count)?;
                 let flags = if function.preload_global {
@@ -108,7 +108,7 @@ impl<W: Write> Writer<W> {
                     } else {
                         0
                     })?;
-                    self.write_c_string(&param.name)?;
+                    self.write_string(param.name)?;
                 }
                 self.write_u16(function.actions.len() as u16)?;
                 self.inner.write_all(&function.actions)?;
@@ -132,8 +132,8 @@ impl<W: Write> Writer<W> {
                 ref target,
             } => {
                 self.write_action_header(OpCode::GetUrl, url.len() + target.len() + 2)?;
-                self.write_c_string(url)?;
-                self.write_c_string(target)?;
+                self.write_string(*url)?;
+                self.write_string(*target)?;
             }
             Action::GetUrl2 {
                 send_vars_method,
@@ -169,7 +169,7 @@ impl<W: Write> Writer<W> {
             }
             Action::GotoLabel(ref label) => {
                 self.write_action_header(OpCode::GotoLabel, label.len() + 1)?;
-                self.write_c_string(label)?;
+                self.write_string(*label)?;
             }
             Action::Greater => self.write_action_header(OpCode::Greater, 0)?,
             Action::If { offset } => {
@@ -232,7 +232,7 @@ impl<W: Write> Writer<W> {
             Action::SetProperty => self.write_action_header(OpCode::SetProperty, 0)?,
             Action::SetTarget(ref target) => {
                 self.write_action_header(OpCode::SetTarget, target.len() + 1)?;
-                self.write_c_string(target)?;
+                self.write_string(*target)?;
             }
             Action::SetTarget2 => self.write_action_header(OpCode::SetTarget2, 0)?,
             Action::SetVariable => self.write_action_header(OpCode::SetVariable, 0)?,
@@ -300,7 +300,7 @@ impl<W: Write> Writer<W> {
                 self.write_u16(catch_length as u16)?;
                 self.write_u16(finally_length as u16)?;
                 match try_block.catch {
-                    Some((CatchVar::Var(ref name), _)) => self.write_c_string(name)?,
+                    Some((CatchVar::Var(name), _)) => self.write_string(name)?,
                     Some((CatchVar::Register(i), _)) => self.write_u8(i)?,
                     _ => (),
                 }
@@ -352,9 +352,9 @@ impl<W: Write> Writer<W> {
 
     fn write_push_value(&mut self, value: &Value) -> Result<()> {
         match *value {
-            Value::Str(ref string) => {
+            Value::Str(string) => {
                 self.write_u8(0)?;
-                self.write_c_string(string)?;
+                self.write_string(string)?;
             }
             Value::Float(v) => {
                 self.write_u8(1)?;

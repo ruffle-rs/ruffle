@@ -13,7 +13,7 @@ use enumset::EnumSet;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
-use swf::avm1::types::FunctionParam;
+use swf::{avm1::types::FunctionParam, SwfStr};
 
 /// Represents a function defined in Ruffle's code.
 ///
@@ -94,14 +94,15 @@ impl<'gc> Avm1Function<'gc> {
         swf_version: u8,
         actions: SwfSlice,
         name: &str,
-        params: &[&str],
+        params: &[SwfStr<'_>],
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<String>>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
-        let name = match name {
-            "" => None,
-            name => Some(name.to_string()),
+        let name = if name.is_empty() {
+            None
+        } else {
+            Some(name.to_string())
         };
 
         Avm1Function {
@@ -118,7 +119,10 @@ impl<'gc> Avm1Function<'gc> {
             suppress_this: false,
             preload_this: false,
             preload_global: false,
-            params: params.iter().map(|&s| (None, s.to_string())).collect(),
+            params: params
+                .iter()
+                .map(|&s| (None, s.to_string_lossy()))
+                .collect(),
             scope,
             constant_pool,
             base_clip,
@@ -134,9 +138,10 @@ impl<'gc> Avm1Function<'gc> {
         constant_pool: GcCell<'gc, Vec<String>>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
-        let name = match swf_function.name {
-            "" => None,
-            name => Some(name.to_string()),
+        let name = if swf_function.name.is_empty() {
+            None
+        } else {
+            Some(swf_function.name.to_string_lossy())
         };
 
         let mut owned_params = Vec::new();
@@ -145,7 +150,7 @@ impl<'gc> Avm1Function<'gc> {
             register_index: r,
         } in &swf_function.params
         {
-            owned_params.push((*r, (*s).to_string()))
+            owned_params.push((*r, (*s).to_string_lossy()))
         }
 
         Avm1Function {

@@ -21,6 +21,7 @@ pub mod avm1;
 pub mod avm2;
 pub mod error;
 pub mod read;
+mod string;
 mod tag_code;
 mod types;
 pub mod write;
@@ -30,6 +31,7 @@ mod test_data;
 
 /// Reexports
 pub use read::{read_swf, read_swf_header};
+pub use string::*;
 pub use tag_code::TagCode;
 pub use types::*;
 pub use write::write_swf;

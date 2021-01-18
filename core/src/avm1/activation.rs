@@ -25,6 +25,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, CatchVar, Function, TryBlock};
+use swf::SwfStr;
 use url::form_urlencoded;
 
 macro_rules! avm_debug {
@@ -432,8 +433,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut read = Reader::new(&code.movie.data()[..], self.swf_version());
-        read.seek(code.start as isize);
+        let mut read = Reader::new(&code.movie.data()[code.start..], self.swf_version());
 
         loop {
             let result = self.do_action(&code, &mut read);
@@ -446,10 +446,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Run a single action from a given action reader.
-    fn do_action(
+    fn do_action<'b>(
         &mut self,
-        data: &SwfSlice,
-        reader: &mut Reader<'_>,
+        data: &'b SwfSlice,
+        reader: &mut Reader<'b>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.actions_since_timeout_check += 1;
         if self.actions_since_timeout_check >= 200 {
@@ -459,7 +459,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
         }
 
-        if reader.pos() >= data.end {
+        if reader.get_ref().as_ptr() as usize >= data.as_ref().as_ptr_range().end as usize {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
         } else if let Some(action) = reader.read_action()? {
@@ -496,7 +496,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     params,
                     actions,
                 } => self.action_define_function(
-                    &name,
+                    name,
                     &params[..],
                     data.to_unbounded_subslice(actions).unwrap(),
                 ),
@@ -516,7 +516,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::GetProperty => self.action_get_property(),
                 Action::GetTime => self.action_get_time(),
                 Action::GetVariable => self.action_get_variable(),
-                Action::GetUrl { url, target } => self.action_get_url(&url, &target),
+                Action::GetUrl { url, target } => self.action_get_url(url, target),
                 Action::GetUrl2 {
                     send_vars_method,
                     is_target_sprite,
@@ -528,14 +528,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     scene_offset,
                 } => self.action_goto_frame_2(set_playing, scene_offset),
                 Action::Greater => self.action_greater(),
-                Action::GotoLabel(label) => self.action_goto_label(&label),
-                Action::If { offset } => self.action_if(offset, reader),
+                Action::GotoLabel(label) => self.action_goto_label(label),
+                Action::If { offset } => self.action_if(offset, reader, data),
                 Action::Increment => self.action_increment(),
                 Action::InitArray => self.action_init_array(),
                 Action::InitObject => self.action_init_object(),
                 Action::ImplementsOp => self.action_implements_op(),
                 Action::InstanceOf => self.action_instance_of(),
-                Action::Jump { offset } => self.action_jump(offset, reader),
+                Action::Jump { offset } => self.action_jump(offset, reader, data),
                 Action::Less => self.action_less(),
                 Action::Less2 => self.action_less_2(),
                 Action::MBAsciiToChar => self.action_mb_ascii_to_char(),
@@ -559,7 +559,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::Return => self.action_return(),
                 Action::SetMember => self.action_set_member(),
                 Action::SetProperty => self.action_set_property(),
-                Action::SetTarget(target) => self.action_set_target(&target),
+                Action::SetTarget(target) => self.action_set_target(&target.to_str_lossy()),
                 Action::SetTarget2 => self.action_set_target2(),
                 Action::SetVariable => self.action_set_variable(),
                 Action::StackSwap => self.action_stack_swap(),
@@ -889,11 +889,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_constant_pool(
         &mut self,
-        constant_pool: &[&str],
+        constant_pool: &[SwfStr<'_>],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.context.avm1.constant_pool = GcCell::allocate(
             self.context.gc_context,
-            constant_pool.iter().map(|s| (*s).to_string()).collect(),
+            constant_pool
+                .iter()
+                .map(|s| (*s).to_string_lossy())
+                .collect(),
         );
         self.set_constant_pool(self.context.avm1.constant_pool);
 
@@ -908,10 +911,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_define_function(
         &mut self,
-        name: &str,
-        params: &[&str],
+        name: SwfStr<'_>,
+        params: &[SwfStr<'_>],
         actions: SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let name = name.to_str_lossy();
+        let name = name.as_ref();
         let swf_version = self.swf_version();
         let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
         let constant_pool = self.constant_pool();
@@ -977,7 +982,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if action_func.name.is_empty() {
             self.context.avm1.push(func_obj);
         } else {
-            self.define(action_func.name, func_obj);
+            self.define(&action_func.name.to_str_lossy(), func_obj);
         }
 
         Ok(FrameControl::Continue)
@@ -1213,9 +1218,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_get_url(&mut self, url: &str, target: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_get_url(
+        &mut self,
+        url: SwfStr<'_>,
+        target: SwfStr<'_>,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let target = target.to_str_lossy();
+        let target = target.as_ref();
+        let url = url.to_string_lossy();
         if target.starts_with("_level") && target.len() > 6 {
-            let url = url.to_string();
             match target[6..].parse::<u32>() {
                 Ok(level_id) => {
                     let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
@@ -1247,7 +1258,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(FrameControl::Continue);
         }
 
-        if let Some(fscommand) = fscommand::parse(url) {
+        if let Some(fscommand) = fscommand::parse(&url) {
             fscommand::handle(fscommand, self)?;
         } else {
             self.context
@@ -1414,10 +1425,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_goto_label(&mut self, label: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_goto_label(&mut self, label: SwfStr<'_>) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                if let Some(frame) = clip.frame_label_to_number(label) {
+                if let Some(frame) = clip.frame_label_to_number(&label.to_str_lossy()) {
                     clip.goto_frame(&mut self.context, frame, true);
                 } else {
                     avm_warn!(self, "GoToLabel: Frame label '{}' not found", label);
@@ -1431,14 +1442,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_if(
+    fn action_if<'b>(
         &mut self,
         jump_offset: i16,
-        reader: &mut Reader<'_>,
+        reader: &mut Reader<'b>,
+        data: &'b SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         if val.as_bool(self.current_swf_version()) {
-            reader.seek(jump_offset.into());
+            self.seek(jump_offset, reader, data)?;
         }
         Ok(FrameControl::Continue)
     }
@@ -1515,13 +1527,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_jump(
+    fn action_jump<'b>(
         &mut self,
         jump_offset: i16,
-        reader: &mut Reader<'_>,
+        reader: &mut Reader<'b>,
+        data: &'b SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Handle out-of-bounds.
-        reader.seek(jump_offset.into());
+        self.seek(jump_offset, reader, data)?;
         Ok(FrameControl::Continue)
     }
 
@@ -1764,12 +1776,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 SwfValue::Float(v) => f64::from(*v).into(),
                 SwfValue::Double(v) => (*v).into(),
                 SwfValue::Str(v) => {
-                    AvmString::new(self.context.gc_context, (*v).to_string()).into()
+                    AvmString::new(self.context.gc_context, v.to_string_lossy()).into()
                 }
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool().read().get(*i as usize) {
-                        AvmString::new(self.context.gc_context, value.to_string()).into()
+                        AvmString::new(self.context.gc_context, value).into()
                     } else {
                         avm_warn!(
                             self,
@@ -2267,7 +2279,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 );
 
                 match catch_vars {
-                    CatchVar::Var(name) => activation.set_variable(name, value.to_owned())?,
+                    CatchVar::Var(name) => {
+                        activation.set_variable(&name.to_str_lossy(), value.to_owned())?
+                    }
                     CatchVar::Register(id) => {
                         activation.set_current_register(*id, value.to_owned())
                     }
@@ -2967,5 +2981,19 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             Ok(FrameControl::Continue)
         }
+    }
+
+    fn seek<'b>(
+        &self,
+        jump_offset: i16,
+        reader: &mut Reader<'b>,
+        data: &'b SwfSlice,
+    ) -> Result<(), Error<'gc>> {
+        let slice = data.movie.data();
+        let mut pos = reader.get_ref().as_ptr() as usize - slice.as_ptr() as usize;
+        pos = (pos as isize + isize::from(jump_offset)) as usize;
+        pos = pos.min(slice.len());
+        *reader.get_mut() = &slice[pos as usize..];
+        Ok(())
     }
 }

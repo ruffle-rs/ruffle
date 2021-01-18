@@ -5,9 +5,12 @@
     clippy::unreadable_literal
 )]
 
-use crate::error::{Error, Result};
-use crate::tag_code::TagCode;
-use crate::types::*;
+use crate::{
+    error::{Error, Result},
+    string::SwfStr,
+    tag_code::TagCode,
+    types::*,
+};
 use byteorder::{LittleEndian, WriteBytesExt};
 use enumset::EnumSet;
 use std::cmp::max;
@@ -185,7 +188,7 @@ pub trait SwfWrite<W: Write> {
         self.get_inner().write_all(&num)
     }
 
-    fn write_c_string(&mut self, s: &str) -> io::Result<()> {
+    fn write_string(&mut self, s: SwfStr<'_>) -> io::Result<()> {
         self.get_inner().write_all(s.as_bytes())?;
         self.write_u8(0)
     }
@@ -306,8 +309,8 @@ impl<W: Write> SwfWrite<W> for Writer<W> {
         self.output.write_f64::<LittleEndian>(n)
     }
 
-    fn write_c_string(&mut self, s: &str) -> io::Result<()> {
-        self.get_inner().write_all(s.as_bytes())?;
+    fn write_string(&mut self, s: SwfStr<'_>) -> io::Result<()> {
+        self.output.write_all(s.as_bytes())?;
         self.write_u8(0)
     }
 }
@@ -534,11 +537,11 @@ impl<W: Write> Writer<W> {
 
             Tag::ExportAssets(ref exports) => self.write_export_assets(&exports[..])?,
 
-            Tag::Protect(ref password) => {
-                if let Some(ref password_md5) = *password {
+            Tag::Protect(password) => {
+                if let Some(password_md5) = password {
                     self.write_tag_header(TagCode::Protect, password_md5.len() as u32 + 3)?;
                     self.write_u16(0)?; // Two null bytes? Not specified in SWF19.
-                    self.write_c_string(password_md5)?;
+                    self.write_string(password_md5)?;
                 } else {
                     self.write_tag_header(TagCode::Protect, 0)?;
                 }
@@ -782,14 +785,14 @@ impl<W: Write> Writer<W> {
 
             Tag::DefineFontName {
                 id,
-                ref name,
-                ref copyright_info,
+                name,
+                copyright_info,
             } => {
                 let len = name.len() + copyright_info.len() + 4;
                 self.write_tag_header(TagCode::DefineFontName, len as u32)?;
                 self.write_character_id(id)?;
-                self.write_c_string(name)?;
-                self.write_c_string(copyright_info)?;
+                self.write_string(name)?;
+                self.write_string(copyright_info)?;
             }
 
             Tag::DefineMorphShape(ref define_morph_shape) => {
@@ -819,7 +822,7 @@ impl<W: Write> Writer<W> {
                 let len = do_abc.data.len() + do_abc.name.len() + 5;
                 self.write_tag_header(TagCode::DoAbc, len as u32)?;
                 self.write_u32(if do_abc.is_lazy_initialize { 1 } else { 0 })?;
-                self.write_c_string(&do_abc.name)?;
+                self.write_string(do_abc.name)?;
                 self.output.write_all(&do_abc.data)?;
             }
             Tag::DoAction(ref action_data) => {
@@ -835,7 +838,7 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(action_data)?;
             }
 
-            Tag::EnableDebugger(ref password_md5) => {
+            Tag::EnableDebugger(password_md5) => {
                 let len = password_md5.len() as u32 + 1;
                 if self.version >= 6 {
                     // SWF v6+ uses EnableDebugger2 tag.
@@ -845,7 +848,7 @@ impl<W: Write> Writer<W> {
                     self.write_tag_header(TagCode::EnableDebugger, len)?;
                 }
 
-                self.write_c_string(password_md5)?;
+                self.write_string(password_md5)?;
             }
 
             Tag::EnableTelemetry { ref password_hash } => {
@@ -861,10 +864,7 @@ impl<W: Write> Writer<W> {
 
             Tag::End => self.write_tag_header(TagCode::End, 0)?,
 
-            Tag::ImportAssets {
-                ref url,
-                ref imports,
-            } => {
+            Tag::ImportAssets { url, ref imports } => {
                 let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>()
                     + url.len() as u32
                     + 1
@@ -872,17 +872,17 @@ impl<W: Write> Writer<W> {
                 // SWF v8 and later use ImportAssets2 tag.
                 if self.version >= 8 {
                     self.write_tag_header(TagCode::ImportAssets2, len + 2)?;
-                    self.write_c_string(url)?;
+                    self.write_string(url)?;
                     self.write_u8(1)?;
                     self.write_u8(0)?;
                 } else {
                     self.write_tag_header(TagCode::ImportAssets, len)?;
-                    self.write_c_string(url)?;
+                    self.write_string(url)?;
                 }
                 self.write_u16(imports.len() as u16)?;
-                for &ExportedAsset { id, ref name } in imports {
+                for &ExportedAsset { id, name } in imports {
                     self.write_u16(id)?;
-                    self.write_c_string(name)?;
+                    self.write_string(name)?;
                 }
             }
 
@@ -891,9 +891,9 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(data)?;
             }
 
-            Tag::Metadata(ref metadata) => {
+            Tag::Metadata(metadata) => {
                 self.write_tag_header(TagCode::Metadata, metadata.len() as u32 + 1)?;
-                self.write_c_string(metadata)?;
+                self.write_string(metadata)?;
             }
 
             // TODO: Allow clone of color.
@@ -969,7 +969,7 @@ impl<W: Write> Writer<W> {
             }
 
             Tag::StartSound2 {
-                ref class_name,
+                class_name,
                 ref sound_info,
             } => {
                 let length = class_name.len() as u32
@@ -987,7 +987,7 @@ impl<W: Write> Writer<W> {
                         0
                     };
                 self.write_tag_header(TagCode::StartSound2, length)?;
-                self.write_c_string(class_name)?;
+                self.write_string(class_name)?;
                 self.write_sound_info(sound_info)?;
             }
 
@@ -999,9 +999,9 @@ impl<W: Write> Writer<W> {
                     + 2;
                 self.write_tag_header(TagCode::SymbolClass, len)?;
                 self.write_u16(symbols.len() as u16)?;
-                for &SymbolClassLink { id, ref class_name } in symbols {
+                for &SymbolClassLink { id, class_name } in symbols {
                     self.write_u16(id)?;
-                    self.write_c_string(class_name)?;
+                    self.write_string(class_name)?;
                 }
             }
 
@@ -1033,15 +1033,12 @@ impl<W: Write> Writer<W> {
                 self.write_u32(flags)?;
             }
 
-            Tag::FrameLabel(FrameLabel {
-                ref label,
-                is_anchor,
-            }) => {
+            Tag::FrameLabel(FrameLabel { label, is_anchor }) => {
                 // TODO: Assert proper version
                 let is_anchor = is_anchor && self.version >= 6;
                 let length = label.len() as u32 + if is_anchor { 2 } else { 1 };
                 self.write_tag_header(TagCode::FrameLabel, length)?;
-                self.write_c_string(label)?;
+                self.write_string(label)?;
                 if is_anchor {
                     self.write_u8(1)?;
                 }
@@ -1506,12 +1503,12 @@ impl<W: Write> Writer<W> {
             writer.write_encoded_u32(data.scenes.len() as u32)?;
             for scene in &data.scenes {
                 writer.write_encoded_u32(scene.frame_num)?;
-                writer.write_c_string(&scene.label)?;
+                writer.write_string(scene.label)?;
             }
             writer.write_encoded_u32(data.frame_labels.len() as u32)?;
             for frame_label in &data.frame_labels {
                 writer.write_encoded_u32(frame_label.frame_num)?;
-                writer.write_c_string(&frame_label.label)?;
+                writer.write_string(frame_label.label)?;
             }
         }
         self.write_tag_header(TagCode::DefineSceneAndFrameLabelData, buf.len() as u32)?;
@@ -1596,9 +1593,9 @@ impl<W: Write> Writer<W> {
             + 2;
         self.write_tag_header(TagCode::ExportAssets, len)?;
         self.write_u16(exports.len() as u16)?;
-        for &ExportedAsset { id, ref name } in exports {
+        for &ExportedAsset { id, name } in exports {
             self.write_u16(id)?;
-            self.write_c_string(name)?;
+            self.write_string(name)?;
         }
         Ok(())
     }
@@ -2035,8 +2032,8 @@ impl<W: Write> Writer<W> {
             writer.write_u16(place_object.depth)?;
 
             if place_object_version >= 3 {
-                if let Some(ref class_name) = place_object.class_name {
-                    writer.write_c_string(class_name)?;
+                if let Some(class_name) = place_object.class_name {
+                    writer.write_string(class_name)?;
                 }
             }
 
@@ -2054,8 +2051,8 @@ impl<W: Write> Writer<W> {
             if let Some(ratio) = place_object.ratio {
                 writer.write_u16(ratio)?;
             }
-            if let Some(ref name) = place_object.name {
-                writer.write_c_string(name)?;
+            if let Some(name) = place_object.name {
+                writer.write_string(name)?;
             };
             if let Some(clip_depth) = place_object.clip_depth {
                 writer.write_u16(clip_depth)?;
@@ -2521,7 +2518,7 @@ impl<W: Write> Writer<W> {
                 | if font.is_italic { 0b10 } else { 0 }
                 | if font.is_bold { 0b1 } else { 0 },
         )?;
-        self.write_c_string(&font.name)?;
+        self.write_string(font.name)?;
         if let Some(ref data) = font.data {
             self.output.write_all(data)?;
         }
@@ -2647,8 +2644,8 @@ impl<W: Write> Writer<W> {
             }
 
             // TODO(Herschel): Check SWF version.
-            if let Some(ref class) = edit_text.font_class_name {
-                writer.write_c_string(class)?;
+            if let Some(class) = edit_text.font_class_name {
+                writer.write_string(class)?;
             }
 
             // TODO(Herschel): Height only exists iff HasFontId, maybe for HasFontClass too?
@@ -2677,9 +2674,9 @@ impl<W: Write> Writer<W> {
                 writer.write_i16(layout.leading.get() as i16)?;
             }
 
-            writer.write_c_string(&edit_text.variable_name)?;
-            if let Some(ref text) = edit_text.initial_text {
-                writer.write_c_string(text)?;
+            writer.write_string(edit_text.variable_name)?;
+            if let Some(text) = edit_text.initial_text {
+                writer.write_string(text)?;
             }
         }
 
@@ -2993,7 +2990,7 @@ mod tests {
             {
                 // TODO: What if I use a cursor instead of buf ?
                 let mut writer = Writer::new(&mut buf, 1);
-                writer.write_c_string("Hello!").unwrap();
+                writer.write_string("Hello!".into()).unwrap();
             }
             assert_eq!(buf, "Hello!\0".bytes().collect::<Vec<_>>());
         }
@@ -3003,7 +3000,7 @@ mod tests {
             {
                 // TODO: What if I use a cursor instead of buf ?
                 let mut writer = Writer::new(&mut buf, 1);
-                writer.write_c_string("😀😂!🐼").unwrap();
+                writer.write_string("😀😂!🐼".into()).unwrap();
             }
             assert_eq!(buf, "😀😂!🐼\0".bytes().collect::<Vec<_>>());
         }
