@@ -195,7 +195,7 @@ pub fn get_local<'gc>(
         .unwrap_or(&Value::Undefined)
         .as_bool(activation.current_swf_version());
 
-    // Secure paramter disallows using the shared object from non-HTTPS.
+    // Secure parameter disallows using the shared object from non-HTTPS.
     if secure && movie_url.scheme() != "https" {
         log::warn!(
             "SharedObject.get_local: Tried to load a secure shared object from non-HTTPS origin"
