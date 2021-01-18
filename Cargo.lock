@@ -3439,6 +3439,7 @@ version = "0.1.2"
 dependencies = [
  "approx",
  "byteorder",
+ "encoding_rs",
  "enumset",
  "flate2",
  "libflate 1.0.3",

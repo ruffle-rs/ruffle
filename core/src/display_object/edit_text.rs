@@ -156,6 +156,7 @@ impl<'gc> EditText<'gc> {
         let mut text_spans = FormatSpans::new();
         text_spans.set_default_format(default_format.clone());
 
+        let text = text.to_str_lossy();
         if is_html {
             let _ = document
                 .as_node()
@@ -211,13 +212,13 @@ impl<'gc> EditText<'gc> {
                             id: swf_tag.id,
                             bounds: swf_tag.bounds,
                             font_id: swf_tag.font_id,
-                            font_class_name: swf_tag.font_class_name.map(str::to_string),
+                            font_class_name: swf_tag.font_class_name.map(|s| s.to_string_lossy()),
                             height: swf_tag.height,
                             color: swf_tag.color.clone(),
                             max_length: swf_tag.max_length,
                             layout: swf_tag.layout.clone(),
-                            variable_name: swf_tag.variable_name.to_string(),
-                            initial_text: swf_tag.initial_text.map(str::to_string),
+                            variable_name: swf_tag.variable_name.to_string_lossy(),
+                            initial_text: swf_tag.initial_text.map(|s| s.to_string_lossy()),
                             is_word_wrap: swf_tag.is_word_wrap,
                             is_multiline: swf_tag.is_multiline,
                             is_password: swf_tag.is_password,
@@ -246,7 +247,7 @@ impl<'gc> EditText<'gc> {
                 intrinsic_bounds,
                 bounds,
                 autosize: AutoSizeMode::None,
-                variable: variable.map(str::to_string),
+                variable: variable.map(|s| s.to_string_lossy()),
                 bound_stage_object: None,
                 firing_variable_binding: false,
                 selection: None,
@@ -293,7 +294,7 @@ impl<'gc> EditText<'gc> {
                 indent: Twips::from_pixels(0.0),
                 leading: Twips::from_pixels(0.0),
             }),
-            variable_name: "", //TODO: should be null
+            variable_name: "".into(), //TODO: should be null
             initial_text: None,
             is_word_wrap: false,
             is_multiline: false,

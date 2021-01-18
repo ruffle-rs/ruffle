@@ -1,3 +1,5 @@
+use crate::string::SwfStr;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action<'a> {
     Add,
@@ -16,11 +18,11 @@ pub enum Action<'a> {
     CastOp,
     CharToAscii,
     CloneSprite,
-    ConstantPool(Vec<&'a str>),
+    ConstantPool(Vec<SwfStr<'a>>),
     Decrement,
     DefineFunction {
-        name: &'a str,
-        params: Vec<&'a str>,
+        name: SwfStr<'a>,
+        params: Vec<SwfStr<'a>>,
         actions: &'a [u8],
     },
     DefineFunction2(Function<'a>),
@@ -39,8 +41,8 @@ pub enum Action<'a> {
     GetProperty,
     GetTime,
     GetUrl {
-        url: &'a str,
-        target: &'a str,
+        url: SwfStr<'a>,
+        target: SwfStr<'a>,
     },
     GetUrl2 {
         send_vars_method: SendVarsMethod,
@@ -53,7 +55,7 @@ pub enum Action<'a> {
         set_playing: bool,
         scene_offset: u16,
     },
-    GotoLabel(&'a str),
+    GotoLabel(SwfStr<'a>),
     Greater,
     If {
         offset: i16,
@@ -89,7 +91,7 @@ pub enum Action<'a> {
     Return,
     SetMember,
     SetProperty,
-    SetTarget(&'a str),
+    SetTarget(SwfStr<'a>),
     SetTarget2,
     SetVariable,
     StackSwap,
@@ -138,7 +140,7 @@ pub enum Value<'a> {
     Int(i32),
     Float(f32),
     Double(f64),
-    Str(&'a str),
+    Str(SwfStr<'a>),
     Register(u8),
     ConstantPool(u16),
 }
@@ -152,7 +154,7 @@ pub enum SendVarsMethod {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Function<'a> {
-    pub name: &'a str,
+    pub name: SwfStr<'a>,
     pub register_count: u8,
     pub params: Vec<FunctionParam<'a>>,
     pub preload_parent: bool,
@@ -169,7 +171,7 @@ pub struct Function<'a> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionParam<'a> {
-    pub name: &'a str,
+    pub name: SwfStr<'a>,
     pub register_index: Option<u8>,
 }
 
@@ -182,6 +184,6 @@ pub struct TryBlock<'a> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CatchVar<'a> {
-    Var(&'a str),
+    Var(SwfStr<'a>),
     Register(u8),
 }

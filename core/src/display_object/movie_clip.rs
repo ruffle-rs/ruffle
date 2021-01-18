@@ -459,7 +459,7 @@ impl<'gc> MovieClip<'gc> {
         // giving us a `SwfSlice` for later parsing, so we have to replcate the
         // *entire* parsing code here. This sucks.
         let flags = reader.read_u32()?;
-        let name = reader.read_c_string()?;
+        let name = reader.read_string()?.to_string_lossy();
         let is_lazy_initialize = flags & 1 != 0;
         let domain = library.avm2_domain();
 
@@ -499,7 +499,7 @@ impl<'gc> MovieClip<'gc> {
 
         for _ in 0..num_symbols {
             let id = reader.read_u16()?;
-            let class_name = reader.read_c_string()?;
+            let class_name = reader.read_string()?.to_string_lossy();
 
             if let Some(name) =
                 Avm2QName::from_symbol_class(&class_name, activation.context.gc_context)
@@ -2458,7 +2458,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let font = swf::Font {
             id: font.id,
             version: 0,
-            name: "",
+            name: "".into(),
             glyphs,
             language: swf::Language::Unknown,
             layout: None,
@@ -2609,7 +2609,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             let character = context
                 .library
                 .library_for_movie_mut(self.movie())
-                .register_export(export.id, &export.name);
+                .register_export(export.id, &export.name.to_str_lossy());
 
             // TODO: do other types of Character need to know their exported name?
             if let Some(Character::MovieClip(movie_clip)) = character {
@@ -2631,7 +2631,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> DecodeResult {
         let frame_label = reader.read_frame_label(tag_len)?;
         // Frame labels are case insensitive (ASCII).
-        let label = frame_label.label.to_ascii_lowercase();
+        let label = frame_label.label.to_str_lossy().to_ascii_lowercase();
         if let std::collections::hash_map::Entry::Vacant(v) = static_data.frame_labels.entry(label)
         {
             v.insert(cur_frame);
