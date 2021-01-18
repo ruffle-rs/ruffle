@@ -25,6 +25,7 @@ const gamesOptGroup = document.getElementById("games-optgroup");
 // Default config used by the player.
 const config = {
     letterbox: "on",
+    logLevel: "warn",
 };
 
 window.addEventListener("DOMContentLoaded", async () => {

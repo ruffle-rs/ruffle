@@ -124,6 +124,9 @@ pub struct Config {
 
     #[serde(rename = "warnOnUnsupportedContent")]
     warn_on_unsupported_content: bool,
+
+    #[serde(rename = "logLevel")]
+    log_level: log::Level,
 }
 
 impl Default for Config {
@@ -133,6 +136,7 @@ impl Default for Config {
             letterbox: Default::default(),
             upgrade_to_https: true,
             warn_on_unsupported_content: true,
+            log_level: log::Level::Error,
         }
     }
 }
@@ -411,7 +415,7 @@ impl Ruffle {
         allow_script_access: bool,
         config: Config,
     ) -> Result<Ruffle, Box<dyn Error>> {
-        let _ = console_log::init_with_level(log::Level::Trace);
+        let _ = console_log::init_with_level(config.log_level);
 
         let window = web_sys::window().ok_or("Expected window")?;
         let document = window.document().ok_or("Expected document")?;
