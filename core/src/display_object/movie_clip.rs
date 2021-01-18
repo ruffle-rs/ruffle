@@ -803,7 +803,7 @@ impl<'gc> MovieClip<'gc> {
         best.map(|(s, fnum)| (s.to_string(), fnum))
     }
 
-    /// Yield a list of labels and frame-nubmers in the current scene.
+    /// Yield a list of labels and frame-numbers in the current scene.
     ///
     /// Labels are returned sorted by frame number.
     pub fn labels_in_range(self, from: FrameNumber, to: FrameNumber) -> Vec<(String, FrameNumber)> {
@@ -2865,7 +2865,7 @@ impl<'gc, 'a> MovieClip<'gc> {
     ) -> DecodeResult {
         // Set background color if none set
         // bgcolor attribute on the HTML embed would override this
-        // Also note that a laoded child SWF could change background color only
+        // Also note that a loaded child SWF could change background color only
         // if parent SWF is missing SetBackgroundColor tag.
         let background_color = reader.read_rgb()?;
         if context.background_color.is_none() {
