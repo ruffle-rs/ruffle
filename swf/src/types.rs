@@ -10,19 +10,22 @@ mod matrix;
 
 pub use matrix::Matrix;
 
+pub type SwfStr<'a> = &'a str;
+
 /// A complete header and tags in the SWF file.
 /// This is returned by the `swf::read_swf` convenience method.
 #[derive(Debug, PartialEq)]
-pub struct Swf {
+pub struct Swf<'a> {
     pub header: Header,
-    pub tags: Vec<Tag>,
+    pub tags: Vec<Tag<'a>>,
 }
 
 /// Returned by `read::read_swf_header`. Includes the decompress
 /// stream as well as the uncompressed data length.
-pub struct SwfStream<'a> {
+pub struct SwfStream {
     pub header: Header,
-    pub reader: crate::read::Reader<Box<dyn std::io::Read + 'a>>,
+    //pub reader: crate::read::Reader<'a>,
+    pub data: Vec<u8>,
 }
 
 /// The header of an SWF file.
@@ -242,45 +245,45 @@ pub struct FileAttributes {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct FrameLabel {
-    pub label: String,
+pub struct FrameLabel<'a> {
+    pub label: SwfStr<'a>,
     pub is_anchor: bool,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DefineSceneAndFrameLabelData {
-    pub scenes: Vec<FrameLabelData>,
-    pub frame_labels: Vec<FrameLabelData>,
+pub struct DefineSceneAndFrameLabelData<'a> {
+    pub scenes: Vec<FrameLabelData<'a>>,
+    pub frame_labels: Vec<FrameLabelData<'a>>,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct FrameLabelData {
+pub struct FrameLabelData<'a> {
     pub frame_num: u32,
-    pub label: String,
+    pub label: SwfStr<'a>,
 }
 
 pub type Depth = u16;
 pub type CharacterId = u16;
 
 #[derive(Debug, PartialEq)]
-pub struct PlaceObject {
+pub struct PlaceObject<'a> {
     pub version: u8,
     pub action: PlaceObjectAction,
     pub depth: Depth,
     pub matrix: Option<Matrix>,
     pub color_transform: Option<ColorTransform>,
     pub ratio: Option<u16>,
-    pub name: Option<String>,
+    pub name: Option<SwfStr<'a>>,
     pub clip_depth: Option<Depth>,
-    pub class_name: Option<String>,
+    pub class_name: Option<SwfStr<'a>>,
     pub filters: Option<Vec<Filter>>,
     pub background_color: Option<Color>,
     pub blend_mode: Option<BlendMode>,
-    pub clip_actions: Option<Vec<ClipAction>>,
+    pub clip_actions: Option<Vec<ClipAction<'a>>>,
     pub is_image: bool,
     pub is_bitmap_cached: Option<bool>,
     pub is_visible: Option<bool>,
-    pub amf_data: Option<Vec<u8>>,
+    pub amf_data: Option<&'a [u8]>,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -416,10 +419,10 @@ pub enum BlendMode {
 ///
 /// [SWF19 pp.37-38 ClipActionRecord](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=37)
 #[derive(Debug, Clone, PartialEq)]
-pub struct ClipAction {
+pub struct ClipAction<'a> {
     pub events: EnumSet<ClipEventFlag>,
     pub key_code: Option<KeyCode>,
-    pub action_data: Vec<u8>,
+    pub action_data: &'a [u8],
 }
 
 /// An event that can be attached to a movieclip instance using
@@ -460,49 +463,49 @@ pub type KeyCode = u8;
 ///
 // [SWF19 p.29](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=29)
 #[derive(Debug, PartialEq)]
-pub enum Tag {
-    ExportAssets(ExportAssets),
+pub enum Tag<'a> {
+    ExportAssets(ExportAssets<'a>),
     ScriptLimits {
         max_recursion_depth: u16,
         timeout_in_seconds: u16,
     },
     ShowFrame,
 
-    Protect(Option<String>),
+    Protect(Option<SwfStr<'a>>),
     CsmTextSettings(CsmTextSettings),
     DebugId(DebugId),
     DefineBinaryData {
         id: CharacterId,
-        data: Vec<u8>,
+        data: &'a [u8],
     },
     DefineBits {
         id: CharacterId,
-        jpeg_data: Vec<u8>,
+        jpeg_data: &'a [u8],
     },
     DefineBitsJpeg2 {
         id: CharacterId,
-        jpeg_data: Vec<u8>,
+        jpeg_data: &'a [u8],
     },
-    DefineBitsJpeg3(DefineBitsJpeg3),
-    DefineBitsLossless(DefineBitsLossless),
-    DefineButton(Box<Button>),
-    DefineButton2(Box<Button>),
+    DefineBitsJpeg3(DefineBitsJpeg3<'a>),
+    DefineBitsLossless(DefineBitsLossless<'a>),
+    DefineButton(Box<Button<'a>>),
+    DefineButton2(Box<Button<'a>>),
     DefineButtonColorTransform(ButtonColorTransform),
     DefineButtonSound(Box<ButtonSounds>),
-    DefineEditText(Box<EditText>),
+    DefineEditText(Box<EditText<'a>>),
     DefineFont(Box<FontV1>),
-    DefineFont2(Box<Font>),
-    DefineFont4(Font4),
+    DefineFont2(Box<Font<'a>>),
+    DefineFont4(Font4<'a>),
     DefineFontAlignZones {
         id: CharacterId,
         thickness: FontThickness,
         zones: Vec<FontAlignZone>,
     },
-    DefineFontInfo(Box<FontInfo>),
+    DefineFontInfo(Box<FontInfo<'a>>),
     DefineFontName {
         id: CharacterId,
-        name: String,
-        copyright_info: String,
+        name: SwfStr<'a>,
+        copyright_info: SwfStr<'a>,
     },
     DefineMorphShape(Box<DefineMorphShape>),
     DefineScalingGrid {
@@ -510,63 +513,63 @@ pub enum Tag {
         splitter_rect: Rectangle,
     },
     DefineShape(Shape),
-    DefineSound(Box<Sound>),
-    DefineSprite(Sprite),
+    DefineSound(Box<Sound<'a>>),
+    DefineSprite(Sprite<'a>),
     DefineText(Box<Text>),
     DefineVideoStream(DefineVideoStream),
-    DoAbc(DoAbc),
-    DoAction(DoAction),
+    DoAbc(DoAbc<'a>),
+    DoAction(DoAction<'a>),
     DoInitAction {
         id: CharacterId,
-        action_data: Vec<u8>,
+        action_data: &'a [u8],
     },
-    EnableDebugger(String),
+    EnableDebugger(SwfStr<'a>),
     EnableTelemetry {
-        password_hash: Vec<u8>,
+        password_hash: &'a [u8],
     },
     End,
-    Metadata(String),
+    Metadata(SwfStr<'a>),
     ImportAssets {
-        url: String,
-        imports: Vec<ExportedAsset>,
+        url: SwfStr<'a>,
+        imports: Vec<ExportedAsset<'a>>,
     },
-    JpegTables(JpegTables),
+    JpegTables(JpegTables<'a>),
     SetBackgroundColor(SetBackgroundColor),
     SetTabIndex {
         depth: Depth,
         tab_index: u16,
     },
-    SoundStreamBlock(SoundStreamBlock),
+    SoundStreamBlock(SoundStreamBlock<'a>),
     SoundStreamHead(Box<SoundStreamHead>),
     SoundStreamHead2(Box<SoundStreamHead>),
     StartSound(StartSound),
     StartSound2 {
-        class_name: String,
+        class_name: SwfStr<'a>,
         sound_info: Box<SoundInfo>,
     },
-    SymbolClass(Vec<SymbolClassLink>),
-    PlaceObject(Box<PlaceObject>),
+    SymbolClass(Vec<SymbolClassLink<'a>>),
+    PlaceObject(Box<PlaceObject<'a>>),
     RemoveObject(RemoveObject),
-    VideoFrame(VideoFrame),
+    VideoFrame(VideoFrame<'a>),
     FileAttributes(FileAttributes),
 
-    FrameLabel(FrameLabel),
-    DefineSceneAndFrameLabelData(DefineSceneAndFrameLabelData),
+    FrameLabel(FrameLabel<'a>),
+    DefineSceneAndFrameLabelData(DefineSceneAndFrameLabelData<'a>),
 
     ProductInfo(ProductInfo),
 
     Unknown {
         tag_code: u16,
-        data: Vec<u8>,
+        data: &'a [u8],
     },
 }
 
-pub type ExportAssets = Vec<ExportedAsset>;
+pub type ExportAssets<'a> = Vec<ExportedAsset<'a>>;
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ExportedAsset {
+pub struct ExportedAsset<'a> {
     pub id: CharacterId,
-    pub name: String,
+    pub name: SwfStr<'a>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -578,9 +581,9 @@ pub struct RemoveObject {
 pub type SetBackgroundColor = Color;
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct SymbolClassLink {
+pub struct SymbolClassLink<'a> {
     pub id: CharacterId,
-    pub class_name: String,
+    pub class_name: SwfStr<'a>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -605,11 +608,11 @@ pub struct Shape {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Sound {
+pub struct Sound<'a> {
     pub id: CharacterId,
     pub format: SoundFormat,
     pub num_samples: u32,
-    pub data: Vec<u8>,
+    pub data: &'a [u8],
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -644,10 +647,10 @@ pub struct StartSound {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Sprite {
+pub struct Sprite<'a> {
     pub id: CharacterId,
     pub num_frames: u16,
-    pub tags: Vec<Tag>,
+    pub tags: Vec<Tag<'a>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -797,14 +800,14 @@ pub struct SoundStreamHead {
     pub latency_seek: i16,
 }
 
-pub type SoundStreamBlock = Vec<u8>;
+pub type SoundStreamBlock<'a> = &'a [u8];
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Button {
+pub struct Button<'a> {
     pub id: CharacterId,
     pub is_track_as_menu: bool,
     pub records: Vec<ButtonRecord>,
-    pub actions: Vec<ButtonAction>,
+    pub actions: Vec<ButtonAction<'a>>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -844,10 +847,10 @@ pub struct ButtonSounds {
 pub type ButtonSound = (CharacterId, SoundInfo);
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ButtonAction {
+pub struct ButtonAction<'a> {
     pub conditions: HashSet<ButtonActionCondition>,
     pub key_code: Option<u8>,
-    pub action_data: Vec<u8>,
+    pub action_data: &'a [u8],
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
@@ -890,10 +893,10 @@ pub struct FontV1 {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Font {
+pub struct Font<'a> {
     pub version: u8,
     pub id: CharacterId,
-    pub name: String,
+    pub name: SwfStr<'a>,
     pub language: Language,
     pub layout: Option<FontLayout>,
     pub glyphs: Vec<Glyph>,
@@ -905,12 +908,12 @@ pub struct Font {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Font4 {
+pub struct Font4<'a> {
     pub id: CharacterId,
     pub is_italic: bool,
     pub is_bold: bool,
-    pub name: String,
-    pub data: Option<Vec<u8>>,
+    pub name: SwfStr<'a>,
+    pub data: Option<&'a [u8]>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -937,10 +940,10 @@ pub struct KerningRecord {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct FontInfo {
+pub struct FontInfo<'a> {
     pub id: CharacterId,
     pub version: u8,
-    pub name: String,
+    pub name: SwfStr<'a>,
     pub is_small_text: bool,
     pub is_shift_jis: bool,
     pub is_ansi: bool,
@@ -975,17 +978,17 @@ pub struct GlyphEntry {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct EditText {
+pub struct EditText<'a> {
     pub id: CharacterId,
     pub bounds: Rectangle,
     pub font_id: Option<CharacterId>, // TODO(Herschel): Combine with height
-    pub font_class_name: Option<String>,
+    pub font_class_name: Option<SwfStr<'a>>,
     pub height: Option<Twips>,
     pub color: Option<Color>,
     pub max_length: Option<u16>,
     pub layout: Option<TextLayout>,
-    pub variable_name: String,
-    pub initial_text: Option<String>,
+    pub variable_name: SwfStr<'a>,
+    pub initial_text: Option<SwfStr<'a>>,
     pub is_word_wrap: bool,
     pub is_multiline: bool,
     pub is_password: bool,
@@ -1048,14 +1051,14 @@ pub enum TextGridFit {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DefineBitsLossless {
+pub struct DefineBitsLossless<'a> {
     pub version: u8,
     pub id: CharacterId,
     pub format: BitmapFormat,
     pub width: u16,
     pub height: u16,
     pub num_colors: u8,
-    pub data: Vec<u8>,
+    pub data: &'a [u8],
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1095,31 +1098,31 @@ pub enum VideoCodec {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct VideoFrame {
+pub struct VideoFrame<'a> {
     pub stream_id: CharacterId,
     pub frame_num: u16,
-    pub data: Vec<u8>,
+    pub data: &'a [u8],
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DefineBitsJpeg3 {
+pub struct DefineBitsJpeg3<'a> {
     pub id: CharacterId,
     pub version: u8,
     pub deblocking: f32,
-    pub data: Vec<u8>,
-    pub alpha_data: Vec<u8>,
+    pub data: &'a [u8],
+    pub alpha_data: &'a [u8],
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DoAbc {
-    pub name: String,
+pub struct DoAbc<'a> {
+    pub name: SwfStr<'a>,
     pub is_lazy_initialize: bool,
-    pub data: Vec<u8>,
+    pub data: &'a [u8],
 }
 
-pub type DoAction = Vec<u8>;
+pub type DoAction<'a> = &'a [u8];
 
-pub type JpegTables = Vec<u8>;
+pub type JpegTables<'a> = &'a [u8];
 
 /// `ProductInfo` contains information about the software used to generate the SWF.
 /// Not documented in the SWF19 reference. Emitted by mxmlc.

@@ -207,7 +207,28 @@ impl<'gc> EditText<'gc> {
                     context.gc_context,
                     EditTextStatic {
                         swf: swf_movie,
-                        text: swf_tag,
+                        text: EditTextStaticData {
+                            id: swf_tag.id,
+                            bounds: swf_tag.bounds,
+                            font_id: swf_tag.font_id,
+                            font_class_name: swf_tag.font_class_name.map(str::to_string),
+                            height: swf_tag.height,
+                            color: swf_tag.color.clone(),
+                            max_length: swf_tag.max_length,
+                            layout: swf_tag.layout.clone(),
+                            variable_name: swf_tag.variable_name.to_string(),
+                            initial_text: swf_tag.initial_text.map(str::to_string),
+                            is_word_wrap: swf_tag.is_word_wrap,
+                            is_multiline: swf_tag.is_multiline,
+                            is_password: swf_tag.is_password,
+                            is_read_only: swf_tag.is_read_only,
+                            is_auto_size: swf_tag.is_auto_size,
+                            is_selectable: swf_tag.is_selectable,
+                            has_border: swf_tag.has_border,
+                            was_static: swf_tag.was_static,
+                            is_html: swf_tag.is_html,
+                            is_device_font: swf_tag.is_device_font,
+                        },
                     },
                 ),
                 is_multiline,
@@ -225,7 +246,7 @@ impl<'gc> EditText<'gc> {
                 intrinsic_bounds,
                 bounds,
                 autosize: AutoSizeMode::None,
-                variable,
+                variable: variable.map(str::to_string),
                 bound_stage_object: None,
                 firing_variable_binding: false,
                 selection: None,
@@ -272,7 +293,7 @@ impl<'gc> EditText<'gc> {
                 indent: Twips::from_pixels(0.0),
                 leading: Twips::from_pixels(0.0),
             }),
-            variable_name: "".to_string(), //TODO: should be null
+            variable_name: "", //TODO: should be null
             initial_text: None,
             is_word_wrap: false,
             is_multiline: false,
@@ -598,7 +619,7 @@ impl<'gc> EditText<'gc> {
             .initial_text
             .clone()
             .unwrap_or_default();
-        let _ = self.set_text(text, &mut activation.context);
+        let _ = self.set_text(text.to_string(), &mut activation.context);
 
         self.0.write(activation.context.gc_context).variable = variable;
         self.try_bind_text_field_variable(activation, true);
@@ -1535,15 +1556,37 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 }
 
 /// Static data shared between all instances of a text object.
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
 struct EditTextStatic {
     swf: Arc<SwfMovie>,
-    text: swf::EditText,
+    text: EditTextStaticData,
+}
+#[derive(Debug, Clone)]
+struct EditTextStaticData {
+    id: CharacterId,
+    bounds: swf::Rectangle,
+    font_id: Option<CharacterId>, // TODO(Herschel): Combine with height
+    font_class_name: Option<String>,
+    height: Option<Twips>,
+    color: Option<Color>,
+    max_length: Option<u16>,
+    layout: Option<swf::TextLayout>,
+    variable_name: String,
+    initial_text: Option<String>,
+    is_word_wrap: bool,
+    is_multiline: bool,
+    is_password: bool,
+    is_read_only: bool,
+    is_auto_size: bool,
+    is_selectable: bool,
+    has_border: bool,
+    was_static: bool,
+    is_html: bool,
+    is_device_font: bool,
 }
 
-unsafe impl<'gc> gc_arena::Collect for EditTextStatic {
-    #[inline]
+unsafe impl<'gc> Collect for EditTextStaticData {
     fn needs_trace() -> bool {
         false
     }

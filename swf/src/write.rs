@@ -2802,7 +2802,7 @@ mod tests {
     use super::*;
     use crate::test_data;
 
-    fn new_swf() -> Swf {
+    fn new_swf() -> Swf<'static> {
         Swf {
             header: Header {
                 compression: Compression::Zlib,
@@ -3125,7 +3125,7 @@ mod tests {
                     .write_tag_list(&[
                         Tag::Unknown {
                             tag_code: 512,
-                            data: vec![0; 100],
+                            data: &[0; 100],
                         },
                         Tag::ShowFrame,
                     ])
