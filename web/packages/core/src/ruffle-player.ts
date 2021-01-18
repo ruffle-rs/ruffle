@@ -286,29 +286,29 @@ export class RufflePlayer extends HTMLElement {
         }
 
         const ruffleConstructor = await this.ruffleConstructor.catch((e) => {
-            console.error("Serious error loading Ruffle: " + e);
+            console.error(`Serious error loading Ruffle: ${e}`);
 
             // Serious duck typing. In error conditions, let's not make assumptions.
-            const message =
-                e && e.message ? String(e.message).toLowerCase() : "";
-            if (message.indexOf("mime") >= 0) {
-                this.panicked = true;
-                this.container.innerHTML = `
-                    <div id="panic">
-                        <div id="panic-title">Something went wrong :(</div>
-                        <div id="panic-body">
-                            <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                            <p>This web server is either not serving ".wasm" files with the correct MIME type, or the file cannot be found.</p>
-                            <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
-                        </div>
-                        <div id="panic-footer">
-                            <ul>
-                                <li><a href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type">View Ruffle Wiki</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                `;
+            if (window.location.protocol === "file:") {
+                e.ruffleIndexError = 100;
+            } else if (!e.ruffleIsExtension) {
+                e.ruffleIndexError = 200;
+                const message = String(e.message).toLowerCase();
+                if (message.includes("mime")) {
+                    e.ruffleIndexError = 201;
+                } else if (
+                    message.includes("networkerror") ||
+                    message.includes("failed to fetch")
+                ) {
+                    e.ruffleIndexError = 202;
+                } else if (
+                    !message.includes("magic") &&
+                    (e.name === "CompileError" || e.name === "TypeError")
+                ) {
+                    e.ruffleIndexError = 203;
+                }
             }
+            this.panic(e);
             throw e;
         });
 
@@ -396,12 +396,33 @@ export class RufflePlayer extends HTMLElement {
     async load(
         options: string | URLLoadOptions | DataLoadOptions
     ): Promise<void> {
-        if (typeof options == "string") {
-            options = { url: options };
+        let optionsError = "";
+        switch (typeof options) {
+            case "string":
+                options = { url: options };
+                break;
+            case "object":
+                if (options === null) {
+                    optionsError = "Argument 0 must be a string or object";
+                } else if (!("url" in options) && !("data" in options)) {
+                    optionsError =
+                        "Argument 0 must contain a `url` or `data` key";
+                } else if (
+                    "url" in options &&
+                    typeof options.url !== "string"
+                ) {
+                    optionsError = "`url` must be a string";
+                }
+                break;
+            default:
+                optionsError = "Argument 0 must be a string or object";
+                break;
         }
-
-        if (!("url" in options) && !("data" in options)) {
-            throw new TypeError("options must contain url or data");
+        if (optionsError.length > 0) {
+            const error = new TypeError(optionsError);
+            error.ruffleIndexError = 101;
+            this.panic(error);
+            throw error;
         }
 
         //TODO: Actually stream files...
@@ -422,7 +443,7 @@ export class RufflePlayer extends HTMLElement {
                 await this.ensureFreshInstance(config);
 
                 if ("url" in options) {
-                    console.log("Loading SWF file " + options.url);
+                    console.log(`Loading SWF file ${options.url}`);
                     try {
                         this.swfUrl = new URL(
                             options.url,
@@ -452,8 +473,7 @@ export class RufflePlayer extends HTMLElement {
                 );
             }
         } catch (err) {
-            console.error("Serious error occurred loading SWF file: " + err);
-            this.panic(err);
+            console.error(`Serious error occurred loading SWF file: ${err}`);
             throw err;
         }
     }
@@ -734,6 +754,17 @@ export class RufflePlayer extends HTMLElement {
         }
         this.panicked = true;
 
+        if (
+            error instanceof Error &&
+            (error.name === "AbortError" ||
+                error.message.includes("AbortError"))
+        ) {
+            // Firefox: Don't display the panic screen if the user leaves the page while something is still loading
+            return;
+        }
+
+        const errorIndex = error?.ruffleIndexError ?? -1;
+
         const errorArray: Array<string | null> & {
             stackIndex: number;
         } = Object.assign([], {
@@ -780,42 +811,125 @@ export class RufflePlayer extends HTMLElement {
         let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
             issueTitle
         )}&body=`;
-        let issueParameters = encodeURIComponent(errorText);
+        let issueBody = encodeURIComponent(errorText);
         if (
             errorArray.stackIndex > -1 &&
-            String(issueLink + issueParameters).length > 8195
+            String(issueLink + issueBody).length > 8195
         ) {
             // Strip the stack error from the array when the produced URL is way too long.
             // This should prevent "414 Request-URI Too Large" errors on Github.
             errorArray[errorArray.stackIndex] = null;
-            issueParameters = encodeURIComponent(errorArray.join(""));
+            issueBody = encodeURIComponent(errorArray.join(""));
         }
-        issueLink += issueParameters;
+        issueLink += issueBody;
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
+        let errorBody, errorFooter;
+        switch (errorIndex) {
+            case 100:
+                // General issue: Running on the `file:` protocol
+                errorBody = `
+                    <p>It appears you are running Ruffle on the "file:" protocol.</p>
+                    <p>This doesn't work as browsers block many features from working for security reasons.</p>
+                    <p>Instead, we invite you to setup a local server or either use the web demo or the desktop application.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="${RUFFLE_ORIGIN}/demo">Web Demo</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/tags">Desktop Application</a></li>
+                `;
+                break;
+            case 101:
+                // General issue: Incorrect JavaScript configuration
+                errorBody = `
+                    <p>Ruffle has encountered a major issue due to an incorrect JavaScript configuration.</p>
+                    <p>If you are the server administrator, we invite you to check the error details to find out which parameter is at fault.</p>
+                    <p>You can also consult the Ruffle wiki for help.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api">View Ruffle Wiki</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+            case 200:
+                // Self hosted: Cannot load `.wasm` file - file not found
+                errorBody = `
+                    <p>Ruffle failed to load the required ".wasm" file component.</p>
+                    <p>If you are the server administrator, please ensure the file has correctly been uploaded.</p>
+                    <p>If the issue persists, you may need to use the "publicPath" setting: please consult the Ruffle wiki for help.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options">View Ruffle Wiki</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+            case 201:
+                // Self hosted: Cannot load `.wasm` file - incorrect MIME type
+                errorBody = `
+                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
+                    <p>This web server is not serving ".wasm" files with the correct MIME type.</p>
+                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type">View Ruffle Wiki</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+            case 202:
+                // Self hosted: Cannot load `.wasm` file - CORS issues
+                errorBody = `
+                    <p>Ruffle failed to load the required ".wasm" file component.</p>
+                    <p>Access to fetch has likely been blocked by CORS policy.</p>
+                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#web">View Ruffle Wiki</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+            case 203:
+                // Self hosted: Cannot load `.wasm` file - a native object / function is overriden
+                errorBody = `
+                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
+                    <p>It seems like the page uses JavaScript code that conflicts with Ruffle.</p>
+                    <p>If you are the server administrator, we invite you to try loading the file on a blank page.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="${issueLink}">Report Bug</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+            default:
+                // Unknown error
+                errorBody = `
+                    <p>Ruffle has encountered a major issue whilst trying to display this Flash content.</p>
+                    <p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="${issueLink}">Report Bug</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+        }
         this.container.innerHTML = `
             <div id="panic">
                 <div id="panic-title">Something went wrong :(</div>
-                <div id="panic-body">
-                    <p>Ruffle has encountered a major issue whilst trying to display this Flash content.</p>
-                    <p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>
-                </div>
+                <div id="panic-body">${errorBody}</div>
                 <div id="panic-footer">
-                    <ul>
-                        <li><a href="${issueLink}">Report Bug</a></li>
-                        <li><a href="#" id="panic-view-details">View Error Details</a></li>
-                    </ul>
+                    <ul>${errorFooter}</ul>
                 </div>
             </div>
         `;
-        (<HTMLLinkElement>(
+        const viewDetails = <HTMLLinkElement>(
             this.container.querySelector("#panic-view-details")
-        )).onclick = () => {
-            this.container.querySelector(
-                "#panic-body"
-            )!.innerHTML = `<textarea>${errorText}</textarea>`;
-            return false;
-        };
+        );
+        if (viewDetails) {
+            viewDetails.onclick = () => {
+                this.container.querySelector(
+                    "#panic-body"
+                )!.innerHTML = `<textarea>${errorText}</textarea>`;
+                return false;
+            };
+        }
 
         // Do this last, just in case it causes any cascading issues.
         if (this.instance) {
