@@ -1,0 +1,52 @@
+green:[Event type="added" bubbles=true cancelable=false eventPhase=2]
+green:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="added" bubbles=true cancelable=false eventPhase=2]
+blue:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+green:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+//BlueSymbol frame 1...
+//GreenSymbol frame 2...
+green:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+green:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+green:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+//BlueSymbol frame 2...
+green:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+green:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+orange:[Event type="added" bubbles=true cancelable=false eventPhase=2]
+orange:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+green:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+orange:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+//BlueSymbol frame 1...
+//OrangeCircle frame 1...
+green:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+orange:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+green:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+orange:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+green:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+orange:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 4
+//BlueSymbol frame 2...
+green:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+orange:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+green:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+orange:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+green:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+blue:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+orange:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 5
+//End MainTimeline frame 5
+//BlueSymbol frame 1...
