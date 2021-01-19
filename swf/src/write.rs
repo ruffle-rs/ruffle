@@ -11,6 +11,7 @@ use crate::{
     tag_code::TagCode,
     types::*,
 };
+use bitstream_io::BitWrite;
 use byteorder::{LittleEndian, WriteBytesExt};
 use enumset::EnumSet;
 use std::cmp::max;
@@ -147,35 +148,31 @@ pub trait SwfWriteExt {
 }
 
 pub struct BitWriter<W: Write> {
-    output: W,
-    pub byte: u8,
-    pub bit_index: u8,
+    bits: bitstream_io::BitWriter<W, bitstream_io::BigEndian>,
 }
 
 impl<W: Write> BitWriter<W> {
     #[inline]
     fn write_bit(&mut self, bit: bool) -> io::Result<()> {
-        self.bit_index -= 1;
-        if bit {
-            self.byte |= 1 << self.bit_index;
-        }
-        if self.bit_index == 0 {
-            self.flush()?;
-        }
-        Ok(())
+        self.bits.write_bit(bit)
     }
 
     #[inline]
     fn write_ubits(&mut self, num_bits: u32, n: u32) -> io::Result<()> {
-        for i in 0..num_bits {
-            self.write_bit(n & (1 << u32::from(num_bits - i - 1)) != 0)?;
+        if num_bits > 0 {
+            self.bits.write(num_bits, n)
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
     #[inline]
     fn write_sbits(&mut self, num_bits: u32, n: i32) -> io::Result<()> {
-        self.write_ubits(num_bits, n as u32)
+        if num_bits > 0 {
+            self.bits.write_signed(num_bits, n)
+        } else {
+            Ok(())
+        }
     }
 
     #[inline]
@@ -190,17 +187,13 @@ impl<W: Write> BitWriter<W> {
 
     #[inline]
     fn flush(&mut self) -> io::Result<()> {
-        if self.bit_index != 8 {
-            self.output.write_u8(self.byte)?;
-            self.bit_index = 8;
-            self.byte = 0;
-        }
-        Ok(())
+        self.bits.byte_align()
     }
 
     #[inline]
     fn writer(&mut self) -> &mut W {
-        &mut self.output
+        let _ = self.bits.flush();
+        self.bits.writer().unwrap()
     }
 }
 
@@ -208,6 +201,7 @@ impl<W: Write> Drop for BitWriter<W> {
     #[inline]
     fn drop(&mut self) {
         let _ = self.flush();
+        let _ = self.bits.flush();
     }
 }
 
@@ -282,9 +276,7 @@ impl<W: Write> Writer<W> {
     #[inline]
     fn bits(&mut self) -> BitWriter<&mut W> {
         BitWriter {
-            output: &mut self.output,
-            byte: 0,
-            bit_index: 8,
+            bits: bitstream_io::BitWriter::new(&mut self.output),
         }
     }
 

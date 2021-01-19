@@ -11,6 +11,7 @@ use crate::{
     string::SwfStr,
     types::*,
 };
+use bitstream_io::BitRead;
 use byteorder::{LittleEndian, ReadBytesExt};
 use enumset::EnumSet;
 use std::collections::HashSet;
@@ -193,43 +194,33 @@ pub trait SwfReadExt {
 }
 
 pub struct BitReader<'a, 'b> {
-    input: &'b mut &'a [u8],
-    byte: u8,
-    bit_index: u8,
+    bits: bitstream_io::BitReader<&'b mut &'a [u8], bitstream_io::BigEndian>,
 }
 
 impl<'a, 'b> BitReader<'a, 'b> {
     #[inline]
     fn byte_align(&mut self) {
-        self.bit_index = 0;
+        self.bits.byte_align();
     }
 
     #[inline]
     fn read_bit(&mut self) -> io::Result<bool> {
-        if self.bit_index == 0 {
-            self.byte = self.input.read_u8()?;
-            self.bit_index = 8;
-        }
-        self.bit_index -= 1;
-        let val = self.byte & (1 << self.bit_index) != 0;
-        Ok(val)
+        self.bits.read_bit()
     }
 
     #[inline]
     fn read_ubits(&mut self, num_bits: u32) -> io::Result<u32> {
-        let mut val = 0u32;
-        for _ in 0..num_bits {
-            val <<= 1;
-            val |= if self.read_bit()? { 1 } else { 0 };
+        if num_bits > 0 {
+            self.bits.read(num_bits)
+        } else {
+            Ok(0)
         }
-        Ok(val)
     }
 
     #[inline]
     fn read_sbits(&mut self, num_bits: u32) -> io::Result<i32> {
         if num_bits > 0 {
-            self.read_ubits(num_bits)
-                .map(|n| (n as i32) << (32 - num_bits) >> (32 - num_bits))
+            self.bits.read_signed(num_bits)
         } else {
             Ok(0)
         }
@@ -247,7 +238,8 @@ impl<'a, 'b> BitReader<'a, 'b> {
 
     #[inline]
     fn reader(&mut self) -> &mut &'a [u8] {
-        &mut self.input
+        self.byte_align();
+        self.bits.reader().unwrap()
     }
 }
 
@@ -289,9 +281,7 @@ impl<'a> Reader<'a> {
 
     fn bits<'b>(&'b mut self) -> BitReader<'a, 'b> {
         BitReader {
-            input: &mut self.input,
-            byte: 0,
-            bit_index: 0,
+            bits: bitstream_io::BitReader::new(&mut self.input),
         }
     }
 
@@ -1972,7 +1962,7 @@ impl<'a> Reader<'a> {
                     context.num_fill_bits = num_fill_bits;
                     context.num_line_bits = num_line_bits;
                     new_style.new_styles = Some(new_styles);
-                    *bits.input = reader.input;
+                    *bits.reader() = reader.input;
                 }
                 Some(ShapeRecord::StyleChange(new_style))
             } else {
@@ -2878,17 +2868,12 @@ pub mod tests {
 
         let mut pos = 0;
         let mut tag_header_length;
-        dbg!(tag_code);
         loop {
             let (swf_tag_code, length) = {
                 let mut tag_reader = Reader::new(&data[pos..], swf_buf.header.version);
                 let ret = tag_reader.read_tag_code_and_length().unwrap();
                 tag_header_length =
                     tag_reader.get_ref().as_ptr() as usize - (pos + data.as_ptr() as usize);
-                dbg!(pos);
-                dbg!(tag_header_length);
-                dbg!(ret.0);
-                dbg!(ret.1);
                 ret
             };
             let tag_data = &data[pos..pos + length + tag_header_length];

@@ -3438,6 +3438,7 @@ name = "swf"
 version = "0.1.2"
 dependencies = [
  "approx",
+ "bitstream-io 1.0.0",
  "byteorder",
  "encoding_rs",
  "enumset",
