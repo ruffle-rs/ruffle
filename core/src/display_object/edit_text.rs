@@ -1120,6 +1120,40 @@ impl<'gc> EditText<'gc> {
                         changed = true;
                     }
                 }
+                TextControlCode::Backspace | TextControlCode::Delete if !selection.is_caret() => {
+                    // Backspace or delete with multiple characters selected
+                    self.replace_text(selection.start(), selection.end(), "", context);
+                    self.set_selection(
+                        Some(TextSelection::for_position(selection.start())),
+                        context.gc_context,
+                    );
+                    changed = true;
+                }
+                TextControlCode::Backspace => {
+                    // Backspace with caret
+                    if selection.start() > 0 {
+                        // Delete previous character
+                        let text = self.text();
+                        let start = string_utils::prev_char_boundary(&text, selection.start());
+                        self.replace_text(start, selection.start(), "", context);
+                        self.set_selection(
+                            Some(TextSelection::for_position(start)),
+                            context.gc_context,
+                        );
+                        changed = true;
+                    }
+                }
+                TextControlCode::Delete => {
+                    // Delete with caret
+                    if selection.end() < self.text_length() {
+                        // Delete next character
+                        let text = self.text();
+                        let end = string_utils::next_char_boundary(&text, selection.start());
+                        self.replace_text(selection.start(), end, "", context);
+                        // No need to change selection
+                        changed = true;
+                    }
+                }
                 _ => {}
             }
             if changed {
@@ -1145,40 +1179,6 @@ impl<'gc> EditText<'gc> {
         if let Some(selection) = self.selection() {
             let mut changed = false;
             match character as u8 {
-                8 | 127 if !selection.is_caret() => {
-                    // Backspace or delete with multiple characters selected
-                    self.replace_text(selection.start(), selection.end(), "", context);
-                    self.set_selection(
-                        Some(TextSelection::for_position(selection.start())),
-                        context.gc_context,
-                    );
-                    changed = true;
-                }
-                8 => {
-                    // Backspace with caret
-                    if selection.start() > 0 {
-                        // Delete previous character
-                        let text = self.text();
-                        let start = string_utils::prev_char_boundary(&text, selection.start());
-                        self.replace_text(start, selection.start(), "", context);
-                        self.set_selection(
-                            Some(TextSelection::for_position(start)),
-                            context.gc_context,
-                        );
-                        changed = true;
-                    }
-                }
-                127 => {
-                    // Delete with caret
-                    if selection.end() < self.text_length() {
-                        // Delete next character
-                        let text = self.text();
-                        let end = string_utils::next_char_boundary(&text, selection.start());
-                        self.replace_text(selection.start(), end, "", context);
-                        // No need to change selection
-                        changed = true;
-                    }
-                }
                 code if !(code as char).is_control() => {
                     self.replace_text(
                         selection.start(),
