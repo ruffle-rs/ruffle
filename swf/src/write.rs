@@ -133,73 +133,17 @@ fn write_lzma_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
     ))
 }
 
-pub trait SwfWrite<W: Write> {
-    fn get_inner(&mut self) -> &mut W;
-
-    fn write_u8(&mut self, n: u8) -> io::Result<()> {
-        self.get_inner().write_u8(n)
-    }
-
-    fn write_u16(&mut self, n: u16) -> io::Result<()> {
-        self.get_inner().write_u16::<LittleEndian>(n)
-    }
-
-    fn write_u32(&mut self, n: u32) -> io::Result<()> {
-        self.get_inner().write_u32::<LittleEndian>(n)
-    }
-
-    fn write_u64(&mut self, n: u64) -> io::Result<()> {
-        self.get_inner().write_u64::<LittleEndian>(n)
-    }
-
-    fn write_i8(&mut self, n: i8) -> io::Result<()> {
-        self.get_inner().write_i8(n)
-    }
-
-    fn write_i16(&mut self, n: i16) -> io::Result<()> {
-        self.get_inner().write_i16::<LittleEndian>(n)
-    }
-
-    fn write_i32(&mut self, n: i32) -> io::Result<()> {
-        self.get_inner().write_i32::<LittleEndian>(n)
-    }
-
-    fn write_fixed8(&mut self, n: f32) -> io::Result<()> {
-        self.write_i16((n * 256f32) as i16)
-    }
-
-    fn write_fixed16(&mut self, n: f64) -> io::Result<()> {
-        self.write_i32((n * 65536f64) as i32)
-    }
-
-    fn write_f32(&mut self, n: f32) -> io::Result<()> {
-        self.get_inner().write_f32::<LittleEndian>(n)
-    }
-
-    fn write_f64(&mut self, n: f64) -> io::Result<()> {
-        // Flash weirdly stores f64 as two LE 32-bit chunks.
-        // First word is the hi-word, second word is the lo-word.
-        let mut num = [0u8; 8];
-        (&mut num[..]).write_f64::<LittleEndian>(n)?;
-        num.swap(0, 4);
-        num.swap(1, 5);
-        num.swap(2, 6);
-        num.swap(3, 7);
-        self.get_inner().write_all(&num)
-    }
-
-    fn write_string(&mut self, s: SwfStr<'_>) -> io::Result<()> {
-        self.get_inner().write_all(s.as_bytes())?;
-        self.write_u8(0)
-    }
-
-    fn bits(&mut self) -> BitWriter<&mut W> {
-        BitWriter {
-            output: self.get_inner(),
-            byte: 0,
-            bit_index: 8,
-        }
-    }
+pub trait SwfWriteExt {
+    fn write_u8(&mut self, n: u8) -> io::Result<()>;
+    fn write_u16(&mut self, n: u16) -> io::Result<()>;
+    fn write_u32(&mut self, n: u32) -> io::Result<()>;
+    fn write_u64(&mut self, n: u64) -> io::Result<()>;
+    fn write_i8(&mut self, n: i8) -> io::Result<()>;
+    fn write_i16(&mut self, n: i16) -> io::Result<()>;
+    fn write_i32(&mut self, n: i32) -> io::Result<()>;
+    fn write_f32(&mut self, n: f32) -> io::Result<()>;
+    fn write_f64(&mut self, n: f64) -> io::Result<()>;
+    fn write_string(&mut self, s: SwfStr<'_>) -> io::Result<()>;
 }
 
 pub struct BitWriter<W: Write> {
@@ -272,43 +216,53 @@ struct Writer<W: Write> {
     pub version: u8,
 }
 
-impl<W: Write> SwfWrite<W> for Writer<W> {
-    fn get_inner(&mut self) -> &mut W {
-        &mut self.output
-    }
-
+impl<W: Write> SwfWriteExt for Writer<W> {
+    #[inline]
     fn write_u8(&mut self, n: u8) -> io::Result<()> {
         self.output.write_u8(n)
     }
 
+    #[inline]
     fn write_u16(&mut self, n: u16) -> io::Result<()> {
         self.output.write_u16::<LittleEndian>(n)
     }
 
+    #[inline]
     fn write_u32(&mut self, n: u32) -> io::Result<()> {
         self.output.write_u32::<LittleEndian>(n)
     }
 
+    #[inline]
+    fn write_u64(&mut self, n: u64) -> io::Result<()> {
+        self.output.write_u64::<LittleEndian>(n)
+    }
+
+    #[inline]
     fn write_i8(&mut self, n: i8) -> io::Result<()> {
         self.output.write_i8(n)
     }
 
+    #[inline]
     fn write_i16(&mut self, n: i16) -> io::Result<()> {
         self.output.write_i16::<LittleEndian>(n)
     }
 
+    #[inline]
     fn write_i32(&mut self, n: i32) -> io::Result<()> {
         self.output.write_i32::<LittleEndian>(n)
     }
 
+    #[inline]
     fn write_f32(&mut self, n: f32) -> io::Result<()> {
         self.output.write_f32::<LittleEndian>(n)
     }
 
+    #[inline]
     fn write_f64(&mut self, n: f64) -> io::Result<()> {
         self.output.write_f64::<LittleEndian>(n)
     }
 
+    #[inline]
     fn write_string(&mut self, s: SwfStr<'_>) -> io::Result<()> {
         self.output.write_all(s.as_bytes())?;
         self.write_u8(0)
@@ -323,6 +277,23 @@ impl<W: Write> Writer<W> {
     #[allow(dead_code)]
     fn into_inner(self) -> W {
         self.output
+    }
+
+    #[inline]
+    fn bits(&mut self) -> BitWriter<&mut W> {
+        BitWriter {
+            output: &mut self.output,
+            byte: 0,
+            bit_index: 8,
+        }
+    }
+
+    fn write_fixed8(&mut self, n: f32) -> io::Result<()> {
+        self.write_i16((n * 256f32) as i16)
+    }
+
+    fn write_fixed16(&mut self, n: f64) -> io::Result<()> {
+        self.write_i32((n * 65536f64) as i32)
     }
 
     fn write_encoded_u32(&mut self, mut n: u32) -> Result<()> {
@@ -2722,7 +2693,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_debug_id(&mut self, debug_id: &DebugId) -> Result<()> {
-        self.get_inner().write_all(debug_id)?;
+        self.output.write_all(debug_id)?;
         Ok(())
     }
 

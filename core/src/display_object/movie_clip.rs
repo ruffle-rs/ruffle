@@ -31,7 +31,7 @@ use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
-use swf::read::SwfRead;
+use swf::read::SwfReadExt;
 use swf::{FillStyle, FrameLabelData, LineStyle};
 
 type FrameNumber = u16;

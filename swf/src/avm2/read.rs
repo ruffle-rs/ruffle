@@ -1,16 +1,11 @@
 use crate::avm2::types::*;
 use crate::error::{Error, Result};
-use crate::read::SwfRead;
-use std::io::{Read, Seek, SeekFrom};
+use crate::read::SwfReadExt;
+use byteorder::{LittleEndian, ReadBytesExt};
+use std::io::{self, Read, Seek, SeekFrom};
 
 pub struct Reader<R: Read> {
-    inner: R,
-}
-
-impl<R: Read> SwfRead<R> for Reader<R> {
-    fn get_inner(&mut self) -> &mut R {
-        &mut self.inner
-    }
+    input: R,
 }
 
 impl<R> Reader<R>
@@ -19,13 +14,13 @@ where
 {
     #[inline]
     pub fn seek(&mut self, relative_offset: i64) -> std::io::Result<u64> {
-        self.inner.seek(SeekFrom::Current(relative_offset as i64))
+        self.input.seek(SeekFrom::Current(relative_offset as i64))
     }
 }
 
 impl<R: Read> Reader<R> {
-    pub fn new(inner: R) -> Reader<R> {
-        Reader { inner }
+    pub fn new(input: R) -> Reader<R> {
+        Reader { input }
     }
 
     pub fn read(&mut self) -> Result<AbcFile> {
@@ -128,7 +123,7 @@ impl<R: Read> Reader<R> {
     fn read_string(&mut self) -> Result<String> {
         let len = self.read_u30()? as usize;
         let mut s = String::with_capacity(len);
-        self.inner
+        self.input
             .by_ref()
             .take(len as u64)
             .read_to_string(&mut s)?;
@@ -501,7 +496,7 @@ impl<R: Read> Reader<R> {
         // Read the code data.
         let code_len = self.read_u30()?;
         let mut code = Vec::with_capacity(code_len as usize);
-        self.inner
+        self.input
             .by_ref()
             .take(code_len.into())
             .read_to_end(&mut code)?;
@@ -866,6 +861,53 @@ impl<R: Read> Reader<R> {
     }
 }
 
+impl<'a, R: 'a + Read> SwfReadExt for Reader<R> {
+    #[inline]
+    fn read_u8(&mut self) -> io::Result<u8> {
+        self.input.read_u8()
+    }
+
+    #[inline]
+    fn read_u16(&mut self) -> io::Result<u16> {
+        self.input.read_u16::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_u32(&mut self) -> io::Result<u32> {
+        self.input.read_u32::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_u64(&mut self) -> io::Result<u64> {
+        self.input.read_u64::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_i8(&mut self) -> io::Result<i8> {
+        self.input.read_i8()
+    }
+
+    #[inline]
+    fn read_i16(&mut self) -> io::Result<i16> {
+        self.input.read_i16::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_i32(&mut self) -> io::Result<i32> {
+        self.input.read_i32::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_f32(&mut self) -> io::Result<f32> {
+        self.input.read_f32::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_f64(&mut self) -> io::Result<f64> {
+        self.input.read_f64::<LittleEndian>()
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -874,8 +916,8 @@ pub mod tests {
     pub fn read_abc_from_file(path: &str) -> Vec<u8> {
         use crate::types::Tag;
         let data = std::fs::read(path).unwrap();
-        let swf_stream = crate::read_swf_header(&data[..]).unwrap();
-        let swf = crate::read_swf(&swf_stream).unwrap();
+        let swf_buf = crate::decompress_swf(&data[..]).unwrap();
+        let swf = crate::parse_swf(&swf_buf).unwrap();
         for tag in swf.tags {
             if let Tag::DoAbc(do_abc) = tag {
                 return do_abc.data.to_vec();

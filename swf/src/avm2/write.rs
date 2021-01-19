@@ -1,21 +1,70 @@
 use crate::avm2::opcode::OpCode;
 use crate::avm2::types::*;
-use crate::write::SwfWrite;
-use std::io::{Result, Write};
+use crate::string::SwfStr;
+use crate::write::SwfWriteExt;
+use byteorder::{LittleEndian, WriteBytesExt};
+use std::io::{self, Result, Write};
 
 pub struct Writer<W: Write> {
-    inner: W,
+    output: W,
 }
 
-impl<W: Write> SwfWrite<W> for Writer<W> {
-    fn get_inner(&mut self) -> &mut W {
-        &mut self.inner
+impl<W: Write> SwfWriteExt for Writer<W> {
+    #[inline]
+    fn write_u8(&mut self, n: u8) -> io::Result<()> {
+        self.output.write_u8(n)
+    }
+
+    #[inline]
+    fn write_u16(&mut self, n: u16) -> io::Result<()> {
+        self.output.write_u16::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_u32(&mut self, n: u32) -> io::Result<()> {
+        self.output.write_u32::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_u64(&mut self, n: u64) -> io::Result<()> {
+        self.output.write_u64::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_i8(&mut self, n: i8) -> io::Result<()> {
+        self.output.write_i8(n)
+    }
+
+    #[inline]
+    fn write_i16(&mut self, n: i16) -> io::Result<()> {
+        self.output.write_i16::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_i32(&mut self, n: i32) -> io::Result<()> {
+        self.output.write_i32::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_f32(&mut self, n: f32) -> io::Result<()> {
+        self.output.write_f32::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_f64(&mut self, n: f64) -> io::Result<()> {
+        self.output.write_f64::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_string(&mut self, s: SwfStr<'_>) -> io::Result<()> {
+        self.output.write_all(s.as_bytes())?;
+        self.write_u8(0)
     }
 }
 
 impl<W: Write> Writer<W> {
-    pub fn new(inner: W) -> Writer<W> {
-        Writer { inner }
+    pub fn new(output: W) -> Writer<W> {
+        Writer { output }
     }
 
     pub fn write(&mut self, abc_file: AbcFile) -> Result<()> {
@@ -105,7 +154,7 @@ impl<W: Write> Writer<W> {
 
     fn write_string(&mut self, s: &str) -> Result<()> {
         self.write_u30(s.len() as u32)?;
-        self.inner.write_all(s.as_bytes())?;
+        self.output.write_all(s.as_bytes())?;
         Ok(())
     }
 
@@ -525,7 +574,7 @@ impl<W: Write> Writer<W> {
         self.write_u30(method_body.max_scope_depth)?;
 
         self.write_u30(method_body.code.len() as u32)?;
-        self.inner.write_all(&method_body.code)?;
+        self.output.write_all(&method_body.code)?;
 
         self.write_u30(method_body.exceptions.len() as u32)?;
         for exception in &method_body.exceptions {

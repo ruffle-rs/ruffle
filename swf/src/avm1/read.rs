@@ -2,21 +2,16 @@
 
 use crate::avm1::{opcode::OpCode, types::*};
 use crate::error::{Error, Result};
-use crate::read::SwfRead;
+use crate::read::SwfReadExt;
 use crate::string::SwfStr;
-use std::io;
+use byteorder::{LittleEndian, ReadBytesExt};
+use std::io::{self, Read};
 
 #[allow(dead_code)]
 pub struct Reader<'a> {
     input: &'a [u8],
     version: u8,
     encoding: &'static encoding_rs::Encoding,
-}
-
-impl<'a> SwfRead<&'a [u8]> for Reader<'a> {
-    fn get_inner(&mut self) -> &mut &'a [u8] {
-        &mut self.input
-    }
 }
 
 impl<'a> Reader<'a> {
@@ -73,6 +68,19 @@ impl<'a> Reader<'a> {
         };
         self.input = &self.input[pos + 1..];
         Ok(s)
+    }
+
+    #[inline]
+    fn read_f64_me(&mut self) -> io::Result<f64> {
+        // Flash weirdly stores f64 as two LE 32-bit chunks.
+        // First word is the hi-word, second word is the lo-word.
+        let mut num = [0u8; 8];
+        self.input.read_exact(&mut num)?;
+        num.swap(0, 4);
+        num.swap(1, 5);
+        num.swap(2, 6);
+        num.swap(3, 7);
+        (&num[..]).read_f64::<LittleEndian>()
     }
 
     #[inline]
@@ -391,6 +399,53 @@ impl<'a> Reader<'a> {
                 None
             },
         }))
+    }
+}
+
+impl<'a> SwfReadExt for Reader<'a> {
+    #[inline]
+    fn read_u8(&mut self) -> io::Result<u8> {
+        self.input.read_u8()
+    }
+
+    #[inline]
+    fn read_u16(&mut self) -> io::Result<u16> {
+        self.input.read_u16::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_u32(&mut self) -> io::Result<u32> {
+        self.input.read_u32::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_u64(&mut self) -> io::Result<u64> {
+        self.input.read_u64::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_i8(&mut self) -> io::Result<i8> {
+        self.input.read_i8()
+    }
+
+    #[inline]
+    fn read_i16(&mut self) -> io::Result<i16> {
+        self.input.read_i16::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_i32(&mut self) -> io::Result<i32> {
+        self.input.read_i32::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_f32(&mut self) -> io::Result<f32> {
+        self.input.read_f32::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_f64(&mut self) -> io::Result<f64> {
+        self.input.read_f64::<LittleEndian>()
     }
 }
 

@@ -2,24 +2,86 @@
 
 use crate::avm1::opcode::OpCode;
 use crate::avm1::types::*;
-use crate::write::SwfWrite;
-use std::io::{Result, Write};
+use crate::string::SwfStr;
+use crate::write::SwfWriteExt;
+use byteorder::{LittleEndian, WriteBytesExt};
+use std::io::{self, Result, Write};
 
 #[allow(dead_code)]
 pub struct Writer<W: Write> {
-    inner: W,
+    output: W,
     version: u8,
 }
 
-impl<W: Write> SwfWrite<W> for Writer<W> {
-    fn get_inner(&mut self) -> &mut W {
-        &mut self.inner
+impl<W: Write> SwfWriteExt for Writer<W> {
+    #[inline]
+    fn write_u8(&mut self, n: u8) -> io::Result<()> {
+        self.output.write_u8(n)
+    }
+
+    #[inline]
+    fn write_u16(&mut self, n: u16) -> io::Result<()> {
+        self.output.write_u16::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_u32(&mut self, n: u32) -> io::Result<()> {
+        self.output.write_u32::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_u64(&mut self, n: u64) -> io::Result<()> {
+        self.output.write_u64::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_i8(&mut self, n: i8) -> io::Result<()> {
+        self.output.write_i8(n)
+    }
+
+    #[inline]
+    fn write_i16(&mut self, n: i16) -> io::Result<()> {
+        self.output.write_i16::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_i32(&mut self, n: i32) -> io::Result<()> {
+        self.output.write_i32::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_f32(&mut self, n: f32) -> io::Result<()> {
+        self.output.write_f32::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_f64(&mut self, n: f64) -> io::Result<()> {
+        self.output.write_f64::<LittleEndian>(n)
+    }
+
+    #[inline]
+    fn write_string(&mut self, s: SwfStr<'_>) -> io::Result<()> {
+        self.output.write_all(s.as_bytes())?;
+        self.write_u8(0)
     }
 }
 
 impl<W: Write> Writer<W> {
-    pub fn new(inner: W, version: u8) -> Writer<W> {
-        Writer { inner, version }
+    pub fn new(output: W, version: u8) -> Writer<W> {
+        Writer { output, version }
+    }
+
+    #[inline]
+    fn write_f64_me(&mut self, n: f64) -> io::Result<()> {
+        // Flash weirdly stores f64 as two LE 32-bit chunks.
+        // First word is the hi-word, second word is the lo-word.
+        let mut num = [0u8; 8];
+        (&mut num[..]).write_f64::<LittleEndian>(n)?;
+        num.swap(0, 4);
+        num.swap(1, 5);
+        num.swap(2, 6);
+        num.swap(3, 7);
+        self.output.write_all(&num)
     }
 
     #[allow(clippy::inconsistent_digit_grouping)]
@@ -66,7 +128,7 @@ impl<W: Write> Writer<W> {
                     self.write_string(*param)?;
                 }
                 self.write_u16(actions.len() as u16)?;
-                self.inner.write_all(actions)?;
+                self.output.write_all(actions)?;
             }
             Action::DefineFunction2(ref function) => {
                 let len = function.name.len()
@@ -111,7 +173,7 @@ impl<W: Write> Writer<W> {
                     self.write_string(param.name)?;
                 }
                 self.write_u16(function.actions.len() as u16)?;
-                self.inner.write_all(&function.actions)?;
+                self.output.write_all(&function.actions)?;
             }
             Action::DefineLocal => self.write_action_header(OpCode::DefineLocal, 0)?,
             Action::DefineLocal2 => self.write_action_header(OpCode::DefineLocal2, 0)?,
@@ -304,7 +366,7 @@ impl<W: Write> Writer<W> {
                     Some((CatchVar::Register(i), _)) => self.write_u8(i)?,
                     _ => (),
                 }
-                self.inner.write_all(&action_buf)?;
+                self.output.write_all(&action_buf)?;
             }
             Action::TypeOf => self.write_action_header(OpCode::TypeOf, 0)?,
             Action::WaitForFrame {
@@ -323,11 +385,11 @@ impl<W: Write> Writer<W> {
             }
             Action::With { ref actions } => {
                 self.write_action_header(OpCode::With, actions.len())?;
-                self.inner.write_all(&actions)?;
+                self.output.write_all(&actions)?;
             }
             Action::Unknown { opcode, ref data } => {
                 self.write_opcode_and_length(opcode, data.len())?;
-                self.inner.write_all(data)?;
+                self.output.write_all(data)?;
             }
         }
 
@@ -376,7 +438,7 @@ impl<W: Write> Writer<W> {
             }
             Value::Double(v) => {
                 self.write_u8(6)?;
-                self.write_f64(v)?;
+                self.write_f64_me(v)?;
             }
             Value::Int(v) => {
                 self.write_u8(7)?;

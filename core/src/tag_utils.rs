@@ -73,10 +73,10 @@ impl SwfMovie {
 
     /// Construct a movie based on the contents of the SWF datastream.
     pub fn from_data(swf_data: &[u8], url: Option<String>) -> Result<Self, Error> {
-        let swf_stream = swf::read::read_swf_header(&swf_data[..])?;
+        let swf_buf = swf::read::decompress_swf(&swf_data[..])?;
         Ok(Self {
-            header: swf_stream.header,
-            data: swf_stream.data,
+            header: swf_buf.header,
+            data: swf_buf.data,
             url,
             parameters: PropertyMap::new(),
         })
