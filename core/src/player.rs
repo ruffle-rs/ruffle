@@ -943,8 +943,24 @@ impl Player {
             // want to run frames on
             let levels: Vec<_> = update_context.levels.values().copied().collect();
 
-            for level in levels {
+            for level in levels.iter() {
+                level.exit_frame(update_context);
+            }
+
+            for level in levels.iter() {
+                level.enter_frame(update_context);
+            }
+
+            for level in levels.iter() {
                 level.run_frame(update_context);
+            }
+
+            for level in levels.iter() {
+                level.frame_constructed(update_context);
+            }
+
+            for level in levels.iter() {
+                level.run_frame_scripts(update_context);
             }
 
             update_context.update_sounds();

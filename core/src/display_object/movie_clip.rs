@@ -68,6 +68,7 @@ pub struct MovieClipData<'gc> {
     has_focus: bool,
     enabled: bool,
     use_hand_cursor: bool,
+    queued_script_frame: Option<FrameNumber>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -93,6 +94,7 @@ impl<'gc> MovieClip<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
+                queued_script_frame: None,
             },
         ))
     }
@@ -122,6 +124,8 @@ impl<'gc> MovieClip<'gc> {
                 is_focusable: false,
                 has_focus: false,
                 enabled: true,
+                use_hand_cursor: true,
+                queued_script_frame: None,
             },
         ))
     }
@@ -155,6 +159,7 @@ impl<'gc> MovieClip<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
+                queued_script_frame: None,
             },
         ))
     }
@@ -1084,16 +1089,8 @@ impl<'gc> MovieClip<'gc> {
             self.0.write(context.gc_context).stop_audio_stream(context);
         }
 
-        if self
-            .0
-            .read()
-            .object
-            .map(|o| o.is_avm2_object())
-            .unwrap_or(false)
-        {
-            let frame_id = self.0.read().current_frame;
-            self.run_frame_scripts(frame_id, context);
-        }
+        let frame_id = self.0.read().current_frame;
+        self.0.write(context.gc_context).queued_script_frame = Some(frame_id);
     }
 
     /// Instantiate a given child object on the timeline at a given depth.
@@ -1339,6 +1336,11 @@ impl<'gc> MovieClip<'gc> {
             .iter()
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
+
+        self.exit_frame(context);
+        self.enter_frame(context);
+        self.frame_constructed(context);
+        self.run_frame_scripts(context);
     }
 
     fn construct_as_avm1_object(
@@ -1519,35 +1521,6 @@ impl<'gc> MovieClip<'gc> {
             .push(Avm2FrameScript { frame_id, callable });
     }
 
-    fn run_frame_scripts(self, frame_id: FrameNumber, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut index = 0;
-        let read = self.0.read();
-
-        let avm2_object = read.object.and_then(|o| o.as_avm2_object().ok());
-
-        if let Some(avm2_object) = avm2_object {
-            while let Some(fs) = read.frame_scripts.get(index) {
-                if fs.frame_id == frame_id {
-                    let callable = fs.callable;
-
-                    context.action_queue.queue_actions(
-                        self.into(),
-                        ActionType::Callable2 {
-                            callable,
-                            reciever: Some(avm2_object),
-                            args: Vec::new(),
-                        },
-                        false,
-                    );
-                }
-
-                index += 1;
-            }
-        } else {
-            log::error!("Attempted to run AVM2 frame scripts on an AVM1 MovieClip.");
-        }
-    }
-
     pub fn set_focusable(self, focusable: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).is_focusable = focusable;
     }
@@ -1655,6 +1628,44 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 context,
                 ClipEvent::Load,
             );
+        }
+    }
+
+    fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut index = 0;
+        let mut write = self.0.write(context.gc_context);
+
+        if let Some(frame_id) = write.queued_script_frame {
+            let avm2_object = write.object.and_then(|o| o.as_avm2_object().ok());
+
+            if let Some(avm2_object) = avm2_object {
+                while let Some(fs) = write.frame_scripts.get(index) {
+                    if fs.frame_id == frame_id {
+                        let callable = fs.callable;
+
+                        context.action_queue.queue_actions(
+                            self.into(),
+                            ActionType::Callable2 {
+                                callable,
+                                reciever: Some(avm2_object),
+                                args: Vec::new(),
+                            },
+                            false,
+                        );
+                    }
+
+                    index += 1;
+                }
+            }
+        }
+
+        write.queued_script_frame = None;
+        drop(write);
+
+        if let Some(container) = self.as_container() {
+            for child in container.iter_render_list() {
+                child.run_frame_scripts(context);
+            }
         }
     }
 
