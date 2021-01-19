@@ -4,7 +4,7 @@ use crate::avm1::types::*;
 use crate::avm2::read::tests::read_abc_from_file;
 use crate::avm2::types::*;
 use crate::read::tests::{read_tag_bytes_from_file, read_tag_bytes_from_file_with_index};
-use crate::read::{read_swf, read_swf_header};
+use crate::read::{decompress_swf, parse_swf};
 use crate::string::SwfStr;
 use crate::tag_code::TagCode;
 use crate::types::*;
@@ -16,8 +16,8 @@ use std::vec::Vec;
 #[allow(dead_code)]
 pub fn echo_swf(filename: &str) {
     let in_data = std::fs::read(filename).unwrap();
-    let swf_stream = read_swf_header(&in_data[..]).unwrap();
-    let swf = read_swf(&swf_stream).unwrap();
+    let swf_buf = decompress_swf(&in_data[..]).unwrap();
+    let swf = parse_swf(&swf_buf).unwrap();
     let out_file = File::create(filename).unwrap();
     write_swf(&swf, out_file).unwrap();
 }

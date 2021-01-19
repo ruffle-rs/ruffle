@@ -16,36 +16,21 @@ use enumset::EnumSet;
 use std::collections::HashSet;
 use std::io::{self, Read};
 
-/// Convenience method to parse an SWF.
-///
-/// Decompresses the SWF in memory and returns a `Vec` of tags.
-/// If you would like to stream the SWF instead, use `read_swf_header` and
-/// `read_tag`.
+/// Parse a decompressed SWF and return a `Vec` of tags.
 ///
 /// # Example
 /// ```
 /// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
 /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
-/// let stream = swf::read_swf_header(&data[..]).unwrap();
-/// let swf = swf::read_swf(&stream).unwrap();
+/// let stream = swf::decompress_swf(&data[..]).unwrap();
+/// let swf = swf::parse_swf(&stream).unwrap();
 /// println!("Number of frames: {}", swf.header.num_frames);
 /// ```
-pub fn read_swf<'a>(swf_stream: &'a SwfStream) -> Result<Swf<'a>> {
-    // // Some SWF streams may not be compressed correctly,
-    // // (e.g. incorrect data length in the stream), so decompressing
-    // // may throw an error even though the data otherwise comes
-    // // through the stream.
-    // // We'll still try to parse what we get if the full decompression fails.
-    // if let Err(e) = reader.get_mut().read_to_end(&mut data) {
-    //     log::warn!("Error decompressing SWF stream, may be corrupt: {}", e);
-    // }
-    // if data.len() != header.uncompressed_length.try_into().unwrap() {
-    //     log::warn!("SWF length doesn't match header, may be corrupt");
-    // }
-    let mut reader = Reader::new(&swf_stream.data[..], swf_stream.header.version);
+pub fn parse_swf<'a>(swf_buf: &'a SwfBuf) -> Result<Swf<'a>> {
+    let mut reader = Reader::new(&swf_buf.data[..], swf_buf.header.version);
 
     Ok(Swf {
-        header: swf_stream.header.clone(),
+        header: swf_buf.header.clone(),
         tags: reader.read_tag_list()?,
     })
 }
@@ -59,22 +44,18 @@ pub fn read_swf<'a>(swf_stream: &'a SwfStream) -> Result<Swf<'a>> {
 /// ```
 /// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
 /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
-/// let swf_stream = swf::read_swf_header(&data[..]).unwrap();
+/// let swf_stream = swf::decompress_swf(&data[..]).unwrap();
 /// println!("FPS: {}", swf_stream.header.frame_rate);
 /// ```
-pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream> {
+pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // Read SWF header.
     let compression = read_compression_type(&mut input)?;
     let version = input.read_u8()?;
     let uncompressed_length = input.read_u32::<LittleEndian>()?;
 
     // Now the SWF switches to a compressed stream.
-    let decompressed_input: Vec<u8> = match compression {
-        Compression::None => {
-            let mut data = Vec::with_capacity(uncompressed_length as usize);
-            input.read_to_end(&mut data)?;
-            data
-        }
+    let mut decompress_stream: Box<dyn Read> = match compression {
+        Compression::None => Box::new(input),
         Compression::Zlib => {
             if version < 6 {
                 log::warn!(
@@ -82,10 +63,7 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream> {
                     version
                 );
             }
-            let mut reader = make_zlib_reader(input)?;
-            let mut data = Vec::with_capacity(uncompressed_length as usize);
-            reader.read_to_end(&mut data)?;
-            data
+            make_zlib_reader(input)?
         }
         Compression::Lzma => {
             if version < 13 {
@@ -96,12 +74,23 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream> {
             }
             // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
             // subtract it here.
-            let mut reader = make_lzma_reader(input, uncompressed_length - 8)?;
-            let mut data = Vec::with_capacity(uncompressed_length as usize);
-            reader.read_to_end(&mut data)?;
-            data
+            make_lzma_reader(input, uncompressed_length - 8)?
         }
     };
+
+    // Some SWF streams may not be compressed correctly,
+    // (e.g. incorrect data length in the stream), so decompressing
+    // may throw an error even though the data otherwise comes
+    // through the stream.
+    // We'll still try to parse what we get if the full decompression fails.
+    let mut decompressed_input = Vec::with_capacity(uncompressed_length as usize);
+    if let Err(e) = decompress_stream.read_to_end(&mut decompressed_input) {
+        log::error!("Error decompressing SWF: {}", e);
+    }
+
+    if decompressed_input.len() as u64 != uncompressed_length as u64 {
+        log::warn!("SWF length doesn't match header, may be corrupt");
+    }
 
     let mut reader = Reader::new(&decompressed_input, version);
     let stage_size = reader.read_rectangle()?;
@@ -116,7 +105,7 @@ pub fn read_swf_header<'a, R: Read + 'a>(mut input: R) -> Result<SwfStream> {
         num_frames,
     };
     let data = reader.get_ref().to_vec();
-    Ok(SwfStream { header, data })
+    Ok(SwfBuf { header, data })
 }
 
 #[cfg(feature = "flate2")]
@@ -191,64 +180,16 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     ))
 }
 
-pub trait SwfRead<R: Read> {
-    fn get_inner(&mut self) -> &mut R;
-
-    fn read_u8(&mut self) -> io::Result<u8> {
-        self.get_inner().read_u8()
-    }
-
-    fn read_u16(&mut self) -> io::Result<u16> {
-        self.get_inner().read_u16::<LittleEndian>()
-    }
-
-    fn read_u32(&mut self) -> io::Result<u32> {
-        self.get_inner().read_u32::<LittleEndian>()
-    }
-
-    fn read_u64(&mut self) -> io::Result<u64> {
-        self.get_inner().read_u64::<LittleEndian>()
-    }
-
-    fn read_i8(&mut self) -> io::Result<i8> {
-        self.get_inner().read_i8()
-    }
-
-    fn read_i16(&mut self) -> io::Result<i16> {
-        self.get_inner().read_i16::<LittleEndian>()
-    }
-
-    fn read_i32(&mut self) -> io::Result<i32> {
-        self.get_inner().read_i32::<LittleEndian>()
-    }
-
-    fn read_fixed8(&mut self) -> io::Result<f32> {
-        self.read_i16().map(|n| f32::from(n) / 256f32)
-    }
-
-    fn read_fixed16(&mut self) -> io::Result<f64> {
-        self.read_i32().map(|n| f64::from(n) / 65536f64)
-    }
-
-    fn read_f32(&mut self) -> io::Result<f32> {
-        self.get_inner().read_f32::<LittleEndian>()
-    }
-
-    fn read_f64(&mut self) -> io::Result<f64> {
-        self.get_inner().read_f64::<LittleEndian>()
-    }
-
-    fn read_f64_me(&mut self) -> io::Result<f64> {
-        // Flash weirdly stores f64 as two LE 32-bit chunks.
-        // First word is the hi-word, second word is the lo-word.
-        let mut num = [0u8; 8];
-        self.get_inner().read_exact(&mut num)?;
-        num.swap(0, 4);
-        num.swap(1, 5);
-        num.swap(2, 6);
-        num.swap(3, 7);
-        (&num[..]).read_f64::<LittleEndian>()
-    }
+pub trait SwfReadExt {
+    fn read_u8(&mut self) -> io::Result<u8>;
+    fn read_u16(&mut self) -> io::Result<u16>;
+    fn read_u32(&mut self) -> io::Result<u32>;
+    fn read_u64(&mut self) -> io::Result<u64>;
+    fn read_i8(&mut self) -> io::Result<i8>;
+    fn read_i16(&mut self) -> io::Result<i16>;
+    fn read_i32(&mut self) -> io::Result<i32>;
+    fn read_f32(&mut self) -> io::Result<f32>;
+    fn read_f64(&mut self) -> io::Result<f64>;
 }
 
 pub struct BitReader<'a, 'b> {
@@ -316,44 +257,6 @@ pub struct Reader<'a> {
     encoding: &'static encoding_rs::Encoding,
 }
 
-impl<'a> SwfRead<&'a [u8]> for Reader<'a> {
-    fn get_inner(&mut self) -> &mut &'a [u8] {
-        &mut self.input
-    }
-
-    fn read_u8(&mut self) -> io::Result<u8> {
-        self.input.read_u8()
-    }
-
-    fn read_u16(&mut self) -> io::Result<u16> {
-        self.input.read_u16::<LittleEndian>()
-    }
-
-    fn read_u32(&mut self) -> io::Result<u32> {
-        self.input.read_u32::<LittleEndian>()
-    }
-
-    fn read_i8(&mut self) -> io::Result<i8> {
-        self.input.read_i8()
-    }
-
-    fn read_i16(&mut self) -> io::Result<i16> {
-        self.input.read_i16::<LittleEndian>()
-    }
-
-    fn read_i32(&mut self) -> io::Result<i32> {
-        self.input.read_i32::<LittleEndian>()
-    }
-
-    fn read_f32(&mut self) -> io::Result<f32> {
-        self.input.read_f32::<LittleEndian>()
-    }
-
-    fn read_f64(&mut self) -> io::Result<f64> {
-        self.input.read_f64::<LittleEndian>()
-    }
-}
-
 impl<'a> Reader<'a> {
     pub fn new(input: &'a [u8], version: u8) -> Reader<'a> {
         Reader {
@@ -386,10 +289,20 @@ impl<'a> Reader<'a> {
 
     fn bits<'b>(&'b mut self) -> BitReader<'a, 'b> {
         BitReader {
-            input: self.get_inner(),
+            input: &mut self.input,
             byte: 0,
             bit_index: 0,
         }
+    }
+
+    #[inline]
+    fn read_fixed8(&mut self) -> io::Result<f32> {
+        self.read_i16().map(|n| f32::from(n) / 256f32)
+    }
+
+    #[inline]
+    fn read_fixed16(&mut self) -> io::Result<f64> {
+        self.read_i32().map(|n| f64::from(n) / 65536f64)
     }
 
     fn read_slice(&mut self, len: usize) -> io::Result<&'a [u8]> {
@@ -442,8 +355,8 @@ impl<'a> Reader<'a> {
     /// ```
     /// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
     /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
-    /// let mut swf_stream = swf::read_swf_header(&data[..]).unwrap();
-    /// let mut reader = swf::read::Reader::new(&swf_stream.data[..], swf_stream.header.version);
+    /// let mut swf_buf = swf::decompress_swf(&data[..]).unwrap();
+    /// let mut reader = swf::read::Reader::new(&swf_buf.data[..], swf_buf.header.version);
     /// while let Ok(tag) = reader.read_tag() {
     ///     println!("Tag: {:?}", tag);
     /// }
@@ -2932,17 +2845,6 @@ pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
     Ok(compression)
 }
 
-// pub fn read_rectangle(mut input: R) -> Result<Rectangle> {
-//     let mut bits = self.bits();
-//     let num_bits: u32 = bits.read_ubits(5)?;
-//     Ok(Rectangle {
-//         x_min: bits.read_sbits_twips(num_bits)?,
-//         x_max: bits.read_sbits_twips(num_bits)?,
-//         y_min: bits.read_sbits_twips(num_bits)?,
-//         y_max: bits.read_sbits_twips(num_bits)?,
-//     })
-// }
-
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -2971,15 +2873,15 @@ pub mod tests {
         file.read_to_end(&mut data).unwrap();
 
         // Halfway parse the SWF file until we find the tag we're searching for.
-        let swf_stream = super::read_swf_header(&data[..]).unwrap();
-        let data = swf_stream.data;
+        let swf_buf = super::decompress_swf(&data[..]).unwrap();
+        let data = swf_buf.data;
 
         let mut pos = 0;
         let mut tag_header_length;
         dbg!(tag_code);
         loop {
             let (swf_tag_code, length) = {
-                let mut tag_reader = Reader::new(&data[pos..], swf_stream.header.version);
+                let mut tag_reader = Reader::new(&data[pos..], swf_buf.header.version);
                 let ret = tag_reader.read_tag_code_and_length().unwrap();
                 tag_header_length =
                     tag_reader.get_ref().as_ptr() as usize - (pos + data.as_ptr() as usize);
@@ -3023,9 +2925,9 @@ pub mod tests {
 
     #[test]
     fn read_swfs() {
-        fn read_from_file(path: &str) -> SwfStream {
+        fn read_from_file(path: &str) -> SwfBuf {
             let data = std::fs::read(path).unwrap();
-            read_swf_header(&data[..]).unwrap()
+            decompress_swf(&data[..]).unwrap()
         }
 
         assert_eq!(
@@ -3049,7 +2951,7 @@ pub mod tests {
     #[test]
     fn read_invalid_swf() {
         let junk = [0u8; 128];
-        let result = read_swf_header(&junk[..]);
+        let result = decompress_swf(&junk[..]);
         // TODO: Verify correct error.
         assert!(result.is_err());
     }
@@ -3425,5 +3327,52 @@ pub mod tests {
                 panic!("Expected SwfParseError, got {:?}", result);
             }
         }
+    }
+}
+
+impl<'a> SwfReadExt for Reader<'a> {
+    #[inline]
+    fn read_u8(&mut self) -> io::Result<u8> {
+        self.input.read_u8()
+    }
+
+    #[inline]
+    fn read_u16(&mut self) -> io::Result<u16> {
+        self.input.read_u16::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_u32(&mut self) -> io::Result<u32> {
+        self.input.read_u32::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_u64(&mut self) -> io::Result<u64> {
+        self.input.read_u64::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_i8(&mut self) -> io::Result<i8> {
+        self.input.read_i8()
+    }
+
+    #[inline]
+    fn read_i16(&mut self) -> io::Result<i16> {
+        self.input.read_i16::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_i32(&mut self) -> io::Result<i32> {
+        self.input.read_i32::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_f32(&mut self) -> io::Result<f32> {
+        self.input.read_f32::<LittleEndian>()
+    }
+
+    #[inline]
+    fn read_f64(&mut self) -> io::Result<f64> {
+        self.input.read_f64::<LittleEndian>()
     }
 }

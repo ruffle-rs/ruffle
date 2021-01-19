@@ -30,7 +30,7 @@ pub mod write;
 mod test_data;
 
 /// Reexports
-pub use read::{read_swf, read_swf_header};
+pub use read::{decompress_swf, parse_swf};
 pub use string::*;
 pub use tag_code::TagCode;
 pub use types::*;

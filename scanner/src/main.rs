@@ -1,7 +1,7 @@
 use clap::Clap;
 use indicatif::{ProgressBar, ProgressStyle};
 use path_slash::PathExt;
-use ruffle_core::swf::{read_swf, read_swf_header};
+use ruffle_core::swf::{decompress_swf, parse_swf};
 
 use serde::Serialize;
 use std::path::{Path, PathBuf};
@@ -65,8 +65,8 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
         }
     };
 
-    let swf_stream = read_swf_header(&data[..]).unwrap();
-    match catch_unwind(|| read_swf(&swf_stream)) {
+    let swf_buf = decompress_swf(&data[..]).unwrap();
+    match catch_unwind(|| parse_swf(&swf_buf)) {
         Ok(swf) => match swf {
             Ok(_swf) => FileResults { name, error: None },
             Err(e) => FileResults {
