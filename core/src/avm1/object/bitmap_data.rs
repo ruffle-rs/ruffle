@@ -269,8 +269,7 @@ impl BitmapData {
     pub fn flood_fill(&mut self, x: u32, y: u32, replace_color: Color) {
         let expected_color = self.get_pixel_raw(x, y).unwrap_or_else(|| 0.into());
 
-        let mut pending = Vec::new();
-        pending.push((x, y));
+        let mut pending = vec![(x, y)];
 
         while !pending.is_empty() {
             if let Some((x, y)) = pending.pop() {

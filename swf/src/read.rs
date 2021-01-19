@@ -1,7 +1,8 @@
 #![allow(
+    renamed_and_removed_lints,
+    clippy::unknown_clippy_lints,
     clippy::float_cmp,
     clippy::inconsistent_digit_grouping,
-    clippy::unknown_clippy_lints,
     clippy::unreadable_literal
 )]
 

@@ -263,7 +263,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         if let Some(proto) = self.proto() {
-            return Ok(proto.resolve_multiname(multiname)?);
+            return proto.resolve_multiname(multiname);
         }
 
         Ok(None)

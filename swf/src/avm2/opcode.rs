@@ -1,5 +1,3 @@
-#![allow(clippy::useless_attribute)]
-
 #[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum OpCode {
     Add = 0xA0,

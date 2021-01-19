@@ -148,9 +148,7 @@ fn distance<'gc>(
         .coerce_to_object(activation);
     let b = args.get(1).unwrap_or(&Value::Undefined);
     let delta = a.call_method("subtract", &[b.to_owned()], activation)?;
-    Ok(delta
-        .coerce_to_object(activation)
-        .get("length", activation)?)
+    delta.coerce_to_object(activation).get("length", activation)
 }
 
 fn polar<'gc>(
@@ -176,14 +174,14 @@ fn interpolate<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 3 {
-        return Ok(point_to_object((NAN, NAN), activation)?);
+        return point_to_object((NAN, NAN), activation);
     }
 
     let a = value_to_point(args.get(0).unwrap().to_owned(), activation)?;
     let b = value_to_point(args.get(1).unwrap().to_owned(), activation)?;
     let f = args.get(2).unwrap().coerce_to_f64(activation)?;
     let result = (b.0 - (b.0 - a.0) * f, b.1 - (b.1 - a.1) * f);
-    Ok(point_to_object(result, activation)?)
+    point_to_object(result, activation)
 }
 
 fn to_string<'gc>(

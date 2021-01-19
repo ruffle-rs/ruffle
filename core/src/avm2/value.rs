@@ -583,11 +583,7 @@ impl<'gc> Value<'gc> {
             _ => unreachable!(),
         };
 
-        Ok(PrimitiveObject::from_primitive(
-            self.clone(),
-            proto,
-            activation.context.gc_context,
-        )?)
+        PrimitiveObject::from_primitive(self.clone(), proto, activation.context.gc_context)
     }
 
     /// Determine if two values are abstractly equal to each other.

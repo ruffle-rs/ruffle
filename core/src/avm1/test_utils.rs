@@ -126,11 +126,7 @@ macro_rules! test_method {
                         let function = object.get($name, activation)?;
 
                         $(
-                            #[allow(unused_mut)]
-                            let mut args: Vec<Value> = Vec::new();
-                            $(
-                                args.push($arg.into());
-                            )*
+                            let args: Vec<Value> = vec![$($arg.into()),*];
                             assert_eq!(function.call($name, activation, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
                         )*
 
