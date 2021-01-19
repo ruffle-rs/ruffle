@@ -1,5 +1,3 @@
-#![allow(clippy::unneeded_field_pattern)]
-
 mod audio;
 mod custom_event;
 mod executor;

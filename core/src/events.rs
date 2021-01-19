@@ -1,6 +1,5 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-#[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub enum PlayerEvent {
     KeyDown { key_code: KeyCode },

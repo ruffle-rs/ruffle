@@ -34,9 +34,8 @@ fn to_string<'gc>(
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Ok(this
-        .map(|t| t.to_string(activation.context.gc_context))
-        .unwrap_or(Ok(Value::Undefined))?)
+    this.map(|t| t.to_string(activation.context.gc_context))
+        .unwrap_or(Ok(Value::Undefined))
 }
 
 /// Implements `Object.prototype.toLocaleString`
@@ -45,9 +44,8 @@ fn to_locale_string<'gc>(
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Ok(this
-        .map(|t| t.to_locale_string(activation.context.gc_context))
-        .unwrap_or(Ok(Value::Undefined))?)
+    this.map(|t| t.to_locale_string(activation.context.gc_context))
+        .unwrap_or(Ok(Value::Undefined))
 }
 
 /// Implements `Object.prototype.valueOf`
@@ -56,9 +54,8 @@ fn value_of<'gc>(
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Ok(this
-        .map(|t| t.value_of(activation.context.gc_context))
-        .unwrap_or(Ok(Value::Undefined))?)
+    this.map(|t| t.value_of(activation.context.gc_context))
+        .unwrap_or(Ok(Value::Undefined))
 }
 
 /// `Object.prototype.hasOwnProperty`

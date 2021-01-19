@@ -1,4 +1,8 @@
-#![allow(clippy::same_item_push, clippy::unknown_clippy_lints)]
+#![allow(
+    renamed_and_removed_lints,
+    clippy::same_item_push,
+    clippy::unknown_clippy_lints
+)]
 
 //! Ruffle web frontend.
 mod audio;
