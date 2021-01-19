@@ -36,7 +36,7 @@ wasm-bindgen = { version = "0.2.69", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.19"
 chrono = { version = "0.4", features = ["wasmbind"] }
 getrandom = { version = "0.2", features = ["js"] }
-serde = { version = "1.0.118", features = ["derive"] }
+serde = { version = "1.0.119", features = ["derive"] }
 
 [dependencies.ruffle_core]
 path = "../core"
