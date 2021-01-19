@@ -45,7 +45,7 @@ pub fn gc<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.system"), "System"),
-        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
@@ -54,7 +54,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.define_class_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "gc"),
+        QName::new(Namespace::public(), "gc"),
         Method::from_builtin(gc),
     ));
 

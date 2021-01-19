@@ -1,7 +1,7 @@
 use crate::avm1::{
     Error as Avm1Error, Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value,
 };
-use crate::avm2::{TObject as Avm2TObject, Value as Avm2Value};
+use crate::avm2::{Avm2, Event as Avm2Event, TObject as Avm2TObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
@@ -874,7 +874,77 @@ pub trait TDisplayObject<'gc>:
         ClipEventResult::NotHandled
     }
 
+    /// Emit an `enterFrame` event on this DisplayObject and any children it
+    /// may have.
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Avm2Value::Object(object) = self.object2() {
+            let mut enter_frame_evt = Avm2Event::new("enterFrame");
+            enter_frame_evt.set_bubbles(false);
+            enter_frame_evt.set_cancelable(false);
+
+            if let Err(e) = Avm2::dispatch_event(context, enter_frame_evt, object) {
+                log::error!("Encountered AVM2 error when dispatching event: {}", e);
+            }
+
+            if let Some(container) = self.as_container() {
+                for child in container.iter_execution_list() {
+                    child.enter_frame(context);
+                }
+            }
+        }
+    }
+
     fn run_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
+
+    /// Emit an `frameConstructed` event on this DisplayObject and any children it
+    /// may have.
+    fn frame_constructed(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Avm2Value::Object(object) = self.object2() {
+            let mut frame_constructed_evt = Avm2Event::new("frameConstructed");
+            frame_constructed_evt.set_bubbles(false);
+            frame_constructed_evt.set_cancelable(false);
+
+            if let Err(e) = Avm2::dispatch_event(context, frame_constructed_evt, object) {
+                log::error!("Encountered AVM2 error when dispatching event: {}", e);
+            }
+
+            if let Some(container) = self.as_container() {
+                for child in container.iter_execution_list() {
+                    child.frame_constructed(context);
+                }
+            }
+        }
+    }
+
+    /// Run any frame scripts (if they exist and this object needs to run them).
+    fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(container) = self.as_container() {
+            for child in container.iter_execution_list() {
+                child.run_frame_scripts(context);
+            }
+        }
+    }
+
+    /// Emit an `exitFrame` event on this DisplayObject and any children it
+    /// may have.
+    fn exit_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Avm2Value::Object(object) = self.object2() {
+            let mut exit_frame_evt = Avm2Event::new("exitFrame");
+            exit_frame_evt.set_bubbles(false);
+            exit_frame_evt.set_cancelable(false);
+
+            if let Err(e) = Avm2::dispatch_event(context, exit_frame_evt, object) {
+                log::error!("Encountered AVM2 error when dispatching event: {}", e);
+            }
+
+            if let Some(container) = self.as_container() {
+                for child in container.iter_execution_list() {
+                    child.exit_frame(context);
+                }
+            }
+        }
+    }
+
     fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
