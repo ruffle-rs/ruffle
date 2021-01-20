@@ -79,21 +79,23 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         }
     };
 
+    // Decompress the entire SWF.
+    let mut data = Vec::with_capacity(uncompressed_length as usize);
+    if let Err(e) = decompress_stream.read_to_end(&mut data) {
+        log::error!("Error decompressing SWF: {}", e);
+    }
+
     // Some SWF streams may not be compressed correctly,
     // (e.g. incorrect data length in the stream), so decompressing
     // may throw an error even though the data otherwise comes
     // through the stream.
     // We'll still try to parse what we get if the full decompression fails.
-    let mut decompressed_input = Vec::with_capacity(uncompressed_length as usize);
-    if let Err(e) = decompress_stream.read_to_end(&mut decompressed_input) {
-        log::error!("Error decompressing SWF: {}", e);
-    }
-
-    if decompressed_input.len() as u64 != uncompressed_length as u64 {
+    // (+ 8 for header size)
+    if data.len() as u64 + 8 != uncompressed_length as u64 {
         log::warn!("SWF length doesn't match header, may be corrupt");
     }
 
-    let mut reader = Reader::new(&decompressed_input, version);
+    let mut reader = Reader::new(&data, version);
     let stage_size = reader.read_rectangle()?;
     let frame_rate = reader.read_fixed8()?;
     let num_frames = reader.read_u16()?;

@@ -22,8 +22,10 @@ pub struct Swf<'a> {
 /// Returned by `read::decompress_swf`.
 /// Owns the decompressed SWF data, which will be referenced when parsed by `parse_swf`.
 pub struct SwfBuf {
+    /// The parsed SWF header.
     pub header: Header,
-    //pub reader: crate::read::Reader<'a>,
+
+    /// The decompressed SWF tag stream.
     pub data: Vec<u8>,
 }
 
