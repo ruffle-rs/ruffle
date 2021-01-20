@@ -22,6 +22,16 @@ export const FLASH_ACTIVEX_CLASSID =
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
+enum PanicError {
+    Unknown,
+    FileProtocol,
+    JavascriptConfiguration,
+    JavascriptConflict,
+    WasmCors,
+    WasmMimeType,
+    WasmNotFound,
+}
+
 declare global {
     interface Document {
         webkitFullscreenEnabled?: boolean;
@@ -290,22 +300,22 @@ export class RufflePlayer extends HTMLElement {
 
             // Serious duck typing. In error conditions, let's not make assumptions.
             if (window.location.protocol === "file:") {
-                e.ruffleIndexError = 100;
+                e.ruffleIndexError = PanicError.FileProtocol;
             } else if (!e.ruffleIsExtension) {
-                e.ruffleIndexError = 200;
+                e.ruffleIndexError = PanicError.WasmNotFound;
                 const message = String(e.message).toLowerCase();
                 if (message.includes("mime")) {
-                    e.ruffleIndexError = 201;
+                    e.ruffleIndexError = PanicError.WasmMimeType;
                 } else if (
                     message.includes("networkerror") ||
                     message.includes("failed to fetch")
                 ) {
-                    e.ruffleIndexError = 202;
+                    e.ruffleIndexError = PanicError.WasmCors;
                 } else if (
                     !message.includes("magic") &&
                     (e.name === "CompileError" || e.name === "TypeError")
                 ) {
-                    e.ruffleIndexError = 203;
+                    e.ruffleIndexError = PanicError.JavascriptConflict;
                 }
             }
             this.panic(e);
@@ -420,7 +430,7 @@ export class RufflePlayer extends HTMLElement {
         }
         if (optionsError.length > 0) {
             const error = new TypeError(optionsError);
-            error.ruffleIndexError = 101;
+            error.ruffleIndexError = PanicError.JavascriptConfiguration;
             this.panic(error);
             throw error;
         }
@@ -763,7 +773,7 @@ export class RufflePlayer extends HTMLElement {
             return;
         }
 
-        const errorIndex = error?.ruffleIndexError ?? -1;
+        const errorIndex = error?.ruffleIndexError ?? PanicError.Unknown;
 
         const errorArray: Array<string | null> & {
             stackIndex: number;
@@ -826,8 +836,8 @@ export class RufflePlayer extends HTMLElement {
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         let errorBody, errorFooter;
         switch (errorIndex) {
-            case 100:
-                // General issue: Running on the `file:` protocol
+            case PanicError.FileProtocol:
+                // General error: Running on the `file:` protocol
                 errorBody = `
                     <p>It appears you are running Ruffle on the "file:" protocol.</p>
                     <p>This doesn't work as browsers block many features from working for security reasons.</p>
@@ -838,8 +848,8 @@ export class RufflePlayer extends HTMLElement {
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/tags">Desktop Application</a></li>
                 `;
                 break;
-            case 101:
-                // General issue: Incorrect JavaScript configuration
+            case PanicError.JavascriptConfiguration:
+                // General error: Incorrect JavaScript configuration
                 errorBody = `
                     <p>Ruffle has encountered a major issue due to an incorrect JavaScript configuration.</p>
                     <p>If you are the server administrator, we invite you to check the error details to find out which parameter is at fault.</p>
@@ -850,7 +860,7 @@ export class RufflePlayer extends HTMLElement {
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
-            case 200:
+            case PanicError.WasmNotFound:
                 // Self hosted: Cannot load `.wasm` file - file not found
                 errorBody = `
                     <p>Ruffle failed to load the required ".wasm" file component.</p>
@@ -862,7 +872,7 @@ export class RufflePlayer extends HTMLElement {
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
-            case 201:
+            case PanicError.WasmMimeType:
                 // Self hosted: Cannot load `.wasm` file - incorrect MIME type
                 errorBody = `
                     <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
@@ -874,7 +884,7 @@ export class RufflePlayer extends HTMLElement {
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
-            case 202:
+            case PanicError.WasmCors:
                 // Self hosted: Cannot load `.wasm` file - CORS issues
                 errorBody = `
                     <p>Ruffle failed to load the required ".wasm" file component.</p>
@@ -886,11 +896,11 @@ export class RufflePlayer extends HTMLElement {
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
-            case 203:
+            case PanicError.JavascriptConflict:
                 // Self hosted: Cannot load `.wasm` file - a native object / function is overriden
                 errorBody = `
                     <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
-                    <p>It seems like the page uses JavaScript code that conflicts with Ruffle.</p>
+                    <p>It seems like this page uses JavaScript code that conflicts with Ruffle.</p>
                     <p>If you are the server administrator, we invite you to try loading the file on a blank page.</p>
                 `;
                 errorFooter = `
