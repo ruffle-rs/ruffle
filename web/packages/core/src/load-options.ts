@@ -66,6 +66,17 @@ export enum UnmuteOverlay {
 }
 
 /**
+ * Console logging level.
+ */
+export enum LogLevel {
+    Error = "error",
+    Warn = "warn",
+    Info = "info",
+    Debug = "debug",
+    Trace = "trace",
+}
+
+/**
  * Any options used for loading a movie.
  */
 export interface BaseLoadOptions {
@@ -131,6 +142,13 @@ export interface BaseLoadOptions {
      * @default true
      */
     warnOnUnsupportedContent?: boolean;
+
+    /**
+     * Console logging level.
+     *
+     * @default LogLevel.Error
+     */
+    logLevel?: LogLevel;
 }
 
 /**
