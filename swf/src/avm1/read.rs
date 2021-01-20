@@ -52,10 +52,9 @@ impl<'a> Reader<'a> {
     pub fn read_string(&mut self) -> io::Result<SwfStr<'a>> {
         let mut pos = 0;
         loop {
-            let byte = *self.input.get(pos).ok_or(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "Not enough data for slice",
-            ))?;
+            let byte = *self.input.get(pos).ok_or_else(|| {
+                io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for slice")
+            })?;
             if byte == 0 {
                 break;
             }
@@ -86,7 +85,7 @@ impl<'a> Reader<'a> {
     #[inline]
     pub fn read_action(&mut self) -> Result<Option<Action<'a>>> {
         let (opcode, mut length) = self.read_opcode_and_length()?;
-        let start = self.input.as_ref();
+        let start = self.input;
 
         let action = self.read_op(opcode, &mut length);
 

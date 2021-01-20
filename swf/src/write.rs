@@ -315,7 +315,7 @@ impl<W: Write> Writer<W> {
         .max()
         .unwrap();
         let mut bits = self.bits();
-        bits.write_ubits(5, num_bits.into())?;
+        bits.write_ubits(5, num_bits)?;
         bits.write_sbits_twips(num_bits, rectangle.x_min)?;
         bits.write_sbits_twips(num_bits, rectangle.x_max)?;
         bits.write_sbits_twips(num_bits, rectangle.y_min)?;
@@ -382,7 +382,7 @@ impl<W: Write> Writer<W> {
                     .unwrap(),
             );
         }
-        bits.write_ubits(4, num_bits.into())?;
+        bits.write_ubits(4, num_bits)?;
         if has_mult {
             bits.write_sbits(num_bits, (color_transform.r_multiply * 256f32) as i32)?;
             bits.write_sbits(num_bits, (color_transform.g_multiply * 256f32) as i32)?;
@@ -438,7 +438,7 @@ impl<W: Write> Writer<W> {
                     .unwrap(),
             );
         }
-        bits.write_ubits(4, num_bits.into())?;
+        bits.write_ubits(4, num_bits)?;
         if has_mult {
             bits.write_sbits(num_bits, (color_transform.r_multiply * 256f32) as i32)?;
             bits.write_sbits(num_bits, (color_transform.g_multiply * 256f32) as i32)?;
@@ -461,7 +461,7 @@ impl<W: Write> Writer<W> {
         bits.write_bit(has_scale)?;
         if has_scale {
             let num_bits = max(count_fbits(m.a), count_fbits(m.d));
-            bits.write_ubits(5, num_bits.into())?;
+            bits.write_ubits(5, num_bits)?;
             bits.write_fbits(num_bits, m.a)?;
             bits.write_fbits(num_bits, m.d)?;
         }
@@ -470,13 +470,13 @@ impl<W: Write> Writer<W> {
         bits.write_bit(has_rotate_skew)?;
         if has_rotate_skew {
             let num_bits = max(count_fbits(m.b), count_fbits(m.c));
-            bits.write_ubits(5, num_bits.into())?;
+            bits.write_ubits(5, num_bits)?;
             bits.write_fbits(num_bits, m.b)?;
             bits.write_fbits(num_bits, m.c)?;
         }
         // Translate (always written)
         let num_bits = max(count_sbits_twips(m.tx), count_sbits_twips(m.ty));
-        bits.write_ubits(5, num_bits.into())?;
+        bits.write_ubits(5, num_bits)?;
         bits.write_sbits_twips(num_bits, m.tx)?;
         bits.write_sbits_twips(num_bits, m.ty)?;
         Ok(())
@@ -1670,7 +1670,7 @@ impl<W: Write> Writer<W> {
                 let mut num_bits = max(count_sbits_twips(delta_x), count_sbits_twips(delta_y));
                 num_bits = max(2, num_bits);
                 let is_axis_aligned = delta_x.get() == 0 || delta_y.get() == 0;
-                bits.write_ubits(4, u32::from(num_bits) - 2)?;
+                bits.write_ubits(4, num_bits - 2)?;
                 bits.write_bit(!is_axis_aligned)?;
                 if is_axis_aligned {
                     bits.write_bit(delta_x.get() == 0)?;
@@ -1699,7 +1699,7 @@ impl<W: Write> Writer<W> {
                 .map(|x| count_sbits_twips(*x))
                 .max()
                 .unwrap();
-                bits.write_ubits(4, u32::from(num_bits) - 2)?;
+                bits.write_ubits(4, num_bits - 2)?;
                 bits.write_sbits_twips(num_bits, control_delta_x)?;
                 bits.write_sbits_twips(num_bits, control_delta_y)?;
                 bits.write_sbits_twips(num_bits, anchor_delta_x)?;
@@ -1716,7 +1716,7 @@ impl<W: Write> Writer<W> {
                 bits.write_bit(style_change.move_to.is_some())?;
                 if let Some((move_x, move_y)) = style_change.move_to {
                     let num_bits = max(count_sbits_twips(move_x), count_sbits_twips(move_y));
-                    bits.write_ubits(5, num_bits.into())?;
+                    bits.write_ubits(5, num_bits)?;
                     bits.write_sbits_twips(num_bits, move_x)?;
                     bits.write_sbits_twips(num_bits, move_y)?;
                 }
