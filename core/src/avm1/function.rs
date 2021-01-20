@@ -332,13 +332,19 @@ impl<'gc> Executable<'gc> {
                 };
 
                 let max_recursion_depth = activation.context.avm1.max_recursion_depth();
+                let base_clip = if effective_ver > 5 {
+                    af.base_clip
+                } else {
+                    this.as_display_object()
+                        .unwrap_or_else(|| activation.base_clip())
+                };
                 let mut frame = Activation::from_action(
                     activation.context.reborrow(),
                     activation.id.function(name, reason, max_recursion_depth)?,
                     effective_ver,
                     child_scope,
                     af.constant_pool,
-                    af.base_clip,
+                    base_clip,
                     this,
                     Some(callee),
                     Some(argcell),
