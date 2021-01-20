@@ -3,7 +3,7 @@
 use crate::avm1::{opcode::OpCode, types::*};
 use crate::error::{Error, Result};
 use crate::read::SwfReadExt;
-use crate::string::SwfStr;
+use crate::string::{Encoding, SwfStr, UTF_8, WINDOWS_1252};
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{self, Read};
 
@@ -11,27 +11,35 @@ use std::io::{self, Read};
 pub struct Reader<'a> {
     input: &'a [u8],
     version: u8,
-    encoding: &'static encoding_rs::Encoding,
+    encoding: &'static Encoding,
 }
 
 impl<'a> Reader<'a> {
+    #[inline]
     pub fn new(input: &'a [u8], version: u8) -> Self {
         Self {
             input,
             version,
             encoding: if version > 5 {
-                encoding_rs::UTF_8
+                UTF_8
             } else {
                 // TODO: Allow configurable encoding
-                encoding_rs::WINDOWS_1252
+                WINDOWS_1252
             },
         }
     }
 
+    #[inline]
+    pub fn encoding(&self) -> &'static Encoding {
+        SwfStr::encoding_for_version(self.version)
+    }
+
+    #[inline]
     pub fn get_ref(&self) -> &'a [u8] {
         self.input
     }
 
+    #[inline]
     pub fn get_mut(&mut self) -> &mut &'a [u8] {
         &mut self.input
     }
@@ -49,7 +57,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    pub fn read_string(&mut self) -> io::Result<SwfStr<'a>> {
+    pub fn read_string(&mut self) -> io::Result<&'a SwfStr> {
         let mut pos = 0;
         loop {
             let byte = *self.input.get(pos).ok_or_else(|| {
@@ -63,7 +71,7 @@ impl<'a> Reader<'a> {
 
         let s = unsafe {
             let slice = self.input.get_unchecked(..pos);
-            SwfStr::from_bytes_unchecked(slice, self.encoding)
+            SwfStr::from_bytes(slice)
         };
         self.input = &self.input[pos + 1..];
         Ok(s)
@@ -483,7 +491,6 @@ pub mod tests {
 
     #[test]
     fn read_define_function() {
-        use encoding_rs::WINDOWS_1252;
         // Ensure we read a function properly along with the function data.
         let action_bytes = vec![
             0x9b, 0x08, 0x00, 0x66, 0x6f, 0x6f, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x96, 0x06, 0x00,

@@ -1,58 +1,49 @@
-//! String typed used by SWF files.
-//!
-//! Allows for locale-dependent encoding for SWF version <6.
+//! String type used by SWF files.
 
-use encoding_rs::{Encoding, UTF_8};
+pub use encoding_rs::{Encoding, SHIFT_JIS, UTF_8, WINDOWS_1252};
 use std::{borrow::Cow, fmt};
 
-/// `SwfStr` is returned by SWF and AVM1 parsing functions.
-/// `SwfStr` is analogous to `&str`, with some additional allowances:
-/// * An encoding is specified along with the string data.
-/// * The string contains no null bytes.
+/// `SwfStr` is the string type returned by SWF parsing functions.
+/// `SwfStr` is a bstr-like type analogous to `str`:
+/// * The encoding depends on the SWF version (UTF-8 for SWF6 and higher).
+///   Use `Reader::encoding` or `SwfStr::encoding_for_version` to get the
+///   proper encoding.
 /// * Invalid data for any particular encoding is allowed;
 ///   any conversions to std::String will be lossy for invalid data.
-/// This handles the locale dependent encoding of early SWF files and
-/// mimics C-style null-terminated string behavior.
 /// To convert this to a standard Rust string, use `SwfStr::to_str_lossy`.
-/// `SwfStr`s are equal if both their encoding and data matches.
-#[derive(Copy, Clone, Eq, PartialEq)]
-pub struct SwfStr<'a> {
+#[derive(Eq, PartialEq)]
+#[repr(transparent)]
+pub struct SwfStr {
     /// The string bytes.
-    string: &'a [u8],
-
-    /// The encoding of the string data.
-    encoding: &'static Encoding,
+    string: [u8],
 }
 
-impl<'a> SwfStr<'a> {
+impl SwfStr {
     /// Create a new `SwfStr` from a byte slice with a given encoding.
     /// The string will be truncated if a null byte is encountered.
     /// The data is not required to be valid for the given encoding.
     #[inline]
-    pub fn from_bytes(string: &'a [u8], encoding: &'static Encoding) -> Self {
-        let i = string.iter().position(|&c| c == 0).unwrap_or(string.len());
-        Self {
-            string: &string[..i],
-            encoding,
-        }
+    pub fn from_bytes(string: &[u8]) -> &Self {
+        unsafe { &*(string as *const [u8] as *const Self) }
     }
 
-    /// Create a new `SwfStr` from a byte slice with a given encoding.
-    /// The data is not required to be valid for the given encoding.
-    ///
-    /// # Safety
-    ///
-    /// The string should contain no null bytes.
     #[inline]
-    pub unsafe fn from_bytes_unchecked(string: &'a [u8], encoding: &'static Encoding) -> Self {
-        Self { string, encoding }
+    pub fn from_bytes_null_terminated(string: &[u8]) -> &Self {
+        let i = string.iter().position(|&c| c == 0).unwrap_or(string.len());
+        Self::from_bytes(&string[..i])
+    }
+
+    /// Create a new UTF-8 `SwfStr` from a Rust `str`.
+    #[inline]
+    pub fn from_utf8_str(string: &str) -> &Self {
+        Self::from_bytes(string.as_bytes())
     }
 
     /// Create a new UTF-8 `SwfStr` from a Rust `str`.
     /// The string will be truncated if a null byte is encountered.
     #[inline]
-    pub fn from_utf8_str(string: &'a str) -> Self {
-        Self::from_bytes(string.as_bytes(), UTF_8)
+    pub fn from_utf8_str_null_terminated(string: &str) -> &Self {
+        Self::from_bytes_null_terminated(string.as_bytes())
     }
 
     /// Create a new `SwfStr` with the given encoding from a Rust `str`.
@@ -60,24 +51,34 @@ impl<'a> SwfStr<'a> {
     /// The string will be truncated if a null byte is encountered.
     /// `None` is returned if the encoding is not lossless.
     /// Intended for tests.
-    pub fn from_str_with_encoding(string: &'a str, encoding: &'static Encoding) -> Option<Self> {
+    pub fn from_str_with_encoding<'a>(
+        string: &'a str,
+        encoding: &'static Encoding,
+    ) -> Option<&'a Self> {
         if let (Cow::Borrowed(s), _, false) = encoding.encode(&string) {
-            Some(Self::from_bytes(s, encoding))
+            Some(Self::from_bytes(s))
         } else {
             None
         }
     }
 
-    /// Returns the byte slice of this string.
+    /// Returns the suggested string encoding for the given SWF version.
+    /// For SWF version 6 and higher, this is always UTF-8.
+    /// For SWF version 5 and lower, this is locale-dependent,
+    /// and we default to WINDOWS-1252.
     #[inline]
-    pub fn as_bytes(&self) -> &'a [u8] {
-        self.string
+    pub fn encoding_for_version(swf_version: u8) -> &'static Encoding {
+        if swf_version >= 6 {
+            UTF_8
+        } else {
+            WINDOWS_1252
+        }
     }
 
-    /// Returns the encoding used by this string.
+    /// Returns the byte slice of this string.
     #[inline]
-    pub fn encoding(&self) -> &'static Encoding {
-        self.encoding
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.string
     }
 
     /// Returns `true` if the string has a length of zero, and `false` otherwise.
@@ -95,47 +96,40 @@ impl<'a> SwfStr<'a> {
     /// Decodes the string into a Rust UTF-8 `str`.
     /// The UTF-8 replacement character will be uses for any invalid data.
     #[inline]
-    pub fn to_str_lossy(&self) -> Cow<'a, str> {
-        self.encoding.decode_without_bom_handling(self.string).0
+    pub fn to_str_lossy(&self, encoding: &'static Encoding) -> Cow<'_, str> {
+        encoding.decode_without_bom_handling(&self.string).0
     }
 
     /// Decodes the string into a Rust UTF-8 `String`.
     /// The UTF-8 replacement character will be uses for any invalid data.
     #[inline]
-    pub fn to_string_lossy(&self) -> String {
-        self.to_str_lossy().into_owned()
+    pub fn to_string_lossy(&self, encoding: &'static Encoding) -> String {
+        self.to_str_lossy(encoding).into_owned()
     }
 }
 
-impl<'a> Default for SwfStr<'a> {
-    fn default() -> Self {
-        Self {
-            string: &[],
-            encoding: UTF_8,
-        }
+impl<'a> Default for &'a SwfStr {
+    fn default() -> &'a SwfStr {
+        SwfStr::from_bytes(&[])
     }
 }
 
-impl<'a> From<&'a str> for SwfStr<'a> {
-    fn from(s: &'a str) -> Self {
+impl<'a> From<&'a str> for &'a SwfStr {
+    fn from(s: &'a str) -> &'a SwfStr {
         SwfStr::from_utf8_str(s)
     }
 }
 
-impl<'a, T: AsRef<str>> PartialEq<T> for SwfStr<'a> {
+impl<'a, T: ?Sized + AsRef<str>> PartialEq<T> for SwfStr {
     fn eq(&self, other: &T) -> bool {
-        self.string == other.as_ref().as_bytes()
+        &self.string == other.as_ref().as_bytes()
     }
 }
 
-impl<'a> fmt::Display for SwfStr<'a> {
+impl fmt::Debug for SwfStr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_str_lossy())
-    }
-}
-
-impl<'a> fmt::Debug for SwfStr<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_str_lossy())
+        // Note that this assumes UTF-8 encoding;
+        // other encodings like Shift-JIS will output gibberish.
+        f.write_str(&self.to_str_lossy(UTF_8))
     }
 }

@@ -459,7 +459,7 @@ impl<'gc> MovieClip<'gc> {
         // giving us a `SwfSlice` for later parsing, so we have to replcate the
         // *entire* parsing code here. This sucks.
         let flags = reader.read_u32()?;
-        let name = reader.read_string()?.to_string_lossy();
+        let name = reader.read_string()?.to_string_lossy(reader.encoding());
         let is_lazy_initialize = flags & 1 != 0;
         let domain = library.avm2_domain();
 
@@ -499,7 +499,7 @@ impl<'gc> MovieClip<'gc> {
 
         for _ in 0..num_symbols {
             let id = reader.read_u16()?;
-            let class_name = reader.read_string()?.to_string_lossy();
+            let class_name = reader.read_string()?.to_string_lossy(reader.encoding());
 
             if let Some(name) =
                 Avm2QName::from_symbol_class(&class_name, activation.context.gc_context)
@@ -565,10 +565,11 @@ impl<'gc> MovieClip<'gc> {
                 .map(|fld| fld.frame_num + 1)
                 .unwrap_or_else(|| static_data.total_frames as u32 + 1);
 
+            let label = label.to_string_lossy(reader.encoding());
             static_data.scene_labels.insert(
-                label.to_string(),
+                label.clone(),
                 Scene {
-                    name: label.to_string(),
+                    name: label,
                     start,
                     length: end as u16 - start as u16,
                 },
@@ -576,9 +577,10 @@ impl<'gc> MovieClip<'gc> {
         }
 
         for FrameLabelData { frame_num, label } in sfl_data.frame_labels {
-            static_data
-                .frame_labels
-                .insert(label.to_string(), frame_num as u16 + 1);
+            static_data.frame_labels.insert(
+                label.to_string_lossy(reader.encoding()),
+                frame_num as u16 + 1,
+            );
         }
 
         Ok(())
@@ -2468,7 +2470,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
             is_bold: false,
             is_italic: false,
         };
-        let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
+        let font_object = Font::from_swf_tag(
+            context.gc_context,
+            context.renderer,
+            &font,
+            reader.encoding(),
+        )
+        .unwrap();
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -2483,7 +2491,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> DecodeResult {
         let font = reader.read_define_font_2(2)?;
-        let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
+        let font_object = Font::from_swf_tag(
+            context.gc_context,
+            context.renderer,
+            &font,
+            reader.encoding(),
+        )
+        .unwrap();
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -2498,7 +2512,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> DecodeResult {
         let font = reader.read_define_font_2(3)?;
-        let font_object = Font::from_swf_tag(context.gc_context, context.renderer, &font).unwrap();
+        let font_object = Font::from_swf_tag(
+            context.gc_context,
+            context.renderer,
+            &font,
+            reader.encoding(),
+        )
+        .unwrap();
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -2606,15 +2626,16 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> DecodeResult {
         let exports = reader.read_export_assets()?;
         for export in exports {
+            let name = export.name.to_str_lossy(reader.encoding());
             let character = context
                 .library
                 .library_for_movie_mut(self.movie())
-                .register_export(export.id, &export.name.to_str_lossy());
+                .register_export(export.id, &name);
 
             // TODO: do other types of Character need to know their exported name?
             if let Some(Character::MovieClip(movie_clip)) = character {
                 *movie_clip.0.read().static_data.exported_name.borrow_mut() =
-                    Some(export.name.to_string());
+                    Some(name.to_string());
             }
         }
         Ok(())
@@ -2631,7 +2652,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> DecodeResult {
         let frame_label = reader.read_frame_label(tag_len)?;
         // Frame labels are case insensitive (ASCII).
-        let label = frame_label.label.to_str_lossy().to_ascii_lowercase();
+        let label = frame_label
+            .label
+            .to_str_lossy(reader.encoding())
+            .to_ascii_lowercase();
         if let std::collections::hash_map::Entry::Vacant(v) = static_data.frame_labels.entry(label)
         {
             v.insert(cur_frame);

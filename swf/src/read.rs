@@ -8,7 +8,7 @@
 
 use crate::{
     error::{Error, Result},
-    string::SwfStr,
+    string::{Encoding, SwfStr},
     types::*,
 };
 use bitstream_io::BitRead;
@@ -248,28 +248,30 @@ impl<'a, 'b> BitReader<'a, 'b> {
 pub struct Reader<'a> {
     input: &'a [u8],
     version: u8,
-    encoding: &'static encoding_rs::Encoding,
 }
 
 impl<'a> Reader<'a> {
+    #[inline]
     pub fn new(input: &'a [u8], version: u8) -> Reader<'a> {
-        Reader {
-            input,
-            version,
-            encoding: if version > 5 {
-                encoding_rs::UTF_8
-            } else {
-                // TODO: Allow configurable encoding
-                encoding_rs::WINDOWS_1252
-            },
-        }
+        Reader { input, version }
     }
 
+    /// Returns the suggested string encoding for this SWF.
+    /// For SWF version 6 and higher, this is always UTF-8.
+    /// For SWF version 5 and lower, this is locale-dependent,
+    /// and we default to WINDOWS-1252.
+    #[inline]
+    pub fn encoding(&self) -> &'static Encoding {
+        SwfStr::encoding_for_version(self.version)
+    }
+
+    #[inline]
     pub fn version(&self) -> u8 {
         self.version
     }
 
     /// Returns a reference to the underlying `Reader`.
+    #[inline]
     pub fn get_ref(&self) -> &'a [u8] {
         self.input
     }
@@ -277,6 +279,7 @@ impl<'a> Reader<'a> {
     /// Returns a mutable reference to the underlying `Reader`.
     ///
     /// Reading from this reference is not recommended.
+    #[inline]
     pub fn get_mut(&mut self) -> &mut &'a [u8] {
         &mut self.input
     }
@@ -317,7 +320,7 @@ impl<'a> Reader<'a> {
         slice
     }
 
-    pub fn read_string(&mut self) -> io::Result<SwfStr<'a>> {
+    pub fn read_string(&mut self) -> io::Result<&'a SwfStr> {
         let mut pos = 0;
         loop {
             let byte = *self.input.get(pos).ok_or_else(|| {
@@ -329,16 +332,14 @@ impl<'a> Reader<'a> {
             pos += 1;
         }
 
-        let s = unsafe {
-            let slice = self.input.get_unchecked(..pos);
-            SwfStr::from_bytes_unchecked(slice, self.encoding)
-        };
+        let slice = unsafe { self.input.get_unchecked(..pos) };
+        let s = SwfStr::from_bytes(slice);
         self.input = &self.input[pos + 1..];
         Ok(s)
     }
 
-    fn read_string_with_len(&mut self, len: usize) -> io::Result<SwfStr<'a>> {
-        Ok(SwfStr::from_bytes(&self.read_slice(len)?, self.encoding))
+    fn read_string_with_len(&mut self, len: usize) -> io::Result<&'a SwfStr> {
+        Ok(SwfStr::from_bytes_null_terminated(&self.read_slice(len)?))
     }
 
     /// Reads the next SWF tag from the stream.

@@ -559,7 +559,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::Return => self.action_return(),
                 Action::SetMember => self.action_set_member(),
                 Action::SetProperty => self.action_set_property(),
-                Action::SetTarget(target) => self.action_set_target(&target.to_str_lossy()),
+                Action::SetTarget(target) => {
+                    self.action_set_target(&target.to_str_lossy(self.encoding()))
+                }
                 Action::SetTarget2 => self.action_set_target2(),
                 Action::SetVariable => self.action_set_variable(),
                 Action::StackSwap => self.action_stack_swap(),
@@ -889,13 +891,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_constant_pool(
         &mut self,
-        constant_pool: &[SwfStr<'_>],
+        constant_pool: &[&'_ SwfStr],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.context.avm1.constant_pool = GcCell::allocate(
             self.context.gc_context,
             constant_pool
                 .iter()
-                .map(|s| (*s).to_string_lossy())
+                .map(|s| (*s).to_string_lossy(self.encoding()))
                 .collect(),
         );
         self.set_constant_pool(self.context.avm1.constant_pool);
@@ -911,11 +913,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_define_function(
         &mut self,
-        name: SwfStr<'_>,
-        params: &[SwfStr<'_>],
+        name: &'_ SwfStr,
+        params: &[&'_ SwfStr],
         actions: SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let name = name.to_str_lossy();
+        let name = name.to_str_lossy(self.encoding());
         let name = name.as_ref();
         let swf_version = self.swf_version();
         let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
@@ -982,7 +984,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if action_func.name.is_empty() {
             self.context.avm1.push(func_obj);
         } else {
-            self.define(&action_func.name.to_str_lossy(), func_obj);
+            self.define(&action_func.name.to_str_lossy(self.encoding()), func_obj);
         }
 
         Ok(FrameControl::Continue)
@@ -1220,12 +1222,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_get_url(
         &mut self,
-        url: SwfStr<'_>,
-        target: SwfStr<'_>,
+        url: &'_ SwfStr,
+        target: &'_ SwfStr,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let target = target.to_str_lossy();
+        let target = target.to_str_lossy(self.encoding());
         let target = target.as_ref();
-        let url = url.to_string_lossy();
+        let url = url.to_string_lossy(self.encoding());
         if target.starts_with("_level") && target.len() > 6 {
             match target[6..].parse::<u32>() {
                 Ok(level_id) => {
@@ -1425,13 +1427,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_goto_label(&mut self, label: SwfStr<'_>) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_goto_label(&mut self, label: &'_ SwfStr) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                if let Some(frame) = clip.frame_label_to_number(&label.to_str_lossy()) {
+                if let Some(frame) =
+                    clip.frame_label_to_number(&label.to_str_lossy(self.encoding()))
+                {
                     clip.goto_frame(&mut self.context, frame, true);
                 } else {
-                    avm_warn!(self, "GoToLabel: Frame label '{}' not found", label);
+                    avm_warn!(self, "GoToLabel: Frame label '{:?}' not found", label);
                 }
             } else {
                 avm_warn!(self, "GoToLabel: Target is not a MovieClip");
@@ -1776,7 +1780,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 SwfValue::Float(v) => f64::from(*v).into(),
                 SwfValue::Double(v) => (*v).into(),
                 SwfValue::Str(v) => {
-                    AvmString::new(self.context.gc_context, v.to_string_lossy()).into()
+                    AvmString::new(self.context.gc_context, v.to_string_lossy(self.encoding()))
+                        .into()
                 }
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
@@ -2279,9 +2284,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 );
 
                 match catch_vars {
-                    CatchVar::Var(name) => {
-                        activation.set_variable(&name.to_str_lossy(), value.to_owned())?
-                    }
+                    CatchVar::Var(name) => activation.set_variable(
+                        &name.to_str_lossy(activation.encoding()),
+                        value.to_owned(),
+                    )?,
                     CatchVar::Register(id) => {
                         activation.set_current_register(*id, value.to_owned())
                     }
@@ -2872,6 +2878,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         self.scope_cell().read().is_defined(self, name)
+    }
+
+    /// Returns the suggested string encoding for actions.
+    /// For SWF version 6 and higher, this is always UTF-8.
+    /// For SWF version 5 and lower, this is locale-dependent,
+    /// and we default to WINDOWS-1252.
+    pub fn encoding(&self) -> &'static swf::Encoding {
+        swf::SwfStr::encoding_for_version(self.swf_version)
     }
 
     /// Returns the SWF version of the action or function being executed.

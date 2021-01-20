@@ -152,11 +152,12 @@ impl<'gc> EditText<'gc> {
         let document = XMLDocument::new(context.gc_context);
         let text = swf_tag.initial_text.clone().unwrap_or_default();
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
+        let encoding = swf_movie.encoding();
 
         let mut text_spans = FormatSpans::new();
         text_spans.set_default_format(default_format.clone());
 
-        let text = text.to_str_lossy();
+        let text = text.to_str_lossy(encoding);
         if is_html {
             let _ = document
                 .as_node()
@@ -193,7 +194,7 @@ impl<'gc> EditText<'gc> {
         base.matrix_mut(context.gc_context).ty = bounds.y_min;
 
         let variable = if !swf_tag.variable_name.is_empty() {
-            Some(swf_tag.variable_name.clone())
+            Some(swf_tag.variable_name)
         } else {
             None
         };
@@ -212,13 +213,15 @@ impl<'gc> EditText<'gc> {
                             id: swf_tag.id,
                             bounds: swf_tag.bounds,
                             font_id: swf_tag.font_id,
-                            font_class_name: swf_tag.font_class_name.map(|s| s.to_string_lossy()),
+                            font_class_name: swf_tag
+                                .font_class_name
+                                .map(|s| s.to_string_lossy(encoding)),
                             height: swf_tag.height,
                             color: swf_tag.color.clone(),
                             max_length: swf_tag.max_length,
                             layout: swf_tag.layout.clone(),
-                            variable_name: swf_tag.variable_name.to_string_lossy(),
-                            initial_text: swf_tag.initial_text.map(|s| s.to_string_lossy()),
+                            variable_name: swf_tag.variable_name.to_string_lossy(encoding),
+                            initial_text: swf_tag.initial_text.map(|s| s.to_string_lossy(encoding)),
                             is_word_wrap: swf_tag.is_word_wrap,
                             is_multiline: swf_tag.is_multiline,
                             is_password: swf_tag.is_password,
@@ -247,7 +250,7 @@ impl<'gc> EditText<'gc> {
                 intrinsic_bounds,
                 bounds,
                 autosize: AutoSizeMode::None,
-                variable: variable.map(|s| s.to_string_lossy()),
+                variable: variable.map(|s| s.to_string_lossy(encoding)),
                 bound_stage_object: None,
                 firing_variable_binding: false,
                 selection: None,
@@ -620,7 +623,7 @@ impl<'gc> EditText<'gc> {
             .initial_text
             .clone()
             .unwrap_or_default();
-        let _ = self.set_text(text.to_string(), &mut activation.context);
+        let _ = self.set_text(text, &mut activation.context);
 
         self.0.write(activation.context.gc_context).variable = variable;
         self.try_bind_text_field_variable(activation, true);

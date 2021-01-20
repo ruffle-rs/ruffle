@@ -841,7 +841,9 @@ pub trait TDisplayObject<'gc>:
                 self.set_color_transform(gc_context, &color_transform.clone().into());
             }
             if let Some(name) = &place_object.name {
-                self.set_name(gc_context, &name.to_str_lossy());
+                let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
+                let name = name.to_str_lossy(encoding);
+                self.set_name(gc_context, &name);
             }
             if let Some(clip_depth) = place_object.clip_depth {
                 self.set_clip_depth(gc_context, clip_depth.into());

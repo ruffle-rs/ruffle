@@ -5,11 +5,10 @@ use crate::avm2::read::tests::read_abc_from_file;
 use crate::avm2::types::*;
 use crate::read::tests::{read_tag_bytes_from_file, read_tag_bytes_from_file_with_index};
 use crate::read::{decompress_swf, parse_swf};
-use crate::string::SwfStr;
+use crate::string::{SwfStr, WINDOWS_1252};
 use crate::tag_code::TagCode;
 use crate::types::*;
 use crate::write::write_swf;
-use encoding_rs::WINDOWS_1252;
 use std::fs::File;
 use std::vec::Vec;
 
