@@ -1,6 +1,7 @@
 {
+    // basic manifest code
     "manifest_version": 2,
-    "name": "Ruffle",
+    "name": "Ruffle Player",
     "description": "__MSG_description__",
     "default_locale": "en",
     "icons": {
@@ -10,6 +11,7 @@
         "128": "icons/128.png",
         "180": "icons/180.png"
     },
+    
     "permissions": [ "storage" ],
     "content_scripts": [
         {
@@ -19,12 +21,15 @@
             "run_at": "document_start"
         }
     ],
+    
+    // advance stuff
     "web_accessible_resources": ["dist/*"],
     "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'unsafe-inline'",
     "browser_action": {
         "default_popup": "popup.html",
         "browser_style": true
     },
+    
     "options_ui": {
         "page": "settings.html",
         "open_in_tab": true
