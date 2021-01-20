@@ -231,6 +231,7 @@ swf_tests! {
     #[ignore] (watch_virtual_property, "avm1/watch_virtual_property", 1),
     (cross_movie_root, "avm1/cross_movie_root", 5),
     (roots_and_levels, "avm1/roots_and_levels", 1),
+    (swf5_encoding, "avm1/swf5_encoding", 1),
     (swf6_case_insensitive, "avm1/swf6_case_insensitive", 1),
     (swf7_case_sensitive, "avm1/swf7_case_sensitive", 1),
     (prototype_enumerate, "avm1/prototype_enumerate", 1),
