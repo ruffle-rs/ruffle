@@ -193,12 +193,12 @@ impl TextFormat {
         swf_movie: Arc<SwfMovie>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Self {
+        let encoding = swf_movie.encoding();
         let movie_library = context.library.library_for_movie_mut(swf_movie);
-
         let font = et.font_id.and_then(|fid| movie_library.get_font(fid));
         let font_class = et
             .font_class_name
-            .map(|s| s.to_string_lossy())
+            .map(|s| s.to_string_lossy(encoding))
             .or_else(|| font.map(|font| font.descriptor().class().to_string()))
             .unwrap_or_else(|| "Times New Roman".to_string());
         let align = et.layout.clone().map(|l| l.align);
@@ -211,7 +211,7 @@ impl TextFormat {
         // Times New Roman non-bold, non-italic. This will need to be revised
         // when we start supporting device fonts.
         Self {
-            font: Some(font_class.to_string()),
+            font: Some(font_class),
             size: et.height.map(|h| h.to_pixels()),
             color: et.color,
             align,

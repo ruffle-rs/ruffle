@@ -56,7 +56,7 @@ impl<W: Write> SwfWriteExt for Writer<W> {
     }
 
     #[inline]
-    fn write_string(&mut self, s: SwfStr<'_>) -> io::Result<()> {
+    fn write_string(&mut self, s: &'_ SwfStr) -> io::Result<()> {
         self.output.write_all(s.as_bytes())?;
         self.write_u8(0)
     }

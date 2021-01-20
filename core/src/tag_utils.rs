@@ -25,6 +25,9 @@ pub struct SwfMovie {
 
     /// Any parameters provided when loading this movie (also known as 'flashvars')
     parameters: PropertyMap<String>,
+
+    /// The suggest encoding for this SWF.
+    encoding: &'static swf::Encoding,
 }
 
 impl SwfMovie {
@@ -42,6 +45,7 @@ impl SwfMovie {
             data: vec![],
             url: None,
             parameters: PropertyMap::new(),
+            encoding: swf::UTF_8,
         }
     }
 
@@ -56,6 +60,7 @@ impl SwfMovie {
             data,
             url: source.url.clone(),
             parameters: source.parameters.clone(),
+            encoding: source.encoding,
         }
     }
 
@@ -74,11 +79,13 @@ impl SwfMovie {
     /// Construct a movie based on the contents of the SWF datastream.
     pub fn from_data(swf_data: &[u8], url: Option<String>) -> Result<Self, Error> {
         let swf_buf = swf::read::decompress_swf(&swf_data[..])?;
+        let encoding = swf::SwfStr::encoding_for_version(swf_buf.header.version);
         Ok(Self {
             header: swf_buf.header,
             data: swf_buf.data,
             url,
             parameters: PropertyMap::new(),
+            encoding,
         })
     }
 
@@ -93,6 +100,14 @@ impl SwfMovie {
 
     pub fn data(&self) -> &[u8] {
         &self.data
+    }
+
+    /// Returns the suggested string encoding for the given SWF version.
+    /// For SWF version 6 and higher, this is always UTF-8.
+    /// For SWF version 5 and lower, this is locale-dependent,
+    /// and we default to WINDOWS-1252.
+    pub fn encoding(&self) -> &'static swf::Encoding {
+        self.encoding
     }
 
     pub fn width(&self) -> u32 {

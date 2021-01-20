@@ -94,7 +94,7 @@ impl<'gc> Avm1Function<'gc> {
         swf_version: u8,
         actions: SwfSlice,
         name: &str,
-        params: &[SwfStr<'_>],
+        params: &[&'_ SwfStr],
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<String>>,
         base_clip: DisplayObject<'gc>,
@@ -121,7 +121,12 @@ impl<'gc> Avm1Function<'gc> {
             preload_global: false,
             params: params
                 .iter()
-                .map(|&s| (None, s.to_string_lossy()))
+                .map(|&s| {
+                    (
+                        None,
+                        s.to_string_lossy(SwfStr::encoding_for_version(swf_version)),
+                    )
+                })
                 .collect(),
             scope,
             constant_pool,
@@ -141,7 +146,11 @@ impl<'gc> Avm1Function<'gc> {
         let name = if swf_function.name.is_empty() {
             None
         } else {
-            Some(swf_function.name.to_string_lossy())
+            Some(
+                swf_function
+                    .name
+                    .to_string_lossy(SwfStr::encoding_for_version(swf_version)),
+            )
         };
 
         let mut owned_params = Vec::new();
@@ -150,7 +159,10 @@ impl<'gc> Avm1Function<'gc> {
             register_index: r,
         } in &swf_function.params
         {
-            owned_params.push((*r, (*s).to_string_lossy()))
+            owned_params.push((
+                *r,
+                (*s).to_string_lossy(SwfStr::encoding_for_version(swf_version)),
+            ))
         }
 
         Avm1Function {

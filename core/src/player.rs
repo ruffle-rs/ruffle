@@ -1281,8 +1281,12 @@ impl Player {
         renderer: &mut dyn RenderBackend,
     ) -> Result<crate::font::Font<'gc>, Error> {
         let mut reader = swf::read::Reader::new(data, 8);
-        let device_font =
-            crate::font::Font::from_swf_tag(gc_context, renderer, &reader.read_define_font_2(3)?)?;
+        let device_font = crate::font::Font::from_swf_tag(
+            gc_context,
+            renderer,
+            &reader.read_define_font_2(3)?,
+            reader.encoding(),
+        )?;
         Ok(device_font)
     }
 

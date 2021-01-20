@@ -18,11 +18,11 @@ pub enum Action<'a> {
     CastOp,
     CharToAscii,
     CloneSprite,
-    ConstantPool(Vec<SwfStr<'a>>),
+    ConstantPool(Vec<&'a SwfStr>),
     Decrement,
     DefineFunction {
-        name: SwfStr<'a>,
-        params: Vec<SwfStr<'a>>,
+        name: &'a SwfStr,
+        params: Vec<&'a SwfStr>,
         actions: &'a [u8],
     },
     DefineFunction2(Function<'a>),
@@ -41,8 +41,8 @@ pub enum Action<'a> {
     GetProperty,
     GetTime,
     GetUrl {
-        url: SwfStr<'a>,
-        target: SwfStr<'a>,
+        url: &'a SwfStr,
+        target: &'a SwfStr,
     },
     GetUrl2 {
         send_vars_method: SendVarsMethod,
@@ -55,7 +55,7 @@ pub enum Action<'a> {
         set_playing: bool,
         scene_offset: u16,
     },
-    GotoLabel(SwfStr<'a>),
+    GotoLabel(&'a SwfStr),
     Greater,
     If {
         offset: i16,
@@ -91,7 +91,7 @@ pub enum Action<'a> {
     Return,
     SetMember,
     SetProperty,
-    SetTarget(SwfStr<'a>),
+    SetTarget(&'a SwfStr),
     SetTarget2,
     SetVariable,
     StackSwap,
@@ -140,7 +140,7 @@ pub enum Value<'a> {
     Int(i32),
     Float(f32),
     Double(f64),
-    Str(SwfStr<'a>),
+    Str(&'a SwfStr),
     Register(u8),
     ConstantPool(u16),
 }
@@ -154,7 +154,7 @@ pub enum SendVarsMethod {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Function<'a> {
-    pub name: SwfStr<'a>,
+    pub name: &'a SwfStr,
     pub register_count: u8,
     pub params: Vec<FunctionParam<'a>>,
     pub preload_parent: bool,
@@ -171,7 +171,7 @@ pub struct Function<'a> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionParam<'a> {
-    pub name: SwfStr<'a>,
+    pub name: &'a SwfStr,
     pub register_index: Option<u8>,
 }
 
@@ -184,6 +184,6 @@ pub struct TryBlock<'a> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CatchVar<'a> {
-    Var(SwfStr<'a>),
+    Var(&'a SwfStr),
     Register(u8),
 }

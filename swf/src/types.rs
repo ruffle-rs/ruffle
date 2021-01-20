@@ -247,7 +247,7 @@ pub struct FileAttributes {
 
 #[derive(Debug, PartialEq)]
 pub struct FrameLabel<'a> {
-    pub label: SwfStr<'a>,
+    pub label: &'a SwfStr,
     pub is_anchor: bool,
 }
 
@@ -260,7 +260,7 @@ pub struct DefineSceneAndFrameLabelData<'a> {
 #[derive(Debug, PartialEq)]
 pub struct FrameLabelData<'a> {
     pub frame_num: u32,
-    pub label: SwfStr<'a>,
+    pub label: &'a SwfStr,
 }
 
 pub type Depth = u16;
@@ -274,9 +274,9 @@ pub struct PlaceObject<'a> {
     pub matrix: Option<Matrix>,
     pub color_transform: Option<ColorTransform>,
     pub ratio: Option<u16>,
-    pub name: Option<SwfStr<'a>>,
+    pub name: Option<&'a SwfStr>,
     pub clip_depth: Option<Depth>,
-    pub class_name: Option<SwfStr<'a>>,
+    pub class_name: Option<&'a SwfStr>,
     pub filters: Option<Vec<Filter>>,
     pub background_color: Option<Color>,
     pub blend_mode: Option<BlendMode>,
@@ -472,7 +472,7 @@ pub enum Tag<'a> {
     },
     ShowFrame,
 
-    Protect(Option<SwfStr<'a>>),
+    Protect(Option<&'a SwfStr>),
     CsmTextSettings(CsmTextSettings),
     DebugId(DebugId),
     DefineBinaryData {
@@ -505,8 +505,8 @@ pub enum Tag<'a> {
     DefineFontInfo(Box<FontInfo<'a>>),
     DefineFontName {
         id: CharacterId,
-        name: SwfStr<'a>,
-        copyright_info: SwfStr<'a>,
+        name: &'a SwfStr,
+        copyright_info: &'a SwfStr,
     },
     DefineMorphShape(Box<DefineMorphShape>),
     DefineScalingGrid {
@@ -524,14 +524,14 @@ pub enum Tag<'a> {
         id: CharacterId,
         action_data: &'a [u8],
     },
-    EnableDebugger(SwfStr<'a>),
+    EnableDebugger(&'a SwfStr),
     EnableTelemetry {
         password_hash: &'a [u8],
     },
     End,
-    Metadata(SwfStr<'a>),
+    Metadata(&'a SwfStr),
     ImportAssets {
-        url: SwfStr<'a>,
+        url: &'a SwfStr,
         imports: Vec<ExportedAsset<'a>>,
     },
     JpegTables(JpegTables<'a>),
@@ -545,7 +545,7 @@ pub enum Tag<'a> {
     SoundStreamHead2(Box<SoundStreamHead>),
     StartSound(StartSound),
     StartSound2 {
-        class_name: SwfStr<'a>,
+        class_name: &'a SwfStr,
         sound_info: Box<SoundInfo>,
     },
     SymbolClass(Vec<SymbolClassLink<'a>>),
@@ -570,7 +570,7 @@ pub type ExportAssets<'a> = Vec<ExportedAsset<'a>>;
 #[derive(Debug, PartialEq, Clone)]
 pub struct ExportedAsset<'a> {
     pub id: CharacterId,
-    pub name: SwfStr<'a>,
+    pub name: &'a SwfStr,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -584,7 +584,7 @@ pub type SetBackgroundColor = Color;
 #[derive(Debug, PartialEq, Clone)]
 pub struct SymbolClassLink<'a> {
     pub id: CharacterId,
-    pub class_name: SwfStr<'a>,
+    pub class_name: &'a SwfStr,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -897,7 +897,7 @@ pub struct FontV1 {
 pub struct Font<'a> {
     pub version: u8,
     pub id: CharacterId,
-    pub name: SwfStr<'a>,
+    pub name: &'a SwfStr,
     pub language: Language,
     pub layout: Option<FontLayout>,
     pub glyphs: Vec<Glyph>,
@@ -913,7 +913,7 @@ pub struct Font4<'a> {
     pub id: CharacterId,
     pub is_italic: bool,
     pub is_bold: bool,
-    pub name: SwfStr<'a>,
+    pub name: &'a SwfStr,
     pub data: Option<&'a [u8]>,
 }
 
@@ -944,7 +944,7 @@ pub struct KerningRecord {
 pub struct FontInfo<'a> {
     pub id: CharacterId,
     pub version: u8,
-    pub name: SwfStr<'a>,
+    pub name: &'a SwfStr,
     pub is_small_text: bool,
     pub is_shift_jis: bool,
     pub is_ansi: bool,
@@ -983,13 +983,13 @@ pub struct EditText<'a> {
     pub id: CharacterId,
     pub bounds: Rectangle,
     pub font_id: Option<CharacterId>, // TODO(Herschel): Combine with height
-    pub font_class_name: Option<SwfStr<'a>>,
+    pub font_class_name: Option<&'a SwfStr>,
     pub height: Option<Twips>,
     pub color: Option<Color>,
     pub max_length: Option<u16>,
     pub layout: Option<TextLayout>,
-    pub variable_name: SwfStr<'a>,
-    pub initial_text: Option<SwfStr<'a>>,
+    pub variable_name: &'a SwfStr,
+    pub initial_text: Option<&'a SwfStr>,
     pub is_word_wrap: bool,
     pub is_multiline: bool,
     pub is_password: bool,
@@ -1116,7 +1116,7 @@ pub struct DefineBitsJpeg3<'a> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DoAbc<'a> {
-    pub name: SwfStr<'a>,
+    pub name: &'a SwfStr,
     pub is_lazy_initialize: bool,
     pub data: &'a [u8],
 }

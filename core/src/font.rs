@@ -101,6 +101,7 @@ impl<'gc> Font<'gc> {
         gc_context: MutationContext<'gc, '_>,
         renderer: &mut dyn RenderBackend,
         tag: &swf::Font,
+        encoding: &'static swf::Encoding,
     ) -> Result<Font<'gc>, Error> {
         let mut glyphs = vec![];
         let mut code_point_to_glyph = fnv::FnvHashMap::default();
@@ -124,7 +125,7 @@ impl<'gc> Font<'gc> {
             fnv::FnvHashMap::default()
         };
 
-        let descriptor = FontDescriptor::from_swf_tag(tag);
+        let descriptor = FontDescriptor::from_swf_tag(tag, encoding);
         let (ascent, descent, leading) = if let Some(layout) = &tag.layout {
             (layout.ascent, layout.descent, layout.leading)
         } else {
@@ -392,12 +393,8 @@ pub struct FontDescriptor {
 
 impl FontDescriptor {
     /// Obtain a font descriptor from a SWF font tag.
-    pub fn from_swf_tag(val: &swf::Font) -> Self {
-        let mut name = val.name.to_string();
-
-        if let Some(first_null) = name.find('\0') {
-            name.truncate(first_null);
-        };
+    pub fn from_swf_tag(val: &swf::Font, encoding: &'static swf::Encoding) -> Self {
+        let name = val.name.to_string_lossy(encoding);
 
         Self {
             name,
