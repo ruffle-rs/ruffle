@@ -30,10 +30,7 @@ impl<'a> SwfStr<'a> {
     /// The data is not required to be valid for the given encoding.
     #[inline]
     pub fn from_bytes(string: &'a [u8], encoding: &'static Encoding) -> Self {
-        let i = string
-            .into_iter()
-            .position(|&c| c == 0)
-            .unwrap_or(string.len());
+        let i = string.iter().position(|&c| c == 0).unwrap_or(string.len());
         Self {
             string: &string[..i],
             encoding,
@@ -41,8 +38,11 @@ impl<'a> SwfStr<'a> {
     }
 
     /// Create a new `SwfStr` from a byte slice with a given encoding.
-    /// The string should contain no null bytes, but ths is not checked.
     /// The data is not required to be valid for the given encoding.
+    ///
+    /// # Safety
+    ///
+    /// The string should contain no null bytes.
     #[inline]
     pub unsafe fn from_bytes_unchecked(string: &'a [u8], encoding: &'static Encoding) -> Self {
         Self { string, encoding }
@@ -51,7 +51,7 @@ impl<'a> SwfStr<'a> {
     /// Create a new UTF-8 `SwfStr` from a Rust `str`.
     /// The string will be truncated if a null byte is encountered.
     #[inline]
-    pub fn from_str(string: &'a str) -> Self {
+    pub fn from_utf8_str(string: &'a str) -> Self {
         Self::from_bytes(string.as_bytes(), UTF_8)
     }
 
@@ -118,7 +118,7 @@ impl<'a> Default for SwfStr<'a> {
 
 impl<'a> From<&'a str> for SwfStr<'a> {
     fn from(s: &'a str) -> Self {
-        SwfStr::from_str(s)
+        SwfStr::from_utf8_str(s)
     }
 }
 

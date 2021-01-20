@@ -27,7 +27,7 @@ use std::io::{self, Read};
 /// let swf = swf::parse_swf(&stream).unwrap();
 /// println!("Number of frames: {}", swf.header.num_frames);
 /// ```
-pub fn parse_swf<'a>(swf_buf: &'a SwfBuf) -> Result<Swf<'a>> {
+pub fn parse_swf(swf_buf: &SwfBuf) -> Result<Swf<'_>> {
     let mut reader = Reader::new(&swf_buf.data[..], swf_buf.header.version);
 
     Ok(Swf {
@@ -320,10 +320,9 @@ impl<'a> Reader<'a> {
     pub fn read_string(&mut self) -> io::Result<SwfStr<'a>> {
         let mut pos = 0;
         loop {
-            let byte = *self.input.get(pos).ok_or(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "Not enough data for slice",
-            ))?;
+            let byte = *self.input.get(pos).ok_or_else(|| {
+                io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for slice")
+            })?;
             if byte == 0 {
                 break;
             }
@@ -848,7 +847,7 @@ impl<'a> Reader<'a> {
 
         // We don't know how many color transforms this tag will contain, so read it into a buffer.
         let version = self.version;
-        let mut reader = Reader::new(&mut self.read_slice(tag_length)?, version);
+        let mut reader = Reader::new(self.read_slice(tag_length)?, version);
 
         let id = reader.read_character_id()?;
         let mut color_transforms = Vec::new();
@@ -2846,7 +2845,7 @@ pub mod tests {
     use std::io::Read;
     use std::vec::Vec;
 
-    fn reader<'a>(data: &'a [u8]) -> Reader<'a> {
+    fn reader(data: &[u8]) -> Reader<'_> {
         let default_version = 13;
         Reader::new(data, default_version)
     }
@@ -2962,8 +2961,8 @@ pub mod tests {
 
     #[test]
     fn read_bit() {
-        let mut buf: &[u8] = &[0b01010101, 0b00100101];
-        let mut reader = Reader::new(&mut buf, 1);
+        let buf: &[u8] = &[0b01010101, 0b00100101];
+        let mut reader = Reader::new(&buf, 1);
         let mut bits = reader.bits();
         assert_eq!(
             (0..16)
@@ -2978,8 +2977,8 @@ pub mod tests {
 
     #[test]
     fn read_ubits() {
-        let mut buf: &[u8] = &[0b01010101, 0b00100101];
-        let mut reader = Reader::new(&mut buf, 1);
+        let buf: &[u8] = &[0b01010101, 0b00100101];
+        let mut reader = Reader::new(buf, 1);
         let mut bits = reader.bits();
         assert_eq!(
             (0..8)
@@ -2991,8 +2990,8 @@ pub mod tests {
 
     #[test]
     fn read_sbits() {
-        let mut buf: &[u8] = &[0b01010101, 0b00100101];
-        let mut reader = Reader::new(&mut buf, 1);
+        let buf: &[u8] = &[0b01010101, 0b00100101];
+        let mut reader = Reader::new(buf, 1);
         let mut bits = reader.bits();
         assert_eq!(
             (0..8)
