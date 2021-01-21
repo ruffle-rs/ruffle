@@ -1,0 +1,6 @@
+_totalframes: 1
+_currentframe: 1
+_currentframe: 2
+_currentframe: 3
+_totalframes: 1
+_currentframe: 1

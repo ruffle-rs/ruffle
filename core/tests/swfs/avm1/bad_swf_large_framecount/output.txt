@@ -1,0 +1,6 @@
+frame 1
+_totalframes: 16
+frame 2
+frame 1
+_totalframes: 16
+frame 2
