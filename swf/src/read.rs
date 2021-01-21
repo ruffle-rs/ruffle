@@ -1369,7 +1369,7 @@ impl<'a> Reader<'a> {
         let mut start_fill_styles = Vec::with_capacity(num_fill_styles);
         let mut end_fill_styles = Vec::with_capacity(num_fill_styles);
         for _ in 0..num_fill_styles {
-            let (start, end) = self.read_morph_fill_style(shape_version)?;
+            let (start, end) = self.read_morph_fill_style()?;
             start_fill_styles.push(start);
             end_fill_styles.push(end);
         }
@@ -1495,7 +1495,7 @@ impl<'a> Reader<'a> {
                 )
             };
             let (start_fill_style, end_fill_style) = if has_fill {
-                let (start, end) = self.read_morph_fill_style(shape_version)?;
+                let (start, end) = self.read_morph_fill_style()?;
                 (Some(start), Some(end))
             } else {
                 (None, None)
@@ -1529,7 +1529,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn read_morph_fill_style(&mut self, shape_version: u8) -> Result<(FillStyle, FillStyle)> {
+    fn read_morph_fill_style(&mut self) -> Result<(FillStyle, FillStyle)> {
         let fill_style_type = self.read_u8()?;
         let fill_style = match fill_style_type {
             0x00 => {
@@ -1555,12 +1555,8 @@ impl<'a> Reader<'a> {
             }
 
             0x13 => {
-                if self.version < 8 || shape_version < 2 {
-                    return Err(Error::invalid_data(
-                        "Focal gradients are only supported in SWF version 8 \
-                         or higher.",
-                    ));
-                }
+                // SWF19 says focal gradients are only allowed in SWFv8+ and DefineMorphShapeShape2,
+                // but it works even in earlier tags (#2730).
                 // TODO(Herschel): How is focal_point stored?
                 let (start_gradient, end_gradient) = self.read_morph_gradient()?;
                 let start_focal_point = self.read_fixed8()?;
@@ -1755,18 +1751,12 @@ impl<'a> Reader<'a> {
 
             0x12 => FillStyle::RadialGradient(self.read_gradient(shape_version)?),
 
-            0x13 => {
-                if self.version < 8 || shape_version < 4 {
-                    return Err(Error::invalid_data(
-                        "Focal gradients are only supported in SWF version 8 \
-                         or higher.",
-                    ));
-                }
-                FillStyle::FocalGradient {
-                    gradient: self.read_gradient(shape_version)?,
-                    focal_point: self.read_fixed8()?,
-                }
-            }
+            0x13 => FillStyle::FocalGradient {
+                // SWF19 says focal gradients are only allowed in SWFv8+ and DefineShape4,
+                // but it works even in earlier tags (#2730).
+                gradient: self.read_gradient(shape_version)?,
+                focal_point: self.read_fixed8()?,
+            },
 
             0x40..=0x43 => FillStyle::Bitmap {
                 id: self.read_u16()?,
