@@ -185,9 +185,7 @@ impl<'gc> Property<'gc> {
             Property::Stored {
                 value, attributes, ..
             } => {
-                if !attributes.contains(
-                    AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
-                ) {
+                if !attributes.contains(Attribute::READ_ONLY) {
                     *value = new_value.into();
                 }
 
@@ -259,15 +257,9 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual {
                 attributes, set, ..
-            } => {
-                !attributes.contains(
-                    AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
-                ) && !set.is_none()
-            }
-            Property::Stored { attributes, .. } => !attributes
-                .contains(AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY),
-            Property::Slot { attributes, .. } => !attributes
-                .contains(AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY),
+            } => !attributes.contains(Attribute::READ_ONLY) && !set.is_none(),
+            Property::Stored { attributes, .. } => !attributes.contains(Attribute::READ_ONLY),
+            Property::Slot { attributes, .. } => !attributes.contains(Attribute::READ_ONLY),
         }
     }
 }

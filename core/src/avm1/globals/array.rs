@@ -46,55 +46,35 @@ pub fn create_array_object<'gc>(
         gc_context,
         "CASEINSENSITIVE",
         1.into(),
-        Attribute::DONT_ENUM
-            | Attribute::DONT_DELETE
-            | AttrAttribute::DONT_ENUM
-            | Attribute::DONT_DELETE
-            | Attribute::READ_ONLY,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "DESCENDING",
         2.into(),
-        Attribute::DONT_ENUM
-            | Attribute::DONT_DELETE
-            | AttrAttribute::DONT_ENUM
-            | Attribute::DONT_DELETE
-            | Attribute::READ_ONLY,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "UNIQUESORT",
         4.into(),
-        Attribute::DONT_ENUM
-            | Attribute::DONT_DELETE
-            | AttrAttribute::DONT_ENUM
-            | Attribute::DONT_DELETE
-            | Attribute::READ_ONLY,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "RETURNINDEXEDARRAY",
         8.into(),
-        Attribute::DONT_ENUM
-            | Attribute::DONT_DELETE
-            | AttrAttribute::DONT_ENUM
-            | Attribute::DONT_DELETE
-            | Attribute::READ_ONLY,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "NUMERIC",
         16.into(),
-        Attribute::DONT_ENUM
-            | Attribute::DONT_DELETE
-            | AttrAttribute::DONT_ENUM
-            | Attribute::DONT_DELETE
-            | Attribute::READ_ONLY,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     array

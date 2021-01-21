@@ -974,7 +974,7 @@ mod tests {
                 activation.context.gc_context,
                 "readonly",
                 "initial".into(),
-                AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+                Attribute::READ_ONLY,
             );
 
             object.set("normal", "replaced".into(), activation).unwrap();

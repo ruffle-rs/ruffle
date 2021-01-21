@@ -68,7 +68,7 @@ pub fn add_property<'gc>(
                     &name,
                     get.to_owned(),
                     None,
-                    AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+                    Attribute::READ_ONLY,
                 );
             } else {
                 return Ok(false.into());

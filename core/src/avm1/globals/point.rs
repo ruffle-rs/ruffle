@@ -361,7 +361,7 @@ pub fn create_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
 
     object.into()

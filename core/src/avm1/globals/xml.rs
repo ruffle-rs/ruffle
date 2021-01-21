@@ -549,7 +549,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -561,7 +561,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -573,7 +573,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -585,7 +585,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -597,7 +597,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -609,7 +609,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -621,7 +621,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -633,7 +633,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -645,7 +645,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -657,7 +657,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -669,7 +669,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -681,7 +681,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -693,7 +693,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xmlnode_proto
         .as_script_object()
@@ -1090,7 +1090,7 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xml_proto.define_value(gc_context, "ignoreWhite", false.into(), Attribute::empty());
     xml_proto.add_property(
@@ -1103,7 +1103,7 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xml_proto.add_property(
         gc_context,
@@ -1115,7 +1115,7 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xml_proto.add_property(
         gc_context,
@@ -1127,7 +1127,7 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+        Attribute::READ_ONLY,
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "createElement",
