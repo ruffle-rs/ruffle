@@ -84,8 +84,8 @@ function sampleFileSelected() {
         localFileInput.value = null;
         player.load({ url: swfData.location, ...config });
     } else {
-        document.getElementById("main").children[0].remove();
-        player = ruffle.create_player();
+        container.children[0].remove();
+        player = ruffle.createPlayer();
         player.id = "player";
         container.append(player);
         authorContainer.style.display = "none";
