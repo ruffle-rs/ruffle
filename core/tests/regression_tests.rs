@@ -314,6 +314,7 @@ swf_tests! {
     (gradient_glow_filter, "avm1/gradient_glow_filter", 1),
     (bitmap_data, "avm1/bitmap_data", 1),
     (array_call_method, "avm1/array_call_method", 1),
+    (bad_swf_tag_past_eof, "avm1/bad_swf_tag_past_eof", 1),
     (as3_hello_world, "avm2/hello_world", 1),
     (as3_function_call, "avm2/function_call", 1),
     (as3_function_call_via_call, "avm2/function_call_via_call", 1),

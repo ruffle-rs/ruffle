@@ -291,6 +291,12 @@ where
 {
     loop {
         let (tag_code, tag_len) = reader.read_tag_code_and_length()?;
+        if tag_len > reader.get_ref().len() {
+            log::error!("Unexpected EOF when reading tag");
+            *reader.get_mut() = &reader.get_ref()[reader.get_ref().len()..];
+            break;
+        }
+
         let tag = TagCode::from_u16(tag_code);
         let tag_slice = &reader.get_ref()[..tag_len];
         let end_slice = &reader.get_ref()[tag_len..];
