@@ -1179,7 +1179,7 @@ impl<W: Write> Writer<W> {
                 .iter()
                 .zip(data.end.fill_styles.iter())
             {
-                writer.write_morph_fill_style(start, end, data.version)?;
+                writer.write_morph_fill_style(start, end)?;
             }
 
             if num_line_styles >= 0xff {
@@ -1263,12 +1263,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_morph_fill_style(
-        &mut self,
-        start: &FillStyle,
-        end: &FillStyle,
-        shape_version: u8,
-    ) -> Result<()> {
+    fn write_morph_fill_style(&mut self, start: &FillStyle, end: &FillStyle) -> Result<()> {
         match (start, end) {
             (&FillStyle::Color(ref start_color), &FillStyle::Color(ref end_color)) => {
                 self.write_u8(0x00)?; // Solid color.
@@ -1302,13 +1297,6 @@ impl<W: Write> Writer<W> {
                     focal_point: end_focal_point,
                 },
             ) => {
-                if self.version < 8 || shape_version < 2 {
-                    return Err(Error::invalid_data(
-                        "Focal gradients are only support in SWF version 8 \
-                         and higher.",
-                    ));
-                }
-
                 self.write_u8(0x13)?; // Focal gradient.
                 self.write_morph_gradient(start_gradient, end_gradient)?;
                 self.write_fixed8(start_focal_point)?;
@@ -1443,7 +1431,7 @@ impl<W: Write> Writer<W> {
                 }
 
                 (&Some(ref start_fill), &Some(ref end_fill)) => {
-                    self.write_morph_fill_style(start_fill, end_fill, shape_version)?
+                    self.write_morph_fill_style(start_fill, end_fill)?
                 }
 
                 _ => {
@@ -1772,13 +1760,6 @@ impl<W: Write> Writer<W> {
                 ref gradient,
                 focal_point,
             } => {
-                if self.version < 8 {
-                    return Err(Error::invalid_data(
-                        "Focal gradients are only support in SWF version 8 \
-                         and higher.",
-                    ));
-                }
-
                 self.write_u8(0x13)?; // Focal gradient.
                 self.write_gradient(gradient, shape_version)?;
                 self.write_fixed8(focal_point)?;
