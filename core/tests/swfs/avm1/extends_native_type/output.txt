@@ -1,0 +1,11 @@
+// MyColorTransform constructor
+// redMultiplier
+1
+// redOffset
+0
+// redOffset = 100
+100
+// ct.__proto__ == MyColorTransform.prototype
+true
+// mc.transform.colorTransform.redOffset
+100
