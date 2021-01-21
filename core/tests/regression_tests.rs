@@ -178,6 +178,7 @@ swf_tests! {
     (primitive_type_globals, "avm1/primitive_type_globals", 1),
     (primitive_instanceof, "avm1/primitive_instanceof", 1),
     (as2_oop, "avm1/as2_oop", 1),
+    (extends_native_type, "avm1/extends_native_type", 1),
     (xml, "avm1/xml", 1),
     (xml_namespaces, "avm1/xml_namespaces", 1),
     (xml_node_namespaceuri, "avm1/xml_node_namespaceuri", 1),
