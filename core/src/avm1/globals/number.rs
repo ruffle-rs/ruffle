@@ -62,7 +62,7 @@ pub fn create_number_object<'gc>(
         gc_context,
         "MAX_VALUE",
         std::f64::MAX.into(),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.define_value(
@@ -71,23 +71,28 @@ pub fn create_number_object<'gc>(
         // Note this is actually the smallest positive denormalized f64.
         // Rust doesn't provide a constant for this (`MIN_POSITIVE` is a normal f64).
         Value::Number(f64::from_bits(1)),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
-    object.define_value(gc_context, "NaN", std::f64::NAN.into(), Attribute::all());
+    object.define_value(
+        gc_context,
+        "NaN",
+        std::f64::NAN.into(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+    );
 
     object.define_value(
         gc_context,
         "NEGATIVE_INFINITY",
         std::f64::NEG_INFINITY.into(),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.define_value(
         gc_context,
         "POSITIVE_INFINITY",
         std::f64::INFINITY.into(),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     number

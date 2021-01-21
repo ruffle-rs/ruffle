@@ -35,7 +35,7 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

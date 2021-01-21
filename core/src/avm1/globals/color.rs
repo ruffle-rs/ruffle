@@ -22,7 +22,7 @@ pub fn constructor<'gc>(
     this.set_attributes(
         activation.context.gc_context,
         Some("target"),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Attribute::empty(),
     );
 
@@ -40,7 +40,7 @@ pub fn create_proto<'gc>(
         "getRGB",
         get_rgb,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -48,7 +48,7 @@ pub fn create_proto<'gc>(
         "getTransform",
         get_transform,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -56,7 +56,7 @@ pub fn create_proto<'gc>(
         "setRGB",
         set_rgb,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -64,7 +64,7 @@ pub fn create_proto<'gc>(
         "setTransform",
         set_transform,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

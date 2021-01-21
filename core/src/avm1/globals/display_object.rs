@@ -34,7 +34,7 @@ macro_rules! with_display_object {
                     Ok(Value::Undefined)
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                Attribute::all(),
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*
@@ -72,7 +72,7 @@ pub fn define_display_object_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -90,7 +90,7 @@ pub fn define_display_object_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -108,7 +108,7 @@ pub fn define_display_object_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 }
 

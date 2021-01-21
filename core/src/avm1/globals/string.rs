@@ -63,7 +63,7 @@ pub fn create_string_object<'gc>(
         "fromCharCode",
         from_char_code,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -97,14 +97,14 @@ pub fn create_proto<'gc>(
         "charAt",
         char_at,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "charCodeAt",
         char_code_at,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -112,7 +112,7 @@ pub fn create_proto<'gc>(
         "concat",
         concat,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -120,7 +120,7 @@ pub fn create_proto<'gc>(
         "indexOf",
         index_of,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -128,19 +128,31 @@ pub fn create_proto<'gc>(
         "lastIndexOf",
         last_index_of,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
-    object.force_set_function("slice", slice, gc_context, Attribute::all(), Some(fn_proto));
+    object.force_set_function(
+        "slice",
+        slice,
+        gc_context,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+        Some(fn_proto),
+    );
 
-    object.force_set_function("split", split, gc_context, Attribute::all(), Some(fn_proto));
+    object.force_set_function(
+        "split",
+        split,
+        gc_context,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+        Some(fn_proto),
+    );
 
     object.force_set_function(
         "substr",
         substr,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -148,7 +160,7 @@ pub fn create_proto<'gc>(
         "substring",
         substring,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -156,7 +168,7 @@ pub fn create_proto<'gc>(
         "toLowerCase",
         to_lower_case,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -164,7 +176,7 @@ pub fn create_proto<'gc>(
         "toUpperCase",
         to_upper_case,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

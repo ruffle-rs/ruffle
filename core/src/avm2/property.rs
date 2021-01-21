@@ -61,7 +61,7 @@ impl<'gc> Property<'gc> {
     pub fn new_const(value: impl Into<Value<'gc>>) -> Self {
         Property::Stored {
             value: value.into(),
-            attributes: Attribute::all(),
+            attributes: Attribute::DONT_DELETE | Attribute::READ_ONLY,
         }
     }
 
@@ -75,11 +75,11 @@ impl<'gc> Property<'gc> {
 
     /// Convert a function into a method.
     ///
-    /// This applies ReadOnly/DONT_DELETE to the property.
+    /// This applies READ_ONLY/DONT_DELETE to the property.
     pub fn new_method(fn_obj: Object<'gc>) -> Self {
         Property::Stored {
             value: fn_obj.into(),
-            attributes: Attribute::all(),
+            attributes: Attribute::DONT_DELETE | Attribute::READ_ONLY,
         }
     }
 
@@ -88,7 +88,7 @@ impl<'gc> Property<'gc> {
         Property::Virtual {
             get: None,
             set: None,
-            attributes: Attribute::all(),
+            attributes: Attribute::DONT_DELETE | Attribute::READ_ONLY,
         }
     }
 
@@ -246,20 +246,27 @@ impl<'gc> Property<'gc> {
     }
 
     pub fn can_delete(&self) -> bool {
-        match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(Attribute::DONT_DELETE),
-            Property::Stored { attributes, .. } => !attributes.contains(Attribute::DONT_DELETE),
-            Property::Slot { attributes, .. } => !attributes.contains(Attribute::DONT_DELETE),
-        }
+        let attributes = match self {
+            Property::Virtual { attributes, .. } => attributes,
+            Property::Stored { attributes, .. } => attributes,
+            Property::Slot { attributes, .. } => attributes,
+        };
+        !attributes.contains(Attribute::DONT_DELETE)
     }
 
     pub fn is_overwritable(&self) -> bool {
-        match self {
+        let attributes = match self {
             Property::Virtual {
                 attributes, set, ..
-            } => !attributes.contains(Attribute::READ_ONLY) && !set.is_none(),
-            Property::Stored { attributes, .. } => !attributes.contains(Attribute::READ_ONLY),
-            Property::Slot { attributes, .. } => !attributes.contains(Attribute::READ_ONLY),
-        }
+            } => {
+                if set.is_none() {
+                    return false;
+                }
+                attributes
+            }
+            Property::Stored { attributes, .. } => attributes,
+            Property::Slot { attributes, .. } => attributes,
+        };
+        !attributes.contains(Attribute::READ_ONLY)
     }
 }

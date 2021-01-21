@@ -48,7 +48,7 @@ macro_rules! with_movie_clip {
                     Ok(Value::Undefined)
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                Attribute::all(),
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*
@@ -209,7 +209,7 @@ pub fn create_proto<'gc>(
         "removeMovieClip",
         remove_movie_clip,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

@@ -27,7 +27,7 @@ macro_rules! implement_local_getters {
                     }
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                Attribute::all(),
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*
@@ -47,7 +47,7 @@ macro_rules! implement_methods {
                     }
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                Attribute::all(),
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*
@@ -71,7 +71,7 @@ macro_rules! implement_utc_getters {
                     }
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                Attribute::all(),
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*

@@ -81,18 +81,24 @@ pub fn create_external_interface_object<'gc>(
             fn_proto,
         ),
         None,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.force_set_function(
         "addCallback",
         add_callback,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
-    object.force_set_function("call", call, gc_context, Attribute::all(), Some(fn_proto));
+    object.force_set_function(
+        "call",
+        call,
+        gc_context,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+        Some(fn_proto),
+    );
 
     object.into()
 }

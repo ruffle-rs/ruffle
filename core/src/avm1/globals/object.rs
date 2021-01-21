@@ -404,7 +404,7 @@ pub fn create_object_object<'gc>(
         "registerClass",
         register_class,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

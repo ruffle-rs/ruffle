@@ -27,15 +27,27 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let mut object = ScriptObject::object(gc_context, Some(proto));
 
-    object.force_set_function("load", load, gc_context, Attribute::all(), Some(fn_proto));
+    object.force_set_function(
+        "load",
+        load,
+        gc_context,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+        Some(fn_proto),
+    );
 
-    object.force_set_function("send", send, gc_context, Attribute::all(), Some(fn_proto));
+    object.force_set_function(
+        "send",
+        send,
+        gc_context,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+        Some(fn_proto),
+    );
 
     object.force_set_function(
         "sendAndLoad",
         send_and_load,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -43,7 +55,7 @@ pub fn create_proto<'gc>(
         "decode",
         decode,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -51,7 +63,7 @@ pub fn create_proto<'gc>(
         "getBytesLoaded",
         get_bytes_loaded,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -59,7 +71,7 @@ pub fn create_proto<'gc>(
         "getBytesTotal",
         get_bytes_total,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -67,7 +79,7 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -75,14 +87,14 @@ pub fn create_proto<'gc>(
         gc_context,
         "contentType",
         "application/x-www-form-url-encoded".into(),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.force_set_function(
         "onLoad",
         on_load,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -90,7 +102,7 @@ pub fn create_proto<'gc>(
         "onData",
         on_data,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -98,7 +110,7 @@ pub fn create_proto<'gc>(
         "addRequestHeader",
         add_request_header,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

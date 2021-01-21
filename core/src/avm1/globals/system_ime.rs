@@ -78,41 +78,56 @@ pub fn create<'gc>(
         gc_context,
         "ALPHANUMERIC_FULL",
         "ALPHANUMERIC_FULL".into(),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     ime.define_value(
         gc_context,
         "ALPHANUMERIC_HALF",
         "ALPHANUMERIC_HALF".into(),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
-    ime.define_value(gc_context, "CHINESE", "CHINESE".into(), Attribute::all());
+    ime.define_value(
+        gc_context,
+        "CHINESE",
+        "CHINESE".into(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+    );
 
     ime.define_value(
         gc_context,
         "JAPANESE_HIRAGANA",
         "JAPANESE_HIRAGANA".into(),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     ime.define_value(
         gc_context,
         "JAPANESE_KATAKANA_FULL",
         "JAPANESE_KATAKANA_FULL".into(),
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
-    ime.define_value(gc_context, "KOREAN", "KOREAN".into(), Attribute::all());
+    ime.define_value(
+        gc_context,
+        "KOREAN",
+        "KOREAN".into(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+    );
 
-    ime.define_value(gc_context, "UNKNOWN", "UNKNOWN".into(), Attribute::all());
+    ime.define_value(
+        gc_context,
+        "UNKNOWN",
+        "UNKNOWN".into(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+    );
 
     ime.force_set_function(
         "onIMEComposition",
         on_ime_composition,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -120,7 +135,7 @@ pub fn create<'gc>(
         "doConversion",
         do_conversion,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -128,7 +143,7 @@ pub fn create<'gc>(
         "getConversionMode",
         get_conversion_mode,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -136,7 +151,7 @@ pub fn create<'gc>(
         "getEnabled",
         get_enabled,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -144,7 +159,7 @@ pub fn create<'gc>(
         "setCompositionString",
         set_composition_string,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -152,7 +167,7 @@ pub fn create<'gc>(
         "setConversionMode",
         set_conversion_mode,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -160,7 +175,7 @@ pub fn create<'gc>(
         "setEnabled",
         set_enabled,
         gc_context,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 

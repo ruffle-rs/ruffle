@@ -204,17 +204,9 @@ impl<'gc> Class<'gc> {
         let class_init = unit.load_method(abc_class.init_method.0, mc)?;
 
         let mut attributes = ClassAttributes::empty();
-        if abc_instance.is_sealed {
-            attributes |= ClassAttributes::SEALED;
-        }
-
-        if abc_instance.is_final {
-            attributes |= ClassAttributes::FINAL;
-        }
-
-        if abc_instance.is_interface {
-            attributes |= ClassAttributes::INTERFACE;
-        }
+        attributes.set(ClassAttributes::SEALED, abc_instance.is_sealed);
+        attributes.set(ClassAttributes::FINAL, abc_instance.is_final);
+        attributes.set(ClassAttributes::INTERFACE, abc_instance.is_interface);
 
         Ok(GcCell::allocate(
             mc,

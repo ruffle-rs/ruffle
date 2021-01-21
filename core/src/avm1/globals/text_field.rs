@@ -23,7 +23,7 @@ macro_rules! with_text_field {
                     Ok(Value::Undefined)
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                Attribute::all(),
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*

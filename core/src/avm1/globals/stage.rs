@@ -49,7 +49,7 @@ pub fn create_stage_object<'gc>(
             fn_proto,
         ),
         None,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     stage.add_property(
@@ -98,7 +98,7 @@ pub fn create_stage_object<'gc>(
             fn_proto,
         ),
         None,
-        Attribute::all(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     stage.into()
