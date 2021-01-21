@@ -142,12 +142,11 @@ impl<'gc> TObject<'gc> for DisplacementMapFilterObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(DisplacementMapFilterObject::empty_object(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.displacement_map_filter),
+        Ok(
+            DisplacementMapFilterObject::empty_object(activation.context.gc_context, Some(this))
+                .into(),
         )
-        .into())
     }
 }

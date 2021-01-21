@@ -126,12 +126,8 @@ impl<'gc> TObject<'gc> for ConvolutionFilterObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(ConvolutionFilterObject::empty_object(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.convolution_filter),
-        )
-        .into())
+        Ok(ConvolutionFilterObject::empty_object(activation.context.gc_context, Some(this)).into())
     }
 }

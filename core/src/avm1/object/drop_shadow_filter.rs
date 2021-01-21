@@ -112,12 +112,8 @@ impl<'gc> TObject<'gc> for DropShadowFilterObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(DropShadowFilterObject::empty_object(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.drop_shadow_filter),
-        )
-        .into())
+        Ok(DropShadowFilterObject::empty_object(activation.context.gc_context, Some(this)).into())
     }
 }

@@ -691,12 +691,8 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(BitmapDataObject::empty_object(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.bitmap_data),
-        )
-        .into())
+        Ok(BitmapDataObject::empty_object(activation.context.gc_context, Some(this)).into())
     }
 }

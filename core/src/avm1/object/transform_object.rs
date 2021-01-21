@@ -87,13 +87,9 @@ impl<'gc> TObject<'gc> for TransformObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(TransformObject::empty(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.transform),
-        )
-        .into())
+        Ok(TransformObject::empty(activation.context.gc_context, Some(this)).into())
     }
 
     fn set(

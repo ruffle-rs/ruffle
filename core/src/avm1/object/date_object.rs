@@ -68,14 +68,9 @@ impl<'gc> TObject<'gc> for DateObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(DateObject::with_date_time(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.date),
-            None,
-        )
-        .into())
+        Ok(DateObject::with_date_time(activation.context.gc_context, Some(this), None).into())
     }
 
     fn as_date_object(&self) -> Option<DateObject<'gc>> {
