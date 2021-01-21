@@ -1102,13 +1102,13 @@ fn extract_maybe_array_strings<'gc>(
     Ok(out)
 }
 
-/// Given a value, extract its array values and coerce them to bitflags.
+/// Given a value, extract its array values and coerce them to SortOptions.
 ///
 /// If the value is not an array, it will be returned as if it was present in a
 /// one-element array containing itself. This is intended for use with parsing
 /// parameters which are optionally arrays. The returned value will still be
 /// coerced into a string in this case.
-fn extract_maybe_array_enumsets<'gc>(
+fn extract_maybe_array_sort_options<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<Vec<SortOptions>, Error> {
@@ -1132,7 +1132,7 @@ pub fn sort_on<'gc>(
     if let Some(this) = this {
         if let Some(field_names_value) = args.get(0).cloned() {
             let field_names = extract_maybe_array_strings(activation, field_names_value)?;
-            let mut options = extract_maybe_array_enumsets(
+            let mut options = extract_maybe_array_sort_options(
                 activation,
                 args.get(1).cloned().unwrap_or_else(|| 0.into()),
             )?;
