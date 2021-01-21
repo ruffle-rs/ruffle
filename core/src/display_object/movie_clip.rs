@@ -3108,13 +3108,17 @@ impl ClipAction {
         let action_data = SwfSlice::from(movie)
             .to_unbounded_subslice(other.action_data)
             .unwrap();
-        let mut x = Vec::new();
-        for i in 0..32 {
-            x.push(ClipEventFlag::from_bits_truncate(
-                other.events.bits() & (1 << i),
-            ));
+
+        let mut events = Vec::new();
+        let flags = other.events.bits();
+        let mut bit = 1u32;
+        while flags & !(bit - 1) != 0 {
+            if (flags & bit) != 0 {
+                events.push(ClipEventFlag::from_bits_truncate(bit));
+            }
+            bit = bit << 1;
         }
-        x.into_iter().map(move |event| Self {
+        events.into_iter().map(move |event| Self {
             event: match event {
                 ClipEventFlag::CONSTRUCT => ClipEvent::Construct,
                 ClipEventFlag::DATA => ClipEvent::Data,
@@ -3139,6 +3143,7 @@ impl ClipAction {
                 ClipEventFlag::RELEASE => ClipEvent::Release,
                 ClipEventFlag::RELEASE_OUTSIDE => ClipEvent::ReleaseOutside,
                 ClipEventFlag::UNLOAD => ClipEvent::Unload,
+                _ => unreachable!(),
             },
             action_data: action_data.clone(),
         })
