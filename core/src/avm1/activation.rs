@@ -1133,10 +1133,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         //TODO: What happens if we try to extend an object which has no `prototype`?
         //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
-        let super_proto = superclass.get("prototype", self)?.coerce_to_object(self);
 
-        let sub_prototype: Object<'gc> =
-            ScriptObject::object(self.context.gc_context, Some(super_proto)).into();
+        // Use `create_bare_object` to ensure the proper underlying object type when
+        // extending native objects.
+        // TODO: This doesn't work if the user manually wires up `prototype`/`__proto__`.
+        // The native object needs to be created later by the superclass's constructor.
+        // (see #701)
+        let super_prototype = superclass.get("prototype", self)?.coerce_to_object(self);
+        let sub_prototype = super_prototype.create_bare_object(self, super_prototype)?;
 
         sub_prototype.set("constructor", superclass.into(), self)?;
         sub_prototype.set_attributes(
