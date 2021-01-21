@@ -3,8 +3,8 @@
 //! These structures are documented in the Adobe SWF File Format Specification
 //! version 19 (henceforth SWF19):
 //! https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf
-use bitflags::bitflags;
 use crate::string::SwfStr;
+use bitflags::bitflags;
 use std::collections::HashSet;
 
 mod matrix;

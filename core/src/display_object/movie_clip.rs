@@ -3116,7 +3116,7 @@ impl ClipAction {
             if (flags & bit) != 0 {
                 events.push(ClipEventFlag::from_bits_truncate(bit));
             }
-            bit = bit << 1;
+            bit <<= 1;
         }
         events.into_iter().map(move |event| Self {
             event: match event {

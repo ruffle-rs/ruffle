@@ -169,7 +169,7 @@ pub fn initialize_internal<'gc>(
         gc_context,
         "_listeners",
         listeners.into(),
-        Attribute::DONT_ENUM.into(),
+        Attribute::DONT_ENUM,
     );
 
     broadcaster.define_value(
