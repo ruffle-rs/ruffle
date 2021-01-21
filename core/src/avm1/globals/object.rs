@@ -68,7 +68,7 @@ pub fn add_property<'gc>(
                     &name,
                     get.to_owned(),
                     None,
-                    Attribute::READ_ONLY,
+                    AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
                 );
             } else {
                 return Ok(false.into());
@@ -348,21 +348,21 @@ pub fn as_set_prop_flags<'gc>(
     let set_flags = args
         .get(2)
         .unwrap_or(&Value::Number(0.0))
-        .coerce_to_f64(activation)? as u128;
+        .coerce_to_f64(activation)? as u8;
+    let set_attributes = Attribute::from_bits_truncate(set_flags);
+
     let clear_flags = args
         .get(3)
         .unwrap_or(&Value::Number(0.0))
-        .coerce_to_f64(activation)? as u128;
+        .coerce_to_f64(activation)? as u8;
+    let clear_attributes = Attribute::from_bits_truncate(clear_flags);
 
-    if set_flags > 0b111 || clear_flags > 0b111 {
+    if set_attributes.bits() != set_flags || clear_attributes.bits() != clear_flags {
         avm_warn!(
             activation,
             "ASSetPropFlags: Unimplemented support for flags > 7"
         );
     }
-
-    let set_attributes = Attribute::from_bits_truncate(set_flags as u8);
-    let clear_attributes = Attribute::from_bits_truncate(clear_flags as u8);
 
     match properties {
         Some(properties) => {

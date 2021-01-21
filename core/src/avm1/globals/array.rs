@@ -42,15 +42,60 @@ pub fn create_array_object<'gc>(
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
     // when run in Flash Player 7. Make these conditional if we add a parameter to control
     // target Flash Player version.
-    object.define_value(gc_context, "CASEINSENSITIVE", 1.into(), Attribute::all());
+    object.define_value(
+        gc_context,
+        "CASEINSENSITIVE",
+        1.into(),
+        Attribute::DONT_ENUM
+            | Attribute::DONT_DELETE
+            | AttrAttribute::DONT_ENUM
+            | Attribute::DONT_DELETE
+            | Attribute::READ_ONLY,
+    );
 
-    object.define_value(gc_context, "DESCENDING", 2.into(), Attribute::all());
+    object.define_value(
+        gc_context,
+        "DESCENDING",
+        2.into(),
+        Attribute::DONT_ENUM
+            | Attribute::DONT_DELETE
+            | AttrAttribute::DONT_ENUM
+            | Attribute::DONT_DELETE
+            | Attribute::READ_ONLY,
+    );
 
-    object.define_value(gc_context, "UNIQUESORT", 4.into(), Attribute::all());
+    object.define_value(
+        gc_context,
+        "UNIQUESORT",
+        4.into(),
+        Attribute::DONT_ENUM
+            | Attribute::DONT_DELETE
+            | AttrAttribute::DONT_ENUM
+            | Attribute::DONT_DELETE
+            | Attribute::READ_ONLY,
+    );
 
-    object.define_value(gc_context, "RETURNINDEXEDARRAY", 8.into(), Attribute::all());
+    object.define_value(
+        gc_context,
+        "RETURNINDEXEDARRAY",
+        8.into(),
+        Attribute::DONT_ENUM
+            | Attribute::DONT_DELETE
+            | AttrAttribute::DONT_ENUM
+            | Attribute::DONT_DELETE
+            | Attribute::READ_ONLY,
+    );
 
-    object.define_value(gc_context, "NUMERIC", 16.into(), Attribute::all());
+    object.define_value(
+        gc_context,
+        "NUMERIC",
+        16.into(),
+        Attribute::DONT_ENUM
+            | Attribute::DONT_DELETE
+            | AttrAttribute::DONT_ENUM
+            | Attribute::DONT_DELETE
+            | Attribute::READ_ONLY,
+    );
 
     array
 }

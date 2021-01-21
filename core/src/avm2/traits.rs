@@ -48,12 +48,10 @@ pub struct Trait<'gc> {
 }
 
 fn trait_attribs_from_abc_traits(abc_trait: &AbcTrait) -> CollectWrapper<TraitAttributes> {
-    CollectWrapper(match (abc_trait.is_final, abc_trait.is_override) {
-        (true, true) => TraitAttributes::all(),
-        (true, false) => TraitAttributes::FINAL,
-        (false, true) => TraitAttributes::OVERRIDE,
-        (false, false) => TraitAttributes::empty(),
-    })
+    let mut attributes = TraitAttributes::empty();
+    attributes.set(TraitAttributes::FINAL, abc_trait.is_final);
+    attributes.set(TraitAttributes::OVERRIDE, abc_trait.is_override);
+    CollectWrapper(attributes)
 }
 
 /// The fields for a particular kind of trait.

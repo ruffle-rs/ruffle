@@ -51,7 +51,7 @@ impl<'gc> Slot<'gc> {
     pub fn new_const(value: impl Into<Value<'gc>>) -> Self {
         Self::Occupied {
             value: value.into(),
-            attributes: Attribute::READ_ONLY,
+            attributes: AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
         }
     }
 
@@ -68,7 +68,9 @@ impl<'gc> Slot<'gc> {
         match self {
             Self::Unoccupied => Err("Cannot overwrite unoccupied slot".into()),
             Self::Occupied { value, attributes } => {
-                if attributes.contains(Attribute::READ_ONLY) {
+                if attributes.contains(
+                    AttrAttribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
+                ) {
                     return Err("Cannot overwrite const slot".into());
                 }
 
