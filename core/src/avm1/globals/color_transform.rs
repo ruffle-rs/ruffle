@@ -64,15 +64,16 @@ pub fn constructor<'gc>(
         .unwrap_or(&Value::Number(0.into()))
         .coerce_to_f64(activation)?;
 
-    let ct = this.as_color_transform_object().unwrap();
-    ct.set_red_multiplier(activation.context.gc_context, red_multiplier);
-    ct.set_green_multiplier(activation.context.gc_context, green_multiplier);
-    ct.set_blue_multiplier(activation.context.gc_context, blue_multiplier);
-    ct.set_alpha_multiplier(activation.context.gc_context, alpha_multiplier);
-    ct.set_red_offset(activation.context.gc_context, red_offset);
-    ct.set_green_offset(activation.context.gc_context, green_offset);
-    ct.set_blue_offset(activation.context.gc_context, blue_offset);
-    ct.set_alpha_offset(activation.context.gc_context, alpha_offset);
+    if let Some(ct) = this.as_color_transform_object() {
+        ct.set_red_multiplier(activation.context.gc_context, red_multiplier);
+        ct.set_green_multiplier(activation.context.gc_context, green_multiplier);
+        ct.set_blue_multiplier(activation.context.gc_context, blue_multiplier);
+        ct.set_alpha_multiplier(activation.context.gc_context, alpha_multiplier);
+        ct.set_red_offset(activation.context.gc_context, red_offset);
+        ct.set_green_offset(activation.context.gc_context, green_offset);
+        ct.set_blue_offset(activation.context.gc_context, blue_offset);
+        ct.set_alpha_offset(activation.context.gc_context, alpha_offset);
+    }
 
     Ok(this.into())
 }
@@ -150,12 +151,14 @@ pub fn get_rgb<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let ct = this.as_color_transform_object().unwrap();
-
-    let rgb = ((ct.get_red_offset() as u32) << 16)
-        | ((ct.get_green_offset() as u32) << 8)
-        | (ct.get_blue_offset() as u32);
-    Ok(Value::Number(rgb.into()))
+    if let Some(ct) = this.as_color_transform_object() {
+        let rgb = ((ct.get_red_offset() as u32) << 16)
+            | ((ct.get_green_offset() as u32) << 8)
+            | (ct.get_blue_offset() as u32);
+        Ok(Value::Number(rgb.into()))
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 pub fn set_rgb<'gc>(
@@ -173,15 +176,15 @@ pub fn set_rgb<'gc>(
     let green = ((new_rgb >> 8) & 0xFF) as f64;
     let blue = (new_rgb & 0xFF) as f64;
 
-    let ct = this.as_color_transform_object().unwrap();
+    if let Some(ct) = this.as_color_transform_object() {
+        ct.set_red_offset(activation.context.gc_context, red);
+        ct.set_green_offset(activation.context.gc_context, green);
+        ct.set_blue_offset(activation.context.gc_context, blue);
 
-    ct.set_red_offset(activation.context.gc_context, red);
-    ct.set_green_offset(activation.context.gc_context, green);
-    ct.set_blue_offset(activation.context.gc_context, blue);
-
-    ct.set_red_multiplier(activation.context.gc_context, 0.0);
-    ct.set_green_multiplier(activation.context.gc_context, 0.0);
-    ct.set_blue_multiplier(activation.context.gc_context, 0.0);
+        ct.set_red_multiplier(activation.context.gc_context, 0.0);
+        ct.set_green_multiplier(activation.context.gc_context, 0.0);
+        ct.set_blue_multiplier(activation.context.gc_context, 0.0);
+    }
 
     Ok(Value::Undefined)
 }
@@ -200,8 +203,9 @@ macro_rules! color_transform_value_accessor {
                     .unwrap_or(&Value::Undefined)
                     .coerce_to_f64(activation)?;
 
-                let ct = this.as_color_transform_object().unwrap();
-                ct.$set_ident(activation.context.gc_context, new_val);
+                if let Some(ct) = this.as_color_transform_object() {
+                    ct.$set_ident(activation.context.gc_context, new_val);
+                }
                 Ok(Value::Undefined.into())
             }
 
@@ -210,8 +214,11 @@ macro_rules! color_transform_value_accessor {
                 this: Object<'gc>,
                 _args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
-                let ct = this.as_color_transform_object().unwrap();
-                Ok(Value::Number(ct.$get_ident()).into())
+                if let Some(ct) = this.as_color_transform_object() {
+                    Ok(Value::Number(ct.$get_ident()).into())
+                } else {
+                    Ok(Value::Undefined)
+                }
             }
         )*
     }
@@ -305,30 +312,32 @@ fn concat<'gc>(
         }
         let other = arg.coerce_to_object(activation);
 
-        let other_ct = other.as_color_transform_object().unwrap();
-        let this_ct = this.as_color_transform_object().unwrap();
+        if let (Some(other_ct), Some(this_ct)) = (
+            other.as_color_transform_object(),
+            this.as_color_transform_object(),
+        ) {
+            let red_multiplier = other_ct.get_red_multiplier() * this_ct.get_red_multiplier();
+            let green_multiplier = other_ct.get_green_multiplier() * this_ct.get_green_multiplier();
+            let blue_multiplier = other_ct.get_blue_multiplier() * this_ct.get_blue_multiplier();
+            let alpha_multiplier = other_ct.get_alpha_multiplier() * this_ct.get_alpha_multiplier();
+            let red_offset = (other_ct.get_red_offset() * this_ct.get_red_multiplier())
+                + this_ct.get_red_offset();
+            let green_offset = (other_ct.get_green_offset() * this_ct.get_green_multiplier())
+                + this_ct.get_green_offset();
+            let blue_offset = (other_ct.get_blue_offset() * this_ct.get_blue_multiplier())
+                + this_ct.get_blue_offset();
+            let alpha_offset = (other_ct.get_alpha_offset() * this_ct.get_alpha_multiplier())
+                + this_ct.get_alpha_offset();
 
-        let red_multiplier = other_ct.get_red_multiplier() * this_ct.get_red_multiplier();
-        let green_multiplier = other_ct.get_green_multiplier() * this_ct.get_green_multiplier();
-        let blue_multiplier = other_ct.get_blue_multiplier() * this_ct.get_blue_multiplier();
-        let alpha_multiplier = other_ct.get_alpha_multiplier() * this_ct.get_alpha_multiplier();
-        let red_offset =
-            (other_ct.get_red_offset() * this_ct.get_red_multiplier()) + this_ct.get_red_offset();
-        let green_offset = (other_ct.get_green_offset() * this_ct.get_green_multiplier())
-            + this_ct.get_green_offset();
-        let blue_offset = (other_ct.get_blue_offset() * this_ct.get_blue_multiplier())
-            + this_ct.get_blue_offset();
-        let alpha_offset = (other_ct.get_alpha_offset() * this_ct.get_alpha_multiplier())
-            + this_ct.get_alpha_offset();
-
-        this_ct.set_red_multiplier(activation.context.gc_context, red_multiplier);
-        this_ct.set_green_multiplier(activation.context.gc_context, green_multiplier);
-        this_ct.set_blue_multiplier(activation.context.gc_context, blue_multiplier);
-        this_ct.set_alpha_multiplier(activation.context.gc_context, alpha_multiplier);
-        this_ct.set_red_offset(activation.context.gc_context, red_offset);
-        this_ct.set_green_offset(activation.context.gc_context, green_offset);
-        this_ct.set_blue_offset(activation.context.gc_context, blue_offset);
-        this_ct.set_alpha_offset(activation.context.gc_context, alpha_offset);
+            this_ct.set_red_multiplier(activation.context.gc_context, red_multiplier);
+            this_ct.set_green_multiplier(activation.context.gc_context, green_multiplier);
+            this_ct.set_blue_multiplier(activation.context.gc_context, blue_multiplier);
+            this_ct.set_alpha_multiplier(activation.context.gc_context, alpha_multiplier);
+            this_ct.set_red_offset(activation.context.gc_context, red_offset);
+            this_ct.set_green_offset(activation.context.gc_context, green_offset);
+            this_ct.set_blue_offset(activation.context.gc_context, blue_offset);
+            this_ct.set_alpha_offset(activation.context.gc_context, alpha_offset);
+        }
     }
 
     Ok(Value::Undefined)
