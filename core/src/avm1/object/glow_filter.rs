@@ -100,12 +100,8 @@ impl<'gc> TObject<'gc> for GlowFilterObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(GlowFilterObject::empty_object(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.glow_filter),
-        )
-        .into())
+        Ok(GlowFilterObject::empty_object(activation.context.gc_context, Some(this)).into())
     }
 }

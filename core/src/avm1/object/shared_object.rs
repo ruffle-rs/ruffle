@@ -66,13 +66,9 @@ impl<'gc> TObject<'gc> for SharedObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(SharedObject::empty_shared_obj(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.shared_object),
-        )
-        .into())
+        Ok(SharedObject::empty_shared_obj(activation.context.gc_context, Some(this)).into())
     }
 
     fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
