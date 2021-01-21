@@ -14,7 +14,6 @@ use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
-use enumset::EnumSet;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use indexmap::IndexMap;
 use rand::Rng;
@@ -1146,16 +1145,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         sub_prototype.set_attributes(
             self.context.gc_context,
             Some("constructor"),
-            Attribute::DontEnum.into(),
-            EnumSet::empty(),
+            Attribute::DONT_ENUM,
+            Attribute::empty(),
         );
 
         sub_prototype.set("__constructor__", superclass.into(), self)?;
         sub_prototype.set_attributes(
             self.context.gc_context,
             Some("__constructor__"),
-            Attribute::DontEnum.into(),
-            EnumSet::empty(),
+            Attribute::DONT_ENUM,
+            Attribute::empty(),
         );
 
         subclass.set("prototype", sub_prototype.into(), self)?;

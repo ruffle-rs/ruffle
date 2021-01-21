@@ -22,7 +22,7 @@ mod fscommand;
 pub mod function;
 pub mod globals;
 pub mod object;
-mod property;
+pub mod property;
 mod scope;
 mod string;
 mod timer;

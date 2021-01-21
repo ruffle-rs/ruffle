@@ -8,7 +8,6 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Avm2, Error};
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
-use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, MutationContext};
 use std::cell::Ref;
 use std::f64::NAN;
@@ -444,20 +443,6 @@ impl<'gc> Value<'gc> {
     /// ToInt32 algorithm which appears to match AVM2.
     pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error> {
         Ok(f64_to_wrapping_i32(self.coerce_to_number(activation)?))
-    }
-
-    /// Coerce the value to an EnumSet of a particular type.
-    ///
-    /// This function will ignore invalid bits of the value when interpreting
-    /// the enum.
-    pub fn coerce_to_enumset<E>(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<EnumSet<E>, Error>
-    where
-        E: EnumSetType,
-    {
-        Ok(EnumSet::from_u32_truncated(self.coerce_to_u32(activation)?))
     }
 
     /// Minimum number of digits after which numbers are formatted as

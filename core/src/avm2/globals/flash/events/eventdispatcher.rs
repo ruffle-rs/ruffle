@@ -375,7 +375,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.set_attributes(ClassAttributes::Sealed.into());
+    write.set_attributes(ClassAttributes::SEALED);
 
     write.implements(QName::new(Namespace::package("flash.events"), "IEventDispatcher").into());
 

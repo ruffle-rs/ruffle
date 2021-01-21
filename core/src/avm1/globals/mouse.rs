@@ -44,21 +44,9 @@ pub fn create_mouse_object<'gc>(
 
     broadcaster_functions.initialize(gc_context, mouse.into(), array_proto);
 
-    mouse.force_set_function(
-        "show",
-        show_mouse,
-        gc_context,
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
-        fn_proto,
-    );
+    mouse.force_set_function("show", show_mouse, gc_context, Attribute::all(), fn_proto);
 
-    mouse.force_set_function(
-        "hide",
-        hide_mouse,
-        gc_context,
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
-        fn_proto,
-    );
+    mouse.force_set_function("hide", hide_mouse, gc_context, Attribute::all(), fn_proto);
 
     mouse.into()
 }

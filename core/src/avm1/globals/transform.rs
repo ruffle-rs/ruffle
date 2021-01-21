@@ -5,9 +5,9 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::{color_transform, matrix};
 use crate::avm1::object::transform_object::TransformObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, TObject, Value};
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 macro_rules! with_transform_props {
@@ -18,7 +18,7 @@ macro_rules! with_transform_props {
                 $name,
                 with_transform_props!(getter $gc, $fn_proto, $get),
                 with_transform_props!(setter $gc, $fn_proto, $($set),*),
-                EnumSet::empty(),
+                Attribute::empty(),
             );
         )*
     };

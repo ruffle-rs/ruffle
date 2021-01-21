@@ -503,9 +503,10 @@ mod test {
     use crate::avm1::globals::create_globals;
     use crate::avm1::object::script_object::ScriptObject;
     use crate::avm1::object::{Object, TObject};
+    use crate::avm1::property::Attribute;
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::{AvmString, Value};
-    use enumset::EnumSet;
+
     use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
     #[test]
@@ -549,7 +550,7 @@ mod test {
                 activation.context.gc_context,
                 "valueOf",
                 valueof.into(),
-                EnumSet::empty(),
+                Attribute::empty(),
             );
 
             assert_eq!(

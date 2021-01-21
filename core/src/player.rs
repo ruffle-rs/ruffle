@@ -2,6 +2,7 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
 use crate::avm2::{Avm2, Domain as Avm2Domain};
 use crate::backend::input::{InputBackend, MouseCursor};
@@ -23,7 +24,6 @@ use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
 use crate::vminterface::{AvmType, Instantiator};
-use enumset::EnumSet;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
@@ -388,7 +388,7 @@ impl Player {
                         context.gc_context,
                         key,
                         AvmString::new(context.gc_context, value).into(),
-                        EnumSet::empty(),
+                        Attribute::empty(),
                     );
                 }
                 Some(object.into())
@@ -426,7 +426,7 @@ impl Player {
                 activation.context.gc_context,
                 "$version",
                 AvmString::new(activation.context.gc_context, version_string).into(),
-                EnumSet::empty(),
+                Attribute::empty(),
             );
         });
 

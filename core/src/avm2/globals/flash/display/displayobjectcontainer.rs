@@ -9,8 +9,7 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
-use enumset::EnumSet;
+use crate::display_object::{DisplayObject, Lists, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::{GcCell, MutationContext};
 use std::cmp::min;
 
@@ -100,7 +99,7 @@ fn remove_child_from_displaylist<'gc>(
 ) {
     if let Some(parent) = child.parent() {
         if let Some(mut ctr) = parent.as_container() {
-            ctr.remove_child(context, child, EnumSet::all());
+            ctr.remove_child(context, child, Lists::all());
         }
     }
 }
@@ -353,7 +352,7 @@ pub fn remove_child_at<'gc>(
 
             let child = ctr.child_by_index(target_child as usize).unwrap();
 
-            ctr.remove_child(&mut activation.context, child, EnumSet::all());
+            ctr.remove_child(&mut activation.context, child, Lists::all());
 
             return Ok(child.object2());
         }

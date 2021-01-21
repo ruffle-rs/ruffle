@@ -4,8 +4,8 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
@@ -337,7 +337,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -355,7 +355,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -373,7 +373,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -391,7 +391,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -409,7 +409,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -427,7 +427,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -445,7 +445,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -463,7 +463,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -481,7 +481,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     filter.into()

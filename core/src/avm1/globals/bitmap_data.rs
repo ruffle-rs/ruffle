@@ -3,11 +3,11 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::bitmap_data::{BitmapDataObject, ChannelOptions, Color};
+use crate::avm1::property::Attribute;
 use crate::avm1::{activation::Activation, object::bitmap_data::BitmapData};
 use crate::avm1::{Object, TObject, Value};
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
-use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 
 pub fn constructor<'gc>(
@@ -847,7 +847,7 @@ pub fn create_proto<'gc>(
             fn_proto,
         ),
         None,
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -860,7 +860,7 @@ pub fn create_proto<'gc>(
             fn_proto,
         ),
         None,
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -873,7 +873,7 @@ pub fn create_proto<'gc>(
             fn_proto,
         ),
         None,
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.add_property(
@@ -886,144 +886,162 @@ pub fn create_proto<'gc>(
             fn_proto,
         ),
         None,
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     object.force_set_function(
         "getPixel",
         get_pixel,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "getPixel32",
         get_pixel32,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "setPixel",
         set_pixel,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "setPixel32",
         set_pixel32,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "copyChannel",
         copy_channel,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "fillRect",
         fill_rect,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
-    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "clone",
+        clone,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
     object.force_set_function(
         "dispose",
         dispose,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "floodFill",
         flood_fill,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
-    object.force_set_function("noise", noise, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "noise",
+        noise,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
     object.force_set_function(
         "colorTransform",
         color_transform,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "getColorBoundsRect",
         get_color_bounds_rect,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "perlinNoise",
         perlin_noise,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "applyFilter",
         apply_filter,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
-    object.force_set_function("draw", draw, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function("draw", draw, gc_context, Attribute::empty(), Some(fn_proto));
     object.force_set_function(
         "hitTest",
         hit_test,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "generateFilterRect",
         generate_filter_rect,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "copyPixels",
         copy_pixels,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
-    object.force_set_function("merge", merge, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "merge",
+        merge,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
     object.force_set_function(
         "paletteMap",
         palette_map,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "pixelDissolve",
         pixel_dissolve,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "scroll",
         scroll,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "threshold",
         threshold,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -1092,7 +1110,7 @@ pub fn create_bitmap_data_object<'gc>(
         "loadBitmap",
         load_bitmap,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         fn_proto,
     );
 

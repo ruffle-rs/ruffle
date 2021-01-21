@@ -3,8 +3,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::{GcCell, MutationContext};
 use std::cell::Ref;
 
@@ -307,7 +307,7 @@ impl<'gc> Scope<'gc> {
     /// local object and does not traverse the scope chain.
     pub fn define(&self, name: &str, value: impl Into<Value<'gc>>, mc: MutationContext<'gc, '_>) {
         self.locals()
-            .define_value(mc, name, value.into(), EnumSet::empty());
+            .define_value(mc, name, value.into(), Attribute::empty());
     }
 
     /// Delete a value from scope

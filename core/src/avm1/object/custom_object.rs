@@ -58,7 +58,7 @@ macro_rules! impl_custom_object_without_set {
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: &str,
             value: crate::avm1::Value<'gc>,
-            attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
+            attributes: crate::avm1::property::Attribute,
         ) {
             self.0
                 .read()
@@ -70,8 +70,8 @@ macro_rules! impl_custom_object_without_set {
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: Option<&str>,
-            set_attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
-            clear_attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
+            set_attributes: crate::avm1::property::Attribute,
+            clear_attributes: crate::avm1::property::Attribute,
         ) {
             self.0.write(gc_context).$field.set_attributes(
                 gc_context,
@@ -87,7 +87,7 @@ macro_rules! impl_custom_object_without_set {
             name: &str,
             get: crate::avm1::object::Object<'gc>,
             set: Option<crate::avm1::object::Object<'gc>>,
-            attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
+            attributes: crate::avm1::property::Attribute,
         ) {
             self.0
                 .read()
@@ -102,7 +102,7 @@ macro_rules! impl_custom_object_without_set {
             name: &str,
             get: crate::avm1::object::Object<'gc>,
             set: Option<crate::avm1::object::Object<'gc>>,
-            attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
+            attributes: crate::avm1::property::Attribute,
         ) {
             self.0
                 .read()
@@ -267,7 +267,6 @@ macro_rules! add_field_accessors {
             $([$var, $type_, set => $set_ident, get => $get_ident],)*
         );
     };
-
 
     ($([$var: ident, $type_: ty $(, set => $set_ident: ident)? $(, get => $get_ident: ident)?],)*) => {
         $(

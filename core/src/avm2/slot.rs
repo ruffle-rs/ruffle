@@ -3,7 +3,6 @@
 use crate::avm2::property::Attribute;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use enumset::EnumSet;
 use gc_arena::{Collect, CollectionContext};
 
 /// Represents a single slot on an object.
@@ -20,7 +19,7 @@ pub enum Slot<'gc> {
     /// TODO: For some reason, rustc believes this variant is unused.
     Occupied {
         value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     },
 }
 
@@ -44,7 +43,7 @@ impl<'gc> Slot<'gc> {
     pub fn new(value: impl Into<Value<'gc>>) -> Self {
         Self::Occupied {
             value: value.into(),
-            attributes: EnumSet::empty(),
+            attributes: Attribute::empty(),
         }
     }
 
@@ -52,7 +51,7 @@ impl<'gc> Slot<'gc> {
     pub fn new_const(value: impl Into<Value<'gc>>) -> Self {
         Self::Occupied {
             value: value.into(),
-            attributes: EnumSet::from(Attribute::ReadOnly),
+            attributes: Attribute::READ_ONLY,
         }
     }
 
@@ -69,7 +68,7 @@ impl<'gc> Slot<'gc> {
         match self {
             Self::Unoccupied => Err("Cannot overwrite unoccupied slot".into()),
             Self::Occupied { value, attributes } => {
-                if attributes.contains(Attribute::ReadOnly) {
+                if attributes.contains(Attribute::READ_ONLY) {
                     return Err("Cannot overwrite const slot".into());
                 }
 

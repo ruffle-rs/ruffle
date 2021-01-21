@@ -2,10 +2,11 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::Object;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1, ScriptObject, TObject, Value};
 use crate::avm_warn;
+use bitflags::bitflags;
 use core::fmt;
-use enumset::{EnumSet, EnumSetType};
 use gc_arena::MutationContext;
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
@@ -214,28 +215,29 @@ enum SettingsPanel {
     Camera = 3,
 }
 
-#[derive(EnumSetType, Debug)]
-pub enum SystemCapabilities {
-    AvHardware,
-    Accessibility,
-    Audio,
-    AudioEncoder,
-    EmbeddedVideo,
-    IME,
-    MP3,
-    Printing,
-    ScreenBroadcast,
-    ScreenPlayback,
-    StreamingAudio,
-    StreamingVideo,
-    VideoEncoder,
-    Debugger,
-    LocalFileRead,
-    Process64Bit,
-    Process32Bit,
-    AcrobatEmbedded,
-    TLS,
-    WindowLess,
+bitflags! {
+    pub struct SystemCapabilities: u32 {
+        const AV_HARDWARE      = 1 << 0;
+        const ACCESSIBILITY    = 1 << 1;
+        const AUDIO            = 1 << 2;
+        const AUDIO_ENCODER    = 1 << 3;
+        const EMBEDDED_VIDEO   = 1 << 4;
+        const IME              = 1 << 5;
+        const MP3              = 1 << 6;
+        const PRINTING         = 1 << 7;
+        const SCREEN_BROADCAST = 1 << 8;
+        const SCREEN_PLAYBACK  = 1 << 9;
+        const STREAMING_AUDIO  = 1 << 10;
+        const STREAMING_VIDEO  = 1 << 11;
+        const VIDEO_ENCODER    = 1 << 12;
+        const DEBUGGER         = 1 << 13;
+        const LOCAL_FILE_READ  = 1 << 14;
+        const PROCESS_64_BIT   = 1 << 15;
+        const PROCESS_32_BIT   = 1 << 16;
+        const ACROBAT_EMBEDDED = 1 << 17;
+        const TLS              = 1 << 18;
+        const WINDOW_LESS      = 1 << 19;
+    }
 }
 
 /// The properties modified by 'System'
@@ -247,7 +249,7 @@ pub struct SystemProperties {
     /// If false then unicode should be used
     pub use_codepage: bool,
     /// The capabilities of the player
-    pub capabilities: EnumSet<SystemCapabilities>,
+    pub capabilities: SystemCapabilities,
     /// The type of the player
     pub player_type: PlayerType,
     /// The type of screen available to the player
@@ -307,42 +309,42 @@ impl SystemProperties {
 
     pub fn get_server_string(&self, avm: &mut Avm1) -> String {
         url::form_urlencoded::Serializer::new(String::new())
-            .append_pair("A", self.encode_capability(SystemCapabilities::Audio))
+            .append_pair("A", self.encode_capability(SystemCapabilities::AUDIO))
             .append_pair(
                 "SA",
-                self.encode_capability(SystemCapabilities::StreamingAudio),
+                self.encode_capability(SystemCapabilities::STREAMING_AUDIO),
             )
             .append_pair(
                 "SV",
-                self.encode_capability(SystemCapabilities::StreamingVideo),
+                self.encode_capability(SystemCapabilities::STREAMING_VIDEO),
             )
             .append_pair(
                 "EV",
-                self.encode_capability(SystemCapabilities::EmbeddedVideo),
+                self.encode_capability(SystemCapabilities::EMBEDDED_VIDEO),
             )
             .append_pair("MP3", self.encode_capability(SystemCapabilities::MP3))
             .append_pair(
                 "AE",
-                self.encode_capability(SystemCapabilities::AudioEncoder),
+                self.encode_capability(SystemCapabilities::AUDIO_ENCODER),
             )
             .append_pair(
                 "VE",
-                self.encode_capability(SystemCapabilities::VideoEncoder),
+                self.encode_capability(SystemCapabilities::VIDEO_ENCODER),
             )
             .append_pair(
                 "ACC",
-                self.encode_not_capability(SystemCapabilities::Accessibility),
+                self.encode_not_capability(SystemCapabilities::ACCESSIBILITY),
             )
-            .append_pair("PR", self.encode_capability(SystemCapabilities::Printing))
+            .append_pair("PR", self.encode_capability(SystemCapabilities::PRINTING))
             .append_pair(
                 "SP",
-                self.encode_capability(SystemCapabilities::ScreenPlayback),
+                self.encode_capability(SystemCapabilities::SCREEN_PLAYBACK),
             )
             .append_pair(
                 "SB",
-                self.encode_capability(SystemCapabilities::ScreenBroadcast),
+                self.encode_capability(SystemCapabilities::SCREEN_BROADCAST),
             )
-            .append_pair("DEB", self.encode_capability(SystemCapabilities::Debugger))
+            .append_pair("DEB", self.encode_capability(SystemCapabilities::DEBUGGER))
             .append_pair(
                 "M",
                 &self.encode_string(
@@ -363,11 +365,11 @@ impl SystemProperties {
             .append_pair("PT", &self.player_type.to_string())
             .append_pair(
                 "AVD",
-                self.encode_not_capability(SystemCapabilities::AvHardware),
+                self.encode_not_capability(SystemCapabilities::AV_HARDWARE),
             )
             .append_pair(
                 "LFD",
-                self.encode_not_capability(SystemCapabilities::LocalFileRead),
+                self.encode_not_capability(SystemCapabilities::LOCAL_FILE_READ),
             )
             .append_pair("DP", &self.dpi.to_string())
             .finish()
@@ -381,7 +383,7 @@ impl Default for SystemProperties {
             exact_settings: true,
             //TODO: default to false on fp>=7, true <= 6
             use_codepage: false,
-            capabilities: EnumSet::empty(),
+            capabilities: SystemCapabilities::empty(),
             player_type: PlayerType::StandAlone,
             screen_color: ScreenColor::Color,
             // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
@@ -519,7 +521,7 @@ pub fn create<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     system.add_property(
@@ -537,25 +539,25 @@ pub fn create<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
-    system.define_value(gc_context, "security", security.into(), EnumSet::empty());
+    system.define_value(gc_context, "security", security.into(), Attribute::empty());
 
     system.define_value(
         gc_context,
         "capabilities",
         capabilities.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
-    system.define_value(gc_context, "IME", ime.into(), EnumSet::empty());
+    system.define_value(gc_context, "IME", ime.into(), Attribute::empty());
 
     system.force_set_function(
         "setClipboard",
         set_clipboard,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -563,7 +565,7 @@ pub fn create<'gc>(
         "showSettings",
         show_settings,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -572,7 +574,7 @@ pub fn create<'gc>(
         "onStatus",
         on_status,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 

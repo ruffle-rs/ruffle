@@ -181,7 +181,7 @@ impl<'gc> Button<'gc> {
         // Kill children that no longer exist in this state.
         for depth in removed_depths {
             if let Some(child) = self.child_by_depth(depth) {
-                self.remove_child(context, child, EnumSet::all());
+                self.remove_child(context, child, Lists::all());
             }
         }
 

@@ -13,7 +13,6 @@ use crate::{
 };
 use bitstream_io::BitRead;
 use byteorder::{LittleEndian, ReadBytesExt};
-use enumset::EnumSet;
 use std::collections::HashSet;
 use std::io::{self, Read};
 
@@ -2208,7 +2207,7 @@ impl<'a> Reader<'a> {
             Ok(None)
         } else {
             let mut length = self.read_u32()?;
-            let key_code = if events.contains(ClipEventFlag::KeyPress) {
+            let key_code = if events.contains(ClipEventFlag::KEY_PRESS) {
                 // ActionData length includes the 1 byte key code.
                 length -= 1;
                 Some(self.read_u8()?)
@@ -2225,33 +2224,33 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn read_clip_event_flags(&mut self) -> Result<EnumSet<ClipEventFlag>> {
+    fn read_clip_event_flags(&mut self) -> Result<ClipEventFlag> {
         // TODO: Switch to a bitset.
-        let mut event_list = EnumSet::new();
+        let mut event_list = ClipEventFlag::empty();
         let flags = self.read_u8()?;
         if flags & 0b1000_0000 != 0 {
-            event_list.insert(ClipEventFlag::KeyUp);
+            event_list.insert(ClipEventFlag::KEY_UP);
         }
         if flags & 0b0100_0000 != 0 {
-            event_list.insert(ClipEventFlag::KeyDown);
+            event_list.insert(ClipEventFlag::KEY_DOWN);
         }
         if flags & 0b0010_0000 != 0 {
-            event_list.insert(ClipEventFlag::MouseUp);
+            event_list.insert(ClipEventFlag::MOUSE_UP);
         }
         if flags & 0b0001_0000 != 0 {
-            event_list.insert(ClipEventFlag::MouseDown);
+            event_list.insert(ClipEventFlag::MOUSE_DOWN);
         }
         if flags & 0b0000_1000 != 0 {
-            event_list.insert(ClipEventFlag::MouseMove);
+            event_list.insert(ClipEventFlag::MOUSE_MOVE);
         }
         if flags & 0b0000_0100 != 0 {
-            event_list.insert(ClipEventFlag::Unload);
+            event_list.insert(ClipEventFlag::UNLOAD);
         }
         if flags & 0b0000_0010 != 0 {
-            event_list.insert(ClipEventFlag::EnterFrame);
+            event_list.insert(ClipEventFlag::ENTER_FRAME);
         }
         if flags & 0b0000_0001 != 0 {
-            event_list.insert(ClipEventFlag::Load);
+            event_list.insert(ClipEventFlag::LOAD);
         }
         if self.version < 6 {
             // SWF19 pp. 48-50: For SWFv5, the ClipEventFlags only had 2 bytes of flags,
@@ -2261,28 +2260,28 @@ impl<'a> Reader<'a> {
         } else {
             let flags = self.read_u8()?;
             if flags & 0b1000_0000 != 0 {
-                event_list.insert(ClipEventFlag::DragOver);
+                event_list.insert(ClipEventFlag::DRAG_OVER);
             }
             if flags & 0b0100_0000 != 0 {
-                event_list.insert(ClipEventFlag::RollOut);
+                event_list.insert(ClipEventFlag::ROLL_OUT);
             }
             if flags & 0b0010_0000 != 0 {
-                event_list.insert(ClipEventFlag::RollOver);
+                event_list.insert(ClipEventFlag::ROLL_OVER);
             }
             if flags & 0b0001_0000 != 0 {
-                event_list.insert(ClipEventFlag::ReleaseOutside);
+                event_list.insert(ClipEventFlag::RELEASE_OUTSIDE);
             }
             if flags & 0b0000_1000 != 0 {
-                event_list.insert(ClipEventFlag::Release);
+                event_list.insert(ClipEventFlag::RELEASE);
             }
             if flags & 0b0000_0100 != 0 {
-                event_list.insert(ClipEventFlag::Press);
+                event_list.insert(ClipEventFlag::PRESS);
             }
             if flags & 0b0000_0010 != 0 {
-                event_list.insert(ClipEventFlag::Initialize);
+                event_list.insert(ClipEventFlag::INITIALIZE);
             }
             if flags & 0b0000_0001 != 0 {
-                event_list.insert(ClipEventFlag::Data);
+                event_list.insert(ClipEventFlag::DATA);
             }
             if self.version < 6 {
                 self.read_u16()?;
@@ -2291,13 +2290,13 @@ impl<'a> Reader<'a> {
                 if flags & 0b0000_0100 != 0 {
                     // Construct was only added in SWF7, but it's not version-gated;
                     // Construct events will still fire in SWF6 in a v7+ player. (#1424)
-                    event_list.insert(ClipEventFlag::Construct);
+                    event_list.insert(ClipEventFlag::CONSTRUCT);
                 }
                 if flags & 0b0000_0010 != 0 {
-                    event_list.insert(ClipEventFlag::KeyPress);
+                    event_list.insert(ClipEventFlag::KEY_PRESS);
                 }
                 if flags & 0b0000_0001 != 0 {
-                    event_list.insert(ClipEventFlag::DragOut);
+                    event_list.insert(ClipEventFlag::DRAG_OUT);
                 }
                 self.read_u8()?;
             }

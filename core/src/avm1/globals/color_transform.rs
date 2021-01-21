@@ -3,8 +3,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 use crate::avm1::object::color_transform_object::ColorTransformObject;
@@ -19,7 +19,7 @@ macro_rules! with_color_transform {
                 $name,
                 FunctionObject::function($gc, Executable::Native($get), Some($fn_proto), $fn_proto),
                 Some(FunctionObject::function($gc, Executable::Native($set), Some($fn_proto), $fn_proto)),
-                EnumSet::empty(),
+                Attribute::empty(),
             );
         )*
     }
@@ -260,7 +260,7 @@ pub fn create_proto<'gc>(
         "concat",
         concat,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -268,7 +268,7 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 

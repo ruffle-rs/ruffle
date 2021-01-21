@@ -84,7 +84,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     );
 
     let mut write = class.write(mc);
-    write.set_attributes(ClassAttributes::Final | ClassAttributes::Sealed);
+    write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
     use std::f64::consts::*;
     math_constants! {
