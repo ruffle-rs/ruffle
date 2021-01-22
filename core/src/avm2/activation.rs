@@ -1279,7 +1279,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             None
         }
-        .ok_or_else(|| format!("Property does not exist: {:?}", multiname.local_name()).into());
+        .ok_or_else(|| format!("Property does not exist: {:?}", multiname).into());
         let result: Value<'gc> = found?.into();
 
         self.context.avm2.push(result);
@@ -1301,7 +1301,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             None
         }
-        .ok_or_else(|| format!("Property does not exist: {:?}", multiname.local_name()).into());
+        .ok_or_else(|| format!("Property does not exist: {:?}", multiname).into());
         let result: Value<'gc> = found?;
 
         self.context.avm2.push(result);
