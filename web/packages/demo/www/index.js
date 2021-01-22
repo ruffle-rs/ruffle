@@ -78,18 +78,20 @@ window.addEventListener("load", () => {
 });
 
 sampleFileInput.addEventListener("change", sampleFileSelected);
-localFileInput.addEventListener("change", event => loadFile(event.target.files[0]));
-container.addEventListener("dragenter", _ => {
+localFileInput.addEventListener("change", (event) => {
+    loadFile(event.target.files[0]);
+});
+container.addEventListener("dragenter", () => {
     overlay.classList.add("drag");
 });
-container.addEventListener("dragleave", _ => {
+container.addEventListener("dragleave", () => {
     overlay.classList.remove("drag");
 });
-container.addEventListener("dragover", event => {
+container.addEventListener("dragover", (event) => {
     event.stopPropagation();
     event.preventDefault();
 });
-container.addEventListener("drop", event => {
+container.addEventListener("drop", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.remove("drag");
@@ -125,6 +127,6 @@ async function loadFile(file) {
     author.textContent = "";
     author.href = "";
 
-    const data = await (new Response(file)).arrayBuffer();
+    const data = await new Response(file).arrayBuffer();
     player.load({ data, ...config });
 }
