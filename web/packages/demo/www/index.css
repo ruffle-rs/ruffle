@@ -14,21 +14,37 @@ body {
 }
 
 #main {
+    position: relative;
     width: 100%;
     height: 100%;
     align-self: center;
     max-height: calc(100vh - 70px);
 }
 
-#container {
-    height: calc(100vh - 70px);
-    width: 100vw;
+#overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    box-sizing: border-box;
+    z-index: 1;
+    pointer-events: none;
+    border: 8px dashed #ffad33;
+    border-radius: 35px;
+    opacity: 0;
+    display: none;
+    transition: opacity 0.3s ease-in;
+}
+
+#overlay.drag {
+    opacity: 1;
+    transition-timing-function: ease-out;
 }
 
 #player {
     width: 100%;
     height: 100%;
-    display: block;
 }
 
 #nav {
