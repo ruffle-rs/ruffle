@@ -11,7 +11,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{Avm2, Error};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.events.EventDispatcher`'s instance constructor.
@@ -38,6 +38,8 @@ pub fn instance_init<'gc>(
             dispatch_list.into(),
             activation,
         )?;
+
+        Avm2::register_broadcast_listener(&mut activation.context, this);
     }
 
     Ok(Value::Undefined)
