@@ -332,8 +332,8 @@ impl BitmapData {
 
         let mut rng = LehmerRNG::with_seed(true_seed);
 
-        for x in 0..self.width() {
-            for y in 0..self.height() {
+        for y in 0..self.height() {
+            for x in 0..self.width() {
                 let pixel_color = if gray_scale {
                     let gray = rng.gen_range(low..high);
                     let alpha = if channel_options.alpha() {
@@ -341,11 +341,6 @@ impl BitmapData {
                     } else {
                         255
                     };
-
-                    if seed <= 0 {
-                        rng.gen_range(low..high);
-                        rng.gen_range(low..high);
-                    }
 
                     Color::argb(alpha, gray, gray, gray)
                 } else {
@@ -373,26 +368,10 @@ impl BitmapData {
                         255
                     };
 
-                    for _ in 0..6 {
-                        rng.gen_range(low..high);
-                    }
-
                     Color::argb(a, r, g, b)
                 };
 
                 self.set_pixel32_raw(x, y, pixel_color);
-            }
-
-            if seed <= 0 {
-                rng = LehmerRNG::with_seed(true_seed);
-                for _ in 0..(x + 1) {
-                    rng.gen();
-                }
-            } else if !gray_scale {
-                rng = LehmerRNG::with_seed(true_seed);
-                for _ in 0..(self.height() * (x + 1)) {
-                    rng.gen();
-                }
             }
         }
     }
