@@ -65,6 +65,16 @@ pub struct Avm2<'gc> {
     /// System prototypes.
     system_prototypes: Option<SystemPrototypes<'gc>>,
 
+    /// A list of objects which are capable of recieving broadcasts.
+    ///
+    /// Certain types of events are "broadcast events" that are emitted on all
+    /// constructed objects in order of their creation, whether or not they are
+    /// currently present on the display list. This list keeps track of that.
+    ///
+    /// TODO: These should be weak object pointers, but our current garbage
+    /// collector does not support weak references.
+    broadcast_list: Vec<Object<'gc>>,
+
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
 }
@@ -78,6 +88,7 @@ impl<'gc> Avm2<'gc> {
             stack: Vec::new(),
             globals,
             system_prototypes: None,
+            broadcast_list: Vec::new(),
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
@@ -131,6 +142,47 @@ impl<'gc> Avm2<'gc> {
         let mut activation = Activation::from_nothing(context.reborrow());
 
         dispatch_event(&mut activation, target, event_object)
+    }
+
+    /// Add an object to the broadcast list.
+    ///
+    /// This function does not (currently) check set membership, so multiple
+    /// registrations will result in multiple broadcasts on that object. Take
+    /// care to ensure that registration happens as close to the top of the
+    /// object hierarchy as possible. Currently, registration happens in
+    /// `EventDispatcher`, as that's the highest class that makes sense to send
+    /// broadcasts to.
+    pub fn register_broadcast_listener(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        object: Object<'gc>,
+    ) {
+        context.avm2.broadcast_list.push(object);
+    }
+
+    /// Dispatch an event on all objects in the current execution list.
+    ///
+    /// `on_class_proto` specifies a class or interface prototype whose
+    /// instances, implementers, and/or subclasses define the set of objects
+    /// that will recieve the event. You can broadcast to just display objects,
+    /// or specific interfaces, and so on.
+    pub fn broadcast_event(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: Event<'gc>,
+        on_class_proto: Object<'gc>,
+    ) -> Result<(), Error> {
+        let el_length = context.avm2.broadcast_list.len();
+
+        for i in 0..el_length {
+            let object = context.avm2.broadcast_list.get(i).copied();
+
+            if let Some(object) = object {
+                if object.has_prototype_in_chain(on_class_proto, true)? {
+                    Avm2::dispatch_event(context, event.clone(), object)?;
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn run_stack_frame_for_callable(
