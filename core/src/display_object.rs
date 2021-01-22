@@ -877,20 +877,17 @@ pub trait TDisplayObject<'gc>:
     /// Emit an `enterFrame` event on this DisplayObject and any children it
     /// may have.
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if let Avm2Value::Object(object) = self.object2() {
-            let mut enter_frame_evt = Avm2Event::new("enterFrame");
-            enter_frame_evt.set_bubbles(false);
-            enter_frame_evt.set_cancelable(false);
+        let mut enter_frame_evt = Avm2Event::new("enterFrame");
+        enter_frame_evt.set_bubbles(false);
+        enter_frame_evt.set_cancelable(false);
 
-            if let Err(e) = Avm2::dispatch_event(context, enter_frame_evt, object) {
-                log::error!("Encountered AVM2 error when dispatching event: {}", e);
-            }
+        let dobject_proto = context.avm2.prototypes().display_object;
 
-            if let Some(container) = self.as_container() {
-                for child in container.iter_execution_list() {
-                    child.enter_frame(context);
-                }
-            }
+        if let Err(e) = Avm2::broadcast_event(context, enter_frame_evt, dobject_proto) {
+            log::error!(
+                "Encountered AVM2 error when broadcasting enterFrame event: {}",
+                e
+            );
         }
     }
 
@@ -899,20 +896,17 @@ pub trait TDisplayObject<'gc>:
     /// Emit an `frameConstructed` event on this DisplayObject and any children it
     /// may have.
     fn frame_constructed(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if let Avm2Value::Object(object) = self.object2() {
-            let mut frame_constructed_evt = Avm2Event::new("frameConstructed");
-            frame_constructed_evt.set_bubbles(false);
-            frame_constructed_evt.set_cancelable(false);
+        let mut frame_constructed_evt = Avm2Event::new("frameConstructed");
+        frame_constructed_evt.set_bubbles(false);
+        frame_constructed_evt.set_cancelable(false);
 
-            if let Err(e) = Avm2::dispatch_event(context, frame_constructed_evt, object) {
-                log::error!("Encountered AVM2 error when dispatching event: {}", e);
-            }
+        let dobject_proto = context.avm2.prototypes().display_object;
 
-            if let Some(container) = self.as_container() {
-                for child in container.iter_execution_list() {
-                    child.frame_constructed(context);
-                }
-            }
+        if let Err(e) = Avm2::broadcast_event(context, frame_constructed_evt, dobject_proto) {
+            log::error!(
+                "Encountered AVM2 error when broadcasting frameConstructed event: {}",
+                e
+            );
         }
     }
 
@@ -925,23 +919,19 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    /// Emit an `exitFrame` event on this DisplayObject and any children it
-    /// may have.
+    /// Emit an `exitFrame` broadcast event.
     fn exit_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if let Avm2Value::Object(object) = self.object2() {
-            let mut exit_frame_evt = Avm2Event::new("exitFrame");
-            exit_frame_evt.set_bubbles(false);
-            exit_frame_evt.set_cancelable(false);
+        let mut exit_frame_evt = Avm2Event::new("exitFrame");
+        exit_frame_evt.set_bubbles(false);
+        exit_frame_evt.set_cancelable(false);
 
-            if let Err(e) = Avm2::dispatch_event(context, exit_frame_evt, object) {
-                log::error!("Encountered AVM2 error when dispatching event: {}", e);
-            }
+        let dobject_proto = context.avm2.prototypes().display_object;
 
-            if let Some(container) = self.as_container() {
-                for child in container.iter_execution_list() {
-                    child.exit_frame(context);
-                }
-            }
+        if let Err(e) = Avm2::broadcast_event(context, exit_frame_evt, dobject_proto) {
+            log::error!(
+                "Encountered AVM2 error when broadcasting exitFrame event: {}",
+                e
+            );
         }
     }
 

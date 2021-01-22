@@ -100,6 +100,7 @@ pub struct SystemPrototypes<'gc> {
     pub video: Object<'gc>,
     pub xml: Object<'gc>,
     pub xml_list: Object<'gc>,
+    pub display_object: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -136,6 +137,7 @@ impl<'gc> SystemPrototypes<'gc> {
             video: empty,
             xml: empty,
             xml_list: empty,
+            display_object: empty,
         }
     }
 }
@@ -538,7 +540,13 @@ pub fn load_player_globals<'gc>(
     )?;
 
     // package `flash.display`
-    class(
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
+        .display_object = class(
         activation,
         flash::display::displayobject::create_class(mc),
         stage_deriver,
