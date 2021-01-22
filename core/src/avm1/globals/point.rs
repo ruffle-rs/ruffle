@@ -5,7 +5,6 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::f64::NAN;
 
@@ -276,13 +275,19 @@ pub fn create_point_object<'gc>(
     );
     let mut object = point.as_script_object().unwrap();
 
-    object.force_set_function("distance", distance, gc_context, EnumSet::empty(), fn_proto);
-    object.force_set_function("polar", polar, gc_context, EnumSet::empty(), fn_proto);
+    object.force_set_function(
+        "distance",
+        distance,
+        gc_context,
+        Attribute::empty(),
+        fn_proto,
+    );
+    object.force_set_function("polar", polar, gc_context, Attribute::empty(), fn_proto);
     object.force_set_function(
         "interpolate",
         interpolate,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         fn_proto,
     );
 
@@ -300,27 +305,33 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
-    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "clone",
+        clone,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
     object.force_set_function(
         "equals",
         equals,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
-    object.force_set_function("add", add, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function("add", add, gc_context, Attribute::empty(), Some(fn_proto));
 
     object.force_set_function(
         "subtract",
         subtract,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -328,7 +339,7 @@ pub fn create_proto<'gc>(
         "normalize",
         normalize,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -336,7 +347,7 @@ pub fn create_proto<'gc>(
         "offset",
         offset,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -350,7 +361,7 @@ pub fn create_proto<'gc>(
             fn_proto,
         ),
         None,
-        Attribute::ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
 
     object.into()

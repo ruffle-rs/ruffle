@@ -8,6 +8,7 @@ use crate::avm2::{
     StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::backend::audio::AudioStreamHandle;
+use bitflags::bitflags;
 
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::character::Character;
@@ -24,7 +25,6 @@ use crate::shape_utils::DrawCommand;
 use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
-use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::{Ref, RefCell};
@@ -57,7 +57,7 @@ pub struct MovieClipData<'gc> {
     clip_actions: Vec<ClipAction>,
     frame_scripts: Vec<Avm2FrameScript<'gc>>,
     has_button_clip_event: bool,
-    flags: EnumSet<MovieClipFlags>,
+    flags: MovieClipFlags,
     avm2_constructor: Option<Avm2Object<'gc>>,
     drawing: Drawing,
     is_focusable: bool,
@@ -93,7 +93,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_actions: Vec::new(),
                 frame_scripts: Vec::new(),
                 has_button_clip_event: false,
-                flags: EnumSet::empty(),
+                flags: MovieClipFlags::empty(),
                 avm2_constructor: None,
                 drawing: Drawing::new(),
                 is_focusable: false,
@@ -125,7 +125,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_actions: Vec::new(),
                 frame_scripts: Vec::new(),
                 has_button_clip_event: false,
-                flags: MovieClipFlags::Playing.into(),
+                flags: MovieClipFlags::PLAYING,
                 avm2_constructor: None,
                 drawing: Drawing::new(),
                 is_focusable: false,
@@ -1159,9 +1159,9 @@ impl<'gc> MovieClip<'gc> {
                 .collect();
             for (_depth, child) in children {
                 if !child.placed_by_script() {
-                    self.remove_child(context, child, EnumSet::all());
+                    self.remove_child(context, child, Lists::all());
                 } else {
-                    self.remove_child(context, child, Lists::Depth.into());
+                    self.remove_child(context, child, Lists::DEPTH);
                 }
             }
             true
@@ -1533,10 +1533,10 @@ impl<'gc> MovieClip<'gc> {
             if let Some(child) = read.container.get_depth(depth) {
                 if !child.placed_by_script() {
                     drop(read);
-                    self.remove_child(context, child, EnumSet::all());
+                    self.remove_child(context, child, Lists::all());
                 } else {
                     drop(read);
-                    self.remove_child(context, child, Lists::Depth.into());
+                    self.remove_child(context, child, Lists::DEPTH);
                 }
             }
         }
@@ -1826,7 +1826,7 @@ impl<'gc> MovieClipData<'gc> {
             MovieClipStatic::with_data(0, movie.into(), total_frames),
         );
         self.tag_stream_pos = 0;
-        self.flags = MovieClipFlags::Playing.into();
+        self.flags = MovieClipFlags::PLAYING;
         self.current_frame = 0;
         self.audio_stream = None;
         self.container = ChildContainer::new();
@@ -1845,23 +1845,23 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn playing(&self) -> bool {
-        self.flags.contains(MovieClipFlags::Playing)
+        self.flags.contains(MovieClipFlags::PLAYING)
     }
 
     fn set_playing(&mut self, value: bool) {
         if value {
-            self.flags.insert(MovieClipFlags::Playing);
+            self.flags |= MovieClipFlags::PLAYING;
         } else {
-            self.flags.remove(MovieClipFlags::Playing);
+            self.flags -= MovieClipFlags::PLAYING;
         }
     }
 
     fn programmatically_played(&self) -> bool {
-        self.flags.contains(MovieClipFlags::ProgrammaticallyPlayed)
+        self.flags.contains(MovieClipFlags::PROGRAMMATICALLY_PLAYED)
     }
 
     fn set_programmatically_played(&mut self) {
-        self.flags.insert(MovieClipFlags::ProgrammaticallyPlayed);
+        self.flags |= MovieClipFlags::PROGRAMMATICALLY_PLAYED;
     }
 
     fn play(&mut self) {
@@ -2000,15 +2000,17 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn initialized(&self) -> bool {
-        self.flags.contains(MovieClipFlags::Initialized)
+        self.flags.contains(MovieClipFlags::INITIALIZED)
     }
 
     fn set_initialized(&mut self, value: bool) -> bool {
+        let ret = self.flags.contains(MovieClipFlags::INITIALIZED);
         if value {
-            self.flags.insert(MovieClipFlags::Initialized)
+            self.flags |= MovieClipFlags::INITIALIZED;
         } else {
-            self.flags.remove(MovieClipFlags::Initialized)
+            self.flags -= MovieClipFlags::INITIALIZED;
         }
+        !ret
     }
 
     /// Stops the audio stream if one is playing.
@@ -2808,9 +2810,9 @@ impl<'gc, 'a> MovieClip<'gc> {
 
         if let Some(child) = self.child_by_depth(remove_object.depth.into()) {
             if !child.placed_by_script() {
-                self.remove_child(context, child, EnumSet::all());
+                self.remove_child(context, child, Lists::all());
             } else {
-                self.remove_child(context, child, Lists::Depth.into());
+                self.remove_child(context, child, Lists::DEPTH);
             }
         }
 
@@ -3061,20 +3063,21 @@ impl<'a> GotoPlaceObject<'a> {
     }
 }
 
-/// Boolean state flags used by `MovieClip`.
-#[derive(Debug, EnumSetType)]
-enum MovieClipFlags {
-    /// Whether this `MovieClip` has run its initial frame.
-    Initialized,
+bitflags! {
+    /// Boolean state flags used by `MovieClip`.
+    struct MovieClipFlags: u8 {
+        /// Whether this `MovieClip` has run its initial frame.
+        const INITIALIZED             = 1 << 0;
 
-    /// Whether this `MovieClip` is playing or stopped.
-    Playing,
+        /// Whether this `MovieClip` is playing or stopped.
+        const PLAYING                 = 1 << 1;
 
-    /// Whether this `MovieClip` has been played as a result of an AS3 command.
-    ///
-    /// The AS3 `isPlaying` property is broken and yields false until you first
-    /// call `play` to unbreak it. This flag tracks that bug.
-    ProgrammaticallyPlayed,
+        /// Whether this `MovieClip` has been played as a result of an AS3 command.
+        ///
+        /// The AS3 `isPlaying` property is broken and yields false until you first
+        /// call `play` to unbreak it. This flag tracks that bug.
+        const PROGRAMMATICALLY_PLAYED = 1 << 2;
+    }
 }
 
 /// Actions that are attached to a `MovieClip` event in
@@ -3105,31 +3108,42 @@ impl ClipAction {
         let action_data = SwfSlice::from(movie)
             .to_unbounded_subslice(other.action_data)
             .unwrap();
-        other.events.into_iter().map(move |event| Self {
+
+        let mut events = Vec::new();
+        let flags = other.events.bits();
+        let mut bit = 1u32;
+        while flags & !(bit - 1) != 0 {
+            if (flags & bit) != 0 {
+                events.push(ClipEventFlag::from_bits_truncate(bit));
+            }
+            bit <<= 1;
+        }
+        events.into_iter().map(move |event| Self {
             event: match event {
-                ClipEventFlag::Construct => ClipEvent::Construct,
-                ClipEventFlag::Data => ClipEvent::Data,
-                ClipEventFlag::DragOut => ClipEvent::DragOut,
-                ClipEventFlag::DragOver => ClipEvent::DragOver,
-                ClipEventFlag::EnterFrame => ClipEvent::EnterFrame,
-                ClipEventFlag::Initialize => ClipEvent::Initialize,
-                ClipEventFlag::KeyUp => ClipEvent::KeyUp,
-                ClipEventFlag::KeyDown => ClipEvent::KeyDown,
-                ClipEventFlag::KeyPress => ClipEvent::KeyPress {
+                ClipEventFlag::CONSTRUCT => ClipEvent::Construct,
+                ClipEventFlag::DATA => ClipEvent::Data,
+                ClipEventFlag::DRAG_OUT => ClipEvent::DragOut,
+                ClipEventFlag::DRAG_OVER => ClipEvent::DragOver,
+                ClipEventFlag::ENTER_FRAME => ClipEvent::EnterFrame,
+                ClipEventFlag::INITIALIZE => ClipEvent::Initialize,
+                ClipEventFlag::KEY_UP => ClipEvent::KeyUp,
+                ClipEventFlag::KEY_DOWN => ClipEvent::KeyDown,
+                ClipEventFlag::KEY_PRESS => ClipEvent::KeyPress {
                     key_code: key_code
                         .and_then(|k| ButtonKeyCode::try_from(k).ok())
                         .unwrap_or(ButtonKeyCode::Unknown),
                 },
-                ClipEventFlag::Load => ClipEvent::Load,
-                ClipEventFlag::MouseUp => ClipEvent::MouseUp,
-                ClipEventFlag::MouseDown => ClipEvent::MouseDown,
-                ClipEventFlag::MouseMove => ClipEvent::MouseMove,
-                ClipEventFlag::Press => ClipEvent::Press,
-                ClipEventFlag::RollOut => ClipEvent::RollOut,
-                ClipEventFlag::RollOver => ClipEvent::RollOver,
-                ClipEventFlag::Release => ClipEvent::Release,
-                ClipEventFlag::ReleaseOutside => ClipEvent::ReleaseOutside,
-                ClipEventFlag::Unload => ClipEvent::Unload,
+                ClipEventFlag::LOAD => ClipEvent::Load,
+                ClipEventFlag::MOUSE_UP => ClipEvent::MouseUp,
+                ClipEventFlag::MOUSE_DOWN => ClipEvent::MouseDown,
+                ClipEventFlag::MOUSE_MOVE => ClipEvent::MouseMove,
+                ClipEventFlag::PRESS => ClipEvent::Press,
+                ClipEventFlag::ROLL_OUT => ClipEvent::RollOut,
+                ClipEventFlag::ROLL_OVER => ClipEvent::RollOver,
+                ClipEventFlag::RELEASE => ClipEvent::Release,
+                ClipEventFlag::RELEASE_OUTSIDE => ClipEvent::ReleaseOutside,
+                ClipEventFlag::UNLOAD => ClipEvent::Unload,
+                _ => unreachable!(),
             },
             action_data: action_data.clone(),
         })

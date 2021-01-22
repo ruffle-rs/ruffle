@@ -4,8 +4,8 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// `Boolean` constructor
@@ -72,14 +72,14 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "valueOf",
         value_of,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 

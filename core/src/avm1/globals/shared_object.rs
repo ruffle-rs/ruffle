@@ -1,10 +1,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 use crate::avm1::object::shared_object::SharedObject;
@@ -106,7 +106,7 @@ fn deserialize_object<'gc>(
                 activation.context.gc_context,
                 entry.0,
                 value,
-                EnumSet::empty(),
+                Attribute::empty(),
             );
         }
         obj.into()
@@ -141,7 +141,7 @@ fn deserialize_array<'gc>(
                     activation.context.gc_context,
                     entry.0,
                     value,
-                    EnumSet::empty(),
+                    Attribute::empty(),
                 );
             }
         }
@@ -282,7 +282,7 @@ pub fn get_local<'gc>(
         activation.context.gc_context,
         "data",
         data,
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     activation.context.shared_objects.insert(full_name, this);
@@ -344,7 +344,7 @@ pub fn create_shared_object_object<'gc>(
         "deleteAll",
         delete_all,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         fn_proto,
     );
 
@@ -352,7 +352,7 @@ pub fn create_shared_object_object<'gc>(
         "getDiskUsage",
         get_disk_usage,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         fn_proto,
     );
 
@@ -360,7 +360,7 @@ pub fn create_shared_object_object<'gc>(
         "getLocal",
         get_local,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         fn_proto,
     );
 
@@ -368,7 +368,7 @@ pub fn create_shared_object_object<'gc>(
         "getRemote",
         get_remote,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         fn_proto,
     );
 
@@ -376,7 +376,7 @@ pub fn create_shared_object_object<'gc>(
         "getMaxSize",
         get_max_size,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         fn_proto,
     );
 
@@ -384,7 +384,7 @@ pub fn create_shared_object_object<'gc>(
         "addListener",
         add_listener,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         fn_proto,
     );
 
@@ -392,7 +392,7 @@ pub fn create_shared_object_object<'gc>(
         "removeListener",
         remove_listener,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         fn_proto,
     );
 
@@ -509,35 +509,53 @@ pub fn create_proto<'gc>(
     let shared_obj = SharedObject::empty_shared_obj(gc_context, Some(proto));
     let mut object = shared_obj.as_script_object().unwrap();
 
-    object.force_set_function("clear", clear, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "clear",
+        clear,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
-    object.force_set_function("close", close, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "close",
+        close,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
     object.force_set_function(
         "connect",
         connect,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
-    object.force_set_function("flush", flush, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "flush",
+        flush,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
     object.force_set_function(
         "getSize",
         get_size,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
-    object.force_set_function("send", send, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function("send", send, gc_context, Attribute::empty(), Some(fn_proto));
 
     object.force_set_function(
         "setFps",
         set_fps,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -545,7 +563,7 @@ pub fn create_proto<'gc>(
         "onStatus",
         on_status,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -553,7 +571,7 @@ pub fn create_proto<'gc>(
         "onSync",
         on_sync,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 

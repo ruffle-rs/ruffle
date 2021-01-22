@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::display_object;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
@@ -23,7 +23,7 @@ macro_rules! with_text_field {
                     Ok(Value::Undefined)
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                DontDelete | ReadOnly | DontEnum,
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*
@@ -38,7 +38,7 @@ macro_rules! with_text_field_props {
                 $name,
                 with_text_field_props!(getter $gc, $fn_proto, $get),
                 with_text_field_props!(setter $gc, $fn_proto, $($set),*),
-                Default::default()
+                Attribute::empty()
             );
         )*
     };

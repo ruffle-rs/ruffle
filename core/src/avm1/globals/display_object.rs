@@ -3,10 +3,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
-use enumset::EnumSet;
+use crate::display_object::{DisplayObject, Lists, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::MutationContext;
 
 /// Depths used/returned by ActionScript are offset by this amount from depths used inside the SWF/by the VM.
@@ -35,7 +34,7 @@ macro_rules! with_display_object {
                     Ok(Value::Undefined)
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                DontDelete | ReadOnly | DontEnum,
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*
@@ -73,7 +72,7 @@ pub fn define_display_object_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -91,7 +90,7 @@ pub fn define_display_object_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -109,7 +108,7 @@ pub fn define_display_object_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 }
 
@@ -160,7 +159,7 @@ pub fn overwrite_root<'gc>(
         activation.context.gc_context,
         "_root",
         new_val,
-        EnumSet::new(),
+        Attribute::empty(),
     );
 
     Ok(Value::Undefined)
@@ -179,7 +178,7 @@ pub fn overwrite_global<'gc>(
         activation.context.gc_context,
         "_global",
         new_val,
-        EnumSet::new(),
+        Attribute::empty(),
     );
 
     Ok(Value::Undefined)
@@ -198,7 +197,7 @@ pub fn overwrite_parent<'gc>(
         activation.context.gc_context,
         "_parent",
         new_val,
-        EnumSet::new(),
+        Attribute::empty(),
     );
 
     Ok(Value::Undefined)
@@ -216,7 +215,7 @@ pub fn remove_display_object<'gc>(
     if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !this.removed() {
         // Need a parent to remove from.
         if let Some(mut parent) = this.parent().and_then(|o| o.as_movie_clip()) {
-            parent.remove_child(&mut activation.context, this, EnumSet::all());
+            parent.remove_child(&mut activation.context, this, Lists::all());
         }
     }
 }

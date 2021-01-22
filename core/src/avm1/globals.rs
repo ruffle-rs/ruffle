@@ -1,9 +1,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::Collect;
 use gc_arena::MutationContext;
 use rand::Rng;
@@ -701,19 +700,29 @@ pub fn create_globals<'gc>(
         transform_proto,
     );
 
-    flash.define_value(gc_context, "geom", geom.into(), EnumSet::empty());
-    flash.define_value(gc_context, "filters", filters.into(), EnumSet::empty());
-    flash.define_value(gc_context, "display", display.into(), EnumSet::empty());
-    geom.define_value(gc_context, "Matrix", matrix.into(), EnumSet::empty());
-    geom.define_value(gc_context, "Point", point.into(), EnumSet::empty());
-    geom.define_value(gc_context, "Rectangle", rectangle.into(), EnumSet::empty());
+    flash.define_value(gc_context, "geom", geom.into(), Attribute::empty());
+    flash.define_value(gc_context, "filters", filters.into(), Attribute::empty());
+    flash.define_value(gc_context, "display", display.into(), Attribute::empty());
+    geom.define_value(gc_context, "Matrix", matrix.into(), Attribute::empty());
+    geom.define_value(gc_context, "Point", point.into(), Attribute::empty());
+    geom.define_value(
+        gc_context,
+        "Rectangle",
+        rectangle.into(),
+        Attribute::empty(),
+    );
     geom.define_value(
         gc_context,
         "ColorTransform",
         color_transform.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
-    geom.define_value(gc_context, "Transform", transform.into(), EnumSet::empty());
+    geom.define_value(
+        gc_context,
+        "Transform",
+        transform.into(),
+        Attribute::empty(),
+    );
 
     let bitmap_filter_proto =
         bitmap_filter::create_proto(gc_context, object_proto, Some(function_proto));
@@ -819,62 +828,62 @@ pub fn create_globals<'gc>(
         gc_context,
         "BitmapFilter",
         bitmap_filter.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "BlurFilter",
         blur_filter.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "BevelFilter",
         bevel_filter.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "GlowFilter",
         glow_filter.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "DropShadowFilter",
         drop_shadow_filter.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "ColorMatrixFilter",
         color_matrix_filter.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "DisplacementMapFilter",
         displacement_map_filter.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "ConvolutionFilter",
         convolution_filter.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     filters.define_value(
         gc_context,
         "GradientBevelFilter",
         gradient_bevel_filter.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
     filters.define_value(
         gc_context,
         "GradientGlowFilter",
         gradient_glow_filter.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     let bitmap_data_proto = bitmap_data::create_proto(gc_context, object_proto, function_proto);
@@ -885,7 +894,7 @@ pub fn create_globals<'gc>(
         gc_context,
         "BitmapData",
         bitmap_data.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     let external = ScriptObject::object(gc_context, Some(object_proto));
@@ -895,12 +904,12 @@ pub fn create_globals<'gc>(
         function_proto,
     );
 
-    flash.define_value(gc_context, "external", external.into(), EnumSet::empty());
+    flash.define_value(gc_context, "external", external.into(), Attribute::empty());
     external.define_value(
         gc_context,
         "ExternalInterface",
         external_interface.into(),
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     let mut globals = ScriptObject::bare_object(gc_context);
@@ -908,37 +917,57 @@ pub fn create_globals<'gc>(
         gc_context,
         "AsBroadcaster",
         as_broadcaster.into(),
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
-    globals.define_value(gc_context, "flash", flash.into(), DontEnum.into());
-    globals.define_value(gc_context, "Array", array.into(), DontEnum.into());
-    globals.define_value(gc_context, "Button", button.into(), DontEnum.into());
-    globals.define_value(gc_context, "Color", color.into(), DontEnum.into());
-    globals.define_value(gc_context, "Error", error.into(), DontEnum.into());
-    globals.define_value(gc_context, "Object", object.into(), DontEnum.into());
-    globals.define_value(gc_context, "Function", function.into(), DontEnum.into());
-    globals.define_value(gc_context, "LoadVars", load_vars.into(), DontEnum.into());
-    globals.define_value(gc_context, "MovieClip", movie_clip.into(), DontEnum.into());
+    globals.define_value(gc_context, "flash", flash.into(), Attribute::DONT_ENUM);
+    globals.define_value(gc_context, "Array", array.into(), Attribute::DONT_ENUM);
+    globals.define_value(gc_context, "Button", button.into(), Attribute::DONT_ENUM);
+    globals.define_value(gc_context, "Color", color.into(), Attribute::DONT_ENUM);
+    globals.define_value(gc_context, "Error", error.into(), Attribute::DONT_ENUM);
+    globals.define_value(gc_context, "Object", object.into(), Attribute::DONT_ENUM);
+    globals.define_value(
+        gc_context,
+        "Function",
+        function.into(),
+        Attribute::DONT_ENUM,
+    );
+    globals.define_value(
+        gc_context,
+        "LoadVars",
+        load_vars.into(),
+        Attribute::DONT_ENUM,
+    );
+    globals.define_value(
+        gc_context,
+        "MovieClip",
+        movie_clip.into(),
+        Attribute::DONT_ENUM,
+    );
     globals.define_value(
         gc_context,
         "MovieClipLoader",
         movie_clip_loader.into(),
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
-    globals.define_value(gc_context, "Sound", sound.into(), DontEnum.into());
-    globals.define_value(gc_context, "TextField", text_field.into(), DontEnum.into());
+    globals.define_value(gc_context, "Sound", sound.into(), Attribute::DONT_ENUM);
+    globals.define_value(
+        gc_context,
+        "TextField",
+        text_field.into(),
+        Attribute::DONT_ENUM,
+    );
     globals.define_value(
         gc_context,
         "TextFormat",
         text_format.into(),
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
-    globals.define_value(gc_context, "XMLNode", xmlnode.into(), DontEnum.into());
-    globals.define_value(gc_context, "XML", xml.into(), DontEnum.into());
-    globals.define_value(gc_context, "String", string.into(), DontEnum.into());
-    globals.define_value(gc_context, "Number", number.into(), DontEnum.into());
-    globals.define_value(gc_context, "Boolean", boolean.into(), DontEnum.into());
-    globals.define_value(gc_context, "Date", date.into(), DontEnum.into());
+    globals.define_value(gc_context, "XMLNode", xmlnode.into(), Attribute::DONT_ENUM);
+    globals.define_value(gc_context, "XML", xml.into(), Attribute::DONT_ENUM);
+    globals.define_value(gc_context, "String", string.into(), Attribute::DONT_ENUM);
+    globals.define_value(gc_context, "Number", number.into(), Attribute::DONT_ENUM);
+    globals.define_value(gc_context, "Boolean", boolean.into(), Attribute::DONT_ENUM);
+    globals.define_value(gc_context, "Date", date.into(), Attribute::DONT_ENUM);
 
     let shared_object_proto = shared_object::create_proto(gc_context, object_proto, function_proto);
 
@@ -951,7 +980,7 @@ pub fn create_globals<'gc>(
         gc_context,
         "SharedObject",
         shared_obj.into(),
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
 
     let context_menu = FunctionObject::constructor(
@@ -965,7 +994,7 @@ pub fn create_globals<'gc>(
         gc_context,
         "ContextMenu",
         context_menu.into(),
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
 
     let selection = selection::create_selection_object(
@@ -975,7 +1004,12 @@ pub fn create_globals<'gc>(
         broadcaster_functions,
         array_proto,
     );
-    globals.define_value(gc_context, "Selection", selection.into(), DontEnum.into());
+    globals.define_value(
+        gc_context,
+        "Selection",
+        selection.into(),
+        Attribute::DONT_ENUM,
+    );
 
     let context_menu_item = FunctionObject::constructor(
         gc_context,
@@ -988,7 +1022,7 @@ pub fn create_globals<'gc>(
         gc_context,
         "ContextMenuItem",
         context_menu_item.into(),
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
 
     let system_security = system_security::create(gc_context, Some(object_proto), function_proto);
@@ -1010,7 +1044,7 @@ pub fn create_globals<'gc>(
         system_capabilities,
         system_ime,
     );
-    globals.define_value(gc_context, "System", system.into(), DontEnum.into());
+    globals.define_value(gc_context, "System", system.into(), Attribute::DONT_ENUM);
 
     globals.define_value(
         gc_context,
@@ -1020,7 +1054,7 @@ pub fn create_globals<'gc>(
             Some(object_proto),
             Some(function_proto),
         )),
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
     globals.define_value(
         gc_context,
@@ -1032,7 +1066,7 @@ pub fn create_globals<'gc>(
             broadcaster_functions,
             array_proto,
         )),
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
     globals.define_value(
         gc_context,
@@ -1044,7 +1078,7 @@ pub fn create_globals<'gc>(
             broadcaster_functions,
             array_proto,
         )),
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
     globals.define_value(
         gc_context,
@@ -1056,72 +1090,90 @@ pub fn create_globals<'gc>(
             function_proto,
             broadcaster_functions,
         )),
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
     globals.force_set_function(
         "isFinite",
         is_finite,
         gc_context,
-        DontEnum,
+        Attribute::DONT_ENUM,
         Some(function_proto),
     );
-    globals.force_set_function("isNaN", is_nan, gc_context, DontEnum, Some(function_proto));
+    globals.force_set_function(
+        "isNaN",
+        is_nan,
+        gc_context,
+        Attribute::DONT_ENUM,
+        Some(function_proto),
+    );
     globals.force_set_function(
         "parseInt",
         parse_int,
         gc_context,
-        DontEnum,
+        Attribute::DONT_ENUM,
         Some(function_proto),
     );
     globals.force_set_function(
         "parseFloat",
         parse_float,
         gc_context,
-        DontEnum,
+        Attribute::DONT_ENUM,
         Some(function_proto),
     );
-    globals.force_set_function("random", random, gc_context, DontEnum, Some(function_proto));
+    globals.force_set_function(
+        "random",
+        random,
+        gc_context,
+        Attribute::DONT_ENUM,
+        Some(function_proto),
+    );
     globals.force_set_function(
         "ASSetPropFlags",
         object::as_set_prop_flags,
         gc_context,
-        DontEnum,
+        Attribute::DONT_ENUM,
         Some(function_proto),
     );
     globals.force_set_function(
         "clearInterval",
         clear_interval,
         gc_context,
-        DontEnum,
+        Attribute::DONT_ENUM,
         Some(function_proto),
     );
     globals.force_set_function(
         "setInterval",
         set_interval,
         gc_context,
-        DontEnum,
+        Attribute::DONT_ENUM,
         Some(function_proto),
     );
     globals.force_set_function(
         "setTimeout",
         set_timeout,
         gc_context,
-        DontEnum,
+        Attribute::DONT_ENUM,
         Some(function_proto),
     );
     globals.force_set_function(
         "updateAfterEvent",
         update_after_event,
         gc_context,
-        DontEnum,
+        Attribute::DONT_ENUM,
         Some(function_proto),
     );
-    globals.force_set_function("escape", escape, gc_context, DontEnum, Some(function_proto));
+    globals.force_set_function(
+        "escape",
+        escape,
+        gc_context,
+        Attribute::DONT_ENUM,
+        Some(function_proto),
+    );
     globals.force_set_function(
         "unescape",
         unescape,
         gc_context,
-        DontEnum,
+        Attribute::DONT_ENUM,
         Some(function_proto),
     );
 
@@ -1135,7 +1187,7 @@ pub fn create_globals<'gc>(
             function_proto,
         ),
         None,
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
     globals.add_property(
         gc_context,
@@ -1147,7 +1199,7 @@ pub fn create_globals<'gc>(
             function_proto,
         ),
         None,
-        DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
 
     (

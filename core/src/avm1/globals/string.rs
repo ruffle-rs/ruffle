@@ -4,10 +4,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::string_utils;
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// `String` constructor
@@ -64,7 +63,7 @@ pub fn create_string_object<'gc>(
         "fromCharCode",
         from_char_code,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -84,28 +83,28 @@ pub fn create_proto<'gc>(
         "toString",
         to_string_value_of,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "valueOf",
         to_string_value_of,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "charAt",
         char_at,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "charCodeAt",
         char_code_at,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -113,7 +112,7 @@ pub fn create_proto<'gc>(
         "concat",
         concat,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -121,7 +120,7 @@ pub fn create_proto<'gc>(
         "indexOf",
         index_of,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -129,7 +128,7 @@ pub fn create_proto<'gc>(
         "lastIndexOf",
         last_index_of,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -137,7 +136,7 @@ pub fn create_proto<'gc>(
         "slice",
         slice,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -145,7 +144,7 @@ pub fn create_proto<'gc>(
         "split",
         split,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -153,7 +152,7 @@ pub fn create_proto<'gc>(
         "substr",
         substr,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -161,7 +160,7 @@ pub fn create_proto<'gc>(
         "substring",
         substring,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -169,7 +168,7 @@ pub fn create_proto<'gc>(
         "toLowerCase",
         to_lower_case,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -177,7 +176,7 @@ pub fn create_proto<'gc>(
         "toUpperCase",
         to_upper_case,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

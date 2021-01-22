@@ -4,9 +4,8 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// `Number` constructor
@@ -63,7 +62,7 @@ pub fn create_number_object<'gc>(
         gc_context,
         "MAX_VALUE",
         std::f64::MAX.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.define_value(
@@ -72,28 +71,28 @@ pub fn create_number_object<'gc>(
         // Note this is actually the smallest positive denormalized f64.
         // Rust doesn't provide a constant for this (`MIN_POSITIVE` is a normal f64).
         Value::Number(f64::from_bits(1)),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.define_value(
         gc_context,
         "NaN",
         std::f64::NAN.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.define_value(
         gc_context,
         "NEGATIVE_INFINITY",
         std::f64::NEG_INFINITY.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.define_value(
         gc_context,
         "POSITIVE_INFINITY",
         std::f64::INFINITY.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     number
@@ -112,14 +111,14 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "valueOf",
         value_of,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 

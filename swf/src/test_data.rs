@@ -2125,7 +2125,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 background_color: None,
                 blend_mode: None,
                 clip_actions: Some(vec![ClipAction {
-                    events: ClipEventFlag::EnterFrame.into(),
+                    events: ClipEventFlag::ENTER_FRAME,
                     key_code: None,
                     action_data: &[150, 6, 0, 0, 99, 108, 105, 112, 0, 38, 0],
                 }]),
@@ -2156,17 +2156,17 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 blend_mode: None,
                 clip_actions: Some(vec![
                     ClipAction {
-                        events: ClipEventFlag::Press | ClipEventFlag::Release,
+                        events: ClipEventFlag::PRESS | ClipEventFlag::RELEASE,
                         key_code: None,
                         action_data: &[150, 3, 0, 0, 65, 0, 38, 0],
                     },
                     ClipAction {
-                        events: ClipEventFlag::KeyPress.into(),
+                        events: ClipEventFlag::KEY_PRESS,
                         key_code: Some(99),
                         action_data: &[150, 3, 0, 0, 66, 0, 38, 0],
                     },
                     ClipAction {
-                        events: ClipEventFlag::EnterFrame.into(),
+                        events: ClipEventFlag::ENTER_FRAME,
                         key_code: None,
                         action_data: &[150, 3, 0, 0, 67, 0, 38, 0],
                     },
@@ -2326,12 +2326,12 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 blend_mode: Some(BlendMode::Difference),
                 clip_actions: Some(vec![
                     ClipAction {
-                        events: ClipEventFlag::ReleaseOutside | ClipEventFlag::RollOver,
+                        events: ClipEventFlag::RELEASE_OUTSIDE | ClipEventFlag::ROLL_OVER,
                         key_code: None,
                         action_data: &[0],
                     },
                     ClipAction {
-                        events: ClipEventFlag::Data.into(),
+                        events: ClipEventFlag::DATA,
                         key_code: None,
                         action_data: &[150, 3, 0, 0, 66, 0, 38, 0],
                     },

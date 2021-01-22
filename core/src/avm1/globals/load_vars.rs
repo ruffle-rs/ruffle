@@ -25,15 +25,13 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    use Attribute::*;
-
     let mut object = ScriptObject::object(gc_context, Some(proto));
 
     object.force_set_function(
         "load",
         load,
         gc_context,
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -41,7 +39,7 @@ pub fn create_proto<'gc>(
         "send",
         send,
         gc_context,
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -49,7 +47,7 @@ pub fn create_proto<'gc>(
         "sendAndLoad",
         send_and_load,
         gc_context,
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -57,7 +55,7 @@ pub fn create_proto<'gc>(
         "decode",
         decode,
         gc_context,
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -65,7 +63,7 @@ pub fn create_proto<'gc>(
         "getBytesLoaded",
         get_bytes_loaded,
         gc_context,
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -73,7 +71,7 @@ pub fn create_proto<'gc>(
         "getBytesTotal",
         get_bytes_total,
         gc_context,
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -81,7 +79,7 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -89,14 +87,14 @@ pub fn create_proto<'gc>(
         gc_context,
         "contentType",
         "application/x-www-form-url-encoded".into(),
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.force_set_function(
         "onLoad",
         on_load,
         gc_context,
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -104,7 +102,7 @@ pub fn create_proto<'gc>(
         "onData",
         on_data,
         gc_context,
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -112,7 +110,7 @@ pub fn create_proto<'gc>(
         "addRequestHeader",
         add_request_header,
         gc_context,
-        DontDelete | DontEnum | ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -343,7 +341,7 @@ fn spawn_load_var_fetch<'gc>(
             activation.context.gc_context,
             "_bytesLoaded",
             0.into(),
-            Attribute::DontDelete | Attribute::DontEnum,
+            Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
         loader_object.set("_bytesLoaded", 0.into(), activation)?;
@@ -354,7 +352,7 @@ fn spawn_load_var_fetch<'gc>(
             activation.context.gc_context,
             "loaded",
             false.into(),
-            Attribute::DontDelete | Attribute::DontEnum,
+            Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
         loader_object.set("loaded", false.into(), activation)?;

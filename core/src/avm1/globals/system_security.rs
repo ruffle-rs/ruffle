@@ -2,9 +2,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::Object;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, ScriptObject, TObject, Value};
 use crate::avm_warn;
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::convert::Into;
 
@@ -97,7 +97,7 @@ pub fn create<'gc>(
         "PolicyFileResolver",
         policy_file_resolver,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -105,7 +105,7 @@ pub fn create<'gc>(
         "allowDomain",
         allow_domain,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -113,7 +113,7 @@ pub fn create<'gc>(
         "allowInsecureDomain",
         allow_insecure_domain,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -121,7 +121,7 @@ pub fn create<'gc>(
         "loadPolicyFile",
         load_policy_file,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -129,7 +129,7 @@ pub fn create<'gc>(
         "escapeDomain",
         escape_domain,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -143,7 +143,7 @@ pub fn create<'gc>(
             fn_proto,
         ),
         None,
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     security.add_property(
@@ -156,7 +156,7 @@ pub fn create<'gc>(
             fn_proto,
         ),
         None,
-        EnumSet::empty(),
+        Attribute::empty(),
     );
 
     security.into()

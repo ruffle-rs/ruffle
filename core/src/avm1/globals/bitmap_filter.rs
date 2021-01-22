@@ -2,8 +2,8 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
@@ -275,7 +275,7 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let mut object = ScriptObject::object(gc_context, Some(proto));
 
-    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), fn_proto);
+    object.force_set_function("clone", clone, gc_context, Attribute::empty(), fn_proto);
 
     object.into()
 }

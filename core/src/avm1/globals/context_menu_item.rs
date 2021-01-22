@@ -108,7 +108,7 @@ pub fn create_proto<'gc>(
         "copy",
         copy,
         gc_context,
-        Attribute::DontEnum | Attribute::DontDelete,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         Some(fn_proto),
     );
 

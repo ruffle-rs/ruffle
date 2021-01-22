@@ -2,11 +2,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::property::Attribute::{self, *};
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::borrow::Cow;
 
@@ -60,7 +59,7 @@ pub fn add_property<'gc>(
                     &name,
                     get.to_owned(),
                     Some(set.to_owned()),
-                    EnumSet::empty(),
+                    Attribute::empty(),
                 );
             } else if let Value::Null = setter {
                 this.add_property_with_case(
@@ -69,7 +68,7 @@ pub fn add_property<'gc>(
                     &name,
                     get.to_owned(),
                     None,
-                    ReadOnly.into(),
+                    Attribute::READ_ONLY,
                 );
             } else {
                 return Ok(false.into());
@@ -248,56 +247,56 @@ pub fn fill_proto<'gc>(
         "addProperty",
         add_property,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "hasOwnProperty",
         has_own_property,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "isPropertyEnumerable",
         is_property_enumerable,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "isPrototypeOf",
         is_prototype_of,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "toString",
         to_string,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "valueOf",
         value_of,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "watch",
         watch,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "unwatch",
         unwatch,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 }
@@ -349,21 +348,21 @@ pub fn as_set_prop_flags<'gc>(
     let set_flags = args
         .get(2)
         .unwrap_or(&Value::Number(0.0))
-        .coerce_to_f64(activation)? as u128;
-    let clear_flags = args
-        .get(2)
-        .unwrap_or(&Value::Number(0.0))
-        .coerce_to_f64(activation)? as u128;
+        .coerce_to_f64(activation)? as u8;
+    let set_attributes = Attribute::from_bits_truncate(set_flags);
 
-    if set_flags > 0b111 || clear_flags > 0b111 {
+    let clear_flags = args
+        .get(3)
+        .unwrap_or(&Value::Number(0.0))
+        .coerce_to_f64(activation)? as u8;
+    let clear_attributes = Attribute::from_bits_truncate(clear_flags);
+
+    if set_attributes.bits() != set_flags || clear_attributes.bits() != clear_flags {
         avm_warn!(
             activation,
             "ASSetPropFlags: Unimplemented support for flags > 7"
         );
     }
-
-    let set_attributes = EnumSet::<Attribute>::from_u128(set_flags & 0b111);
-    let clear_attributes = EnumSet::<Attribute>::from_u128(clear_flags & 0b111);
 
     match properties {
         Some(properties) => {
@@ -405,7 +404,7 @@ pub fn create_object_object<'gc>(
         "registerClass",
         register_class,
         gc_context,
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

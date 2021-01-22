@@ -1,18 +1,18 @@
 //! User-defined properties
 
-use self::Attribute::*;
 use crate::avm1::object::Object;
 use crate::avm1::Value;
+use bitflags::bitflags;
 use core::fmt;
-use enumset::{EnumSet, EnumSetType};
 
-/// Attributes of properties in the AVM runtime.
-/// The order is significant and should match the order used by `object::as_set_prop_flags`.
-#[derive(EnumSetType, Debug)]
-pub enum Attribute {
-    DontEnum,
-    DontDelete,
-    ReadOnly,
+bitflags! {
+    /// Attributes of properties in the AVM runtime.
+    /// The values are significant and should match the order used by `object::as_set_prop_flags`.
+    pub struct Attribute: u8 {
+        const DONT_ENUM   = 1 << 0;
+        const DONT_DELETE = 1 << 1;
+        const READ_ONLY   = 1 << 2;
+    }
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -21,11 +21,11 @@ pub enum Property<'gc> {
     Virtual {
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     },
     Stored {
         value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     },
 }
 
@@ -47,7 +47,7 @@ impl<'gc> Property<'gc> {
             Property::Stored {
                 value, attributes, ..
             } => {
-                if !attributes.contains(ReadOnly) {
+                if !attributes.contains(Attribute::READ_ONLY) {
                     *value = new_value.into();
                 }
 
@@ -57,7 +57,7 @@ impl<'gc> Property<'gc> {
     }
 
     /// List this property's attributes.
-    pub fn attributes(&self) -> EnumSet<Attribute> {
+    pub fn attributes(&self) -> Attribute {
         match self {
             Property::Virtual { attributes, .. } => *attributes,
             Property::Stored { attributes, .. } => *attributes,
@@ -65,7 +65,7 @@ impl<'gc> Property<'gc> {
     }
 
     /// Re-define this property's attributes.
-    pub fn set_attributes(&mut self, new_attributes: EnumSet<Attribute>) {
+    pub fn set_attributes(&mut self, new_attributes: Attribute) {
         match self {
             Property::Virtual {
                 ref mut attributes, ..
@@ -78,15 +78,15 @@ impl<'gc> Property<'gc> {
 
     pub fn can_delete(&self) -> bool {
         match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(DontDelete),
-            Property::Stored { attributes, .. } => !attributes.contains(DontDelete),
+            Property::Virtual { attributes, .. } => !attributes.contains(Attribute::DONT_DELETE),
+            Property::Stored { attributes, .. } => !attributes.contains(Attribute::DONT_DELETE),
         }
     }
 
     pub fn is_enumerable(&self) -> bool {
         match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(DontEnum),
-            Property::Stored { attributes, .. } => !attributes.contains(DontEnum),
+            Property::Virtual { attributes, .. } => !attributes.contains(Attribute::DONT_ENUM),
+            Property::Stored { attributes, .. } => !attributes.contains(Attribute::DONT_ENUM),
         }
     }
 
@@ -95,8 +95,8 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual {
                 attributes, set, ..
-            } => !attributes.contains(ReadOnly) && !set.is_none(),
-            Property::Stored { attributes, .. } => !attributes.contains(ReadOnly),
+            } => !attributes.contains(Attribute::READ_ONLY) && !set.is_none(),
+            Property::Stored { attributes, .. } => !attributes.contains(Attribute::READ_ONLY),
         }
     }
 

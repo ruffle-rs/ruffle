@@ -5,7 +5,6 @@ use crate::avm1::object::date_object::DateObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
-use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
 use num_traits::ToPrimitive;
 use std::f64::NAN;
@@ -28,7 +27,7 @@ macro_rules! implement_local_getters {
                     }
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                Attribute::DontDelete | Attribute::ReadOnly | Attribute::DontEnum,
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*
@@ -48,7 +47,7 @@ macro_rules! implement_methods {
                     }
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                Attribute::DontDelete | Attribute::ReadOnly | Attribute::DontEnum,
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*
@@ -72,7 +71,7 @@ macro_rules! implement_utc_getters {
                     }
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                Attribute::DontDelete | Attribute::ReadOnly | Attribute::DontEnum,
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*
@@ -906,7 +905,7 @@ pub fn create_date_object<'gc>(
     );
     let mut object = date.as_script_object().unwrap();
 
-    object.force_set_function("UTC", create_utc, gc_context, EnumSet::empty(), fn_proto);
+    object.force_set_function("UTC", create_utc, gc_context, Attribute::empty(), fn_proto);
 
     date
 }

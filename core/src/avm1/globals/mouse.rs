@@ -48,7 +48,7 @@ pub fn create_mouse_object<'gc>(
         "show",
         show_mouse,
         gc_context,
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -56,7 +56,7 @@ pub fn create_mouse_object<'gc>(
         "hide",
         hide_mouse,
         gc_context,
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 

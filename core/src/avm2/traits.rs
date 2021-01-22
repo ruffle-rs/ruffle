@@ -7,20 +7,21 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::{Avm2, Error};
 use crate::collect::CollectWrapper;
-use enumset::{EnumSet, EnumSetType};
+use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::types::{Trait as AbcTrait, TraitKind as AbcTraitKind};
 
-/// All attributes a trait can have.
-#[derive(Debug, EnumSetType)]
-pub enum TraitAttributes {
-    /// Whether or not traits in downstream classes are allowed to override
-    /// this trait.
-    Final,
+bitflags! {
+    /// All attributes a trait can have.
+    pub struct  TraitAttributes: u8 {
+        /// Whether or not traits in downstream classes are allowed to override
+        /// this trait.
+        const FINAL    = 1 << 0;
 
-    /// Whether or not this trait is intended to override an upstream class's
-    /// trait.
-    Override,
+        /// Whether or not this trait is intended to override an upstream class's
+        /// trait.
+        const OVERRIDE = 1 << 1;
+    }
 }
 
 /// Represents a trait as loaded into the VM.
@@ -40,19 +41,17 @@ pub struct Trait<'gc> {
     name: QName<'gc>,
 
     /// The attributes set on this trait.
-    attributes: CollectWrapper<EnumSet<TraitAttributes>>,
+    attributes: CollectWrapper<TraitAttributes>,
 
     /// The kind of trait in use.
     kind: TraitKind<'gc>,
 }
 
-fn trait_attribs_from_abc_traits(abc_trait: &AbcTrait) -> CollectWrapper<EnumSet<TraitAttributes>> {
-    CollectWrapper(match (abc_trait.is_final, abc_trait.is_override) {
-        (true, true) => TraitAttributes::Final | TraitAttributes::Override,
-        (true, false) => TraitAttributes::Final.into(),
-        (false, true) => TraitAttributes::Override.into(),
-        (false, false) => EnumSet::empty(),
-    })
+fn trait_attribs_from_abc_traits(abc_trait: &AbcTrait) -> CollectWrapper<TraitAttributes> {
+    let mut attributes = TraitAttributes::empty();
+    attributes.set(TraitAttributes::FINAL, abc_trait.is_final);
+    attributes.set(TraitAttributes::OVERRIDE, abc_trait.is_override);
+    CollectWrapper(attributes)
 }
 
 /// The fields for a particular kind of trait.
@@ -104,7 +103,7 @@ impl<'gc> Trait<'gc> {
 
         Trait {
             name,
-            attributes: CollectWrapper(EnumSet::empty()),
+            attributes: CollectWrapper(TraitAttributes::empty()),
             kind: TraitKind::Class { slot_id: 0, class },
         }
     }
@@ -112,7 +111,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_method(name: QName<'gc>, method: Method<'gc>) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(EnumSet::empty()),
+            attributes: CollectWrapper(TraitAttributes::empty()),
             kind: TraitKind::Method { disp_id: 0, method },
         }
     }
@@ -120,7 +119,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_getter(name: QName<'gc>, method: Method<'gc>) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(EnumSet::empty()),
+            attributes: CollectWrapper(TraitAttributes::empty()),
             kind: TraitKind::Getter { disp_id: 0, method },
         }
     }
@@ -128,7 +127,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_setter(name: QName<'gc>, method: Method<'gc>) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(EnumSet::empty()),
+            attributes: CollectWrapper(TraitAttributes::empty()),
             kind: TraitKind::Setter { disp_id: 0, method },
         }
     }
@@ -136,7 +135,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_function(name: QName<'gc>, function: Method<'gc>) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(EnumSet::empty()),
+            attributes: CollectWrapper(TraitAttributes::empty()),
             kind: TraitKind::Function {
                 slot_id: 0,
                 function,
@@ -151,7 +150,7 @@ impl<'gc> Trait<'gc> {
     ) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(EnumSet::empty()),
+            attributes: CollectWrapper(TraitAttributes::empty()),
             kind: TraitKind::Slot {
                 slot_id: 0,
                 type_name,
@@ -167,7 +166,7 @@ impl<'gc> Trait<'gc> {
     ) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(EnumSet::empty()),
+            attributes: CollectWrapper(TraitAttributes::empty()),
             kind: TraitKind::Slot {
                 slot_id: 0,
                 type_name,
@@ -280,14 +279,14 @@ impl<'gc> Trait<'gc> {
     }
 
     pub fn is_final(&self) -> bool {
-        self.attributes.0.contains(TraitAttributes::Final)
+        self.attributes.0.contains(TraitAttributes::FINAL)
     }
 
     pub fn is_override(&self) -> bool {
-        self.attributes.0.contains(TraitAttributes::Override)
+        self.attributes.0.contains(TraitAttributes::OVERRIDE)
     }
 
-    pub fn set_attributes(&mut self, attribs: EnumSet<TraitAttributes>) {
+    pub fn set_attributes(&mut self, attribs: TraitAttributes) {
         self.attributes.0 = attribs;
     }
 

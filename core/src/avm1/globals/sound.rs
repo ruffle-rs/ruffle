@@ -4,7 +4,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, SoundObject, TObject, Value};
 use crate::avm_warn;
 use crate::character::Character;
@@ -44,7 +44,7 @@ pub fn create_proto<'gc>(
         "attachSound",
         attach_sound,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -58,7 +58,7 @@ pub fn create_proto<'gc>(
             fn_proto,
         ),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -71,14 +71,14 @@ pub fn create_proto<'gc>(
             fn_proto,
         ),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.as_script_object().unwrap().force_set_function(
         "getBytesLoaded",
         get_bytes_loaded,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -86,7 +86,7 @@ pub fn create_proto<'gc>(
         "getBytesTotal",
         get_bytes_total,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -94,7 +94,7 @@ pub fn create_proto<'gc>(
         "getPan",
         get_pan,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -102,7 +102,7 @@ pub fn create_proto<'gc>(
         "getTransform",
         get_transform,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -110,7 +110,7 @@ pub fn create_proto<'gc>(
         "getVolume",
         get_volume,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -118,7 +118,7 @@ pub fn create_proto<'gc>(
         "loadSound",
         load_sound,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -132,14 +132,14 @@ pub fn create_proto<'gc>(
             fn_proto,
         ),
         None,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.as_script_object().unwrap().force_set_function(
         "setPan",
         set_pan,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -147,7 +147,7 @@ pub fn create_proto<'gc>(
         "setTransform",
         set_transform,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -155,7 +155,7 @@ pub fn create_proto<'gc>(
         "setVolume",
         set_volume,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -163,7 +163,7 @@ pub fn create_proto<'gc>(
         "start",
         start,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -171,7 +171,7 @@ pub fn create_proto<'gc>(
         "stop",
         stop,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

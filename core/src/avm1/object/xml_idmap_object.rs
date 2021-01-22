@@ -7,7 +7,6 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::avm_warn;
 use crate::xml::{XMLDocument, XMLNode};
-use enumset::EnumSet;
 use gc_arena::{Collect, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
@@ -124,7 +123,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.base()
             .add_property(gc_context, name, get, set, attributes)
@@ -137,7 +136,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.base()
             .add_property_with_case(activation, gc_context, name, get, set, attributes)
@@ -169,7 +168,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.base()
             .define_value(gc_context, name, value, attributes)
@@ -179,8 +178,8 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: Option<&str>,
-        set_attributes: EnumSet<Attribute>,
-        clear_attributes: EnumSet<Attribute>,
+        set_attributes: Attribute,
+        clear_attributes: Attribute,
     ) {
         self.base()
             .set_attributes(gc_context, name, set_attributes, clear_attributes)

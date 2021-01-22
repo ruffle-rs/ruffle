@@ -9,7 +9,6 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Object, Value};
 use crate::backend::navigator::RequestOptions;
 use crate::display_object::{DisplayObject, TDisplayObject};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
@@ -25,7 +24,7 @@ pub fn constructor<'gc>(
         activation.context.gc_context,
         "_listeners",
         Value::Object(listeners.into()),
-        Attribute::DontEnum.into(),
+        Attribute::DONT_ENUM,
     );
     listeners.set_array_element(0, Value::Object(this), activation.context.gc_context);
 
@@ -109,7 +108,7 @@ pub fn get_progress<'gc>(
                     .movie()
                     .map(|mv| (mv.header().uncompressed_length).into())
                     .unwrap_or(Value::Undefined),
-                EnumSet::empty(),
+                Attribute::empty(),
             );
             ret_obj.define_value(
                 activation.context.gc_context,
@@ -118,7 +117,7 @@ pub fn get_progress<'gc>(
                     .movie()
                     .map(|mv| (mv.header().uncompressed_length).into())
                     .unwrap_or(Value::Undefined),
-                EnumSet::empty(),
+                Attribute::empty(),
             );
 
             return Ok(ret_obj.into());
@@ -143,21 +142,21 @@ pub fn create_proto<'gc>(
         "loadClip",
         load_clip,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     mcl_proto.as_script_object().unwrap().force_set_function(
         "unloadClip",
         unload_clip,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     mcl_proto.as_script_object().unwrap().force_set_function(
         "getProgress",
         get_progress,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 

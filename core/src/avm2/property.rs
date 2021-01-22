@@ -1,20 +1,20 @@
 //! Property data structures
 
-use self::Attribute::*;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use enumset::{EnumSet, EnumSetType};
+use bitflags::bitflags;
 use gc_arena::{Collect, CollectionContext};
 
-/// Attributes of properties in the AVM runtime.
-///
-/// TODO: Replace with AVM2 properties for traits
-#[derive(EnumSetType, Debug)]
-pub enum Attribute {
-    DontDelete,
-    ReadOnly,
+bitflags! {
+    /// Attributes of properties in the AVM runtime.
+    ///
+    /// TODO: Replace with AVM2 properties for traits
+    pub struct Attribute: u8 {
+        const DONT_DELETE = 1 << 0;
+        const READ_ONLY   = 1 << 1;
+    }
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -23,15 +23,15 @@ pub enum Property<'gc> {
     Virtual {
         get: Option<Object<'gc>>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     },
     Stored {
         value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     },
     Slot {
         slot_id: u32,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     },
 }
 
@@ -53,7 +53,7 @@ impl<'gc> Property<'gc> {
     pub fn new_stored(value: impl Into<Value<'gc>>) -> Self {
         Property::Stored {
             value: value.into(),
-            attributes: EnumSet::from(Attribute::DontDelete),
+            attributes: Attribute::DONT_DELETE,
         }
     }
 
@@ -61,7 +61,7 @@ impl<'gc> Property<'gc> {
     pub fn new_const(value: impl Into<Value<'gc>>) -> Self {
         Property::Stored {
             value: value.into(),
-            attributes: Attribute::ReadOnly | Attribute::DontDelete,
+            attributes: Attribute::DONT_DELETE | Attribute::READ_ONLY,
         }
     }
 
@@ -69,17 +69,17 @@ impl<'gc> Property<'gc> {
     pub fn new_dynamic_property(value: impl Into<Value<'gc>>) -> Self {
         Property::Stored {
             value: value.into(),
-            attributes: EnumSet::empty(),
+            attributes: Attribute::empty(),
         }
     }
 
     /// Convert a function into a method.
     ///
-    /// This applies ReadOnly/DontDelete to the property.
+    /// This applies READ_ONLY/DONT_DELETE to the property.
     pub fn new_method(fn_obj: Object<'gc>) -> Self {
         Property::Stored {
             value: fn_obj.into(),
-            attributes: Attribute::ReadOnly | Attribute::DontDelete,
+            attributes: Attribute::DONT_DELETE | Attribute::READ_ONLY,
         }
     }
 
@@ -88,7 +88,7 @@ impl<'gc> Property<'gc> {
         Property::Virtual {
             get: None,
             set: None,
-            attributes: Attribute::ReadOnly | Attribute::DontDelete,
+            attributes: Attribute::DONT_DELETE | Attribute::READ_ONLY,
         }
     }
 
@@ -96,7 +96,7 @@ impl<'gc> Property<'gc> {
     pub fn new_slot(slot_id: u32) -> Self {
         Property::Slot {
             slot_id,
-            attributes: EnumSet::from(Attribute::DontDelete),
+            attributes: Attribute::DONT_DELETE,
         }
     }
 
@@ -185,7 +185,7 @@ impl<'gc> Property<'gc> {
             Property::Stored {
                 value, attributes, ..
             } => {
-                if !attributes.contains(ReadOnly) {
+                if !attributes.contains(Attribute::READ_ONLY) {
                     *value = new_value.into();
                 }
 
@@ -246,20 +246,27 @@ impl<'gc> Property<'gc> {
     }
 
     pub fn can_delete(&self) -> bool {
-        match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(DontDelete),
-            Property::Stored { attributes, .. } => !attributes.contains(DontDelete),
-            Property::Slot { attributes, .. } => !attributes.contains(DontDelete),
-        }
+        let attributes = match self {
+            Property::Virtual { attributes, .. } => attributes,
+            Property::Stored { attributes, .. } => attributes,
+            Property::Slot { attributes, .. } => attributes,
+        };
+        !attributes.contains(Attribute::DONT_DELETE)
     }
 
     pub fn is_overwritable(&self) -> bool {
-        match self {
+        let attributes = match self {
             Property::Virtual {
                 attributes, set, ..
-            } => !attributes.contains(ReadOnly) && !set.is_none(),
-            Property::Stored { attributes, .. } => !attributes.contains(ReadOnly),
-            Property::Slot { attributes, .. } => !attributes.contains(ReadOnly),
-        }
+            } => {
+                if set.is_none() {
+                    return false;
+                }
+                attributes
+            }
+            Property::Stored { attributes, .. } => attributes,
+            Property::Slot { attributes, .. } => attributes,
+        };
+        !attributes.contains(Attribute::READ_ONLY)
     }
 }

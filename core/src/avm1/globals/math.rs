@@ -1,7 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::Object;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
 use rand::Rng;
@@ -20,7 +20,7 @@ macro_rules! wrap_std {
                     }
                 },
                 $gc_context,
-                DontDelete | ReadOnly | DontEnum,
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $proto
             );
         )*
@@ -144,49 +144,49 @@ pub fn create<'gc>(
         gc_context,
         "E",
         std::f64::consts::E.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
     math.define_value(
         gc_context,
         "LN10",
         std::f64::consts::LN_10.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
     math.define_value(
         gc_context,
         "LN2",
         std::f64::consts::LN_2.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
     math.define_value(
         gc_context,
         "LOG10E",
         std::f64::consts::LOG10_E.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
     math.define_value(
         gc_context,
         "LOG2E",
         std::f64::consts::LOG2_E.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
     math.define_value(
         gc_context,
         "PI",
         std::f64::consts::PI.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
     math.define_value(
         gc_context,
         "SQRT1_2",
         std::f64::consts::FRAC_1_SQRT_2.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
     math.define_value(
         gc_context,
         "SQRT2",
         std::f64::consts::SQRT_2.into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     wrap_std!(math, gc_context, fn_proto,
@@ -208,42 +208,42 @@ pub fn create<'gc>(
         "atan2",
         atan2,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
     math.force_set_function(
         "pow",
         pow,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
     math.force_set_function(
         "max",
         max,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
     math.force_set_function(
         "min",
         min,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
     math.force_set_function(
         "random",
         random,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
     math.force_set_function(
         "round",
         round,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 

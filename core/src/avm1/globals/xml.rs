@@ -5,13 +5,12 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::xml_object::XMLObject;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
 use crate::xml;
 use crate::xml::{XMLDocument, XMLNode};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 use quick_xml::Error as ParseError;
 
@@ -550,7 +549,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -562,7 +561,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -574,7 +573,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -586,7 +585,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -598,7 +597,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -610,7 +609,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -622,7 +621,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -634,7 +633,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -646,7 +645,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -658,7 +657,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -670,7 +669,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -682,7 +681,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -694,7 +693,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto
         .as_script_object()
@@ -703,7 +702,7 @@ pub fn create_xmlnode_proto<'gc>(
             "appendChild",
             xmlnode_append_child,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -713,7 +712,7 @@ pub fn create_xmlnode_proto<'gc>(
             "insertBefore",
             xmlnode_insert_before,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -723,7 +722,7 @@ pub fn create_xmlnode_proto<'gc>(
             "cloneNode",
             xmlnode_clone_node,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -733,7 +732,7 @@ pub fn create_xmlnode_proto<'gc>(
             "getNamespaceForPrefix",
             xmlnode_get_namespace_for_prefix,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -743,7 +742,7 @@ pub fn create_xmlnode_proto<'gc>(
             "getPrefixForNamespace",
             xmlnode_get_prefix_for_namespace,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -753,7 +752,7 @@ pub fn create_xmlnode_proto<'gc>(
             "hasChildNodes",
             xmlnode_has_child_nodes,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -763,7 +762,7 @@ pub fn create_xmlnode_proto<'gc>(
             "removeNode",
             xmlnode_remove_node,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -773,7 +772,7 @@ pub fn create_xmlnode_proto<'gc>(
             "toString",
             xmlnode_to_string,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
 
@@ -1091,9 +1090,9 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
-    xml_proto.define_value(gc_context, "ignoreWhite", false.into(), EnumSet::empty());
+    xml_proto.define_value(gc_context, "ignoreWhite", false.into(), Attribute::empty());
     xml_proto.add_property(
         gc_context,
         "xmlDecl",
@@ -1104,7 +1103,7 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xml_proto.add_property(
         gc_context,
@@ -1116,7 +1115,7 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xml_proto.add_property(
         gc_context,
@@ -1128,41 +1127,41 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "createElement",
         xml_create_element,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "createTextNode",
         xml_create_text_node,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "parseXML",
         xml_parse_xml,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "load",
         xml_load,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "onData",
         xml_on_data,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 

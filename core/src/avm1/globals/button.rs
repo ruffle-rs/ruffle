@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::display_object;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::display_object::{Button, TDisplayObject};
 use gc_arena::MutationContext;
@@ -17,7 +17,7 @@ macro_rules! with_button_props {
                 $name,
                 with_button_props!(getter $gc, $fn_proto, $get),
                 with_button_props!(setter $gc, $fn_proto, $($set),*),
-                DontDelete | DontEnum,
+                Attribute::DONT_DELETE | Attribute::DONT_ENUM,
             );
         )*
     };

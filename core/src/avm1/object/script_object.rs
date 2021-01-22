@@ -5,7 +5,6 @@ use crate::avm1::property::{Attribute, Property};
 use crate::avm1::{AvmString, Object, ObjectPtr, TObject, Value};
 use crate::property_map::{Entry, PropertyMap};
 use core::fmt;
-use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
 
@@ -185,16 +184,14 @@ impl<'gc> ScriptObject<'gc> {
     /// is only possible when defining host functions. User-defined functions
     /// always get a fresh explicit prototype, so you should never force set a
     /// user-defined function.
-    pub fn force_set_function<A>(
+    pub fn force_set_function(
         &mut self,
         name: &str,
         function: NativeFunction<'gc>,
         gc_context: MutationContext<'gc, '_>,
-        attributes: A,
+        attributes: Attribute,
         fn_proto: Option<Object<'gc>>,
-    ) where
-        A: Into<EnumSet<Attribute>>,
-    {
+    ) {
         self.define_value(
             gc_context,
             name,
@@ -205,7 +202,7 @@ impl<'gc> ScriptObject<'gc> {
                 fn_proto,
             )
             .into(),
-            attributes.into(),
+            attributes,
         )
     }
 
@@ -239,9 +236,9 @@ impl<'gc> ScriptObject<'gc> {
                     entry.insert(Property::Stored {
                         value: native_value,
                         attributes: if is_enumerable {
-                            EnumSet::empty()
+                            Attribute::empty()
                         } else {
-                            Attribute::DontEnum.into()
+                            Attribute::DONT_ENUM
                         },
                     });
                 }
@@ -354,7 +351,7 @@ impl<'gc> ScriptObject<'gc> {
                     Entry::Vacant(entry) => {
                         entry.insert(Property::Stored {
                             value: value.clone(),
-                            attributes: Default::default(),
+                            attributes: Attribute::empty(),
                         });
 
                         None
@@ -529,7 +526,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.0.write(gc_context).values.insert(
             name,
@@ -549,7 +546,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.0.write(gc_context).values.insert(
             name,
@@ -596,7 +593,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.0
             .write(gc_context)
@@ -608,8 +605,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: Option<&str>,
-        set_attributes: EnumSet<Attribute>,
-        clear_attributes: EnumSet<Attribute>,
+        set_attributes: Attribute,
+        clear_attributes: Attribute,
     ) {
         match name {
             None => {
@@ -841,7 +838,7 @@ mod tests {
     use crate::avm1::activation::ActivationIdentifier;
     use crate::avm1::function::Executable;
     use crate::avm1::globals::system::SystemProperties;
-    use crate::avm1::property::Attribute::*;
+    use crate::avm1::property::Attribute;
     use crate::avm1::{Avm1, Timers};
     use crate::avm2::Avm2;
     use crate::backend::audio::NullAudioBackend;
@@ -955,7 +952,7 @@ mod tests {
                 activation.context.gc_context,
                 "forced",
                 "forced".into(),
-                EnumSet::empty(),
+                Attribute::empty(),
             );
             object.set("natural", "natural".into(), activation).unwrap();
 
@@ -971,13 +968,13 @@ mod tests {
                 activation.context.gc_context,
                 "normal",
                 "initial".into(),
-                EnumSet::empty(),
+                Attribute::empty(),
             );
             object.as_script_object().unwrap().define_value(
                 activation.context.gc_context,
                 "readonly",
                 "initial".into(),
-                ReadOnly.into(),
+                Attribute::READ_ONLY,
             );
 
             object.set("normal", "replaced".into(), activation).unwrap();
@@ -1000,7 +997,7 @@ mod tests {
                 activation.context.gc_context,
                 "test",
                 "initial".into(),
-                DontDelete.into(),
+                Attribute::DONT_DELETE,
             );
 
             assert_eq!(object.delete(activation, "test"), false);
@@ -1032,7 +1029,7 @@ mod tests {
                 "test",
                 getter,
                 None,
-                EnumSet::empty(),
+                Attribute::empty(),
             );
 
             assert_eq!(object.get("test", activation).unwrap(), "Virtual!".into());
@@ -1058,26 +1055,26 @@ mod tests {
                 "virtual",
                 getter,
                 None,
-                EnumSet::empty(),
+                Attribute::empty(),
             );
             object.as_script_object().unwrap().add_property(
                 activation.context.gc_context,
                 "virtual_un",
                 getter,
                 None,
-                DontDelete.into(),
+                Attribute::DONT_DELETE,
             );
             object.as_script_object().unwrap().define_value(
                 activation.context.gc_context,
                 "stored",
                 "Stored!".into(),
-                EnumSet::empty(),
+                Attribute::empty(),
             );
             object.as_script_object().unwrap().define_value(
                 activation.context.gc_context,
                 "stored_un",
                 "Stored!".into(),
-                DontDelete.into(),
+                Attribute::DONT_DELETE,
             );
 
             assert_eq!(object.delete(activation, "virtual"), true);
@@ -1113,27 +1110,27 @@ mod tests {
                 activation.context.gc_context,
                 "stored",
                 Value::Null,
-                EnumSet::empty(),
+                Attribute::empty(),
             );
             object.as_script_object().unwrap().define_value(
                 activation.context.gc_context,
                 "stored_hidden",
                 Value::Null,
-                DontEnum.into(),
+                Attribute::DONT_ENUM,
             );
             object.as_script_object().unwrap().add_property(
                 activation.context.gc_context,
                 "virtual",
                 getter,
                 None,
-                EnumSet::empty(),
+                Attribute::empty(),
             );
             object.as_script_object().unwrap().add_property(
                 activation.context.gc_context,
                 "virtual_hidden",
                 getter,
                 None,
-                DontEnum.into(),
+                Attribute::DONT_ENUM,
             );
 
             let keys: Vec<_> = object.get_keys(activation);

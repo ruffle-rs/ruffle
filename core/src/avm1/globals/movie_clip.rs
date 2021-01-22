@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
@@ -48,7 +48,7 @@ macro_rules! with_movie_clip {
                     Ok(Value::Undefined)
                 } as crate::avm1::function::NativeFunction<'gc>,
                 $gc_context,
-                DontDelete | ReadOnly | DontEnum,
+                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
                 $fn_proto
             );
         )*
@@ -63,7 +63,7 @@ macro_rules! with_movie_clip_props {
                 $name,
                 with_movie_clip_props!(getter $gc, $fn_proto, $get),
                 with_movie_clip_props!(setter $gc, $fn_proto, $($set),*),
-                DontDelete | DontEnum,
+                Attribute::DONT_DELETE | Attribute::DONT_ENUM,
             );
         )*
     };
@@ -209,7 +209,7 @@ pub fn create_proto<'gc>(
         "removeMovieClip",
         remove_movie_clip,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

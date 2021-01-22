@@ -46,35 +46,35 @@ pub fn create_array_object<'gc>(
         gc_context,
         "CASEINSENSITIVE",
         1.into(),
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "DESCENDING",
         2.into(),
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "UNIQUESORT",
         4.into(),
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "RETURNINDEXEDARRAY",
         8.into(),
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "NUMERIC",
         16.into(),
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     array
@@ -663,78 +663,78 @@ pub fn create_proto<'gc>(
         "push",
         push,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "unshift",
         unshift,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "shift",
         shift,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
-    object.force_set_function("pop", pop, gc_context, Attribute::DontEnum, Some(fn_proto));
+    object.force_set_function("pop", pop, gc_context, Attribute::DONT_ENUM, Some(fn_proto));
     object.force_set_function(
         "reverse",
         reverse,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "join",
         join,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "slice",
         slice,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "splice",
         splice,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "concat",
         concat,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "toString",
         to_string,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "sort",
         sort,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "sortOn",
         sort_on,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

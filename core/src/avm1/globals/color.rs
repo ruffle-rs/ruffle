@@ -5,10 +5,9 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
@@ -23,8 +22,8 @@ pub fn constructor<'gc>(
     this.set_attributes(
         activation.context.gc_context,
         Some("target"),
-        DontDelete | ReadOnly | DontEnum,
-        EnumSet::empty(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+        Attribute::empty(),
     );
 
     Ok(this.into())
@@ -41,7 +40,7 @@ pub fn create_proto<'gc>(
         "getRGB",
         get_rgb,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -49,7 +48,7 @@ pub fn create_proto<'gc>(
         "getTransform",
         get_transform,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -57,7 +56,7 @@ pub fn create_proto<'gc>(
         "setRGB",
         set_rgb,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -65,7 +64,7 @@ pub fn create_proto<'gc>(
         "setTransform",
         set_transform,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

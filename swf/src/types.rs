@@ -4,7 +4,7 @@
 //! version 19 (henceforth SWF19):
 //! https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf
 use crate::string::SwfStr;
-use enumset::{EnumSet, EnumSetType};
+use bitflags::bitflags;
 use std::collections::HashSet;
 
 mod matrix;
@@ -418,39 +418,40 @@ pub enum BlendMode {
 /// An clip action (a.k.a. clip event) placed on a movieclip instance.
 /// Created in the Flash IDE using `onClipEvent` or `on` blocks.
 ///
-/// [SWF19 pp.37-38 ClipActionRecord](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=37)
+/// [SWF19 pp.37-38 ClipActionRecord](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=39)
 #[derive(Debug, Clone, PartialEq)]
 pub struct ClipAction<'a> {
-    pub events: EnumSet<ClipEventFlag>,
+    pub events: ClipEventFlag,
     pub key_code: Option<KeyCode>,
     pub action_data: &'a [u8],
 }
 
-/// An event that can be attached to a movieclip instance using
-/// an `onClipEvent` or `on` block.
-///
-/// [SWF19 pp.48-50 ClipEvent](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=38)
-#[derive(Debug, EnumSetType)]
-pub enum ClipEventFlag {
-    Construct,
-    Data,
-    DragOut,
-    DragOver,
-    EnterFrame,
-    Initialize,
-    KeyUp,
-    KeyDown,
-    KeyPress,
-    Load,
-    MouseUp,
-    MouseDown,
-    MouseMove,
-    Press,
-    RollOut,
-    RollOver,
-    Release,
-    ReleaseOutside,
-    Unload,
+bitflags! {
+    /// An event that can be attached to a movieclip instance using
+    /// an `onClipEvent` or `on` block.
+    ///
+    /// [SWF19 pp.48-50 ClipEvent](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=50)
+    pub struct ClipEventFlag: u32 {
+        const CONSTRUCT       = 1 << 0;
+        const DATA            = 1 << 1;
+        const DRAG_OUT        = 1 << 2;
+        const DRAG_OVER       = 1 << 3;
+        const ENTER_FRAME     = 1 << 4;
+        const INITIALIZE      = 1 << 5;
+        const KEY_UP          = 1 << 6;
+        const KEY_DOWN        = 1 << 7;
+        const KEY_PRESS       = 1 << 8;
+        const LOAD            = 1 << 9;
+        const MOUSE_UP        = 1 << 10;
+        const MOUSE_DOWN      = 1 << 11;
+        const MOUSE_MOVE      = 1 << 12;
+        const PRESS           = 1 << 13;
+        const ROLL_OUT        = 1 << 14;
+        const ROLL_OVER       = 1 << 15;
+        const RELEASE         = 1 << 16;
+        const RELEASE_OUTSIDE = 1 << 17;
+        const UNLOAD          = 1 << 18;
+    }
 }
 
 /// A key code used in `ButtonAction` and `ClipAction` key press events.

@@ -9,7 +9,7 @@ use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
-use enumset::{EnumSet, EnumSetType};
+use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
@@ -68,7 +68,7 @@ pub struct DisplayObjectBase<'gc> {
     next_sibling: Option<DisplayObject<'gc>>,
 
     /// Bit flags for various display object properites.
-    flags: EnumSet<DisplayObjectFlags>,
+    flags: DisplayObjectFlags,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -86,7 +86,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             skew: 0.0,
             prev_sibling: None,
             next_sibling: None,
-            flags: DisplayObjectFlags::Visible.into(),
+            flags: DisplayObjectFlags::VISIBLE,
         }
     }
 }
@@ -104,28 +104,30 @@ unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
 impl<'gc> DisplayObjectBase<'gc> {
     /// Reset all properties that would be adjusted by a movie load.
     fn reset_for_movie_load(&mut self) {
-        let flags_to_keep = self
-            .flags
-            .intersection(EnumSet::from(DisplayObjectFlags::LockRoot));
-        self.flags = DisplayObjectFlags::Visible.into();
-        self.flags.insert_all(flags_to_keep);
+        let flags_to_keep = self.flags & DisplayObjectFlags::LOCK_ROOT;
+        self.flags = flags_to_keep | DisplayObjectFlags::VISIBLE;
     }
 
     fn id(&self) -> CharacterId {
         0
     }
+
     fn depth(&self) -> Depth {
         self.depth
     }
+
     fn set_depth(&mut self, depth: Depth) {
         self.depth = depth;
     }
+
     fn place_frame(&self) -> u16 {
         self.place_frame
     }
+
     fn set_place_frame(&mut self, _context: MutationContext<'gc, '_>, frame: u16) {
         self.place_frame = frame;
     }
+
     fn transform(&self) -> &Transform {
         &self.transform
     }
@@ -133,19 +135,24 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn matrix(&self) -> &Matrix {
         &self.transform.matrix
     }
+
     fn matrix_mut(&mut self, _context: MutationContext<'gc, '_>) -> &mut Matrix {
         &mut self.transform.matrix
     }
+
     fn set_matrix(&mut self, _context: MutationContext<'gc, '_>, matrix: &Matrix) {
         self.transform.matrix = *matrix;
-        self.flags.remove(DisplayObjectFlags::ScaleRotationCached);
+        self.flags -= DisplayObjectFlags::SCALE_ROTATION_CACHED;
     }
+
     fn color_transform(&self) -> &ColorTransform {
         &self.transform.color_transform
     }
+
     fn color_transform_mut(&mut self) -> &mut ColorTransform {
         &mut self.transform.color_transform
     }
+
     fn set_color_transform(
         &mut self,
         _context: MutationContext<'gc, '_>,
@@ -153,16 +160,20 @@ impl<'gc> DisplayObjectBase<'gc> {
     ) {
         self.transform.color_transform = *color_transform;
     }
+
     fn x(&self) -> f64 {
         self.transform.matrix.tx.to_pixels()
     }
+
     fn set_x(&mut self, value: f64) {
         self.set_transformed_by_script(true);
         self.transform.matrix.tx = Twips::from_pixels(value)
     }
+
     fn y(&self) -> f64 {
         self.transform.matrix.ty.to_pixels()
     }
+
     fn set_y(&mut self, value: f64) {
         self.set_transformed_by_script(true);
         self.transform.matrix.ty = Twips::from_pixels(value)
@@ -172,7 +183,10 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// Calculating these requires heavy trig ops, so we only do it when `_xscale`, `_yscale` or
     /// `_rotation` is accessed.
     fn cache_scale_rotation(&mut self) {
-        if !self.flags.contains(DisplayObjectFlags::ScaleRotationCached) {
+        if !self
+            .flags
+            .contains(DisplayObjectFlags::SCALE_ROTATION_CACHED)
+        {
             let (a, b, c, d) = (
                 f64::from(self.transform.matrix.a),
                 f64::from(self.transform.matrix.b),
@@ -201,7 +215,7 @@ impl<'gc> DisplayObjectBase<'gc> {
             self.scale_x = Percent::from_unit(scale_x);
             self.scale_y = Percent::from_unit(scale_y);
             self.skew = rotation_y - rotation_x;
-            self.flags.insert(DisplayObjectFlags::ScaleRotationCached);
+            self.flags |= DisplayObjectFlags::SCALE_ROTATION_CACHED;
         }
     }
 
@@ -224,6 +238,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.cache_scale_rotation();
         self.rotation
     }
+
     fn set_rotation(&mut self, degrees: Degrees) {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
@@ -238,10 +253,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         matrix.c = (self.scale_y.into_unit() * -sin_y) as f32;
         matrix.d = (self.scale_y.into_unit() * cos_y) as f32;
     }
+
     fn scale_x(&mut self) -> Percent {
         self.cache_scale_rotation();
         self.scale_x
     }
+
     fn set_scale_x(&mut self, value: Percent) {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
@@ -252,10 +269,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         matrix.a = (cos * value.into_unit()) as f32;
         matrix.b = (sin * value.into_unit()) as f32;
     }
+
     fn scale_y(&mut self) -> Percent {
         self.cache_scale_rotation();
         self.scale_y
     }
+
     fn set_scale_y(&mut self, value: Percent) {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
@@ -270,25 +289,32 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn name(&self) -> &str {
         &self.name
     }
+
     fn set_name(&mut self, _context: MutationContext<'gc, '_>, name: &str) {
         self.name = name.to_string();
     }
+
     fn alpha(&self) -> f64 {
         f64::from(self.color_transform().a_mult)
     }
+
     fn set_alpha(&mut self, value: f64) {
         self.set_transformed_by_script(true);
         self.color_transform_mut().a_mult = value as f32
     }
+
     fn clip_depth(&self) -> Depth {
         self.clip_depth
     }
+
     fn set_clip_depth(&mut self, _context: MutationContext<'gc, '_>, depth: Depth) {
         self.clip_depth = depth;
     }
+
     fn parent(&self) -> Option<DisplayObject<'gc>> {
         self.parent
     }
+
     fn set_parent(
         &mut self,
         _context: MutationContext<'gc, '_>,
@@ -296,9 +322,11 @@ impl<'gc> DisplayObjectBase<'gc> {
     ) {
         self.parent = parent;
     }
+
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
         self.prev_sibling
     }
+
     fn set_prev_sibling(
         &mut self,
         _context: MutationContext<'gc, '_>,
@@ -306,9 +334,11 @@ impl<'gc> DisplayObjectBase<'gc> {
     ) {
         self.prev_sibling = node;
     }
+
     fn next_sibling(&self) -> Option<DisplayObject<'gc>> {
         self.next_sibling
     }
+
     fn set_next_sibling(
         &mut self,
         _context: MutationContext<'gc, '_>,
@@ -316,77 +346,78 @@ impl<'gc> DisplayObjectBase<'gc> {
     ) {
         self.next_sibling = node;
     }
+
     fn removed(&self) -> bool {
-        self.flags.contains(DisplayObjectFlags::Removed)
+        self.flags.contains(DisplayObjectFlags::REMOVED)
     }
+
     fn set_removed(&mut self, value: bool) {
         if value {
-            self.flags.insert(DisplayObjectFlags::Removed);
+            self.flags |= DisplayObjectFlags::REMOVED;
         } else {
-            self.flags.remove(DisplayObjectFlags::Removed);
+            self.flags -= DisplayObjectFlags::REMOVED;
         }
     }
 
     fn visible(&self) -> bool {
-        self.flags.contains(DisplayObjectFlags::Visible)
+        self.flags.contains(DisplayObjectFlags::VISIBLE)
     }
 
     fn set_visible(&mut self, value: bool) {
         if value {
-            self.flags.insert(DisplayObjectFlags::Visible);
+            self.flags |= DisplayObjectFlags::VISIBLE;
         } else {
-            self.flags.remove(DisplayObjectFlags::Visible);
+            self.flags -= DisplayObjectFlags::VISIBLE;
         }
     }
 
     fn lock_root(&self) -> bool {
-        self.flags.contains(DisplayObjectFlags::LockRoot)
+        self.flags.contains(DisplayObjectFlags::LOCK_ROOT)
     }
 
     fn set_lock_root(&mut self, value: bool) {
         if value {
-            self.flags.insert(DisplayObjectFlags::LockRoot);
+            self.flags |= DisplayObjectFlags::LOCK_ROOT;
         } else {
-            self.flags.remove(DisplayObjectFlags::LockRoot);
+            self.flags -= DisplayObjectFlags::LOCK_ROOT;
         }
     }
 
     fn transformed_by_script(&self) -> bool {
-        self.flags.contains(DisplayObjectFlags::TransformedByScript)
+        self.flags
+            .contains(DisplayObjectFlags::TRANSFORMED_BY_SCRIPT)
     }
 
     fn set_transformed_by_script(&mut self, value: bool) {
         if value {
-            self.flags.insert(DisplayObjectFlags::TransformedByScript);
+            self.flags |= DisplayObjectFlags::TRANSFORMED_BY_SCRIPT;
         } else {
-            self.flags.remove(DisplayObjectFlags::TransformedByScript);
+            self.flags -= DisplayObjectFlags::TRANSFORMED_BY_SCRIPT;
         }
     }
 
     fn placed_by_script(&self) -> bool {
-        self.flags.contains(DisplayObjectFlags::PlacedByScript)
+        self.flags.contains(DisplayObjectFlags::PLACED_BY_SCRIPT)
     }
 
     fn set_placed_by_script(&mut self, value: bool) {
         if value {
-            self.flags.insert(DisplayObjectFlags::PlacedByScript);
+            self.flags |= DisplayObjectFlags::PLACED_BY_SCRIPT;
         } else {
-            self.flags.remove(DisplayObjectFlags::PlacedByScript);
+            self.flags -= DisplayObjectFlags::PLACED_BY_SCRIPT;
         }
     }
 
     fn instantiated_by_timeline(&self) -> bool {
         self.flags
-            .contains(DisplayObjectFlags::InstantiatedByTimeline)
+            .contains(DisplayObjectFlags::INSTANTIATED_BY_TIMELINE)
     }
 
     fn set_instantiated_by_timeline(&mut self, value: bool) {
         if value {
-            self.flags
-                .insert(DisplayObjectFlags::InstantiatedByTimeline);
+            self.flags |= DisplayObjectFlags::INSTANTIATED_BY_TIMELINE;
         } else {
-            self.flags
-                .remove(DisplayObjectFlags::InstantiatedByTimeline);
+            self.flags -= DisplayObjectFlags::INSTANTIATED_BY_TIMELINE;
         }
     }
 
@@ -1268,33 +1299,35 @@ impl<'gc> DisplayObject<'gc> {
     }
 }
 
-/// Bit flags used by `DisplayObject`.
-#[derive(Collect, EnumSetType, Debug)]
-#[collect(no_drop)]
-enum DisplayObjectFlags {
-    /// Whether this object has been removed from the display list.
-    /// Necessary in AVM1 to throw away queued actions from removed movie clips.
-    Removed,
+bitflags! {
+    /// Bit flags used by `DisplayObject`.
+    #[derive(Collect)]
+    #[collect(no_drop)]
+    struct DisplayObjectFlags: u8 {
+        /// Whether this object has been removed from the display list.
+        /// Necessary in AVM1 to throw away queued actions from removed movie clips.
+        const REMOVED                  = 1 << 0;
 
-    /// If this object is visible (`_visible` property).
-    Visible,
+        /// If this object is visible (`_visible` property).
+        const VISIBLE                  = 1 << 1;
 
-    /// Whether the `_xscale`, `_yscale` and `_rotation` of the object have been calculated and cached.
-    ScaleRotationCached,
+        /// Whether the `_xscale`, `_yscale` and `_rotation` of the object have been calculated and cached.
+        const SCALE_ROTATION_CACHED    = 1 << 2;
 
-    /// Whether this object has been transformed by ActionScript.
-    /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
-    TransformedByScript,
+        /// Whether this object has been transformed by ActionScript.
+        /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
+        const TRANSFORMED_BY_SCRIPT    = 1 << 3;
 
-    /// Whether this object has been placed in a container by ActionScript 3.
-    /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
-    PlacedByScript,
+        /// Whether this object has been placed in a container by ActionScript 3.
+        /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
+        const PLACED_BY_SCRIPT         = 1 << 4;
 
-    /// Whether this object has been instantiated by a SWF tag.
-    /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
-    InstantiatedByTimeline,
+        /// Whether this object has been instantiated by a SWF tag.
+        /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
+        const INSTANTIATED_BY_TIMELINE = 1 << 5;
 
-    /// Whether this object has `_lockroot` set to true, in which case
-    /// it becomes the _root of itself and of any children
-    LockRoot,
+        /// Whether this object has `_lockroot` set to true, in which case
+        /// it becomes the _root of itself and of any children
+        const LOCK_ROOT                = 1 << 6;
+    }
 }

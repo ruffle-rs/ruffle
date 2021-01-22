@@ -5,7 +5,7 @@ use crate::display_object::button::Button;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject};
 use crate::string_utils::swf_string_eq_ignore_case;
-use enumset::{EnumSet, EnumSetType};
+use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cmp::Ordering;
@@ -13,24 +13,25 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::ops::RangeBounds;
 
-/// The three lists that a display object container is supposed to maintain.
-#[derive(EnumSetType)]
-pub enum Lists {
-    /// The list that determines the order in which children are rendered.
-    ///
-    /// This is directly manipulated by AVM2 code.
-    Render,
+bitflags! {
+    /// The three lists that a display object container is supposed to maintain.
+    pub struct Lists: u8 {
+        /// The list that determines the order in which children are rendered.
+        ///
+        /// This is directly manipulated by AVM2 code.
+        const RENDER    = 1 << 0;
 
-    /// The list that determines the identity of children according to the
-    /// timeline and AVM1 code.
-    ///
-    /// Manipulations of the depth list are generally propagated to the render
-    /// list, except in cases where children have been reordered by AVM2.
-    Depth,
+        /// The list that determines the identity of children according to the
+        /// timeline and AVM1 code.
+        ///
+        /// Manipulations of the depth list are generally propagated to the render
+        /// list, except in cases where children have been reordered by AVM2.
+        const DEPTH     = 1 << 1;
 
-    /// The list that determines the order in which childrens' actions are
-    /// executed.
-    Execution,
+        /// The list that determines the order in which childrens' actions are
+        /// executed.
+        const EXECUTION = 1 << 2;
+    }
 }
 
 #[enum_trait_object(
@@ -149,7 +150,7 @@ pub trait TDisplayObjectContainer<'gc>:
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
-        from_lists: EnumSet<Lists>,
+        from_lists: Lists,
     ) -> bool;
 
     /// Remove a set of children identified by their render list indicies from
@@ -365,7 +366,7 @@ macro_rules! impl_display_object_container {
             if let Some(old_parent) = child.parent() {
                 if !DisplayObject::ptr_eq(old_parent, (*self).into()) {
                     if let Some(mut old_parent) = old_parent.as_container() {
-                        old_parent.remove_child(context, child, EnumSet::all());
+                        old_parent.remove_child(context, child, Lists::all());
                     }
                 }
             }
@@ -395,7 +396,7 @@ macro_rules! impl_display_object_container {
             &mut self,
             context: &mut UpdateContext<'_, 'gc, '_>,
             child: DisplayObject<'gc>,
-            from_lists: EnumSet<Lists>,
+            from_lists: Lists,
         ) -> bool {
             debug_assert!(DisplayObject::ptr_eq(
                 child.parent().unwrap(),
@@ -404,11 +405,11 @@ macro_rules! impl_display_object_container {
 
             let mut write = self.0.write(context.gc_context);
 
-            let removed_from_depth_list = from_lists.contains(Lists::Depth)
+            let removed_from_depth_list = from_lists.contains(Lists::DEPTH)
                 && write.$field.remove_child_from_depth_list(child);
-            let removed_from_render_list = from_lists.contains(Lists::Render)
+            let removed_from_render_list = from_lists.contains(Lists::RENDER)
                 && write.$field.remove_child_from_render_list(child);
-            let removed_from_execution_list = from_lists.contains(Lists::Execution)
+            let removed_from_execution_list = from_lists.contains(Lists::EXECUTION)
                 && write.$field.remove_child_from_exec_list(context, child);
 
             drop(write);

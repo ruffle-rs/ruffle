@@ -11,7 +11,6 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
 use crate::property_map::PropertyMap;
 use crate::types::Percent;
-use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
@@ -268,7 +267,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.0
             .read()
@@ -280,8 +279,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: Option<&str>,
-        set_attributes: EnumSet<Attribute>,
-        clear_attributes: EnumSet<Attribute>,
+        set_attributes: Attribute,
+        clear_attributes: Attribute,
     ) {
         self.0.write(gc_context).base.set_attributes(
             gc_context,
@@ -297,7 +296,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.0
             .read()
@@ -312,7 +311,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.0
             .read()

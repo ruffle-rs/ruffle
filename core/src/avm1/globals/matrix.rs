@@ -4,8 +4,8 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::point::{point_to_object, value_to_point};
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 use swf::{Matrix, Twips};
 
@@ -427,7 +427,7 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -435,19 +435,31 @@ pub fn create_proto<'gc>(
         "identity",
         identity,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
-    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "clone",
+        clone,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
-    object.force_set_function("scale", scale, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "scale",
+        scale,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
     object.force_set_function(
         "rotate",
         rotate,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -455,7 +467,7 @@ pub fn create_proto<'gc>(
         "translate",
         translate,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -463,7 +475,7 @@ pub fn create_proto<'gc>(
         "concat",
         concat,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -471,7 +483,7 @@ pub fn create_proto<'gc>(
         "invert",
         invert,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -479,7 +491,7 @@ pub fn create_proto<'gc>(
         "createBox",
         create_box,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -487,7 +499,7 @@ pub fn create_proto<'gc>(
         "createGradientBox",
         create_gradient_box,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -495,7 +507,7 @@ pub fn create_proto<'gc>(
         "transformPoint",
         transform_point,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -503,7 +515,7 @@ pub fn create_proto<'gc>(
         "deltaTransformPoint",
         delta_transform_point,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
