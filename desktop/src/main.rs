@@ -3,6 +3,7 @@ mod custom_event;
 mod executor;
 mod input;
 mod locale;
+mod log_adapter;
 mod navigator;
 mod storage;
 mod task;
@@ -13,8 +14,12 @@ use crate::executor::GlutinAsyncExecutor;
 use clap::Clap;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use ruffle_core::{
-    backend::audio::{AudioBackend, NullAudioBackend},
+    backend::{
+        audio::{AudioBackend, NullAudioBackend},
+        log::{LogBackend, NullLogBackend},
+    },
     config::Letterbox,
+    tag_utils::SwfMovie,
     Player,
 };
 use ruffle_render_wgpu::WgpuRenderBackend;
@@ -24,9 +29,8 @@ use std::time::Instant;
 use tinyfiledialogs::open_file_dialog;
 use url::Url;
 
+use crate::log_adapter::StdoutLogBackend;
 use crate::storage::DiskStorageBackend;
-use ruffle_core::backend::log::NullLogBackend;
-use ruffle_core::tag_utils::SwfMovie;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::io::Read;
 use std::rc::Rc;
@@ -79,11 +83,14 @@ struct Opt {
     proxy: Option<Url>,
 
     /// (Optional) Replace all embedded http URLs with https
-    #[clap(long, case_insensitive = true, takes_value = false)]
+    #[clap(long, case_insensitive = true)]
     upgrade_to_https: bool,
 
-    #[clap(long, case_insensitive = true, takes_value = false)]
+    #[clap(long, case_insensitive = true)]
     timedemo: bool,
+
+    #[clap(short, long, case_insensitive = true)]
+    trace: bool,
 }
 
 #[cfg(feature = "render_trace")]
@@ -225,18 +232,14 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let storage = Box::new(DiskStorageBackend::new());
-    let user_interface = Box::new(ui::DesktopUiBackend::new(window.clone()));
+    let log: Box<dyn LogBackend> = if opt.trace {
+        Box::new(StdoutLogBackend::new())
+    } else {
+        Box::new(NullLogBackend::new())
+    };
+    let ui = Box::new(ui::DesktopUiBackend::new(window.clone()));
     let locale = Box::new(locale::DesktopLocaleBackend::new());
-    let player = Player::new(
-        renderer,
-        audio,
-        navigator,
-        input,
-        storage,
-        locale,
-        Box::new(NullLogBackend::new()),
-        user_interface,
-    )?;
+    let player = Player::new(renderer, audio, navigator, input, storage, locale, log, ui)?;
     {
         let mut player = player.lock().unwrap();
         player.set_root_movie(Arc::new(movie));
