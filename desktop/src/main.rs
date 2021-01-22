@@ -78,19 +78,20 @@ struct Opt {
     #[cfg(feature = "render_trace")]
     trace_path: Option<PathBuf>,
 
-    /// (Optional) Proxy to use when loading movies via URL
+    /// (Optional) Proxy to use when loading movies via URL.
     #[clap(long, case_insensitive = true)]
     proxy: Option<Url>,
 
-    /// (Optional) Replace all embedded http URLs with https
+    /// (Optional) Replace all embedded http URLs with https.
     #[clap(long, case_insensitive = true)]
     upgrade_to_https: bool,
 
     #[clap(long, case_insensitive = true)]
     timedemo: bool,
 
+    /// (Optional) Print AVM traces to stdout.
     #[clap(short, long, case_insensitive = true)]
-    trace: bool,
+    trace_avm: bool,
 }
 
 #[cfg(feature = "render_trace")]
@@ -232,7 +233,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     )); //TODO: actually implement this backend type
     let input = Box::new(input::WinitInputBackend::new(window.clone()));
     let storage = Box::new(DiskStorageBackend::new());
-    let log: Box<dyn LogBackend> = if opt.trace {
+    let log: Box<dyn LogBackend> = if opt.trace_avm {
         Box::new(StdoutLogBackend::new())
     } else {
         Box::new(NullLogBackend::new())
