@@ -943,11 +943,11 @@ impl Player {
             // want to run frames on
             let levels: Vec<_> = update_context.levels.values().copied().collect();
 
-            for level in levels.iter() {
+            if let Some(level) = levels.first() {
                 level.exit_frame(update_context);
             }
 
-            for level in levels.iter() {
+            if let Some(level) = levels.first() {
                 level.enter_frame(update_context);
             }
 
@@ -955,7 +955,7 @@ impl Player {
                 level.run_frame(update_context);
             }
 
-            for level in levels.iter() {
+            if let Some(level) = levels.first() {
                 level.frame_constructed(update_context);
             }
 
