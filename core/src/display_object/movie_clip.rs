@@ -414,8 +414,6 @@ impl<'gc> MovieClip<'gc> {
         // TODO: Init actions are supposed to be executed once, and it gives a
         // sprite ID... how does that work?
         let sprite_id = reader.read_u16()?;
-        log::info!("Init Action sprite ID {}", sprite_id);
-
         let slice = self
             .0
             .read()

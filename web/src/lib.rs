@@ -220,7 +220,6 @@ impl Ruffle {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
             instance.borrow().core.lock().unwrap().set_is_playing(true);
-            log::info!("PLAY!");
         });
     }
 
@@ -230,7 +229,6 @@ impl Ruffle {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
             instance.borrow().core.lock().unwrap().set_is_playing(false);
-            log::info!("PAUSE!");
         });
     }
 
