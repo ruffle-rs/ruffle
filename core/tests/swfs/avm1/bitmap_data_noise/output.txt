@@ -285,7 +285,7 @@ ff:b3:b3:b3
 ff:90:90:90
 // bitmap.getPixel32(2, 2)
 ff:87:87:87
-// noise(0)
+// noise(2) (3x3)
 // bitmap.getPixel32(0, 0)
 ff:4e:e2:b3
 // bitmap.getPixel32(0, 1)
@@ -304,7 +304,7 @@ ff:b0:fd:87
 ff:8f:2f:22
 // bitmap.getPixel32(2, 2)
 ff:b1:eb:d6
-// noise(0)
+// noise(2) (6x6)
 // bitmap.getPixel32(0, 0)
 ff:4e:e2:b3
 // bitmap.getPixel32(0, 1)
@@ -377,3 +377,255 @@ ff:2a:15:ca
 ff:c9:b7:f5
 // bitmap.getPixel32(5, 5)
 ff:3d:33:fa
+// noise(0) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:a7:f1:d9
+// bitmap.getPixel32(0, 1)
+ff:d8:fe:43
+// bitmap.getPixel32(1, 0)
+ff:2a:82:c8
+// bitmap.getPixel32(1, 1)
+ff:4d:98:55
+// noise(1) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:a7:f1:d9
+// bitmap.getPixel32(0, 1)
+ff:d8:fe:43
+// bitmap.getPixel32(1, 0)
+ff:2a:82:c8
+// bitmap.getPixel32(1, 1)
+ff:4d:98:55
+// noise(2) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:4e:e2:b3
+// bitmap.getPixel32(0, 1)
+ff:b0:fd:87
+// bitmap.getPixel32(1, 0)
+ff:54:5:90
+// bitmap.getPixel32(1, 1)
+ff:9b:30:ab
+// noise(3) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:f5:d3:8d
+// bitmap.getPixel32(0, 1)
+ff:88:fc:cb
+// bitmap.getPixel32(1, 0)
+ff:7f:87:58
+// bitmap.getPixel32(1, 1)
+ff:e9:c9:0
+// noise(4) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:9c:c4:67
+// bitmap.getPixel32(0, 1)
+ff:60:fa:e
+// bitmap.getPixel32(1, 0)
+ff:a9:a:20
+// bitmap.getPixel32(1, 1)
+ff:37:61:56
+// noise(5) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:43:b5:40
+// bitmap.getPixel32(0, 1)
+ff:38:f9:52
+// bitmap.getPixel32(1, 0)
+ff:d4:8c:e9
+// bitmap.getPixel32(1, 1)
+ff:85:f9:ab
+// noise(6) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:ea:a6:1a
+// bitmap.getPixel32(0, 1)
+ff:10:f8:96
+// bitmap.getPixel32(1, 0)
+ff:fe:f:b1
+// bitmap.getPixel32(1, 1)
+ff:d3:92:1
+// noise(7) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:91:97:f4
+// bitmap.getPixel32(0, 1)
+ff:e8:f6:d9
+// bitmap.getPixel32(1, 0)
+ff:29:91:79
+// bitmap.getPixel32(1, 1)
+ff:21:2a:56
+// noise(8) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:38:89:ce
+// bitmap.getPixel32(0, 1)
+ff:c0:f5:1d
+// bitmap.getPixel32(1, 0)
+ff:53:14:41
+// bitmap.getPixel32(1, 1)
+ff:6f:c3:ac
+// noise(9) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:df:7a:a7
+// bitmap.getPixel32(0, 1)
+ff:98:f4:61
+// bitmap.getPixel32(1, 0)
+ff:7e:96:9
+// bitmap.getPixel32(1, 1)
+ff:bd:5b:1
+// noise(10) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:86:6b:81
+// bitmap.getPixel32(0, 1)
+ff:70:f2:a4
+// bitmap.getPixel32(1, 0)
+ff:a8:19:d2
+// bitmap.getPixel32(1, 1)
+ff:b:f3:57
+// noise(11) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:2d:5c:5b
+// bitmap.getPixel32(0, 1)
+ff:48:f1:e8
+// bitmap.getPixel32(1, 0)
+ff:d3:9b:9a
+// bitmap.getPixel32(1, 1)
+ff:59:8c:ac
+// noise(12) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:d4:4d:35
+// bitmap.getPixel32(0, 1)
+ff:20:f0:2c
+// bitmap.getPixel32(1, 0)
+ff:fd:1e:62
+// bitmap.getPixel32(1, 1)
+ff:a7:24:2
+// noise(13) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:7b:3e:e
+// bitmap.getPixel32(0, 1)
+ff:f8:ee:6f
+// bitmap.getPixel32(1, 0)
+ff:27:a0:2a
+// bitmap.getPixel32(1, 1)
+ff:f5:bc:57
+// noise(14) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:22:2f:e8
+// bitmap.getPixel32(0, 1)
+ff:d0:ed:b3
+// bitmap.getPixel32(1, 0)
+ff:52:23:f3
+// bitmap.getPixel32(1, 1)
+ff:43:55:ad
+// noise(15) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:c9:20:c2
+// bitmap.getPixel32(0, 1)
+ff:a8:ec:f7
+// bitmap.getPixel32(1, 0)
+ff:7c:a5:bb
+// bitmap.getPixel32(1, 1)
+ff:91:ed:2
+// noise(16) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:70:12:9c
+// bitmap.getPixel32(0, 1)
+ff:80:ea:3a
+// bitmap.getPixel32(1, 0)
+ff:a7:28:83
+// bitmap.getPixel32(1, 1)
+ff:de:86:58
+// noise(17) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:17:3:75
+// bitmap.getPixel32(0, 1)
+ff:58:e9:7e
+// bitmap.getPixel32(1, 0)
+ff:d1:ab:4b
+// bitmap.getPixel32(1, 1)
+ff:2c:1e:ad
+// noise(18) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:be:f4:4f
+// bitmap.getPixel32(0, 1)
+ff:30:e8:c2
+// bitmap.getPixel32(1, 0)
+ff:fc:2d:13
+// bitmap.getPixel32(1, 1)
+ff:7a:b6:3
+// noise(19) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:65:e5:29
+// bitmap.getPixel32(0, 1)
+ff:8:e6:5
+// bitmap.getPixel32(1, 0)
+ff:26:b0:dc
+// bitmap.getPixel32(1, 1)
+ff:c8:4f:58
+// noise(1, 10, 11) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:b:b:b
+// bitmap.getPixel32(0, 1)
+ff:a:a:b
+// bitmap.getPixel32(1, 0)
+ff:a:a:a
+// bitmap.getPixel32(1, 1)
+ff:b:a:b
+// noise(1, 10, 2) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:a:a:a
+// bitmap.getPixel32(0, 1)
+ff:a:a:a
+// bitmap.getPixel32(1, 0)
+ff:a:a:a
+// bitmap.getPixel32(1, 1)
+ff:a:a:a
+// noise(1, 0, 255, 1) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:a7:0:0
+// bitmap.getPixel32(0, 1)
+ff:d9:0:0
+// bitmap.getPixel32(1, 0)
+ff:f1:0:0
+// bitmap.getPixel32(1, 1)
+ff:2a:0:0
+// noise(1, 0, 255, 1 | 2) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:a7:f1:0
+// bitmap.getPixel32(0, 1)
+ff:82:c8:0
+// bitmap.getPixel32(1, 0)
+ff:d9:2a:0
+// bitmap.getPixel32(1, 1)
+ff:d8:fe:0
+// noise(1, 0, 255, 1 | 2 | 4) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:a7:f1:d9
+// bitmap.getPixel32(0, 1)
+ff:d8:fe:43
+// bitmap.getPixel32(1, 0)
+ff:2a:82:c8
+// bitmap.getPixel32(1, 1)
+ff:4d:98:55
+// noise(1, 0, 255, 1, true) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:a7:a7:a7
+// bitmap.getPixel32(0, 1)
+ff:d9:d9:d9
+// bitmap.getPixel32(1, 0)
+ff:f1:f1:f1
+// bitmap.getPixel32(1, 1)
+ff:2a:2a:2a
+// noise(1, 0, 255, 1 | 2, true) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:a7:a7:a7
+// bitmap.getPixel32(0, 1)
+ff:d9:d9:d9
+// bitmap.getPixel32(1, 0)
+ff:f1:f1:f1
+// bitmap.getPixel32(1, 1)
+ff:2a:2a:2a
+// noise(1, 0, 255, 1 | 2 | 4, true) (2x2)
+// bitmap.getPixel32(0, 0)
+ff:a7:a7:a7
+// bitmap.getPixel32(0, 1)
+ff:d9:d9:d9
+// bitmap.getPixel32(1, 0)
+ff:f1:f1:f1
+// bitmap.getPixel32(1, 1)
+ff:2a:2a:2a
