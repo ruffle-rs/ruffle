@@ -834,6 +834,18 @@ impl AudioBackend for WebAudioBackend {
         })
     }
 
+    fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<u32> {
+        SOUND_INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            if let Some(_instance) = instances.get(instance) {
+                // TODO: Return actual position
+                Some(0)
+            } else {
+                None
+            }
+        })
+    }
+
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32> {
         if let Some(sound) = self.sounds.get(sound) {
             // AS duration does not subtract skip_sample_frames.

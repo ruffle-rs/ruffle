@@ -2014,7 +2014,7 @@ impl<'gc> MovieClipData<'gc> {
     /// Stops the audio stream if one is playing.
     fn stop_audio_stream(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if let Some(audio_stream) = self.audio_stream.take() {
-            context.audio.stop_stream(audio_stream);
+            context.stop_stream(audio_stream);
         }
     }
 
@@ -2854,13 +2854,9 @@ impl<'gc, 'a> MovieClip<'gc> {
                             "Invalid slice generated when constructing sound stream block",
                         )
                     })?;
-                let audio_stream = context.audio.start_stream(
-                    mc.id(),
-                    mc.current_frame() + 1,
-                    slice,
-                    &stream_info,
-                );
-                mc.audio_stream = audio_stream.ok();
+                let audio_stream =
+                    context.start_stream(mc.id(), mc.current_frame() + 1, slice, &stream_info);
+                mc.audio_stream = audio_stream;
             }
         }
 
@@ -2884,18 +2880,28 @@ impl<'gc, 'a> MovieClip<'gc> {
             match start_sound.sound_info.event {
                 // "Event" sounds always play, independent of the timeline.
                 SoundEvent::Event => {
-                    let _ = context.audio.start_sound(handle, &start_sound.sound_info);
+                    let _ = context.start_sound(
+                        handle,
+                        &start_sound.sound_info,
+                        Some(self.into()),
+                        None,
+                    );
                 }
 
                 // "Start" sounds only play if an instance of the same sound is not already playing.
                 SoundEvent::Start => {
-                    if !context.audio.is_sound_playing_with_handle(handle) {
-                        let _ = context.audio.start_sound(handle, &start_sound.sound_info);
+                    if !context.is_sound_playing_with_handle(handle) {
+                        let _ = context.start_sound(
+                            handle,
+                            &start_sound.sound_info,
+                            Some(self.into()),
+                            None,
+                        );
                     }
                 }
 
                 // "Stop" stops any active instances of a given sound.
-                SoundEvent::Stop => context.audio.stop_sounds_with_handle(handle),
+                SoundEvent::Stop => context.stop_sounds_with_handle(handle),
             }
         }
         Ok(())

@@ -2021,7 +2021,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_stop_sounds(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.context.audio.stop_all_sounds();
+        self.context.stop_all_sounds();
         Ok(FrameControl::Continue)
     }
 

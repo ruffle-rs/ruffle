@@ -511,7 +511,7 @@ impl<'gc> ButtonData<'gc> {
                 .library_for_movie_mut(self.movie())
                 .get_sound(*id)
             {
-                let _ = context.audio.start_sound(sound_handle, sound_info);
+                let _ = context.start_sound(sound_handle, sound_info, None, None);
             }
         }
     }
