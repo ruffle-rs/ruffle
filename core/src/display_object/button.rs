@@ -11,6 +11,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
+use swf::ButtonActionCondition;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -42,15 +43,19 @@ impl<'gc> Button<'gc> {
             let action_data = source_movie
                 .to_unbounded_subslice(action.action_data)
                 .unwrap();
-            for condition in &action.conditions {
-                let button_action = ButtonAction {
-                    action_data: action_data.clone(),
-                    condition: *condition,
-                    key_code: action
-                        .key_code
-                        .and_then(|k| ButtonKeyCode::try_from(k).ok()),
-                };
-                actions.push(button_action);
+            let bits = action.conditions.bits();
+            let mut bit = 1u16;
+            while bits & !(bit - 1) != 0 {
+                if bits & bit != 0 {
+                    actions.push(ButtonAction {
+                        action_data: action_data.clone(),
+                        condition: ButtonActionCondition::from_bits_truncate(bit),
+                        key_code: action
+                            .key_code
+                            .and_then(|k| ButtonKeyCode::try_from(k).ok()),
+                    });
+                }
+                bit <<= 1;
             }
         }
 
@@ -406,7 +411,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             ClipEvent::KeyPress { key_code } => {
                 handled = write.run_actions(
                     context,
-                    swf::ButtonActionCondition::KeyPress,
+                    swf::ButtonActionCondition::KEY_PRESS,
                     Some(key_code),
                 );
                 cur_state
@@ -416,22 +421,30 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
 
         match (cur_state, new_state) {
             (ButtonState::Up, ButtonState::Over) => {
-                write.run_actions(context, swf::ButtonActionCondition::IdleToOverUp, None);
+                write.run_actions(context, swf::ButtonActionCondition::IDLE_TO_OVER_UP, None);
                 write.play_sound(context, write.static_data.read().up_to_over_sound.as_ref());
             }
             (ButtonState::Over, ButtonState::Up) => {
-                write.run_actions(context, swf::ButtonActionCondition::OverUpToIdle, None);
+                write.run_actions(context, swf::ButtonActionCondition::OVER_UP_TO_IDLE, None);
                 write.play_sound(context, write.static_data.read().over_to_up_sound.as_ref());
             }
             (ButtonState::Over, ButtonState::Down) => {
-                write.run_actions(context, swf::ButtonActionCondition::OverUpToOverDown, None);
+                write.run_actions(
+                    context,
+                    swf::ButtonActionCondition::OVER_UP_TO_OVER_DOWN,
+                    None,
+                );
                 write.play_sound(
                     context,
                     write.static_data.read().over_to_down_sound.as_ref(),
                 );
             }
             (ButtonState::Down, ButtonState::Over) => {
-                write.run_actions(context, swf::ButtonActionCondition::OverDownToOverUp, None);
+                write.run_actions(
+                    context,
+                    swf::ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
+                    None,
+                );
                 write.play_sound(
                     context,
                     write.static_data.read().down_to_over_sound.as_ref(),
@@ -512,7 +525,7 @@ impl<'gc> ButtonData<'gc> {
         if let Some(parent) = self.base.parent {
             for action in &self.static_data.read().actions {
                 if action.condition == condition
-                    && (action.condition != swf::ButtonActionCondition::KeyPress
+                    && (action.condition != swf::ButtonActionCondition::KEY_PRESS
                         || action.key_code == key_code)
                 {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.

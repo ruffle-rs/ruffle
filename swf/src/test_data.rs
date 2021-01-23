@@ -201,9 +201,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 records: vec![
                     ButtonRecord {
                         id: 1,
-                        states: vec![ButtonState::Up, ButtonState::Over]
-                            .into_iter()
-                            .collect(),
+                        states: ButtonState::UP | ButtonState::OVER,
                         depth: 1,
                         matrix: Matrix::identity(),
                         color_transform: ColorTransform::new(),
@@ -212,9 +210,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     },
                     ButtonRecord {
                         id: 2,
-                        states: vec![ButtonState::Down, ButtonState::HitTest]
-                            .into_iter()
-                            .collect(),
+                        states: ButtonState::DOWN | ButtonState::HIT_TEST,
                         depth: 1,
                         matrix: Matrix::identity(),
                         color_transform: ColorTransform::new(),
@@ -223,9 +219,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     },
                 ],
                 actions: vec![ButtonAction {
-                    conditions: vec![ButtonActionCondition::OverDownToOverUp]
-                        .into_iter()
-                        .collect(),
+                    conditions: ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
                     key_code: None,
                     action_data: &[0],
                 }],
@@ -240,9 +234,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 records: vec![
                     ButtonRecord {
                         id: 2,
-                        states: vec![ButtonState::Up, ButtonState::Over]
-                            .into_iter()
-                            .collect(),
+                        states: ButtonState::UP | ButtonState::OVER,
                         depth: 1,
                         matrix: Matrix::identity(),
                         color_transform: ColorTransform {
@@ -264,9 +256,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     },
                     ButtonRecord {
                         id: 3,
-                        states: vec![ButtonState::Down, ButtonState::HitTest]
-                            .into_iter()
-                            .collect(),
+                        states: ButtonState::DOWN | ButtonState::HIT_TEST,
                         depth: 1,
                         matrix: Matrix::identity(),
                         color_transform: ColorTransform {
@@ -285,14 +275,12 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 ],
                 actions: vec![
                     ButtonAction {
-                        conditions: vec![ButtonActionCondition::OverDownToOverUp]
-                            .into_iter()
-                            .collect(),
+                        conditions: ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
                         key_code: None,
                         action_data: &[150, 3, 0, 0, 65, 0, 38, 0], // trace("A");
                     },
                     ButtonAction {
-                        conditions: vec![ButtonActionCondition::KeyPress].into_iter().collect(),
+                        conditions: ButtonActionCondition::KEY_PRESS,
                         key_code: Some(3),                          // Home
                         action_data: &[150, 3, 0, 0, 66, 0, 38, 0], // trace("B");
                     },

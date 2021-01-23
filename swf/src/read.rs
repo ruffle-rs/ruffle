@@ -13,7 +13,6 @@ use crate::{
 };
 use bitstream_io::BitRead;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::collections::HashSet;
 use std::io::{self, Read};
 
 /// Parse a decompressed SWF and return a `Vec` of tags.
@@ -802,9 +801,7 @@ impl<'a> Reader<'a> {
             is_track_as_menu: false,
             records,
             actions: vec![ButtonAction {
-                conditions: vec![ButtonActionCondition::OverDownToOverUp]
-                    .into_iter()
-                    .collect(),
+                conditions: ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
                 key_code: None,
                 action_data,
             }],
@@ -937,39 +934,9 @@ impl<'a> Reader<'a> {
     fn read_button_action(&mut self) -> Result<(ButtonAction<'a>, bool)> {
         let length = self.read_u16()?;
         let flags = self.read_u16()?;
-        let mut conditions = HashSet::with_capacity(8);
-        if (flags & 0b1) != 0 {
-            conditions.insert(ButtonActionCondition::IdleToOverUp);
-        }
-        if (flags & 0b10) != 0 {
-            conditions.insert(ButtonActionCondition::OverUpToIdle);
-        }
-        if (flags & 0b100) != 0 {
-            conditions.insert(ButtonActionCondition::OverUpToOverDown);
-        }
-        if (flags & 0b1000) != 0 {
-            conditions.insert(ButtonActionCondition::OverDownToOverUp);
-        }
-        if (flags & 0b1_0000) != 0 {
-            conditions.insert(ButtonActionCondition::OverDownToOutDown);
-        }
-        if (flags & 0b10_0000) != 0 {
-            conditions.insert(ButtonActionCondition::OutDownToOverDown);
-        }
-        if (flags & 0b100_0000) != 0 {
-            conditions.insert(ButtonActionCondition::OutDownToIdle);
-        }
-        if (flags & 0b1000_0000) != 0 {
-            conditions.insert(ButtonActionCondition::IdleToOverDown);
-        }
-
-        if (flags & 0b1_0000_0000) != 0 {
-            conditions.insert(ButtonActionCondition::OverDownToIdle);
-        }
+        let mut conditions = ButtonActionCondition::from_bits_truncate(flags);
         let key_code = (flags >> 9) as u8;
-        if key_code != 0 {
-            conditions.insert(ButtonActionCondition::KeyPress);
-        }
+        conditions.set(ButtonActionCondition::KEY_PRESS, key_code != 0);
         let action_data = if length >= 4 {
             self.read_slice(length as usize - 4)?
         } else if length == 0 {

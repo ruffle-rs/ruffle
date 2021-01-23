@@ -5,7 +5,6 @@
 //! https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf
 use crate::string::SwfStr;
 use bitflags::bitflags;
-use std::collections::HashSet;
 
 mod matrix;
 
@@ -851,23 +850,24 @@ pub type ButtonSound = (CharacterId, SoundInfo);
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ButtonAction<'a> {
-    pub conditions: HashSet<ButtonActionCondition>,
+    pub conditions: ButtonActionCondition,
     pub key_code: Option<u8>,
     pub action_data: &'a [u8],
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub enum ButtonActionCondition {
-    IdleToOverDown,
-    OutDownToIdle,
-    OutDownToOverDown,
-    OverDownToOutDown,
-    OverDownToOverUp,
-    OverUpToOverDown,
-    OverUpToIdle,
-    IdleToOverUp,
-    OverDownToIdle,
-    KeyPress,
+bitflags! {
+    pub struct ButtonActionCondition: u16 {
+        const IDLE_TO_OVER_UP       = 1 << 0;
+        const OVER_UP_TO_IDLE       = 1 << 1;
+        const OVER_UP_TO_OVER_DOWN  = 1 << 2;
+        const OVER_DOWN_TO_OVER_UP  = 1 << 3;
+        const OVER_DOWN_TO_OUT_DOWN = 1 << 4;
+        const OUT_DOWN_TO_OVER_DOWN = 1 << 5;
+        const OUT_DOWN_TO_IDLE      = 1 << 6;
+        const IDLE_TO_OVER_DOWN     = 1 << 7;
+        const OVER_DOWN_TO_IDLE     = 1 << 8;
+        const KEY_PRESS             = 1 << 9;
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

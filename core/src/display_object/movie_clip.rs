@@ -3108,10 +3108,10 @@ impl ClipAction {
             .unwrap();
 
         let mut events = Vec::new();
-        let flags = other.events.bits();
+        let bits = other.events.bits();
         let mut bit = 1u32;
-        while flags & !(bit - 1) != 0 {
-            if (flags & bit) != 0 {
+        while bits & !(bit - 1) != 0 {
+            if bits & bit != 0 {
                 events.push(ClipEventFlag::from_bits_truncate(bit));
             }
             bit <<= 1;
