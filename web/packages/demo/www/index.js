@@ -65,12 +65,8 @@ window.addEventListener("DOMContentLoaded", async () => {
             options.findIndex((swfData) => swfData.value.endsWith(initialFile)),
             0
         );
-    } else {
-        // Load a random file.
-        sampleFileInput.selectedIndex =
-            Math.floor(Math.random() * data.swfs.length) + 1;
+        sampleFileSelected();
     }
-    sampleFileSelected();
 });
 
 window.addEventListener("load", () => {
