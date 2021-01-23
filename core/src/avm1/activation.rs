@@ -1300,7 +1300,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 target.as_display_object()
             } else {
                 let start = self.target_clip_or_root()?;
-                self.resolve_target_display_object(start, target.clone(), true)?
+                self.resolve_target_display_object(start, target, true)?
             }
         } else {
             Some(self.target_clip_or_root()?)
@@ -1792,7 +1792,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool().read().get(*i as usize) {
-                        value.clone()
+                        *value
                     } else {
                         avm_warn!(
                             self,
@@ -1811,7 +1811,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_push_duplicate(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
-        self.context.avm1.push(val.clone());
+        self.context.avm1.push(val);
         self.context.avm1.push(val);
         Ok(FrameControl::Continue)
     }
@@ -2028,7 +2028,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_store_register(&mut self, register: u8) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The value must remain on the stack.
         let val = self.context.avm1.pop();
-        self.context.avm1.push(val.clone());
+        self.context.avm1.push(val);
         self.set_current_register(register, val);
 
         Ok(FrameControl::Continue)

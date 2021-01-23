@@ -282,7 +282,7 @@ impl<'gc> Executable<'gc> {
                     for i in 0..args.len() {
                         arguments.set_array_element(
                             i,
-                            args.get(i).unwrap().clone(),
+                            *args.get(i).unwrap(),
                             activation.context.gc_context,
                         );
                     }

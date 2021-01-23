@@ -490,7 +490,7 @@ fn set_left<'gc>(
     let new_left = args.get(0).unwrap_or(&Value::Undefined).to_owned();
     let old_left = this.get("x", activation)?.coerce_to_f64(activation)?;
     let width = this.get("width", activation)?.coerce_to_f64(activation)?;
-    this.set("x", new_left.clone(), activation)?;
+    this.set("x", new_left, activation)?;
     this.set(
         "width",
         Value::Number(width + (old_left - new_left.coerce_to_f64(activation)?)),
@@ -515,7 +515,7 @@ fn set_top<'gc>(
     let new_top = args.get(0).unwrap_or(&Value::Undefined).to_owned();
     let old_top = this.get("y", activation)?.coerce_to_f64(activation)?;
     let height = this.get("height", activation)?.coerce_to_f64(activation)?;
-    this.set("y", new_top.clone(), activation)?;
+    this.set("y", new_top, activation)?;
     this.set(
         "height",
         Value::Number(height + (old_top - new_top.coerce_to_f64(activation)?)),
@@ -632,8 +632,8 @@ fn set_top_left<'gc>(
     let old_top = this.get("y", activation)?.coerce_to_f64(activation)?;
     let height = this.get("height", activation)?.coerce_to_f64(activation)?;
 
-    this.set("x", new_left.clone(), activation)?;
-    this.set("y", new_top.clone(), activation)?;
+    this.set("x", new_left, activation)?;
+    this.set("y", new_top, activation)?;
     this.set(
         "width",
         Value::Number(width + (old_left - new_left.coerce_to_f64(activation)?)),

@@ -189,7 +189,7 @@ fn on_data<'gc>(
     let success = match args.get(0) {
         None | Some(Value::Undefined) | Some(Value::Null) => false,
         Some(val) => {
-            this.call_method(&"decode", &[val.clone()], activation)?;
+            this.call_method(&"decode", &[*val], activation)?;
             this.set("loaded", true.into(), activation)?;
             true
         }

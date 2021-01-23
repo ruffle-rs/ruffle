@@ -455,7 +455,7 @@ pub fn concat<'gc>(
         }
 
         if !added {
-            array.set_array_element(length, arg.clone(), activation.context.gc_context);
+            array.set_array_element(length, *arg, activation.context.gc_context);
             length += 1;
         }
     }
@@ -792,8 +792,8 @@ fn sort_compare_fields<'a, 'gc: 'a>(
     use crate::avm1::object::value_object::ValueObject;
     move |activation, a, b| {
         for (field_name, compare_fn) in field_names.iter().zip(compare_fns.iter_mut()) {
-            let a_object = ValueObject::boxed(activation, a.clone());
-            let b_object = ValueObject::boxed(activation, b.clone());
+            let a_object = ValueObject::boxed(activation, *a);
+            let b_object = ValueObject::boxed(activation, *b);
             let a_prop = a_object.get(field_name, activation).unwrap();
             let b_prop = b_object.get(field_name, activation).unwrap();
 
@@ -816,7 +816,7 @@ fn sort_compare_custom<'gc>(
     compare_fn: &Value<'gc>,
 ) -> Ordering {
     // TODO: Handle errors.
-    let args = [a.clone(), b.clone()];
+    let args = [*a, *b];
     let ret = compare_fn
         .call("[Compare]", activation, this, None, &args)
         .unwrap_or(Value::Undefined);

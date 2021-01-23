@@ -94,7 +94,7 @@ impl<'gc> ValueObject<'gc> {
 
     /// Retrieve the boxed value.
     pub fn unbox(self) -> Value<'gc> {
-        self.0.read().value.clone()
+        self.0.read().value
     }
 
     /// Change the value in the box.

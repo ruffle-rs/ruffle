@@ -50,7 +50,7 @@ impl<'gc> Watcher<'gc> {
             )),
             old_value,
             new_value,
-            self.user_data.clone(),
+            self.user_data,
         ];
         if let Some(executable) = self.callback.as_executable() {
             executable.exec(
@@ -295,14 +295,14 @@ impl<'gc> ScriptObject<'gc> {
 
                 if let Some(this_proto) = proto {
                     worked = true;
-                    if let Some(rval) = this_proto.call_setter(name, value.clone(), activation) {
+                    if let Some(rval) = this_proto.call_setter(name, value, activation) {
                         if let Some(exec) = rval.as_executable() {
                             let _ = exec.exec(
                                 "[Setter]",
                                 activation,
                                 this,
                                 Some(this_proto),
-                                &[value.clone()],
+                                &[value],
                                 ExecutionReason::Special,
                                 rval,
                             );
@@ -324,14 +324,8 @@ impl<'gc> ScriptObject<'gc> {
                 let mut return_value = Ok(());
                 if let Some(watcher) = watcher {
                     let old_value = self.get(name, activation)?;
-                    value = match watcher.call(
-                        activation,
-                        name,
-                        old_value,
-                        value.clone(),
-                        this,
-                        base_proto,
-                    ) {
+                    value = match watcher.call(activation, name, old_value, value, this, base_proto)
+                    {
                         Ok(value) => value,
                         Err(Error::ThrownValue(error)) => {
                             return_value = Err(Error::ThrownValue(error));
@@ -347,10 +341,10 @@ impl<'gc> ScriptObject<'gc> {
                     .values
                     .entry(name, activation.is_case_sensitive())
                 {
-                    Entry::Occupied(mut entry) => entry.get_mut().set(value.clone()),
+                    Entry::Occupied(mut entry) => entry.get_mut().set(value),
                     Entry::Vacant(entry) => {
                         entry.insert(Property::Stored {
-                            value: value.clone(),
+                            value,
                             attributes: Attribute::empty(),
                         });
 
@@ -803,14 +797,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         gc_context: MutationContext<'gc, '_>,
     ) -> usize {
-        self.sync_native_property(&index.to_string(), gc_context, Some(value.clone()), true);
+        self.sync_native_property(&index.to_string(), gc_context, Some(value), true);
         let mut adjust_length = false;
         let length = match &mut self.0.write(gc_context).array {
             ArrayStorage::Vector(vector) => {
                 if index >= vector.len() {
                     vector.resize(index + 1, Value::Undefined);
                 }
-                vector[index] = value.clone();
+                vector[index] = value;
                 adjust_length = true;
                 vector.len()
             }
