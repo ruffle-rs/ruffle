@@ -158,8 +158,22 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
 impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     pub fn update_sounds(&mut self) {
-        self.audio_manager
-            .update_sounds(self.audio, self.gc_context)
+        let removed = self
+            .audio_manager
+            .update_sounds(self.audio, self.gc_context);
+        for sound in removed {
+            if let Some(object) = sound.avm1_object {
+                self.action_queue.queue_actions(
+                    *self.levels.get(&0).unwrap(),
+                    ActionType::Method {
+                        object: object.into(),
+                        name: "onSoundComplete",
+                        args: vec![],
+                    },
+                    false,
+                );
+            }
+        }
     }
 
     pub fn start_sound(

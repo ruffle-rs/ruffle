@@ -1,6 +1,6 @@
-use crate::{avm1::SoundObject, display_object::DisplayObject};
+use crate::{avm1::SoundObject, context::UpdateContext, display_object::DisplayObject};
 use downcast_rs::Downcast;
-use gc_arena::{Collect, CollectionContext, MutationContext};
+use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 
 pub mod decoders;
@@ -179,18 +179,23 @@ impl<'gc> AudioManager<'gc> {
     pub fn update_sounds(
         &mut self,
         audio: &mut dyn AudioBackend,
-        gc_context: MutationContext<'gc, '_>,
-    ) {
-        self.sounds.retain(move |_, sound| {
+        gc_context: gc_arena::MutationContext<'gc, '_>,
+    ) -> Vec<SoundInstance<'gc>> {
+        let mut removed = vec![];
+        self.sounds.retain(|_, sound| {
             if let Some(pos) = audio.get_sound_position(sound.instance) {
+                // Sounds still playing; update position.
                 if let Some(avm1_object) = sound.avm1_object {
                     avm1_object.set_position(gc_context, pos);
                 }
                 true
             } else {
+                // Sound ended; fire end event.
+                removed.push(sound.clone());
                 false
             }
         });
+        removed
     }
 
     pub fn start_sound(
@@ -286,11 +291,12 @@ unsafe impl<'gc> Collect for AudioManager<'gc> {
         }
     }
 }
-struct SoundInstance<'gc> {
+#[derive(Clone)]
+pub struct SoundInstance<'gc> {
     instance: SoundInstanceHandle,
     sound: SoundHandle,
     display_object: Option<DisplayObject<'gc>>,
-    avm1_object: Option<SoundObject<'gc>>,
+    pub avm1_object: Option<SoundObject<'gc>>,
 }
 
 unsafe impl<'gc> Collect for SoundInstance<'gc> {
