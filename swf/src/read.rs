@@ -758,14 +758,11 @@ impl<'a> Reader<'a> {
     fn read_tag_list(&mut self) -> Result<Vec<Tag<'a>>> {
         let mut tags = Vec::new();
         loop {
-            match self.read_tag() {
-                Ok(Tag::End) => break,
-                Ok(tag) => tags.push(tag),
-                Err(err) => {
-                    // We screwed up reading this tag in some way.
-                    return Err(err);
-                }
+            let tag = self.read_tag()?;
+            if tag == Tag::End {
+                break;
             }
+            tags.push(tag);
         }
         Ok(tags)
     }
