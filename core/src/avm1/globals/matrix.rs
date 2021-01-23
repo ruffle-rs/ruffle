@@ -126,22 +126,22 @@ fn constructor<'gc>(
         apply_matrix_to_object(Matrix::identity(), this, activation)?;
     } else {
         if let Some(a) = args.get(0) {
-            this.set("a", a.clone(), activation)?;
+            this.set("a", *a, activation)?;
         }
         if let Some(b) = args.get(1) {
-            this.set("b", b.clone(), activation)?;
+            this.set("b", *b, activation)?;
         }
         if let Some(c) = args.get(2) {
-            this.set("c", c.clone(), activation)?;
+            this.set("c", *c, activation)?;
         }
         if let Some(d) = args.get(3) {
-            this.set("d", d.clone(), activation)?;
+            this.set("d", *d, activation)?;
         }
         if let Some(tx) = args.get(4) {
-            this.set("tx", tx.clone(), activation)?;
+            this.set("tx", *tx, activation)?;
         }
         if let Some(ty) = args.get(5) {
-            this.set("ty", ty.clone(), activation)?;
+            this.set("ty", *ty, activation)?;
         }
     }
 
@@ -240,7 +240,7 @@ fn concat<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut matrix = object_to_matrix(this, activation)?;
-    let other = value_to_matrix(args.get(0).unwrap_or(&Value::Undefined).clone(), activation)?;
+    let other = value_to_matrix(*args.get(0).unwrap_or(&Value::Undefined), activation)?;
     matrix = other * matrix;
     apply_matrix_to_object(matrix, this, activation)?;
 

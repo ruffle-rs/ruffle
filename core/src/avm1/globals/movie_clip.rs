@@ -142,7 +142,7 @@ pub fn hit_test<'gc>(
     } else if args.len() == 1 {
         let other = activation.resolve_target_display_object(
             movie_clip.into(),
-            args.get(0).unwrap().clone(),
+            *args.get(0).unwrap(),
             false,
         )?;
         if let Some(other) = other {

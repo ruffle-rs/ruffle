@@ -9,7 +9,7 @@ use crate::ecma_conversions::{
 use std::borrow::Cow;
 use std::f64::NAN;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
 pub enum Value<'gc> {
     Undefined,
@@ -639,26 +639,17 @@ mod test {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
-            assert_eq!(
-                b.abstract_lt(a.clone(), activation).unwrap(),
-                Value::Bool(false)
-            );
+            assert_eq!(b.abstract_lt(a, activation).unwrap(), Value::Bool(false));
 
             let nan = Value::Number(NAN);
-            assert_eq!(
-                nan.abstract_lt(a.clone(), activation).unwrap(),
-                Value::Undefined
-            );
+            assert_eq!(nan.abstract_lt(a, activation).unwrap(), Value::Undefined);
 
             let inf = Value::Number(INFINITY);
-            assert_eq!(
-                inf.abstract_lt(a.clone(), activation).unwrap(),
-                Value::Bool(false)
-            );
+            assert_eq!(inf.abstract_lt(a, activation).unwrap(), Value::Bool(false));
 
             let neg_inf = Value::Number(NEG_INFINITY);
             assert_eq!(
-                neg_inf.abstract_lt(a.clone(), activation).unwrap(),
+                neg_inf.abstract_lt(a, activation).unwrap(),
                 Value::Bool(true)
             );
 
