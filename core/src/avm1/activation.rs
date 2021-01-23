@@ -193,7 +193,7 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     scope: GcCell<'gc, Scope<'gc>>,
 
     /// The currently in use constant pool.
-    constant_pool: GcCell<'gc, Vec<String>>,
+    constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
 
     /// The immutable value of `this`.
     this: Object<'gc>,
@@ -252,7 +252,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         id: ActivationIdentifier<'a>,
         swf_version: u8,
         scope: GcCell<'gc, Scope<'gc>>,
-        constant_pool: GcCell<'gc, Vec<String>>,
+        constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
         this: Object<'gc>,
         callee: Option<Object<'gc>>,
@@ -896,7 +896,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             self.context.gc_context,
             constant_pool
                 .iter()
-                .map(|s| (*s).to_string_lossy(self.encoding()))
+                .map(|s| {
+                    AvmString::new(self.context.gc_context, s.to_string_lossy(self.encoding()))
+                        .into()
+                })
                 .collect(),
         );
         self.set_constant_pool(self.context.avm1.constant_pool);
@@ -1789,7 +1792,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool().read().get(*i as usize) {
-                        AvmString::new(self.context.gc_context, value).into()
+                        value.clone()
                     } else {
                         avm_warn!(
                             self,
@@ -2977,11 +2980,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
     }
 
-    pub fn constant_pool(&self) -> GcCell<'gc, Vec<String>> {
+    pub fn constant_pool(&self) -> GcCell<'gc, Vec<Value<'gc>>> {
         self.constant_pool
     }
 
-    pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<String>>) {
+    pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<Value<'gc>>>) {
         self.constant_pool = constant_pool;
     }
 
