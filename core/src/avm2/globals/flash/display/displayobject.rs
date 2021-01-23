@@ -507,107 +507,107 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "alpha"),
+        QName::new(Namespace::public_namespace(), "alpha"),
         Method::from_builtin(alpha),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::package(""), "alpha"),
+        QName::new(Namespace::public_namespace(), "alpha"),
         Method::from_builtin(set_alpha),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "height"),
+        QName::new(Namespace::public_namespace(), "height"),
         Method::from_builtin(height),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::package(""), "height"),
+        QName::new(Namespace::public_namespace(), "height"),
         Method::from_builtin(set_height),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "scaleY"),
+        QName::new(Namespace::public_namespace(), "scaleY"),
         Method::from_builtin(scale_y),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::package(""), "scaleY"),
+        QName::new(Namespace::public_namespace(), "scaleY"),
         Method::from_builtin(set_scale_y),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "width"),
+        QName::new(Namespace::public_namespace(), "width"),
         Method::from_builtin(width),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::package(""), "width"),
+        QName::new(Namespace::public_namespace(), "width"),
         Method::from_builtin(set_width),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "scaleX"),
+        QName::new(Namespace::public_namespace(), "scaleX"),
         Method::from_builtin(scale_x),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::package(""), "scaleX"),
+        QName::new(Namespace::public_namespace(), "scaleX"),
         Method::from_builtin(set_scale_x),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "x"),
+        QName::new(Namespace::public_namespace(), "x"),
         Method::from_builtin(x),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::package(""), "x"),
+        QName::new(Namespace::public_namespace(), "x"),
         Method::from_builtin(set_x),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "y"),
+        QName::new(Namespace::public_namespace(), "y"),
         Method::from_builtin(y),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::package(""), "y"),
+        QName::new(Namespace::public_namespace(), "y"),
         Method::from_builtin(set_y),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "rotation"),
+        QName::new(Namespace::public_namespace(), "rotation"),
         Method::from_builtin(rotation),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::package(""), "rotation"),
+        QName::new(Namespace::public_namespace(), "rotation"),
         Method::from_builtin(set_rotation),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "name"),
+        QName::new(Namespace::public_namespace(), "name"),
         Method::from_builtin(name),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::package(""), "name"),
+        QName::new(Namespace::public_namespace(), "name"),
         Method::from_builtin(set_name),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "parent"),
+        QName::new(Namespace::public_namespace(), "parent"),
         Method::from_builtin(parent),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "root"),
+        QName::new(Namespace::public_namespace(), "root"),
         Method::from_builtin(root),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "visible"),
+        QName::new(Namespace::public_namespace(), "visible"),
         Method::from_builtin(visible),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::package(""), "visible"),
+        QName::new(Namespace::public_namespace(), "visible"),
         Method::from_builtin(set_visible),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "mouseX"),
+        QName::new(Namespace::public_namespace(), "mouseX"),
         Method::from_builtin(mouse_x),
     ));
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "mouseY"),
+        QName::new(Namespace::public_namespace(), "mouseY"),
         Method::from_builtin(mouse_y),
     ));
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "hitTestPoint"),
+        QName::new(Namespace::public_namespace(), "hitTestPoint"),
         Method::from_builtin(hit_test_point),
     ));
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "hitTestObject"),
+        QName::new(Namespace::public_namespace(), "hitTestObject"),
         Method::from_builtin(hit_test_object),
     ));
 

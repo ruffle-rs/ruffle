@@ -537,92 +537,92 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "addFrameScript"),
+        QName::new(Namespace::public_namespace(), "addFrameScript"),
         Method::from_builtin(add_frame_script),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "currentFrame"),
+        QName::new(Namespace::public_namespace(), "currentFrame"),
         Method::from_builtin(current_frame),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "currentFrameLabel"),
+        QName::new(Namespace::public_namespace(), "currentFrameLabel"),
         Method::from_builtin(current_frame_label),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "currentLabel"),
+        QName::new(Namespace::public_namespace(), "currentLabel"),
         Method::from_builtin(current_label),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "currentLabels"),
+        QName::new(Namespace::public_namespace(), "currentLabels"),
         Method::from_builtin(current_labels),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "currentScene"),
+        QName::new(Namespace::public_namespace(), "currentScene"),
         Method::from_builtin(current_scene),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "scenes"),
+        QName::new(Namespace::public_namespace(), "scenes"),
         Method::from_builtin(scenes),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "framesLoaded"),
+        QName::new(Namespace::public_namespace(), "framesLoaded"),
         Method::from_builtin(frames_loaded),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "isPlaying"),
+        QName::new(Namespace::public_namespace(), "isPlaying"),
         Method::from_builtin(is_playing),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "totalFrames"),
+        QName::new(Namespace::public_namespace(), "totalFrames"),
         Method::from_builtin(total_frames),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "gotoAndPlay"),
+        QName::new(Namespace::public_namespace(), "gotoAndPlay"),
         Method::from_builtin(goto_and_play),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "gotoAndStop"),
+        QName::new(Namespace::public_namespace(), "gotoAndStop"),
         Method::from_builtin(goto_and_stop),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "stop"),
+        QName::new(Namespace::public_namespace(), "stop"),
         Method::from_builtin(stop),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "play"),
+        QName::new(Namespace::public_namespace(), "play"),
         Method::from_builtin(play),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "prevFrame"),
+        QName::new(Namespace::public_namespace(), "prevFrame"),
         Method::from_builtin(prev_frame),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "nextFrame"),
+        QName::new(Namespace::public_namespace(), "nextFrame"),
         Method::from_builtin(next_frame),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "prevScene"),
+        QName::new(Namespace::public_namespace(), "prevScene"),
         Method::from_builtin(prev_scene),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "nextScene"),
+        QName::new(Namespace::public_namespace(), "nextScene"),
         Method::from_builtin(next_scene),
     ));
 
