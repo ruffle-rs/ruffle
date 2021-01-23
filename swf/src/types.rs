@@ -814,7 +814,7 @@ pub struct Button<'a> {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ButtonRecord {
-    pub states: HashSet<ButtonState>,
+    pub states: ButtonState,
     pub id: CharacterId,
     pub depth: Depth,
     pub matrix: Matrix,
@@ -823,12 +823,13 @@ pub struct ButtonRecord {
     pub blend_mode: BlendMode,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub enum ButtonState {
-    Up,
-    Over,
-    Down,
-    HitTest,
+bitflags! {
+    pub struct ButtonState: u8 {
+        const UP       = 1 << 0;
+        const OVER     = 1 << 1;
+        const DOWN     = 1 << 2;
+        const HIT_TEST = 1 << 3;
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

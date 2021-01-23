@@ -1560,23 +1560,7 @@ impl<W: Write> Writer<W> {
             0b1_0000
         } else {
             0
-        } | if record.states.contains(&ButtonState::HitTest) {
-            0b1000
-        } else {
-            0
-        } | if record.states.contains(&ButtonState::Down) {
-            0b100
-        } else {
-            0
-        } | if record.states.contains(&ButtonState::Over) {
-            0b10
-        } else {
-            0
-        } | if record.states.contains(&ButtonState::Up) {
-            0b1
-        } else {
-            0
-        };
+        } | record.states.bits();
         self.write_u8(flags)?;
         self.write_u16(record.id)?;
         self.write_u16(record.depth)?;

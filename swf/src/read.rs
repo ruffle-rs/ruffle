@@ -902,19 +902,7 @@ impl<'a> Reader<'a> {
         if flags == 0 {
             return Ok(None);
         }
-        let mut states = HashSet::with_capacity(4);
-        if (flags & 0b1) != 0 {
-            states.insert(ButtonState::Up);
-        }
-        if (flags & 0b10) != 0 {
-            states.insert(ButtonState::Over);
-        }
-        if (flags & 0b100) != 0 {
-            states.insert(ButtonState::Down);
-        }
-        if (flags & 0b1000) != 0 {
-            states.insert(ButtonState::HitTest);
-        }
+        let states = ButtonState::from_bits_truncate(flags);
         let id = self.read_u16()?;
         let depth = self.read_u16()?;
         let matrix = self.read_matrix()?;

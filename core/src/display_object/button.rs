@@ -129,9 +129,9 @@ impl<'gc> Button<'gc> {
         let mut write = self.0.write(context.gc_context);
         write.state = state;
         let swf_state = match state {
-            ButtonState::Up => swf::ButtonState::Up,
-            ButtonState::Over => swf::ButtonState::Over,
-            ButtonState::Down => swf::ButtonState::Down,
+            ButtonState::Up => swf::ButtonState::UP,
+            ButtonState::Over => swf::ButtonState::OVER,
+            ButtonState::Down => swf::ButtonState::DOWN,
         };
 
         // Create any new children that exist in this state, and remove children
@@ -141,7 +141,7 @@ impl<'gc> Button<'gc> {
         let mut children = Vec::new();
 
         for record in &write.static_data.read().records {
-            if record.states.contains(&swf_state) {
+            if record.states.contains(swf_state) {
                 // State contains this depth, so we don't have to remove it.
                 removed_depths.remove(&record.depth.into());
 
@@ -257,7 +257,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             let read = self.0.read();
 
             for record in &read.static_data.read().records {
-                if record.states.contains(&swf::ButtonState::HitTest) {
+                if record.states.contains(swf::ButtonState::HIT_TEST) {
                     match context
                         .library
                         .library_for_movie_mut(read.static_data.read().swf.clone())
