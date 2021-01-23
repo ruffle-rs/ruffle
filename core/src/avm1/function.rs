@@ -77,7 +77,7 @@ pub struct Avm1Function<'gc> {
     scope: GcCell<'gc, Scope<'gc>>,
 
     /// The constant pool the function executes with.
-    constant_pool: GcCell<'gc, Vec<String>>,
+    constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
 
     /// The base movie clip that the function was defined on.
     /// This is the movie clip that contains the bytecode.
@@ -95,7 +95,7 @@ impl<'gc> Avm1Function<'gc> {
         name: &str,
         params: &[&'_ SwfStr],
         scope: GcCell<'gc, Scope<'gc>>,
-        constant_pool: GcCell<'gc, Vec<String>>,
+        constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
         let name = if name.is_empty() {
@@ -139,7 +139,7 @@ impl<'gc> Avm1Function<'gc> {
         actions: SwfSlice,
         swf_function: &swf::avm1::types::Function,
         scope: GcCell<'gc, Scope<'gc>>,
-        constant_pool: GcCell<'gc, Vec<String>>,
+        constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
         let name = if swf_function.name.is_empty() {

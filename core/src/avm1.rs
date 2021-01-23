@@ -82,7 +82,7 @@ pub struct Avm1<'gc> {
 
     /// The constant pool to use for new activations from code sources that
     /// don't close over the constant pool they were defined with.
-    constant_pool: GcCell<'gc, Vec<String>>,
+    constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
 
     /// The global object.
     globals: Object<'gc>,
