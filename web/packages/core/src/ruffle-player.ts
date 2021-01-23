@@ -99,7 +99,8 @@ export class RufflePlayer extends HTMLElement {
     private container: HTMLElement;
     private playButton: HTMLElement;
     private unmuteOverlay: HTMLElement;
-    private rightClickMenu: HTMLElement;
+    private contextMenu: HTMLElement;
+    private hasContextMenu = false;
     private swfUrl?: string;
     private instance: Ruffle | null;
     private _trace_observer: ((message: string) => void) | null;
@@ -107,7 +108,6 @@ export class RufflePlayer extends HTMLElement {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private ruffleConstructor: Promise<{ new (...args: any[]): Ruffle }>;
     private panicked = false;
-    private hasContextMenu = false;
 
     /**
      * If set to true, the movie is allowed to interact with the page through
@@ -144,12 +144,9 @@ export class RufflePlayer extends HTMLElement {
             this.unmuteOverlayClicked.bind(this)
         );
 
-        this.rightClickMenu = this.shadow.getElementById("right_click_menu")!;
-        this.addEventListener(
-            "contextmenu",
-            this.openRightClickMenu.bind(this)
-        );
-        window.addEventListener("click", this.hideRightClickMenu.bind(this));
+        this.contextMenu = this.shadow.getElementById("context-menu")!;
+        this.addEventListener("contextmenu", this.showContextMenu.bind(this));
+        window.addEventListener("click", this.hideContextMenu.bind(this));
 
         this.instance = null;
         this.allowScriptAccess = false;
@@ -568,45 +565,45 @@ export class RufflePlayer extends HTMLElement {
         return items;
     }
 
-    private openRightClickMenu(e: MouseEvent): void {
+    private showContextMenu(e: MouseEvent): void {
         e.preventDefault();
 
         if (!this.hasContextMenu) {
             return;
         }
 
-        // Clear all `right_click_menu` items.
-        while (this.rightClickMenu.firstChild) {
-            this.rightClickMenu.removeChild(this.rightClickMenu.firstChild);
+        // Clear all `contextMenu` items.
+        while (this.contextMenu.firstChild) {
+            this.contextMenu.removeChild(this.contextMenu.firstChild);
         }
 
-        // Populate `right_click_menu` items.
+        // Populate `contextMenu` items.
         for (const { text, onClick } of this.contextMenuItems()) {
             const element = document.createElement("li");
             element.className = "menu_item active";
             element.textContent = text;
             element.addEventListener("click", onClick);
-            this.rightClickMenu.appendChild(element);
+            this.contextMenu.appendChild(element);
         }
 
-        // Place `right_click_menu` in the top-left corner, so
+        // Place `contextMenu` in the top-left corner, so
         // its `clientWidth` and `clientHeight` are not clamped.
-        this.rightClickMenu.style.left = "0";
-        this.rightClickMenu.style.top = "0";
-        this.rightClickMenu.style.display = "block";
+        this.contextMenu.style.left = "0";
+        this.contextMenu.style.top = "0";
+        this.contextMenu.style.display = "block";
 
         const rect = this.getBoundingClientRect();
         const x = e.clientX - rect.x;
         const y = e.clientY - rect.y;
-        const maxX = rect.width - this.rightClickMenu.clientWidth - 1;
-        const maxY = rect.height - this.rightClickMenu.clientHeight - 1;
+        const maxX = rect.width - this.contextMenu.clientWidth - 1;
+        const maxY = rect.height - this.contextMenu.clientHeight - 1;
 
-        this.rightClickMenu.style.left = Math.floor(Math.min(x, maxX)) + "px";
-        this.rightClickMenu.style.top = Math.floor(Math.min(y, maxY)) + "px";
+        this.contextMenu.style.left = Math.floor(Math.min(x, maxX)) + "px";
+        this.contextMenu.style.top = Math.floor(Math.min(y, maxY)) + "px";
     }
 
-    private hideRightClickMenu(): void {
-        this.rightClickMenu.style.display = "none";
+    private hideContextMenu(): void {
+        this.contextMenu.style.display = "none";
     }
 
     /**
