@@ -156,7 +156,7 @@ export interface BaseLoadOptions {
      *
      * @default true
      */
-    showContextMenu?: boolean;
+    contextMenu?: boolean;
 }
 
 /**
