@@ -437,7 +437,7 @@ export class RufflePlayer extends HTMLElement {
                 ...options,
             };
 
-            this.hasContextMenu = config.showContextMenu !== false;
+            this.hasContextMenu = config.contextMenu !== false;
 
             // Pre-emptively set background color of container while Ruffle/SWF loads.
             if (config.backgroundColor) {
