@@ -184,10 +184,12 @@ impl BitmapData {
 
     pub fn bitmap_handle(&mut self, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle> {
         if self.bitmap_handle.is_none() {
-            match renderer.register_bitmap_raw(self.width(), self.height(), self.pixels_rgba()) {
-                Ok(bitmap_handle) => self.bitmap_handle = Some(bitmap_handle),
-                Err(err) => log::warn!("Failed to register raw bitmap for BitmapData: {:?}", err),
+            let bitmap_handle =
+                renderer.register_bitmap_raw(self.width(), self.height(), self.pixels_rgba());
+            if let Err(e) = &bitmap_handle {
+                log::warn!("Failed to register raw bitmap for BitmapData: {:?}", e);
             }
+            self.bitmap_handle = bitmap_handle.ok();
         }
 
         self.bitmap_handle

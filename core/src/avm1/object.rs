@@ -174,7 +174,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error<'gc>> {
         let (method, base_proto) =
             search_prototype(Some((*self).into()), name, activation, (*self).into())?;
-        let method = method;
 
         if let Value::Object(_) = method {
         } else {
