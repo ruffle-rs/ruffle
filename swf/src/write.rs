@@ -1064,79 +1064,13 @@ impl<W: Write> Writer<W> {
                 } else {
                     writer.write_u16(0)?;
                 }
-                writer.write_u8(
-                    if action
-                        .conditions
-                        .contains(&ButtonActionCondition::IdleToOverDown)
-                    {
-                        0b1000_0000
-                    } else {
-                        0
-                    } | if action
-                        .conditions
-                        .contains(&ButtonActionCondition::OutDownToIdle)
-                    {
-                        0b100_0000
-                    } else {
-                        0
-                    } | if action
-                        .conditions
-                        .contains(&ButtonActionCondition::OutDownToOverDown)
-                    {
-                        0b10_0000
-                    } else {
-                        0
-                    } | if action
-                        .conditions
-                        .contains(&ButtonActionCondition::OverDownToOutDown)
-                    {
-                        0b1_0000
-                    } else {
-                        0
-                    } | if action
-                        .conditions
-                        .contains(&ButtonActionCondition::OverDownToOverUp)
-                    {
-                        0b1000
-                    } else {
-                        0
-                    } | if action
-                        .conditions
-                        .contains(&ButtonActionCondition::OverUpToOverDown)
-                    {
-                        0b100
-                    } else {
-                        0
-                    } | if action
-                        .conditions
-                        .contains(&ButtonActionCondition::OverUpToIdle)
-                    {
-                        0b10
-                    } else {
-                        0
-                    } | if action
-                        .conditions
-                        .contains(&ButtonActionCondition::IdleToOverUp)
-                    {
-                        0b1
-                    } else {
-                        0
-                    },
-                )?;
-                let mut flags = if action
-                    .conditions
-                    .contains(&ButtonActionCondition::OverDownToIdle)
-                {
-                    0b1
-                } else {
-                    0
-                };
-                if action.conditions.contains(&ButtonActionCondition::KeyPress) {
+                let mut flags = action.conditions.bits();
+                if action.conditions.contains(ButtonActionCondition::KEY_PRESS) {
                     if let Some(key_code) = action.key_code {
-                        flags |= key_code << 1;
+                        flags |= (key_code as u16) << 9;
                     }
                 }
-                writer.write_u8(flags)?;
+                writer.write_u16(flags)?;
                 writer.output.write_all(&action.action_data)?;
             }
         }
