@@ -100,8 +100,12 @@ export class RufflePlayer extends HTMLElement {
     private container: HTMLElement;
     private playButton: HTMLElement;
     private unmuteOverlay: HTMLElement;
-    private contextMenu: HTMLElement;
+
+    // Firefox has a read-only "contextMenu" property,
+    // so avoid shadowing it.
+    private contextMenuElement: HTMLElement;
     private hasContextMenu = false;
+
     private swfUrl?: string;
     private instance: Ruffle | null;
     private _trace_observer: ((message: string) => void) | null;
@@ -151,7 +155,7 @@ export class RufflePlayer extends HTMLElement {
             this.unmuteOverlayClicked.bind(this)
         );
 
-        this.contextMenu = this.shadow.getElementById("context-menu")!;
+        this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
         window.addEventListener("click", this.hideContextMenu.bind(this));
 
@@ -580,38 +584,42 @@ export class RufflePlayer extends HTMLElement {
             return;
         }
 
-        // Clear all `contextMenu` items.
-        while (this.contextMenu.firstChild) {
-            this.contextMenu.removeChild(this.contextMenu.firstChild);
+        // Clear all context menu items.
+        while (this.contextMenuElement.firstChild) {
+            this.contextMenuElement.removeChild(
+                this.contextMenuElement.firstChild
+            );
         }
 
-        // Populate `contextMenu` items.
+        // Populate context menu items.
         for (const { text, onClick } of this.contextMenuItems()) {
             const element = document.createElement("li");
             element.className = "menu_item active";
             element.textContent = text;
             element.addEventListener("click", onClick);
-            this.contextMenu.appendChild(element);
+            this.contextMenuElement.appendChild(element);
         }
 
-        // Place `contextMenu` in the top-left corner, so
+        // Place a context menu in the top-left corner, so
         // its `clientWidth` and `clientHeight` are not clamped.
-        this.contextMenu.style.left = "0";
-        this.contextMenu.style.top = "0";
-        this.contextMenu.style.display = "block";
+        this.contextMenuElement.style.left = "0";
+        this.contextMenuElement.style.top = "0";
+        this.contextMenuElement.style.display = "block";
 
         const rect = this.getBoundingClientRect();
         const x = e.clientX - rect.x;
         const y = e.clientY - rect.y;
-        const maxX = rect.width - this.contextMenu.clientWidth - 1;
-        const maxY = rect.height - this.contextMenu.clientHeight - 1;
+        const maxX = rect.width - this.contextMenuElement.clientWidth - 1;
+        const maxY = rect.height - this.contextMenuElement.clientHeight - 1;
 
-        this.contextMenu.style.left = Math.floor(Math.min(x, maxX)) + "px";
-        this.contextMenu.style.top = Math.floor(Math.min(y, maxY)) + "px";
+        this.contextMenuElement.style.left =
+            Math.floor(Math.min(x, maxX)) + "px";
+        this.contextMenuElement.style.top =
+            Math.floor(Math.min(y, maxY)) + "px";
     }
 
     private hideContextMenu(): void {
-        this.contextMenu.style.display = "none";
+        this.contextMenuElement.style.display = "none";
     }
 
     /**
