@@ -3,6 +3,7 @@ import { Ruffle } from "../pkg/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
+import { Config } from "./config";
 import {
     BaseLoadOptions,
     DataLoadOptions,
@@ -116,6 +117,12 @@ export class RufflePlayer extends HTMLElement {
      * This should only be enabled for movies you trust.
      */
     allowScriptAccess: boolean;
+
+    /**
+     * Any configuration that should apply to this specific player.
+     * This will be defaulted with any global configuration.
+     */
+    config: Config = {};
 
     /**
      * Constructs a new Ruffle flash player for insertion onto the page.
@@ -434,6 +441,7 @@ export class RufflePlayer extends HTMLElement {
         try {
             const config: BaseLoadOptions = {
                 ...(window.RufflePlayer?.config ?? {}),
+                ...this.config,
                 ...options,
             };
 
