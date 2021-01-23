@@ -412,16 +412,11 @@ impl Player {
 
             // Load and parse the device font.
             let device_font =
-                match Self::load_device_font(context.gc_context, DEVICE_FONT_TAG, context.renderer)
-                {
-                    Ok(font) => Some(font),
-                    Err(e) => {
-                        log::error!("Unable to load device font: {}", e);
-                        None
-                    }
-                };
-
-            context.library.set_device_font(device_font);
+                Self::load_device_font(context.gc_context, DEVICE_FONT_TAG, context.renderer);
+            if let Err(e) = &device_font {
+                log::error!("Unable to load device font: {}", e);
+            }
+            context.library.set_device_font(device_font.ok());
 
             // Set the version parameter on the root.
             let mut activation = Activation::from_stub(
