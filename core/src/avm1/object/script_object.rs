@@ -835,7 +835,7 @@ mod tests {
     use crate::avm1::property::Attribute;
     use crate::avm1::{Avm1, Timers};
     use crate::avm2::Avm2;
-    use crate::backend::audio::NullAudioBackend;
+    use crate::backend::audio::{AudioManager, NullAudioBackend};
     use crate::backend::input::NullInputBackend;
     use crate::backend::locale::NullLocaleBackend;
     use crate::backend::log::NullLogBackend;
@@ -882,6 +882,7 @@ mod tests {
                 rng: &mut SmallRng::from_seed([0u8; 32]),
                 action_queue: &mut crate::context::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),
+                audio_manager: &mut AudioManager::new(),
                 input: &mut NullInputBackend::new(),
                 background_color: &mut None,
                 library: &mut Library::empty(gc_context),

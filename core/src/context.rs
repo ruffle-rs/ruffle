@@ -7,7 +7,11 @@ use crate::backend::input::InputBackend;
 use crate::backend::locale::LocaleBackend;
 use crate::backend::log::LogBackend;
 use crate::backend::storage::StorageBackend;
-use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
+use crate::backend::{
+    audio::{AudioBackend, AudioManager, AudioStreamHandle, SoundHandle, SoundInstanceHandle},
+    navigator::NavigatorBackend,
+    render::RenderBackend,
+};
 use crate::display_object::EditText;
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
@@ -59,6 +63,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The audio backend, used by display objects and AVM to play audio.
     pub audio: &'a mut dyn AudioBackend,
+
+    /// The audio manager, manging all actively playing sounds.
+    pub audio_manager: &'a mut AudioManager<'gc>,
 
     /// The navigator backend, used by the AVM to make HTTP requests and visit webpages.
     pub navigator: &'a mut (dyn NavigatorBackend + 'a),
@@ -149,6 +156,61 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub time_offset: &'a mut u32,
 }
 
+impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
+    pub fn update_sounds(&mut self) {
+        self.audio_manager
+            .update_sounds(self.audio, self.gc_context)
+    }
+
+    pub fn start_sound(
+        &mut self,
+        sound: SoundHandle,
+        settings: &swf::SoundInfo,
+        owner: Option<DisplayObject<'gc>>,
+        avm1_object: Option<crate::avm1::SoundObject<'gc>>,
+    ) -> Option<SoundInstanceHandle> {
+        self.audio_manager
+            .start_sound(self.audio, sound, settings, owner, avm1_object)
+    }
+
+    pub fn stop_sound(&mut self, instance: SoundInstanceHandle) {
+        self.audio_manager.stop_sound(self.audio, instance)
+    }
+
+    pub fn stop_sounds_with_handle(&mut self, sound: SoundHandle) {
+        self.audio_manager
+            .stop_sounds_with_handle(self.audio, sound)
+    }
+
+    pub fn stop_sounds_with_display_object(&mut self, display_object: DisplayObject<'gc>) {
+        self.audio_manager
+            .stop_sounds_with_display_object(self.audio, display_object)
+    }
+
+    pub fn stop_all_sounds(&mut self) {
+        self.audio_manager.stop_all_sounds(self.audio)
+    }
+
+    pub fn is_sound_playing_with_handle(&mut self, sound: SoundHandle) -> bool {
+        self.audio_manager.is_sound_playing_with_handle(sound)
+    }
+
+    pub fn start_stream(
+        &mut self,
+        clip_id: swf::CharacterId,
+        frame: u16,
+        data: crate::tag_utils::SwfSlice,
+        stream_info: &swf::SoundStreamHead,
+    ) -> Option<AudioStreamHandle> {
+        self.audio_manager
+            .start_stream(self.audio, clip_id, frame, data, stream_info)
+    }
+
+    pub fn stop_stream(&mut self, handle: AudioStreamHandle) {
+        self.audio_manager.stop_stream(self.audio, handle)
+    }
+}
+
 unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context> {
     fn trace(&self, cc: CollectionContext) {
         self.action_queue.trace(cc);
@@ -158,6 +220,7 @@ unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context
         self.needs_render.trace(cc);
         self.swf.trace(cc);
         self.audio.trace(cc);
+        self.audio_manager.trace(cc);
         self.navigator.trace(cc);
         self.renderer.trace(cc);
         self.input.trace(cc);
@@ -200,6 +263,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             needs_render: self.needs_render,
             swf: self.swf,
             audio: self.audio,
+            audio_manager: self.audio_manager,
             navigator: self.navigator,
             renderer: self.renderer,
             locale: self.locale,

@@ -9,7 +9,12 @@ use crate::backend::input::{InputBackend, MouseCursor};
 use crate::backend::locale::LocaleBackend;
 use crate::backend::navigator::{NavigatorBackend, RequestOptions};
 use crate::backend::storage::StorageBackend;
-use crate::backend::{audio::AudioBackend, log::LogBackend, render::RenderBackend, ui::UiBackend};
+use crate::backend::{
+    audio::{AudioBackend, AudioManager},
+    log::LogBackend,
+    render::RenderBackend,
+    ui::UiBackend,
+};
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{EditText, MorphShape, MovieClip};
@@ -86,6 +91,9 @@ struct GcRootData<'gc> {
 
     /// A tracker for the current keyboard focused element
     focus_tracker: FocusTracker<'gc>,
+
+    /// Manager of active sound instances.
+    audio_manager: AudioManager<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -106,6 +114,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Vec<EditText<'gc>>,
         &mut Timers<'gc>,
         &mut ExternalInterface<'gc>,
+        &mut AudioManager<'gc>,
     ) {
         (
             &mut self.levels,
@@ -119,6 +128,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.unbound_text_fields,
             &mut self.timers,
             &mut self.external_interface,
+            &mut self.audio_manager,
         )
     }
 }
@@ -273,6 +283,7 @@ impl Player {
                         timers: Timers::new(),
                         external_interface: ExternalInterface::new(),
                         focus_tracker: FocusTracker::new(gc_context),
+                        audio_manager: AudioManager::new(),
                     },
                 ))
             }),
@@ -890,6 +901,8 @@ impl Player {
 
     pub fn run_frame(&mut self) {
         self.update(|update_context| {
+            update_context.update_sounds();
+
             // TODO: In what order are levels run?
             // NOTE: We have to copy all the layer pointers into a separate list
             // because level updates can create more levels, which we don't
@@ -1217,6 +1230,7 @@ impl Player {
                 unbound_text_fields,
                 timers,
                 external_interface,
+                audio_manager,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -1255,6 +1269,7 @@ impl Player {
                 focus_tracker,
                 times_get_time_called: 0,
                 time_offset,
+                audio_manager,
             };
 
             let ret = f(&mut update_context);

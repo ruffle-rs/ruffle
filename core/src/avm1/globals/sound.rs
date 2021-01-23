@@ -325,9 +325,7 @@ fn position<'gc>(
             // the previous valid position.
             // Needs some audio backend work for this.
             if sound_object.sound().is_some() {
-                if let Some(_sound_instance) = sound_object.sound_instance() {
-                    avm_warn!(activation, "Sound.position: Unimplemented");
-                }
+                avm_warn!(activation, "Sound.position: Unimplemented");
                 return Ok(sound_object.position().into());
             }
         } else {
@@ -384,7 +382,7 @@ fn start<'gc>(
     use swf::{SoundEvent, SoundInfo};
     if let Some(sound_object) = this.as_sound_object() {
         if let Some(sound) = sound_object.sound() {
-            let sound_instance = activation.context.audio.start_sound(
+            let sound_instance = activation.context.start_sound(
                 sound,
                 &SoundInfo {
                     event: SoundEvent::Start,
@@ -397,8 +395,10 @@ fn start<'gc>(
                     num_loops: loops,
                     envelope: None,
                 },
+                sound_object.owner(),
+                Some(sound_object),
             );
-            if let Ok(sound_instance) = sound_instance {
+            if let Some(sound_instance) = sound_instance {
                 sound_object
                     .set_sound_instance(activation.context.gc_context, Some(sound_instance));
             }
@@ -444,15 +444,13 @@ fn stop<'gc>(
                     name
                 )
             }
-        } else if let Some(_owner) = sound.owner() {
+        } else if let Some(owner) = sound.owner() {
             // Usage 2: Stop all sound running within a given clip.
-            // TODO: We just stop the last played sound for now.
-            if let Some(sound_instance) = sound.sound_instance() {
-                activation.context.audio.stop_sound(sound_instance);
-            }
+            activation.context.stop_sounds_with_display_object(owner);
+            sound.set_sound_instance(activation.context.gc_context, None);
         } else {
             // Usage 3: If there is no owner and no name, this call acts like `stopAllSounds()`.
-            activation.context.audio.stop_all_sounds();
+            activation.context.stop_all_sounds();
         }
     } else {
         avm_warn!(activation, "Sound.stop: this is not a Sound");
