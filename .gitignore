@@ -12,3 +12,6 @@ _cacache/
 _logs/
 anonymous-cli-metrics.json
 node_modules/
+
+# Flash
+RECOVER_*.fla
