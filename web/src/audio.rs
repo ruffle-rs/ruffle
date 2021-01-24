@@ -3,13 +3,13 @@ use generational_arena::Arena;
 use ruffle_core::backend::audio::decoders::{AdpcmDecoder, Mp3Decoder};
 use ruffle_core::backend::audio::swf::{self, AudioCompression};
 use ruffle_core::backend::audio::{
-    AudioBackend, AudioStreamHandle, SoundHandle, SoundInstanceHandle,
+    AudioBackend, AudioStreamHandle, SoundHandle, SoundInstanceHandle, SoundTransform,
 };
 use ruffle_web_common::JsResult;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use wasm_bindgen::{closure::Closure, prelude::*, JsCast};
-use web_sys::AudioContext;
+use web_sys::{AudioContext, GainNode};
 
 pub struct WebAudioBackend {
     context: AudioContext,
@@ -92,13 +92,9 @@ struct SoundInstance {
 /// and any event listeners are removed.
 impl Drop for SoundInstance {
     fn drop(&mut self) {
-        if let SoundInstanceType::AudioBuffer {
-            node,
-            buffer_source_node,
-        } = &self.instance_type
-        {
-            let _ = buffer_source_node.set_onended(None);
-            let _ = node.disconnect();
+        if let SoundInstanceType::AudioBuffer(instance) = &self.instance_type {
+            let _ = instance.buffer_source_node.set_onended(None);
+            let _ = instance.node.disconnect();
         }
     }
 }
@@ -106,14 +102,186 @@ impl Drop for SoundInstance {
 #[allow(dead_code)]
 enum SoundInstanceType {
     Decoder(Decoder),
-    AudioBuffer {
-        /// The node that is connected to the output.
-        node: web_sys::AudioNode,
+    AudioBuffer(AudioBufferInstance),
+}
 
-        /// The buffer node containing the audio data.
-        /// This is often the same as `node`, but will be different
-        /// if there is a custom envelope on this sound.
-        buffer_source_node: web_sys::AudioBufferSourceNode,
+/// A sound instance that is playing from an AudioBuffersource node.
+struct AudioBufferInstance {
+    /// The node that is connected to the output.
+    node: web_sys::AudioNode,
+
+    /// The buffer node containing the audio data.
+    /// This is often the same as `node`, but will be different
+    /// if there is a custom envelope on this sound.
+    sound_transform_nodes: SoundTransformNodes,
+
+    /// The audio node with envelopes applied.
+    envelope_node: web_sys::AudioNode,
+
+    /// The buffer node containing the audio data.
+    /// This is often the same as `envelope_node`, but will be different
+    /// if there is a custom envelope on this sound.
+    buffer_source_node: web_sys::AudioBufferSourceNode,
+}
+
+impl AudioBufferInstance {
+    #[allow(clippy::float_cmp)]
+    fn set_transform(&mut self, context: &AudioContext, transform: &SoundTransform) {
+        let is_full_transform = transform.left_to_right != 0.0
+            || transform.right_to_left != 0.0
+            || transform.left_to_left != transform.right_to_right;
+
+        // Lazily instantiate gain nodes, depending on the type of transform.
+        match &self.sound_transform_nodes {
+            SoundTransformNodes::None => {
+                if is_full_transform {
+                    let _ = self.create_full_transform(context);
+                } else if transform.left_to_left != 1.0 || transform.right_to_right != 1.0 {
+                    let _ = self.create_volume_transform(context);
+                }
+            }
+            SoundTransformNodes::Volume { .. } => {
+                if is_full_transform {
+                    let _ = self.create_full_transform(context);
+                }
+            }
+            SoundTransformNodes::Transform { .. } => (),
+        }
+
+        match &self.sound_transform_nodes {
+            SoundTransformNodes::None => (),
+            SoundTransformNodes::Volume { gain } => {
+                // Assumes right_to_right is matching.
+                gain.gain().set_value(transform.left_to_left);
+            }
+            SoundTransformNodes::Transform {
+                left_to_left_gain,
+                left_to_right_gain,
+                right_to_left_gain,
+                right_to_right_gain,
+            } => {
+                left_to_left_gain.gain().set_value(transform.left_to_left);
+                left_to_right_gain.gain().set_value(transform.left_to_right);
+                right_to_left_gain.gain().set_value(transform.right_to_left);
+                right_to_right_gain
+                    .gain()
+                    .set_value(transform.right_to_right);
+            }
+        }
+    }
+
+    /// Adds a gain node to this sound instance, allowing the volume to be adjusted.
+    fn create_volume_transform(
+        &mut self,
+        context: &AudioContext,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Create the gain node to control the volume.
+        let gain = context.create_gain().into_js_result()?;
+
+        // Wire up the nodes.
+        // Note that for mono tracks, we want to use channel 0 (left) for both the left and right.
+        self.node.disconnect().warn_on_error();
+        self.envelope_node.disconnect().warn_on_error();
+        self.envelope_node
+            .connect_with_audio_node(&gain)
+            .into_js_result()?;
+
+        gain.connect_with_audio_node(&context.destination())
+            .warn_on_error();
+
+        self.node = gain.clone().into();
+        self.sound_transform_nodes = SoundTransformNodes::Volume { gain };
+        Ok(())
+    }
+
+    /// Adds a bunch of gain nodes to this sound instance, allowing a SoundTransform
+    /// to be applied to it.
+    fn create_full_transform(
+        &mut self,
+        context: &AudioContext,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let is_stereo = self.node.channel_count() > 1;
+
+        // Split the left and right channels.
+        let splitter = context
+            .create_channel_splitter_with_number_of_outputs(2)
+            .into_js_result()?;
+
+        // Create the envelope gain nodes for the left and right channels.
+        let left_to_left_gain = context.create_gain().into_js_result()?;
+        let left_to_right_gain = context.create_gain().into_js_result()?;
+        let right_to_left_gain = context.create_gain().into_js_result()?;
+        let right_to_right_gain = context.create_gain().into_js_result()?;
+
+        let merger: web_sys::AudioNode = context
+            .create_channel_merger_with_number_of_inputs(2)
+            .into_js_result()?
+            .into();
+
+        // Wire up the nodes.
+        // Note that for mono tracks, we want to use channel 0 (left) for both the left and right.
+        self.node.disconnect().warn_on_error();
+        self.envelope_node.disconnect().warn_on_error();
+        self.envelope_node
+            .connect_with_audio_node(&splitter)
+            .into_js_result()?;
+        splitter
+            .connect_with_audio_node_and_output(&left_to_left_gain, 0)
+            .into_js_result()?;
+        splitter
+            .connect_with_audio_node_and_output(&left_to_right_gain, 0)
+            .into_js_result()?;
+        splitter
+            .connect_with_audio_node_and_output(&right_to_left_gain, if is_stereo { 1 } else { 0 })
+            .into_js_result()?;
+        splitter
+            .connect_with_audio_node_and_output(&right_to_right_gain, if is_stereo { 1 } else { 0 })
+            .into_js_result()?;
+
+        left_to_left_gain
+            .connect_with_audio_node_and_output_and_input(&merger, 0, 0)
+            .into_js_result()?;
+        left_to_right_gain
+            .connect_with_audio_node_and_output_and_input(&merger, 0, 1)
+            .into_js_result()?;
+        right_to_left_gain
+            .connect_with_audio_node_and_output_and_input(&merger, 0, 0)
+            .into_js_result()?;
+        right_to_right_gain
+            .connect_with_audio_node_and_output_and_input(&merger, 0, 1)
+            .into_js_result()?;
+
+        merger
+            .connect_with_audio_node(&context.destination())
+            .warn_on_error();
+
+        self.node = merger;
+        self.sound_transform_nodes = SoundTransformNodes::Transform {
+            left_to_left_gain,
+            left_to_right_gain,
+            right_to_left_gain,
+            right_to_right_gain,
+        };
+        Ok(())
+    }
+}
+
+/// The gain nodes controlling the sound transform for this sound.
+/// Because most sounds will be untransformed, we lazily instantiate
+/// this only when necessary to play a transformed sound.
+enum SoundTransformNodes {
+    /// No transform is applied to this sound.
+    None,
+
+    /// This sound has volume applied to it.
+    Volume { gain: GainNode },
+
+    /// This sound has a full transform applied to it.
+    Transform {
+        left_to_left_gain: GainNode,
+        left_to_right_gain: GainNode,
+        right_to_left_gain: GainNode,
+        right_to_right_gain: GainNode,
     },
 }
 
@@ -231,10 +399,12 @@ impl WebAudioBackend {
                 let instance = SoundInstance {
                     handle: Some(handle),
                     format: sound.format.clone(),
-                    instance_type: SoundInstanceType::AudioBuffer {
+                    instance_type: SoundInstanceType::AudioBuffer(AudioBufferInstance {
+                        envelope_node: node.clone(),
                         node,
                         buffer_source_node: buffer_source_node.clone(),
-                    },
+                        sound_transform_nodes: SoundTransformNodes::None,
+                    }),
                 };
                 let instance_handle = SOUND_INSTANCES.with(|instances| {
                     let mut instances = instances.borrow_mut();
@@ -855,6 +1025,17 @@ impl AudioBackend for WebAudioBackend {
         } else {
             None
         }
+    }
+
+    fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform) {
+        SOUND_INSTANCES.with(|instances| {
+            let mut instances = instances.borrow_mut();
+            if let Some(instance) = instances.get_mut(instance) {
+                if let SoundInstanceType::AudioBuffer(sound) = &mut instance.instance_type {
+                    sound.set_transform(&self.context, &transform);
+                }
+            }
+        })
     }
 }
 

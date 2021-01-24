@@ -12,7 +12,7 @@ use crate::backend::{
     navigator::NavigatorBackend,
     render::RenderBackend,
 };
-use crate::display_object::EditText;
+use crate::display_object::{EditText, SoundTransform};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
@@ -176,6 +176,15 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         }
     }
 
+    pub fn global_sound_transform(&self) -> &SoundTransform {
+        self.audio_manager.global_sound_transform()
+    }
+
+    pub fn set_global_sound_transform(&mut self, sound_transform: SoundTransform) {
+        self.audio_manager
+            .set_global_sound_transform(self.audio, sound_transform);
+    }
+
     pub fn start_sound(
         &mut self,
         sound: SoundHandle,
@@ -222,6 +231,10 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 
     pub fn stop_stream(&mut self, handle: AudioStreamHandle) {
         self.audio_manager.stop_stream(self.audio, handle)
+    }
+
+    pub fn update_sound_transforms(&mut self) {
+        self.audio_manager.update_sound_transforms(self.audio)
     }
 }
 

@@ -4,7 +4,7 @@ use ruffle_core::backend::audio::decoders::{
     self, AdpcmDecoder, Mp3Decoder, PcmDecoder, SeekableDecoder,
 };
 use ruffle_core::backend::audio::{
-    swf, AudioBackend, AudioStreamHandle, SoundHandle, SoundInstanceHandle,
+    swf, AudioBackend, AudioStreamHandle, SoundHandle, SoundInstanceHandle, SoundTransform,
 };
 use ruffle_core::tag_utils::SwfSlice;
 use std::io::Cursor;
@@ -66,6 +66,11 @@ struct SoundInstance {
     /// If this flag is false, the sound will be cleaned up during the
     /// next loop of the sound thread.
     active: bool,
+
+    /// The volume transform for this sound instance.
+    left_transform: [f32; 2],
+
+    right_transform: [f32; 2],
 }
 
 impl CpalAudioBackend {
@@ -266,6 +271,7 @@ impl CpalAudioBackend {
     ) where
         T: 'a + cpal::Sample + Default + dasp::Sample,
         T::Signed: dasp::sample::conv::FromSample<i16>,
+        T::Float: dasp::sample::conv::FromSample<f32>,
     {
         use dasp::{
             frame::{Frame, Stereo},
@@ -282,7 +288,16 @@ impl CpalAudioBackend {
             for (_, sound) in sound_instances.iter_mut() {
                 if sound.active && !sound.signal.is_exhausted() {
                     let sound_frame = sound.signal.next();
-                    let sound_frame: Stereo<T::Signed> = Frame::map(sound_frame, Sample::to_sample);
+                    let left = sound_frame.mul_amp(sound.left_transform);
+                    let right = sound_frame.mul_amp(sound.right_transform);
+                    let sound_frame: Stereo<T::Signed> = unsafe {
+                        [
+                            Sample::add_amp(*left.get_unchecked(0), *left.get_unchecked(1))
+                                .to_sample(),
+                            Sample::add_amp(*right.get_unchecked(0), *right.get_unchecked(1))
+                                .to_sample(),
+                        ]
+                    };
                     output_frame = output_frame.add_amp(sound_frame);
                 } else {
                     sound.active = false;
@@ -347,6 +362,8 @@ impl AudioBackend for CpalAudioBackend {
             clip_id: Some(clip_id),
             signal,
             active: true,
+            left_transform: [1.0, 0.0],
+            right_transform: [0.0, 1.0],
         });
         Ok(handle)
     }
@@ -384,6 +401,8 @@ impl AudioBackend for CpalAudioBackend {
             clip_id: None,
             signal,
             active: true,
+            left_transform: [1.0, 0.0],
+            right_transform: [0.0, 1.0],
         });
         Ok(handle)
     }
@@ -432,12 +451,12 @@ impl AudioBackend for CpalAudioBackend {
         }
     }
 
-    fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool {
-        let sound_instances = self.sound_instances.lock().unwrap();
-        let handle = Some(handle);
-        sound_instances
-            .iter()
-            .any(|(_, instance)| instance.handle == handle && instance.active)
+    fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform) {
+        let mut sound_instances = self.sound_instances.lock().unwrap();
+        if let Some(instance) = sound_instances.get_mut(instance) {
+            instance.left_transform = [transform.left_to_left, transform.right_to_left];
+            instance.right_transform = [transform.left_to_right, transform.right_to_right];
+        }
     }
 
     fn tick(&mut self) {}
