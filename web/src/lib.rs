@@ -215,7 +215,6 @@ impl Ruffle {
     }
 
     pub fn play(&mut self) {
-        // Remove instance from the active list.
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
@@ -224,12 +223,20 @@ impl Ruffle {
     }
 
     pub fn pause(&mut self) {
-        // Remove instance from the active list.
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
             instance.borrow().core.lock().unwrap().set_is_playing(false);
         });
+    }
+
+    pub fn is_playing(&mut self) -> bool {
+        INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
+            let is_playing = instance.borrow().core.lock().unwrap().is_playing();
+            is_playing
+        })
     }
 
     pub fn destroy(&mut self) {

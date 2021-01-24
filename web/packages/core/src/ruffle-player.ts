@@ -109,6 +109,7 @@ export class RufflePlayer extends HTMLElement {
     private swfUrl?: string;
     private instance: Ruffle | null;
     private _trace_observer: ((message: string) => void) | null;
+    private lastActivePlayingState: boolean;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private ruffleConstructor: Promise<{ new (...args: any[]): Ruffle }>;
@@ -165,7 +166,40 @@ export class RufflePlayer extends HTMLElement {
 
         this.ruffleConstructor = loadRuffle();
 
+        this.lastActivePlayingState = false;
+        this.setupPauseOnTabHidden();
+
         return this;
+    }
+
+    /**
+     * Setup event listener to detect when tab is not active to pause instance playback.
+     * this.instance.play() is called when the tab becomes visible only if the
+     * the instance was not paused before tab became hidden.
+     *
+     * See:
+     *      https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
+     * @ignore
+     * @internal
+     */
+    setupPauseOnTabHidden(): void {
+        document.addEventListener(
+            "visibilitychange",
+            () => {
+                if (!this.instance) return;
+
+                // Tab just changed to be inactive. Record whether instance was playing.
+                if (document.hidden) {
+                    this.lastActivePlayingState = this.instance.is_playing();
+                    this.instance.pause();
+                }
+                // Play only if instance was playing originally.
+                if (!document.hidden && this.lastActivePlayingState === true) {
+                    this.instance.play();
+                }
+            },
+            false
+        );
     }
 
     /**
