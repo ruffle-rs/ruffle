@@ -14,12 +14,10 @@ fn main() {
         println!("cargo:rerun-if-changed=.git/HEAD");
     }
 
-    #[cfg(windows)]
-    {
-        // Embed resource file w/ icon.
-        println!("cargo:rerun-if-changed=assets/ruffle_desktop.rc");
-        embed_resource::compile("assets/ruffle_desktop.rc")
-    }
+    // Embed resource file w/ icon on windows
+    // To allow for cross-compilation, this must not be behind cfg(windows)!
+    println!("cargo:rerun-if-changed=assets/ruffle_desktop.rc");
+    embed_resource::compile("assets/ruffle_desktop.rc");
 
     println!("cargo:rerun-if-env-changed=CFG_RELEASE_CHANNEL");
     if option_env!("CFG_RELEASE_CHANNEL").map_or(true, |c| c == "nightly" || c == "dev") {
