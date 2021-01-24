@@ -159,7 +159,7 @@ pub fn create_proto<'gc>(
     globals: Object<'gc>,
 ) -> (Object<'gc>, GcCell<'gc, Class<'gc>>) {
     let object_class = Class::new(
-        QName::new(Namespace::public_namespace(), "Object"),
+        QName::new(Namespace::public(), "Object"),
         None,
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
@@ -189,19 +189,19 @@ pub fn fill_proto<'gc>(
 ) -> Object<'gc> {
     object_proto.install_method(
         gc_context,
-        QName::new(Namespace::public_namespace(), "toString"),
+        QName::new(Namespace::public(), "toString"),
         0,
         FunctionObject::from_builtin(gc_context, to_string, fn_proto),
     );
     object_proto.install_method(
         gc_context,
-        QName::new(Namespace::public_namespace(), "toLocaleString"),
+        QName::new(Namespace::public(), "toLocaleString"),
         0,
         FunctionObject::from_builtin(gc_context, to_locale_string, fn_proto),
     );
     object_proto.install_method(
         gc_context,
-        QName::new(Namespace::public_namespace(), "valueOf"),
+        QName::new(Namespace::public(), "valueOf"),
         0,
         FunctionObject::from_builtin(gc_context, value_of, fn_proto),
     );
@@ -225,7 +225,7 @@ pub fn fill_proto<'gc>(
     );
     object_proto.install_method(
         gc_context,
-        QName::new(Namespace::public_namespace(), "setPropertyIsEnumerable"),
+        QName::new(Namespace::public(), "setPropertyIsEnumerable"),
         0,
         FunctionObject::from_builtin(gc_context, set_property_is_enumerable, fn_proto),
     );

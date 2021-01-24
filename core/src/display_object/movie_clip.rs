@@ -1085,7 +1085,7 @@ impl<'gc> MovieClip<'gc> {
             if let Avm2Value::Object(mut p) = self.object2() {
                 if let Avm2Value::Object(c) = child.object2() {
                     let name = Avm2QName::new(
-                        Avm2Namespace::public_namespace(),
+                        Avm2Namespace::public(),
                         AvmString::new(context.gc_context, child.name().to_owned()),
                     );
                     let mut activation = Avm2Activation::from_nothing(context.reborrow());
@@ -1419,7 +1419,7 @@ impl<'gc> MovieClip<'gc> {
             mc_proto
                 .get_property(
                     mc_proto,
-                    &Avm2QName::new(Avm2Namespace::public_namespace(), "constructor"),
+                    &Avm2QName::new(Avm2Namespace::public(), "constructor"),
                     &mut activation,
                 )
                 .unwrap()
@@ -1432,7 +1432,7 @@ impl<'gc> MovieClip<'gc> {
             let proto = constructor
                 .get_property(
                     constructor,
-                    &Avm2QName::new(Avm2Namespace::public_namespace(), "prototype"),
+                    &Avm2QName::new(Avm2Namespace::public(), "prototype"),
                     &mut activation,
                 )?
                 .coerce_to_object(&mut activation)?;

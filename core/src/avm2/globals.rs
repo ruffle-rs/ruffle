@@ -240,7 +240,7 @@ where
     constr
         .get_property(
             constr,
-            &QName::new(Namespace::public_namespace(), "prototype"),
+            &QName::new(Namespace::public(), "prototype"),
             activation,
         )?
         .coerce_to_object(activation)

@@ -603,7 +603,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
                 fobject.install_slot(
                     activation.context.gc_context,
-                    QName::new(Namespace::public_namespace(), "prototype"),
+                    QName::new(Namespace::public(), "prototype"),
                     0,
                     es3_proto.into(),
                 );

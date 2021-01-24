@@ -244,7 +244,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             if method.method().needs_arguments_object {
                 args_object.set_property(
                     args_object,
-                    &QName::new(Namespace::public_namespace(), "callee"),
+                    &QName::new(Namespace::public(), "callee"),
                     callee.into(),
                     &mut activation,
                 )?;
@@ -322,7 +322,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         receiver: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error> {
-        let name = QName::new(Namespace::public_namespace(), "constructor");
+        let name = QName::new(Namespace::public(), "constructor");
         let base_proto: Result<Object<'gc>, Error> =
             self.base_proto().and_then(|p| p.proto()).ok_or_else(|| {
                 "Attempted to call super constructor without a superclass."
@@ -1184,7 +1184,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let obj = self.context.avm2.pop().coerce_to_object(self)?;
         let name = self.context.avm2.pop().coerce_to_string(self)?;
 
-        let qname = QName::new(Namespace::public_namespace(), name);
+        let qname = QName::new(Namespace::public(), name);
         let has_prop = obj.has_property(&qname)?;
 
         self.context.avm2.push(has_prop);
@@ -1352,11 +1352,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let mut ctor = self.context.avm2.pop().coerce_to_object(self)?;
 
         let proto = ctor
-            .get_property(
-                ctor,
-                &QName::new(Namespace::public_namespace(), "prototype"),
-                self,
-            )?
+            .get_property(ctor, &QName::new(Namespace::public(), "prototype"), self)?
             .coerce_to_object(self)?;
 
         let object = proto.construct(self, &args)?;
@@ -1385,11 +1381,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .get_property(source, &ctor_name?, self)?
             .coerce_to_object(self)?;
         let proto = ctor
-            .get_property(
-                ctor,
-                &QName::new(Namespace::public_namespace(), "prototype"),
-                self,
-            )?
+            .get_property(ctor, &QName::new(Namespace::public(), "prototype"), self)?
             .coerce_to_object(self)?;
 
         let object = proto.construct(self, &args)?;
@@ -1429,7 +1421,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             object.set_property(
                 object,
-                &QName::new(Namespace::public_namespace(), name.coerce_to_string(self)?),
+                &QName::new(Namespace::public(), name.coerce_to_string(self)?),
                 value,
                 self,
             )?;
@@ -1462,7 +1454,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         new_fn.install_slot(
             self.context.gc_context,
-            QName::new(Namespace::public_namespace(), "prototype"),
+            QName::new(Namespace::public(), "prototype"),
             0,
             es3_proto.into(),
         );

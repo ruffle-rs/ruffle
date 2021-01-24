@@ -16,8 +16,8 @@ macro_rules! math_constants {
     ($class:ident, $($name:expr => $value:expr),*) => {{
         $(
             $class.define_class_trait(Trait::from_const(
-                QName::new(Namespace::public_namespace(), $name),
-                Multiname::from(QName::new(Namespace::public_namespace(), "Number")),
+                QName::new(Namespace::public(), $name),
+                Multiname::from(QName::new(Namespace::public(), "Number")),
                 Some($value.into()),
             ));
         )*
@@ -28,7 +28,7 @@ macro_rules! math_method {
     ($class:ident, $($name:expr => $f:expr),*) => {{
         $(
             $class.define_class_trait(Trait::from_method(
-                QName::new(Namespace::public_namespace(), $name),
+                QName::new(Namespace::public(), $name),
                 Method::from_builtin($f),
             ));
         )*
@@ -39,7 +39,7 @@ macro_rules! math_wrap_std {
     ($class:ident, $($name:expr => $std:expr),*) => {{
         $(
             $class.define_class_trait(Trait::from_method(
-                QName::new(Namespace::public_namespace(), $name),
+                QName::new(Namespace::public(), $name),
                 Method::from_builtin(
                     |activation, _this, args| -> Result<Value<'gc>, Error> {
                         if let Some(input) = args.get(0) {
@@ -76,8 +76,8 @@ pub fn class_init<'gc>(
 /// Construct `Math`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
-        QName::new(Namespace::public_namespace(), "Math"),
-        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        QName::new(Namespace::public(), "Math"),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
