@@ -569,7 +569,13 @@ export class RufflePlayer extends HTMLElement {
             }
         }
         items.push({
-            text: `Ruffle %VERSION_NAME%`,
+            text: "SEPARATOR",
+            onClick() {
+                // do nothing.
+            },
+        });
+        items.push({
+            text: `About Ruffle (%VERSION_NAME%)`,
             onClick() {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
@@ -593,11 +599,19 @@ export class RufflePlayer extends HTMLElement {
 
         // Populate context menu items.
         for (const { text, onClick } of this.contextMenuItems()) {
-            const element = document.createElement("li");
-            element.className = "menu_item active";
-            element.textContent = text;
-            element.addEventListener("click", onClick);
-            this.contextMenuElement.appendChild(element);
+            if (text == "SEPARATOR") {
+                const element = document.createElement("li");
+                element.className = "menu_separator";
+                const hr = document.createElement("hr");
+                element.appendChild(hr);
+                this.contextMenuElement.appendChild(element);
+            } else {
+                const element = document.createElement("li");
+                element.className = "menu_item active";
+                element.textContent = text;
+                element.addEventListener("click", onClick);
+                this.contextMenuElement.appendChild(element);
+            }
         }
 
         // Place a context menu in the top-left corner, so

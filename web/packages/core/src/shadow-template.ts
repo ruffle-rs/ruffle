@@ -157,13 +157,12 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #context-menu {
-            display: none;
-            color: #FFAD33;
-            background-color: #37528c;
-            border-radius: 5px;
-            box-shadow: 0px 5px 15px -5px #000;
+            color: black;
+            background-color: #FAFAFA;
+            border: 1px solid gray;
+            box-shadow: 0px 5px 10px -5px black;
             position: absolute;
-            font-size: 16px;
+            font-size: 14px;
             text-align: left;
             list-style: none;
             padding: 0;
@@ -174,36 +173,25 @@ ruffleShadowTemplate.innerHTML = `
             padding: 5px 10px;
         }
 
-        #context-menu .menu_separator {
-            padding: 5px 5px;
-        }
 
         #context-menu .active {
             cursor: pointer;
-            color: #FFAD33;
+            color: black;
         }
 
         #context-menu .disabled {
             cursor: default;
-            color: #94672F;
+            color: gray;
         }
 
         #context-menu .active:hover {
-            background-color: #184778;
+            background-color: lightgray;
         }
 
-        #context-menu hr {
-            color: #FFAD33;
-        }
-
-        #context-menu > :first-child {
-            border-top-right-radius: 5px;
-            border-top-left-radius: 5px;
-        }
-
-        #context-menu > :last-child {
-            border-bottom-right-radius: 5px;
-            border-bottom-left-radius: 5px;
+        #context-menu .menu_separator hr {
+            border: none;
+            border-bottom: 1px solid lightgray;
+            margin: 2px;
         }
     </style>
     <style id="dynamic_styles"></style>
