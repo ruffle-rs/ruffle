@@ -140,13 +140,16 @@ fn main() {
     }
 }
 
-fn load_movie_from_path(movie_url: Url, opt: &Opt) -> Result<SwfMovie, Box<dyn std::error::Error>> {
+fn load_movie_from_path(
+    movie_url: Url,
+    proxy: Option<&Url>,
+) -> Result<SwfMovie, Box<dyn std::error::Error>> {
     if movie_url.scheme() == "file" {
         if let Ok(path) = movie_url.to_file_path() {
             return SwfMovie::from_path(path);
         }
     }
-    let proxy = opt.proxy.as_ref().and_then(|url| url.as_str().parse().ok());
+    let proxy = proxy.and_then(|url| url.as_str().parse().ok());
     let builder = HttpClient::builder()
         .proxy(proxy)
         .redirect_policy(RedirectPolicy::Follow);
@@ -155,10 +158,11 @@ fn load_movie_from_path(movie_url: Url, opt: &Opt) -> Result<SwfMovie, Box<dyn s
     let mut buffer: Vec<u8> = Vec::new();
     res.into_body().read_to_end(&mut buffer)?;
 
-    let mut movie = SwfMovie::from_data(&buffer, Some(movie_url.to_string()))?;
+    SwfMovie::from_data(&buffer, Some(movie_url.to_string()))
+}
 
-    // Set query parameters.
-    for parameter in &opt.parameters {
+fn set_movie_parameters(movie: &mut SwfMovie, parameters: &[String]) {
+    for parameter in parameters {
         let mut split = parameter.splitn(2, '=');
         if let (Some(key), Some(value)) = (split.next(), split.next()) {
             movie.parameters_mut().insert(key, value.to_string(), true);
@@ -168,8 +172,6 @@ fn load_movie_from_path(movie_url: Url, opt: &Opt) -> Result<SwfMovie, Box<dyn s
                 .insert(&parameter, "".to_string(), true);
         }
     }
-
-    Ok(movie)
 }
 
 fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
@@ -200,7 +202,8 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let movie = load_movie_from_path(movie_url.to_owned(), &opt)?;
+    let mut movie = load_movie_from_path(movie_url.to_owned(), opt.proxy.as_ref())?;
+    set_movie_parameters(&mut movie, &opt.parameters);
     let movie_size = LogicalSize::new(movie.width(), movie.height());
 
     let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
@@ -457,7 +460,8 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         None => return Err("Input file necessary for timedemo".into()),
     };
 
-    let movie = load_movie_from_path(movie_url, &opt)?;
+    let mut movie = load_movie_from_path(movie_url, opt.proxy.as_ref())?;
+    set_movie_parameters(&mut movie, &opt.parameters);
     let movie_frames = Some(movie.header().num_frames);
 
     let viewport_width = 1920;
