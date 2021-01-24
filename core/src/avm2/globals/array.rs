@@ -127,7 +127,7 @@ pub fn resolve_array_hole<'gc>(
                 p.get_property(
                     p,
                     &QName::new(
-                        Namespace::public_namespace(),
+                        Namespace::public(),
                         AvmString::new(activation.context.gc_context, i.to_string()),
                     ),
                     activation,
@@ -210,7 +210,7 @@ pub fn to_locale_string<'gc>(
 
         let tls = o.get_property(
             o,
-            &QName::new(Namespace::public_namespace(), "toLocaleString"),
+            &QName::new(Namespace::public(), "toLocaleString"),
             activation,
         )?;
 
@@ -261,7 +261,7 @@ impl<'gc> ArrayIter<'gc> {
         let length = array_object
             .get_property(
                 array_object,
-                &QName::new(Namespace::public_namespace(), "length"),
+                &QName::new(Namespace::public(), "length"),
                 activation,
             )?
             .coerce_to_u32(activation)?;
@@ -291,7 +291,7 @@ impl<'gc> ArrayIter<'gc> {
                     .get_property(
                         self.array_object,
                         &QName::new(
-                            Namespace::public_namespace(),
+                            Namespace::public(),
                             AvmString::new(activation.context.gc_context, i.to_string()),
                         ),
                         activation,
@@ -1165,14 +1165,14 @@ pub fn sort_on<'gc>(
                         let mut a_object = a.coerce_to_object(activation)?;
                         let a_field = a_object.get_property(
                             a_object,
-                            &QName::new(Namespace::public_namespace(), *field_name),
+                            &QName::new(Namespace::public(), *field_name),
                             activation,
                         )?;
 
                         let mut b_object = b.coerce_to_object(activation)?;
                         let b_field = b_object.get_property(
                             b_object,
-                            &QName::new(Namespace::public_namespace(), *field_name),
+                            &QName::new(Namespace::public(), *field_name),
                             activation,
                         )?;
 
@@ -1209,15 +1209,15 @@ pub fn sort_on<'gc>(
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
-        QName::new(Namespace::public_namespace(), "Array"),
-        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        QName::new(Namespace::public(), "Array"),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
     );
 
     class.write(mc).define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public_namespace(), "length"),
+        QName::new(Namespace::public(), "length"),
         Method::from_builtin(length),
     ));
 
@@ -1232,17 +1232,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "toString"),
+        QName::new(Namespace::public(), "toString"),
         Method::from_builtin(to_string),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "toLocaleString"),
+        QName::new(Namespace::public(), "toLocaleString"),
         Method::from_builtin(to_locale_string),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "valueOf"),
+        QName::new(Namespace::public(), "valueOf"),
         Method::from_builtin(value_of),
     ));
 
@@ -1327,32 +1327,32 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
-        QName::new(Namespace::public_namespace(), "CASEINSENSITIVE"),
-        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
+        QName::new(Namespace::public(), "CASEINSENSITIVE"),
+        Multiname::from(QName::new(Namespace::public(), "uint")),
         Some(SortOptions::CASE_INSENSITIVE.bits().into()),
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
-        QName::new(Namespace::public_namespace(), "DESCENDING"),
-        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
+        QName::new(Namespace::public(), "DESCENDING"),
+        Multiname::from(QName::new(Namespace::public(), "uint")),
         Some(SortOptions::DESCENDING.bits().into()),
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
-        QName::new(Namespace::public_namespace(), "NUMERIC"),
-        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
+        QName::new(Namespace::public(), "NUMERIC"),
+        Multiname::from(QName::new(Namespace::public(), "uint")),
         Some(SortOptions::NUMERIC.bits().into()),
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
-        QName::new(Namespace::public_namespace(), "RETURNINDEXEDARRAY"),
-        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
+        QName::new(Namespace::public(), "RETURNINDEXEDARRAY"),
+        Multiname::from(QName::new(Namespace::public(), "uint")),
         Some(SortOptions::RETURN_INDEXED_ARRAY.bits().into()),
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
-        QName::new(Namespace::public_namespace(), "UNIQUESORT"),
-        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
+        QName::new(Namespace::public(), "UNIQUESORT"),
+        Multiname::from(QName::new(Namespace::public(), "uint")),
         Some(SortOptions::UNIQUE_SORT.bits().into()),
     ));
 

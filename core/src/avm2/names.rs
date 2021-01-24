@@ -62,7 +62,7 @@ impl<'gc> Namespace<'gc> {
         })
     }
 
-    pub fn public_namespace() -> Self {
+    pub fn public() -> Self {
         Namespace::Package("".into())
     }
 
@@ -137,7 +137,7 @@ impl<'gc> QName<'gc> {
 
     pub fn dynamic_name(local_part: impl Into<AvmString<'gc>>) -> Self {
         Self {
-            ns: Namespace::public_namespace(),
+            ns: Namespace::public(),
             name: local_part.into(),
         }
     }
@@ -183,7 +183,7 @@ impl<'gc> QName<'gc> {
                 name: AvmString::new(mc, local_name.to_string()),
             }),
             [local_name] => Some(Self {
-                ns: Namespace::public_namespace(),
+                ns: Namespace::public(),
                 name: AvmString::new(mc, local_name.to_string()),
             }),
             _ => None,

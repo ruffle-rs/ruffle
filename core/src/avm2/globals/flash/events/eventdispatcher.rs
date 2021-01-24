@@ -367,7 +367,7 @@ pub fn class_init<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.events"), "EventDispatcher"),
-        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
@@ -380,23 +380,23 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.implements(QName::new(Namespace::package("flash.events"), "IEventDispatcher").into());
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "addEventListener"),
+        QName::new(Namespace::public(), "addEventListener"),
         Method::from_builtin(add_event_listener),
     ));
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "removeEventListener"),
+        QName::new(Namespace::public(), "removeEventListener"),
         Method::from_builtin(remove_event_listener),
     ));
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "hasEventListener"),
+        QName::new(Namespace::public(), "hasEventListener"),
         Method::from_builtin(has_event_listener),
     ));
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "willTrigger"),
+        QName::new(Namespace::public(), "willTrigger"),
         Method::from_builtin(will_trigger),
     ));
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "dispatchEvent"),
+        QName::new(Namespace::public(), "dispatchEvent"),
         Method::from_builtin(dispatch_event),
     ));
 

@@ -93,7 +93,7 @@ impl<'gc> FunctionObject<'gc> {
             let super_proto: Result<_, Error> = base_class
                 .get_property(
                     base_class,
-                    &QName::new(Namespace::public_namespace(), "prototype"),
+                    &QName::new(Namespace::public(), "prototype"),
                     activation,
                 )?
                 .coerce_to_object(activation)
@@ -143,7 +143,7 @@ impl<'gc> FunctionObject<'gc> {
             let iface_proto = interface
                 .get_property(
                     interface,
-                    &QName::new(Namespace::public_namespace(), "prototype"),
+                    &QName::new(Namespace::public(), "prototype"),
                     activation,
                 )?
                 .coerce_to_object(activation)?;
@@ -180,12 +180,12 @@ impl<'gc> FunctionObject<'gc> {
 
         constr.install_dynamic_property(
             activation.context.gc_context,
-            QName::new(Namespace::public_namespace(), "prototype"),
+            QName::new(Namespace::public(), "prototype"),
             class_proto.into(),
         )?;
         class_proto.install_dynamic_property(
             activation.context.gc_context,
-            QName::new(Namespace::public_namespace(), "constructor"),
+            QName::new(Namespace::public(), "constructor"),
             constr.into(),
         )?;
 
@@ -263,12 +263,12 @@ impl<'gc> FunctionObject<'gc> {
 
         base.install_dynamic_property(
             mc,
-            QName::new(Namespace::public_namespace(), "prototype"),
+            QName::new(Namespace::public(), "prototype"),
             prototype.into(),
         )?;
         prototype.install_dynamic_property(
             mc,
-            QName::new(Namespace::public_namespace(), "constructor"),
+            QName::new(Namespace::public(), "constructor"),
             base.into(),
         )?;
 

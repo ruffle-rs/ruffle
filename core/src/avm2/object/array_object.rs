@@ -191,7 +191,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
         if let Ok(index) = local_name.parse::<usize>() {
             if self.0.read().array.get(index).is_some() {
-                return Ok(Some(Namespace::public_namespace()));
+                return Ok(Some(Namespace::public()));
             }
         }
 

@@ -34,8 +34,8 @@ pub fn class_init<'gc>(
 /// Construct `global`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     Class::new(
-        QName::new(Namespace::public_namespace(), "global"),
-        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        QName::new(Namespace::public(), "global"),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
