@@ -1975,9 +1975,9 @@ dependencies = [
 
 [[package]]
 name = "lyon"
-version = "0.17.3"
+version = "0.17.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a90be95ae04a3fa64777a0de244acf55fdde882eba6a23d4c2cd4f60f34ddf09"
+checksum = "e675e45caaea6ab7e88b27cd262ecf8a8cd015802e92c30611d3421ec15711d7"
 dependencies = [
  "lyon_algorithms",
  "lyon_tessellation",
@@ -2015,9 +2015,9 @@ dependencies = [
 
 [[package]]
 name = "lyon_tessellation"
-version = "0.17.3"
+version = "0.17.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2133ee881f9c08ffae9bf866ef56204ab6da4ccb2b2b37963c14b028d798fd41"
+checksum = "a5fe15d82be91e7e43d3b2c5b9a7c8cc01f523592def51ee088f2a669fa32a8d"
 dependencies = [
  "arrayvec",
  "lyon_path",
