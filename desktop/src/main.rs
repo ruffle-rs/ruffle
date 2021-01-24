@@ -1,3 +1,10 @@
+// By default, Windows creates an additional console window for our program.
+//
+//
+// This is silently ignored on non-windows systems.
+// See https://docs.microsoft.com/en-us/cpp/build/reference/subsystem?view=msvc-160 for details.
+#![windows_subsystem = "windows"]
+
 mod audio;
 mod custom_event;
 mod executor;
@@ -102,7 +109,14 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
 }
 
 fn main() {
-    win32_hide_console();
+    // When linked with the windows subsystem windows won't automatically attach
+    // to the console of the parent process, so we do it explicitly. This fails
+    // silently if the parent has no console.
+    #[cfg(windows)]
+    unsafe {
+        use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
+        AttachConsole(ATTACH_PARENT_PROCESS);
+    }
 
     env_logger::init();
 
@@ -117,6 +131,12 @@ fn main() {
     if let Err(e) = ret {
         eprintln!("Fatal error:\n{}", e);
         std::process::exit(-1);
+    }
+
+    // Without explicitly detaching the console cmd won't redraw it's prompt.
+    #[cfg(windows)]
+    unsafe {
+        winapi::um::wincon::FreeConsole();
     }
 }
 
@@ -491,23 +511,4 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     println!("Ran {} frames in {}s.", num_frames, duration.as_secs_f32());
 
     Ok(())
-}
-
-/// Hides the Win32 console if we were not launched from the command line.
-fn win32_hide_console() {
-    #[cfg(windows)]
-    unsafe {
-        use winapi::um::{wincon::*, winuser::*};
-        // If we have a console, and we are the exclusive process using that console,
-        // then we were not launched from the command-line; hide the console to act like a GUI app.
-        let hwnd = GetConsoleWindow();
-        if !hwnd.is_null() {
-            let mut pids = [0; 2];
-            let num_pids = GetConsoleProcessList(pids.as_mut_ptr(), 2);
-            let is_exclusive = num_pids <= 1;
-            if is_exclusive {
-                ShowWindow(hwnd, SW_HIDE);
-            }
-        }
-    }
 }
