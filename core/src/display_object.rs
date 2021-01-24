@@ -67,6 +67,9 @@ pub struct DisplayObjectBase<'gc> {
     /// The next sibling of this display object in order of execution.
     next_sibling: Option<DisplayObject<'gc>>,
 
+    /// The sound transform of sounds playing via this display object.
+    sound_transform: SoundTransform,
+
     /// Bit flags for various display object properites.
     flags: DisplayObjectFlags,
 }
@@ -86,6 +89,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             skew: 0.0,
             prev_sibling: None,
             next_sibling: None,
+            sound_transform: Default::default(),
             flags: DisplayObjectFlags::VISIBLE,
         }
     }
@@ -357,6 +361,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         } else {
             self.flags -= DisplayObjectFlags::REMOVED;
         }
+    }
+
+    fn sound_transform(&self) -> &SoundTransform {
+        &self.sound_transform
+    }
+
+    fn set_sound_transform(&mut self, sound_transform: SoundTransform) {
+        self.sound_transform = sound_transform;
     }
 
     fn visible(&self) -> bool {
@@ -763,6 +775,16 @@ pub trait TDisplayObject<'gc>:
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
     fn set_visible(&self, context: MutationContext<'gc, '_>, value: bool);
+
+    /// The sound transform for sounds played inside this display object.
+    fn sound_transform(&self) -> Ref<SoundTransform>;
+
+    /// The sound transform for sounds played inside this display object.
+    fn set_sound_transform(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        sound_transform: SoundTransform,
+    );
 
     /// Whether this display object is used as the _root of itself and its children.
     /// Returned by the `_lockroot` ActionScript property.
@@ -1209,6 +1231,20 @@ macro_rules! impl_display_object_sansbounds {
         fn set_removed(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_removed(value)
         }
+        fn sound_transform(&self) -> std::cell::Ref<crate::display_object::SoundTransform> {
+            std::cell::Ref::map(self.0.read(), |r| r.$field.sound_transform())
+        }
+        fn set_sound_transform(
+            &self,
+            context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+            value: crate::display_object::SoundTransform,
+        ) {
+            self.0
+                .write(context.gc_context)
+                .$field
+                .set_sound_transform(value);
+            context.update_sound_transforms();
+        }
         fn visible(&self) -> bool {
             self.0.read().$field.visible()
         }
@@ -1329,5 +1365,83 @@ bitflags! {
         /// Whether this object has `_lockroot` set to true, in which case
         /// it becomes the _root of itself and of any children
         const LOCK_ROOT                = 1 << 6;
+    }
+}
+
+/// Represents the sound transfomr of sounds played inside a Flash MovieClip.
+/// Every value is a percentage (0-100), but out of range values are allowed.
+/// In AVM1, this is returned by `Sound.getTransform`.
+/// In AVM2, this is returned by `Sprite.soundTransform`.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct SoundTransform {
+    pub volume: i32,
+    pub left_to_left: i32,
+    pub left_to_right: i32,
+    pub right_to_left: i32,
+    pub right_to_right: i32,
+}
+
+impl SoundTransform {
+    pub const MAX_VOLUME: i32 = 100;
+
+    /// Applies another SoundTransform on top of this SoundTransform.
+    pub fn concat(&mut self, other: &SoundTransform) {
+        // This is a 2x2 matrix multiply between the transforms.
+        // Done with integer math to match Flash behavior.
+        const MAX_VOLUME: i64 = SoundTransform::MAX_VOLUME as i64;
+        self.volume = (i64::from(self.volume) * i64::from(other.volume) / MAX_VOLUME) as i32;
+
+        let ll0 = i64::from(self.left_to_left);
+        let lr0 = i64::from(self.left_to_right);
+        let rl0 = i64::from(self.right_to_left);
+        let rr0 = i64::from(self.right_to_right);
+        let ll1 = i64::from(other.left_to_left);
+        let lr1 = i64::from(other.left_to_right);
+        let rl1 = i64::from(other.right_to_left);
+        let rr1 = i64::from(other.right_to_right);
+        self.left_to_left = ((ll0 * ll1 + rl0 * lr1) / MAX_VOLUME) as i32;
+        self.left_to_right = ((lr0 * ll1 + rr0 * lr1) / MAX_VOLUME) as i32;
+        self.right_to_left = ((ll0 * rl1 + rl0 * rr1) / MAX_VOLUME) as i32;
+        self.right_to_right = ((lr0 * rl1 + rr0 * rr1) / MAX_VOLUME) as i32;
+    }
+
+    /// Returns the pan of this transform.
+    /// -100 is full left and 100 is full right.
+    /// This matches the behavior of AVM1 `Sound.getPan()`
+    pub fn pan(&self) -> i32 {
+        // It's not clear why Flash has the weird `abs` behavior, but this
+        // mathes the values that Flash returns (see `sound` regression test).
+        if self.left_to_left != Self::MAX_VOLUME {
+            Self::MAX_VOLUME - self.left_to_left.abs()
+        } else {
+            self.right_to_right.abs() - Self::MAX_VOLUME
+        }
+    }
+
+    /// Sets this transform of this pan.
+    /// -100 is full left and 100 is full right.
+    /// This matches the behavior of AVM1 `Sound.setPan()`.
+    pub fn set_pan(&mut self, pan: i32) {
+        if pan >= 0 {
+            self.left_to_left = Self::MAX_VOLUME - pan;
+            self.right_to_right = Self::MAX_VOLUME;
+        } else {
+            self.left_to_left = Self::MAX_VOLUME;
+            self.right_to_right = Self::MAX_VOLUME + pan;
+        }
+        self.left_to_right = 0;
+        self.right_to_left = 0;
+    }
+}
+
+impl Default for SoundTransform {
+    fn default() -> Self {
+        Self {
+            volume: 100,
+            left_to_left: 100,
+            left_to_right: 0,
+            right_to_left: 0,
+            right_to_right: 100,
+        }
     }
 }

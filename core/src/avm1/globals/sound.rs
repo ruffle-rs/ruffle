@@ -5,10 +5,10 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, SoundObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, SoundObject, TObject, Value};
 use crate::avm_warn;
 use crate::character::Character;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{SoundTransform, TDisplayObject};
 use gc_arena::MutationContext;
 
 /// Implements `Sound`
@@ -267,29 +267,68 @@ fn get_bytes_total<'gc>(
 
 fn get_pan<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Sound.getPan: Unimplemented");
-    Ok(0.into())
+    let transform = this.as_sound_object().map(|sound| {
+        sound
+            .owner()
+            .map(|owner| owner.sound_transform().clone())
+            .unwrap_or_else(|| activation.context.global_sound_transform().clone())
+    });
+
+    if let Some(transform) = transform {
+        Ok(transform.pan().into())
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 fn get_transform<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Sound.getTransform: Unimplemented");
-    Ok(Value::Undefined)
+    let transform = this.as_sound_object().map(|sound| {
+        sound
+            .owner()
+            .map(|owner| owner.sound_transform().clone())
+            .unwrap_or_else(|| activation.context.global_sound_transform().clone())
+    });
+
+    if let Some(transform) = transform {
+        let obj = ScriptObject::object(
+            activation.context.gc_context,
+            Some(activation.context.avm1.prototypes.object),
+        );
+        // Surprisngly `lr` means "right-to-left" and `rl` means "left-to-right".
+        obj.set("ll", transform.left_to_left.into(), activation)?;
+        obj.set("lr", transform.right_to_left.into(), activation)?;
+        obj.set("rl", transform.left_to_right.into(), activation)?;
+        obj.set("rr", transform.right_to_right.into(), activation)?;
+        Ok(obj.into())
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 fn get_volume<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Sound.getVolume: Unimplemented");
-    Ok(100.into())
+    let transform = this.as_sound_object().map(|sound| {
+        sound
+            .owner()
+            .map(|owner| owner.sound_transform().clone())
+            .unwrap_or_else(|| activation.context.global_sound_transform().clone())
+    });
+
+    if let Some(transform) = transform {
+        Ok(transform.volume.into())
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 fn id3<'gc>(
@@ -337,28 +376,91 @@ fn position<'gc>(
 
 fn set_pan<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Sound.setPan: Unimplemented");
+    let value = args.get(0).copied().unwrap_or(Value::Undefined);
+    let pan = clamp_sound_transform_value(activation, value)?;
+
+    if let Some(sound) = this.as_sound_object() {
+        if let Some(owner) = sound.owner() {
+            let mut transform = owner.sound_transform().clone();
+            transform.set_pan(pan);
+            owner.set_sound_transform(&mut activation.context, transform);
+        } else {
+            let mut transform = activation.context.global_sound_transform().clone();
+            transform.set_pan(pan);
+            activation.context.set_global_sound_transform(transform);
+        }
+    }
+
     Ok(Value::Undefined)
 }
 
 fn set_transform<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Sound.setTransform: Unimplemented");
+    let obj = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation);
+
+    if let Some(sound) = this.as_sound_object() {
+        let mut transform = if let Some(owner) = sound.owner() {
+            owner.sound_transform().clone()
+        } else {
+            activation.context.global_sound_transform().clone()
+        };
+
+        if obj.has_own_property(activation, "ll") {
+            transform.left_to_left = obj.get("ll", activation)?.coerce_to_i32(activation)?;
+        }
+        // Surprisngly `lr` means "right-to-left" and `rl` means "left-to-right".
+        if obj.has_own_property(activation, "rl") {
+            transform.left_to_right = obj.get("rl", activation)?.coerce_to_i32(activation)?;
+        }
+        if obj.has_own_property(activation, "lr") {
+            transform.right_to_left = obj.get("lr", activation)?.coerce_to_i32(activation)?;
+        }
+        if obj.has_own_property(activation, "rr") {
+            transform.right_to_right = obj.get("rr", activation)?.coerce_to_i32(activation)?;
+        }
+
+        if let Some(owner) = sound.owner() {
+            owner.set_sound_transform(&mut activation.context, transform);
+        } else {
+            activation.context.set_global_sound_transform(transform);
+        };
+    }
     Ok(Value::Undefined)
 }
 
 fn set_volume<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Sound.setVolume: Unimplemented");
+    let value = args.get(0).copied().unwrap_or(Value::Undefined);
+    let volume = clamp_sound_transform_value(activation, value)?;
+
+    if let Some(sound) = this.as_sound_object() {
+        if let Some(owner) = sound.owner() {
+            let transform = SoundTransform {
+                volume,
+                ..*owner.sound_transform()
+            };
+            owner.set_sound_transform(&mut activation.context, transform);
+        } else {
+            let transform = SoundTransform {
+                volume,
+                ..*activation.context.global_sound_transform()
+            };
+            activation.context.set_global_sound_transform(transform);
+        }
+    }
+
     Ok(Value::Undefined)
 }
 
@@ -457,4 +559,19 @@ fn stop<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Used by methods like `Sound.setVolume` to clamp the parameter to i32 range.
+fn clamp_sound_transform_value<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<i32, Error<'gc>> {
+    value.coerce_to_f64(activation).map(|n| {
+        // Values outside of i32 range get clamped to i32::MIN.
+        if n.is_finite() && n >= f64::from(i32::MIN) && n <= f64::from(i32::MAX) {
+            n as i32
+        } else {
+            i32::MIN
+        }
+    })
 }

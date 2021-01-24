@@ -1,4 +1,9 @@
-use crate::{avm1::SoundObject, context::UpdateContext, display_object::DisplayObject};
+use crate::{
+    avm1::SoundObject,
+    display_object::{
+        self, DisplayObject, SoundTransform as DisplayObjectSoundTransform, TDisplayObject,
+    },
+};
 use downcast_rs::Downcast;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
@@ -81,6 +86,9 @@ pub trait AudioBackend: Downcast {
     /// Returns `None` if sound is not registered.
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32>;
 
+    /// Set the volume transform for a sound instance.
+    fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform);
+
     // TODO: Eventually remove this/move it to library.
     fn is_loading_complete(&self) -> bool {
         true
@@ -154,6 +162,8 @@ impl AudioBackend for NullAudioBackend {
     fn get_sound_duration(&self, _sound: SoundHandle) -> Option<u32> {
         None
     }
+
+    fn set_sound_transform(&mut self, _instance: SoundInstanceHandle, _transform: SoundTransform) {}
 }
 
 impl Default for NullAudioBackend {
@@ -164,7 +174,10 @@ impl Default for NullAudioBackend {
 
 pub struct AudioManager<'gc> {
     /// The list of actively playing sounds.
-    sounds: Arena<SoundInstance<'gc>>,
+    sounds: Vec<SoundInstance<'gc>>,
+
+    /// The global sound transform applied to all sounds.
+    global_sound_transform: DisplayObjectSoundTransform,
 }
 
 impl<'gc> AudioManager<'gc> {
@@ -172,7 +185,8 @@ impl<'gc> AudioManager<'gc> {
 
     pub fn new() -> Self {
         Self {
-            sounds: Arena::with_capacity(Self::MAX_SOUNDS),
+            sounds: Vec::with_capacity(Self::MAX_SOUNDS),
+            global_sound_transform: Default::default(),
         }
     }
 
@@ -182,7 +196,7 @@ impl<'gc> AudioManager<'gc> {
         gc_context: gc_arena::MutationContext<'gc, '_>,
     ) -> Vec<SoundInstance<'gc>> {
         let mut removed = vec![];
-        self.sounds.retain(|_, sound| {
+        self.sounds.retain(|sound| {
             if let Some(pos) = audio.get_sound_position(sound.instance) {
                 // Sounds still playing; update position.
                 if let Some(avm1_object) = sound.avm1_object {
@@ -198,36 +212,56 @@ impl<'gc> AudioManager<'gc> {
         removed
     }
 
+    /// Update the sound transforms for all sounds.
+    /// This should be called whenever a sound transform changes on a display object.
+    pub fn update_sound_transforms(&mut self, audio: &mut dyn AudioBackend) {
+        // This updates the sound transform for all sounds, even though the transform has
+        // only changed on a single display object. There are only a small amount
+        // of sounds playing at any time, so this shouldn't be a big deal.
+        for sound in &self.sounds {
+            let transform = self.transform_for_sound(sound);
+            audio.set_sound_transform(sound.instance, transform);
+        }
+    }
+
     pub fn start_sound(
         &mut self,
         audio: &mut dyn AudioBackend,
         sound: SoundHandle,
         settings: &swf::SoundInfo,
-        owner: Option<DisplayObject<'gc>>,
+        display_object: Option<DisplayObject<'gc>>,
         avm1_object: Option<SoundObject<'gc>>,
     ) -> Option<SoundInstanceHandle> {
         if self.sounds.len() < Self::MAX_SOUNDS {
-            let backend_instance = audio.start_sound(sound, settings).ok()?;
+            let handle = audio.start_sound(sound, settings).ok()?;
             let instance = SoundInstance {
                 sound,
-                instance: backend_instance,
-                display_object: owner,
+                instance: handle,
+                display_object,
                 avm1_object,
             };
-            Some(self.sounds.insert(instance))
+            audio.set_sound_transform(handle, self.transform_for_sound(&instance));
+            self.sounds.push(instance);
+            Some(handle)
         } else {
             None
         }
     }
 
     pub fn stop_sound(&mut self, audio: &mut dyn AudioBackend, instance: SoundInstanceHandle) {
-        if let Some(instance) = self.sounds.remove(instance) {
+        if let Some(i) = self
+            .sounds
+            .iter()
+            .position(|other| other.instance == instance)
+        {
+            let instance = &self.sounds[i];
             audio.stop_sound(instance.instance);
+            self.sounds.swap_remove(i);
         }
     }
 
     pub fn stop_sounds_with_handle(&mut self, audio: &mut dyn AudioBackend, sound: SoundHandle) {
-        self.sounds.retain(move |_, other| {
+        self.sounds.retain(move |other| {
             if other.sound == sound {
                 audio.stop_sound(other.instance);
                 false
@@ -242,7 +276,7 @@ impl<'gc> AudioManager<'gc> {
         audio: &mut dyn AudioBackend,
         display_object: DisplayObject<'gc>,
     ) {
-        self.sounds.retain(move |_, sound| {
+        self.sounds.retain(move |sound| {
             if let Some(other) = sound.display_object {
                 if DisplayObject::ptr_eq(other, display_object) {
                     audio.stop_sound(sound.instance);
@@ -259,13 +293,14 @@ impl<'gc> AudioManager<'gc> {
     }
 
     pub fn is_sound_playing_with_handle(&mut self, sound: SoundHandle) -> bool {
-        self.sounds.iter().any(|(_, other)| other.sound == sound)
+        self.sounds.iter().any(|other| other.sound == sound)
     }
 
     pub fn start_stream(
         &mut self,
         audio: &mut dyn AudioBackend,
         clip_id: swf::CharacterId,
+
         frame: u16,
         data: crate::tag_utils::SwfSlice,
         stream_info: &swf::SoundStreamHead,
@@ -275,6 +310,30 @@ impl<'gc> AudioManager<'gc> {
 
     pub fn stop_stream(&mut self, audio: &mut dyn AudioBackend, handle: AudioStreamHandle) {
         audio.stop_stream(handle)
+    }
+
+    pub fn global_sound_transform(&self) -> &DisplayObjectSoundTransform {
+        &self.global_sound_transform
+    }
+
+    pub fn set_global_sound_transform(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        sound_transform: DisplayObjectSoundTransform,
+    ) {
+        self.global_sound_transform = sound_transform;
+        self.update_sound_transforms(audio);
+    }
+
+    fn transform_for_sound(&self, sound: &SoundInstance<'gc>) -> SoundTransform {
+        let mut transform = DisplayObjectSoundTransform::default();
+        let mut parent = sound.display_object;
+        while let Some(display_object) = parent {
+            transform.concat(&display_object.sound_transform());
+            parent = display_object.parent();
+        }
+        transform.concat(&self.global_sound_transform);
+        SoundTransform::from_display_object_transform(&transform)
     }
 }
 
@@ -286,7 +345,7 @@ impl<'gc> Default for AudioManager<'gc> {
 
 unsafe impl<'gc> Collect for AudioManager<'gc> {
     fn trace(&self, cc: CollectionContext) {
-        for (_, sound) in &self.sounds {
+        for sound in &self.sounds {
             sound.trace(cc);
         }
     }
@@ -303,5 +362,41 @@ unsafe impl<'gc> Collect for SoundInstance<'gc> {
     fn trace(&self, cc: CollectionContext) {
         self.display_object.trace(cc);
         self.avm1_object.trace(cc);
+    }
+}
+
+/// A sound transform for a playing sound, for use by audio backends.
+/// This differs from `display_object::SoundTranform` by being
+/// already converted to `f32` and having `volume` baked in.
+#[derive(Debug, PartialEq, Clone)]
+pub struct SoundTransform {
+    pub left_to_left: f32,
+    pub left_to_right: f32,
+    pub right_to_left: f32,
+    pub right_to_right: f32,
+}
+
+impl SoundTransform {
+    /// Converts from a `display_object::SoundTransform` to a `backend::audio::SoundTransform`.
+    fn from_display_object_transform(other: &DisplayObjectSoundTransform) -> Self {
+        const SCALE: f32 = (display_object::SoundTransform::MAX_VOLUME
+            * display_object::SoundTransform::MAX_VOLUME) as f32;
+        Self {
+            left_to_left: other.left_to_left as f32 * other.volume as f32 / SCALE,
+            left_to_right: other.left_to_right as f32 * other.volume as f32 / SCALE,
+            right_to_left: other.right_to_left as f32 * other.volume as f32 / SCALE,
+            right_to_right: other.right_to_right as f32 * other.volume as f32 / SCALE,
+        }
+    }
+}
+
+impl Default for SoundTransform {
+    fn default() -> Self {
+        Self {
+            left_to_left: 1.0,
+            left_to_right: 0.0,
+            right_to_left: 0.0,
+            right_to_right: 1.0,
+        }
     }
 }

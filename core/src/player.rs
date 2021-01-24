@@ -901,8 +901,6 @@ impl Player {
 
     pub fn run_frame(&mut self) {
         self.update(|update_context| {
-            update_context.update_sounds();
-
             // TODO: In what order are levels run?
             // NOTE: We have to copy all the layer pointers into a separate list
             // because level updates can create more levels, which we don't
@@ -912,6 +910,8 @@ impl Player {
             for level in levels {
                 level.run_frame(update_context);
             }
+
+            update_context.update_sounds();
         });
         self.needs_render = true;
     }
