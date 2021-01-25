@@ -1181,7 +1181,8 @@ impl<'gc> EditText<'gc> {
     }
 
     fn on_changed(&self, activation: &mut Activation<'_, 'gc, '_>) {
-        if let Some(object) = self.0.read().object {
+        let object = self.0.read().object;
+        if let Some(object) = object {
             let _ = object.call_method(
                 "broadcastMessage",
                 &["onChanged".into(), object.into()],
