@@ -35,7 +35,7 @@ num-traits = "0.2"
 instant = "0.1"
 encoding_rs = "0.8.26"
 rand = { version = "0.8.2", features = ["std", "small_rng"], default-features = false }
-serde = { version = "1.0.121", features = ["derive"], optional = true }
+serde = { version = "1.0.122", features = ["derive"], optional = true }
 
 [dependencies.jpeg-decoder]
 version = "0.1.21"
