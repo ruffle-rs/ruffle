@@ -608,6 +608,53 @@ impl BitmapData {
         }
     }
 
+    // Unlike `copy_channel` and `copy_pixels`, this function seems to
+    // operate "in-place" if the source bitmap is the same object as `self`.
+    // This means that we can't resolve this aliasing issue in Rust by a
+    // simple clone in the caller. Instead, if the `source_bitmap` parameter
+    // is `None`, it means that `self` should be used as source as well.
+    pub fn palette_map(
+        &mut self,
+        source_bitmap: Option<&Self>,
+        src_rect: (i32, i32, i32, i32),
+        dest_point: (i32, i32),
+        channel_arrays: ([u32; 256], [u32; 256], [u32; 256], [u32; 256]),
+    ) {
+        let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+        let (dest_min_x, dest_min_y) = dest_point;
+
+        for src_y in src_min_y..(src_min_y + src_height) {
+            for src_x in src_min_x..(src_min_x + src_width) {
+                let dest_x = src_x - src_min_x + dest_min_x;
+                let dest_y = src_y - src_min_y + dest_min_y;
+
+                if !self.is_point_in_bounds(dest_x, dest_y)
+                    || !source_bitmap
+                        .unwrap_or(self)
+                        .is_point_in_bounds(src_x, src_y)
+                {
+                    continue;
+                }
+
+                let source_color = source_bitmap
+                    .unwrap_or(self)
+                    .get_pixel_raw(src_x as u32, src_y as u32)
+                    .unwrap()
+                    .to_un_multiplied_alpha();
+
+                let r = channel_arrays.0[source_color.red() as usize];
+                let g = channel_arrays.1[source_color.green() as usize];
+                let b = channel_arrays.2[source_color.blue() as usize];
+                let a = channel_arrays.3[source_color.alpha() as usize];
+
+                let sum = u32::wrapping_add(u32::wrapping_add(r, g), u32::wrapping_add(b, a));
+                let mix_color = Color(sum as i32).to_premultiplied_alpha(true);
+
+                self.set_pixel32_raw(dest_x as u32, dest_y as u32, mix_color);
+            }
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn perlin_noise(
         &mut self,

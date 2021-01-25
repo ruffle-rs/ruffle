@@ -815,13 +815,88 @@ pub fn merge<'gc>(
 }
 
 pub fn palette_map<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            log::warn!("BitmapData.paletteMap - not yet implemented");
+            let source_bitmap = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let source_rect = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let src_min_x = source_rect
+                .get("x", activation)?
+                .coerce_to_i32(activation)?;
+            let src_min_y = source_rect
+                .get("y", activation)?
+                .coerce_to_i32(activation)?;
+            let src_width = source_rect
+                .get("width", activation)?
+                .coerce_to_i32(activation)?;
+            let src_height = source_rect
+                .get("height", activation)?
+                .coerce_to_i32(activation)?;
+
+            let dest_point = args
+                .get(2)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let dest_x = dest_point.get("x", activation)?.coerce_to_i32(activation)?;
+            let dest_y = dest_point.get("y", activation)?.coerce_to_i32(activation)?;
+
+            let mut get_channel = |index: usize, shift: usize| -> Result<[u32; 256], Error<'gc>> {
+                let arg = args.get(index).unwrap_or(&Value::Null);
+                let mut array = [0_u32; 256];
+                for (i, item) in array.iter_mut().enumerate() {
+                    *item = if let Value::Object(arg) = arg {
+                        arg.array_element(i).coerce_to_u32(activation)?
+                    } else {
+                        // This is an "identity mapping", fulfilling the part of the spec that
+                        // says that channels which have no array provided are simply copied.
+                        (i << shift) as u32
+                    }
+                }
+                Ok(array)
+            };
+
+            let red_array = get_channel(3, 16)?;
+            let green_array = get_channel(4, 8)?;
+            let blue_array = get_channel(5, 0)?;
+            let alpha_array = get_channel(6, 24)?;
+
+            if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
+                if !src_bitmap.disposed() {
+                    // dealing with object aliasing...
+                    let src_bitmap_data_cell = src_bitmap.bitmap_data();
+                    let read;
+                    let source: Option<&BitmapData> =
+                        if GcCell::ptr_eq(src_bitmap_data_cell, bitmap_data.bitmap_data()) {
+                            None
+                        } else {
+                            read = src_bitmap_data_cell.read();
+                            Some(&read)
+                        };
+
+                    bitmap_data
+                        .bitmap_data()
+                        .write(activation.context.gc_context)
+                        .palette_map(
+                            source,
+                            (src_min_x, src_min_y, src_width, src_height),
+                            (dest_x, dest_y),
+                            (red_array, green_array, blue_array, alpha_array),
+                        );
+                }
+            }
+
             return Ok(Value::Undefined);
         }
     }
