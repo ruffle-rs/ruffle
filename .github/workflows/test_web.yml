@@ -39,8 +39,9 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
+    # wasm-bindgen-cli version must match wasm-bindgen crate version
     - name: Install wasm-bindgen
-      run: cargo install wasm-bindgen-cli
+      run: cargo install wasm-bindgen-cli --version 0.2.69
 
     - name: Setup conda
       uses: conda-incubator/setup-miniconda@v2

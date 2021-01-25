@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 js-sys = "0.3.46"
 log = "0.4"
-wasm-bindgen = "0.2.69"
+wasm-bindgen = "=0.2.69"
 
 [dependencies.web-sys]
 version = "0.3.41"
