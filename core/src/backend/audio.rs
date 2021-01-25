@@ -69,15 +69,6 @@ pub trait AudioBackend: Downcast {
     /// Good ol' stopAllSounds() :-)
     fn stop_all_sounds(&mut self);
 
-    /// Stops all active sound instances of a particular sound.
-    /// Used by SWF `StartSound` tag with `SoundEvent::Stop`.
-    fn stop_sounds_with_handle(&mut self, handle: SoundHandle);
-
-    /// Returns whether a sound clip is playing.
-    /// Used by SWF `StartSouynd` tag with `SoundEvent:Start`,
-    /// which only plays a sound if that sound is not already playing.
-    fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool;
-
     /// Get the position of a sound instance in milliseconds.
     /// Returns `None` if ther sound is not/no longer playing
     fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<u32>;
@@ -151,11 +142,6 @@ impl AudioBackend for NullAudioBackend {
         self.streams.remove(stream);
     }
     fn stop_all_sounds(&mut self) {}
-    fn stop_sounds_with_handle(&mut self, _handle: SoundHandle) {}
-    fn is_sound_playing_with_handle(&mut self, _handle: SoundHandle) -> bool {
-        false
-    }
-
     fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<u32> {
         None
     }

@@ -424,12 +424,6 @@ impl AudioBackend for CpalAudioBackend {
         sound_instances.clear();
     }
 
-    fn stop_sounds_with_handle(&mut self, handle: SoundHandle) {
-        let mut sound_instances = self.sound_instances.lock().unwrap();
-        let handle = Some(handle);
-        sound_instances.retain(|_, instance| instance.handle != handle);
-    }
-
     fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<u32> {
         let sound_instances = self.sound_instances.lock().unwrap();
         if let Some(_instance) = sound_instances.get(instance) {

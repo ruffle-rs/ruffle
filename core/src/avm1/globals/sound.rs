@@ -535,7 +535,8 @@ fn stop<'gc>(
                     .character_by_export_name(&name)
                 {
                     // Stop all sounds with the given name.
-                    activation.context.audio.stop_sounds_with_handle(*sound);
+                    let sound = *sound;
+                    activation.context.stop_sounds_with_handle(sound);
                 } else {
                     avm_warn!(activation, "Sound.stop: Sound '{}' not found", name);
                 }
