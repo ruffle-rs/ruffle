@@ -77,6 +77,7 @@ type Decoder = Box<dyn Iterator<Item = [i16; 2]>>;
 /// a stream sound (`SoundStreamBlock`).
 struct SoundInstance {
     /// Handle to the sound clip.
+    #[allow(dead_code)]
     handle: Option<SoundHandle>,
 
     /// Format of the sound.
@@ -983,24 +984,6 @@ impl AudioBackend for WebAudioBackend {
                 instances.remove(i);
             }
             instances.clear();
-        })
-    }
-
-    fn stop_sounds_with_handle(&mut self, handle: SoundHandle) {
-        SOUND_INSTANCES.with(|instances| {
-            let mut instances = instances.borrow_mut();
-            let handle = Some(handle);
-            instances.retain(|_, instance| instance.handle != handle);
-        })
-    }
-
-    fn is_sound_playing_with_handle(&mut self, handle: SoundHandle) -> bool {
-        SOUND_INSTANCES.with(|instances| {
-            let instances = instances.borrow();
-            let handle = Some(handle);
-            instances
-                .iter()
-                .any(|(_, instance)| instance.handle == handle)
         })
     }
 
