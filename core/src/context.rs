@@ -8,11 +8,11 @@ use crate::backend::locale::LocaleBackend;
 use crate::backend::log::LogBackend;
 use crate::backend::storage::StorageBackend;
 use crate::backend::{
-    audio::{AudioBackend, AudioManager, AudioStreamHandle, SoundHandle, SoundInstanceHandle},
+    audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     navigator::NavigatorBackend,
     render::RenderBackend,
 };
-use crate::display_object::{EditText, SoundTransform};
+use crate::display_object::{EditText, MovieClip, SoundTransform};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
@@ -220,17 +220,20 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 
     pub fn start_stream(
         &mut self,
-        clip_id: swf::CharacterId,
+        stream_handle: Option<SoundHandle>,
+        movie_clip: MovieClip<'gc>,
         frame: u16,
         data: crate::tag_utils::SwfSlice,
         stream_info: &swf::SoundStreamHead,
-    ) -> Option<AudioStreamHandle> {
-        self.audio_manager
-            .start_stream(self.audio, clip_id, frame, data, stream_info)
-    }
-
-    pub fn stop_stream(&mut self, handle: AudioStreamHandle) {
-        self.audio_manager.stop_stream(self.audio, handle)
+    ) -> Option<SoundInstanceHandle> {
+        self.audio_manager.start_stream(
+            self.audio,
+            stream_handle,
+            movie_clip,
+            frame,
+            data,
+            stream_info,
+        )
     }
 
     pub fn update_sound_transforms(&mut self) {

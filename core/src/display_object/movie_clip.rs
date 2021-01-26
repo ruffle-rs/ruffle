@@ -7,7 +7,7 @@ use crate::avm2::{
     Avm2, Error as Avm2Error, Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName,
     StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
-use crate::backend::audio::AudioStreamHandle;
+use crate::backend::audio::{PreloadStreamHandle, SoundHandle, SoundInstanceHandle};
 use bitflags::bitflags;
 
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
@@ -51,7 +51,7 @@ pub struct MovieClipData<'gc> {
     static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
     current_frame: FrameNumber,
-    audio_stream: Option<AudioStreamHandle>,
+    audio_stream: Option<SoundInstanceHandle>,
     container: ChildContainer<'gc>,
     object: Option<AvmObject<'gc>>,
     clip_actions: Vec<ClipAction>,
@@ -173,6 +173,7 @@ impl<'gc> MovieClip<'gc> {
         let mut reader = data.read_from(0);
         let mut cur_frame = 1;
         let mut ids = fnv::FnvHashMap::default();
+        let mut preload_stream_handle = None;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
             TagCode::FileAttributes => {
                 let attributes = reader.read_file_attributes()?;
@@ -370,28 +371,41 @@ impl<'gc> MovieClip<'gc> {
             TagCode::SoundStreamHead => self.0.write(context.gc_context).preload_sound_stream_head(
                 context,
                 reader,
-                cur_frame,
+                &mut preload_stream_handle,
                 &mut static_data,
                 1,
             ),
-            TagCode::SoundStreamHead2 => self
-                .0
-                .write(context.gc_context)
-                .preload_sound_stream_head(context, reader, cur_frame, &mut static_data, 2),
-            TagCode::SoundStreamBlock => self
-                .0
-                .write(context.gc_context)
-                .preload_sound_stream_block(context, reader, cur_frame, &mut static_data, tag_len),
+            TagCode::SoundStreamHead2 => {
+                self.0.write(context.gc_context).preload_sound_stream_head(
+                    context,
+                    reader,
+                    &mut preload_stream_handle,
+                    &mut static_data,
+                    2,
+                )
+            }
+            TagCode::SoundStreamBlock => {
+                self.0.write(context.gc_context).preload_sound_stream_block(
+                    context,
+                    reader,
+                    preload_stream_handle,
+                    cur_frame,
+                    tag_len,
+                )
+            }
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
-        self.0.write(context.gc_context).static_data =
-            Gc::allocate(context.gc_context, static_data);
 
         // Finalize audio stream.
-        if self.0.read().static_data.audio_stream_info.is_some() {
-            context.audio.preload_sound_stream_end(self.0.read().id());
+        if let Some(stream) = preload_stream_handle {
+            if let Some(sound) = context.audio.preload_sound_stream_end(stream) {
+                static_data.audio_stream_handle = Some(sound);
+            }
         }
+
+        self.0.write(context.gc_context).static_data =
+            Gc::allocate(context.gc_context, static_data);
     }
 
     #[inline]
@@ -2014,7 +2028,7 @@ impl<'gc> MovieClipData<'gc> {
     /// Stops the audio stream if one is playing.
     fn stop_audio_stream(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if let Some(audio_stream) = self.audio_stream.take() {
-            context.stop_stream(audio_stream);
+            context.stop_sound(audio_stream);
         }
     }
 
@@ -2152,15 +2166,15 @@ impl<'gc, 'a> MovieClipData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
+        stream: Option<PreloadStreamHandle>,
         cur_frame: FrameNumber,
-        static_data: &mut MovieClipStatic,
         tag_len: usize,
     ) -> DecodeResult {
-        if static_data.audio_stream_info.is_some() {
+        if let Some(stream) = stream {
             let data = &reader.get_ref()[..tag_len];
             context
                 .audio
-                .preload_sound_stream_block(self.id(), cur_frame, data);
+                .preload_sound_stream_block(stream, cur_frame, data);
         }
 
         Ok(())
@@ -2171,14 +2185,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
-        cur_frame: FrameNumber,
+        stream: &mut Option<PreloadStreamHandle>,
         static_data: &mut MovieClipStatic,
         _version: u8,
     ) -> DecodeResult {
         let audio_stream_info = reader.read_sound_stream_head()?;
-        context
-            .audio
-            .preload_sound_stream_head(self.id(), cur_frame, &audio_stream_info);
+        *stream = context.audio.preload_sound_stream_head(&audio_stream_info);
         static_data.audio_stream_info = Some(audio_stream_info);
         Ok(())
     }
@@ -2840,7 +2852,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         _reader: &mut SwfStream<'a>,
     ) -> DecodeResult {
-        let mut mc = self.0.write(context.gc_context);
+        let mc = self.0.read();
         if mc.playing() {
             if let (Some(stream_info), None) = (&mc.static_data.audio_stream_info, mc.audio_stream)
             {
@@ -2854,9 +2866,15 @@ impl<'gc, 'a> MovieClip<'gc> {
                             "Invalid slice generated when constructing sound stream block",
                         )
                     })?;
-                let audio_stream =
-                    context.start_stream(mc.id(), mc.current_frame() + 1, slice, &stream_info);
-                mc.audio_stream = audio_stream;
+                let audio_stream = context.start_stream(
+                    mc.static_data.audio_stream_handle,
+                    self,
+                    mc.current_frame() + 1,
+                    slice,
+                    &stream_info,
+                );
+                drop(mc);
+                self.0.write(context.gc_context).audio_stream = audio_stream;
             }
         }
 
@@ -2935,6 +2953,7 @@ struct MovieClipStatic {
     frame_labels: HashMap<String, FrameNumber>,
     scene_labels: HashMap<String, Scene>,
     audio_stream_info: Option<swf::SoundStreamHead>,
+    audio_stream_handle: Option<SoundHandle>,
     total_frames: FrameNumber,
     /// The last known symbol name under which this movie clip was exported.
     /// Used for looking up constructors registered with `Object.registerClass`.
@@ -2954,6 +2973,7 @@ impl MovieClipStatic {
             frame_labels: HashMap::new(),
             scene_labels: HashMap::new(),
             audio_stream_info: None,
+            audio_stream_handle: None,
             exported_name: RefCell::new(None),
         }
     }

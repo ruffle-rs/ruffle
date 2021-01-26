@@ -4,7 +4,7 @@ use ruffle_core::backend::audio::decoders::{
     self, AdpcmDecoder, Mp3Decoder, PcmDecoder, SeekableDecoder,
 };
 use ruffle_core::backend::audio::{
-    swf, AudioBackend, AudioStreamHandle, SoundHandle, SoundInstanceHandle, SoundTransform,
+    swf, AudioBackend, SoundHandle, SoundInstanceHandle, SoundTransform,
 };
 use ruffle_core::tag_utils::SwfSlice;
 use std::io::Cursor;
@@ -57,10 +57,6 @@ struct SoundInstance {
 
     /// The audio stream. Call `next()` to yield sample frames.
     signal: Signal,
-
-    /// The character ID of the movie clip that contains this stream.
-    /// `None` if this sound is an event sound (`StartSound`).
-    clip_id: Option<swf::CharacterId>,
 
     /// Flag indicating whether this sound is still playing.
     /// If this flag is false, the sound will be cleaned up during the
@@ -344,11 +340,11 @@ impl AudioBackend for CpalAudioBackend {
 
     fn start_stream(
         &mut self,
-        clip_id: swf::CharacterId,
+        _stream_handle: Option<SoundHandle>,
         _clip_frame: u16,
         clip_data: SwfSlice,
         stream_info: &swf::SoundStreamHead,
-    ) -> Result<AudioStreamHandle, Error> {
+    ) -> Result<SoundInstanceHandle, Error> {
         let format = &stream_info.stream_format;
 
         // The audio data for stream sounds is distributed among the frames of a
@@ -359,18 +355,12 @@ impl AudioBackend for CpalAudioBackend {
         let mut sound_instances = self.sound_instances.lock().unwrap();
         let handle = sound_instances.insert(SoundInstance {
             handle: None,
-            clip_id: Some(clip_id),
             signal,
             active: true,
             left_transform: [1.0, 0.0],
             right_transform: [0.0, 1.0],
         });
         Ok(handle)
-    }
-
-    fn stop_stream(&mut self, stream: AudioStreamHandle) {
-        let mut sound_instances = self.sound_instances.lock().unwrap();
-        sound_instances.remove(stream);
     }
 
     fn start_sound(
@@ -398,7 +388,6 @@ impl AudioBackend for CpalAudioBackend {
         let mut sound_instances = self.sound_instances.lock().unwrap();
         let handle = sound_instances.insert(SoundInstance {
             handle: Some(sound_handle),
-            clip_id: None,
             signal,
             active: true,
             left_transform: [1.0, 0.0],

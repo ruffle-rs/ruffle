@@ -1,7 +1,8 @@
 use crate::{
     avm1::SoundObject,
     display_object::{
-        self, DisplayObject, SoundTransform as DisplayObjectSoundTransform, TDisplayObject,
+        self, DisplayObject, MovieClip, SoundTransform as DisplayObjectSoundTransform,
+        TDisplayObject,
     },
 };
 use downcast_rs::Downcast;
@@ -16,9 +17,9 @@ pub mod swf {
     };
 }
 
-pub type AudioStreamHandle = Index;
 pub type SoundHandle = Index;
 pub type SoundInstanceHandle = Index;
+pub type PreloadStreamHandle = u32;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -26,45 +27,56 @@ pub trait AudioBackend: Downcast {
     fn play(&mut self);
     fn pause(&mut self);
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error>;
+
+    /// Used by the web backend to pre-decode sound streams.
+    /// Returns the sound handle to be used to add data to the stream.
+    /// Other backends return `None`.
+    /// TODO: Get rid of the preload_* methods when web backend has a better way
+    /// of decoding audio on the fly.
     fn preload_sound_stream_head(
         &mut self,
-        _clip_id: swf::CharacterId,
-        _clip_frame: u16,
         _stream_info: &swf::SoundStreamHead,
-    ) {
+    ) -> Option<PreloadStreamHandle> {
+        None
     }
+
+    /// Used by the web backend to add data to a currently preloading sound stream.
     fn preload_sound_stream_block(
         &mut self,
-        _clip_id: swf::CharacterId,
+        _stream: PreloadStreamHandle,
         _clip_frame: u16,
         _audio_data: &[u8],
     ) {
     }
-    fn preload_sound_stream_end(&mut self, _clip_id: swf::CharacterId) {}
 
-    /// Starts playing a sound instance that is not tied to a MovieClip timeline.
-    /// In Flash, this is known as an "Event" sound.
+    /// Used by the web backend to finalize and decode a sound stream.
+    /// Returns true if this was a valid stream.
+    fn preload_sound_stream_end(&mut self, _stream: PreloadStreamHandle) -> Option<SoundHandle> {
+        None
+    }
+
+    /// Plays a sound.
     fn start_sound(
         &mut self,
         sound: SoundHandle,
         settings: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error>;
 
+    /// Starts playing a "stream" sound, which is an audio stream that is distributed
+    /// among the frames of a Flash MovieClip.
+    /// On the web backend, `stream_handle` should be the handle for the preloaded stream.
+    /// Other backends can pass `None`.
     fn start_stream(
         &mut self,
-        clip_id: crate::prelude::CharacterId,
+        stream_handle: Option<SoundHandle>,
         clip_frame: u16,
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
-    ) -> Result<AudioStreamHandle, Error>;
+    ) -> Result<SoundInstanceHandle, Error>;
 
     /// Stops a playing sound instance.
     /// No-op if the sound is not playing.
     fn stop_sound(&mut self, sound: SoundInstanceHandle);
-
-    /// Stops a playing stream souund.
-    /// Should be called whenever a MovieClip timeline stops playing or seeks to a new frame.
-    fn stop_stream(&mut self, stream: AudioStreamHandle);
 
     /// Good ol' stopAllSounds() :-)
     fn stop_all_sounds(&mut self);
@@ -99,13 +111,11 @@ impl_downcast!(AudioBackend);
 /// Audio backend that ignores all audio.
 pub struct NullAudioBackend {
     sounds: Arena<()>,
-    streams: Arena<()>,
 }
 
 impl NullAudioBackend {
     pub fn new() -> NullAudioBackend {
         NullAudioBackend {
-            streams: Arena::new(),
             sounds: Arena::new(),
         }
     }
@@ -128,19 +138,16 @@ impl AudioBackend for NullAudioBackend {
 
     fn start_stream(
         &mut self,
-        _clip_id: crate::prelude::CharacterId,
-        _stream_start_frame: u16,
+        _stream_handle: Option<SoundHandle>,
+        _clip_frame: u16,
         _clip_data: crate::tag_utils::SwfSlice,
         _handle: &swf::SoundStreamHead,
-    ) -> Result<AudioStreamHandle, Error> {
-        Ok(self.streams.insert(()))
+    ) -> Result<SoundInstanceHandle, Error> {
+        Ok(SoundInstanceHandle::from_raw_parts(0, 0))
     }
 
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
 
-    fn stop_stream(&mut self, stream: AudioStreamHandle) {
-        self.streams.remove(stream);
-    }
     fn stop_all_sounds(&mut self) {}
     fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<u32> {
         None
@@ -221,7 +228,7 @@ impl<'gc> AudioManager<'gc> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_sound(sound, settings).ok()?;
             let instance = SoundInstance {
-                sound,
+                sound: Some(sound),
                 instance: handle,
                 display_object,
                 avm1_object,
@@ -248,7 +255,7 @@ impl<'gc> AudioManager<'gc> {
 
     pub fn stop_sounds_with_handle(&mut self, audio: &mut dyn AudioBackend, sound: SoundHandle) {
         self.sounds.retain(move |other| {
-            if other.sound == sound {
+            if other.sound == Some(sound) {
                 audio.stop_sound(other.instance);
                 false
             } else {
@@ -279,23 +286,34 @@ impl<'gc> AudioManager<'gc> {
     }
 
     pub fn is_sound_playing_with_handle(&mut self, sound: SoundHandle) -> bool {
-        self.sounds.iter().any(|other| other.sound == sound)
+        self.sounds.iter().any(|other| other.sound == Some(sound))
     }
 
     pub fn start_stream(
         &mut self,
         audio: &mut dyn AudioBackend,
-        clip_id: swf::CharacterId,
-
-        frame: u16,
+        stream_handle: Option<SoundHandle>,
+        movie_clip: MovieClip<'gc>,
+        clip_frame: u16,
         data: crate::tag_utils::SwfSlice,
         stream_info: &swf::SoundStreamHead,
-    ) -> Option<AudioStreamHandle> {
-        audio.start_stream(clip_id, frame, data, stream_info).ok()
-    }
-
-    pub fn stop_stream(&mut self, audio: &mut dyn AudioBackend, handle: AudioStreamHandle) {
-        audio.stop_stream(handle)
+    ) -> Option<SoundInstanceHandle> {
+        if self.sounds.len() < Self::MAX_SOUNDS {
+            let handle = audio
+                .start_stream(stream_handle, clip_frame, data, stream_info)
+                .ok()?;
+            let instance = SoundInstance {
+                sound: None,
+                instance: handle,
+                display_object: Some(movie_clip.into()),
+                avm1_object: None,
+            };
+            audio.set_sound_transform(handle, self.transform_for_sound(&instance));
+            self.sounds.push(instance);
+            Some(handle)
+        } else {
+            None
+        }
     }
 
     pub fn global_sound_transform(&self) -> &DisplayObjectSoundTransform {
@@ -338,9 +356,18 @@ unsafe impl<'gc> Collect for AudioManager<'gc> {
 }
 #[derive(Clone)]
 pub struct SoundInstance<'gc> {
+    /// The handle to the sound instance in the audio backend.
     instance: SoundInstanceHandle,
-    sound: SoundHandle,
+
+    /// The handle to the sound definition in the audio backend.
+    /// This will be `None` for stream sounds.
+    sound: Option<SoundHandle>,
+
+    /// The display object that this sound is playing in, if any.
+    /// Used for volume mixing and `Sound.stop()`.
     display_object: Option<DisplayObject<'gc>>,
+
+    /// The AVM1 `Sound` object associated with this sound, if any.
     pub avm1_object: Option<SoundObject<'gc>>,
 }
 

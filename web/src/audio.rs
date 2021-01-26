@@ -1,9 +1,9 @@
 use fnv::FnvHashMap;
 use generational_arena::Arena;
-use ruffle_core::backend::audio::decoders::{AdpcmDecoder, Mp3Decoder};
-use ruffle_core::backend::audio::swf::{self, AudioCompression};
 use ruffle_core::backend::audio::{
-    AudioBackend, AudioStreamHandle, SoundHandle, SoundInstanceHandle, SoundTransform,
+    decoders::{AdpcmDecoder, Mp3Decoder},
+    swf::{self, AudioCompression},
+    AudioBackend, PreloadStreamHandle, SoundHandle, SoundInstanceHandle, SoundTransform,
 };
 use ruffle_web_common::JsResult;
 use std::cell::{Cell, RefCell};
@@ -14,12 +14,12 @@ use web_sys::{AudioContext, GainNode};
 pub struct WebAudioBackend {
     context: AudioContext,
     sounds: Arena<Sound>,
-    stream_data: FnvHashMap<swf::CharacterId, StreamData>,
-    id_to_sound: FnvHashMap<swf::CharacterId, SoundHandle>,
     left_samples: Vec<f32>,
     right_samples: Vec<f32>,
     frame_rate: f64,
     min_sample_rate: u16,
+    preload_stream_data: FnvHashMap<PreloadStreamHandle, StreamData>,
+    next_stream_id: u32,
 }
 
 thread_local! {
@@ -68,6 +68,9 @@ struct Sound {
 
     /// Number of samples to skip encoder delay.
     skip_sample_frames: u16,
+
+    /// If this is a stream sound, the frame numbers and sample counts for each segment of the stream.
+    stream_segments: Vec<(u16, u32)>,
 }
 
 type Decoder = Box<dyn Iterator<Item = [i16; 2]>>;
@@ -306,8 +309,8 @@ impl WebAudioBackend {
         Ok(Self {
             context,
             sounds: Arena::new(),
-            stream_data: FnvHashMap::default(),
-            id_to_sound: FnvHashMap::default(),
+            preload_stream_data: FnvHashMap::default(),
+            next_stream_id: 0,
             left_samples: vec![],
             right_samples: vec![],
             frame_rate: 1.0,
@@ -783,18 +786,19 @@ impl AudioBackend for WebAudioBackend {
             )?),
             num_sample_frames: sound.num_samples,
             skip_sample_frames,
+            stream_segments: vec![],
         };
         Ok(self.sounds.insert(sound))
     }
 
     fn preload_sound_stream_head(
         &mut self,
-        clip_id: swf::CharacterId,
-        _stream_start_frame: u16,
         stream_info: &swf::SoundStreamHead,
-    ) {
-        self.stream_data
-            .entry(clip_id)
+    ) -> Option<PreloadStreamHandle> {
+        let stream_id = self.next_stream_id;
+        self.next_stream_id = self.next_stream_id.wrapping_add(1);
+        self.preload_stream_data
+            .entry(stream_id)
             .or_insert_with(|| StreamData {
                 format: stream_info.stream_format.clone(),
                 audio_data: vec![],
@@ -805,15 +809,16 @@ impl AudioBackend for WebAudioBackend {
                 stream_segments: vec![],
                 last_clip_frame: 0,
             });
+        Some(stream_id)
     }
 
     fn preload_sound_stream_block(
         &mut self,
-        clip_id: swf::CharacterId,
+        stream_id: PreloadStreamHandle,
         clip_frame: u16,
         audio_data: &[u8],
     ) {
-        if let Some(stream) = self.stream_data.get_mut(&clip_id) {
+        if let Some(stream) = self.preload_stream_data.get_mut(&stream_id) {
             // Handle gaps in streaming audio. Store the offsets for each stream segment.
             if stream.audio_data.is_empty() || stream.last_clip_frame + 1 != clip_frame {
                 let sample_mult = 44100 / stream.format.sample_rate;
@@ -858,8 +863,8 @@ impl AudioBackend for WebAudioBackend {
         }
     }
 
-    fn preload_sound_stream_end(&mut self, clip_id: swf::CharacterId) {
-        let stream_data = self.stream_data.remove(&clip_id);
+    fn preload_sound_stream_end(&mut self, stream_id: PreloadStreamHandle) -> Option<SoundHandle> {
+        let stream_data = self.preload_stream_data.remove(&stream_id);
 
         if let Some(mut stream) = stream_data {
             if !stream.audio_data.is_empty() {
@@ -874,18 +879,19 @@ impl AudioBackend for WebAudioBackend {
                         None
                     },
                 ) {
-                    stream.audio_data = vec![];
-                    self.stream_data.insert(clip_id, stream.clone());
                     let handle = self.sounds.insert(Sound {
                         format: stream.format,
                         source: SoundSource::AudioBuffer(audio_buffer),
                         num_sample_frames: stream.num_sample_frames,
                         skip_sample_frames: stream.skip_sample_frames,
+                        stream_segments: stream.stream_segments,
                     });
-                    self.id_to_sound.insert(clip_id, handle);
+                    return Some(handle);
                 }
             }
         }
+
+        None
     }
 
     fn start_sound(
@@ -899,25 +905,24 @@ impl AudioBackend for WebAudioBackend {
 
     fn start_stream(
         &mut self,
-        clip_id: swf::CharacterId,
+        stream_handle: Option<SoundHandle>,
         clip_frame: u16,
         _clip_data: ruffle_core::tag_utils::SwfSlice,
         _stream_info: &swf::SoundStreamHead,
-    ) -> Result<AudioStreamHandle, Error> {
-        if let Some(&handle) = self.id_to_sound.get(&clip_id) {
+    ) -> Result<SoundInstanceHandle, Error> {
+        if let Some(stream) = stream_handle {
             let mut sound_info = None;
             if clip_frame > 1 {
-                if let Some(stream_data) = self.stream_data.get(&clip_id) {
+                if let Some(sound) = self.sounds.get(stream) {
                     // Figure out the frame and sample where this stream segment first starts.
-                    let start_pos = match stream_data
+                    let start_pos = match sound
                         .stream_segments
                         .binary_search_by(|(f, _)| f.cmp(&clip_frame))
                     {
-                        Ok(i) => stream_data.stream_segments[i].1,
+                        Ok(i) => sound.stream_segments[i].1,
                         Err(i) => {
                             if i > 0 {
-                                let (segment_frame, segment_sample) =
-                                    stream_data.stream_segments[i - 1];
+                                let (segment_frame, segment_sample) = sound.stream_segments[i - 1];
                                 let frames_skipped = clip_frame.saturating_sub(segment_frame);
                                 let samples_per_frame = 44100.0 / self.frame_rate;
                                 segment_sample
@@ -936,10 +941,10 @@ impl AudioBackend for WebAudioBackend {
                     });
                 }
             }
-            let handle = self.start_sound_internal(handle, sound_info.as_ref())?;
-            Ok(handle)
+            let instance = self.start_sound_internal(stream, sound_info.as_ref())?;
+            Ok(instance)
         } else {
-            let msg = format!("Missing stream for clip {}", clip_id);
+            let msg = format!("Missing stream for sound ID {:?}", stream_handle);
             log::error!("{}", msg);
             Err(msg.into())
         }
@@ -949,13 +954,6 @@ impl AudioBackend for WebAudioBackend {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
             instances.remove(sound);
-        })
-    }
-
-    fn stop_stream(&mut self, stream: AudioStreamHandle) {
-        SOUND_INSTANCES.with(|instances| {
-            let mut instances = instances.borrow_mut();
-            instances.remove(stream);
         })
     }
 
