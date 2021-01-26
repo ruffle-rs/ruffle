@@ -14,7 +14,9 @@ use bitflags::bitflags;
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
-use crate::display_object::container::{ChildContainer, TDisplayObjectContainer};
+use crate::display_object::container::{
+    dispatch_added_event, ChildContainer, TDisplayObjectContainer,
+};
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
     Video,
@@ -1128,6 +1130,8 @@ impl<'gc> MovieClip<'gc> {
                 child.post_instantiation(context, child, None, Instantiator::Movie, false);
                 child.run_frame(context);
             }
+
+            dispatch_added_event(self.into(), child, false, context);
 
             if let Avm2Value::Object(mut p) = self.object2() {
                 if let Avm2Value::Object(c) = child.object2() {
