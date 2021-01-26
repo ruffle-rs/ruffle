@@ -331,6 +331,23 @@ pub fn decode_jpeg(
     let metadata = decoder.info().ok_or("Unable to get image info")?;
     let decoded_data = decoder.decode()?;
 
+    let decoded_data = match metadata.pixel_format {
+        jpeg_decoder::PixelFormat::RGB24 => decoded_data,
+        jpeg_decoder::PixelFormat::CMYK32 => {
+            log::warn!("Unimplemented CMYK32 JPEG pixel format");
+            decoded_data
+        }
+        jpeg_decoder::PixelFormat::L8 => {
+            let mut rgb = Vec::with_capacity(decoded_data.len() * 3);
+            for elem in decoded_data {
+                rgb.push(elem);
+                rgb.push(elem);
+                rgb.push(elem);
+            }
+            rgb
+        }
+    };
+
     // Decompress the alpha data (DEFLATE compression).
     if let Some(alpha_data) = alpha_data {
         let alpha_data = decompress_zlib(alpha_data)?;
