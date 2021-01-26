@@ -1,0 +1,603 @@
+sound = new Sound()
+volume:         100
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setVolume(50.5)
+volume:         50
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setVolume(-999)
+volume:         -999
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setVolume(NaN)
+volume:         -2147483648
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setVolume(2147483647)
+volume:         2147483647
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setVolume(2147483648)
+volume:         -2147483648
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setVolume(-3000000000)
+volume:         -2147483648
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setVolume(true)
+volume:         1
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setPan(50)
+volume:         1
+pan:            50
+left-to-left:   50
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setPan(200.2)
+volume:         1
+pan:            0
+left-to-left:   -100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setPan(-50)
+volume:         1
+pan:            -50
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 50
+
+Sound.setPan(-200.2)
+volume:         1
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: -100
+
+Sound.setPan(3000000000)
+volume:         1
+pan:            2147483448
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: -2147483548
+
+Sound.setPan(-3000000000)
+volume:         1
+pan:            2147483448
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: -2147483548
+
+Sound.setPan(NaN)
+volume:         1
+pan:            2147483448
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: -2147483548
+
+Sound.setTransform({ll: 100, rl: 0, lr: 0, rr: 100})
+volume:         1
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setTransform({ll: 100, rl: 999, lr: 999, rr: 999})
+volume:         1
+pan:            899
+left-to-left:   100
+left-to-right:  999
+right-to-left:  999
+right-to-right: 999
+
+Sound.setTransform({ll: 101, rl: 999, lr: 999, rr: 100})
+volume:         1
+pan:            -1
+left-to-left:   101
+left-to-right:  999
+right-to-left:  999
+right-to-right: 100
+
+Sound.setTransform({ll: 99, rl: 999, lr: 999, rr: 100})
+volume:         1
+pan:            1
+left-to-left:   99
+left-to-right:  999
+right-to-left:  999
+right-to-right: 100
+
+Sound.setTransform({ll: 100, rl: 33.3, lr: 33.3, rr: 101})
+volume:         1
+pan:            1
+left-to-left:   100
+left-to-right:  999
+right-to-left:  999
+right-to-right: 101
+
+Sound.setTransform({ll: 100, rl: 33.3, lr: 33.3, rr: 99})
+volume:         1
+pan:            -1
+left-to-left:   100
+left-to-right:  999
+right-to-left:  999
+right-to-right: 99
+
+Sound.setTransform({})
+volume:         1
+pan:            -1
+left-to-left:   100
+left-to-right:  999
+right-to-left:  999
+right-to-right: 99
+
+Sound.setTransform({ll: 0, rr: 100})
+volume:         1
+pan:            50
+left-to-left:   50
+left-to-right:  50
+right-to-left:  999
+right-to-right: 99
+
+Sound.setTransform({ll: 3000000000, rl: 3000000000, lr: 3000000000, rr: 3000000000})
+volume:         1
+pan:            -1294967196
+left-to-left:   -1294967296
+left-to-right:  -1294967296
+right-to-left:  -1294967296
+right-to-right: -1294967296
+
+Sound.setTransform({ll: NaN, rl: NaN, lr: NaN, rr: NaN})
+volume:         1
+pan:            100
+left-to-left:   0
+left-to-right:  0
+right-to-left:  0
+right-to-right: 0
+
+Sound.setTransform(o) // with __proto__
+volume:         1
+pan:            100
+left-to-left:   0
+left-to-right:  0
+right-to-left:  0
+right-to-right: 0
+
+Sound.setTransform({ll: -150, rl: 0, lr: 0, rr: -150})
+volume:         1
+pan:            -50
+left-to-left:   -150
+left-to-right:  0
+right-to-left:  0
+right-to-right: -150
+
+Sound.setTransform({ll: -150, rl: 0, lr: 0, rr: -100})
+volume:         1
+pan:            -50
+left-to-left:   -150
+left-to-right:  0
+right-to-left:  0
+right-to-right: -100
+
+Sound.setTransform({ll: -150, rl: 0, lr: 0, rr: -50})
+volume:         1
+pan:            -50
+left-to-left:   -150
+left-to-right:  0
+right-to-left:  0
+right-to-right: -50
+
+Sound.setTransform({ll: -150, rl: 0, lr: 0, rr: 0})
+volume:         1
+pan:            -50
+left-to-left:   -150
+left-to-right:  0
+right-to-left:  0
+right-to-right: 0
+
+Sound.setTransform({ll: -150, rl: 0, lr: 0, rr: 50})
+volume:         1
+pan:            -50
+left-to-left:   -150
+left-to-right:  0
+right-to-left:  0
+right-to-right: 50
+
+Sound.setTransform({ll: -150, rl: 0, lr: 0, rr: 100})
+volume:         1
+pan:            -50
+left-to-left:   -150
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setTransform({ll: -150, rl: 0, lr: 0, rr: 150})
+volume:         1
+pan:            -50
+left-to-left:   -150
+left-to-right:  0
+right-to-left:  0
+right-to-right: 150
+
+Sound.setTransform({ll: -100, rl: 0, lr: 0, rr: -150})
+volume:         1
+pan:            0
+left-to-left:   -100
+left-to-right:  0
+right-to-left:  0
+right-to-right: -150
+
+Sound.setTransform({ll: -100, rl: 0, lr: 0, rr: -100})
+volume:         1
+pan:            0
+left-to-left:   -100
+left-to-right:  0
+right-to-left:  0
+right-to-right: -100
+
+Sound.setTransform({ll: -100, rl: 0, lr: 0, rr: -50})
+volume:         1
+pan:            0
+left-to-left:   -100
+left-to-right:  0
+right-to-left:  0
+right-to-right: -50
+
+Sound.setTransform({ll: -100, rl: 0, lr: 0, rr: 0})
+volume:         1
+pan:            0
+left-to-left:   -100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 0
+
+Sound.setTransform({ll: -100, rl: 0, lr: 0, rr: 50})
+volume:         1
+pan:            0
+left-to-left:   -100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 50
+
+Sound.setTransform({ll: -100, rl: 0, lr: 0, rr: 100})
+volume:         1
+pan:            0
+left-to-left:   -100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setTransform({ll: -100, rl: 0, lr: 0, rr: 150})
+volume:         1
+pan:            0
+left-to-left:   -100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 150
+
+Sound.setTransform({ll: -50, rl: 0, lr: 0, rr: -150})
+volume:         1
+pan:            50
+left-to-left:   -50
+left-to-right:  0
+right-to-left:  0
+right-to-right: -150
+
+Sound.setTransform({ll: -50, rl: 0, lr: 0, rr: -100})
+volume:         1
+pan:            50
+left-to-left:   -50
+left-to-right:  0
+right-to-left:  0
+right-to-right: -100
+
+Sound.setTransform({ll: -50, rl: 0, lr: 0, rr: -50})
+volume:         1
+pan:            50
+left-to-left:   -50
+left-to-right:  0
+right-to-left:  0
+right-to-right: -50
+
+Sound.setTransform({ll: -50, rl: 0, lr: 0, rr: 0})
+volume:         1
+pan:            50
+left-to-left:   -50
+left-to-right:  0
+right-to-left:  0
+right-to-right: 0
+
+Sound.setTransform({ll: -50, rl: 0, lr: 0, rr: 50})
+volume:         1
+pan:            50
+left-to-left:   -50
+left-to-right:  0
+right-to-left:  0
+right-to-right: 50
+
+Sound.setTransform({ll: -50, rl: 0, lr: 0, rr: 100})
+volume:         1
+pan:            50
+left-to-left:   -50
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setTransform({ll: -50, rl: 0, lr: 0, rr: 150})
+volume:         1
+pan:            50
+left-to-left:   -50
+left-to-right:  0
+right-to-left:  0
+right-to-right: 150
+
+Sound.setTransform({ll: 0, rl: 0, lr: 0, rr: -150})
+volume:         1
+pan:            100
+left-to-left:   0
+left-to-right:  0
+right-to-left:  0
+right-to-right: -150
+
+Sound.setTransform({ll: 0, rl: 0, lr: 0, rr: -100})
+volume:         1
+pan:            100
+left-to-left:   0
+left-to-right:  0
+right-to-left:  0
+right-to-right: -100
+
+Sound.setTransform({ll: 0, rl: 0, lr: 0, rr: -50})
+volume:         1
+pan:            100
+left-to-left:   0
+left-to-right:  0
+right-to-left:  0
+right-to-right: -50
+
+Sound.setTransform({ll: 0, rl: 0, lr: 0, rr: 0})
+volume:         1
+pan:            100
+left-to-left:   0
+left-to-right:  0
+right-to-left:  0
+right-to-right: 0
+
+Sound.setTransform({ll: 0, rl: 0, lr: 0, rr: 50})
+volume:         1
+pan:            100
+left-to-left:   0
+left-to-right:  0
+right-to-left:  0
+right-to-right: 50
+
+Sound.setTransform({ll: 0, rl: 0, lr: 0, rr: 100})
+volume:         1
+pan:            100
+left-to-left:   0
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setTransform({ll: 0, rl: 0, lr: 0, rr: 150})
+volume:         1
+pan:            100
+left-to-left:   0
+left-to-right:  0
+right-to-left:  0
+right-to-right: 150
+
+Sound.setTransform({ll: 50, rl: 0, lr: 0, rr: -150})
+volume:         1
+pan:            50
+left-to-left:   50
+left-to-right:  0
+right-to-left:  0
+right-to-right: -150
+
+Sound.setTransform({ll: 50, rl: 0, lr: 0, rr: -100})
+volume:         1
+pan:            50
+left-to-left:   50
+left-to-right:  0
+right-to-left:  0
+right-to-right: -100
+
+Sound.setTransform({ll: 50, rl: 0, lr: 0, rr: -50})
+volume:         1
+pan:            50
+left-to-left:   50
+left-to-right:  0
+right-to-left:  0
+right-to-right: -50
+
+Sound.setTransform({ll: 50, rl: 0, lr: 0, rr: 0})
+volume:         1
+pan:            50
+left-to-left:   50
+left-to-right:  0
+right-to-left:  0
+right-to-right: 0
+
+Sound.setTransform({ll: 50, rl: 0, lr: 0, rr: 50})
+volume:         1
+pan:            50
+left-to-left:   50
+left-to-right:  0
+right-to-left:  0
+right-to-right: 50
+
+Sound.setTransform({ll: 50, rl: 0, lr: 0, rr: 100})
+volume:         1
+pan:            50
+left-to-left:   50
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setTransform({ll: 50, rl: 0, lr: 0, rr: 150})
+volume:         1
+pan:            50
+left-to-left:   50
+left-to-right:  0
+right-to-left:  0
+right-to-right: 150
+
+Sound.setTransform({ll: 100, rl: 0, lr: 0, rr: -150})
+volume:         1
+pan:            50
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: -150
+
+Sound.setTransform({ll: 100, rl: 0, lr: 0, rr: -100})
+volume:         1
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: -100
+
+Sound.setTransform({ll: 100, rl: 0, lr: 0, rr: -50})
+volume:         1
+pan:            -50
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: -50
+
+Sound.setTransform({ll: 100, rl: 0, lr: 0, rr: 0})
+volume:         1
+pan:            -100
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 0
+
+Sound.setTransform({ll: 100, rl: 0, lr: 0, rr: 50})
+volume:         1
+pan:            -50
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 50
+
+Sound.setTransform({ll: 100, rl: 0, lr: 0, rr: 100})
+volume:         1
+pan:            0
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setTransform({ll: 100, rl: 0, lr: 0, rr: 150})
+volume:         1
+pan:            50
+left-to-left:   100
+left-to-right:  0
+right-to-left:  0
+right-to-right: 150
+
+Sound.setTransform({ll: 150, rl: 0, lr: 0, rr: -150})
+volume:         1
+pan:            -50
+left-to-left:   150
+left-to-right:  0
+right-to-left:  0
+right-to-right: -150
+
+Sound.setTransform({ll: 150, rl: 0, lr: 0, rr: -100})
+volume:         1
+pan:            -50
+left-to-left:   150
+left-to-right:  0
+right-to-left:  0
+right-to-right: -100
+
+Sound.setTransform({ll: 150, rl: 0, lr: 0, rr: -50})
+volume:         1
+pan:            -50
+left-to-left:   150
+left-to-right:  0
+right-to-left:  0
+right-to-right: -50
+
+Sound.setTransform({ll: 150, rl: 0, lr: 0, rr: 0})
+volume:         1
+pan:            -50
+left-to-left:   150
+left-to-right:  0
+right-to-left:  0
+right-to-right: 0
+
+Sound.setTransform({ll: 150, rl: 0, lr: 0, rr: 50})
+volume:         1
+pan:            -50
+left-to-left:   150
+left-to-right:  0
+right-to-left:  0
+right-to-right: 50
+
+Sound.setTransform({ll: 150, rl: 0, lr: 0, rr: 100})
+volume:         1
+pan:            -50
+left-to-left:   150
+left-to-right:  0
+right-to-left:  0
+right-to-right: 100
+
+Sound.setTransform({ll: 150, rl: 0, lr: 0, rr: 150})
+volume:         1
+pan:            -50
+left-to-left:   150
+left-to-right:  0
+right-to-left:  0
+right-to-right: 150
+
+sound1.setVolume(50)
+sound2.getVolume(): 50
+sound3.getVolume(): 1
