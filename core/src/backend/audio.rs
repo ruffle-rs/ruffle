@@ -187,8 +187,9 @@ impl<'gc> AudioManager<'gc> {
         &mut self,
         audio: &mut dyn AudioBackend,
         gc_context: gc_arena::MutationContext<'gc, '_>,
-    ) -> Vec<SoundInstance<'gc>> {
-        let mut removed = vec![];
+        action_queue: &mut crate::context::ActionQueue<'gc>,
+        root: DisplayObject<'gc>,
+    ) {
         self.sounds.retain(|sound| {
             if let Some(pos) = audio.get_sound_position(sound.instance) {
                 // Sounds still playing; update position.
@@ -198,11 +199,20 @@ impl<'gc> AudioManager<'gc> {
                 true
             } else {
                 // Sound ended; fire end event.
-                removed.push(sound.clone());
+                if let Some(object) = sound.avm1_object {
+                    action_queue.queue_actions(
+                        root,
+                        crate::context::ActionType::Method {
+                            object: object.into(),
+                            name: "onSoundComplete",
+                            args: vec![],
+                        },
+                        false,
+                    );
+                }
                 false
             }
         });
-        removed
     }
 
     /// Update the sound transforms for all sounds.
