@@ -15,3 +15,7 @@ node_modules/
 
 # Flash
 RECOVER_*.fla
+
+# Benchmark files
+# Not sure if these should be committed to the repo, or if the user should supply them themselves?
+swf/benches/real-world-swfs/*.swf
