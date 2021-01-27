@@ -292,3 +292,34 @@ jobs:
           github_token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
           directory: js-docs
           force: true
+
+  publish-aur-package:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get current time with dashes
+        uses: 1466587594/get-current-time@v2
+        id: current_time_dashes
+        with:
+          format: YYYY-MM-DD
+
+      - name: Get current time with dots
+        uses: 1466587594/get-current-time@v2
+        id: current_time_dots
+        with:
+          format: YYYY.MM.DD
+
+      - name: Update PKGBUILD
+        run: sed -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/" -i ./PKGBUILD
+
+      - name: Publish AUR package
+        uses: KSXGitHub/github-actions-deploy-aur@v2
+        with:
+          pkgname: ruffle-nightly-bin
+          pkgbuild: ./PKGBUILD
+          commit_username: RuffleBuild
+          commit_email: ruffle@ruffle.rs
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update to Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}
