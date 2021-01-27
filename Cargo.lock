@@ -3160,6 +3160,7 @@ dependencies = [
  "swf",
  "thiserror",
  "url",
+ "vp6-dec-rs",
  "weak-table",
 ]
 
@@ -3870,6 +3871,14 @@ name = "version_check"
 version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5a972e5669d67ba988ce3dc826706fb0a8b01471c088cb0b6110b805cc36aed"
+
+[[package]]
+name = "vp6-dec-rs"
+version = "0.1.0"
+source = "git+https://github.com/torokati44/vp6-dec-rs?branch=main#e9058284166ad18218e8ecca299b5a92ff3ddbdb"
+dependencies = [
+ "cc",
+]
 
 [[package]]
 name = "vswhom"
