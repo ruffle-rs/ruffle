@@ -24,7 +24,17 @@ lzma-rs = {version = "0.1.3", optional = true }
 
 [dev-dependencies]
 approx = "0.4.0"
+criterion = "0.3"
 
 [features]
 default = ["flate2", "lzma"]
 lzma = ["lzma-rs"]
+__benchmark_internal = [] # Used internally for benchmarks
+
+[[bench]]
+name = "bench_swf"
+harness = false
+required-features = ["__benchmark_internal"]
+
+[lib]
+bench = false

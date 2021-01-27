@@ -29,6 +29,9 @@ pub mod write;
 #[cfg(test)]
 mod test_data;
 
+#[cfg(feature = "__benchmark_internal")]
+pub mod test_data;
+
 /// Reexports
 pub use read::{decompress_swf, parse_swf};
 pub use string::*;
