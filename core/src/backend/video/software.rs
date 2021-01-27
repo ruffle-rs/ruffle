@@ -32,13 +32,17 @@ impl VideoBackend for SoftwareVideoBackend {
     fn register_video_stream(
         &mut self,
         _num_frames: u32,
-        _size: (u16, u16),
+        size: (u16, u16),
         codec: VideoCodec,
         _filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
         let decoder: Box<dyn VideoDecoder> = match codec {
             #[cfg(feature = "h263")]
             VideoCodec::H263 => Box::new(h263::H263Decoder::new()),
+            #[cfg(feature = "vp6")]
+            VideoCodec::Vp6 => Box::new(vp6::Vp6Decoder::new(false, size)),
+            #[cfg(feature = "vp6")]
+            VideoCodec::Vp6WithAlpha => Box::new(vp6::Vp6Decoder::new(true, size)),
             _ => return Err(format!("Unsupported video codec type {:?}", codec).into()),
         };
         let stream = VideoStream::new(decoder);
@@ -195,6 +199,89 @@ mod h263 {
     impl Default for H263Decoder {
         fn default() -> Self {
             Self::new()
+        }
+    }
+}
+
+#[cfg(feature = "vp6")]
+mod vp6 {
+    use crate::backend::video::software::VideoDecoder;
+    use crate::backend::video::{DecodedFrame, EncodedFrame, Error, FrameDependency};
+    use vp6_dec_rs::Vp6State;
+
+    /// VP6 video decoder.
+    pub struct Vp6Decoder(Vp6State, (u16, u16));
+
+    impl Vp6Decoder {
+        pub fn new(with_alpha: bool, bounds: (u16, u16)) -> Self {
+            Self(Vp6State::new(with_alpha), bounds)
+        }
+    }
+
+    impl VideoDecoder for Vp6Decoder {
+        fn preload_frame(
+            &mut self,
+            encoded_frame: EncodedFrame<'_>,
+        ) -> Result<FrameDependency, Error> {
+            // Luckily the very first bit of the encoded frames is exactly
+            // this flag, so we don't have to bother asking any "proper"
+            // decoder or parser.
+            Ok(
+                if !encoded_frame.data.is_empty() && (encoded_frame.data[0] & 0b_1000_0000) == 0 {
+                    FrameDependency::None
+                } else {
+                    FrameDependency::Past
+                },
+            )
+        }
+
+        fn decode_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<DecodedFrame, Error> {
+            let (mut rgba, (mut width, mut height)) = self.0.decode(encoded_frame.data);
+            let &bounds = &self.1;
+
+            if width < bounds.0 as usize || height < bounds.1 as usize {
+                log::warn!("A VP6 video frame is smaller than the bounds of the stream it belongs in. This is not supported.");
+                // Flash Player just produces a black image in this case!
+            }
+
+            if width > bounds.0 as usize {
+                // Removing the unwanted pixels on the right edge (most commonly: unused pieces of macroblocks)
+                // by squishing all the rows tightly next to each other.
+                // Even though the vp6 decoder in FFmpeg could do this trimming on its own (accepts parameters
+                // for it in the extradata field), the swscale colorspace conversion would still have to be done
+                // into a frame that has a stride which is a multiple of 32 or 64 bytes (for performance reasons;
+                // otherwise it leaves the right edge blank) and that is often greater than the actual width*4,
+                // so there will be gaps between the rows in these cases.
+                // And Bitmap at the moment does not allow these gaps, so we need to remove them.
+                // Also dropping any unwanted rows on the bottom while we're at it.
+                let new_width = bounds.0 as usize;
+                let new_height = usize::min(height, bounds.1 as usize);
+                // no need to move the first row, nor any rows on the bottom that will end up being cropped entirely
+                for row in 1..new_height {
+                    rgba.copy_within(
+                        row * width * 4..(row * width + new_width) * 4,
+                        row * new_width * 4,
+                    );
+                }
+                width = new_width;
+                height = new_height;
+            }
+
+            // Cropping the unwanted rows on the bottom, also dropping any unused space at the end left by the squish above
+            height = usize::min(height, bounds.1 as usize);
+            rgba.truncate(width * height * 4);
+
+            Ok(DecodedFrame {
+                width: width as u16,
+                height: height as u16,
+                rgba,
+            })
+        }
+    }
+
+    impl Default for Vp6Decoder {
+        fn default() -> Self {
+            Self::new(false, (0, 0))
         }
     }
 }
