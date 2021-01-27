@@ -221,7 +221,14 @@ impl CpalAudioBackend {
         // Convert the `Decoder` to a `Signal`, and resample it the the output
         // sample rate.
         let signal = self.make_resampler(&sound.format, signal);
-        Ok(Box::new(signal))
+        if let Some(envelope) = &settings.envelope {
+            use dasp::Signal;
+            let envelope_signal =
+                EnvelopeSignal::new(&envelope[..], self.output_config.sample_rate.0);
+            Ok(Box::new(signal.mul_amp(envelope_signal)))
+        } else {
+            Ok(Box::new(signal))
+        }
     }
 
     /// Creates a `dasp::signal::Signal` that decodes and resamples a "stream" sound.
@@ -466,7 +473,6 @@ impl Default for ArcAsRef {
 struct EventSoundSignal {
     decoder: Box<dyn SeekableDecoder + Send>,
     num_loops: u16,
-    envelope_signal: Option<EnvelopeSignal>,
     start_sample_frame: u32,
     end_sample_frame: Option<u32>,
     cur_sample_frame: u32,
@@ -490,16 +496,9 @@ impl EventSoundSignal {
             .unwrap_or(num_sample_frames)
             + skip_sample_frames;
 
-        let envelope_signal = if let Some(envelope) = &settings.envelope {
-            Some(EnvelopeSignal::new(envelope.clone()))
-        } else {
-            None
-        };
-
         let mut signal = Self {
             decoder,
             num_loops: settings.num_loops,
-            envelope_signal,
             start_sample_frame,
             end_sample_frame: Some(end_sample_frame),
             cur_sample_frame: start_sample_frame,
@@ -529,7 +528,7 @@ impl dasp::signal::Signal for EventSoundSignal {
     fn next(&mut self) -> Self::Frame {
         // Loop the sound if necessary, and get the next frame.
         if !self.is_exhausted {
-            let frame = if let Some(frame) = self.decoder.next() {
+            if let Some(frame) = self.decoder.next() {
                 self.cur_sample_frame += 1;
                 if let Some(end) = self.end_sample_frame {
                     if self.cur_sample_frame > end {
@@ -540,12 +539,6 @@ impl dasp::signal::Signal for EventSoundSignal {
             } else {
                 self.next_loop();
                 self.next()
-            };
-            if let Some(envelope) = &mut self.envelope_signal {
-                use dasp::frame::Frame;
-                frame.mul_amp(envelope.next())
-            } else {
-                frame
             }
         } else {
             [0, 0]
@@ -574,9 +567,20 @@ struct EnvelopeSignal {
 }
 
 impl EnvelopeSignal {
-    fn new(envelope: swf::SoundEnvelope) -> Self {
-        // TODO: This maybe can be done more clever using the `sample` crate.
-        let mut envelope = envelope.into_iter();
+    fn new(envelope: &[swf::SoundEnvelopePoint], output_sample_rate: u32) -> Self {
+        // Envelope samples are always in 44.1KHz.
+        const ENVELOPE_SAMPLE_RATE: u32 = 44100;
+
+        // Scale the envelope points from 44.1KHz to the output rate.
+        let scale = f64::from(output_sample_rate) / f64::from(ENVELOPE_SAMPLE_RATE);
+        let mut envelope = envelope
+            .iter()
+            .map(|pt| swf::SoundEnvelopePoint {
+                sample: (f64::from(pt.sample) * scale) as u32,
+                ..*pt
+            })
+            .collect::<swf::SoundEnvelope>()
+            .into_iter();
         let first_point = envelope.next().unwrap_or(swf::SoundEnvelopePoint {
             sample: 0,
             left_volume: 1.0,
