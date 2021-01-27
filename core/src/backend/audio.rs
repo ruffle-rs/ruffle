@@ -171,18 +171,24 @@ pub struct AudioManager<'gc> {
 
     /// The global sound transform applied to all sounds.
     global_sound_transform: DisplayObjectSoundTransform,
+
+    /// Whether a sound transform has been changed.
+    transforms_dirty: bool,
 }
 
 impl<'gc> AudioManager<'gc> {
+    /// The maximum number of sound instances that can play at once.
     pub const MAX_SOUNDS: usize = 32;
 
     pub fn new() -> Self {
         Self {
             sounds: Vec::with_capacity(Self::MAX_SOUNDS),
             global_sound_transform: Default::default(),
+            transforms_dirty: false,
         }
     }
 
+    /// Update state of active sounds. Should be called once per frame.
     pub fn update_sounds(
         &mut self,
         audio: &mut dyn AudioBackend,
@@ -190,6 +196,7 @@ impl<'gc> AudioManager<'gc> {
         action_queue: &mut crate::context::ActionQueue<'gc>,
         root: DisplayObject<'gc>,
     ) {
+        // Update the position of sounds, and remove any completed sounds.
         self.sounds.retain(|sound| {
             if let Some(pos) = audio.get_sound_position(sound.instance) {
                 // Sounds still playing; update position.
@@ -213,18 +220,9 @@ impl<'gc> AudioManager<'gc> {
                 false
             }
         });
-    }
 
-    /// Update the sound transforms for all sounds.
-    /// This should be called whenever a sound transform changes on a display object.
-    pub fn update_sound_transforms(&mut self, audio: &mut dyn AudioBackend) {
-        // This updates the sound transform for all sounds, even though the transform has
-        // only changed on a single display object. There are only a small amount
-        // of sounds playing at any time, so this shouldn't be a big deal.
-        for sound in &self.sounds {
-            let transform = self.transform_for_sound(sound);
-            audio.set_sound_transform(sound.instance, transform);
-        }
+        // Update sound transforms, if dirty.
+        self.update_sound_transforms(audio);
     }
 
     pub fn start_sound(
@@ -330,13 +328,13 @@ impl<'gc> AudioManager<'gc> {
         &self.global_sound_transform
     }
 
-    pub fn set_global_sound_transform(
-        &mut self,
-        audio: &mut dyn AudioBackend,
-        sound_transform: DisplayObjectSoundTransform,
-    ) {
+    pub fn set_global_sound_transform(&mut self, sound_transform: DisplayObjectSoundTransform) {
         self.global_sound_transform = sound_transform;
-        self.update_sound_transforms(audio);
+        self.transforms_dirty = true;
+    }
+
+    pub fn set_sound_transforms_dirty(&mut self) {
+        self.transforms_dirty = true;
     }
 
     fn transform_for_sound(&self, sound: &SoundInstance<'gc>) -> SoundTransform {
@@ -348,6 +346,21 @@ impl<'gc> AudioManager<'gc> {
         }
         transform.concat(&self.global_sound_transform);
         SoundTransform::from_display_object_transform(&transform)
+    }
+
+    /// Update the sound transforms for all sounds.
+    /// This should be called whenever a sound transform changes on a display object.
+    fn update_sound_transforms(&mut self, audio: &mut dyn AudioBackend) {
+        // This updates the sound transform for all sounds, even though the transform has
+        // only changed on a single display object. There are only a small amount
+        // of sounds playing at any time, so this shouldn't be a big deal.
+        if self.transforms_dirty {
+            for sound in &self.sounds {
+                let transform = self.transform_for_sound(sound);
+                audio.set_sound_transform(sound.instance, transform);
+            }
+            self.transforms_dirty = false;
+        }
     }
 }
 

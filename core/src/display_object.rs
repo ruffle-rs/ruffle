@@ -1243,7 +1243,7 @@ macro_rules! impl_display_object_sansbounds {
                 .write(context.gc_context)
                 .$field
                 .set_sound_transform(value);
-            context.update_sound_transforms();
+            context.set_sound_transforms_dirty();
         }
         fn visible(&self) -> bool {
             self.0.read().$field.visible()
