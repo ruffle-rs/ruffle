@@ -909,22 +909,9 @@ impl<'a, R: 'a + Read> SwfReadExt for Reader<R> {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
     use crate::test_data;
-
-    pub fn read_abc_from_file(path: &str) -> Vec<u8> {
-        use crate::types::Tag;
-        let data = std::fs::read(path).unwrap();
-        let swf_buf = crate::decompress_swf(&data[..]).unwrap();
-        let swf = crate::parse_swf(&swf_buf).unwrap();
-        for tag in swf.tags {
-            if let Tag::DoAbc(do_abc) = tag {
-                return do_abc.data.to_vec();
-            }
-        }
-        panic!("ABC tag not found in {}", path);
-    }
 
     #[test]
     fn read_abc() {

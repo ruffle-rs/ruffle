@@ -2745,76 +2745,14 @@ pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
-    use crate::tag_code::TagCode;
     use crate::test_data;
-    use std::fs::File;
-    use std::io::Read;
     use std::vec::Vec;
 
     fn reader(data: &[u8]) -> Reader<'_> {
         let default_version = 13;
         Reader::new(data, default_version)
-    }
-
-    pub fn read_tag_bytes_from_file_with_index(
-        path: &str,
-        tag_code: TagCode,
-        mut index: usize,
-    ) -> Vec<u8> {
-        let mut file = if let Ok(file) = File::open(path) {
-            file
-        } else {
-            panic!("Cannot open {}", path);
-        };
-        let mut data = Vec::new();
-        file.read_to_end(&mut data).unwrap();
-
-        // Halfway parse the SWF file until we find the tag we're searching for.
-        let swf_buf = super::decompress_swf(&data[..]).unwrap();
-        let data = swf_buf.data;
-
-        let mut pos = 0;
-        let mut tag_header_length;
-        loop {
-            let (swf_tag_code, length) = {
-                let mut tag_reader = Reader::new(&data[pos..], swf_buf.header.version);
-                let ret = tag_reader.read_tag_code_and_length().unwrap();
-                tag_header_length =
-                    tag_reader.get_ref().as_ptr() as usize - (pos + data.as_ptr() as usize);
-                ret
-            };
-            let tag_data = &data[pos..pos + length + tag_header_length];
-            pos += tag_header_length + length;
-            if swf_tag_code == 0 {
-                panic!("Tag not found");
-            } else if swf_tag_code == tag_code as u16 {
-                if index == 0 {
-                    // Flash tends to export tags with the extended header even if the size
-                    // would fit with the standard header.
-                    // This screws up our tests, because swf-rs writes tags with the
-                    // minimum header necessary.
-                    // We want to easily write new tests by exporting SWFs from the Flash
-                    // software, so rewrite with a standard header to match swf-rs output.
-                    let mut data = tag_data.to_vec();
-                    if length < 0b111111 && (data[0] & 0b111111) == 0b111111 {
-                        let mut tag_data = Vec::with_capacity(length + 2);
-                        tag_data.extend_from_slice(&data[0..2]);
-                        tag_data.extend_from_slice(&data[6..]);
-                        tag_data[0] = (data[0] & !0b111111) | (length as u8);
-                        data = tag_data;
-                    }
-                    return data;
-                } else {
-                    index -= 1;
-                }
-            }
-        }
-    }
-
-    pub fn read_tag_bytes_from_file(path: &str, tag_code: TagCode) -> Vec<u8> {
-        read_tag_bytes_from_file_with_index(path, tag_code, 0)
     }
 
     #[test]
