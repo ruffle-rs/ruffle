@@ -156,6 +156,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub time_offset: &'a mut u32,
 }
 
+/// Convenience methods for controlling audio.
 impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     pub fn update_sounds(&mut self) {
         self.audio_manager.update_sounds(
@@ -172,7 +173,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 
     pub fn set_global_sound_transform(&mut self, sound_transform: SoundTransform) {
         self.audio_manager
-            .set_global_sound_transform(self.audio, sound_transform);
+            .set_global_sound_transform(sound_transform);
     }
 
     pub fn start_sound(
@@ -226,8 +227,8 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         )
     }
 
-    pub fn update_sound_transforms(&mut self) {
-        self.audio_manager.update_sound_transforms(self.audio)
+    pub fn set_sound_transforms_dirty(&mut self) {
+        self.audio_manager.set_sound_transforms_dirty()
     }
 }
 
