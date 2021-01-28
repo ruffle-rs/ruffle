@@ -235,6 +235,8 @@ pub trait ExternalInterfaceProvider {
     fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>>;
 
     fn on_callback_available(&self, name: &str);
+
+    fn on_fs_command(&self, command: &str, args: &str) -> bool;
 }
 
 pub trait ExternalInterfaceMethod {
@@ -294,5 +296,14 @@ impl<'gc> ExternalInterface<'gc> {
 
     pub fn available(&self) -> bool {
         !self.providers.is_empty()
+    }
+
+    pub fn invoke_fs_command(&self, command: &str, args: &str) -> bool {
+        for provider in &self.providers {
+            if provider.on_fs_command(command, args) {
+                return true;
+            }
+        }
+        false
     }
 }

@@ -13,13 +13,17 @@ pub fn parse(url: &str) -> Option<&str> {
     }
 }
 
-/// TODO: FSCommand URL handling
 pub fn handle<'gc>(
-    fscommand: &str,
+    command: &str,
+    args: &str,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<(), Error<'gc>> {
-    avm_warn!(activation, "Unhandled FSCommand: {}", fscommand);
-
-    //This should be an error.
+    if !activation
+        .context
+        .external_interface
+        .invoke_fs_command(command, args)
+    {
+        avm_warn!(activation, "Unhandled FSCommand: {}", command);
+    }
     Ok(())
 }

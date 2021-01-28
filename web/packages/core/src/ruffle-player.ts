@@ -117,6 +117,16 @@ export class RufflePlayer extends HTMLElement {
     private panicked = false;
 
     /**
+     * A movie can communicate with the hosting page using fscommand
+     * as long as script access is allowed.
+     *
+     * @param command A string passed to the host application for any use.
+     * @param args A string passed to the host application for any use.
+     * @returns True if the command was handled.
+     */
+    onFSCommand: ((command: string, args: string) => boolean) | null;
+
+    /**
      * Any configuration that should apply to this specific player.
      * This will be defaulted with any global configuration.
      */
@@ -155,6 +165,7 @@ export class RufflePlayer extends HTMLElement {
 
         this.instance = null;
         this.options = null;
+        this.onFSCommand = null;
         this._trace_observer = null;
 
         this.ruffleConstructor = loadRuffle();

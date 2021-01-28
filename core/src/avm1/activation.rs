@@ -1267,7 +1267,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         if let Some(fscommand) = fscommand::parse(&url) {
-            fscommand::handle(fscommand, self)?;
+            let fsargs = target;
+            fscommand::handle(fscommand, fsargs, self)?;
         } else {
             self.context
                 .navigator
@@ -1290,7 +1291,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let url = url_val.coerce_to_string(self)?;
 
         if let Some(fscommand) = fscommand::parse(&url) {
-            fscommand::handle(fscommand, self)?;
+            let fsargs = target.coerce_to_string(self)?.to_string();
+            fscommand::handle(fscommand, &fsargs, self)?;
             return Ok(FrameControl::Continue);
         }
 

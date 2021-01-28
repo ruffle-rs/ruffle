@@ -1129,7 +1129,9 @@ pub fn get_url<'gc>(
     if let Some(url_val) = args.get(0) {
         let url = url_val.coerce_to_string(activation)?;
         if let Some(fscommand) = fscommand::parse(&url) {
-            fscommand::handle(fscommand, activation);
+            let fsargs_val = args.get(1).cloned().unwrap_or(Value::Undefined);
+            let fsargs = fsargs_val.coerce_to_string(activation)?;
+            fscommand::handle(fscommand, &fsargs, activation);
             return Ok(Value::Undefined);
         }
 
