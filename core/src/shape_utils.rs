@@ -406,10 +406,8 @@ impl<'a> ShapeConverter<'a> {
                         }
 
                         // <= because fill ID 0 (no fill) is not included in fill style array
-                        self.fill_style1 = if fs > 0 && fs <= num_fill_styles {
-                            // unsafe is okay because the above condition guarantees non-zero
-                            let id = unsafe { NonZeroU32::new_unchecked(fs) };
-                            Some(ActivePath::new(id, (self.x, self.y)))
+                        self.fill_style1 = if fs <= num_fill_styles {
+                            NonZeroU32::new(fs).map(|id| ActivePath::new(id, (self.x, self.y)))
                         } else {
                             None
                         }
@@ -423,9 +421,8 @@ impl<'a> ShapeConverter<'a> {
                             }
                         }
 
-                        self.fill_style0 = if fs > 0 && fs <= num_fill_styles {
-                            let id = unsafe { NonZeroU32::new_unchecked(fs) };
-                            Some(ActivePath::new(id, (self.x, self.y)))
+                        self.fill_style0 = if fs <= num_fill_styles {
+                            NonZeroU32::new(fs).map(|id| ActivePath::new(id, (self.x, self.y)))
                         } else {
                             None
                         }
@@ -436,9 +433,8 @@ impl<'a> ShapeConverter<'a> {
                             self.strokes.merge_path(path, false);
                         }
 
-                        self.line_style = if ls > 0 && ls <= num_line_styles {
-                            let id = unsafe { NonZeroU32::new_unchecked(ls) };
-                            Some(ActivePath::new(id, (self.x, self.y)))
+                        self.line_style = if ls <= num_line_styles {
+                            NonZeroU32::new(ls).map(|id| ActivePath::new(id, (self.x, self.y)))
                         } else {
                             None
                         }
