@@ -1091,7 +1091,7 @@ impl<'gc> MovieClip<'gc> {
                     }
                 }
                 // Run first frame.
-                child.apply_place_object(context.gc_context, place_object);
+                child.apply_place_object(context.gc_context, self.movie(), place_object);
                 child.post_instantiation(context, child, None, Instantiator::Movie, false);
                 child.run_frame(context);
             }
@@ -1254,7 +1254,11 @@ impl<'gc> MovieClip<'gc> {
                 // If it's a rewind, we removed any dead children above, so we always
                 // modify the previous child.
                 Some(prev_child) if params.id() == 0 || is_rewind => {
-                    prev_child.apply_place_object(context.gc_context, &params.place_object);
+                    prev_child.apply_place_object(
+                        context.gc_context,
+                        self.movie(),
+                        &params.place_object,
+                    );
                 }
                 _ => {
                     if let Some(child) = clip.instantiate_child(
@@ -2794,7 +2798,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             }
             PlaceObjectAction::Modify => {
                 if let Some(child) = self.child_by_depth(place_object.depth.into()) {
-                    child.apply_place_object(context.gc_context, &place_object);
+                    child.apply_place_object(context.gc_context, self.movie(), &place_object);
                     child
                 } else {
                     return Ok(());

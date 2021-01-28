@@ -21,10 +21,12 @@ use crate::{
 };
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Function, Object, Uint8Array};
-use ruffle_core::backend::input::InputBackend;
-use ruffle_core::backend::render::RenderBackend;
-use ruffle_core::backend::storage::MemoryStorageBackend;
-use ruffle_core::backend::storage::StorageBackend;
+use ruffle_core::backend::{
+    audio::{AudioBackend, NullAudioBackend},
+    input::InputBackend,
+    render::RenderBackend,
+    storage::{MemoryStorageBackend, StorageBackend},
+};
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{KeyCode, MouseWheelDelta};
@@ -434,7 +436,12 @@ impl Ruffle {
             .append_child(&canvas.clone().into())
             .into_js_result()?;
 
-        let audio = Box::new(WebAudioBackend::new()?);
+        let audio: Box<dyn AudioBackend> = if let Ok(audio) = WebAudioBackend::new() {
+            Box::new(audio)
+        } else {
+            log::error!("Unable to create audio backend. No audio will be played.");
+            Box::new(NullAudioBackend::new())
+        };
         let navigator = Box::new(WebNavigatorBackend::new(
             allow_script_access,
             config.upgrade_to_https,
