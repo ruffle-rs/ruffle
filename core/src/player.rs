@@ -908,7 +908,22 @@ impl Player {
             let levels: Vec<_> = update_context.levels.values().copied().collect();
 
             for level in levels {
-                level.run_frame(update_context);
+                // level.run_frame(update_context);
+                use std::collections::VecDeque;
+                let mut q = VecDeque::<DisplayObject<'_>>::new();
+                q.push_front(level);
+                let mut s = VecDeque::new();
+                while let Some(x) = q.pop_back() {
+                    if let Some(x) = x.as_container() {
+                        for &c in x.iter_execution_list().collect::<Vec<DisplayObject<'_>>>().iter().rev() {
+                            q.push_front(c); // TODO: extend?
+                        }
+                    }
+                    s.push_front(x);
+                }
+                for x in s.iter() {
+                    x.run_frame(update_context);
+                }
             }
 
             update_context.update_sounds();

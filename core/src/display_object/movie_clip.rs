@@ -1581,9 +1581,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
-        for child in self.iter_execution_list() {
-            child.run_frame(context);
-        }
+        // for child in self.iter_execution_list() {
+        //     child.run_frame(context);
+        // }
 
         // Run my load/enterFrame clip event.
         let mut mc = self.0.write(context.gc_context);
