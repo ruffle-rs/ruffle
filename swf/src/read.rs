@@ -319,25 +319,17 @@ impl<'a> Reader<'a> {
     }
 
     pub fn read_string(&mut self) -> io::Result<&'a SwfStr> {
-        let mut pos = 0;
-        loop {
-            let byte = *self.input.get(pos).ok_or_else(|| {
-                io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for slice")
-            })?;
-            if byte == 0 {
-                break;
-            }
-            pos += 1;
-        }
-
-        let slice = unsafe { self.input.get_unchecked(..pos) };
-        let s = SwfStr::from_bytes(slice);
-        self.input = &self.input[pos + 1..];
+        let s = SwfStr::from_bytes_null_terminated(&self.input).ok_or_else(|| {
+            io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for string")
+        })?;
+        self.input = &self.input[s.len() + 1..];
         Ok(s)
     }
 
     fn read_string_with_len(&mut self, len: usize) -> io::Result<&'a SwfStr> {
-        Ok(SwfStr::from_bytes_null_terminated(&self.read_slice(len)?))
+        let bytes = &self.read_slice(len)?;
+        // TODO: Maybe just strip the possible trailing null char instead of looping here.
+        Ok(SwfStr::from_bytes_null_terminated(bytes).unwrap_or_else(|| SwfStr::from_bytes(bytes)))
     }
 
     /// Reads the next SWF tag from the stream.
@@ -3050,9 +3042,21 @@ pub mod tests {
     #[test]
     fn read_string() {
         {
-            let buf = b"Testing\0";
+            let buf = b"Testing\0More testing\0\0Non-string data";
             let mut reader = Reader::new(&buf[..], 1);
             assert_eq!(reader.read_string().unwrap(), "Testing");
+            assert_eq!(reader.read_string().unwrap(), "More testing");
+            assert_eq!(reader.read_string().unwrap(), "");
+            assert!(reader.read_string().is_err());
+        }
+        {
+            let mut reader = Reader::new(&[], 1);
+            assert!(reader.read_string().is_err());
+        }
+        {
+            let buf = b"\0Testing";
+            let mut reader = Reader::new(&buf[..], 1);
+            assert_eq!(reader.read_string().unwrap(), "");
         }
         {
             let buf = "12🤖12\0".as_bytes();

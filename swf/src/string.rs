@@ -27,10 +27,17 @@ impl SwfStr {
         unsafe { &*(string as *const [u8] as *const Self) }
     }
 
+    /// Read a `SwfStr` from a byte slice until a NULL byte is encountered.
+    /// Returns `None` if no NULL byte was found.
     #[inline]
-    pub fn from_bytes_null_terminated(string: &[u8]) -> &Self {
-        let i = string.iter().position(|&c| c == 0).unwrap_or(string.len());
-        Self::from_bytes(&string[..i])
+    pub fn from_bytes_null_terminated(string: &[u8]) -> Option<&Self> {
+        // If investigations show that the bounds check is not elided,
+        // it should be safe to use `get_unchecked` here instead.
+        // Initial Godbolt research shows it doesn't make a difference.
+        string
+            .iter()
+            .position(|&c| c == 0)
+            .map(|i| Self::from_bytes(&string[..i]))
     }
 
     /// Create a new UTF-8 `SwfStr` from a Rust `str`.
@@ -40,9 +47,8 @@ impl SwfStr {
     }
 
     /// Create a new UTF-8 `SwfStr` from a Rust `str`.
-    /// The string will be truncated if a null byte is encountered.
     #[inline]
-    pub fn from_utf8_str_null_terminated(string: &str) -> &Self {
+    pub fn from_utf8_str_null_terminated(string: &str) -> Option<&Self> {
         Self::from_bytes_null_terminated(string.as_bytes())
     }
 
