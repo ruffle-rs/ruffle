@@ -901,23 +901,20 @@ impl Player {
 
     pub fn run_frame(&mut self) {
         self.update(|update_context| {
-            // TODO: In what order are levels run?
             // NOTE: We have to copy all the layer pointers into a separate list
             // because level updates can create more levels, which we don't
             // want to run frames on
             let levels: Vec<_> = update_context.levels.values().copied().collect();
 
+            // TODO: In what order are levels run?
             for level in levels {
-                // level.run_frame(update_context);
                 use std::collections::VecDeque;
                 let mut q = VecDeque::<DisplayObject<'_>>::new();
                 q.push_front(level);
                 let mut s = VecDeque::new();
                 while let Some(x) = q.pop_back() {
                     if let Some(x) = x.as_container() {
-                        for &c in x.iter_execution_list().collect::<Vec<DisplayObject<'_>>>().iter().rev() {
-                            q.push_front(c); // TODO: extend?
-                        }
+                        q.extend(x.iter_execution_list().rev());
                     }
                     s.push_front(x);
                 }

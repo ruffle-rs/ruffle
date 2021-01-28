@@ -68,7 +68,10 @@ pub trait TDisplayObjectContainer<'gc>:
     fn child_by_name(self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>>;
 
     /// Yield the head of the execution list.
-    fn first_executed_child(self) -> Option<DisplayObject<'gc>>;
+    fn exec_list_head(self) -> Option<DisplayObject<'gc>>;
+
+    /// Yield the tail of the execution list.
+    fn exec_list_tail(self) -> Option<DisplayObject<'gc>>;
 
     /// Returns the number of children on the render list.
     fn num_children(self) -> usize;
@@ -176,9 +179,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// The iterator's concrete type is stated here due to Rust language
     /// limitations.
     fn iter_execution_list(self) -> ExecIter<'gc> {
-        ExecIter {
-            cur_child: self.first_executed_child(),
-        }
+        ExecIter::from_container(self.into())
     }
 
     /// Iterates over the children of this display object in render order. This
@@ -252,8 +253,12 @@ macro_rules! impl_display_object_container {
             self.0.read().$field.get_name(name, case_sensitive)
         }
 
-        fn first_executed_child(self) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.first_executed_child()
+        fn exec_list_head(self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.exec_list_head()
+        }
+
+        fn exec_list_tail(self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.exec_list_tail()
         }
 
         fn num_children(self) -> usize {
@@ -498,7 +503,9 @@ pub struct ChildContainer<'gc> {
     ///
     /// This list is an intrusive linked list baked into all display objects.
     /// Thus, this merely references the first item in the list.
-    exec_list: Option<DisplayObject<'gc>>,
+    exec_list_head: Option<DisplayObject<'gc>>,
+
+    exec_list_tail: Option<DisplayObject<'gc>>,
 }
 
 impl<'gc> Default for ChildContainer<'gc> {
@@ -512,13 +519,19 @@ impl<'gc> ChildContainer<'gc> {
         ChildContainer {
             render_list: Vec::new(),
             depth_list: BTreeMap::new(),
-            exec_list: None,
+            exec_list_head: None,
+            exec_list_tail: None,
         }
     }
 
     /// Get the head of the execution list.
-    pub fn first_executed_child(&self) -> Option<DisplayObject<'gc>> {
-        self.exec_list
+    pub fn exec_list_head(&self) -> Option<DisplayObject<'gc>> {
+        self.exec_list_head
+    }
+
+    /// Get the tail of the execution list.
+    pub fn exec_list_tail(&self) -> Option<DisplayObject<'gc>> {
+        self.exec_list_tail
     }
 
     /// Adds a child to the front of the execution list.
@@ -529,12 +542,14 @@ impl<'gc> ChildContainer<'gc> {
         gc_context: MutationContext<'gc, '_>,
         child: DisplayObject<'gc>,
     ) {
-        if let Some(head) = self.exec_list {
+        if let Some(head) = self.exec_list_head {
             head.set_prev_sibling(gc_context, Some(child));
             child.set_next_sibling(gc_context, Some(head));
+        } else {
+            self.exec_list_tail = Some(child);
         }
 
-        self.exec_list = Some(child);
+        self.exec_list_head = Some(child);
     }
 
     /// Removes a child from the execution list.
@@ -556,7 +571,8 @@ impl<'gc> ChildContainer<'gc> {
         let next = child.next_sibling();
         let present_on_execution_list = prev.is_some()
             || next.is_some()
-            || (self.exec_list.is_some() && DisplayObject::ptr_eq(self.exec_list.unwrap(), child));
+            || (self.exec_list_head.is_some()
+                && DisplayObject::ptr_eq(self.exec_list_head.unwrap(), child));
 
         if let Some(prev) = prev {
             prev.set_next_sibling(context.gc_context, next);
@@ -568,9 +584,14 @@ impl<'gc> ChildContainer<'gc> {
         child.set_prev_sibling(context.gc_context, None);
         child.set_next_sibling(context.gc_context, None);
 
-        if let Some(head) = self.exec_list {
+        if let Some(head) = self.exec_list_head {
             if DisplayObject::ptr_eq(head, child) {
-                self.exec_list = next;
+                self.exec_list_head = next;
+            }
+        }
+        if let Some(tail) = self.exec_list_tail {
+            if DisplayObject::ptr_eq(tail, child) {
+                self.exec_list_tail = prev;
             }
         }
 
@@ -695,8 +716,6 @@ impl<'gc> ChildContainer<'gc> {
     /// position will be shifted back by one, which must be taken into account
     /// when calculating future insertion IDs.
     ///
-    /// `parent` should be the display object that owns this container.
-    ///
     /// All children at or after the given ID will be shifted down in the
     /// render list. The child will *not* be put onto the depth list.
     pub fn insert_at_id(
@@ -797,7 +816,7 @@ impl<'gc> ChildContainer<'gc> {
     /// Remove all children from the container's execution, render, and depth
     /// lists.
     pub fn clear(&mut self, gc_context: MutationContext<'gc, '_>) {
-        let mut head = self.exec_list;
+        let mut head = self.exec_list_head;
 
         while let Some(child) = head {
             let next_head = child.next_sibling();
@@ -808,7 +827,8 @@ impl<'gc> ChildContainer<'gc> {
             head = next_head;
         }
 
-        self.exec_list = None;
+        self.exec_list_head = None;
+        self.exec_list_tail = None;
         self.render_list.clear();
         self.depth_list.clear();
     }
@@ -850,17 +870,40 @@ impl<'gc> ChildContainer<'gc> {
 }
 
 pub struct ExecIter<'gc> {
-    cur_child: Option<DisplayObject<'gc>>,
+    cur_head: Option<DisplayObject<'gc>>,
+    cur_tail: Option<DisplayObject<'gc>>,
+}
+
+impl<'gc> ExecIter<'gc> {
+    fn from_container(src: DisplayObjectContainer<'gc>) -> Self {
+        Self {
+            cur_head: src.exec_list_head(),
+            cur_tail: src.exec_list_tail(),
+        }
+    }
 }
 
 impl<'gc> Iterator for ExecIter<'gc> {
     type Item = DisplayObject<'gc>;
-    fn next(&mut self) -> Option<Self::Item> {
-        let cur = self.cur_child;
 
-        self.cur_child = self
-            .cur_child
+    fn next(&mut self) -> Option<Self::Item> {
+        let cur = self.cur_head;
+
+        self.cur_head = self
+            .cur_head
             .and_then(|display_cell| display_cell.next_sibling());
+
+        cur
+    }
+}
+
+impl<'gc> DoubleEndedIterator for ExecIter<'gc> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let cur = self.cur_tail;
+
+        self.cur_tail = self
+            .cur_tail
+            .and_then(|display_cell| display_cell.prev_sibling());
 
         cur
     }
