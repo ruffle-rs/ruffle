@@ -96,6 +96,9 @@ extern "C" {
     #[wasm_bindgen(method, js_name = "onCallbackAvailable")]
     fn on_callback_available(this: &JavascriptPlayer, name: &str);
 
+    #[wasm_bindgen(method, catch, js_name = "onFSCommand")]
+    fn on_fs_command(this: &JavascriptPlayer, command: &str, args: &str) -> Result<bool, JsValue>;
+
     #[wasm_bindgen(method)]
     fn panic(this: &JavascriptPlayer, error: &JsError);
 
@@ -978,6 +981,12 @@ impl ExternalInterfaceProvider for JavascriptInterface {
 
     fn on_callback_available(&self, name: &str) {
         self.js_player.on_callback_available(name);
+    }
+
+    fn on_fs_command(&self, command: &str, args: &str) -> bool {
+        self.js_player
+            .on_fs_command(command, args)
+            .unwrap_or_default()
     }
 }
 
