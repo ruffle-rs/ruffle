@@ -58,22 +58,11 @@ impl<'a> Reader<'a> {
     }
 
     pub fn read_string(&mut self) -> io::Result<&'a SwfStr> {
-        let mut pos = 0;
-        loop {
-            let byte = *self.input.get(pos).ok_or_else(|| {
-                io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for slice")
-            })?;
-            if byte == 0 {
-                break;
-            }
-            pos += 1;
-        }
-
-        let s = unsafe {
-            let slice = self.input.get_unchecked(..pos);
-            SwfStr::from_bytes(slice)
-        };
-        self.input = &self.input[pos + 1..];
+        // Same implementation as in `swf::read::Reader`
+        let s = SwfStr::from_bytes_null_terminated(&self.input).ok_or_else(|| {
+            io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for string")
+        })?;
+        self.input = &self.input[s.len() + 1..];
         Ok(s)
     }
 
