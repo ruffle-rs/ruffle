@@ -689,11 +689,18 @@ impl WebAudioBackend {
             .unwrap();
         let audio_buffer = Rc::new(RefCell::new(audio_buffer));
 
-        let data_array = unsafe { js_sys::Uint8Array::view(&audio_data[..]) };
-        let array_buffer = data_array.buffer().slice_with_end(
-            data_array.byte_offset(),
-            data_array.byte_offset() + data_array.byte_length(),
-        );
+        // Clone the audio data into an ArrayBuffer
+        // SAFETY: (compare with the docs for `Uint8Array::view`)
+        // - We don't resize WASMs backing buffer before the view is cloned
+        // - We don't mutate `data_array`
+        // - Since we clone the buffer, its lifetime is correctly disconnected from `audio_data`
+        let array_buffer = {
+            let data_array = unsafe { js_sys::Uint8Array::view(audio_data) };
+            data_array.buffer().slice_with_end(
+                data_array.byte_offset(),
+                data_array.byte_offset() + data_array.byte_length(),
+            )
+        };
 
         NUM_SOUNDS_LOADING.with(|n| n.set(n.get() + 1));
 

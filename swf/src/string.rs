@@ -19,11 +19,12 @@ pub struct SwfStr {
 }
 
 impl SwfStr {
-    /// Create a new `SwfStr` from a byte slice with a given encoding.
-    /// The string will be truncated if a null byte is encountered.
+    /// Create a new `SwfStr` from a byte slice.
     /// The data is not required to be valid for the given encoding.
     #[inline]
     pub fn from_bytes(string: &[u8]) -> &Self {
+        // SAFETY: Casting is safe because internal representations are
+        // the same, see repr(transparent).
         unsafe { &*(string as *const [u8] as *const Self) }
     }
 
