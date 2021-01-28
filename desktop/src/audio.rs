@@ -291,16 +291,12 @@ impl CpalAudioBackend {
             for (_, sound) in sound_instances.iter_mut() {
                 if sound.active && !sound.signal.is_exhausted() {
                     let sound_frame = sound.signal.next();
-                    let left = sound_frame.mul_amp(sound.left_transform);
-                    let right = sound_frame.mul_amp(sound.right_transform);
-                    let sound_frame: Stereo<T::Signed> = unsafe {
-                        [
-                            Sample::add_amp(*left.get_unchecked(0), *left.get_unchecked(1))
-                                .to_sample(),
-                            Sample::add_amp(*right.get_unchecked(0), *right.get_unchecked(1))
-                                .to_sample(),
-                        ]
-                    };
+                    let [left_0, left_1] = sound_frame.mul_amp(sound.left_transform);
+                    let [right_0, right_1] = sound_frame.mul_amp(sound.right_transform);
+                    let sound_frame: Stereo<T::Signed> = [
+                        Sample::add_amp(left_0, left_1).to_sample(),
+                        Sample::add_amp(right_0, right_1).to_sample(),
+                    ];
                     output_frame = output_frame.add_amp(sound_frame);
                 } else {
                     sound.active = false;
