@@ -883,6 +883,7 @@ pub trait TDisplayObject<'gc>:
     fn apply_place_object(
         &self,
         gc_context: MutationContext<'gc, '_>,
+        placing_movie: Option<Arc<SwfMovie>>,
         place_object: &swf::PlaceObject,
     ) {
         // PlaceObject tags only apply if this onject has not been dynamically moved by AS code.
@@ -912,15 +913,22 @@ pub trait TDisplayObject<'gc>:
             {
                 // Convert from `swf::ClipAction` to Ruffle's `ClipAction`.
                 use crate::display_object::movie_clip::ClipAction;
-                clip.set_clip_actions(
-                    gc_context,
-                    clip_actions
-                        .iter()
-                        .cloned()
-                        .map(|a| ClipAction::from_action_and_movie(a, clip.movie().unwrap()))
-                        .flatten()
-                        .collect(),
-                );
+                if let Some(placing_movie) = placing_movie {
+                    clip.set_clip_actions(
+                        gc_context,
+                        clip_actions
+                            .iter()
+                            .cloned()
+                            .map(|a| {
+                                ClipAction::from_action_and_movie(a, Arc::clone(&placing_movie))
+                            })
+                            .flatten()
+                            .collect(),
+                    );
+                } else {
+                    // This probably shouldn't happen; we should always have a movie.
+                    log::error!("No movie when trying to set clip event");
+                }
             }
             // TODO: Others will go here eventually.
         }
