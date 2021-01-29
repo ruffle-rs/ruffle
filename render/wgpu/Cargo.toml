@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", rev = "6cfd4243603b495fed568445792feed51e78aac2" }
 image = "0.23.12"
-jpeg-decoder = "0.1.21"
+jpeg-decoder = "0.1.22"
 log = "0.4"
 lyon = "0.17.4"
 ruffle_core = { path = "../../core" }
