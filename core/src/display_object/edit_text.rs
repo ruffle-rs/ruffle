@@ -86,6 +86,9 @@ pub struct EditTextData<'gc> {
     /// If the text is word-wrapped.
     is_word_wrap: bool,
 
+    /// If this is a password input field
+    is_password: bool,
+
     /// The color of the background fill. Only applied when has_border.
     background_color: u32,
 
@@ -147,6 +150,7 @@ impl<'gc> EditText<'gc> {
         let is_multiline = swf_tag.is_multiline;
         let is_word_wrap = swf_tag.is_word_wrap;
         let is_selectable = swf_tag.is_selectable;
+        let is_password = swf_tag.is_password;
         let is_editable = !swf_tag.is_read_only;
         let is_html = swf_tag.is_html;
         let document = XMLDocument::new(context.gc_context);
@@ -239,6 +243,7 @@ impl<'gc> EditText<'gc> {
                 is_selectable,
                 is_editable,
                 is_word_wrap,
+                is_password,
                 background_color,
                 has_border,
                 border_color,
@@ -457,6 +462,14 @@ impl<'gc> EditText<'gc> {
 
     pub fn is_multiline(self) -> bool {
         self.0.read().is_multiline
+    }
+
+    pub fn is_password(self) -> bool {
+        self.0.read().is_password
+    }
+
+    pub fn set_password(self, is_password: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).is_password = is_password;
     }
 
     pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -802,11 +815,9 @@ impl<'gc> EditText<'gc> {
         {
             let baseline_adjustment =
                 font.get_baseline_for_height(params.height()) - params.height();
-            font.evaluate(
-                text,
-                self.text_transform(color.clone(), baseline_adjustment),
-                params,
-                |pos, transform, glyph: &Glyph, advance, x| {
+
+            let glyph_func =
+                |pos: usize, transform: &Transform, glyph: &Glyph, advance: Twips, x: Twips| {
                     // If it's highlighted, override the color.
                     match selection {
                         Some(selection) if selection.contains(start + pos) => {
@@ -872,8 +883,22 @@ impl<'gc> EditText<'gc> {
                             context.renderer.draw_rect(color.clone(), &caret);
                         }
                     }
-                },
-            );
+                };
+            if edit_text.is_password {
+                font.evaluate(
+                    &"*".repeat(text.len()),
+                    self.text_transform(color.clone(), baseline_adjustment),
+                    params,
+                    glyph_func,
+                );
+            } else {
+                font.evaluate(
+                    text,
+                    self.text_transform(color.clone(), baseline_adjustment),
+                    params,
+                    glyph_func,
+                );
+            }
         }
 
         if let Some(drawing) = lbox.as_renderable_drawing() {
