@@ -38,7 +38,7 @@ rand = { version = "0.8.3", features = ["std", "small_rng"], default-features = 
 serde = { version = "1.0.123", features = ["derive"], optional = true }
 
 [dependencies.jpeg-decoder]
-version = "0.1.21"
+version = "0.1.22"
 default-features = false # can't use rayon on web
 
 [dev-dependencies]
