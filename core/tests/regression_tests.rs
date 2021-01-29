@@ -250,6 +250,7 @@ swf_tests! {
     (issue_1906, "avm1/issue_1906", 2),
     (issue_2030, "avm1/issue_2030", 1),
     (issue_2166, "avm1/issue_2166", 1),
+    (issue_2870, "avm1/issue_2870", 10),
     (function_as_function, "avm1/function_as_function", 1),
     (infinite_recursion_function, "avm1/infinite_recursion_function", 1),
     (infinite_recursion_function_in_setter, "avm1/infinite_recursion_function_in_setter", 1),
