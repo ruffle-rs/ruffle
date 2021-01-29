@@ -960,8 +960,10 @@ impl Player {
                 level.frame_constructed(update_context);
             }
 
-            for level in levels.iter() {
-                level.run_frame(update_context);
+            for level in levels {
+                for x in level.iter_global_exec_list() {
+                    x.run_frame(update_context);
+                }
             }
 
             for level in levels.iter() {
@@ -1226,7 +1228,7 @@ impl Player {
     }
 
     /// Runs the closure `f` with an `UpdateContext`.
-    /// This takes cares of populating the `UpdateContext` struct, avoiding borrow issues.
+    /// This takes care of populating the `UpdateContext` struct, avoiding borrow issues.
     fn mutate_with_update_context<F, R>(&mut self, f: F) -> R
     where
         F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc, '_>) -> R,

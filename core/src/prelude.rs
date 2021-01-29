@@ -2,7 +2,7 @@ pub use crate::avm2::Value as Avm2Value;
 pub use crate::bounding_box::BoundingBox;
 pub use crate::color_transform::ColorTransform;
 pub use crate::display_object::{
-    DisplayObject, DisplayObjectContainer, Lists, TDisplayObject, TDisplayObjectContainer,
+    DisplayObject, DisplayObjectContainer, Lists, TDisplayObject, TDisplayObjectContainer, GlobalExecIter
 };
 pub use crate::{
     impl_display_object, impl_display_object_container, impl_display_object_sansbounds,

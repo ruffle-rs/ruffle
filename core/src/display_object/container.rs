@@ -442,6 +442,12 @@ macro_rules! impl_display_object_container {
 
             drop(write);
 
+            let mut level0 = context.levels.get_mut(&0).copied().unwrap();
+            if let Some(removed_child) = removed_child {
+                level0.remove_child_from_global_exec_list(context, removed_child);
+            }
+            level0.add_child_to_global_exec_list(context.gc_context, child);
+
             child.set_parent(context.gc_context, Some(self.into()));
             child.set_place_frame(context.gc_context, 0);
             child.set_depth(context.gc_context, depth);
@@ -554,6 +560,11 @@ macro_rules! impl_display_object_container {
 
             drop(write);
 
+            if from_lists.contains(Lists::EXECUTION) {
+                let mut level0 = context.levels.get_mut(&0).copied().unwrap();
+                level0.remove_child_from_global_exec_list(context, child);
+            }
+
             if removed_from_execution_list {
                 child.unload(context);
 
@@ -595,6 +606,9 @@ macro_rules! impl_display_object_container {
                 write.$field.remove_child_from_exec_list(context, removed);
 
                 drop(write);
+
+                let mut level0 = context.levels.get_mut(&0).copied().unwrap();
+                level0.remove_child_from_global_exec_list(context, removed);
 
                 removed.unload(context);
 
@@ -712,7 +726,7 @@ impl<'gc> ChildContainer<'gc> {
     /// unset the parent either as that's expected to happen after unloading.
     pub fn remove_child_from_exec_list(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
     ) -> bool {
         // Remove from children linked list.
@@ -888,6 +902,8 @@ impl<'gc> ChildContainer<'gc> {
         } else {
             self.render_list.insert(id, child);
             self.add_child_to_exec_list(context.gc_context, child);
+            let mut level0 = context.levels.get_mut(&0).copied().unwrap();
+            level0.add_child_to_global_exec_list(context.gc_context, child);
         }
     }
 
@@ -1008,6 +1024,7 @@ pub struct ExecIter<'gc> {
 
 impl<'gc> Iterator for ExecIter<'gc> {
     type Item = DisplayObject<'gc>;
+
     fn next(&mut self) -> Option<Self::Item> {
         let cur = self.cur_child;
 

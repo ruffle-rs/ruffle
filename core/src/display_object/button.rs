@@ -318,10 +318,6 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
                     .insert(depth, child);
             }
         }
-
-        for child in self.iter_execution_list() {
-            child.run_frame(context);
-        }
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
