@@ -3492,9 +3492,9 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "svg"
-version = "0.8.2"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bdb25a4593d6656239319426f4025f7a658157e25e89f0e0319d7516d46042d"
+checksum = "dcbef9cf3cf75dd7772fb1f40dd6d90278a5263454db94ee399500ee9918aaa7"
 
 [[package]]
 name = "swf"
