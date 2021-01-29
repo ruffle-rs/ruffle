@@ -894,6 +894,7 @@ impl TextSpan {
 #[collect(require_static)]
 pub struct FormatSpans {
     text: String,
+    visual_text: String,
     spans: Vec<TextSpan>,
     default_format: TextFormat,
 }
@@ -908,6 +909,7 @@ impl FormatSpans {
     pub fn new() -> Self {
         FormatSpans {
             text: "".to_string(),
+            visual_text: "".to_string(),
             spans: vec![TextSpan::default()],
             default_format: TextFormat::default(),
         }
@@ -918,6 +920,7 @@ impl FormatSpans {
     pub fn from_str_and_spans(text: &str, spans: &[TextSpan]) -> Self {
         FormatSpans {
             text: text.to_string(),
+            visual_text: text.to_string(),
             spans: spans.to_vec(),
             default_format: Default::default(),
         }
@@ -931,8 +934,17 @@ impl FormatSpans {
         self.default_format = tf.mix_with(self.default_format.clone());
     }
 
+    pub fn set_visual_text(&mut self, text: String) {
+        self.visual_text = text;
+    }
+
     /// Retrieve the text backing the format spans.
     pub fn text(&self) -> &str {
+        &self.visual_text
+    }
+
+    /// Retrieve the actual text without any modifications
+    pub fn real_text(&self) -> &str {
         &self.text
     }
 
@@ -1211,7 +1223,6 @@ impl FormatSpans {
             // entire string.
             new_string.push_str(&self.text);
         }
-
         new_string.push_str(with);
 
         if let Some(text) = self.text.get(to..) {
@@ -1219,6 +1230,9 @@ impl FormatSpans {
         }
 
         self.text = new_string;
+
+        // The visually displayed text should be the same as the underlying text, and can be modified later
+        self.visual_text = self.text.clone();
 
         self.normalize();
     }
@@ -1264,7 +1278,12 @@ impl FormatSpans {
                             .node_name()
                             .eq_ignore_ascii_case("br") =>
                 {
-                    self.replace_text(self.text.len(), self.text.len(), "\n", format_stack.last());
+                    self.replace_text(
+                        self.text().len(),
+                        self.text().len(),
+                        "\n",
+                        format_stack.last(),
+                    );
                 }
                 Step::Out(node)
                     if node

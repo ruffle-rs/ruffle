@@ -168,12 +168,22 @@ impl<'gc> EditText<'gc> {
                 .replace_with_str(context.gc_context, &text, false, false);
             text_spans.lower_from_html(document);
         } else {
-            text_spans.replace_text(0, text_spans.text().len(), &text, Some(&default_format));
+            text_spans.replace_text(
+                0,
+                text_spans.real_text().len(),
+                &text,
+                Some(&default_format),
+            );
         }
 
         if !is_multiline {
-            let filtered = text_spans.text().replace("\n", "");
-            text_spans.replace_text(0, text_spans.text().len(), &filtered, Some(&default_format));
+            let filtered = text_spans.real_text().replace("\n", "");
+            text_spans.replace_text(
+                0,
+                text_spans.real_text().len(),
+                &filtered,
+                Some(&default_format),
+            );
         }
 
         let bounds: BoundingBox = swf_tag.bounds.clone().into();
@@ -328,7 +338,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text(self) -> String {
-        self.0.read().text_spans.text().to_string()
+        self.0.read().text_spans.real_text().to_string()
     }
 
     pub fn set_text(
@@ -337,7 +347,7 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut edit_text = self.0.write(context.gc_context);
-        let len = edit_text.text_spans.text().len();
+        let len = edit_text.text_spans.real_text().len();
         let tf = edit_text.text_spans.default_format().clone();
 
         edit_text.text_spans.replace_text(0, len, &text, Some(&tf));
@@ -470,6 +480,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_password(self, is_password: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).is_password = is_password;
+        self.relayout(context);
     }
 
     pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -704,10 +715,16 @@ impl<'gc> EditText<'gc> {
     /// text-span representation.
     fn relayout(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut edit_text = self.0.write(context.gc_context);
+        let len = edit_text.text_spans.real_text().len();
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
         let width = edit_text.bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0);
+
+        if edit_text.is_password {
+            // If currently hidden, replace the visual text with astericks
+            edit_text.text_spans.set_visual_text("*".repeat(len));
+        }
 
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
@@ -815,9 +832,11 @@ impl<'gc> EditText<'gc> {
         {
             let baseline_adjustment =
                 font.get_baseline_for_height(params.height()) - params.height();
-
-            let glyph_func =
-                |pos: usize, transform: &Transform, glyph: &Glyph, advance: Twips, x: Twips| {
+            font.evaluate(
+                text,
+                self.text_transform(color.clone(), baseline_adjustment),
+                params,
+                |pos, transform, glyph: &Glyph, advance, x| {
                     // If it's highlighted, override the color.
                     match selection {
                         Some(selection) if selection.contains(start + pos) => {
@@ -883,22 +902,8 @@ impl<'gc> EditText<'gc> {
                             context.renderer.draw_rect(color.clone(), &caret);
                         }
                     }
-                };
-            if edit_text.is_password {
-                font.evaluate(
-                    &"*".repeat(text.len()),
-                    self.text_transform(color.clone(), baseline_adjustment),
-                    params,
-                    glyph_func,
-                );
-            } else {
-                font.evaluate(
-                    text,
-                    self.text_transform(color.clone(), baseline_adjustment),
-                    params,
-                    glyph_func,
-                );
-            }
+                },
+            );
         }
 
         if let Some(drawing) = lbox.as_renderable_drawing() {
