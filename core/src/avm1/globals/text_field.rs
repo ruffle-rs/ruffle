@@ -138,12 +138,12 @@ pub fn create_proto<'gc>(
         "type" => [get_type, set_type],
         "variable" => [variable, set_variable],
         "wordWrap" => [word_wrap, set_word_wrap],
-        "password" => [is_password, set_password],
+        "password" => [password, set_password],
     );
 
     object.into()
 }
-pub fn is_password<'gc>(
+pub fn password<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
