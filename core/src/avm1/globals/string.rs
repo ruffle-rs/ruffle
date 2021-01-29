@@ -327,32 +327,20 @@ fn last_index_of<'gc>(
     };
     let start_index = match args.get(1) {
         None | Some(Value::Undefined) => this.len(),
-        Some(n) => {
-            let n = n.coerce_to_i32(activation)?;
-            if n >= 0 {
-                let n = n as usize;
-                if n <= this.len() {
-                    n
-                } else {
-                    this.len()
-                }
-            } else {
-                0
-            }
-        }
+        Some(n) => n.coerce_to_i32(activation)?.max(0) as usize,
     };
 
     if pattern.is_empty() {
         // Empty pattern is found immediately.
-        Ok((start_index as f64).into())
+        Ok(start_index.into())
     } else if let Some((i, _)) = this[..]
         .windows(pattern.len())
         .enumerate()
-        .take(start_index)
+        .take(start_index + 1)
         .rev()
         .find(|(_, w)| *w == &pattern[..])
     {
-        Ok((i as f64).into())
+        Ok(i.into())
     } else {
         // Not found
         Ok((-1).into())
