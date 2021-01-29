@@ -81,6 +81,16 @@ NaN
 102
 
 // indexOf 
+// s.indexOf("a")
+0
+// s.indexOf("a", 16)
+16
+// s.indexOf("a", 14)
+14
+// s.indexOf("a", 13)
+14
+// s.indexOf("a", 0)
+0
 // s.indexOf("test")
 3
 // s.indexOf("test", 4)
@@ -113,6 +123,16 @@ undefined
 6
 
 // lastIndexOf
+// s.lastIndexOf("a")
+16
+// s.lastIndexOf("a", 16)
+16
+// s.lastIndexOf("a", 14)
+14
+// s.lastIndexOf("a", 13)
+2
+// s.lastIndexOf("a", 0)
+0
 // s.lastIndexOf("test")
 10
 // s.lastIndexOf("test", 11)
