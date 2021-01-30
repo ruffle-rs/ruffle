@@ -3,13 +3,14 @@
 //! Trace output can be compared with correct output from the official Flash Player.
 
 use approx::assert_relative_eq;
-use ruffle_core::backend::locale::NullLocaleBackend;
-use ruffle_core::backend::log::LogBackend;
-use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
-use ruffle_core::backend::storage::MemoryStorageBackend;
-use ruffle_core::backend::ui::NullUiBackend;
 use ruffle_core::backend::{
-    audio::NullAudioBackend, input::NullInputBackend, render::NullRenderer,
+    audio::NullAudioBackend,
+    locale::NullLocaleBackend,
+    log::LogBackend,
+    navigator::{NullExecutor, NullNavigatorBackend},
+    render::NullRenderer,
+    storage::MemoryStorageBackend,
+    ui::NullUiBackend,
 };
 use ruffle_core::context::UpdateContext;
 use ruffle_core::external::Value as ExternalValue;
@@ -719,7 +720,6 @@ fn run_swf(
         Box::new(NullRenderer),
         Box::new(NullAudioBackend::new()),
         Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
-        Box::new(NullInputBackend::new()),
         Box::new(MemoryStorageBackend::default()),
         Box::new(NullLocaleBackend::new()),
         Box::new(TestLogBackend::new(trace_output.clone())),

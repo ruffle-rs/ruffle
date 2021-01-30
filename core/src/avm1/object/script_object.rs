@@ -836,12 +836,12 @@ mod tests {
     use crate::avm1::{Avm1, Timers};
     use crate::avm2::Avm2;
     use crate::backend::audio::{AudioManager, NullAudioBackend};
-    use crate::backend::input::NullInputBackend;
     use crate::backend::locale::NullLocaleBackend;
     use crate::backend::log::NullLogBackend;
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::backend::render::NullRenderer;
     use crate::backend::storage::MemoryStorageBackend;
+    use crate::backend::ui::NullUiBackend;
     use crate::context::UpdateContext;
     use crate::display_object::MovieClip;
     use crate::focus_tracker::FocusTracker;
@@ -883,7 +883,7 @@ mod tests {
                 action_queue: &mut crate::context::ActionQueue::new(),
                 audio: &mut NullAudioBackend::new(),
                 audio_manager: &mut AudioManager::new(),
-                input: &mut NullInputBackend::new(),
+                ui: &mut NullUiBackend::new(),
                 background_color: &mut None,
                 library: &mut Library::empty(gc_context),
                 navigator: &mut NullNavigatorBackend::new(),
