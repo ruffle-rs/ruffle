@@ -1,11 +1,11 @@
-use ruffle_core::backend::ui::{UiBackend, MouseCursor};
-use ruffle_core::events::{KeyCode, PlayerEvent};
-use std::rc::Rc;
-use std::collections::HashSet;
-use tinyfiledialogs::{message_box_ok, MessageBoxIcon};
-use winit::window::Window;
-use winit::event::{ElementState, ModifiersState, VirtualKeyCode, WindowEvent};
 use clipboard::{ClipboardContext, ClipboardProvider};
+use ruffle_core::backend::ui::{MouseCursor, UiBackend};
+use ruffle_core::events::{KeyCode, PlayerEvent};
+use std::collections::HashSet;
+use std::rc::Rc;
+use tinyfiledialogs::{message_box_ok, MessageBoxIcon};
+use winit::event::{ElementState, ModifiersState, VirtualKeyCode, WindowEvent};
+use winit::window::Window;
 
 pub struct DesktopUiBackend {
     window: Rc<Window>,

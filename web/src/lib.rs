@@ -439,7 +439,9 @@ impl Ruffle {
             config.upgrade_to_https,
         ));
         let storage = match window.local_storage() {
-            Ok(Some(s)) => Box::new(storage::LocalStorageBackend::new(s)) as Box<dyn StorageBackend>,
+            Ok(Some(s)) => {
+                Box::new(storage::LocalStorageBackend::new(s)) as Box<dyn StorageBackend>
+            }
             err => {
                 log::warn!("Unable to use localStorage: {:?}\nData will not save.", err);
                 Box::new(MemoryStorageBackend::default())
@@ -449,15 +451,7 @@ impl Ruffle {
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
         let log = Box::new(log_adapter::WebLogBackend::new(trace_observer.clone()));
         let ui = Box::new(ui::WebUiBackend::new(js_player.clone(), &canvas));
-        let core = ruffle_core::Player::new(
-            renderer,
-            audio,
-            navigator,
-            storage,
-            locale,
-            log,
-            ui,
-        )?;
+        let core = ruffle_core::Player::new(renderer, audio, navigator, storage, locale, log, ui)?;
         {
             let mut core = core.lock().unwrap();
             if let Some(color) = config.background_color.and_then(parse_html_color) {
@@ -732,8 +726,7 @@ impl Ruffle {
                             let instance = instance.borrow();
                             if instance.has_focus {
                                 let mut core = instance.core.lock().unwrap();
-                                let ui =
-                                    core.ui_mut().downcast_mut::<ui::WebUiBackend>().unwrap();
+                                let ui = core.ui_mut().downcast_mut::<ui::WebUiBackend>().unwrap();
                                 ui.keydown(&js_event);
 
                                 let key_code = ui.last_key_code();
@@ -773,8 +766,7 @@ impl Ruffle {
                             let instance = instance.borrow();
                             if instance.has_focus {
                                 let mut core = instance.core.lock().unwrap();
-                                let ui =
-                                    core.ui_mut().downcast_mut::<ui::WebUiBackend>().unwrap();
+                                let ui = core.ui_mut().downcast_mut::<ui::WebUiBackend>().unwrap();
                                 ui.keyup(&js_event);
 
                                 let key_code = ui.last_key_code();

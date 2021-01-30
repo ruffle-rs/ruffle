@@ -1,5 +1,5 @@
 use super::JavascriptPlayer;
-use ruffle_core::backend::ui::{UiBackend, MouseCursor};
+use ruffle_core::backend::ui::{MouseCursor, UiBackend};
 use ruffle_core::events::KeyCode;
 use ruffle_web_common::JsResult;
 use std::collections::HashSet;
@@ -197,7 +197,7 @@ impl UiBackend for WebUiBackend {
         log::warn!("set clipboard not implemented");
     }
 
-     fn is_fullscreen(&self) -> bool {
+    fn is_fullscreen(&self) -> bool {
         self.js_player.is_fullscreen()
     }
 

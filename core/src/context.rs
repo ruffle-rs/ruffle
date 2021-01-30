@@ -5,12 +5,12 @@ use crate::avm1::{Avm1, Object as Avm1Object, Timers, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, Value as Avm2Value};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
-    navigator::NavigatorBackend,
-    render::RenderBackend,
-    ui::UiBackend,
     locale::LocaleBackend,
     log::LogBackend,
+    navigator::NavigatorBackend,
+    render::RenderBackend,
     storage::StorageBackend,
+    ui::UiBackend,
 };
 use crate::display_object::{EditText, MovieClip, SoundTransform};
 use crate::external::ExternalInterface;

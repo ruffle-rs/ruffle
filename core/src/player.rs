@@ -7,12 +7,12 @@ use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
 use crate::avm2::{Avm2, Domain as Avm2Domain};
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
-    log::LogBackend,
-    render::RenderBackend,
-    ui::{UiBackend, MouseCursor},
     locale::LocaleBackend,
+    log::LogBackend,
     navigator::{NavigatorBackend, RequestOptions},
+    render::RenderBackend,
     storage::StorageBackend,
+    ui::{MouseCursor, UiBackend},
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
@@ -577,8 +577,7 @@ impl Player {
                 key_code: KeyCode::V,
             } = event
             {
-                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt)
-                {
+                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) {
                     self.mutate_with_update_context(|context| {
                         let mut dumper = VariableDumper::new("  ");
                         let levels = context.levels.clone();
@@ -613,8 +612,7 @@ impl Player {
                 key_code: KeyCode::D,
             } = event
             {
-                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt)
-                {
+                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) {
                     self.mutate_with_update_context(|context| {
                         if context.avm1.show_debug_output() {
                             log::info!(
