@@ -920,7 +920,7 @@ impl FormatSpans {
     pub fn from_str_and_spans(text: &str, spans: &[TextSpan]) -> Self {
         FormatSpans {
             text: text.to_string(),
-            visual_text: text.to_string(),
+            visual_text: "".to_string(),
             spans: spans.to_vec(),
             default_format: Default::default(),
         }
@@ -937,19 +937,19 @@ impl FormatSpans {
     pub fn set_visual_text(&mut self, text: String) {
         self.visual_text = text;
     }
-	
-	pub fn has_visual_text(&self) -> bool {
-		!self.visual_text.is_empty()
-	}
+
+    pub fn has_visual_text(&self) -> bool {
+        !self.visual_text.is_empty()
+    }
 
     /// Retrieve the text backing the format spans.
     pub fn text(&self) -> &str {
-		if self.visual_text.is_empty(){
-			// If visual text is empty, just use the normal text
-			&self.text
-		} else {
-			&self.visual_text
-		}
+        if self.visual_text.is_empty() {
+            // If visual text is empty, just use the normal text
+            &self.text
+        } else {
+            &self.visual_text
+        }
     }
 
     /// Retrieve the actual text without any modifications

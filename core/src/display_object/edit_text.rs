@@ -725,9 +725,9 @@ impl<'gc> EditText<'gc> {
             // If currently hidden, replace the visual text with astericks
             edit_text.text_spans.set_visual_text("*".repeat(len));
         } else if edit_text.text_spans.has_visual_text() {
-			// If it is not a password and has visual text, we can replace with an empty string
-			edit_text.text_spans.set_visual_text("".to_string());
-		}
+            // If it is not a password and has visual text, we can replace with an empty string
+            edit_text.text_spans.set_visual_text("".to_string());
+        }
 
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
