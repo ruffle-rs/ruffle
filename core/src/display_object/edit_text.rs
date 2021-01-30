@@ -1,7 +1,8 @@
 //! `EditText` display object and support code.
+
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::{Avm1, AvmString, Object, StageObject, TObject, Value};
-use crate::backend::input::MouseCursor;
+use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
@@ -1521,27 +1522,27 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                     let length = text.len();
                     match key_code {
                         ButtonKeyCode::Left => {
-                            if (context.input.is_key_down(KeyCode::Shift) || selection.is_caret())
+                            if (context.ui.is_key_down(KeyCode::Shift) || selection.is_caret())
                                 && selection.to > 0
                             {
                                 selection.to = string_utils::prev_char_boundary(text, selection.to);
-                                if !context.input.is_key_down(KeyCode::Shift) {
+                                if !context.ui.is_key_down(KeyCode::Shift) {
                                     selection.from = selection.to;
                                 }
-                            } else if !context.input.is_key_down(KeyCode::Shift) {
+                            } else if !context.ui.is_key_down(KeyCode::Shift) {
                                 selection.to = selection.start();
                                 selection.from = selection.to;
                             }
                         }
                         ButtonKeyCode::Right => {
-                            if (context.input.is_key_down(KeyCode::Shift) || selection.is_caret())
+                            if (context.ui.is_key_down(KeyCode::Shift) || selection.is_caret())
                                 && selection.to < length
                             {
                                 selection.to = string_utils::next_char_boundary(text, selection.to);
-                                if !context.input.is_key_down(KeyCode::Shift) {
+                                if !context.ui.is_key_down(KeyCode::Shift) {
                                     selection.from = selection.to;
                                 }
-                            } else if !context.input.is_key_down(KeyCode::Shift) {
+                            } else if !context.ui.is_key_down(KeyCode::Shift) {
                                 selection.to = selection.end();
                                 selection.from = selection.to;
                             }

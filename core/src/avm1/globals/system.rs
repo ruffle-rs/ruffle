@@ -411,7 +411,7 @@ pub fn set_clipboard<'gc>(
         .coerce_to_string(activation)?
         .to_string();
 
-    activation.context.input.set_clipboard_content(new_content);
+    activation.context.ui.set_clipboard_content(new_content);
 
     Ok(Value::Undefined)
 }

@@ -27,7 +27,7 @@ mod movie_clip;
 mod text;
 
 use crate::avm1::activation::Activation;
-use crate::backend::input::MouseCursor;
+use crate::backend::ui::MouseCursor;
 pub use crate::display_object::container::{
     DisplayObjectContainer, Lists, TDisplayObjectContainer,
 };
