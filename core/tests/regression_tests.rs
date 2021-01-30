@@ -318,6 +318,7 @@ swf_tests! {
     (array_call_method, "avm1/array_call_method", 1),
     (bad_swf_tag_past_eof, "avm1/bad_swf_tag_past_eof", 1),
     (sound, "avm1/sound", 1),
+    (action_to_integer, "avm1/action_to_integer", 1),
     (as3_hello_world, "avm2/hello_world", 1),
     (as3_function_call, "avm2/function_call", 1),
     (as3_function_call_via_call, "avm2/function_call_via_call", 1),

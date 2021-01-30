@@ -1,0 +1,14 @@
+// int(undefined)
+0
+// int(null)
+0
+// int(false)
+0
+// int(0)
+0
+// int('test')
+-2147483648
+// int('foobarbaz')
+-2147483648
+// int({})
+0
