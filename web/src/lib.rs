@@ -120,6 +120,9 @@ struct JavascriptInterface {
 #[derive(Serialize, Deserialize)]
 #[serde(default = "Default::default")]
 pub struct Config {
+    #[serde(rename = "allowScriptAccess")]
+    allow_script_access: bool,
+
     #[serde(rename = "backgroundColor")]
     background_color: Option<String>,
 
@@ -138,6 +141,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            allow_script_access: false,
             background_color: Default::default(),
             letterbox: Default::default(),
             upgrade_to_https: true,
@@ -160,7 +164,6 @@ impl Ruffle {
     pub fn new(
         parent: HtmlElement,
         js_player: JavascriptPlayer,
-        allow_script_access: bool,
         config: &JsValue,
     ) -> Result<Ruffle, JsValue> {
         if RUFFLE_GLOBAL_PANIC.is_completed() {
@@ -172,8 +175,7 @@ impl Ruffle {
 
         let config: Config = config.into_serde().unwrap_or_default();
 
-        Ruffle::new_internal(parent, js_player, allow_script_access, config)
-            .map_err(|_| "Error creating player".into())
+        Ruffle::new_internal(parent, js_player, config).map_err(|_| "Error creating player".into())
     }
 
     /// Stream an arbitrary movie file from (presumably) the Internet.
@@ -423,10 +425,10 @@ impl Ruffle {
     fn new_internal(
         parent: HtmlElement,
         js_player: JavascriptPlayer,
-        allow_script_access: bool,
         config: Config,
     ) -> Result<Ruffle, Box<dyn Error>> {
         let _ = console_log::init_with_level(config.log_level);
+        let allow_script_access = config.allow_script_access;
 
         let window = web_sys::window().ok_or("Expected window")?;
         let document = window.document().ok_or("Expected document")?;

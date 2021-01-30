@@ -40,12 +40,13 @@ export class RuffleEmbed extends RufflePlayer {
                 this.attributes.getNamedItem("allowScriptAccess")?.value ??
                 null;
 
-            this.allowScriptAccess = isScriptAccessAllowed(
-                allowScriptAccess,
-                src.value
-            );
+            // Kick off the SWF download.
             this.load({
                 url: src.value,
+                allowScriptAccess: isScriptAccessAllowed(
+                    allowScriptAccess,
+                    src.value
+                ),
                 parameters: this.attributes.getNamedItem("flashvars")?.value,
                 backgroundColor: this.attributes.getNamedItem("bgcolor")?.value,
             });
