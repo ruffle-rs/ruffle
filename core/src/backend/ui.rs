@@ -10,9 +10,7 @@ pub trait UiBackend: Downcast {
 
     fn mouse_visible(&self) -> bool;
 
-    fn hide_mouse(&mut self);
-
-    fn show_mouse(&mut self);
+    fn set_mouse_visible(&mut self, visible: bool);
 
     /// Changes the mouse cursor image.
     fn set_mouse_cursor(&mut self, cursor: MouseCursor);
@@ -73,9 +71,7 @@ impl UiBackend for NullUiBackend {
         true
     }
 
-    fn hide_mouse(&mut self) {}
-
-    fn show_mouse(&mut self) {}
+    fn set_mouse_visible(&mut self, _visible: bool) {}
 
     fn set_mouse_cursor(&mut self, _cursor: MouseCursor) {}
 

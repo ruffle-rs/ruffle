@@ -192,14 +192,9 @@ impl UiBackend for DesktopUiBackend {
         self.cursor_visible
     }
 
-    fn hide_mouse(&mut self) {
-        self.window.set_cursor_visible(false);
-        self.cursor_visible = false;
-    }
-
-    fn show_mouse(&mut self) {
-        self.window.set_cursor_visible(true);
-        self.cursor_visible = true;
+    fn set_mouse_visible(&mut self, visible: bool) {
+        self.window.set_cursor_visible(visible);
+        self.cursor_visible = visible;
     }
 
     fn set_mouse_cursor(&mut self, cursor: MouseCursor) {
