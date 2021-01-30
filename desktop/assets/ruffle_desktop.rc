@@ -26,7 +26,7 @@ FILESUBTYPE VFT2_UNKNOWN
         BLOCK "040904b0"
         {
             VALUE "CompanyName", "Ruffle"
-            VALUE "FileDescription", "A Flash Player emulator written in Rust"
+            VALUE "FileDescription", "Ruffle"
             VALUE "FileVersion", VER_FILEVERSION_STR
             VALUE "InternalName", "ruffle_desktop.exe"
             VALUE "LegalCopyright", "Copyright (C) 2021"
