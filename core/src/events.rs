@@ -10,6 +10,7 @@ pub enum PlayerEvent {
     MouseLeft,
     MouseWheel { delta: MouseWheelDelta },
     TextInput { codepoint: char },
+    TextControl { code: TextControlCode },
 }
 
 /// The distance scrolled by the mouse wheel.
@@ -133,6 +134,29 @@ impl ClipEvent {
             ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
             ClipEvent::Unload => Some("onUnload"),
         }
+    }
+}
+
+/// Control inputs to a text field
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum TextControlCode {
+    // TODO: Extend this
+    SelectAll,
+    Copy,
+    Paste,
+    Cut,
+    Backspace,
+    Enter,
+    Delete,
+}
+
+impl TextControlCode {
+    /// Indicates whether this is an event that edits the text content
+    pub fn is_edit_input(self) -> bool {
+        matches!(
+            self,
+            Self::Paste | Self::Cut | Self::Backspace | Self::Enter | Self::Delete
+        )
     }
 }
 

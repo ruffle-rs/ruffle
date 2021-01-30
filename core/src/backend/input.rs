@@ -17,6 +17,9 @@ pub trait InputBackend: Downcast {
     /// Changes the mouse cursor image.
     fn set_mouse_cursor(&mut self, cursor: MouseCursor);
 
+    /// Get the clipboard content
+    fn clipboard_content(&mut self) -> String;
+
     /// Set the clipboard to the given content
     fn set_clipboard_content(&mut self, content: String);
 }
@@ -53,6 +56,10 @@ impl InputBackend for NullInputBackend {
     fn show_mouse(&mut self) {}
 
     fn set_mouse_cursor(&mut self, _cursor: MouseCursor) {}
+
+    fn clipboard_content(&mut self) -> String {
+        "".to_string()
+    }
 
     fn set_clipboard_content(&mut self, _content: String) {}
 }
