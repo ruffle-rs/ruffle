@@ -54,17 +54,19 @@ We recommend using the currently active LTS 12, but we do also run tests with ma
 
 #### wasm-bindgen
 
-This can be installed with `cargo install wasm-bindgen-cli`.
+<!-- Be sure to also update the wasm-bindgen-cli version in .github/workflows/*.yaml and web/Cargo.toml -->
+This can be installed with `cargo install wasm-bindgen-cli --version 0.2.69`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
 
 #### Binaryen
 
 This is optional, used to further optimize the built WebAssembly module.
 Some ways to install Binaryen:
- - download one of the [prebuilt releases](https://github.com/WebAssembly/binaryen/releases/)
- - using your Linux distribution's package manager (`sudo apt install binaryen`, `sudo dnf install binaryen`)
- - from [Homebrew](https://formulae.brew.sh/formula/binaryen)
- - from [Anaconda](https://anaconda.org/conda-forge/binaryen)
- - [compile it yourself](https://github.com/WebAssembly/binaryen#building)
+
+-   download one of the [prebuilt releases](https://github.com/WebAssembly/binaryen/releases/)
+-   using your Linux distribution's package manager (`sudo apt install binaryen`, `sudo dnf install binaryen`)
+-   from [Homebrew](https://formulae.brew.sh/formula/binaryen)
+-   from [Anaconda](https://anaconda.org/conda-forge/binaryen)
+-   [compile it yourself](https://github.com/WebAssembly/binaryen#building)
 
 Just make sure the `wasm-opt` program is in `$PATH`, and that it works.
 

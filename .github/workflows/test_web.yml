@@ -40,6 +40,7 @@ jobs:
       run: sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
     # wasm-bindgen-cli version must match wasm-bindgen crate version
+    # Be sure to update in release_nightlies.yml, web/Cargo.toml, web/README.md
     - name: Install wasm-bindgen
       run: cargo install wasm-bindgen-cli --version 0.2.69
 
