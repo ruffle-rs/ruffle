@@ -138,9 +138,26 @@ pub fn create_proto<'gc>(
         "type" => [get_type, set_type],
         "variable" => [variable, set_variable],
         "wordWrap" => [word_wrap, set_word_wrap],
+        "password" => [password, set_password],
     );
 
     object.into()
+}
+pub fn password<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.is_password().into())
+}
+
+pub fn set_password<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let current_swf_version = activation.current_swf_version();
+    this.set_password(value.as_bool(current_swf_version), &mut activation.context);
+    Ok(())
 }
 
 fn get_new_text_format<'gc>(

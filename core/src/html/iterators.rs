@@ -32,7 +32,7 @@ impl<'a> Iterator for TextSpanIter<'a> {
             let next = (
                 start_pos,
                 end_pos,
-                self.base.text().get(start_pos..end_pos)?,
+                self.base.displayed_text().get(start_pos..end_pos)?,
                 span,
             );
 
