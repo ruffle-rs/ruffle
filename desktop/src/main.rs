@@ -8,7 +8,6 @@
 mod audio;
 mod custom_event;
 mod executor;
-mod input;
 mod locale;
 mod navigator;
 mod storage;
@@ -19,11 +18,7 @@ use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use clap::Clap;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
-use ruffle_core::{
-    backend::audio::{AudioBackend, NullAudioBackend},
-    config::Letterbox,
-    Player,
-};
+use ruffle_core::{backend::audio::AudioBackend, config::Letterbox, Player};
 use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -31,8 +26,6 @@ use std::time::Instant;
 use tinyfiledialogs::open_file_dialog;
 use url::Url;
 
-use crate::storage::DiskStorageBackend;
-use ruffle_core::backend::log::NullLogBackend;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::io::Read;
@@ -224,13 +217,6 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     window.set_inner_size(movie_size);
     let viewport_size = window.inner_size();
 
-    let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
-        Ok(audio) => Box::new(audio),
-        Err(e) => {
-            log::error!("Unable to create audio device: {}", e);
-            Box::new(NullAudioBackend::new())
-        }
-    };
     let renderer = Box::new(WgpuRenderBackend::for_window(
         window.as_ref(),
         (viewport_size.width, viewport_size.height),
@@ -238,6 +224,13 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         opt.power.into(),
         trace_path(&opt),
     )?);
+    let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
+        Ok(audio) => Box::new(audio),
+        Err(e) => {
+            log::error!("Unable to create audio device: {}", e);
+            Box::new(ruffle_core::backend::audio::NullAudioBackend::new())
+        }
+    };
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
     let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
         movie_url.clone(),
@@ -246,20 +239,11 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         opt.proxy,
         opt.upgrade_to_https,
     )); //TODO: actually implement this backend type
-    let input = Box::new(input::WinitInputBackend::new(window.clone()));
-    let storage = Box::new(DiskStorageBackend::new());
-    let user_interface = Box::new(ui::DesktopUiBackend::new(window.clone()));
+    let storage = Box::new(storage::DiskStorageBackend::new());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
-    let player = Player::new(
-        renderer,
-        audio,
-        navigator,
-        input,
-        storage,
-        locale,
-        Box::new(NullLogBackend::new()),
-        user_interface,
-    )?;
+    let log = Box::new(ruffle_core::backend::log::NullLogBackend::new());
+    let ui = Box::new(ui::DesktopUiBackend::new(window.clone()));
+    let player = Player::new(renderer, audio, navigator, storage, locale, log, ui)?;
     {
         let mut player = player.lock().unwrap();
         player.set_root_movie(Arc::new(movie));
@@ -417,8 +401,8 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                     WindowEvent::KeyboardInput { .. } | WindowEvent::ReceivedCharacter(_) => {
                         let mut player_lock = player.lock().unwrap();
                         if let Some(event) = player_lock
-                            .input_mut()
-                            .downcast_mut::<input::WinitInputBackend>()
+                            .ui_mut()
+                            .downcast_mut::<ui::DesktopUiBackend>()
                             .unwrap()
                             .handle_event(event)
                         {
@@ -473,23 +457,14 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         opt.power.into(),
         trace_path(&opt),
     )?);
-    let audio: Box<dyn AudioBackend> = Box::new(NullAudioBackend::new());
+    let audio: Box<dyn AudioBackend> =
+        Box::new(ruffle_core::backend::audio::NullAudioBackend::new());
     let navigator = Box::new(ruffle_core::backend::navigator::NullNavigatorBackend::new());
-    let input = Box::new(ruffle_core::backend::input::NullInputBackend::new());
     let storage = Box::new(ruffle_core::backend::storage::MemoryStorageBackend::default());
-    let user_interface = Box::new(ruffle_core::backend::ui::NullUiBackend::new());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
-    let log = Box::new(NullLogBackend::new());
-    let player = Player::new(
-        renderer,
-        audio,
-        navigator,
-        input,
-        storage,
-        locale,
-        log,
-        user_interface,
-    )?;
+    let log = Box::new(ruffle_core::backend::log::NullLogBackend::new());
+    let ui = Box::new(ruffle_core::backend::ui::NullUiBackend::new());
+    let player = Player::new(renderer, audio, navigator, storage, locale, log, ui)?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
     player.lock().unwrap().set_is_playing(true);
 

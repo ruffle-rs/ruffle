@@ -5,15 +5,14 @@ use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
 use crate::avm2::{Avm2, Domain as Avm2Domain};
-use crate::backend::input::{InputBackend, MouseCursor};
-use crate::backend::locale::LocaleBackend;
-use crate::backend::navigator::{NavigatorBackend, RequestOptions};
-use crate::backend::storage::StorageBackend;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
+    locale::LocaleBackend,
     log::LogBackend,
+    navigator::{NavigatorBackend, RequestOptions},
     render::RenderBackend,
-    ui::UiBackend,
+    storage::StorageBackend,
+    ui::{MouseCursor, UiBackend},
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
@@ -139,7 +138,6 @@ make_arena!(GcArena, GcRoot);
 type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;
 type Renderer = Box<dyn RenderBackend>;
-type Input = Box<dyn InputBackend>;
 type Storage = Box<dyn StorageBackend>;
 type Locale = Box<dyn LocaleBackend>;
 type Log = Box<dyn LogBackend>;
@@ -165,19 +163,18 @@ pub struct Player {
     is_playing: bool,
     needs_render: bool,
 
-    audio: Audio,
     renderer: Renderer,
-    pub navigator: Navigator,
-    input: Input,
+    audio: Audio,
+    navigator: Navigator,
+    storage: Storage,
     locale: Locale,
     log: Log,
-    pub user_interface: UI,
+    ui: UI,
+
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
     view_bounds: BoundingBox,
-
-    storage: Storage,
 
     rng: SmallRng,
 
@@ -237,11 +234,10 @@ impl Player {
         renderer: Renderer,
         audio: Audio,
         navigator: Navigator,
-        input: Input,
         storage: Storage,
         locale: Locale,
         log: Log,
-        user_interface: UI,
+        ui: UI,
     ) -> Result<Arc<Mutex<Self>>, Error> {
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
         let movie_width = 550;
@@ -305,10 +301,9 @@ impl Player {
             renderer,
             audio,
             navigator,
-            input,
             locale,
             log,
-            user_interface,
+            ui,
             self_reference: None,
             system: SystemProperties::default(),
             instance_counter: 0,
@@ -545,7 +540,7 @@ impl Player {
 
     fn should_letterbox(&self) -> bool {
         self.letterbox == Letterbox::On
-            || (self.letterbox == Letterbox::Fullscreen && self.user_interface.is_fullscreen())
+            || (self.letterbox == Letterbox::Fullscreen && self.ui.is_fullscreen())
     }
 
     pub fn warn_on_unsupported_content(&self) -> bool {
@@ -582,8 +577,7 @@ impl Player {
                 key_code: KeyCode::V,
             } = event
             {
-                if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt)
-                {
+                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) {
                     self.mutate_with_update_context(|context| {
                         let mut dumper = VariableDumper::new("  ");
                         let levels = context.levels.clone();
@@ -618,8 +612,7 @@ impl Player {
                 key_code: KeyCode::D,
             } = event
             {
-                if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt)
-                {
+                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) {
                     self.mutate_with_update_context(|context| {
                         if context.avm1.show_debug_output() {
                             log::info!(
@@ -859,7 +852,7 @@ impl Player {
         // Update mouse cursor if it has changed.
         if new_cursor != self.mouse_cursor {
             self.mouse_cursor = new_cursor;
-            self.input.set_mouse_cursor(new_cursor)
+            self.ui.set_mouse_cursor(new_cursor)
         }
 
         hover_changed
@@ -890,7 +883,7 @@ impl Player {
             }
         });
         if is_action_script_3 && self.warn_on_unsupported_content {
-            self.user_interface.message("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
+            self.ui.message("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
         }
     }
 
@@ -982,12 +975,12 @@ impl Player {
         self.renderer
     }
 
-    pub fn input(&self) -> &Input {
-        &self.input
+    pub fn ui(&self) -> &UI {
+        &self.ui
     }
 
-    pub fn input_mut(&mut self) -> &mut dyn InputBackend {
-        self.input.deref_mut()
+    pub fn ui_mut(&mut self) -> &mut UI {
+        &mut self.ui
     }
 
     pub fn locale(&self) -> &Locale {
@@ -1170,7 +1163,7 @@ impl Player {
             renderer,
             audio,
             navigator,
-            input,
+            ui,
             rng,
             mouse_position,
             stage_width,
@@ -1192,7 +1185,7 @@ impl Player {
             self.renderer.deref_mut(),
             self.audio.deref_mut(),
             self.navigator.deref_mut(),
-            self.input.deref_mut(),
+            self.ui.deref_mut(),
             &mut self.rng,
             &self.mouse_pos,
             Twips::from_pixels(self.movie_width.into()),
@@ -1237,7 +1230,7 @@ impl Player {
                 renderer,
                 audio,
                 navigator,
-                input,
+                ui,
                 action_queue,
                 gc_context,
                 levels,

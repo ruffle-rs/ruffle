@@ -10,13 +10,9 @@ pub fn show_mouse<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let was_visible = activation.context.input.mouse_visible();
-    activation.context.input.show_mouse();
-    if was_visible {
-        Ok(0.into())
-    } else {
-        Ok(1.into())
-    }
+    let was_visible = activation.context.ui.mouse_visible();
+    activation.context.ui.set_mouse_visible(true);
+    Ok(if was_visible { 0 } else { 1 }.into())
 }
 
 pub fn hide_mouse<'gc>(
@@ -24,13 +20,9 @@ pub fn hide_mouse<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let was_visible = activation.context.input.mouse_visible();
-    activation.context.input.hide_mouse();
-    if was_visible {
-        Ok(0.into())
-    } else {
-        Ok(1.into())
-    }
+    let was_visible = activation.context.ui.mouse_visible();
+    activation.context.ui.set_mouse_visible(false);
+    Ok(if was_visible { 0 } else { 1 }.into())
 }
 
 pub fn create_mouse_object<'gc>(

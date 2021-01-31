@@ -6,26 +6,19 @@
 
 //! Ruffle web frontend.
 mod audio;
-mod input;
 mod locale;
 mod log_adapter;
 mod navigator;
 mod storage;
 mod ui;
 
-use crate::log_adapter::WebLogBackend;
-use crate::storage::LocalStorageBackend;
-use crate::{
-    audio::WebAudioBackend, input::WebInputBackend, locale::WebLocaleBackend,
-    navigator::WebNavigatorBackend,
-};
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Function, Object, Uint8Array};
 use ruffle_core::backend::{
     audio::{AudioBackend, NullAudioBackend},
-    input::InputBackend,
     render::RenderBackend,
     storage::{MemoryStorageBackend, StorageBackend},
+    ui::UiBackend,
 };
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
@@ -410,7 +403,7 @@ impl Ruffle {
                     let player = instance.core.lock().unwrap();
                     return player
                         .audio()
-                        .downcast_ref::<WebAudioBackend>()
+                        .downcast_ref::<audio::WebAudioBackend>()
                         .map(|audio| audio.audio_context().clone());
                 }
             }
@@ -435,41 +428,30 @@ impl Ruffle {
         parent
             .append_child(&canvas.clone().into())
             .into_js_result()?;
-
-        let audio: Box<dyn AudioBackend> = if let Ok(audio) = WebAudioBackend::new() {
+        let audio: Box<dyn AudioBackend> = if let Ok(audio) = audio::WebAudioBackend::new() {
             Box::new(audio)
         } else {
             log::error!("Unable to create audio backend. No audio will be played.");
             Box::new(NullAudioBackend::new())
         };
-        let navigator = Box::new(WebNavigatorBackend::new(
+        let navigator = Box::new(navigator::WebNavigatorBackend::new(
             allow_script_access,
             config.upgrade_to_https,
         ));
-        let input = Box::new(WebInputBackend::new(&canvas));
-        let locale = Box::new(WebLocaleBackend::new());
-
-        let local_storage = match window.local_storage() {
-            Ok(Some(s)) => Box::new(LocalStorageBackend::new(s)) as Box<dyn StorageBackend>,
+        let storage = match window.local_storage() {
+            Ok(Some(s)) => {
+                Box::new(storage::LocalStorageBackend::new(s)) as Box<dyn StorageBackend>
+            }
             err => {
                 log::warn!("Unable to use localStorage: {:?}\nData will not save.", err);
                 Box::new(MemoryStorageBackend::default())
             }
         };
-
+        let locale = Box::new(locale::WebLocaleBackend::new());
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
-        let log = Box::new(WebLogBackend::new(trace_observer.clone()));
-        let user_interface = Box::new(ui::WebUiBackend::new(js_player.clone()));
-        let core = ruffle_core::Player::new(
-            renderer,
-            audio,
-            navigator,
-            input,
-            local_storage,
-            locale,
-            log,
-            user_interface,
-        )?;
+        let log = Box::new(log_adapter::WebLogBackend::new(trace_observer.clone()));
+        let ui = Box::new(ui::WebUiBackend::new(js_player.clone(), &canvas));
+        let core = ruffle_core::Player::new(renderer, audio, navigator, storage, locale, log, ui)?;
         {
             let mut core = core.lock().unwrap();
             if let Some(color) = config.background_color.and_then(parse_html_color) {
@@ -744,12 +726,11 @@ impl Ruffle {
                             let instance = instance.borrow();
                             if instance.has_focus {
                                 let mut core = instance.core.lock().unwrap();
-                                let input =
-                                    core.input_mut().downcast_mut::<WebInputBackend>().unwrap();
-                                input.keydown(&js_event);
+                                let ui = core.ui_mut().downcast_mut::<ui::WebUiBackend>().unwrap();
+                                ui.keydown(&js_event);
 
-                                let key_code = input.last_key_code();
-                                let key_char = input.last_key_char();
+                                let key_code = ui.last_key_code();
+                                let key_char = ui.last_key_char();
 
                                 if key_code != KeyCode::Unknown {
                                     core.handle_event(PlayerEvent::KeyDown { key_code });
@@ -785,11 +766,10 @@ impl Ruffle {
                             let instance = instance.borrow();
                             if instance.has_focus {
                                 let mut core = instance.core.lock().unwrap();
-                                let input =
-                                    core.input_mut().downcast_mut::<WebInputBackend>().unwrap();
-                                input.keyup(&js_event);
+                                let ui = core.ui_mut().downcast_mut::<ui::WebUiBackend>().unwrap();
+                                ui.keyup(&js_event);
 
-                                let key_code = input.last_key_code();
+                                let key_code = ui.last_key_code();
                                 if key_code != KeyCode::Unknown {
                                     core.handle_event(PlayerEvent::KeyUp { key_code });
                                 }

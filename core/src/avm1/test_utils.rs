@@ -4,12 +4,12 @@ use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object, Timers, UpdateContext};
 use crate::avm2::Avm2;
 use crate::backend::audio::{AudioManager, NullAudioBackend};
-use crate::backend::input::NullInputBackend;
 use crate::backend::locale::NullLocaleBackend;
 use crate::backend::log::NullLogBackend;
 use crate::backend::navigator::NullNavigatorBackend;
 use crate::backend::render::NullRenderer;
 use crate::backend::storage::MemoryStorageBackend;
+use crate::backend::ui::NullUiBackend;
 use crate::context::ActionQueue;
 use crate::display_object::{MovieClip, TDisplayObject};
 use crate::focus_tracker::FocusTracker;
@@ -51,7 +51,7 @@ where
             levels: &mut levels,
             rng: &mut SmallRng::from_seed([0u8; 32]),
             audio: &mut NullAudioBackend::new(),
-            input: &mut NullInputBackend::new(),
+            ui: &mut NullUiBackend::new(),
             action_queue: &mut ActionQueue::new(),
             background_color: &mut None,
             library: &mut Library::empty(gc_context),

@@ -3,14 +3,14 @@
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object as Avm1Object, Timers, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, Value as Avm2Value};
-use crate::backend::input::InputBackend;
-use crate::backend::locale::LocaleBackend;
-use crate::backend::log::LogBackend;
-use crate::backend::storage::StorageBackend;
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
+    locale::LocaleBackend,
+    log::LogBackend,
     navigator::NavigatorBackend,
     render::RenderBackend,
+    storage::StorageBackend,
+    ui::UiBackend,
 };
 use crate::display_object::{EditText, MovieClip, SoundTransform};
 use crate::external::ExternalInterface;
@@ -73,8 +73,8 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The renderer, used by the display objects to draw themselves.
     pub renderer: &'a mut dyn RenderBackend,
 
-    /// The input backend, used to detect user interactions.
-    pub input: &'a mut dyn InputBackend,
+    /// The UI backend, used to detect user interactions.
+    pub ui: &'a mut dyn UiBackend,
 
     /// The storage backend, used for storing persistent state
     pub storage: &'a mut dyn StorageBackend,
@@ -244,7 +244,7 @@ unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context
         self.audio_manager.trace(cc);
         self.navigator.trace(cc);
         self.renderer.trace(cc);
-        self.input.trace(cc);
+        self.ui.trace(cc);
         self.storage.trace(cc);
         self.rng.trace(cc);
         self.levels.trace(cc);
@@ -289,7 +289,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             renderer: self.renderer,
             locale: self.locale,
             log: self.log,
-            input: self.input,
+            ui: self.ui,
             storage: self.storage,
             rng: self.rng,
             levels: self.levels,
