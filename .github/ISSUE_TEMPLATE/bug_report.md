@@ -35,4 +35,4 @@ A clear and concise description of what you expected to happen.
 
 **What platform are you using?**
  - If you're using the desktop version, please list the OS you are using.
- - If you're using the web version , please list the OS, browser, and mobile device (if applicable).
+ - If you're using the web version, please list the OS, browser, and mobile device (if applicable).
