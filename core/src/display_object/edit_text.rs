@@ -185,6 +185,10 @@ impl<'gc> EditText<'gc> {
                 Some(&default_format),
             );
         }
+		
+		if is_password {
+            text_spans.hide_text();
+		}
 
         let bounds: BoundingBox = swf_tag.bounds.clone().into();
 
@@ -715,18 +719,17 @@ impl<'gc> EditText<'gc> {
     /// text-span representation.
     fn relayout(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut edit_text = self.0.write(context.gc_context);
-        let len = edit_text.text_spans.real_text().len();
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
         let width = edit_text.bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0);
 
         if edit_text.is_password {
-            // If currently hidden, replace the visual text with astericks
-            edit_text.text_spans.set_displayed_text("*".repeat(len));
+            // If the text is a password, hide the text
+            edit_text.text_spans.hide_text();
         } else if edit_text.text_spans.has_displayed_text() {
-            // If it is not a password and has visual text, we can replace with an empty string
-            edit_text.text_spans.set_displayed_text("".to_string());
+            // If it is not a password and has displayed text, we can clear the displayed text
+            edit_text.text_spans.clear_displayed_text();
         }
 
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(

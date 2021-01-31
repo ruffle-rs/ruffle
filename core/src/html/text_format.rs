@@ -934,9 +934,13 @@ impl FormatSpans {
         self.default_format = tf.mix_with(self.default_format.clone());
     }
 
-    pub fn set_displayed_text(&mut self, text: String) {
-        self.displayed_text = text;
+    pub fn hide_text(&mut self) {
+        self.displayed_text = "*".repeat(self.text.len());
     }
+	
+	pub fn clear_displayed_text(&mut self){
+		self.displayed_text = "".to_string();
+	}
 
     pub fn has_displayed_text(&self) -> bool {
         !self.displayed_text.is_empty()
