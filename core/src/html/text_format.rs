@@ -894,7 +894,7 @@ impl TextSpan {
 #[collect(require_static)]
 pub struct FormatSpans {
     text: String,
-    visual_text: String,
+    displayed_text: String,
     spans: Vec<TextSpan>,
     default_format: TextFormat,
 }
@@ -909,7 +909,7 @@ impl FormatSpans {
     pub fn new() -> Self {
         FormatSpans {
             text: "".to_string(),
-            visual_text: "".to_string(),
+            displayed_text: "".to_string(),
             spans: vec![TextSpan::default()],
             default_format: TextFormat::default(),
         }
@@ -920,7 +920,7 @@ impl FormatSpans {
     pub fn from_str_and_spans(text: &str, spans: &[TextSpan]) -> Self {
         FormatSpans {
             text: text.to_string(),
-            visual_text: "".to_string(),
+            displayed_text: "".to_string(),
             spans: spans.to_vec(),
             default_format: Default::default(),
         }
@@ -934,21 +934,21 @@ impl FormatSpans {
         self.default_format = tf.mix_with(self.default_format.clone());
     }
 
-    pub fn set_visual_text(&mut self, text: String) {
-        self.visual_text = text;
+    pub fn set_displayed_text(&mut self, text: String) {
+        self.displayed_text = text;
     }
 
-    pub fn has_visual_text(&self) -> bool {
-        !self.visual_text.is_empty()
+    pub fn has_displayed_text(&self) -> bool {
+        !self.displayed_text.is_empty()
     }
 
     /// Retrieve the text backing the format spans.
     pub fn text(&self) -> &str {
-        if self.visual_text.is_empty() {
+        if self.displayed_text.is_empty() {
             // If visual text is empty, just use the normal text
             &self.text
         } else {
-            &self.visual_text
+            &self.displayed_text
         }
     }
 
