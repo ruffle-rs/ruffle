@@ -87,18 +87,18 @@ export class RuffleObject extends RufflePlayer {
 
         this.params = paramsOf(this);
 
-        const allowScriptAccess = findCaseInsensitive(
-            this.params,
-            "allowScriptAccess",
-            null
-        );
         let url = null;
-
         if (this.attributes.getNamedItem("data")) {
             url = this.attributes.getNamedItem("data")?.value;
         } else if (this.params.movie) {
             url = this.params.movie;
         }
+
+        const allowScriptAccess = findCaseInsensitive(
+            this.params,
+            "allowScriptAccess",
+            null
+        );
 
         const parameters = findCaseInsensitive(
             this.params,
@@ -113,19 +113,19 @@ export class RuffleObject extends RufflePlayer {
         );
 
         if (url) {
-            this.allowScriptAccess = isScriptAccessAllowed(
+            const options: URLLoadOptions = { url };
+            options.allowScriptAccess = isScriptAccessAllowed(
                 allowScriptAccess,
                 url
             );
-
-            // Kick off the SWF download.
-            const options: URLLoadOptions = { url };
             if (parameters) {
                 options.parameters = parameters;
             }
             if (backgroundColor) {
                 options.backgroundColor = backgroundColor;
             }
+
+            // Kick off the SWF download.
             this.load(options);
         }
     }

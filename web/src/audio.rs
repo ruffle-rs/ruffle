@@ -293,9 +293,7 @@ type Error = Box<dyn std::error::Error>;
 
 impl WebAudioBackend {
     pub fn new() -> Result<Self, Error> {
-        log::error!("A");
         let context = AudioContext::new().map_err(|_| "Unable to create AudioContext")?;
-        log::error!("B");
 
         // Deduce the minimum sample rate for this browser.
         let mut min_sample_rate = 44100;

@@ -108,20 +108,13 @@ export class RufflePlayer extends HTMLElement {
 
     private swfUrl?: string;
     private instance: Ruffle | null;
+    private options: BaseLoadOptions | null;
     private _trace_observer: ((message: string) => void) | null;
     private lastActivePlayingState: boolean;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private ruffleConstructor: Promise<{ new (...args: any[]): Ruffle }>;
     private panicked = false;
-
-    /**
-     * If set to true, the movie is allowed to interact with the page through
-     * JavaScript, using a flash concept called `ExternalInterface`.
-     *
-     * This should only be enabled for movies you trust.
-     */
-    allowScriptAccess: boolean;
 
     /**
      * Any configuration that should apply to this specific player.
@@ -161,7 +154,7 @@ export class RufflePlayer extends HTMLElement {
         window.addEventListener("click", this.hideContextMenu.bind(this));
 
         this.instance = null;
-        this.allowScriptAccess = false;
+        this.options = null;
         this._trace_observer = null;
 
         this.ruffleConstructor = loadRuffle();
@@ -356,12 +349,7 @@ export class RufflePlayer extends HTMLElement {
             throw e;
         });
 
-        this.instance = new ruffleConstructor(
-            this.container,
-            this,
-            this.allowScriptAccess,
-            config
-        );
+        this.instance = new ruffleConstructor(this.container, this, config);
         console.log("New Ruffle instance created.");
 
         // In Firefox, AudioContext.state is always "suspended" when the object has just been created.
@@ -482,7 +470,10 @@ export class RufflePlayer extends HTMLElement {
                 ...this.config,
                 ...options,
             };
+            // `allowScriptAccess` can only be set in `options`.
+            config.allowScriptAccess = options.allowScriptAccess;
 
+            this.options = options;
             this.hasContextMenu = config.contextMenu !== false;
 
             // Pre-emptively set background color of container while Ruffle/SWF loads.
@@ -1026,7 +1017,9 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected debugPlayerInfo(): string {
-        return `Allows script access: ${this.allowScriptAccess}\n`;
+        return `Allows script access: ${
+            this.options?.allowScriptAccess ?? false
+        }\n`;
     }
 }
 
