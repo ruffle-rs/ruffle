@@ -20,6 +20,10 @@ pub trait UiBackend: Downcast {
 
     fn is_fullscreen(&self) -> bool;
 
+    /// Displays a warning about unsupported content in Ruffle.
+    /// The user can still click an "OK" or "run anyway" message to dismiss the warning.
+    fn display_unsupported_message(&self);
+    // Unused, but kept in case we need it later
     fn message(&self, message: &str);
 }
 impl_downcast!(UiBackend);
@@ -80,6 +84,8 @@ impl UiBackend for NullUiBackend {
     fn is_fullscreen(&self) -> bool {
         false
     }
+
+    fn display_unsupported_message(&self) {}
 
     fn message(&self, _message: &str) {}
 }

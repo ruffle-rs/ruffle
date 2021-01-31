@@ -201,6 +201,10 @@ impl UiBackend for WebUiBackend {
         self.js_player.is_fullscreen()
     }
 
+    fn display_unsupported_message(&self) {
+        self.js_player.display_unsupported_message()
+    }
+
     fn message(&self, message: &str) {
         self.js_player.display_message(message);
     }

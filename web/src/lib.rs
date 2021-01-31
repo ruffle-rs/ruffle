@@ -102,6 +102,9 @@ extern "C" {
     #[wasm_bindgen(method)]
     fn panic(this: &JavascriptPlayer, error: &JsError);
 
+    #[wasm_bindgen(method, js_name = "displayUnsupportedMessage")]
+    fn display_unsupported_message(this: &JavascriptPlayer);
+
     #[wasm_bindgen(method, js_name = "displayMessage")]
     fn display_message(this: &JavascriptPlayer, message: &str);
 
