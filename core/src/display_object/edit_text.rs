@@ -168,27 +168,17 @@ impl<'gc> EditText<'gc> {
                 .replace_with_str(context.gc_context, &text, false, false);
             text_spans.lower_from_html(document);
         } else {
-            text_spans.replace_text(
-                0,
-                text_spans.text().len(),
-                &text,
-                Some(&default_format),
-            );
+            text_spans.replace_text(0, text_spans.text().len(), &text, Some(&default_format));
         }
 
         if !is_multiline {
             let filtered = text_spans.text().replace("\n", "");
-            text_spans.replace_text(
-                0,
-                text_spans.text().len(),
-                &filtered,
-                Some(&default_format),
-            );
+            text_spans.replace_text(0, text_spans.text().len(), &filtered, Some(&default_format));
         }
-		
-		if is_password {
+
+        if is_password {
             text_spans.hide_text();
-		}
+        }
 
         let bounds: BoundingBox = swf_tag.bounds.clone().into();
 
