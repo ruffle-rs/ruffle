@@ -665,7 +665,7 @@ impl<'gc> LayoutBox<'gc> {
         is_word_wrap: bool,
         is_device_font: bool,
     ) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
-        let mut layout_context = LayoutContext::new(movie, bounds, fs.text());
+        let mut layout_context = LayoutContext::new(movie, bounds, fs.displayed_text());
 
         for (span_start, _end, span_text, span) in fs.iter_spans() {
             if let Some(font) = layout_context.resolve_font(context, &span, is_device_font) {

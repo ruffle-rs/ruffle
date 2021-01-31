@@ -170,17 +170,17 @@ impl<'gc> EditText<'gc> {
         } else {
             text_spans.replace_text(
                 0,
-                text_spans.real_text().len(),
+                text_spans.text().len(),
                 &text,
                 Some(&default_format),
             );
         }
 
         if !is_multiline {
-            let filtered = text_spans.real_text().replace("\n", "");
+            let filtered = text_spans.text().replace("\n", "");
             text_spans.replace_text(
                 0,
-                text_spans.real_text().len(),
+                text_spans.text().len(),
                 &filtered,
                 Some(&default_format),
             );
@@ -342,7 +342,7 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text(self) -> String {
-        self.0.read().text_spans.real_text().to_string()
+        self.0.read().text_spans.text().to_string()
     }
 
     pub fn set_text(
@@ -351,7 +351,7 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut edit_text = self.0.write(context.gc_context);
-        let len = edit_text.text_spans.real_text().len();
+        let len = edit_text.text_spans.text().len();
         let tf = edit_text.text_spans.default_format().clone();
 
         edit_text.text_spans.replace_text(0, len, &text, Some(&tf));
@@ -834,7 +834,7 @@ impl<'gc> EditText<'gc> {
         // Instead, we embed an SWF version of Noto Sans to use as the "device font", and render
         // it the same as any other SWF outline text.
         if let Some((text, _tf, font, params, color)) =
-            lbox.as_renderable_text(edit_text.text_spans.text())
+            lbox.as_renderable_text(edit_text.text_spans.displayed_text())
         {
             let baseline_adjustment =
                 font.get_baseline_for_height(params.height()) - params.height();

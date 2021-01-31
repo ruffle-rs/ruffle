@@ -948,17 +948,15 @@ impl FormatSpans {
 
     /// Retrieve the text backing the format spans.
     pub fn text(&self) -> &str {
-        if self.displayed_text.is_empty() {
-            // If visual text is empty, just use the normal text
-            &self.text
-        } else {
-            &self.displayed_text
-        }
+        &self.text
     }
 
-    /// Retrieve the actual text without any modifications
-    pub fn real_text(&self) -> &str {
-        &self.text
+    pub fn displayed_text(&self) -> &str {
+		if self.has_displayed_text() {
+			&self.displayed_text
+		} else {
+			&self.text
+		}
     }
 
     /// Retrieve the text span at a particular index.
