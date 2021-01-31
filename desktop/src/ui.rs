@@ -70,6 +70,13 @@ impl DesktopUiBackend {
     }
 }
 
+// TODO: Move link to https://ruffle.rs/faq or similar
+const UNSUPPORTED_CONTENT_MESSAGE: &str = "\
+This content is not yet supported by Ruffle and will likely not run as intended.
+
+See the following link for more info:
+https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users";
+
 impl UiBackend for DesktopUiBackend {
     fn is_key_down(&self, key: KeyCode) -> bool {
         match key {
@@ -214,6 +221,14 @@ impl UiBackend for DesktopUiBackend {
 
     fn is_fullscreen(&self) -> bool {
         self.window.fullscreen().is_some()
+    }
+
+    fn display_unsupported_message(&self) {
+        message_box_ok(
+            "Ruffle - Unsupported content",
+            UNSUPPORTED_CONTENT_MESSAGE,
+            MessageBoxIcon::Warning,
+        );
     }
 
     fn message(&self, message: &str) {

@@ -129,30 +129,44 @@ ruffleShadowTemplate.innerHTML = `
             color: #FFAD33;
             opacity: 1.0;
             z-index: 2;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
         }
 
         #message_overlay .message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100%;
-            padding: 20px;
-            transform: translate(-50%, -50%);
+            text-align: center;
+            max-height: 100%;
+            max-width: 100%;
+            padding: 5%;
         }
 
-        #continue-btn {
-             cursor: pointer;
-             background-color: #37528C;
-             color: #FFAD33;
-             border: 2px solid #FFAD33;
-             font-weight: bold;
-             font-size: 20px;
-             border-radius: 20px;
-             padding: 10px;
+        #message_overlay p {
+            margin: 0.5em 0;
         }
 
-        #continue-btn:hover {
+        #message_overlay .message div {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            column-gap: 1em;
+        }
+
+        #message_overlay a, #message_overlay button {
+            cursor: pointer;
+            background-color: #37528C;
+            color: #FFAD33;
+            border: 2px solid #FFAD33;
+            font-weight: bold;
+            font-size: 1.25em;
+            border-radius: 0.6em;
+            padding: 10px;
+            text-decoration: none;
+            margin: 2% 0;
+        }
+
+        #message_overlay a:hover, #message_overlay button:hover {
             background-color: rgba(255, 255, 255, 0.3);
         }
 

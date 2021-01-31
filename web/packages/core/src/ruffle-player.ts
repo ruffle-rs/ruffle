@@ -1008,17 +1008,36 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    displayUnsupportedMessage(): void {
+        const div = document.createElement("div");
+        div.id = "message_overlay";
+        // TODO: Change link to https://ruffle.rs/faq or similar
+        // TODO: Pause content until message is dismissed
+        div.innerHTML = `<div class="message">
+            <p>Flash Player has been removed from browsers in 2021.</p>
+            <p>This content is not yet supported by the Ruffle emulator and will likely not run as intended.</p>
+            <div>
+                <a class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">More info</a>
+                <button id="run-anyway-btn">Run anyway</button>
+            </div>
+        </div>`;
+        this.container.prepend(div);
+        const button = <HTMLButtonElement>div.querySelector("#run-anyway-btn");
+        button.onclick = () => {
+            div.remove();
+        };
+    }
+
     displayMessage(message: string): void {
         // Show a dismissible message in front of the player
         const div = document.createElement("div");
         div.id = "message_overlay";
         div.innerHTML = `<div class="message">
-            <div>
-                <p>${message}</p>
-            </div>
+            <p>${message}</p>
             <div>
                 <button id="continue-btn">continue</button>
-            </div>`;
+            </div>
+        </div>`;
         this.container.prepend(div);
         (<HTMLButtonElement>(
             this.container.querySelector("#continue-btn")

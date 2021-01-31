@@ -883,7 +883,7 @@ impl Player {
             }
         });
         if is_action_script_3 && self.warn_on_unsupported_content {
-            self.ui.message("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
+            self.ui.display_unsupported_message();
         }
     }
 
