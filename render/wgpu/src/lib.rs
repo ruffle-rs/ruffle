@@ -89,8 +89,6 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     depth_texture_view: wgpu::TextureView,
     current_frame: Option<Frame<'static, T>>,
     meshes: Vec<Mesh>,
-    viewport_width: f32,
-    viewport_height: f32,
     mask_state: MaskState,
     textures: Vec<Texture>,
     num_masks: u32,
@@ -269,9 +267,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&descriptors.device);
 
-        let viewport_width = target.width() as f32;
-        let viewport_height = target.height() as f32;
-
         descriptors
             .globals
             .set_resolution(target.width(), target.height());
@@ -283,8 +278,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             depth_texture_view,
             current_frame: None,
             meshes: Vec::new(),
-            viewport_width,
-            viewport_height,
             textures: Vec::new(),
 
             num_masks: 0,
@@ -835,9 +828,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
             });
         self.depth_texture_view = depth_texture.create_view(&Default::default());
-
-        self.viewport_width = width as f32;
-        self.viewport_height = height as f32;
         self.descriptors.globals.set_resolution(width, height);
     }
 
