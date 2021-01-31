@@ -147,7 +147,7 @@ jobs:
         run: |
           cp target/release/ruffle_desktop package/ruffle
           cd package/
-          tar -czvf release.tar.gz *
+          tar -czvf ../release.tar.gz *
 
       - name: Package selfhosted
         if: matrix.os == 'ubuntu-latest'
