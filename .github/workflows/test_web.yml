@@ -8,36 +8,32 @@ on:
 
 jobs:
   build:
-    name: Test node ${{ matrix.node_version }} / rust ${{ matrix.rust_version }} / ${{ matrix.os }}
+    name: Test Node.js ${{ matrix.node_version }} / Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' }}
     strategy:
       fail-fast: false
       matrix:
         # We most likely don't care about rust versions here, we'll catch those issues in "test rust"
-        node_version: ['10', '12']
+        node_version: ['12', '14']
         rust_version: ['stable']
         # MIKE: Turning off macOS-latest for now (flaky tests on CI)
         os: [ubuntu-latest, windows-latest]
 
     steps:
-    - uses: actions/checkout@v1
-    
-    - name: Use Node.js ${{ matrix.node_version }}
-      uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+
+    - name: Setup Node.js ${{ matrix.node_version }}
+      uses: actions/setup-node@v2
       with:
         node-version: ${{ matrix.node_version }}
 
-    - name: Use stable rust toolchain
+    - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: ${{ matrix.rust_version }}
         target: wasm32-unknown-unknown
-
-    - name: Install linux dependencies
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
     # wasm-bindgen-cli version must match wasm-bindgen crate version
     # Be sure to update in release_nightlies.yml, web/Cargo.toml, web/README.md
@@ -50,14 +46,18 @@ jobs:
         activate-environment: binaryen
 
     - name: Install binaryen
-      shell: bash -l {0}
       run: conda install -c conda-forge binaryen
 
-    - name: Build web
+    - name: Build
       working-directory: web
-      shell: bash -l {0}
       run: |
         npm run bootstrap
-        npm run lint
         npm run build
-        npm run test
+
+    - name: Run tests
+      working-directory: web
+      run: npm test
+
+    - name: Check formatting
+      working-directory: web
+      run: npm run lint

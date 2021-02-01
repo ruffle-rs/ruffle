@@ -6,12 +6,12 @@ on:
 
 jobs:
   create-nightly-release:
-    name: Create nightly release
+    name: Create Nightly Release
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       activity_check: ${{ env.GHA_REPO_ALIVE }}
+      date: ${{ steps.current_time_underscores.outputs.formattedTime }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Activity check
         run: |
@@ -20,29 +20,27 @@ jobs:
           curl -sL https://api.github.com/repos/$GITHUB_REPOSITORY/commits | jq -r '[.[]][0]' > $HOME/commit.json
           date="$(jq -r '.commit.committer.date' $HOME/commit.json)"
           timestamp=$(date --utc -d "$date" +%s)
+          days=$(( ( $(date --utc +%s) - $timestamp ) / 86400 ))
           author="$(jq -r '.commit.committer.name' $HOME/commit.json)"
           url="$(jq -r '.html_url' $HOME/commit.json)"
-          days=$(( ( $(date --utc +%s) - $timestamp ) / 86400 ))
           rm -f $HOME/commit.json
-          echo "Repository activity : $timestamp $author $url"
+          echo "Repository activity: $timestamp $author $url"
           alive=0
           if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
-             echo "[WARNING] Ignoring activity limits : workflow triggered manually"
-             alive=1
+            echo "[WARNING] Ignoring activity check: workflow triggered manually."
+            alive=1
+          elif [[ $days < 1 ]]; then
+            echo Repository active
+            alive=1
           else
-             if [ $days -lt 1 ]; then
-                echo Repository active : $days days
-                alive=1
-             else
-                echo "[WARNING] Repository not updated : event<${{ github.event_name }}> not allowed to modify stale repository"
-             fi
+            echo "[WARNING] Repository not updated: event ${{ github.event_name }} not allowed to modify stale repository."
           fi
-          if [ $alive -eq 1 ]; then
+          if [[ $alive == 1 ]]; then
             echo "GHA_REPO_ALIVE=true" >> $GITHUB_ENV
           fi
         shell: bash
 
-      - name: Get current time
+      - name: Get current time with dashes
         uses: 1466587594/get-current-time@v2
         id: current_time_dashes
         with:
@@ -65,8 +63,8 @@ jobs:
           release_name: Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}
           prerelease: true
 
-  build-desktop-nightlies:
-    name: Build desktop nightly for ${{ matrix.os }}
+  build:
+    name: Build ${{ matrix.os }}
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.activity_check == 'true'
     strategy:
@@ -75,18 +73,24 @@ jobs:
         os: [ubuntu-latest, windows-latest, macOS-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
 
-      - name: Use stable rust toolchain
+      - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           target: wasm32-unknown-unknown
 
-      - name: Install linux dependencies
+      - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
+        run: sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
+
+      - name: Setup Node.js
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/setup-node@v1
+        with:
+          node-version: '14'
 
       # wasm-bindgen-cli version must match wasm-bindgen crate version
       # Be sure to update in test_web.yml, web/Cargo.toml, web/README.md
@@ -99,25 +103,17 @@ jobs:
           activate-environment: binaryen
 
       - name: Install binaryen
-        shell: bash -l {0}
         run: conda install -c conda-forge binaryen
 
-      - name: Setup node
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/setup-node@v1
-        with:
-          node-version: 12
-
-      - name: Build web
+      - name: Build Web
         if: matrix.os == 'ubuntu-latest'
         working-directory: web
-        shell: bash -l {0}
         run: |
           npm run bootstrap
           npm run build
           npm run docs
 
-      - name: Build Windows desktop
+      - name: Build Windows
         if: matrix.os == 'windows-latest'
         uses: actions-rs/cargo@v1
         with:
@@ -126,8 +122,8 @@ jobs:
         env:
           RUSTFLAGS: -Ctarget-feature=+crt-static
 
-      - name: Build Mac / Ubuntu
-        if: matrix.os != 'windows-latest'
+      - name: Build macOS / Linux
+        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         uses: actions-rs/cargo@v1
         with:
           command: build
@@ -135,31 +131,31 @@ jobs:
 
       - name: Package common
         run: |
-          mkdir release
-          cp README.md release/README.md
-          cp LICENSE_APACHE release/LICENSE_APACHE
-          cp LICENSE_MIT release/LICENSE_MIT
+          mkdir package
+          cp README.md package/README.md
+          cp LICENSE_APACHE package/LICENSE_APACHE
+          cp LICENSE_MIT package/LICENSE_MIT
 
-      - name: Package windows
+      - name: Package Windows
         if: matrix.os == 'windows-latest'
         run: |
-          cp target/release/ruffle_desktop.exe release/ruffle.exe
-          7z a release.zip ./release/*
+          cp target/release/ruffle_desktop.exe package/ruffle.exe
+          7z a release.zip ./package/*
 
-      - name: Package linux/mac
+      - name: Package macOS / Linux
         if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         run: |
-          cp target/release/ruffle_desktop release/ruffle
-          cd release
+          cp target/release/ruffle_desktop package/ruffle
+          cd package/
           tar -czvf ../release.tar.gz *
 
       - name: Package selfhosted
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cd web/packages/selfhosted/dist
+          cd web/packages/selfhosted/dist/
           zip -r release.zip .
 
-      - name: Upload windows
+      - name: Upload Windows
         if: matrix.os == 'windows-latest'
         uses: actions/upload-release-asset@v1
         env:
@@ -170,7 +166,7 @@ jobs:
           asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_windows.zip
           asset_content_type: application/zip
 
-      - name: Upload mac
+      - name: Upload macOS
         if: matrix.os == 'macOS-latest'
         uses: actions/upload-release-asset@v1
         env:
@@ -181,7 +177,7 @@ jobs:
           asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_mac.tar.gz
           asset_content_type: application/gzip
 
-      - name: Upload linux
+      - name: Upload Linux
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-release-asset@v1
         env:
@@ -203,17 +199,6 @@ jobs:
           asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_selfhosted.zip
           asset_content_type: application/zip
 
-      - name: Upload firefox extension
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./web/packages/extension/dist/firefox_unsigned.xpi
-          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_firefox.xpi
-          asset_content_type: application/x-xpinstall
-
       - name: Upload generic extension
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-release-asset@v1
@@ -224,6 +209,17 @@ jobs:
           asset_path: ./web/packages/extension/dist/ruffle_extension.zip
           asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_extension.zip
           asset_content_type: application/zip
+
+      - name: Upload Firefox extension
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./web/packages/extension/dist/firefox_unsigned.xpi
+          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_firefox.xpi
+          asset_content_type: application/x-xpinstall
 
       - name: Clone web demo
         if: matrix.os == 'ubuntu-latest'
@@ -238,7 +234,7 @@ jobs:
       - name: Update web demo
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cd demo
+          cd demo/
 
           # Delete the old build.
           rm -f *.js *.wasm *.html
@@ -247,11 +243,10 @@ jobs:
           cp -f ../web/packages/demo/dist/* .
 
           # Create git commit. Amend previous commit to avoid daily commit spam.
-          git config user.email "ruffle@ruffle.rs"
           git config user.name "RuffleBuild"
-          git add *
-          git commit --amend -am "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
-          cd ..
+          git config user.email "ruffle@ruffle.rs"
+          git add -A
+          git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
 
       - name: Push web demo
         if: matrix.os == 'ubuntu-latest'
@@ -262,7 +257,7 @@ jobs:
           directory: demo
           force: true
 
-      - name: Clone js docs
+      - name: Clone JS docs
         if: matrix.os == 'ubuntu-latest'
         uses: actions/checkout@v2
         with:
@@ -272,25 +267,24 @@ jobs:
           fetch-depth: 0
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
-      - name: Update js docs
+      - name: Update JS docs
         if: matrix.os == 'ubuntu-latest'
         run: |
-          cd js-docs
+          cd js-docs/
 
           # Delete the old docs
-          rm -rf master
+          rm -rf master/
 
           # Copy the fresh docs into this folder.
-          cp -R ../web/packages/core/docs master
+          cp -r ../web/packages/core/docs master
 
           # Create git commit. Amend previous commit to avoid daily commit spam.
-          git config user.email "ruffle@ruffle.rs"
           git config user.name "RuffleBuild"
+          git config user.email "ruffle@ruffle.rs"
           git add -A
-          git commit --amend -am "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
-          cd ..
+          git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
 
-      - name: Push js docs
+      - name: Push JS docs
         if: matrix.os == 'ubuntu-latest'
         uses: ad-m/github-push-action@master
         with:
