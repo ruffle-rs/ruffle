@@ -10,6 +10,7 @@ use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
 use crate::property_map::PropertyMap;
+use crate::string_utils::swf_string_eq;
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
@@ -182,10 +183,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         let props = activation.context.avm1.display_properties;
 
         // Check if a text field is bound to this property and update the text if so.
+        let case_sensitive = activation.is_case_sensitive();
         for binding in obj
             .text_field_bindings
             .iter()
-            .filter(|binding| binding.variable_name == name)
+            .filter(|binding| swf_string_eq(&binding.variable_name, name, case_sensitive))
         {
             let _ = binding.text_field.set_html_text(
                 value.coerce_to_string(activation)?.to_string(),

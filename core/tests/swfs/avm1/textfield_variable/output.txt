@@ -26,6 +26,10 @@ undefined
 text3.text:
 
 
+Case insensitivity:
+text3.text:
+Testing
+
 Initial text set by variable:
 mc.theVar: mc theVar
 text1.text: mc theVar
