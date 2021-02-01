@@ -122,6 +122,9 @@ struct AudioBufferInstance {
     /// The audio node with envelopes applied.
     envelope_node: web_sys::AudioNode,
 
+    /// Whether the output of `envelope_node` is mono or stereo.
+    envelope_is_stereo: bool,
+
     /// The buffer node containing the audio data.
     /// This is often the same as `envelope_node`, but will be different
     /// if there is a custom envelope on this sound.
@@ -204,8 +207,6 @@ impl AudioBufferInstance {
         &mut self,
         context: &AudioContext,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let is_stereo = self.node.channel_count() > 1;
-
         // Split the left and right channels.
         let splitter = context
             .create_channel_splitter_with_number_of_outputs(2)
@@ -236,10 +237,16 @@ impl AudioBufferInstance {
             .connect_with_audio_node_and_output(&left_to_right_gain, 0)
             .into_js_result()?;
         splitter
-            .connect_with_audio_node_and_output(&right_to_left_gain, if is_stereo { 1 } else { 0 })
+            .connect_with_audio_node_and_output(
+                &right_to_left_gain,
+                if self.envelope_is_stereo { 1 } else { 0 },
+            )
             .into_js_result()?;
         splitter
-            .connect_with_audio_node_and_output(&right_to_right_gain, if is_stereo { 1 } else { 0 })
+            .connect_with_audio_node_and_output(
+                &right_to_right_gain,
+                if self.envelope_is_stereo { 1 } else { 0 },
+            )
             .into_js_result()?;
 
         left_to_left_gain
@@ -260,6 +267,7 @@ impl AudioBufferInstance {
             .warn_on_error();
 
         self.node = merger;
+        self.envelope_is_stereo = true;
         self.sound_transform_nodes = SoundTransformNodes::Transform {
             left_to_left_gain,
             left_to_right_gain,
@@ -338,6 +346,7 @@ impl WebAudioBackend {
                 let buffer_source_node = node.clone();
 
                 let sound_sample_rate = f64::from(sound.format.sample_rate);
+                let mut is_stereo = sound.format.is_stereo;
                 let node: web_sys::AudioNode = match settings {
                     Some(settings)
                         if sound.skip_sample_frames > 0
@@ -378,6 +387,7 @@ impl WebAudioBackend {
 
                         // For envelopes, we rig the node up to some splitter/gain nodes.
                         if let Some(envelope) = &settings.envelope {
+                            is_stereo = true;
                             self.create_sound_envelope(
                                 node.into(),
                                 envelope,
@@ -405,6 +415,7 @@ impl WebAudioBackend {
                     format: sound.format.clone(),
                     instance_type: SoundInstanceType::AudioBuffer(AudioBufferInstance {
                         envelope_node: node.clone(),
+                        envelope_is_stereo: is_stereo,
                         node,
                         buffer_source_node: buffer_source_node.clone(),
                         sound_transform_nodes: SoundTransformNodes::None,
