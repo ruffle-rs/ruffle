@@ -10,7 +10,7 @@ use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, MutationContext, CollectionContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::cmp::min;
@@ -42,27 +42,51 @@ pub use movie_clip::{MovieClip, Scene};
 pub use text::Text;
 pub use video::Video;
 
-pub struct GlobalExecIter<'gc> {
-    cur_child: Option<DisplayObject<'gc>>,
+#[derive(Copy, Clone)]
+pub struct GlobalExecList<'gc> {
+    head: Option<DisplayObject<'gc>>,
 }
 
-impl<'gc> GlobalExecIter<'gc> {
-    fn new(src: &DisplayObjectBase<'gc>) -> Self {
-        Self { cur_child: src.global_exec_list() }
+unsafe impl<'gc> Collect for GlobalExecList<'gc> {
+    fn trace(&self, cc: CollectionContext) {
+        let exec_list: Vec<DisplayObject<'gc>> = self.collect();
+        for display_object in exec_list {
+            display_object.trace(cc);
+        }
     }
 }
 
-impl<'gc> Iterator for GlobalExecIter<'gc> {
+impl<'gc> GlobalExecList<'gc> {
+    pub fn new(head: Option<DisplayObject<'gc>>) -> Self {
+        Self { head }
+    }
+
+    pub fn head(&self) -> Option<DisplayObject<'gc>> {
+        self.head
+    }
+
+    pub fn set_head(&mut self, node: Option<DisplayObject<'gc>>) {
+        self.head = node;
+    }
+}
+
+impl<'gc> Iterator for GlobalExecList<'gc> {
     type Item = DisplayObject<'gc>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let cur = self.cur_child;
+        let cur = self.head;
 
-        self.cur_child = self
-            .cur_child
+        self.head = self
+            .head
             .and_then(|display_cell| display_cell.next_global());
 
         cur
+    }
+}
+
+impl<'gc> Default for GlobalExecList<'gc> {
+    fn default() -> Self {
+        Self::new(None)
     }
 }
 
@@ -88,7 +112,6 @@ pub struct DisplayObjectBase<'gc> {
     scale_y: Percent,
     skew: f64,
 
-    global_exec_list: Option<DisplayObject<'gc>>,
     prev_global: Option<DisplayObject<'gc>>,
     next_global: Option<DisplayObject<'gc>>,
 
@@ -124,7 +147,6 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             scale_x: Percent::from_unit(1.0),
             scale_y: Percent::from_unit(1.0),
             skew: 0.0,
-            global_exec_list: None,
             prev_global: None,
             next_global: None,
             prev_sibling: None,
@@ -368,18 +390,6 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.next_sibling = node;
     }
 
-    fn global_exec_list(&self) -> Option<DisplayObject<'gc>> {
-        self.global_exec_list
-    }
-
-    fn set_global_exec_list(
-        &mut self,
-        _context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    ) {
-        self.global_exec_list = node;
-    }
-
     fn prev_global(&self) -> Option<DisplayObject<'gc>> {
         self.prev_global
     }
@@ -402,54 +412,6 @@ impl<'gc> DisplayObjectBase<'gc> {
         node: Option<DisplayObject<'gc>>,
     ) {
         self.next_global = node;
-    }
-
-    fn add_child_to_global_exec_list(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        child: DisplayObject<'gc>,
-    ) {
-        if let Some(head) = self.global_exec_list {
-            head.set_prev_global(gc_context, Some(child));
-            child.set_next_global(gc_context, Some(head));
-        }
-
-        self.global_exec_list = Some(child);
-    }
-
-    fn remove_child_from_global_exec_list(
-        &mut self,
-        context: &UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-    ) -> bool {
-        // Remove from children linked list.
-        let prev = child.prev_global();
-        let next = child.next_global();
-        let present_on_execution_list = prev.is_some()
-            || next.is_some()
-            || (self.global_exec_list.is_some() && DisplayObject::ptr_eq(self.global_exec_list.unwrap(), child));
-
-        if let Some(prev) = prev {
-            prev.set_next_global(context.gc_context, next);
-        }
-        if let Some(next) = next {
-            next.set_prev_global(context.gc_context, prev);
-        }
-
-        child.set_prev_global(context.gc_context, None);
-        child.set_next_global(context.gc_context, None);
-
-        if let Some(head) = self.global_exec_list {
-            if DisplayObject::ptr_eq(head, child) {
-                self.global_exec_list = next;
-            }
-        }
-
-        present_on_execution_list
-    }
-
-    fn iter_global_exec_list(&self) -> GlobalExecIter<'gc> {
-        GlobalExecIter::new(self)
     }
 
     fn removed(&self) -> bool {
@@ -838,17 +800,6 @@ pub trait TDisplayObject<'gc>:
     fn set_prev_global(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
     fn next_global(&self) -> Option<DisplayObject<'gc>>;
     fn set_next_global(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
-    fn add_child_to_global_exec_list(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        child: DisplayObject<'gc>,
-    );
-    fn remove_child_from_global_exec_list(
-        &mut self,
-        context: &UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-    ) -> bool;
-    fn iter_global_exec_list(&self) -> GlobalExecIter<'gc>;
     fn masker(&self) -> Option<DisplayObject<'gc>>;
     fn set_masker(
         &self,
@@ -1511,16 +1462,6 @@ macro_rules! impl_display_object_sansbounds {
         ) {
             self.0.write(context).$field.set_next_sibling(node);
         }
-        fn global_exec_list(&self) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.global_exec_list()
-        }
-        fn set_global_exec_list(
-            &self,
-            context: gc_arena::MutationContext<'gc, '_>,
-            node: Option<DisplayObject<'gc>>,
-        ) {
-            self.0.write(context).$field.set_global_exec_list(context, node);
-        }
         fn prev_global(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.prev_global()
         }
@@ -1541,22 +1482,6 @@ macro_rules! impl_display_object_sansbounds {
         ) {
             self.0.write(context).$field.set_next_global(context, node);
         }
-        fn add_child_to_global_exec_list(
-            &mut self,
-            context: gc_arena::MutationContext<'gc, '_>,
-            child: DisplayObject<'gc>,
-        ) {
-            self.0.write(context).$field.add_child_to_global_exec_list(context, child)
-        }
-        fn remove_child_from_global_exec_list(
-            &mut self,
-            context: &UpdateContext<'_, 'gc, '_>,
-            child: DisplayObject<'gc>,
-        ) -> bool {
-            self.0.write(context.gc_context).$field.remove_child_from_global_exec_list(context, child)
-        }
-        fn iter_global_exec_list(&self) -> GlobalExecIter<'gc> {
-            self.0.read().$field.iter_global_exec_list()
         fn masker(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.masker()
         }

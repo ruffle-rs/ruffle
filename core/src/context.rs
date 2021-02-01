@@ -34,6 +34,8 @@ use std::time::Duration;
 /// `Player` crates this when it begins a tick and passes it through the call stack to
 /// children and the VM.
 pub struct UpdateContext<'a, 'gc, 'gc_context> {
+    pub exec_list: &'a mut GlobalExecList<'gc>,
+
     /// The queue of actions that will be run after the display list updates.
     /// Display objects and actions can push actions onto the queue.
     pub action_queue: &'a mut ActionQueue<'gc>,
@@ -234,6 +236,45 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     pub fn set_sound_transforms_dirty(&mut self) {
         self.audio_manager.set_sound_transforms_dirty()
     }
+
+    pub fn remove_node(
+        &mut self,
+        node: DisplayObject<'gc>,
+    ) -> bool {
+        // Remove from linked list.
+        let prev = node.prev_global();
+        let next = node.next_global();
+        let present_on_execution_list = prev.is_some()
+            || next.is_some()
+            || (self.exec_list.head().is_some() && DisplayObject::ptr_eq(self.exec_list.head().unwrap(), node));
+
+        if let Some(prev) = prev {
+            prev.set_next_global(self.gc_context, next);
+        }
+        if let Some(next) = next {
+            next.set_prev_global(self.gc_context, prev);
+        }
+
+        node.set_prev_global(self.gc_context, None);
+        node.set_next_global(self.gc_context, None);
+
+        if let Some(head) = self.exec_list.head() {
+            if DisplayObject::ptr_eq(head, node) {
+                self.exec_list.set_head(next);
+            }
+        }
+
+        present_on_execution_list
+    }
+
+    pub fn add_node(&mut self, node: DisplayObject<'gc>) {
+        if let Some(head) = self.exec_list.head() {
+            head.set_prev_global(self.gc_context, Some(node));
+            node.set_next_global(self.gc_context, Some(head));
+        }
+
+        self.exec_list.set_head(Some(node));
+    }
 }
 
 impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
@@ -249,6 +290,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         'a: 'b,
     {
         UpdateContext {
+            exec_list: self.exec_list,
             action_queue: self.action_queue,
             background_color: self.background_color,
             gc_context: self.gc_context,

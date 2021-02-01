@@ -442,11 +442,11 @@ macro_rules! impl_display_object_container {
 
             drop(write);
 
-            let mut level0 = context.levels.get_mut(&0).copied().unwrap();
             if let Some(removed_child) = removed_child {
-                level0.remove_child_from_global_exec_list(context, removed_child);
+                context
+                    .remove_node(removed_child);
             }
-            level0.add_child_to_global_exec_list(context.gc_context, child);
+            context.add_node(child);
 
             child.set_parent(context.gc_context, Some(self.into()));
             child.set_place_frame(context.gc_context, 0);
@@ -561,8 +561,7 @@ macro_rules! impl_display_object_container {
             drop(write);
 
             if from_lists.contains(Lists::EXECUTION) {
-                let mut level0 = context.levels.get_mut(&0).copied().unwrap();
-                level0.remove_child_from_global_exec_list(context, child);
+                context.remove_node(child);
             }
 
             if removed_from_execution_list {
@@ -604,11 +603,9 @@ macro_rules! impl_display_object_container {
                 write.$field.remove_child_from_render_list(removed);
                 write.$field.remove_child_from_depth_list(removed);
                 write.$field.remove_child_from_exec_list(context, removed);
-
                 drop(write);
 
-                let mut level0 = context.levels.get_mut(&0).copied().unwrap();
-                level0.remove_child_from_global_exec_list(context, removed);
+                context.remove_node(removed);
 
                 removed.unload(context);
 
@@ -873,8 +870,6 @@ impl<'gc> ChildContainer<'gc> {
     /// position will be shifted back by one, which must be taken into account
     /// when calculating future insertion IDs.
     ///
-    /// `parent` should be the display object that owns this container.
-    ///
     /// All children at or after the given ID will be shifted down in the
     /// render list. The child will *not* be put onto the depth list.
     pub fn insert_at_id(
@@ -902,8 +897,7 @@ impl<'gc> ChildContainer<'gc> {
         } else {
             self.render_list.insert(id, child);
             self.add_child_to_exec_list(context.gc_context, child);
-            let mut level0 = context.levels.get_mut(&0).copied().unwrap();
-            level0.add_child_to_global_exec_list(context.gc_context, child);
+            context.add_node(child);
         }
     }
 

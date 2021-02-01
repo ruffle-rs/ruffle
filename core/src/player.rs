@@ -17,7 +17,7 @@ use crate::backend::{
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
-use crate::display_object::{EditText, MorphShape, MovieClip};
+use crate::display_object::{EditText, MorphShape, MovieClip, GlobalExecList};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
@@ -52,6 +52,8 @@ struct GcRoot<'gc>(GcCell<'gc, GcRootData<'gc>>);
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRootData<'gc> {
+    exec_list: GlobalExecList<'gc>,
+
     library: Library<'gc>,
 
     /// The list of levels on the current stage.
@@ -103,6 +105,7 @@ impl<'gc> GcRootData<'gc> {
     fn update_context_params(
         &mut self,
     ) -> (
+        &mut GlobalExecList<'gc>,
         &mut BTreeMap<u32, DisplayObject<'gc>>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
@@ -117,6 +120,7 @@ impl<'gc> GcRootData<'gc> {
         &mut AudioManager<'gc>,
     ) {
         (
+            &mut self.exec_list,
             &mut self.levels,
             &mut self.library,
             &mut self.action_queue,
@@ -272,6 +276,7 @@ impl Player {
                 GcRoot(GcCell::allocate(
                     gc_context,
                     GcRootData {
+                        exec_list: GlobalExecList::default(),
                         library: Library::empty(gc_context),
                         levels: BTreeMap::new(),
                         mouse_hovered_object: None,
@@ -413,6 +418,7 @@ impl Player {
             root.post_instantiation(context, root, flashvars, Instantiator::Movie, false);
             root.set_default_root_name(context);
             context.levels.insert(0, root);
+            context.add_node(root);
 
             // Load and parse the device font.
             let device_font =
@@ -960,8 +966,9 @@ impl Player {
                 level.frame_constructed(update_context);
             }
 
-            for level in levels {
-                for x in level.iter_global_exec_list() {
+            for _level in levels {
+                let head = update_context.exec_list.head();
+                for x in GlobalExecList::new(head) {
                     x.run_frame(update_context);
                 }
             }
@@ -1288,6 +1295,7 @@ impl Player {
             let mouse_hovered_object = root_data.mouse_hovered_object;
             let focus_tracker = root_data.focus_tracker;
             let (
+                exec_list,
                 levels,
                 library,
                 action_queue,
@@ -1303,6 +1311,7 @@ impl Player {
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
+                exec_list,
                 player_version,
                 swf,
                 library,

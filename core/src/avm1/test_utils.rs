@@ -46,6 +46,7 @@ where
         let globals = avm1.global_object_cell();
 
         let mut context = UpdateContext {
+            exec_list: &mut GlobalExecList::default(),
             gc_context,
             player_version: 32,
             swf: &swf,
