@@ -1,5 +1,10 @@
 #version 100
-precision mediump float;
+
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float;
+#else
+    precision mediump float;
+#endif
 
 uniform mat4 view_matrix;
 uniform mat4 world_matrix;
