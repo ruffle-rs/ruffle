@@ -12,7 +12,7 @@ use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext, CollectionContext};
 use ruffle_macros::enum_trait_object;
-use std::cell::{Ref, RefMut};
+use std::{cell::{Ref, RefMut}, iter::Map};
 use std::cmp::min;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -41,22 +41,94 @@ pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
 pub use text::Text;
 pub use video::Video;
+use std::collections::{BTreeMap, btree_map::{Values, Iter}};
 
-#[derive(Copy, Clone)]
-pub struct GlobalExecList<'gc> {
-    head: Option<DisplayObject<'gc>>,
+#[derive(Clone)]
+pub struct Levels<'gc>(BTreeMap<u32, Level<'gc>>);
+
+impl<'gc> Levels<'gc> {
+    pub fn new() -> Self {
+        Self(BTreeMap::new())
+    }
+
+    pub fn get(&self, depth: u32) -> Option<DisplayObject<'gc>> {
+        self.0.get(&depth).map(|level| level.root())
+    }
+
+    pub fn get_exec_list(&self, depth: u32) -> Option<DisplayObject<'gc>> {
+        self.0.get(&depth).and_then(|level| level.exec_list())
+    }
+
+    pub fn set_exec_list(&mut self, depth: u32, head: Option<DisplayObject<'gc>>) {
+        self.0.get_mut(&depth).unwrap().set_exec_list(head);
+    }
+
+    pub fn insert(&mut self, depth: u32, level: Level<'gc>) {
+        self.0.insert(depth, level);
+    }
+
+    pub fn iter(&self) -> Values<u32, Level<'gc>> {
+        self.0.values()
+    }
+
+    pub fn iter2(&self) -> Iter<u32, Level<'gc>> {
+        self.0.iter()
+    }
 }
 
-unsafe impl<'gc> Collect for GlobalExecList<'gc> {
+unsafe impl<'gc> Collect for Levels<'gc> {
     fn trace(&self, cc: CollectionContext) {
-        let exec_list: Vec<DisplayObject<'gc>> = self.collect();
-        for display_object in exec_list {
+        for level in self.iter() {
+            level.trace(cc);
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Level<'gc> {
+    root: DisplayObject<'gc>,
+    exec_list: Option<DisplayObject<'gc>>,
+}
+
+impl<'gc> Level<'gc> {
+    pub fn new(src: DisplayObject<'gc>) -> Self {
+        Self {
+            root: src,
+            exec_list: Some(src),
+        }
+    }
+
+    pub fn root(&self) -> DisplayObject<'gc> {
+        self.root
+    }
+
+    pub fn exec_list(&self) -> Option<DisplayObject<'gc>> {
+        self.exec_list
+    }
+
+    pub fn set_exec_list(&mut self, head: Option<DisplayObject<'gc>>) {
+        self.exec_list = head;
+    }
+
+    pub fn iter(&self) -> GlobalExecIter<'gc> {
+        GlobalExecIter::new(Some(self.root))
+    }
+}
+
+unsafe impl<'gc> Collect for Level<'gc> {
+    fn trace(&self, cc: CollectionContext) {
+        for display_object in self.iter() {
             display_object.trace(cc);
         }
     }
 }
 
-impl<'gc> GlobalExecList<'gc> {
+#[derive(Copy, Clone)]
+pub struct GlobalExecIter<'gc> {
+    head: Option<DisplayObject<'gc>>,
+}
+
+impl<'gc> GlobalExecIter<'gc> {
     pub fn new(head: Option<DisplayObject<'gc>>) -> Self {
         Self { head }
     }
@@ -70,7 +142,7 @@ impl<'gc> GlobalExecList<'gc> {
     }
 }
 
-impl<'gc> Iterator for GlobalExecList<'gc> {
+impl<'gc> Iterator for GlobalExecIter<'gc> {
     type Item = DisplayObject<'gc>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -84,7 +156,7 @@ impl<'gc> Iterator for GlobalExecList<'gc> {
     }
 }
 
-impl<'gc> Default for GlobalExecList<'gc> {
+impl<'gc> Default for GlobalExecIter<'gc> {
     fn default() -> Self {
         Self::new(None)
     }
@@ -833,7 +905,7 @@ pub trait TDisplayObject<'gc>:
             };
             if is_level {
                 if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
-                    return context.levels.get(&level_id).copied();
+                    return context.levels.get(level_id).clone(); // TODO: copied?
                 }
             }
         }

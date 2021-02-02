@@ -13,7 +13,7 @@ use crate::backend::{
     ui::UiBackend,
     video::VideoBackend,
 };
-use crate::display_object::{EditText, MovieClip, SoundTransform};
+use crate::display_object::{EditText, MovieClip, SoundTransform, Levels};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
@@ -26,7 +26,7 @@ use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
@@ -34,8 +34,6 @@ use std::time::Duration;
 /// `Player` crates this when it begins a tick and passes it through the call stack to
 /// children and the VM.
 pub struct UpdateContext<'a, 'gc, 'gc_context> {
-    pub exec_list: &'a mut GlobalExecList<'gc>,
-
     /// The queue of actions that will be run after the display list updates.
     /// Display objects and actions can push actions onto the queue.
     pub action_queue: &'a mut ActionQueue<'gc>,
@@ -95,7 +93,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub rng: &'a mut SmallRng,
 
     /// All loaded levels of the current player.
-    pub levels: &'a mut BTreeMap<u32, DisplayObject<'gc>>,
+    pub levels: &'a mut Levels<'gc>,
 
     /// The display object that the mouse is currently hovering over.
     pub mouse_hovered_object: Option<DisplayObject<'gc>>,
@@ -169,7 +167,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             self.audio,
             self.gc_context,
             self.action_queue,
-            *self.levels.get(&0).unwrap(),
+            self.levels.get(0).unwrap(),
         );
     }
 
@@ -244,9 +242,11 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         // Remove from linked list.
         let prev = node.prev_global();
         let next = node.next_global();
+        let depth = node.depth() as u32;
+        let exec_list = self.levels.get_exec_list(depth); // TODO: cast depth?
         let present_on_execution_list = prev.is_some()
             || next.is_some()
-            || (self.exec_list.head().is_some() && DisplayObject::ptr_eq(self.exec_list.head().unwrap(), node));
+            || (exec_list.is_some() && DisplayObject::ptr_eq(exec_list.unwrap(), node));
 
         if let Some(prev) = prev {
             prev.set_next_global(self.gc_context, next);
@@ -258,9 +258,9 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         node.set_prev_global(self.gc_context, None);
         node.set_next_global(self.gc_context, None);
 
-        if let Some(head) = self.exec_list.head() {
+        if let Some(head) = exec_list {
             if DisplayObject::ptr_eq(head, node) {
-                self.exec_list.set_head(next);
+                self.levels.set_exec_list(depth, next);
             }
         }
 
@@ -268,12 +268,14 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     }
 
     pub fn add_node(&mut self, node: DisplayObject<'gc>) {
-        if let Some(head) = self.exec_list.head() {
+        let depth = node.depth() as u32;
+        let exec_list = self.levels.get_exec_list(depth);
+        if let Some(head) = exec_list {
             head.set_prev_global(self.gc_context, Some(node));
             node.set_next_global(self.gc_context, Some(head));
         }
 
-        self.exec_list.set_head(Some(node));
+        self.levels.set_exec_list(depth, Some(node));
     }
 }
 
@@ -290,7 +292,6 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         'a: 'b,
     {
         UpdateContext {
-            exec_list: self.exec_list,
             action_queue: self.action_queue,
             background_color: self.background_color,
             gc_context: self.gc_context,
