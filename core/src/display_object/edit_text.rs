@@ -7,7 +7,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
-use crate::font::{round_down_to_pixel, Glyph};
+use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
@@ -139,6 +139,9 @@ pub struct EditTextData<'gc> {
 
     /// Whether or not this EditText has the current keyboard focus
     has_focus: bool,
+
+    /// Which rendering engine this text field will use.
+    render_settings: TextRenderSettings,
 }
 
 impl<'gc> EditText<'gc> {
@@ -265,6 +268,7 @@ impl<'gc> EditText<'gc> {
                 firing_variable_binding: false,
                 selection: None,
                 has_focus: false,
+                render_settings: Default::default(),
             },
         ));
 
@@ -1059,6 +1063,14 @@ impl<'gc> EditText<'gc> {
         } else {
             text.selection = None;
         }
+    }
+
+    pub fn set_render_settings(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        settings: TextRenderSettings,
+    ) {
+        self.0.write(gc_context).render_settings = settings
     }
 
     pub fn screen_position_to_index(self, position: (Twips, Twips)) -> Option<usize> {
