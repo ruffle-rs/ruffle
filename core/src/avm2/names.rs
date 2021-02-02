@@ -63,23 +63,23 @@ impl<'gc> Namespace<'gc> {
     }
 
     pub fn public() -> Self {
-        Namespace::Package("".into())
+        Self::Package("".into())
     }
 
     pub fn as3_namespace() -> Self {
-        Namespace::Namespace("http://adobe.com/AS3/2006/builtin".into())
+        Self::Namespace("http://adobe.com/AS3/2006/builtin".into())
     }
 
     pub fn package(package_name: impl Into<AvmString<'gc>>) -> Self {
-        Namespace::Package(package_name.into())
+        Self::Package(package_name.into())
     }
 
     pub fn private(name: impl Into<AvmString<'gc>>) -> Self {
-        Namespace::Private(name.into())
+        Self::Private(name.into())
     }
 
     pub fn is_public(&self) -> bool {
-        *self == Self::Package("".into())
+        *self == Self::public()
     }
 
     pub fn is_any(&self) -> bool {
@@ -91,7 +91,7 @@ impl<'gc> Namespace<'gc> {
     }
 
     pub fn is_dynamic(&self) -> bool {
-        self.eq(&Self::Package("".into())) || self.is_any()
+        self.is_public() || self.is_any()
     }
 
     /// Get the string value of this namespace, ignoring its type.
