@@ -4,6 +4,8 @@ use crate::prelude::*;
 use crate::transform::Transform;
 use gc_arena::{Collect, Gc, MutationContext};
 
+pub use swf::TextGridFit;
+
 /// Certain Flash routines measure text by rounding down to the nearest whole pixel.
 pub fn round_down_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().floor())
@@ -431,6 +433,55 @@ impl FontDescriptor {
     /// Get the italic-ness of the described font.
     pub fn italic(&self) -> bool {
         self.is_italic
+    }
+}
+
+/// The text rendering engine that a text field should use.
+/// This is controlled by the "Anti-alias" setting in the Flash IDE.
+/// Using "Anti-alias for readibility" switches to the "Advanced" text
+/// rendering engine.
+#[derive(Debug, PartialEq, Clone, Collect)]
+#[collect(require_static)]
+pub enum TextRenderSettings {
+    /// This text should render with the standard rendering engine.
+    /// Set via "Anti-alias for animation" in the Flash IDE.
+    Default,
+
+    /// This text should render with the advanced rendering engine.
+    /// Set via "Anti-alias for readibility" in the Flash IDE.
+    /// The parameters are set via the CSMTextSettings SWF tag.
+    /// Ruffle does not support this currently, but this also affects
+    /// hit-testing behavior.
+    Advanced {
+        grid_fit: TextGridFit,
+        thickness: f32,
+        sharpness: f32,
+    },
+}
+
+impl TextRenderSettings {
+    pub fn is_advanced(&self) -> bool {
+        matches!(self, TextRenderSettings::Advanced { .. })
+    }
+}
+
+impl Default for TextRenderSettings {
+    fn default() -> Self {
+        TextRenderSettings::Default
+    }
+}
+
+impl From<swf::CsmTextSettings> for TextRenderSettings {
+    fn from(settings: swf::CsmTextSettings) -> Self {
+        if settings.use_advanced_rendering {
+            TextRenderSettings::Advanced {
+                grid_fit: settings.grid_fit,
+                thickness: settings.thickness,
+                sharpness: settings.sharpness,
+            }
+        } else {
+            TextRenderSettings::Default
+        }
     }
 }
 

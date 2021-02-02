@@ -1,10 +1,11 @@
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::font::TextRenderSettings;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
@@ -15,6 +16,7 @@ pub struct Text<'gc>(GcCell<'gc, TextData<'gc>>);
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, TextStatic>,
+    render_settings: TextRenderSettings,
 }
 
 impl<'gc> Text<'gc> {
@@ -37,8 +39,17 @@ impl<'gc> Text<'gc> {
                         text_blocks: tag.records.clone(),
                     },
                 ),
+                render_settings: Default::default(),
             },
         ))
+    }
+
+    pub fn set_render_settings(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        settings: TextRenderSettings,
+    ) {
+        self.0.write(gc_context).render_settings = settings
     }
 }
 
@@ -123,6 +134,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         mut point: (Twips, Twips),
     ) -> bool {
         if self.world_bounds().contains(point) {
+            // Texts using the "Advanced text rendering" always hit test using their bounding box.
+            if self.0.read().render_settings.is_advanced() {
+                return true;
+            }
+
             // Transform the point into the text's local space.
             let local_matrix = self.global_to_local_matrix();
             let tf = self.0.read();

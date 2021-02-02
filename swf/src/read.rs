@@ -360,7 +360,9 @@ impl<'a> Reader<'a> {
         let tag = match TagCode::from_u16(tag_code) {
             Some(TagCode::End) => Tag::End,
             Some(TagCode::ShowFrame) => Tag::ShowFrame,
-            Some(TagCode::CsmTextSettings) => tag_reader.read_csm_text_settings()?,
+            Some(TagCode::CsmTextSettings) => {
+                Tag::CsmTextSettings(tag_reader.read_csm_text_settings()?)
+            }
             Some(TagCode::DefineBinaryData) => {
                 let id = tag_reader.read_u16()?;
                 tag_reader.read_u32()?; // Reserved
@@ -947,13 +949,13 @@ impl<'a> Reader<'a> {
         ))
     }
 
-    fn read_csm_text_settings(&mut self) -> Result<Tag<'a>> {
+    pub fn read_csm_text_settings(&mut self) -> Result<CsmTextSettings> {
         let id = self.read_character_id()?;
         let flags = self.read_u8()?;
         let thickness = self.read_f32()?;
         let sharpness = self.read_f32()?;
         self.read_u8()?; // Reserved (0).
-        Ok(Tag::CsmTextSettings(CsmTextSettings {
+        Ok(CsmTextSettings {
             id,
             use_advanced_rendering: flags & 0b01000000 != 0,
             grid_fit: match flags & 0b11_000 {
@@ -964,7 +966,7 @@ impl<'a> Reader<'a> {
             },
             thickness,
             sharpness,
-        }))
+        })
     }
 
     pub fn read_frame_label(&mut self, length: usize) -> Result<FrameLabel<'a>> {

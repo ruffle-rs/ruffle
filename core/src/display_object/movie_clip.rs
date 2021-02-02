@@ -192,6 +192,10 @@ impl<'gc> MovieClip<'gc> {
 
                 Ok(())
             }
+            TagCode::CsmTextSettings => self
+                .0
+                .write(context.gc_context)
+                .csm_text_settings(context, reader),
             TagCode::DefineBits => self
                 .0
                 .write(context.gc_context)
@@ -2196,6 +2200,36 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let audio_stream_info = reader.read_sound_stream_head()?;
         *stream = context.audio.preload_sound_stream_head(&audio_stream_info);
         static_data.audio_stream_info = Some(audio_stream_info);
+        Ok(())
+    }
+
+    fn csm_text_settings(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<'a>,
+    ) -> DecodeResult {
+        let settings = reader.read_csm_text_settings()?;
+        let library = context.library.library_for_movie_mut(self.movie());
+        match library.character_by_id(settings.id) {
+            Some(Character::Text(text)) => {
+                text.set_render_settings(context.gc_context, settings.into());
+            }
+            Some(Character::EditText(edit_text)) => {
+                edit_text.set_render_settings(context.gc_context, settings.into());
+            }
+            Some(_) => {
+                log::warn!(
+                    "Tried to apply CSMTextSettings to non-text character ID {}",
+                    settings.id
+                );
+            }
+            None => {
+                log::warn!(
+                    "Tried to apply CSMTextSettings to unregistered character ID {}",
+                    settings.id
+                );
+            }
+        }
         Ok(())
     }
 
