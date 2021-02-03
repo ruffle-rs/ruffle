@@ -58,9 +58,8 @@ pub fn dispatch_removed_event<'gc>(
     }
 }
 
-/// Dispatch the `addedToStage` event on a child and all of it's grandchildren,
-/// recursively.
-pub fn dispatch_added_to_stage_event<'gc>(
+/// Dispatch the `addedToStage` event on a child, ignoring it's grandchildren.
+pub fn dispatch_added_to_stage_event_only<'gc>(
     child: DisplayObject<'gc>,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
@@ -73,10 +72,36 @@ pub fn dispatch_added_to_stage_event<'gc>(
             log::error!("Encountered AVM2 error when dispatching event: {}", e);
         }
     }
+}
+
+/// Dispatch the `addedToStage` event on a child and all of it's grandchildren,
+/// recursively.
+pub fn dispatch_added_to_stage_event<'gc>(
+    child: DisplayObject<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+) {
+    dispatch_added_to_stage_event_only(child, context);
 
     if let Some(child_container) = child.as_container() {
         for grandchild in child_container.iter_render_list() {
             dispatch_added_to_stage_event(grandchild, context)
+        }
+    }
+}
+
+/// Dispatch an `added` event to one object, and log an errors encounted whilst
+/// doing so.
+pub fn dispatch_added_event_only<'gc>(
+    child: DisplayObject<'gc>,
+    context: &mut UpdateContext<'_, 'gc, '_>,
+) {
+    if let Avm2Value::Object(object) = child.object2() {
+        let mut removed_evt = Avm2Event::new("added");
+        removed_evt.set_bubbles(true);
+        removed_evt.set_cancelable(false);
+
+        if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
+            log::error!("Encountered AVM2 error when dispatching event: {}", e);
         }
     }
 }
@@ -93,15 +118,7 @@ pub fn dispatch_added_event<'gc>(
     child_was_on_stage: bool,
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
-    if let Avm2Value::Object(object) = child.object2() {
-        let mut removed_evt = Avm2Event::new("added");
-        removed_evt.set_bubbles(true);
-        removed_evt.set_cancelable(false);
-
-        if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
-            log::error!("Encountered AVM2 error when dispatching event: {}", e);
-        }
-    }
+    dispatch_added_event_only(child, context);
 
     if parent.is_on_stage(context) && !child_was_on_stage {
         dispatch_added_to_stage_event(child, context);
@@ -185,6 +202,9 @@ pub trait TDisplayObjectContainer<'gc>:
     /// render and execution lists if and only if the child was not flagged as
     /// being placed by script. If such a child was removed from said lists, it
     /// will be returned here. Otherwise, this method returns `None`.
+    ///
+    /// Note: this method specifically does *not* dispatch events on any
+    /// children it modifies. You must do this yourself.
     fn replace_at_depth(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -369,14 +389,6 @@ macro_rules! impl_display_object_container {
             child: DisplayObject<'gc>,
             depth: Depth,
         ) -> Option<DisplayObject<'gc>> {
-            use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
-            let child_was_on_stage = child.is_on_stage(context);
-            dispatch_added_event(self.into(), child, child_was_on_stage, context);
-            let to_remove = self.0.read().$field.get_depth(depth);
-            if let Some(to_remove) = to_remove {
-                dispatch_removed_event(to_remove, context);
-            }
-
             let mut write = self.0.write(context.gc_context);
 
             let prev_child = write.$field.insert_child_into_depth_list(depth, child);

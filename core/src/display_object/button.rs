@@ -1,7 +1,9 @@
 use crate::avm1::{Object, StageObject, Value};
 use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
-use crate::display_object::container::ChildContainer;
+use crate::display_object::container::{
+    dispatch_added_event, dispatch_removed_event, ChildContainer,
+};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
@@ -198,7 +200,11 @@ impl<'gc> Button<'gc> {
             // Initialize new child.
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.run_frame(context);
-            self.replace_at_depth(context, child, depth.into());
+            let removed_child = self.replace_at_depth(context, child, depth.into());
+            dispatch_added_event(self.into(), child, false, context);
+            if let Some(removed_child) = removed_child {
+                dispatch_removed_event(removed_child, context);
+            }
         }
     }
 
