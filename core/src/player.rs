@@ -32,7 +32,7 @@ use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
@@ -188,6 +188,7 @@ pub struct Player {
     /// This is how we support custom SWF framerates
     /// and compensate for small lags by "catching up" (up to MAX_FRAMES_PER_TICK).
     frame_accumulator: f64,
+    recent_run_frame_timings: VecDeque<f64>,
 
     /// Faked time passage for fooling hand-written busy-loop FPS limiters.
     time_offset: u32,
@@ -286,6 +287,7 @@ impl Player {
 
             frame_rate,
             frame_accumulator: 0.0,
+            recent_run_frame_timings: VecDeque::with_capacity(10),
             time_offset: 0,
 
             movie_width,
@@ -436,6 +438,41 @@ impl Player {
         self.audio.set_frame_rate(self.frame_rate);
     }
 
+    /// Get rough estimate of the max # of times we can update the frame.
+    ///
+    /// In some cases, we might want to update several times in a row.
+    /// For example, if the game runs at 60FPS, but the host runs at 30FPS
+    /// Or if for some reason the we miss a couple of frames.
+    /// However, if the code is simply slow, this is the opposite of what we want;
+    /// If run_frame() consistently takes say 100ms, we don't want `tick` to try to "catch up",
+    /// as this will only make it worse.
+    ///
+    /// This rough heuristic manages this job; for example if average run_frame()
+    /// takes more than 1/3 of frame_time, we shouldn't run it more than twice in a row.
+    /// This logic is far from perfect, as it doesn't take into account
+    /// that things like rendering also take time. But for now it's good enough.
+    fn max_frames_per_tick(&self) -> u32 {
+        const MAX_FRAMES_PER_TICK: u32 = 5;
+
+        if self.recent_run_frame_timings.is_empty() {
+            5
+        } else {
+            let frame_time = 1000.0 / self.frame_rate;
+            let average_run_frame_time = self.recent_run_frame_timings.iter().sum::<f64>()
+                / self.recent_run_frame_timings.len() as f64;
+            ((frame_time / average_run_frame_time) as u32)
+                .max(1)
+                .min(MAX_FRAMES_PER_TICK)
+        }
+    }
+
+    fn add_frame_timing(&mut self, elapsed: f64) {
+        self.recent_run_frame_timings.push_back(elapsed);
+        if self.recent_run_frame_timings.len() >= 10 {
+            self.recent_run_frame_timings.pop_front();
+        }
+    }
+
     pub fn tick(&mut self, dt: f64) {
         // Don't run until preloading is complete.
         // TODO: Eventually we want to stream content similar to the Flash player.
@@ -447,13 +484,18 @@ impl Player {
             self.frame_accumulator += dt;
             let frame_time = 1000.0 / self.frame_rate;
 
-            const MAX_FRAMES_PER_TICK: u32 = 5; // Sanity cap on frame tick.
+            let max_frames_per_tick = self.max_frames_per_tick();
             let mut frame = 0;
-            while frame < MAX_FRAMES_PER_TICK && self.frame_accumulator >= frame_time {
-                self.frame_accumulator -= frame_time;
-                self.run_frame();
-                frame += 1;
 
+            while frame < max_frames_per_tick && self.frame_accumulator >= frame_time {
+                let timer = Instant::now();
+                self.run_frame();
+                let elapsed = timer.elapsed().as_millis() as f64;
+
+                self.add_frame_timing(elapsed);
+
+                self.frame_accumulator -= frame_time;
+                frame += 1;
                 // The script probably tried implementing an FPS limiter with a busy loop.
                 // We fooled the busy loop by pretending that more time has passed that actually did.
                 // Then we need to actually pass this time, by decreasing frame_accumulator
