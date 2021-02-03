@@ -15,7 +15,8 @@ use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
-    dispatch_added_event, ChildContainer, TDisplayObjectContainer,
+    dispatch_added_event_only, dispatch_added_to_stage_event_only, dispatch_removed_event,
+    ChildContainer, TDisplayObjectContainer,
 };
 use crate::display_object::{
     Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
@@ -39,6 +40,19 @@ use swf::extensions::ReadSwfExt;
 use swf::{FillStyle, FrameLabelData, LineStyle, Tag};
 
 type FrameNumber = u16;
+
+/// Indication of what frame `run_frame` should jump to next.
+#[derive(PartialEq, Eq)]
+enum NextFrame {
+    /// Construct and run the next frame in the clip.
+    Next,
+
+    /// Jump to the first frame in the clip.
+    First,
+
+    /// Do not construct or run any frames.
+    Same,
+}
 
 /// A movie clip is a display object with its own timeline that runs independently of the root timeline.
 /// The SWF19 spec calls this "Sprite" and the SWF tag defines it is "DefineSprite".
@@ -70,6 +84,7 @@ pub struct MovieClipData<'gc> {
     has_focus: bool,
     enabled: bool,
     use_hand_cursor: bool,
+    last_queued_script_frame: Option<FrameNumber>,
     queued_script_frame: Option<FrameNumber>,
 }
 
@@ -96,6 +111,7 @@ impl<'gc> MovieClip<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
+                last_queued_script_frame: None,
                 queued_script_frame: None,
             },
         ))
@@ -127,6 +143,7 @@ impl<'gc> MovieClip<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
+                last_queued_script_frame: None,
                 queued_script_frame: None,
             },
         ))
@@ -161,6 +178,7 @@ impl<'gc> MovieClip<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
+                last_queued_script_frame: None,
                 queued_script_frame: None,
             },
         ))
@@ -578,7 +596,8 @@ impl<'gc> MovieClip<'gc> {
                         if id == 0 {
                             //TODO: This assumes only the root movie has `SymbolClass` tags.
                             self.set_avm2_constructor(activation.context.gc_context, Some(proto));
-                            self.construct_as_avm2_object(&mut activation.context, self.into());
+                            self.allocate_as_avm2_object(&mut activation.context, self.into());
+                            self.construct_as_avm2_object(&mut activation.context);
                         } else if let Some(Character::MovieClip(mc)) = library.character_by_id(id) {
                             mc.set_avm2_constructor(activation.context.gc_context, Some(proto))
                         } else {
@@ -1029,24 +1048,27 @@ impl<'gc> MovieClip<'gc> {
             .run_clip_event(self.into(), context, event);
     }
 
+    /// Determine what the clip's next frame should be.
+    fn determine_next_frame(self) -> NextFrame {
+        if self.current_frame() < self.total_frames() {
+            NextFrame::Next
+        } else if self.total_frames() > 1 {
+            NextFrame::First
+        } else {
+            NextFrame::Same
+        }
+    }
+
     fn run_frame_internal(
         self,
         self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         run_display_actions: bool,
     ) {
-        // Advance frame number.
-        if self.current_frame() < self.total_frames() {
-            self.0.write(context.gc_context).current_frame += 1;
-        } else if self.total_frames() > 1 {
-            // Looping acts exactly like a gotoAndPlay(1).
-            // Specifically, object that existed on frame 1 should not be destroyed
-            // and recreated.
-            self.run_goto(self_display_object, context, 1);
-            return;
-        } else {
-            // Single frame clips do not play.
-            self.stop(context);
+        match self.determine_next_frame() {
+            NextFrame::Next => self.0.write(context.gc_context).current_frame += 1,
+            NextFrame::First => return self.run_goto(self_display_object, context, 1),
+            NextFrame::Same => self.stop(context),
         }
 
         let mc = self.0.read();
@@ -1056,19 +1078,21 @@ impl<'gc> MovieClip<'gc> {
         let mut has_stream_block = false;
         drop(mc);
 
+        let vm_type = self.vm_type(context);
+
         use swf::TagCode;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
             TagCode::DoAction => self.do_action(self_display_object, context, reader, tag_len),
-            TagCode::PlaceObject if run_display_actions => {
+            TagCode::PlaceObject if run_display_actions && vm_type == AvmType::Avm1 => {
                 self.place_object(self_display_object, context, reader, tag_len, 1)
             }
-            TagCode::PlaceObject2 if run_display_actions => {
+            TagCode::PlaceObject2 if run_display_actions && vm_type == AvmType::Avm1 => {
                 self.place_object(self_display_object, context, reader, tag_len, 2)
             }
-            TagCode::PlaceObject3 if run_display_actions => {
+            TagCode::PlaceObject3 if run_display_actions && vm_type == AvmType::Avm1 => {
                 self.place_object(self_display_object, context, reader, tag_len, 3)
             }
-            TagCode::PlaceObject4 if run_display_actions => {
+            TagCode::PlaceObject4 if run_display_actions && vm_type == AvmType::Avm1 => {
                 self.place_object(self_display_object, context, reader, tag_len, 4)
             }
             TagCode::RemoveObject if run_display_actions => self.remove_object(context, reader, 1),
@@ -1127,11 +1151,21 @@ impl<'gc> MovieClip<'gc> {
                 }
                 // Run first frame.
                 child.apply_place_object(context, self.movie(), place_object);
+                child.construct_frame(context);
                 child.post_instantiation(context, child, None, Instantiator::Movie, false);
-                child.run_frame(context);
+                // In AVM1, children are added in `run_frame` so this is necessary.
+                // In AVM2 we add them in `construct_frame` so calling this causes
+                // duplicate frames
+                if child.vm_type(context) == AvmType::Avm1 {
+                    child.run_frame(context);
+                }
             }
 
-            dispatch_added_event(self.into(), child, false, context);
+            dispatch_added_event_only(child, context);
+            dispatch_added_to_stage_event_only(child, context);
+            if let Some(prev_child) = prev_child {
+                dispatch_removed_event(prev_child, context);
+            }
 
             if let Avm2Value::Object(mut p) = self.object2() {
                 if let Avm2Value::Object(c) = child.object2() {
@@ -1323,6 +1357,10 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame < frame)
             .for_each(|goto| run_goto_command(self, context, goto));
 
+        self.exit_frame(context);
+        self.enter_frame(context);
+        self.frame_constructed(context);
+
         // Next, run the final frame for the parent clip.
         // Re-run the final frame without display tags (DoAction, StartSound, etc.)
         // Note that this only happens if the frame exists and is loaded;
@@ -1341,9 +1379,6 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
 
-        self.exit_frame(context);
-        self.enter_frame(context);
-        self.frame_constructed(context);
         self.run_frame_scripts(context);
     }
 
@@ -1464,7 +1499,12 @@ impl<'gc> MovieClip<'gc> {
         );
     }
 
-    fn construct_as_avm2_object(
+    /// Allocate the AVM2 side of this object.
+    ///
+    /// This function does *not* call the constructor; it is intended that you
+    /// will construct the object first before doing so. This function is
+    /// intended to be called from `construct_frame`.
+    fn allocate_as_avm2_object(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
@@ -1499,8 +1539,6 @@ impl<'gc> MovieClip<'gc> {
             )
             .into();
 
-            constructor.call(Some(object), &[], &mut activation, Some(proto))?;
-
             Ok(object)
         };
         let result: Result<Avm2Object<'gc>, Avm2Error> = constr_thing();
@@ -1508,7 +1546,49 @@ impl<'gc> MovieClip<'gc> {
         if let Ok(object) = result {
             self.0.write(context.gc_context).object = Some(object.into());
         } else if let Err(e) = result {
-            log::error!("Got {} when constructing AVM2 side of display object", e);
+            log::error!("Got {} when allocating AVM2 side of display object", e);
+        }
+    }
+
+    /// Construct the AVM2 side of this object.
+    ///
+    /// This function does *not* allocate the object; it is intended that you
+    /// will allocate the object first before doing so. This function is
+    /// intended to be called from `post_instantiate`.
+    fn construct_as_avm2_object(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut constructor = self.0.read().avm2_constructor.unwrap_or_else(|| {
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut mc_proto = activation.context.avm2.prototypes().movieclip;
+            mc_proto
+                .get_property(
+                    mc_proto,
+                    &Avm2QName::new(Avm2Namespace::public(), "constructor"),
+                    &mut activation,
+                )
+                .unwrap()
+                .coerce_to_object(&mut activation)
+                .unwrap()
+        });
+
+        if let Avm2Value::Object(object) = self.object2() {
+            let mut constr_thing = || {
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let proto = constructor
+                    .get_property(
+                        constructor,
+                        &Avm2QName::new(Avm2Namespace::public(), "prototype"),
+                        &mut activation,
+                    )?
+                    .coerce_to_object(&mut activation)?;
+                constructor.call(Some(object), &[], &mut activation, Some(proto))?;
+
+                Ok(())
+            };
+            let result: Result<(), Avm2Error> = constr_thing();
+
+            if let Err(e) = result {
+                log::error!("Got {} when constructing AVM2 side of display object", e);
+            }
         }
     }
 
@@ -1604,6 +1684,50 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.read().movie().version()
     }
 
+    /// Construct objects placed on this frame.
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // New children will be constructed when they are instantiated and thus
+        // if we construct before our children, they'll get double-constructed.
+        for child in self.iter_execution_list() {
+            child.construct_frame(context);
+        }
+
+        // AVM1 code expects to execute in line with timeline instructions, so
+        // it's exempted from frame construction.
+        if self.vm_type(context) == AvmType::Avm2 {
+            if matches!(self.object2(), Avm2Value::Undefined) {
+                self.allocate_as_avm2_object(context, (*self).into())
+            }
+
+            if self.determine_next_frame() != NextFrame::First {
+                let mc = self.0.read();
+                let data = mc.static_data.swf.clone();
+                let mut reader = data.read_from(mc.tag_stream_pos);
+                drop(mc);
+
+                let self_display_object: DisplayObject<'gc> = (*self).into();
+
+                use swf::TagCode;
+                let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
+                    TagCode::PlaceObject => {
+                        self.place_object(self_display_object, context, reader, tag_len, 1)
+                    }
+                    TagCode::PlaceObject2 => {
+                        self.place_object(self_display_object, context, reader, tag_len, 2)
+                    }
+                    TagCode::PlaceObject3 => {
+                        self.place_object(self_display_object, context, reader, tag_len, 3)
+                    }
+                    TagCode::PlaceObject4 => {
+                        self.place_object(self_display_object, context, reader, tag_len, 4)
+                    }
+                    _ => Ok(()),
+                };
+                let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+            }
+        }
+    }
+
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Children must run first.
         for child in self.iter_execution_list() {
@@ -1640,29 +1764,32 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         let mut write = self.0.write(context.gc_context);
 
         if let Some(frame_id) = write.queued_script_frame {
-            let avm2_object = write.object.and_then(|o| o.as_avm2_object().ok());
+            if write.queued_script_frame != write.last_queued_script_frame {
+                let avm2_object = write.object.and_then(|o| o.as_avm2_object().ok());
 
-            if let Some(avm2_object) = avm2_object {
-                while let Some(fs) = write.frame_scripts.get(index) {
-                    if fs.frame_id == frame_id {
-                        let callable = fs.callable;
+                if let Some(avm2_object) = avm2_object {
+                    while let Some(fs) = write.frame_scripts.get(index) {
+                        if fs.frame_id == frame_id {
+                            let callable = fs.callable;
 
-                        context.action_queue.queue_actions(
-                            self.into(),
-                            ActionType::Callable2 {
-                                callable,
-                                reciever: Some(avm2_object),
-                                args: Vec::new(),
-                            },
-                            false,
-                        );
+                            context.action_queue.queue_actions(
+                                self.into(),
+                                ActionType::Callable2 {
+                                    callable,
+                                    reciever: Some(avm2_object),
+                                    args: Vec::new(),
+                                },
+                                false,
+                            );
+                        }
+
+                        index += 1;
                     }
-
-                    index += 1;
                 }
             }
         }
 
+        write.last_queued_script_frame = write.queued_script_frame;
         write.queued_script_frame = None;
         drop(write);
 
@@ -1805,16 +1932,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        let movie = self.movie().unwrap();
-        let library = context.library.library_for_movie_mut(movie);
-
-        // Attempt to divine the VM we should initialize this instance as.
-        // If our movie doesn't already have that determined, then this is the
-        // root movie clip and we need to scan the SWF for file attributes.
-        let vm_type = library.avm_type();
-
+        let vm_type = self.vm_type(context);
         if vm_type == AvmType::Avm2 {
-            self.construct_as_avm2_object(context, display_object);
+            self.construct_as_avm2_object(context);
         } else if vm_type == AvmType::Avm1 {
             self.construct_as_avm1_object(
                 context,

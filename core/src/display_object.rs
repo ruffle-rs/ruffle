@@ -8,7 +8,7 @@ use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
-use crate::vminterface::Instantiator;
+use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -891,6 +891,18 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
+    /// Construct all display objects that the timeline indicates should exist
+    /// this frame, and their children.
+    ///
+    /// This function should ensure the following, from the point of view of
+    /// downstream VMs:
+    ///
+    /// 1. That the object itself has been allocated, if not constructed
+    /// 2. That newly created children have been instantiated and are present
+    ///    as properties on the class
+    fn construct_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
+
+    /// Execute all other timeline actions on this object and it's children.
     fn run_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
 
     /// Emit an `frameConstructed` event on this DisplayObject and any children it
@@ -1143,6 +1155,16 @@ pub trait TDisplayObject<'gc>:
     /// Return the SWF that defines this display object.
     fn movie(&self) -> Option<Arc<SwfMovie>> {
         self.parent().and_then(|p| p.movie())
+    }
+
+    /// Return the VM that this object belongs to.
+    ///
+    /// This function panics if the display object has no defining movie.
+    fn vm_type(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> AvmType {
+        let movie = self.movie().unwrap();
+        let library = context.library.library_for_movie_mut(movie);
+
+        library.avm_type()
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc>;
