@@ -92,8 +92,8 @@ jobs:
         with:
           node-version: '14'
 
-      # wasm-bindgen-cli version must match wasm-bindgen crate version
-      # Be sure to update in test_web.yml, web/Cargo.toml, web/README.md
+      # wasm-bindgen-cli version must match wasm-bindgen crate version.
+      # Be sure to update in test_web.yml, web/Cargo.toml and web/README.md.
       - name: Install wasm-bindgen
         run: cargo install wasm-bindgen-cli --version 0.2.69
 
@@ -102,12 +102,16 @@ jobs:
         with:
           activate-environment: binaryen
 
+      # conda is available only with "shell: bash -l {0}".
+      # See https://github.com/marketplace/actions/setup-miniconda.
       - name: Install binaryen
+        shell: bash -l {0}
         run: conda install -c conda-forge binaryen
 
-      - name: Build Web
+      - name: Build web
         if: matrix.os == 'ubuntu-latest'
         working-directory: web
+        shell: bash -l {0}
         run: |
           npm run bootstrap
           npm run build
