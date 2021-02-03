@@ -6,6 +6,7 @@
 		public function EventWatcher() {
 			super();
 			this.setup();
+			trace(this.name + " constructed");
 		}
 		
 		function trace_event(event: Event) {
