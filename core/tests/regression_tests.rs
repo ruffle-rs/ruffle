@@ -318,6 +318,7 @@ swf_tests! {
     (bitmap_data, "avm1/bitmap_data", 1),
     (bitmap_data_noise, "avm1/bitmap_data_noise", 1),
     (array_call_method, "avm1/array_call_method", 1),
+    (bad_placeobject_clipaction, "avm1/bad_placeobject_clipaction", 2),
     (bad_swf_tag_past_eof, "avm1/bad_swf_tag_past_eof", 1),
     (sound, "avm1/sound", 1),
     (action_to_integer, "avm1/action_to_integer", 1),
