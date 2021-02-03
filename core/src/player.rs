@@ -17,7 +17,7 @@ use crate::backend::{
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
-use crate::display_object::{EditText, MorphShape, MovieClip, Levels, Level, GlobalExecIter};
+use crate::display_object::{EditText, Level, Levels, MorphShape, MovieClip};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
@@ -33,7 +33,7 @@ use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
@@ -331,7 +331,7 @@ impl Player {
                 Instantiator::Movie,
                 false,
             );
-            context.levels.insert(0u32, Level::new(fake_root.into()));
+            context.levels.insert(0u32, fake_root.into());
 
             Avm2::load_player_globals(context)
         })?;
@@ -412,7 +412,7 @@ impl Player {
             root.construct_frame(context);
             root.post_instantiation(context, root, flashvars, Instantiator::Movie, false);
             root.set_default_root_name(context);
-            context.levels.insert(0, Level::new(root));
+            context.levels.insert(0, root);
             context.add_node(root);
 
             // Load and parse the device font.
@@ -777,7 +777,7 @@ impl Player {
             // Fire event listener on appropriate object
             if let Some((listener_type, event_name, args)) = listener {
                 context.action_queue.queue_actions(
-                    context.levels.get(0).expect("root level"),
+                    *context.levels.get(0).expect("root level"),
                     ActionType::NotifyListeners {
                         listener: listener_type,
                         method: event_name,
@@ -866,9 +866,13 @@ impl Player {
         let hover_changed = self.mutate_with_update_context(|context| {
             // Check hovered object.
             let mut new_hovered = None;
+            // TODO: use rev?
             for (_depth, level) in context.levels.clone().iter2().rev() {
                 if new_hovered.is_none() {
-                    new_hovered = level.root().mouse_pick(context, level.root(), (mouse_pos.0, mouse_pos.1));
+                    new_hovered =
+                        level
+                            .root()
+                            .mouse_pick(context, *level.root(), (mouse_pos.0, mouse_pos.1));
                 } else {
                     break;
                 }
@@ -917,7 +921,7 @@ impl Player {
         let mut is_action_script_3 = false;
         self.mutate_with_update_context(|context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
-            let root = context.levels.get(0).expect("root level");
+            let root = *context.levels.get(0).expect("root level");
             root.as_movie_clip()
                 .unwrap()
                 .preload(context, &mut morph_shapes);
@@ -943,7 +947,7 @@ impl Player {
             // TODO: In what order are levels run?
             // NOTE: We have to copy all the layer pointers into a separate list
             // because level updates can create more levels, which we don't
-            // want to run frames on
+            // want to run frames on.
             let levels: Vec<_> = update_context.levels.iter().copied().collect();
 
             if let Some(level) = levels.first() {

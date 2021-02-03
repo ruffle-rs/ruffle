@@ -13,7 +13,7 @@ use crate::backend::{
     ui::UiBackend,
     video::VideoBackend,
 };
-use crate::display_object::{EditText, MovieClip, SoundTransform, Levels};
+use crate::display_object::{EditText, Levels, MovieClip, SoundTransform};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
@@ -167,7 +167,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             self.audio,
             self.gc_context,
             self.action_queue,
-            self.levels.get(0).unwrap(),
+            *self.levels.get(0).unwrap(),
         );
     }
 
@@ -235,15 +235,12 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         self.audio_manager.set_sound_transforms_dirty()
     }
 
-    pub fn remove_node(
-        &mut self,
-        node: DisplayObject<'gc>,
-    ) -> bool {
+    pub fn remove_node(&mut self, node: DisplayObject<'gc>) -> bool {
         // Remove from linked list.
         let prev = node.prev_global();
         let next = node.next_global();
-        let depth = node.depth() as u32;
-        let exec_list = self.levels.get_exec_list(depth); // TODO: cast depth?
+        let depth = node.depth() as u32; // TODO: cast depth?
+        let exec_list = self.levels.get_exec_list(depth);
         let present_on_execution_list = prev.is_some()
             || next.is_some()
             || (exec_list.is_some() && DisplayObject::ptr_eq(exec_list.unwrap(), node));
@@ -268,13 +265,11 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     }
 
     pub fn add_node(&mut self, node: DisplayObject<'gc>) {
-        let depth = node.depth() as u32;
-        let exec_list = self.levels.get_exec_list(depth);
-        if let Some(head) = exec_list {
+        let depth = node.depth() as u32; // TODO: cast depth?
+        if let Some(head) = self.levels.get_exec_list(depth) {
             head.set_prev_global(self.gc_context, Some(node));
             node.set_next_global(self.gc_context, Some(head));
         }
-
         self.levels.set_exec_list(depth, Some(node));
     }
 }

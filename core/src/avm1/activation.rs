@@ -9,7 +9,7 @@ use crate::avm1::{
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, Level};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
@@ -343,7 +343,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Self {
         let version = context.swf.version();
         let globals = context.avm1.global_object_cell();
-        let level0 = context.levels.get(0).unwrap();
+        let level0 = *context.levels.get(0).unwrap();
 
         Self::from_nothing(context, id, version, globals, level0)
     }
@@ -2807,7 +2807,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// with a script object.
     pub fn resolve_level(&mut self, level_id: u32) -> DisplayObject<'gc> {
         if let Some(level) = self.context.levels.get(level_id) {
-            level
+            *level
         } else {
             let level: DisplayObject<'_> = MovieClip::new(
                 SwfSlice::empty(self.base_clip().movie().unwrap()),
@@ -2817,7 +2817,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             level.set_depth(self.context.gc_context, level_id as i32);
             level.set_default_root_name(&mut self.context);
-            self.context.levels.insert(level_id, Level::new(level));
+            self.context.levels.insert(level_id, level);
             level.post_instantiation(&mut self.context, level, None, Instantiator::Movie, false);
 
             level

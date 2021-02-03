@@ -39,7 +39,7 @@ impl<'gc> Timers<'gc> {
 
         let version = context.swf.header().version;
         let globals = context.avm1.global_object_cell();
-        let level0 = context.levels.get(0).unwrap().clone(); // TODO: copied?
+        let level0 = context.levels.get(0).copied().unwrap(); // TODO: copied?
 
         let mut activation = Activation::from_nothing(
             context.reborrow(),

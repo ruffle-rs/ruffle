@@ -443,8 +443,7 @@ macro_rules! impl_display_object_container {
             drop(write);
 
             if let Some(removed_child) = removed_child {
-                context
-                    .remove_node(removed_child);
+                context.remove_node(removed_child);
             }
             context.add_node(child);
 
@@ -723,7 +722,7 @@ impl<'gc> ChildContainer<'gc> {
     /// unset the parent either as that's expected to happen after unloading.
     pub fn remove_child_from_exec_list(
         &mut self,
-        context: &UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
     ) -> bool {
         // Remove from children linked list.

@@ -836,7 +836,7 @@ mod tests {
     use crate::backend::ui::NullUiBackend;
     use crate::backend::video::NullVideoBackend;
     use crate::context::UpdateContext;
-    use crate::display_object::MovieClip;
+    use crate::display_object::{Level, Levels, MovieClip};
     use crate::focus_tracker::FocusTracker;
     use crate::library::Library;
     use crate::loader::LoadManager;
@@ -846,7 +846,7 @@ mod tests {
     use gc_arena::rootless_arena;
     use instant::Instant;
     use rand::{rngs::SmallRng, SeedableRng};
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::HashMap;
     use std::sync::Arc;
     use std::time::Duration;
 
@@ -861,14 +861,13 @@ mod tests {
             let root: DisplayObject<'_> =
                 MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
             root.set_depth(gc_context, 0);
-            let mut levels = BTreeMap::new();
+            let mut levels = Levels::new();
             levels.insert(0, root);
 
             let object = ScriptObject::object(gc_context, Some(avm1.prototypes().object)).into();
             let globals = avm1.global_object_cell();
 
             let mut context = UpdateContext {
-                exec_list: &mut GlobalExecList::default(),
                 gc_context,
                 player_version: 32,
                 swf: &swf,
@@ -911,7 +910,7 @@ mod tests {
             root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
             root.set_name(context.gc_context, "");
 
-            let base_clip = *context.levels.get(&0).unwrap();
+            let base_clip = *context.levels.get(0).unwrap();
             let swf_version = context.swf.version();
             let mut activation = Activation::from_nothing(
                 context,

@@ -10,9 +10,9 @@ use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
-use gc_arena::{Collect, MutationContext, CollectionContext};
+use gc_arena::{Collect, CollectionContext, MutationContext};
 use ruffle_macros::enum_trait_object;
-use std::{cell::{Ref, RefMut}, iter::Map};
+use std::cell::{Ref, RefMut};
 use std::cmp::min;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -39,9 +39,12 @@ pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
+use std::collections::{
+    btree_map::{Iter, Values},
+    BTreeMap,
+};
 pub use text::Text;
 pub use video::Video;
-use std::collections::{BTreeMap, btree_map::{Values, Iter}};
 
 #[derive(Clone)]
 pub struct Levels<'gc>(BTreeMap<u32, Level<'gc>>);
@@ -51,7 +54,7 @@ impl<'gc> Levels<'gc> {
         Self(BTreeMap::new())
     }
 
-    pub fn get(&self, depth: u32) -> Option<DisplayObject<'gc>> {
+    pub fn get(&self, depth: u32) -> Option<&DisplayObject<'gc>> {
         self.0.get(&depth).map(|level| level.root())
     }
 
@@ -60,11 +63,15 @@ impl<'gc> Levels<'gc> {
     }
 
     pub fn set_exec_list(&mut self, depth: u32, head: Option<DisplayObject<'gc>>) {
-        self.0.get_mut(&depth).unwrap().set_exec_list(head);
+        if let Some(level) = self.0.get_mut(&depth) {
+            level.set_exec_list(head);
+        } else if let Some(head) = head {
+            self.0.insert(depth, Level::new(head));
+        }
     }
 
-    pub fn insert(&mut self, depth: u32, level: Level<'gc>) {
-        self.0.insert(depth, level);
+    pub fn insert(&mut self, depth: u32, level: DisplayObject<'gc>) {
+        self.0.insert(depth, Level::new(level));
     }
 
     pub fn iter(&self) -> Values<u32, Level<'gc>> {
@@ -91,27 +98,27 @@ pub struct Level<'gc> {
 }
 
 impl<'gc> Level<'gc> {
-    pub fn new(src: DisplayObject<'gc>) -> Self {
+    fn new(src: DisplayObject<'gc>) -> Self {
         Self {
             root: src,
-            exec_list: Some(src),
+            exec_list: None,
         }
     }
 
-    pub fn root(&self) -> DisplayObject<'gc> {
-        self.root
+    pub fn root(&self) -> &DisplayObject<'gc> {
+        &self.root
     }
 
-    pub fn exec_list(&self) -> Option<DisplayObject<'gc>> {
+    fn exec_list(&self) -> Option<DisplayObject<'gc>> {
         self.exec_list
     }
 
-    pub fn set_exec_list(&mut self, head: Option<DisplayObject<'gc>>) {
+    fn set_exec_list(&mut self, head: Option<DisplayObject<'gc>>) {
         self.exec_list = head;
     }
 
     pub fn iter(&self) -> GlobalExecIter<'gc> {
-        GlobalExecIter::new(Some(self.root))
+        GlobalExecIter::new(self.exec_list)
     }
 }
 
@@ -132,14 +139,6 @@ impl<'gc> GlobalExecIter<'gc> {
     pub fn new(head: Option<DisplayObject<'gc>>) -> Self {
         Self { head }
     }
-
-    pub fn head(&self) -> Option<DisplayObject<'gc>> {
-        self.head
-    }
-
-    pub fn set_head(&mut self, node: Option<DisplayObject<'gc>>) {
-        self.head = node;
-    }
 }
 
 impl<'gc> Iterator for GlobalExecIter<'gc> {
@@ -153,12 +152,6 @@ impl<'gc> Iterator for GlobalExecIter<'gc> {
             .and_then(|display_cell| display_cell.next_global());
 
         cur
-    }
-}
-
-impl<'gc> Default for GlobalExecIter<'gc> {
-    fn default() -> Self {
-        Self::new(None)
     }
 }
 
@@ -905,7 +898,7 @@ pub trait TDisplayObject<'gc>:
             };
             if is_level {
                 if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
-                    return context.levels.get(level_id).clone(); // TODO: copied?
+                    return context.levels.get(level_id).copied(); // TODO: copied?
                 }
             }
         }
