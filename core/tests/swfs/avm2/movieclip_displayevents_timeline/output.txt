@@ -1,3 +1,4 @@
+blue constructed
 blue:[Event type="added" bubbles=true cancelable=false eventPhase=2]
 blue:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
 blue:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
@@ -6,6 +7,7 @@ blue:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
 blue:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
 blue:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 blue:[Event type="added" bubbles=true cancelable=false eventPhase=3]
+green constructed
 green:[Event type="added" bubbles=true cancelable=false eventPhase=2]
 blue:[Event type="added" bubbles=true cancelable=false eventPhase=3]
 green:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
@@ -18,6 +20,7 @@ blue:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
 green:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
 blue:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 green:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+orange constructed
 orange:[Event type="added" bubbles=true cancelable=false eventPhase=2]
 orange:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
 blue:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
@@ -39,6 +42,7 @@ orange:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
 blue:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 orange:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 blue:[Event type="added" bubbles=true cancelable=false eventPhase=3]
+green constructed
 green:[Event type="added" bubbles=true cancelable=false eventPhase=2]
 blue:[Event type="added" bubbles=true cancelable=false eventPhase=3]
 green:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
