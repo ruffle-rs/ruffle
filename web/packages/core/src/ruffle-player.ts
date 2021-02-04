@@ -59,6 +59,13 @@ interface ContextMenuItem {
      * @param event The mouse event that triggered the click
      */
     onClick: (event: MouseEvent) => void;
+
+    /**
+     * Whether to add a separator right after the item
+     *
+     * @default true
+     */
+    separator?: boolean;
 }
 
 /**
@@ -605,16 +612,11 @@ export class RufflePlayer extends HTMLElement {
             }
         }
         items.push({
-            text: "SEPARATOR",
-            onClick() {
-                // do nothing.
-            },
-        });
-        items.push({
             text: `About Ruffle (%VERSION_NAME%)`,
             onClick() {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
+            separator: false,
         });
         return items;
     }
@@ -634,19 +636,19 @@ export class RufflePlayer extends HTMLElement {
         }
 
         // Populate context menu items.
-        for (const { text, onClick } of this.contextMenuItems()) {
-            if (text == "SEPARATOR") {
-                const element = document.createElement("li");
-                element.className = "menu_separator";
+        for (const { text, onClick, separator } of this.contextMenuItems()) {
+            const menuItem = document.createElement("li");
+            menuItem.className = "menu_item active";
+            menuItem.textContent = text;
+            menuItem.addEventListener("click", onClick);
+            this.contextMenuElement.appendChild(menuItem);
+
+            if (separator !== false) {
+                const menuSeparator = document.createElement("li");
+                menuSeparator.className = "menu_separator";
                 const hr = document.createElement("hr");
-                element.appendChild(hr);
-                this.contextMenuElement.appendChild(element);
-            } else {
-                const element = document.createElement("li");
-                element.className = "menu_item active";
-                element.textContent = text;
-                element.addEventListener("click", onClick);
-                this.contextMenuElement.appendChild(element);
+                menuSeparator.appendChild(hr);
+                this.contextMenuElement.appendChild(menuSeparator);
             }
         }
 
@@ -1017,14 +1019,14 @@ export class RufflePlayer extends HTMLElement {
             <p>Flash Player has been removed from browsers in 2021.</p>
             <p>This content is not yet supported by the Ruffle emulator and will likely not run as intended.</p>
             <div>
-                <a class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">More info</a>
+                <a target="_top" class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">More info</a>
                 <button id="run-anyway-btn">Run anyway</button>
             </div>
         </div>`;
         this.container.prepend(div);
         const button = <HTMLButtonElement>div.querySelector("#run-anyway-btn");
         button.onclick = () => {
-            div.remove();
+            div.parentNode!.removeChild(div);
         };
     }
 
@@ -1042,7 +1044,7 @@ export class RufflePlayer extends HTMLElement {
         (<HTMLButtonElement>(
             this.container.querySelector("#continue-btn")
         )).onclick = () => {
-            div.remove();
+            div.parentNode!.removeChild(div);
         };
     }
 
