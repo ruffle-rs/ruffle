@@ -836,7 +836,7 @@ mod tests {
     use crate::backend::ui::NullUiBackend;
     use crate::backend::video::NullVideoBackend;
     use crate::context::UpdateContext;
-    use crate::display_object::{Level, Levels, MovieClip};
+    use crate::display_object::{Levels, MovieClip};
     use crate::focus_tracker::FocusTracker;
     use crate::library::Library;
     use crate::loader::LoadManager;

@@ -239,8 +239,8 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         // Remove from linked list.
         let prev = node.prev_global();
         let next = node.next_global();
-        let depth = node.depth() as u32; // TODO: cast depth?
-        let exec_list = self.levels.get_exec_list(depth);
+        let level = node.level();
+        let exec_list = self.levels.get_exec_list(level);
         let present_on_execution_list = prev.is_some()
             || next.is_some()
             || (exec_list.is_some() && DisplayObject::ptr_eq(exec_list.unwrap(), node));
@@ -257,7 +257,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 
         if let Some(head) = exec_list {
             if DisplayObject::ptr_eq(head, node) {
-                self.levels.set_exec_list(depth, next);
+                self.levels.set_exec_list(level, next);
             }
         }
 
@@ -265,12 +265,13 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     }
 
     pub fn add_node(&mut self, node: DisplayObject<'gc>) {
-        let depth = node.depth() as u32; // TODO: cast depth?
-        if let Some(head) = self.levels.get_exec_list(depth) {
+        let level = node.level();
+        println!("[add_node] level: {}", level);
+        if let Some(head) = self.levels.get_exec_list(level) {
             head.set_prev_global(self.gc_context, Some(node));
             node.set_next_global(self.gc_context, Some(head));
         }
-        self.levels.set_exec_list(depth, Some(node));
+        self.levels.set_exec_list(level, Some(node));
     }
 }
 

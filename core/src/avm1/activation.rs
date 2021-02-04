@@ -2816,8 +2816,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .into();
 
             level.set_depth(self.context.gc_context, level_id as i32);
+            level.set_level(self.context.gc_context, level_id);
             level.set_default_root_name(&mut self.context);
             self.context.levels.insert(level_id, level);
+            self.context.add_node(level);
             level.post_instantiation(&mut self.context, level, None, Instantiator::Movie, false);
 
             level

@@ -12,7 +12,7 @@ use crate::backend::storage::MemoryStorageBackend;
 use crate::backend::ui::NullUiBackend;
 use crate::backend::video::NullVideoBackend;
 use crate::context::ActionQueue;
-use crate::display_object::{Level, Levels, MovieClip, TDisplayObject};
+use crate::display_object::{Levels, MovieClip, TDisplayObject};
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
 use crate::loader::LoadManager;

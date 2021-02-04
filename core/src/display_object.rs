@@ -71,6 +71,10 @@ impl<'gc> Levels<'gc> {
     }
 
     pub fn insert(&mut self, depth: u32, level: DisplayObject<'gc>) {
+        let exec_list = self.get_exec_list(depth);
+        if exec_list.is_some() {
+            self.set_exec_list(depth, exec_list);
+        }
         self.0.insert(depth, Level::new(level));
     }
 
@@ -136,7 +140,7 @@ pub struct GlobalExecIter<'gc> {
 }
 
 impl<'gc> GlobalExecIter<'gc> {
-    pub fn new(head: Option<DisplayObject<'gc>>) -> Self {
+    fn new(head: Option<DisplayObject<'gc>>) -> Self {
         Self { head }
     }
 }
@@ -158,6 +162,7 @@ impl<'gc> Iterator for GlobalExecIter<'gc> {
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
+    level: u32,
     parent: Option<DisplayObject<'gc>>,
     place_frame: u16,
     depth: Depth,
@@ -202,6 +207,7 @@ pub struct DisplayObjectBase<'gc> {
 impl<'gc> Default for DisplayObjectBase<'gc> {
     fn default() -> Self {
         Self {
+            level: 0,
             parent: Default::default(),
             place_frame: Default::default(),
             depth: Default::default(),
@@ -226,6 +232,18 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
 
 #[allow(dead_code)]
 impl<'gc> DisplayObjectBase<'gc> {
+    fn level(&self) -> u32 {
+        if let Some(parent) = self.parent {
+            parent.level()
+        } else {
+            self.level
+        }
+    }
+
+    fn set_level(&mut self, _context: MutationContext<'gc, '_>, level: u32) {
+        self.level = level;
+    }
+
     /// Reset all properties that would be adjusted by a movie load.
     fn reset_for_movie_load(&mut self) {
         let flags_to_keep = self.flags & DisplayObjectFlags::LOCK_ROOT;
@@ -581,6 +599,8 @@ impl<'gc> DisplayObjectBase<'gc> {
 pub trait TDisplayObject<'gc>:
     'gc + Clone + Copy + Collect + Debug + Into<DisplayObject<'gc>>
 {
+    fn level(&self) -> u32;
+    fn set_level(&self, gc_context: MutationContext<'gc, '_>, level: u32);
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth;
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
@@ -1414,6 +1434,12 @@ pub enum DisplayObjectPtr {}
 #[macro_export]
 macro_rules! impl_display_object_sansbounds {
     ($field:ident) => {
+        fn level(&self) -> u32 {
+            self.0.read().$field.level()
+        }
+        fn set_level(&self, gc_context: gc_arena::MutationContext<'gc, '_>, level: u32) {
+            self.0.write(gc_context).$field.set_level(gc_context, level)
+        }
         fn depth(&self) -> crate::prelude::Depth {
             self.0.read().$field.depth()
         }
