@@ -171,6 +171,7 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #context-menu {
+            display: none;
             color: black;
             background-color: #FAFAFA;
             border: 1px solid gray;
@@ -186,7 +187,6 @@ ruffleShadowTemplate.innerHTML = `
         #context-menu .menu_item {
             padding: 5px 10px;
         }
-
 
         #context-menu .active {
             cursor: pointer;
