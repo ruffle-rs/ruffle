@@ -13,7 +13,7 @@ description = "Read and write the Adobe Flash SWF file format."
 bitflags = "1.2.1"
 bitstream-io = "1.0.0"
 byteorder = "1.4"
-encoding_rs = "0.8.26"
+encoding_rs = "0.8.28"
 num-derive = "0.3"
 num-traits = "0.2"
 libflate = {version = "1.0", optional = true}
