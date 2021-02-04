@@ -72,10 +72,11 @@ impl<'gc> Levels<'gc> {
 
     pub fn insert(&mut self, depth: u32, level: DisplayObject<'gc>) {
         let exec_list = self.get_exec_list(depth);
+        self.0.insert(depth, Level::new(level));
+        // TODO: remove?
         if exec_list.is_some() {
             self.set_exec_list(depth, exec_list);
         }
-        self.0.insert(depth, Level::new(level));
     }
 
     pub fn iter(&self) -> Values<u32, Level<'gc>> {
@@ -233,11 +234,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
 #[allow(dead_code)]
 impl<'gc> DisplayObjectBase<'gc> {
     fn level(&self) -> u32 {
-        if let Some(parent) = self.parent {
-            parent.level()
-        } else {
-            self.level
-        }
+        self.level
     }
 
     fn set_level(&mut self, _context: MutationContext<'gc, '_>, level: u32) {
@@ -918,7 +915,7 @@ pub trait TDisplayObject<'gc>:
             };
             if is_level {
                 if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
-                    return context.levels.get(level_id).copied(); // TODO: copied?
+                    return context.levels.get(level_id).copied();
                 }
             }
         }

@@ -448,6 +448,7 @@ macro_rules! impl_display_object_container {
             context.add_node(child);
 
             child.set_parent(context.gc_context, Some(self.into()));
+            child.set_level(context.gc_context, self.level());
             child.set_place_frame(context.gc_context, 0);
             child.set_depth(context.gc_context, depth);
 

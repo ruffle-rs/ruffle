@@ -266,7 +266,6 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 
     pub fn add_node(&mut self, node: DisplayObject<'gc>) {
         let level = node.level();
-        println!("[add_node] level: {}", level);
         if let Some(head) = self.levels.get_exec_list(level) {
             head.set_prev_global(self.gc_context, Some(node));
             node.set_next_global(self.gc_context, Some(head));

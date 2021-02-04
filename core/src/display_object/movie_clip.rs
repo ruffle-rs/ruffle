@@ -1146,6 +1146,7 @@ impl<'gc> MovieClip<'gc> {
                 child.set_instantiated_by_timeline(context.gc_context, true);
                 child.set_depth(context.gc_context, depth);
                 child.set_parent(context.gc_context, Some(self_display_object));
+                child.set_level(context.gc_context, self_display_object.level());
                 if child.vm_type(context) == AvmType::Avm2 {
                     // In AVM2 instantiation happens before frame advance so we
                     // have to special-case that
