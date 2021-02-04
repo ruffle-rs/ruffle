@@ -5,5 +5,4 @@ update_configs:
     update_schedule: "live"
   - package_manager: "javascript"
     directory: "web"
-    update_schedule: "live"
-
+    update_schedule: "weekly"
