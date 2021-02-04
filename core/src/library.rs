@@ -87,7 +87,7 @@ impl<'gc> MovieLibrary<'gc> {
         // TODO(Herschel): What is the behavior if id already exists?
         if !self.contains_character(id) {
             if let Character::Font(font) = character.clone() {
-                self.fonts.insert(font.descriptor(), font);
+                self.fonts.insert(font.descriptor().clone(), font);
             }
 
             self.characters.insert(id, character);
