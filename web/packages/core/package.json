@@ -12,8 +12,8 @@
         "build": "npm run build:cargo && npm run build:wasm-bindgen && npm run build:wasm-opt && npm run build:ts",
         "build:cargo": "cargo build --release --target wasm32-unknown-unknown",
         "build:wasm-bindgen": "wasm-bindgen ../../../target/wasm32-unknown-unknown/release/ruffle_web.wasm --target web --out-dir ./pkg --out-name ruffle_web",
-        "build:wasm-opt": "wasm-opt ./pkg/ruffle_web_bg.wasm -O -g --output ./pkg/ruffle_web_bg.opt.wasm && move-file ./pkg/ruffle_web_bg.opt.wasm ./pkg/ruffle_web_bg.wasm || npm run build:wasm-opt-note",
-        "build:wasm-opt-note": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.'",
+        "build:wasm-opt": "wasm-opt ./pkg/ruffle_web_bg.wasm -O -g --output ./pkg/ruffle_web_bg.opt.wasm && move-file ./pkg/ruffle_web_bg.opt.wasm ./pkg/ruffle_web_bg.wasm || npm run build:wasm-opt-failed",
+        "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && [[ $GITHUB_ACTIONS != true ]]",
         "build:ts": "tsc -d && node tools/set_version.js",
         "docs": "typedoc",
         "test": "mocha -r esm -r ts-node/register test/**.ts"
