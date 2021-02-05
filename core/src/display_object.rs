@@ -186,12 +186,6 @@ pub struct DisplayObjectBase<'gc> {
     prev_global: Option<DisplayObject<'gc>>,
     next_global: Option<DisplayObject<'gc>>,
 
-    /// The previous sibling of this display object in order of execution.
-    prev_sibling: Option<DisplayObject<'gc>>,
-
-    /// The next sibling of this display object in order of execution.
-    next_sibling: Option<DisplayObject<'gc>>,
-
     /// The sound transform of sounds playing via this display object.
     sound_transform: SoundTransform,
 
@@ -221,8 +215,6 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             skew: 0.0,
             prev_global: None,
             next_global: None,
-            prev_sibling: None,
-            next_sibling: None,
             masker: None,
             maskee: None,
             sound_transform: Default::default(),
@@ -454,22 +446,6 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.parent = parent;
     }
 
-    fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
-        self.prev_sibling
-    }
-
-    fn set_prev_sibling(&mut self, node: Option<DisplayObject<'gc>>) {
-        self.prev_sibling = node;
-    }
-
-    fn next_sibling(&self) -> Option<DisplayObject<'gc>> {
-        self.next_sibling
-    }
-
-    fn set_next_sibling(&mut self, node: Option<DisplayObject<'gc>>) {
-        self.next_sibling = node;
-    }
-
     fn prev_global(&self) -> Option<DisplayObject<'gc>> {
         self.prev_global
     }
@@ -634,7 +610,7 @@ pub trait TDisplayObject<'gc>:
         let mut bounds = self.self_bounds().transform(matrix);
 
         if let Some(ctr) = self.as_container() {
-            for child in ctr.iter_execution_list() {
+            for child in ctr.iter_render_list() {
                 let matrix = *matrix * *child.matrix();
                 bounds.union(&child.bounds_with_transform(&matrix));
             }
@@ -868,16 +844,6 @@ pub trait TDisplayObject<'gc>:
     fn set_clip_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
     fn parent(&self) -> Option<DisplayObject<'gc>>;
     fn set_parent(&self, gc_context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
-    fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
-    fn set_prev_sibling(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    );
-    fn next_sibling(&self) -> Option<DisplayObject<'gc>>;
-    fn set_next_sibling(&self, gc_context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
-    fn global_exec_list(&self) -> Option<DisplayObject<'gc>>;
-    fn set_global_exec_list(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
     fn prev_global(&self) -> Option<DisplayObject<'gc>>;
     fn set_prev_global(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
     fn next_global(&self) -> Option<DisplayObject<'gc>>;
@@ -1113,7 +1079,8 @@ pub trait TDisplayObject<'gc>:
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Unload children.
         if let Some(ctr) = self.as_container() {
-            for child in ctr.iter_execution_list() {
+            // TODO: fix order?
+            for child in ctr.iter_render_list() {
                 child.unload(context);
             }
         }
@@ -1529,26 +1496,6 @@ macro_rules! impl_display_object_sansbounds {
             parent: Option<crate::display_object::DisplayObject<'gc>>,
         ) {
             self.0.write(context).$field.set_parent(parent)
-        }
-        fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.prev_sibling()
-        }
-        fn set_prev_sibling(
-            &self,
-            context: gc_arena::MutationContext<'gc, '_>,
-            node: Option<DisplayObject<'gc>>,
-        ) {
-            self.0.write(context).$field.set_prev_sibling(node);
-        }
-        fn next_sibling(&self) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.next_sibling()
-        }
-        fn set_next_sibling(
-            &self,
-            context: gc_arena::MutationContext<'gc, '_>,
-            node: Option<DisplayObject<'gc>>,
-        ) {
-            self.0.write(context).$field.set_next_sibling(node);
         }
         fn prev_global(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.prev_global()

@@ -83,7 +83,7 @@ fn validate_remove_operation<'gc>(
         .as_container()
         .ok_or("ArgumentError: Parent is not a DisplayObjectContainer")?;
 
-    for child in old_ctr.iter_execution_list() {
+    for child in old_ctr.iter_render_list() {
         if DisplayObject::ptr_eq(child, proposed_child) {
             return Ok(());
         }
