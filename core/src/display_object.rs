@@ -39,62 +39,8 @@ pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
-use std::collections::{
-    btree_map::{Iter, Values},
-    BTreeMap,
-};
 pub use text::Text;
 pub use video::Video;
-
-#[derive(Clone)]
-pub struct Levels<'gc>(BTreeMap<u32, Level<'gc>>);
-
-impl<'gc> Levels<'gc> {
-    pub fn new() -> Self {
-        Self(BTreeMap::new())
-    }
-
-    pub fn get(&self, depth: u32) -> Option<&DisplayObject<'gc>> {
-        self.0.get(&depth).map(|level| level.root())
-    }
-
-    pub fn get_exec_list(&self, depth: u32) -> Option<DisplayObject<'gc>> {
-        self.0.get(&depth).and_then(|level| level.exec_list())
-    }
-
-    pub fn set_exec_list(&mut self, depth: u32, head: Option<DisplayObject<'gc>>) {
-        if let Some(level) = self.0.get_mut(&depth) {
-            level.set_exec_list(head);
-        } else if let Some(head) = head {
-            self.0.insert(depth, Level::new(head));
-        }
-    }
-
-    pub fn insert(&mut self, depth: u32, level: DisplayObject<'gc>) {
-        let exec_list = self.get_exec_list(depth);
-        self.0.insert(depth, Level::new(level));
-        // TODO: remove?
-        if exec_list.is_some() {
-            self.set_exec_list(depth, exec_list);
-        }
-    }
-
-    pub fn iter(&self) -> Values<u32, Level<'gc>> {
-        self.0.values()
-    }
-
-    pub fn iter2(&self) -> Iter<u32, Level<'gc>> {
-        self.0.iter()
-    }
-}
-
-unsafe impl<'gc> Collect for Levels<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        for level in self.iter() {
-            level.trace(cc);
-        }
-    }
-}
 
 #[derive(Clone, Copy)]
 pub struct Level<'gc> {
@@ -103,22 +49,26 @@ pub struct Level<'gc> {
 }
 
 impl<'gc> Level<'gc> {
-    fn new(src: DisplayObject<'gc>) -> Self {
+    pub fn new(root: DisplayObject<'gc>) -> Self {
         Self {
-            root: src,
+            root,
             exec_list: None,
         }
     }
 
-    pub fn root(&self) -> &DisplayObject<'gc> {
-        &self.root
+    pub fn root(&self) -> DisplayObject<'gc> {
+        self.root
     }
 
-    fn exec_list(&self) -> Option<DisplayObject<'gc>> {
+    pub fn set_root(&mut self, root: DisplayObject<'gc>) {
+        self.root = root;
+    }
+
+    pub fn exec_list(&self) -> Option<DisplayObject<'gc>> {
         self.exec_list
     }
 
-    fn set_exec_list(&mut self, head: Option<DisplayObject<'gc>>) {
+    pub fn set_exec_list(&mut self, head: Option<DisplayObject<'gc>>) {
         self.exec_list = head;
     }
 
@@ -163,10 +113,10 @@ impl<'gc> Iterator for GlobalExecIter<'gc> {
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
-    level: u32,
     parent: Option<DisplayObject<'gc>>,
     place_frame: u16,
     depth: Depth,
+    level: u32,
     transform: Transform,
     name: String,
     clip_depth: Depth,
@@ -225,22 +175,10 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
 
 #[allow(dead_code)]
 impl<'gc> DisplayObjectBase<'gc> {
-    fn level(&self) -> u32 {
-        self.level
-    }
-
-    fn set_level(&mut self, _context: MutationContext<'gc, '_>, level: u32) {
-        self.level = level;
-    }
-
     /// Reset all properties that would be adjusted by a movie load.
     fn reset_for_movie_load(&mut self) {
         let flags_to_keep = self.flags & DisplayObjectFlags::LOCK_ROOT;
         self.flags = flags_to_keep | DisplayObjectFlags::VISIBLE;
-    }
-
-    fn id(&self) -> CharacterId {
-        0
     }
 
     fn depth(&self) -> Depth {
@@ -249,6 +187,14 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_depth(&mut self, depth: Depth) {
         self.depth = depth;
+    }
+
+    fn level(&self) -> u32 {
+        self.level
+    }
+
+    fn set_level(&mut self, _context: MutationContext<'gc, '_>, level: u32) {
+        self.level = level;
     }
 
     fn place_frame(&self) -> u16 {
@@ -572,11 +518,11 @@ impl<'gc> DisplayObjectBase<'gc> {
 pub trait TDisplayObject<'gc>:
     'gc + Clone + Copy + Collect + Debug + Into<DisplayObject<'gc>>
 {
-    fn level(&self) -> u32;
-    fn set_level(&self, gc_context: MutationContext<'gc, '_>, level: u32);
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth;
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
+    fn level(&self) -> u32;
+    fn set_level(&self, gc_context: MutationContext<'gc, '_>, level: u32);
 
     /// The untransformed inherent bounding box of this object.
     /// These bounds do **not** include child DisplayObjects.
@@ -881,7 +827,7 @@ pub trait TDisplayObject<'gc>:
             };
             if is_level {
                 if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
-                    return context.levels.get(level_id).copied();
+                    return context.levels.get(&level_id).map(|&l| l.root());
                 }
             }
         }
@@ -1398,17 +1344,17 @@ pub enum DisplayObjectPtr {}
 #[macro_export]
 macro_rules! impl_display_object_sansbounds {
     ($field:ident) => {
-        fn level(&self) -> u32 {
-            self.0.read().$field.level()
-        }
-        fn set_level(&self, gc_context: gc_arena::MutationContext<'gc, '_>, level: u32) {
-            self.0.write(gc_context).$field.set_level(gc_context, level)
-        }
         fn depth(&self) -> crate::prelude::Depth {
             self.0.read().$field.depth()
         }
         fn set_depth(&self, gc_context: gc_arena::MutationContext<'gc, '_>, depth: Depth) {
             self.0.write(gc_context).$field.set_depth(depth)
+        }
+        fn level(&self) -> u32 {
+            self.0.read().$field.level()
+        }
+        fn set_level(&self, gc_context: gc_arena::MutationContext<'gc, '_>, level: u32) {
+            self.0.write(gc_context).$field.set_level(gc_context, level)
         }
         fn place_frame(&self) -> u16 {
             self.0.read().$field.place_frame()

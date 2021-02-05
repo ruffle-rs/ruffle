@@ -203,7 +203,7 @@ impl<'gc> Callback<'gc> {
     ) -> Value {
         match self {
             Callback::Avm1 { this, method } => {
-                let base_clip = *context.levels.get(0).unwrap();
+                let base_clip = context.levels.get(&0).unwrap().root();
                 let swf_version = context.swf.version();
                 let globals = context.avm1.global_object_cell();
                 let mut activation = Avm1Activation::from_nothing(

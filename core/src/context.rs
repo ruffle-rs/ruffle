@@ -13,7 +13,7 @@ use crate::backend::{
     ui::UiBackend,
     video::VideoBackend,
 };
-use crate::display_object::{EditText, Levels, MovieClip, SoundTransform};
+use crate::display_object::{EditText, Level, MovieClip, SoundTransform};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
@@ -26,7 +26,7 @@ use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
@@ -93,7 +93,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub rng: &'a mut SmallRng,
 
     /// All loaded levels of the current player.
-    pub levels: &'a mut Levels<'gc>,
+    pub levels: &'a mut BTreeMap<u32, Level<'gc>>,
 
     /// The display object that the mouse is currently hovering over.
     pub mouse_hovered_object: Option<DisplayObject<'gc>>,
@@ -160,14 +160,14 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub time_offset: &'a mut u32,
 }
 
-/// Convenience methods for controlling audio.
 impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
+    /// Convenience methods for controlling audio.
     pub fn update_sounds(&mut self) {
         self.audio_manager.update_sounds(
             self.audio,
             self.gc_context,
             self.action_queue,
-            *self.levels.get(0).unwrap(),
+            self.levels.get(&0).unwrap().root(),
         );
     }
 
@@ -235,15 +235,22 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         self.audio_manager.set_sound_transforms_dirty()
     }
 
+    /// Methods to add/remove nodes from the global execution list.
+    pub fn add_to_execution_list(&mut self, node: DisplayObject<'gc>) {
+        if let Some(level) = self.levels.get_mut(&node.level()) {
+            if let Some(head) = level.exec_list() {
+                head.set_prev_global(self.gc_context, Some(node));
+                node.set_next_global(self.gc_context, Some(head));
+            }
+            level.set_exec_list(Some(node));
+        } else {
+            self.levels.insert(node.level(), Level::new(node));
+        }
+    }
+
     pub fn remove_from_execution_list(&mut self, node: DisplayObject<'gc>) -> bool {
-        // Remove from linked list.
         let prev = node.prev_global();
         let next = node.next_global();
-        let level = node.level();
-        let exec_list = self.levels.get_exec_list(level);
-        let present_on_execution_list = prev.is_some()
-            || next.is_some()
-            || (exec_list.is_some() && DisplayObject::ptr_eq(exec_list.unwrap(), node));
 
         if let Some(prev) = prev {
             prev.set_next_global(self.gc_context, next);
@@ -255,22 +262,16 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         node.set_prev_global(self.gc_context, None);
         node.set_next_global(self.gc_context, None);
 
-        if let Some(head) = exec_list {
-            if DisplayObject::ptr_eq(head, node) {
-                self.levels.set_exec_list(level, next);
+        if let Some(level) = self.levels.get_mut(&node.level()) {
+            if let Some(head) = level.exec_list() {
+                if DisplayObject::ptr_eq(head, node) {
+                    level.set_exec_list(next);
+                    return true;
+                }
             }
         }
 
-        present_on_execution_list
-    }
-
-    pub fn add_to_execution_list(&mut self, node: DisplayObject<'gc>) {
-        let level = node.level();
-        if let Some(head) = self.levels.get_exec_list(level) {
-            head.set_prev_global(self.gc_context, Some(node));
-            node.set_next_global(self.gc_context, Some(head));
-        }
-        self.levels.set_exec_list(level, Some(node));
+        prev.is_some() || next.is_some()
     }
 }
 
