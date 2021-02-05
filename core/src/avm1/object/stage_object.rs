@@ -409,8 +409,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         let mut keys = obj.base.get_keys(activation);
 
         if let Some(ctr) = obj.display_object.as_container() {
-            // TODO: fix order?
-            keys.extend(ctr.iter_render_list().map(|child| child.name().to_string()));
+            keys.extend(ctr.iter_children_by_depth().map(|(_, child)| child.name().to_string()));
         }
 
         keys

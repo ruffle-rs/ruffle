@@ -157,19 +157,19 @@ bitflags! {
 pub trait TDisplayObjectContainer<'gc>:
     'gc + Clone + Copy + Collect + Debug + Into<DisplayObjectContainer<'gc>>
 {
-    /// Get a child display object by it's position in the render list.
+    /// Get a child display object by its position in the render list.
     ///
     /// The `index` provided here should not be confused with the `Depth`s used
     /// to index the depth list.
     fn child_by_index(self, index: usize) -> Option<DisplayObject<'gc>>;
 
-    /// Get a child display object by it's position in the depth list.
+    /// Get a child display object by its position in the depth list.
     ///
     /// The `Depth` provided here should not be confused with the `index`s used
     /// to index the render list.
     fn child_by_depth(self, depth: Depth) -> Option<DisplayObject<'gc>>;
 
-    /// Get a child display object by it's instance/timeline name.
+    /// Get a child display object by its instance/timeline name.
     ///
     /// The `case_sensitive` parameter determines if we should consider
     /// children with different capitalizations as being distinct names.
@@ -181,6 +181,10 @@ pub trait TDisplayObjectContainer<'gc>:
 
     /// Returns the number of children on the render list.
     fn num_children(self) -> usize;
+
+    /// Returns the lowest depth on the render list, or `None` if no children
+    /// exist on the depth list.
+    fn lowest_depth(self) -> Option<Depth>;
 
     /// Returns the highest depth on the render list, or `None` if no children
     /// exist on the depth list.
@@ -251,7 +255,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// You can control which lists a child should be removed from with the
     /// `from_lists` parameter. If a list is omitted from `from_lists`, then
     /// not only will the child remain, but the return code will also not take
-    /// it's presence in the list into account.
+    /// its presence in the list into account.
     fn remove_child(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -282,6 +286,10 @@ pub trait TDisplayObjectContainer<'gc>:
     /// limitations.
     fn iter_render_list(self) -> RenderIter<'gc> {
         RenderIter::from_container(self.into())
+    }
+
+    fn iter_children_by_depth(self) -> DepthIter<'gc> {
+        DepthIter::from_container(self.into())
     }
 
     /// Renders the children of this container in render list order.
@@ -347,6 +355,10 @@ macro_rules! impl_display_object_container {
 
         fn num_children(self) -> usize {
             self.0.read().$field.num_children()
+        }
+
+        fn lowest_depth(self) -> Option<Depth> {
+            self.0.read().$field.lowest_depth()
         }
 
         fn highest_depth(self) -> Option<Depth> {
@@ -683,6 +695,12 @@ impl<'gc> ChildContainer<'gc> {
         }
     }
 
+    /// Returns the lowest depth in use by this container, or `None` if there
+    /// are no children.
+    pub fn lowest_depth(&self) -> Option<Depth> {
+        self.depth_list.keys().copied().next()
+    }
+
     /// Returns the highest depth in use by this container, or `None` if there
     /// are no children.
     pub fn highest_depth(&self) -> Option<Depth> {
@@ -699,7 +717,7 @@ impl<'gc> ChildContainer<'gc> {
         self.depth_list.get(&depth).copied()
     }
 
-    /// Get a child by it's instance/timeline name.
+    /// Get a child by its instance/timeline name.
     ///
     /// The `case_sensitive` parameter determines if we should consider
     /// children with different capitalizations as being distinct names.
@@ -723,7 +741,7 @@ impl<'gc> ChildContainer<'gc> {
         }
     }
 
-    /// Get a child by it's render list position (ID).
+    /// Get a child by its render list position (ID).
     pub fn get_id(&self, id: usize) -> Option<DisplayObject<'gc>> {
         self.render_list.get(id).copied()
     }
@@ -905,7 +923,7 @@ impl<'gc> RenderIter<'gc> {
 impl<'gc> Iterator for RenderIter<'gc> {
     type Item = DisplayObject<'gc>;
 
-    fn next(&mut self) -> Option<DisplayObject<'gc>> {
+    fn next(&mut self) -> Option<Self::Item> {
         if self.i == self.neg_i {
             return None;
         }
@@ -929,5 +947,39 @@ impl<'gc> DoubleEndedIterator for RenderIter<'gc> {
         self.neg_i -= 1;
 
         this
+    }
+}
+
+pub struct DepthIter<'gc> {
+    container: DisplayObjectContainer<'gc>,
+    depth: Option<Depth>,
+    lowest_depth: Option<Depth>,
+}
+
+impl<'gc> DepthIter<'gc> {
+    fn from_container(container: DisplayObjectContainer<'gc>) -> Self {
+        Self {
+            container,
+            depth: container.highest_depth(),
+            lowest_depth: container.lowest_depth(),
+        }
+    }
+}
+
+impl<'gc> Iterator for DepthIter<'gc> {
+    type Item = (Depth, DisplayObject<'gc>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut depth = self.depth?;
+        loop {
+            if depth < self.lowest_depth.unwrap() {
+                return None;
+            }
+            if let Some(child) = self.container.child_by_depth(depth) {
+                self.depth = Some(depth - 1);
+                return Some((depth, child));
+            }
+            depth -= 1;
+        }
     }
 }
