@@ -11,6 +11,7 @@ use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
+use crate::prelude::Depth;
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
@@ -2815,11 +2816,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             )
             .into();
 
-            level.set_depth(self.context.gc_context, level_id as i32);
+            level.set_depth(self.context.gc_context, level_id as Depth);
             level.set_level(self.context.gc_context, level_id);
             level.set_default_root_name(&mut self.context);
             self.context.levels.insert(level_id, level);
-            self.context.add_node(level);
+            self.context.add_to_execution_list(level);
             level.post_instantiation(&mut self.context, level, None, Instantiator::Movie, false);
 
             level

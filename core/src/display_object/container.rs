@@ -415,9 +415,9 @@ macro_rules! impl_display_object_container {
             drop(write);
 
             if let Some(removed_child) = removed_child {
-                context.remove_node(removed_child);
+                context.remove_from_execution_list(removed_child);
             }
-            context.add_node(child);
+            context.add_to_execution_list(child);
 
             child.set_parent(context.gc_context, Some(self.into()));
             child.set_level(context.gc_context, self.level());
@@ -531,7 +531,7 @@ macro_rules! impl_display_object_container {
             drop(write);
 
             let removed_from_execution_list =
-                from_lists.contains(Lists::EXECUTION) && context.remove_node(child);
+                from_lists.contains(Lists::EXECUTION) && context.remove_from_execution_list(child);
 
             if removed_from_execution_list {
                 child.unload(context);
@@ -573,7 +573,7 @@ macro_rules! impl_display_object_container {
                 write.$field.remove_child_from_depth_list(removed);
                 drop(write);
 
-                context.remove_node(removed);
+                context.remove_from_execution_list(removed);
 
                 removed.unload(context);
 
@@ -802,7 +802,7 @@ impl<'gc> ChildContainer<'gc> {
             }
         } else {
             self.render_list.insert(id, child);
-            context.add_node(child);
+            context.add_to_execution_list(child);
         }
     }
 

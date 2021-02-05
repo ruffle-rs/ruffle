@@ -235,7 +235,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         self.audio_manager.set_sound_transforms_dirty()
     }
 
-    pub fn remove_node(&mut self, node: DisplayObject<'gc>) -> bool {
+    pub fn remove_from_execution_list(&mut self, node: DisplayObject<'gc>) -> bool {
         // Remove from linked list.
         let prev = node.prev_global();
         let next = node.next_global();
@@ -264,7 +264,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         present_on_execution_list
     }
 
-    pub fn add_node(&mut self, node: DisplayObject<'gc>) {
+    pub fn add_to_execution_list(&mut self, node: DisplayObject<'gc>) {
         let level = node.level();
         if let Some(head) = self.levels.get_exec_list(level) {
             head.set_prev_global(self.gc_context, Some(node));
