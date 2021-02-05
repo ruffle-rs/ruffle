@@ -1765,16 +1765,16 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     while let Some(fs) = write.frame_scripts.get(index) {
                         if fs.frame_id == frame_id {
                             let callable = fs.callable;
-
-                            context.action_queue.queue_actions(
-                                self.into(),
-                                ActionType::Callable2 {
-                                    callable,
-                                    reciever: Some(avm2_object),
-                                    args: Vec::new(),
-                                },
-                                false,
-                            );
+                            drop(write);
+                            if let Err(e) = Avm2::run_stack_frame_for_callable(
+                                callable,
+                                Some(avm2_object),
+                                &[],
+                                context,
+                            ) {
+                                log::error!("Error occured when running AVM2 frame script: {}", e);
+                            }
+                            write = self.0.write(context.gc_context);
                         }
 
                         index += 1;
