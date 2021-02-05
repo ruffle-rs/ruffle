@@ -206,8 +206,8 @@ impl<'gc> EditText<'gc> {
 
         let mut base = DisplayObjectBase::default();
 
-        base.matrix_mut(context.gc_context).tx = bounds.x_min;
-        base.matrix_mut(context.gc_context).ty = bounds.y_min;
+        base.matrix_mut().tx = bounds.x_min;
+        base.matrix_mut().ty = bounds.y_min;
 
         let variable = if !swf_tag.variable_name.is_empty() {
             Some(swf_tag.variable_name)
@@ -1400,7 +1400,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn set_matrix(&self, context: MutationContext<'gc, '_>, matrix: &Matrix) {
-        self.0.write(context).base.set_matrix(context, matrix);
+        self.0.write(context).base.set_matrix(matrix);
         self.redraw_border(context);
     }
 

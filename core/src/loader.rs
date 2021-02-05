@@ -12,7 +12,7 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use crate::xml::XmlNode;
 use encoding_rs::UTF_8;
-use gc_arena::{Collect, CollectionContext, MutationContext};
+use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use std::string::FromUtf8Error;
 use std::sync::{Arc, Mutex, Weak};
@@ -171,12 +171,11 @@ impl<'gc> LoadManager<'gc> {
         loaded_clip: DisplayObject<'gc>,
         clip_object: Option<Object<'gc>>,
         queue: &mut ActionQueue<'gc>,
-        gc_context: MutationContext<'gc, '_>,
     ) {
         let mut invalidated_loaders = vec![];
 
         for (index, loader) in self.0.iter_mut() {
-            if loader.movie_clip_loaded(loaded_clip, clip_object, queue, gc_context) {
+            if loader.movie_clip_loaded(loaded_clip, clip_object, queue) {
                 invalidated_loaders.push(index);
             }
         }
@@ -702,7 +701,6 @@ impl<'gc> Loader<'gc> {
         loaded_clip: DisplayObject<'gc>,
         clip_object: Option<Object<'gc>>,
         queue: &mut ActionQueue<'gc>,
-        _gc_context: MutationContext<'gc, '_>,
     ) -> bool {
         let (clip, broadcaster, loader_status) = match self {
             Loader::Movie {
