@@ -193,7 +193,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.level
     }
 
-    fn set_level(&mut self, _context: MutationContext<'gc, '_>, level: u32) {
+    fn set_level(&mut self, level: u32) {
         self.level = level;
     }
 
@@ -1354,7 +1354,7 @@ macro_rules! impl_display_object_sansbounds {
             self.0.read().$field.level()
         }
         fn set_level(&self, gc_context: gc_arena::MutationContext<'gc, '_>, level: u32) {
-            self.0.write(gc_context).$field.set_level(gc_context, level)
+            self.0.write(gc_context).$field.set_level(level)
         }
         fn place_frame(&self) -> u16 {
             self.0.read().$field.place_frame()
