@@ -967,8 +967,8 @@ impl Player {
             }
 
             for level in levels {
-                for x in level.iter() {
-                    x.run_frame(update_context);
+                for object in level.iter() {
+                    object.run_frame(update_context);
                 }
             }
 

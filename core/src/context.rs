@@ -249,6 +249,12 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     }
 
     pub fn remove_from_execution_list(&mut self, node: DisplayObject<'gc>) -> bool {
+        if let Some(ctr) = node.as_container() {
+            for child in ctr.iter_render_list() {
+                self.remove_from_execution_list(child);
+            }
+        }
+
         let prev = node.prev_global();
         let next = node.next_global();
 

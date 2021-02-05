@@ -875,6 +875,7 @@ impl<'gc> ChildContainer<'gc> {
 
     /// Remove all children from the container's render and depth lists.
     pub fn clear(&mut self, _gc_context: MutationContext<'gc, '_>) {
+        // TODO: remove from global execution list?
         self.render_list.clear();
         self.depth_list.clear();
     }

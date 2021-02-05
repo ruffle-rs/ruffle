@@ -10,7 +10,7 @@ use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
-use gc_arena::{Collect, CollectionContext, MutationContext};
+use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::cmp::min;
@@ -42,7 +42,8 @@ pub use movie_clip::{MovieClip, Scene};
 pub use text::Text;
 pub use video::Video;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Collect)]
+#[collect(no_drop)]
 pub struct Level<'gc> {
     root: DisplayObject<'gc>,
     exec_list: Option<DisplayObject<'gc>>,
@@ -73,27 +74,14 @@ impl<'gc> Level<'gc> {
     }
 
     pub fn iter(&self) -> GlobalExecIter<'gc> {
-        GlobalExecIter::new(self.exec_list)
-    }
-}
-
-unsafe impl<'gc> Collect for Level<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        for display_object in self.iter() {
-            display_object.trace(cc);
+        GlobalExecIter {
+            head: self.exec_list,
         }
     }
 }
 
-#[derive(Copy, Clone)]
 pub struct GlobalExecIter<'gc> {
     head: Option<DisplayObject<'gc>>,
-}
-
-impl<'gc> GlobalExecIter<'gc> {
-    fn new(head: Option<DisplayObject<'gc>>) -> Self {
-        Self { head }
-    }
 }
 
 impl<'gc> Iterator for GlobalExecIter<'gc> {
@@ -152,10 +140,10 @@ pub struct DisplayObjectBase<'gc> {
 impl<'gc> Default for DisplayObjectBase<'gc> {
     fn default() -> Self {
         Self {
-            level: 0,
             parent: Default::default(),
             place_frame: Default::default(),
             depth: Default::default(),
+            level: Default::default(),
             transform: Default::default(),
             name: Default::default(),
             clip_depth: Default::default(),
