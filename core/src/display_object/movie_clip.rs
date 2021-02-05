@@ -2210,7 +2210,6 @@ impl<'gc> MovieClipData<'gc> {
                 //TODO: This should have an AVM2 onload path.
                 self.object.and_then(|o| o.as_avm1_object().ok()),
                 context.action_queue,
-                context.gc_context,
             );
         }
     }
