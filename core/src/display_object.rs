@@ -73,18 +73,18 @@ impl<'gc> Level<'gc> {
         self.exec_list = head;
     }
 
-    pub fn iter(&self) -> GlobalExecIter<'gc> {
-        GlobalExecIter {
+    pub fn iter(&self) -> ExecIter<'gc> {
+        ExecIter {
             head: self.exec_list,
         }
     }
 }
 
-pub struct GlobalExecIter<'gc> {
+pub struct ExecIter<'gc> {
     head: Option<DisplayObject<'gc>>,
 }
 
-impl<'gc> Iterator for GlobalExecIter<'gc> {
+impl<'gc> Iterator for ExecIter<'gc> {
     type Item = DisplayObject<'gc>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -92,7 +92,7 @@ impl<'gc> Iterator for GlobalExecIter<'gc> {
 
         self.head = self
             .head
-            .and_then(|display_cell| display_cell.next_global());
+            .and_then(|display_cell| display_cell.next_exec());
 
         cur
     }
@@ -121,17 +121,20 @@ pub struct DisplayObjectBase<'gc> {
     scale_y: Percent,
     skew: f64,
 
-    prev_global: Option<DisplayObject<'gc>>,
-    next_global: Option<DisplayObject<'gc>>,
+    /// The previous display object in order of execution.
+    prev_exec: Option<DisplayObject<'gc>>,
 
-    /// The sound transform of sounds playing via this display object.
-    sound_transform: SoundTransform,
+    /// The next display object in order of execution.
+    next_exec: Option<DisplayObject<'gc>>,
 
     /// The display object that we are being masked by.
     masker: Option<DisplayObject<'gc>>,
 
     /// The display object we are currently masking.
     maskee: Option<DisplayObject<'gc>>,
+
+    /// The sound transform of sounds playing via this display object.
+    sound_transform: SoundTransform,
 
     /// Bit flags for various display object properites.
     flags: DisplayObjectFlags,
@@ -151,8 +154,8 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             scale_x: Percent::from_unit(1.0),
             scale_y: Percent::from_unit(1.0),
             skew: 0.0,
-            prev_global: None,
-            next_global: None,
+            prev_exec: None,
+            next_exec: None,
             masker: None,
             maskee: None,
             sound_transform: Default::default(),
@@ -380,28 +383,28 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.parent = parent;
     }
 
-    fn prev_global(&self) -> Option<DisplayObject<'gc>> {
-        self.prev_global
+    fn prev_exec(&self) -> Option<DisplayObject<'gc>> {
+        self.prev_exec
     }
 
-    fn set_prev_global(
+    fn set_prev_exec(
         &mut self,
         _context: MutationContext<'gc, '_>,
         node: Option<DisplayObject<'gc>>,
     ) {
-        self.prev_global = node;
+        self.prev_exec = node;
     }
 
-    fn next_global(&self) -> Option<DisplayObject<'gc>> {
-        self.next_global
+    fn next_exec(&self) -> Option<DisplayObject<'gc>> {
+        self.next_exec
     }
 
-    fn set_next_global(
+    fn set_next_exec(
         &mut self,
         _context: MutationContext<'gc, '_>,
         node: Option<DisplayObject<'gc>>,
     ) {
-        self.next_global = node;
+        self.next_exec = node;
     }
 
     fn removed(&self) -> bool {
@@ -778,10 +781,10 @@ pub trait TDisplayObject<'gc>:
     fn set_clip_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
     fn parent(&self) -> Option<DisplayObject<'gc>>;
     fn set_parent(&self, gc_context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
-    fn prev_global(&self) -> Option<DisplayObject<'gc>>;
-    fn set_prev_global(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
-    fn next_global(&self) -> Option<DisplayObject<'gc>>;
-    fn set_next_global(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
+    fn prev_exec(&self) -> Option<DisplayObject<'gc>>;
+    fn set_prev_exec(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
+    fn next_exec(&self) -> Option<DisplayObject<'gc>>;
+    fn set_next_exec(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
     fn masker(&self) -> Option<DisplayObject<'gc>>;
     fn set_masker(
         &self,
@@ -1431,25 +1434,25 @@ macro_rules! impl_display_object_sansbounds {
         ) {
             self.0.write(context).$field.set_parent(parent)
         }
-        fn prev_global(&self) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.prev_global()
+        fn prev_exec(&self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.prev_exec()
         }
-        fn set_prev_global(
+        fn set_prev_exec(
             &self,
             context: gc_arena::MutationContext<'gc, '_>,
             node: Option<DisplayObject<'gc>>,
         ) {
-            self.0.write(context).$field.set_prev_global(context, node);
+            self.0.write(context).$field.set_prev_exec(context, node);
         }
-        fn next_global(&self) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.next_global()
+        fn next_exec(&self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.next_exec()
         }
-        fn set_next_global(
+        fn set_next_exec(
             &self,
             context: gc_arena::MutationContext<'gc, '_>,
             node: Option<DisplayObject<'gc>>,
         ) {
-            self.0.write(context).$field.set_next_global(context, node);
+            self.0.write(context).$field.set_next_exec(context, node);
         }
         fn masker(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.masker()
