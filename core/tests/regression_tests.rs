@@ -9,7 +9,7 @@ use ruffle_core::backend::{
     log::LogBackend,
     navigator::{NullExecutor, NullNavigatorBackend},
     render::NullRenderer,
-    storage::MemoryStorageBackend,
+    storage::{MemoryStorageBackend, StorageBackend},
     ui::NullUiBackend,
 };
 use ruffle_core::context::UpdateContext;
@@ -580,6 +580,44 @@ fn external_interface_avm1() -> Result<(), Error> {
             Ok(())
         },
     )
+}
+
+#[test]
+fn shared_object_avm1() -> Result<(), Error> {
+    // Test SharedObject persistence. Run an SWF that saves data
+    // to a shared object twice and verify that the data is saved.
+    let mut memory_storage_backend: Box<dyn StorageBackend> =
+        Box::new(MemoryStorageBackend::default());
+
+    // Initial run; no shared object data.
+    test_swf(
+        "tests/swfs/avm1/shared_object/test.swf",
+        1,
+        "tests/swfs/avm1/shared_object/output1.txt",
+        |_player| Ok(()),
+        |player| {
+            // Save the storage backend for next run.
+            let mut player = player.lock().unwrap();
+            std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+            Ok(())
+        },
+    )?;
+
+    // Re-run the SWF, verifying that the shared object persists.
+    test_swf(
+        "tests/swfs/avm1/shared_object/test.swf",
+        1,
+        "tests/swfs/avm1/shared_object/output2.txt",
+        |player| {
+            // Swap in the previous storage backend.
+            let mut player = player.lock().unwrap();
+            std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+            Ok(())
+        },
+        |_player| Ok(()),
+    )?;
+
+    Ok(())
 }
 
 #[test]
