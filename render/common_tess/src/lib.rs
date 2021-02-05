@@ -408,29 +408,36 @@ fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> Path
     }
 
     let mut builder = Path::builder();
-    let mut cmds = commands.into_iter().peekable();
-    while let Some(cmd) = cmds.next() {
+    let mut move_to = Some((Twips::default(), Twips::default()));
+    for cmd in commands {
         match cmd {
             DrawCommand::MoveTo { x, y } => {
-                builder.begin(point(x, y));
+                if move_to.is_none() {
+                    builder.end(false);
+                }
+                move_to = Some((x, y));
             }
             DrawCommand::LineTo { x, y } => {
+                if let Some((x, y)) = move_to.take() {
+                    builder.begin(point(x, y));
+                }
                 builder.line_to(point(x, y));
             }
             DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+                if let Some((x, y)) = move_to.take() {
+                    builder.begin(point(x, y));
+                }
                 builder.quadratic_bezier_to(point(x1, y1), point(x2, y2));
             }
         }
-
-        if let Some(DrawCommand::MoveTo { .. }) = cmds.peek() {
-            builder.end(false);
-        }
     }
 
-    if is_closed {
-        builder.close();
-    } else {
-        builder.end(false);
+    if move_to.is_none() {
+        if is_closed {
+            builder.close();
+        } else {
+            builder.end(false);
+        }
     }
 
     builder.build()
