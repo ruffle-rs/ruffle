@@ -1357,10 +1357,6 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame < frame)
             .for_each(|goto| run_goto_command(self, context, goto));
 
-        self.exit_frame(context);
-        self.enter_frame(context);
-        self.frame_constructed(context);
-
         // Next, run the final frame for the parent clip.
         // Re-run the final frame without display tags (DoAction, StartSound, etc.)
         // Note that this only happens if the frame exists and is loaded;
@@ -1378,8 +1374,6 @@ impl<'gc> MovieClip<'gc> {
             .iter()
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
-
-        self.run_frame_scripts(context);
     }
 
     fn construct_as_avm1_object(
