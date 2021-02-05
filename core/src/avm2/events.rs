@@ -381,7 +381,14 @@ pub fn dispatch_event_to_target<'gc>(
             &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
             activation,
         )?
-        .coerce_to_object(activation)?;
+        .coerce_to_object(activation);
+
+    if dispatch_list.is_err() {
+        // Objects with no dispatch list act as if they had an empty one
+        return Ok(());
+    }
+
+    let dispatch_list = dispatch_list.unwrap();
 
     let mut evtmut = event.as_event_mut(activation.context.gc_context).unwrap();
     let name = evtmut.event_type();
