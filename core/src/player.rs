@@ -1013,6 +1013,14 @@ impl Player {
         &mut self.renderer
     }
 
+    pub fn storage(&self) -> &Storage {
+        &self.storage
+    }
+
+    pub fn storage_mut(&mut self) -> &mut Storage {
+        &mut self.storage
+    }
+
     pub fn destroy(self) -> Renderer {
         self.renderer
     }

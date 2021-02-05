@@ -134,8 +134,8 @@ fn deserialize_array<'gc>(
 
         for entry in json_obj.iter() {
             let value = recursive_deserialize(entry.1.clone(), activation);
-            if let Ok(i) = entry.0.parse::<i32>() {
-                obj.set_array_element(i as usize, value, activation.context.gc_context);
+            if let Ok(i) = entry.0.parse::<usize>() {
+                obj.set_array_element(i, value, activation.context.gc_context);
             } else {
                 obj.define_value(
                     activation.context.gc_context,
