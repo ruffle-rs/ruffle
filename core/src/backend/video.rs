@@ -6,7 +6,7 @@ use swf::{VideoCodec, VideoDeblocking};
 
 pub type VideoStreamHandle = Index;
 
-type Error = Box<dyn std::error::Error>;
+pub type Error = Box<dyn std::error::Error>;
 
 /// An encoded video frame of some video codec.
 pub struct EncodedFrame<'a> {
@@ -17,7 +17,15 @@ pub struct EncodedFrame<'a> {
     data: &'a [u8],
 
     /// A caller-specified frame ID. Frame IDs must be consistent between
+    /// subsequent uses of the same data stream.
     frame_id: u32,
+}
+
+impl<'a> EncodedFrame<'a> {
+    /// Borrow this frame's data.
+    pub fn data(&'a self) -> &'a [u8] {
+        &self.data
+    }
 }
 
 /// What dependencies a given video frame has on any previous frames.
@@ -28,9 +36,8 @@ pub enum FrameDependency {
     /// This frame has one reference frame which must be completely decoded
     /// before this frame can be decoded.
     ///
-    /// The given frame identifier is relative to those provided by the caller
-    /// and not
-    OneRef(u32),
+    /// The reference frame is the previous frame in the video stream.
+    LastFrame,
 }
 
 /// A backend that provides access to some number of video decoders.
@@ -96,6 +103,14 @@ pub struct NullVideoBackend {
     streams: Arena<()>,
 }
 
+/// Implementation of video that does not decode any video.
+///
+/// Specifically:
+///
+///  * Registering a video stream fails silently
+///  * All video frames are silently marked as keyframes
+///  * Video stream decoding fails (since we can't pump arbitrary bitmaps into
+///    arbitrary renderers)
 impl NullVideoBackend {
     pub fn new() -> Self {
         Self {
