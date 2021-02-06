@@ -233,11 +233,21 @@ impl std::fmt::Display for Twips {
     }
 }
 
+/// A rectangular region defined by minimum
+/// and maximum x- and y-coordinate positions
+/// measured in [`Twips`].
 #[derive(Debug, PartialEq, Clone, Default)]
 pub struct Rectangle {
+    /// The minimum x-position of the rectangle.
     pub x_min: Twips,
+
+    /// The maximum x-position of the rectangle.
     pub x_max: Twips,
+
+    /// The minimum y-position of the rectangle.
     pub y_min: Twips,
+
+    /// The maximum y-position of the rectangle.
     pub y_max: Twips,
 }
 
