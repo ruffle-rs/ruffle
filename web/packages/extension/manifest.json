@@ -1,6 +1,6 @@
 {
     "manifest_version": 2,
-    "name": "Ruffle",
+    "name": "Ruffle Player",
     "description": "__MSG_description__",
     "default_locale": "en",
     "icons": {
