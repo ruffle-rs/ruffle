@@ -1,0 +1,25 @@
+//new String();
+
+//new String(undefined);
+undefined
+//new String(null);
+null
+//new String(false);
+false
+//new String(true);
+true
+//new String(0);
+0
+//new String(123);
+123
+//new String(-1.23);
+-1.23
+//new String("");
+
+//new String("abc012aáâ!?*你好こんにちはمَرحَبًا");
+abc012aáâ!?*你好こんにちはمَرحَبًا
+//new String(new Object());
+[object Object]
+//function f():void {}
+//new String(f);
+function Function() {}
