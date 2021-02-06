@@ -507,6 +507,7 @@ swf_tests! {
     (as3_string_constr, "avm2/string_constr", 1),
     (as3_string_length, "avm2/string_length", 1),
     (as3_string_char_at, "avm2/string_char_at", 1),
+    (as3_string_char_code_at, "avm2/string_char_code_at", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
