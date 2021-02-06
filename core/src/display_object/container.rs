@@ -480,10 +480,12 @@ macro_rules! impl_display_object_container {
             child.set_place_frame(context.gc_context, 0);
             child.set_parent(context.gc_context, Some((*self).into()));
 
-            self.0
-                .write(context.gc_context)
-                .$field
-                .insert_at_id(context, child, index);
+            let mut write = self.0.write(context.gc_context);
+            let inserted = write.$field.insert_at_id(child, index);
+            drop(write);
+            if inserted {
+                context.add_to_execution_list(child);
+            }
 
             if parent_changed {
                 dispatch_added_event(
@@ -774,12 +776,10 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// All children at or after the given ID will be shifted down in the
     /// render list. The child will *not* be put onto the depth list.
-    pub fn insert_at_id(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-        id: usize,
-    ) {
+    ///
+    /// Return `true` if the child was actually inserted, and `false` if it
+    /// was already present in the render list.
+    pub fn insert_at_id(&mut self, child: DisplayObject<'gc>, id: usize) -> bool {
         if let Some(old_id) = self
             .render_list
             .iter()
@@ -796,9 +796,10 @@ impl<'gc> ChildContainer<'gc> {
                 Ordering::Greater => self.render_list[id..old_id].rotate_right(1),
                 Ordering::Equal => {}
             }
+            false
         } else {
             self.render_list.insert(id, child);
-            context.add_to_execution_list(child);
+            true
         }
     }
 

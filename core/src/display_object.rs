@@ -90,9 +90,7 @@ impl<'gc> Iterator for ExecIter<'gc> {
     fn next(&mut self) -> Option<Self::Item> {
         let cur = self.head;
 
-        self.head = self
-            .head
-            .and_then(|display_cell| display_cell.next_exec());
+        self.head = self.head.and_then(|display_cell| display_cell.next_exec());
 
         cur
     }
