@@ -505,6 +505,7 @@ swf_tests! {
     (as3_movieclip_dispatchevent_target, "avm2/movieclip_dispatchevent_target", 1),
     (as3_movieclip_dispatchevent_selfadd, "avm2/movieclip_dispatchevent_selfadd", 1),
     (as3_string_constr, "avm2/string_constr", 1),
+    (as3_string_length, "avm2/string_length", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
