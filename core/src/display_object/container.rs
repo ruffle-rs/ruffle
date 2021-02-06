@@ -261,7 +261,7 @@ pub trait TDisplayObjectContainer<'gc>:
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
         from_lists: Lists,
-    ) -> bool;
+    );
 
     /// Remove a set of children identified by their render list indicies from
     /// this container's render and depth lists.
@@ -512,7 +512,7 @@ macro_rules! impl_display_object_container {
             context: &mut UpdateContext<'_, 'gc, '_>,
             child: DisplayObject<'gc>,
             from_lists: Lists,
-        ) -> bool {
+        ) {
             debug_assert!(DisplayObject::ptr_eq(
                 child.parent().unwrap(),
                 (*self).into()
@@ -522,29 +522,25 @@ macro_rules! impl_display_object_container {
             dispatch_removed_event(child, context);
 
             let mut write = self.0.write(context.gc_context);
-
-            let removed_from_depth_list = from_lists.contains(Lists::DEPTH)
-                && write.$field.remove_child_from_depth_list(child);
-            let removed_from_render_list = from_lists.contains(Lists::RENDER)
-                && write.$field.remove_child_from_render_list(child);
-
+            if from_lists.contains(Lists::DEPTH) {
+                write.$field.remove_child_from_depth_list(child);
+            }
+            if from_lists.contains(Lists::RENDER) {
+                write.$field.remove_child_from_render_list(child);
+            }
             drop(write);
+            if from_lists.contains(Lists::EXECUTION) {
+                context.remove_from_execution_list(child);
 
-            let removed_from_execution_list =
-                from_lists.contains(Lists::EXECUTION) && context.remove_from_execution_list(child);
-
-            if removed_from_execution_list {
                 child.unload(context);
 
-                //TODO: This is an awful, *awful* hack to deal with the fact
-                //that unloaded AVM1 clips see their parents, while AVM2 clips
-                //don't.
+                // TODO: This is an awful, *awful* hack to deal with the fact
+                // that unloaded AVM1 clips see their parents, while AVM2 clips
+                // don't.
                 if !matches!(child.object2(), Avm2Value::Undefined) {
                     child.set_parent(context.gc_context, None);
                 }
             }
-
-            removed_from_render_list || removed_from_depth_list || removed_from_execution_list
         }
 
         fn remove_range<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)

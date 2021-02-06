@@ -248,7 +248,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         }
     }
 
-    pub fn remove_from_execution_list(&mut self, node: DisplayObject<'gc>) -> bool {
+    pub fn remove_from_execution_list(&mut self, node: DisplayObject<'gc>) {
         if let Some(ctr) = node.as_container() {
             for child in ctr.iter_render_list() {
                 self.remove_from_execution_list(child);
@@ -272,12 +272,9 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             if let Some(head) = level.exec_list() {
                 if DisplayObject::ptr_eq(head, node) {
                     level.set_exec_list(next);
-                    return true;
                 }
             }
         }
-
-        prev.is_some() || next.is_some()
     }
 }
 
