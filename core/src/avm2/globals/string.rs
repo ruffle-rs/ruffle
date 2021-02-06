@@ -86,6 +86,36 @@ fn char_at<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `String.charCodeAt`
+fn char_code_at<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Value::String(s) = this.value_of(activation.context.gc_context)? {
+            // This function takes Number, so if we use coerce_to_i32 instead of coerce_to_number, the value may overflow.
+            let n = args
+                .get(0)
+                .unwrap_or(&Value::Number(0.0))
+                .coerce_to_number(activation)?;
+            if n < 0.0 {
+                return Ok(f64::NAN.into());
+            }
+
+            let index = if !n.is_nan() { n as usize } else { 0 };
+            let ret = s
+                .encode_utf16()
+                .nth(index)
+                .map(f64::from)
+                .unwrap_or(f64::NAN);
+            return Ok(ret.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `String`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -107,6 +137,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::as3_namespace(), "charAt"),
         Method::from_builtin(char_at),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::as3_namespace(), "charCodeAt"),
+        Method::from_builtin(char_code_at),
     ));
 
     class
