@@ -111,8 +111,6 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         };
     }
 
-    fn run_script(&self, _js_code: &str) {}
-
     fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
         let full_url = match self.movie_url.clone().join(url) {

@@ -35,96 +35,6 @@ impl WebNavigatorBackend {
             upgrade_to_https,
         }
     }
-}
-
-impl NavigatorBackend for WebNavigatorBackend {
-    fn navigate_to_url(
-        &self,
-        url: String,
-        window_spec: Option<String>,
-        vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
-    ) {
-        if let Some(window) = window() {
-            if let Some(url) = url.trim().strip_prefix("javascript:") {
-                let target = window_spec.unwrap_or_else(|| "".to_string());
-
-                if target.is_empty() || target == "_self" || target == "undefined" {
-                    self.run_script(url);
-                }
-            } else {
-                let window_url = if url.is_empty() {
-                    "".to_string()
-                } else if url.trim().is_empty() {
-                    "./".to_string()
-                } else {
-                    url.to_string()
-                };
-
-                let form_url = if let Ok(parsed_url) = Url::parse(&url) {
-                    self.pre_process_url(parsed_url).to_string()
-                } else {
-                    url.to_string()
-                };
-
-                //TODO: Should we return a result for failed opens? Does Flash care?
-                match (vars_method, window_spec) {
-                    (Some((navmethod, formvars)), window_spec) => {
-                        let document = match window.document() {
-                            Some(document) => document,
-                            None => return,
-                        };
-                        let body = match document.body() {
-                            Some(body) => body,
-                            None => return,
-                        };
-
-                        let form = document
-                            .create_element("form")
-                            .unwrap()
-                            .dyn_into::<web_sys::HtmlFormElement>()
-                            .unwrap();
-
-                        let _ = form.set_attribute(
-                            "method",
-                            match navmethod {
-                                NavigationMethod::GET => "get",
-                                NavigationMethod::POST => "post",
-                            },
-                        );
-
-                        let _ = form.set_attribute("action", &form_url);
-
-                        if let Some(target) = window_spec {
-                            let _ = form.set_attribute("target", &target);
-                        }
-
-                        for (k, v) in formvars.iter() {
-                            let hidden = document.create_element("input").unwrap();
-
-                            let _ = hidden.set_attribute("type", "hidden");
-                            let _ = hidden.set_attribute("name", k);
-                            let _ = hidden.set_attribute("value", v);
-
-                            let _ = form.append_child(&hidden);
-                        }
-
-                        let _ = body.append_child(&form);
-                        let _ = form.submit();
-                    }
-                    (_, Some(ref window_name)) if !window_name.is_empty() => {
-                        if !window_url.is_empty() {
-                            let _ = window.open_with_url_and_target(&window_url, window_name);
-                        }
-                    }
-                    _ => {
-                        if !window_url.is_empty() {
-                            let _ = window.location().assign(&window_url);
-                        }
-                    }
-                };
-            }
-        }
-    }
 
     fn run_script(&self, js_code: &str) {
         if self.allow_script_access {
@@ -137,6 +47,105 @@ impl NavigatorBackend for WebNavigatorBackend {
 
             let _ = body.append_child(&script);
             let _ = body.remove_child(&script);
+        } else {
+            log::error!("SWF tried to run a script, but script access is not allowed");
+        }
+    }
+}
+
+impl NavigatorBackend for WebNavigatorBackend {
+    fn navigate_to_url(
+        &self,
+        url: String,
+        window_spec: Option<String>,
+        vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
+    ) {
+        const JAVASCRIPT_PREFIX: &str = "javascript:";
+
+        if let Some(window) = window() {
+            let url_trimmed = url.trim();
+            if url_trimmed
+                .get(..JAVASCRIPT_PREFIX.len())
+                .unwrap_or_default()
+                .eq_ignore_ascii_case(JAVASCRIPT_PREFIX)
+            {
+                let target = window_spec.unwrap_or_else(|| "".to_string());
+                if target.is_empty() || target == "_self" || target == "undefined" {
+                    self.run_script(&url);
+                }
+                return;
+            }
+
+            let window_url = if url.is_empty() {
+                "".to_string()
+            } else if url_trimmed.is_empty() {
+                "./".to_string()
+            } else {
+                url.to_string()
+            };
+
+            let form_url = if let Ok(parsed_url) = Url::parse(&url) {
+                self.pre_process_url(parsed_url).to_string()
+            } else {
+                url.to_string()
+            };
+
+            //TODO: Should we return a result for failed opens? Does Flash care?
+            match (vars_method, window_spec) {
+                (Some((navmethod, formvars)), window_spec) => {
+                    let document = match window.document() {
+                        Some(document) => document,
+                        None => return,
+                    };
+                    let body = match document.body() {
+                        Some(body) => body,
+                        None => return,
+                    };
+
+                    let form = document
+                        .create_element("form")
+                        .unwrap()
+                        .dyn_into::<web_sys::HtmlFormElement>()
+                        .unwrap();
+
+                    let _ = form.set_attribute(
+                        "method",
+                        match navmethod {
+                            NavigationMethod::GET => "get",
+                            NavigationMethod::POST => "post",
+                        },
+                    );
+
+                    let _ = form.set_attribute("action", &form_url);
+
+                    if let Some(target) = window_spec {
+                        let _ = form.set_attribute("target", &target);
+                    }
+
+                    for (k, v) in formvars.iter() {
+                        let hidden = document.create_element("input").unwrap();
+
+                        let _ = hidden.set_attribute("type", "hidden");
+                        let _ = hidden.set_attribute("name", k);
+                        let _ = hidden.set_attribute("value", v);
+
+                        let _ = form.append_child(&hidden);
+                    }
+
+                    let _ = body.append_child(&form);
+                    let _ = form.submit();
+                }
+                (_, Some(ref window_name)) if !window_name.is_empty() => {
+                    if !window_url.is_empty() {
+                        let _ = window.open_with_url_and_target(&window_url, window_name);
+                    }
+                }
+                _ => {
+                    if !window_url.is_empty() {
+                        let _ = window.location().assign(&window_url);
+                    }
+                }
+            };
         }
     }
 
