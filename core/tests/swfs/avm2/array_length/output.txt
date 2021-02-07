@@ -1,0 +1,15 @@
+// [].length;
+0
+// [0, 1, 2, 3, 4].length;
+5
+// [undefined].length;
+1
+// var a = [0, 1, 2];
+// a.length;
+3
+// a.length = 5;
+// a
+0,1,2,,
+// a.length = 0;
+// a
+

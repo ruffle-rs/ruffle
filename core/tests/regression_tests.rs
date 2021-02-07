@@ -432,6 +432,7 @@ swf_tests! {
     (as3_array_sort, "avm2/array_sort", 1),
     (as3_array_sorton, "avm2/array_sorton", 1),
     (as3_array_hasownproperty, "avm2/array_hasownproperty", 1),
+    (as3_array_length, "avm2/array_length", 1),
     (stage_property_representation, "avm1/stage_property_representation", 1),
     (as3_timeline_scripts, "avm2/timeline_scripts", 3),
     (as3_movieclip_properties, "avm2/movieclip_properties", 4),

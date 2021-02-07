@@ -58,7 +58,7 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `Array.length`
+/// Implements `Array.length`'s getter
 pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -67,6 +67,25 @@ pub fn length<'gc>(
     if let Some(this) = this {
         if let Some(array) = this.as_array_storage() {
             return Ok(array.length().into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.length`'s setter
+pub fn set_length<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+            let size = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u32(activation)?;
+            array.set_length(size as usize);
         }
     }
 
@@ -1219,6 +1238,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     class.write(mc).define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "length"),
         Method::from_builtin(length),
+    ));
+    class.write(mc).define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "length"),
+        Method::from_builtin(set_length),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
