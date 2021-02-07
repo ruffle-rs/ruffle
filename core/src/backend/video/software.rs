@@ -41,39 +41,33 @@ impl VideoBackend for SoftwareVideoBackend {
         codec: VideoCodec,
         _filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
-        match codec {
-            _ => Err(format!("Unsupported video codec type {:?}", codec).into()),
-        }
+        Err(format!("Unsupported video codec type {:?}", codec).into())
     }
 
     fn preload_video_stream_frame(
         &mut self,
         stream: VideoStreamHandle,
-        encoded_frame: EncodedFrame<'_>,
+        _encoded_frame: EncodedFrame<'_>,
     ) -> Result<FrameDependency, Error> {
-        let stream = self
+        let _stream = self
             .streams
             .get_mut(stream)
             .ok_or("Unregistered video stream")?;
 
-        match stream {
-            _ => unreachable!(),
-        }
+        unreachable!()
     }
 
     fn decode_video_stream_frame(
         &mut self,
         stream: VideoStreamHandle,
-        encoded_frame: EncodedFrame<'_>,
-        renderer: &mut dyn RenderBackend,
+        _encoded_frame: EncodedFrame<'_>,
+        _renderer: &mut dyn RenderBackend,
     ) -> Result<BitmapInfo, Error> {
-        let stream = self
+        let _stream = self
             .streams
             .get_mut(stream)
             .ok_or("Unregistered video stream")?;
 
-        match stream {
-            _ => unreachable!(),
-        }
+        unreachable!()
     }
 }
