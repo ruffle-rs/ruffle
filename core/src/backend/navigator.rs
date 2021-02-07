@@ -172,9 +172,6 @@ pub trait NavigatorBackend {
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     );
 
-    /// Execute a JavaScript code.
-    fn run_script(&self, js_code: &str);
-
     /// Fetch data at a given URL and return it some time in the future.
     fn fetch(&self, url: &str, request_options: RequestOptions) -> OwnedFuture<Vec<u8>, Error>;
 
@@ -361,8 +358,6 @@ impl NavigatorBackend for NullNavigatorBackend {
         _vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
     }
-
-    fn run_script(&self, _js_code: &str) {}
 
     fn fetch(&self, url: &str, _opts: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         let mut path = self.relative_base_path.clone();
