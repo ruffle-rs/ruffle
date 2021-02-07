@@ -16,5 +16,5 @@ package() {
 	cd "$srcdir/"
 	install -Dm755 -t "$pkgdir/usr/bin/" ruffle
 	install -Dm644 -t "$pkgdir/usr/share/doc/$pkgname/" README.md
-	install -Dm644 -t "$pkgdir/usr/share/licenses/$pkgname/" LICENSE_*
+	install -Dm644 -t "$pkgdir/usr/share/licenses/$pkgname/" LICENSE.md
 }

@@ -98,16 +98,18 @@ Sincere thanks to the diamond level sponsors of Ruffle:
 
 ## License
 
-Licensed under either of
+Ruffle is licensed under either of
 
-- Apache License, Version 2.0 ([LICENSE_APACHE](LICENSE_APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE_MIT](LICENSE_MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+- MIT License (http://opensource.org/licenses/MIT)
 
 at your option.
 
+Ruffle depends on third-party libraries under compatible licenses. See [LICENSE.md](LICENSE.md) for full information.
+
 ### Contribution
 
-Ruffle welcomes contribution from everyone. See CONTRIBUTING.md for help getting started.
+Ruffle welcomes contribution from everyone. See [CONTRIBUTING.md](CONTRIBUTING.md) for help getting started.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you shall be dual licensed as above, without any
