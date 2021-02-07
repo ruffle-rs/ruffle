@@ -137,8 +137,7 @@ jobs:
         run: |
           mkdir package
           cp README.md package/README.md
-          cp LICENSE_APACHE package/LICENSE_APACHE
-          cp LICENSE_MIT package/LICENSE_MIT
+          cp LICENSE.md package/LICENSE.md
 
       - name: Package Windows
         if: matrix.os == 'windows-latest'
