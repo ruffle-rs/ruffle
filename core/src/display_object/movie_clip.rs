@@ -31,7 +31,7 @@ use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
-use swf::read::SwfReadExt;
+use swf::Tag;
 use swf::{FillStyle, FrameLabelData, LineStyle};
 
 type FrameNumber = u16;
@@ -165,18 +165,14 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
     ) {
-        use swf::TagCode;
         // TODO: Re-creating static data because preload step occurs after construction.
         // Should be able to hoist this up somewhere, or use MaybeUninit.
         let mut static_data = (&*self.0.read().static_data).clone();
-        let data = self.0.read().static_data.swf.clone();
-        let mut reader = data.read_from(0);
         let mut cur_frame = 1;
         let mut ids = fnv::FnvHashMap::default();
         let mut preload_stream_handle = None;
-        let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
-            TagCode::FileAttributes => {
-                let attributes = reader.read_file_attributes()?;
+        let mut tag_callback = |tag| match tag {
+            Tag::FileAttributes(attributes) => {
                 let avm_type = if attributes.is_action_script_3 {
                     log::warn!("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
                     AvmType::Avm2
@@ -192,214 +188,141 @@ impl<'gc> MovieClip<'gc> {
 
                 Ok(())
             }
-            TagCode::CsmTextSettings => self
+            Tag::CsmTextSettings(settings) => self
                 .0
                 .write(context.gc_context)
-                .csm_text_settings(context, reader),
-            TagCode::DefineBits => self
+                .csm_text_settings(context, settings),
+            Tag::DefineBits { id, jpeg_data } => self
                 .0
                 .write(context.gc_context)
-                .define_bits(context, reader, tag_len),
-            TagCode::DefineBitsJpeg2 => self
+                .define_bits(context, id, jpeg_data),
+            Tag::DefineBitsJpeg2 { id, jpeg_data } => self
                 .0
                 .write(context.gc_context)
-                .define_bits_jpeg_2(context, reader, tag_len),
-            TagCode::DefineBitsJpeg3 => self
+                .define_bits_jpeg_2(context, id, jpeg_data),
+            Tag::DefineBitsJpeg3(define_bits) => self
                 .0
                 .write(context.gc_context)
-                .define_bits_jpeg_3(context, reader, tag_len),
-            TagCode::DefineBitsJpeg4 => self
+                .define_bits_jpeg_3(context, &define_bits),
+            Tag::DefineBitsLossless(define_bits) => self
                 .0
                 .write(context.gc_context)
-                .define_bits_jpeg_4(context, reader, tag_len),
-            TagCode::DefineBitsLossless => self
+                .define_bits_lossless(context, &define_bits),
+            Tag::DefineButton(button) | Tag::DefineButton2(button) => self
                 .0
                 .write(context.gc_context)
-                .define_bits_lossless(context, reader, 1),
-            TagCode::DefineBitsLossless2 => self
+                .define_button(context, &button),
+            Tag::DefineButtonColorTransform(button_colors) => self
                 .0
                 .write(context.gc_context)
-                .define_bits_lossless(context, reader, 2),
-            TagCode::DefineButton => self
+                .define_button_cxform(context, button_colors),
+            Tag::DefineButtonSound(button_sounds) => self
                 .0
                 .write(context.gc_context)
-                .define_button_1(context, reader),
-            TagCode::DefineButton2 => self
+                .define_button_sound(context, *button_sounds),
+            Tag::DefineEditText(edit_text) => self
                 .0
                 .write(context.gc_context)
-                .define_button_2(context, reader),
-            TagCode::DefineButtonCxform => self
+                .define_edit_text(context, *edit_text),
+            Tag::DefineFont(font) => self
                 .0
                 .write(context.gc_context)
-                .define_button_cxform(context, reader, tag_len),
-            TagCode::DefineButtonSound => self
+                .define_font_1(context, *font),
+            Tag::DefineFont2(font) => self
                 .0
                 .write(context.gc_context)
-                .define_button_sound(context, reader),
-            TagCode::DefineEditText => self
+                .define_font_2(context, &font),
+            Tag::DefineFont4(font) => self
                 .0
                 .write(context.gc_context)
-                .define_edit_text(context, reader),
-            TagCode::DefineFont => self
+                .define_font_4(context, &font),
+            Tag::DefineMorphShape(define_morph_shape) => self
                 .0
                 .write(context.gc_context)
-                .define_font_1(context, reader),
-            TagCode::DefineFont2 => self
+                .define_morph_shape(context, morph_shapes, &define_morph_shape),
+            Tag::DefineShape(shape) => self
                 .0
                 .write(context.gc_context)
-                .define_font_2(context, reader),
-            TagCode::DefineFont3 => self
+                .define_shape(context, shape),
+            Tag::DefineSound(sound) => self
                 .0
                 .write(context.gc_context)
-                .define_font_3(context, reader),
-            TagCode::DefineFont4 => self
-                .0
-                .write(context.gc_context)
-                .define_font_4(context, reader),
-            TagCode::DefineMorphShape => self.0.write(context.gc_context).define_morph_shape(
-                context,
-                reader,
-                morph_shapes,
-                1,
-            ),
-            TagCode::DefineMorphShape2 => self.0.write(context.gc_context).define_morph_shape(
-                context,
-                reader,
-                morph_shapes,
-                2,
-            ),
-            TagCode::DefineShape => self
-                .0
-                .write(context.gc_context)
-                .define_shape(context, reader, 1),
-            TagCode::DefineShape2 => self
-                .0
-                .write(context.gc_context)
-                .define_shape(context, reader, 2),
-            TagCode::DefineShape3 => self
-                .0
-                .write(context.gc_context)
-                .define_shape(context, reader, 3),
-            TagCode::DefineShape4 => self
-                .0
-                .write(context.gc_context)
-                .define_shape(context, reader, 4),
-            TagCode::DefineSound => self
-                .0
-                .write(context.gc_context)
-                .define_sound(context, reader),
-            TagCode::DefineSprite => self.0.write(context.gc_context).define_sprite(
-                context,
-                reader,
-                tag_len,
-                morph_shapes,
-            ),
-            TagCode::DefineText => self
-                .0
-                .write(context.gc_context)
-                .define_text(context, reader, 1),
-            TagCode::DefineText2 => self
-                .0
-                .write(context.gc_context)
-                .define_text(context, reader, 2),
-            TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
-            TagCode::DoAbc => self.do_abc(context, reader, tag_len),
-            TagCode::SymbolClass => self.symbol_class(context, reader),
-            TagCode::DefineSceneAndFrameLabelData => {
-                self.scene_and_frame_labels(reader, &mut static_data)
-            }
-            TagCode::ExportAssets => self
-                .0
-                .write(context.gc_context)
-                .export_assets(context, reader),
-            TagCode::FrameLabel => self.0.write(context.gc_context).frame_label(
-                context,
-                reader,
-                tag_len,
-                cur_frame,
-                &mut static_data,
-            ),
-            TagCode::JpegTables => self
-                .0
-                .write(context.gc_context)
-                .jpeg_tables(context, reader, tag_len),
-            TagCode::PlaceObject => self.0.write(context.gc_context).preload_place_object(
-                context,
-                reader,
-                tag_len,
-                &mut ids,
-                morph_shapes,
-                1,
-            ),
-            TagCode::PlaceObject2 => self.0.write(context.gc_context).preload_place_object(
-                context,
-                reader,
-                tag_len,
-                &mut ids,
-                morph_shapes,
-                2,
-            ),
-            TagCode::PlaceObject3 => self.0.write(context.gc_context).preload_place_object(
-                context,
-                reader,
-                tag_len,
-                &mut ids,
-                morph_shapes,
-                3,
-            ),
-            TagCode::PlaceObject4 => self.0.write(context.gc_context).preload_place_object(
-                context,
-                reader,
-                tag_len,
-                &mut ids,
-                morph_shapes,
-                4,
-            ),
-            TagCode::RemoveObject => self
-                .0
-                .write(context.gc_context)
-                .preload_remove_object(context, reader, &mut ids, 1),
-            TagCode::RemoveObject2 => self
-                .0
-                .write(context.gc_context)
-                .preload_remove_object(context, reader, &mut ids, 2),
-            TagCode::ShowFrame => {
+                .define_sound(context, &sound),
+            Tag::DefineSprite(sprite) => {
                 self.0
                     .write(context.gc_context)
-                    .preload_show_frame(context, reader, &mut cur_frame)
+                    .define_sprite(context, morph_shapes, sprite)
             }
-            TagCode::ScriptLimits => self
+            Tag::DefineText(text) => self.0.write(context.gc_context).define_text(context, &text),
+            Tag::DoAbc(do_abc) => self.do_abc(context, do_abc),
+            Tag::DoInitAction { id, action_data } => self.do_init_action(context, id, action_data),
+            Tag::SymbolClass(symbol_class_link) => self.symbol_class(context, &symbol_class_link),
+            Tag::DefineSceneAndFrameLabelData(data) => {
+                self.scene_and_frame_labels(&mut static_data, data)
+            }
+            Tag::ExportAssets(export_assets) => self
                 .0
                 .write(context.gc_context)
-                .script_limits(reader, context.avm1),
-            TagCode::SoundStreamHead => self.0.write(context.gc_context).preload_sound_stream_head(
+                .export_assets(context, export_assets),
+            Tag::FrameLabel(label) => self.0.write(context.gc_context).frame_label(
                 context,
-                reader,
-                &mut preload_stream_handle,
+                cur_frame,
                 &mut static_data,
-                1,
+                &label,
             ),
-            TagCode::SoundStreamHead2 => {
+            Tag::JpegTables(tables) => self
+                .0
+                .write(context.gc_context)
+                .jpeg_tables(context, &tables),
+            Tag::PlaceObject(place_object) => self
+                .0
+                .write(context.gc_context)
+                .preload_place_object(context, &mut ids, morph_shapes, &place_object),
+            Tag::RemoveObject(remove_object) => self
+                .0
+                .write(context.gc_context)
+                .preload_remove_object(context, &mut ids, remove_object),
+            Tag::ShowFrame => self
+                .0
+                .write(context.gc_context)
+                .preload_show_frame(context, &mut cur_frame),
+            Tag::ScriptLimits {
+                max_recursion_depth,
+                timeout_in_seconds,
+            } => self.0.write(context.gc_context).script_limits(
+                context.avm1,
+                max_recursion_depth,
+                timeout_in_seconds,
+            ),
+            Tag::SoundStreamHead(head) | Tag::SoundStreamHead2(head) => {
                 self.0.write(context.gc_context).preload_sound_stream_head(
                     context,
-                    reader,
                     &mut preload_stream_handle,
                     &mut static_data,
-                    2,
+                    *head,
                 )
             }
-            TagCode::SoundStreamBlock => {
-                self.0.write(context.gc_context).preload_sound_stream_block(
-                    context,
-                    reader,
-                    preload_stream_handle,
-                    cur_frame,
-                    tag_len,
-                )
-            }
+            Tag::SoundStreamBlock(block) => self
+                .0
+                .write(context.gc_context)
+                .preload_sound_stream_block(context, preload_stream_handle, cur_frame, block),
             _ => Ok(()),
         };
-        let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
+        let data = self.0.read().static_data.swf.clone();
+        let mut reader = data.read_from(0);
+        loop {
+            match reader.read_tag() {
+                Ok(tag) => {
+                    if tag == Tag::End {
+                        break;
+                    }
+                    if let Err(e) = tag_callback(tag) {
+                        log::error!("Error running tag callback: {}", e);
+                    }
+                }
+                Err(e) => log::error!("Error reading tag: {}", e),
+            }
+        }
 
         // Finalize audio stream.
         if let Some(stream) = preload_stream_handle {
@@ -416,8 +339,8 @@ impl<'gc> MovieClip<'gc> {
     fn do_init_action(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'_>,
-        tag_len: usize,
+        _id: swf::CharacterId,
+        action_data: &[u8],
     ) -> DecodeResult {
         let movie = self.movie().unwrap();
         let library = context.library.library_for_movie_mut(movie);
@@ -431,13 +354,13 @@ impl<'gc> MovieClip<'gc> {
 
         // TODO: Init actions are supposed to be executed once, and it gives a
         // sprite ID... how does that work?
-        let _sprite_id = reader.read_u16()?;
+
         let slice = self
             .0
             .read()
             .static_data
             .swf
-            .resize_to_reader(reader, tag_len)
+            .to_subslice(action_data)
             .ok_or_else(|| {
                 std::io::Error::new(
                     std::io::ErrorKind::Other,
@@ -456,12 +379,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     #[inline]
-    fn do_abc(
-        self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'_>,
-        tag_len: usize,
-    ) -> DecodeResult {
+    fn do_abc(self, context: &mut UpdateContext<'_, 'gc, '_>, do_abc: swf::DoAbc) -> DecodeResult {
         let movie = self.movie().unwrap();
         let library = context.library.library_for_movie_mut(movie);
         if let Err(e) = library.check_avm_type(AvmType::Avm2) {
@@ -470,30 +388,24 @@ impl<'gc> MovieClip<'gc> {
             return Ok(());
         }
 
-        // Queue the actions.
-        // TODO: The tag reader parses the entire ABC file, instead of just
-        // giving us a `SwfSlice` for later parsing, so we have to replcate the
-        // *entire* parsing code here. This sucks.
-        let flags = reader.read_u32()?;
-        let name = reader.read_string()?.to_string_lossy(reader.encoding());
-        let is_lazy_initialize = flags & 1 != 0;
-        let domain = library.avm2_domain();
-
-        // The rest of the tag is an ABC file so we can take our SwfSlice now.
         let slice = self
             .0
             .read()
             .static_data
             .swf
-            .resize_to_reader(reader, tag_len)
+            .to_subslice(do_abc.data)
             .ok_or_else(|| {
                 std::io::Error::new(
                     std::io::ErrorKind::Other,
-                    "Invalid source or tag length when running init action",
+                    "Invalid source or tag length when running do abc",
                 )
             })?;
 
-        if let Err(e) = Avm2::load_abc(slice, &name, is_lazy_initialize, context, domain) {
+        // Queue the actions.
+        let name = do_abc.name.to_string_lossy(context.swf.encoding());
+        let domain = library.avm2_domain();
+
+        if let Err(e) = Avm2::load_abc(slice, &name, do_abc.is_lazy_initialize, context, domain) {
             log::warn!("Error loading ABC file: {}", e);
         }
 
@@ -504,18 +416,16 @@ impl<'gc> MovieClip<'gc> {
     fn symbol_class(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'_>,
+        symbols: &[swf::SymbolClassLink],
     ) -> DecodeResult {
+        let encoding = context.swf.encoding();
         let movie = self
             .movie()
             .ok_or("Attempted to set symbol classes on movie without any")?;
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
-        let num_symbols = reader.read_u16()?;
-
-        for _ in 0..num_symbols {
-            let id = reader.read_u16()?;
-            let class_name = reader.read_string()?.to_string_lossy(reader.encoding());
+        for symbol in symbols.iter() {
+            let class_name = symbol.class_name.to_string_lossy(encoding);
 
             if let Some(name) =
                 Avm2QName::from_symbol_class(&class_name, activation.context.gc_context)
@@ -536,17 +446,19 @@ impl<'gc> MovieClip<'gc> {
                             .library
                             .library_for_movie_mut(movie.clone());
 
-                        if id == 0 {
+                        if symbol.id == 0 {
                             //TODO: This assumes only the root movie has `SymbolClass` tags.
                             self.set_avm2_constructor(activation.context.gc_context, Some(proto));
                             self.construct_as_avm2_object(&mut activation.context, self.into());
-                        } else if let Some(Character::MovieClip(mc)) = library.character_by_id(id) {
+                        } else if let Some(Character::MovieClip(mc)) =
+                            library.character_by_id(symbol.id)
+                        {
                             mc.set_avm2_constructor(activation.context.gc_context, Some(proto))
                         } else {
                             log::warn!(
                                 "Symbol class {} cannot be assigned to invalid character id {}",
                                 class_name,
-                                id
+                                symbol.id
                             );
                         }
                     }
@@ -565,13 +477,14 @@ impl<'gc> MovieClip<'gc> {
     #[inline]
     fn scene_and_frame_labels(
         self,
-        reader: &mut SwfStream<'_>,
         static_data: &mut MovieClipStatic,
+        mut sfl_data: swf::DefineSceneAndFrameLabelData,
     ) -> DecodeResult {
-        let mut sfl_data = reader.read_define_scene_and_frame_label_data()?;
         sfl_data
             .scenes
             .sort_unstable_by(|s1, s2| s1.frame_num.cmp(&s2.frame_num));
+
+        let encoding = self.movie().unwrap().encoding();
 
         for (i, FrameLabelData { frame_num, label }) in sfl_data.scenes.iter().enumerate() {
             let start = *frame_num as u16 + 1;
@@ -581,7 +494,7 @@ impl<'gc> MovieClip<'gc> {
                 .map(|fld| fld.frame_num + 1)
                 .unwrap_or_else(|| static_data.total_frames as u32 + 1);
 
-            let label = label.to_string_lossy(reader.encoding());
+            let label = label.to_string_lossy(encoding);
             static_data.scene_labels.insert(
                 label.clone(),
                 Scene {
@@ -593,10 +506,9 @@ impl<'gc> MovieClip<'gc> {
         }
 
         for FrameLabelData { frame_num, label } in sfl_data.frame_labels {
-            static_data.frame_labels.insert(
-                label.to_string_lossy(reader.encoding()),
-                frame_num as u16 + 1,
-            );
+            static_data
+                .frame_labels
+                .insert(label.to_string_lossy(encoding), frame_num as u16 + 1);
         }
 
         Ok(())
@@ -2064,16 +1976,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_bits_lossless(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        version: u8,
+        define_bits: &swf::DefineBitsLossless,
     ) -> DecodeResult {
-        let define_bits_lossless = reader.read_define_bits_lossless(version)?;
-        let bitmap_info = context
-            .renderer
-            .register_bitmap_png(&define_bits_lossless)?;
+        let bitmap_info = context.renderer.register_bitmap_png(define_bits)?;
         let bitmap = crate::display_object::Bitmap::new(
             context,
-            define_bits_lossless.id,
+            define_bits.id,
             bitmap_info.handle,
             bitmap_info.width,
             bitmap_info.height,
@@ -2081,7 +1989,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(define_bits_lossless.id, Character::Bitmap(bitmap));
+            .register_character(define_bits.id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -2089,13 +1997,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_morph_shape(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
-        version: u8,
+        swf_shape: &swf::DefineMorphShape,
     ) -> DecodeResult {
         // Certain backends may have to preload morph shape frames, so defer registering until the end.
-        let swf_shape = reader.read_define_morph_shape(version)?;
-        let morph_shape = MorphShapeStatic::from_swf_tag(context, &swf_shape, self.movie());
+        let morph_shape = MorphShapeStatic::from_swf_tag(context, swf_shape, self.movie());
         morph_shapes.insert(swf_shape.id, morph_shape);
         Ok(())
     }
@@ -2104,12 +2010,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_shape(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        version: u8,
+        shape: swf::Shape,
     ) -> DecodeResult {
-        let swf_shape = reader.read_define_shape(version)?;
-        let id = swf_shape.id;
-        let graphic = Graphic::from_swf_tag(context, swf_shape, self.movie());
+        let id = shape.id;
+        let graphic = Graphic::from_swf_tag(context, shape, self.movie());
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -2121,18 +2025,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn preload_place_object(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
         ids: &mut fnv::FnvHashMap<Depth, CharacterId>,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
-        version: u8,
+        place_object: &swf::PlaceObject,
     ) -> DecodeResult {
         use swf::PlaceObjectAction;
-        let place_object = if version == 1 {
-            reader.read_place_object(tag_len)
-        } else {
-            reader.read_place_object_2_or_3(version)
-        }?;
         match place_object.action {
             PlaceObjectAction::Place(id) => {
                 if let Some(morph_shape) = morph_shapes.get_mut(&id) {
@@ -2171,13 +2068,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn preload_sound_stream_block(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
         stream: Option<PreloadStreamHandle>,
         cur_frame: FrameNumber,
-        tag_len: usize,
+        data: swf::SoundStreamBlock,
     ) -> DecodeResult {
         if let Some(stream) = stream {
-            let data = &reader.get_ref()[..tag_len];
             context
                 .audio
                 .preload_sound_stream_block(stream, cur_frame, data);
@@ -2190,12 +2085,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn preload_sound_stream_head(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
         stream: &mut Option<PreloadStreamHandle>,
         static_data: &mut MovieClipStatic,
-        _version: u8,
+        audio_stream_info: swf::SoundStreamHead,
     ) -> DecodeResult {
-        let audio_stream_info = reader.read_sound_stream_head()?;
         *stream = context.audio.preload_sound_stream_head(&audio_stream_info);
         static_data.audio_stream_info = Some(audio_stream_info);
         Ok(())
@@ -2204,9 +2097,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn csm_text_settings(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
+        settings: swf::CsmTextSettings,
     ) -> DecodeResult {
-        let settings = reader.read_csm_text_settings()?;
         let library = context.library.library_for_movie_mut(self.movie());
         match library.character_by_id(settings.id) {
             Some(Character::Text(text)) => {
@@ -2235,16 +2127,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_bits(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
+        id: CharacterId,
+        jpeg_data: &[u8],
     ) -> DecodeResult {
-        use std::io::Read;
-        let id = reader.read_u16()?;
-        let data_len = tag_len - 2;
-        let mut jpeg_data = Vec::with_capacity(data_len);
-        reader.get_mut().read_to_end(&mut jpeg_data)?;
         let bitmap_info = context.renderer.register_bitmap_jpeg(
-            &jpeg_data,
+            jpeg_data,
             context
                 .library
                 .library_for_movie_mut(self.movie())
@@ -2268,14 +2155,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_bits_jpeg_2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
+        id: CharacterId,
+        jpeg_data: &[u8],
     ) -> DecodeResult {
-        use std::io::Read;
-        let id = reader.read_u16()?;
-        let data_len = tag_len - 2;
-        let mut jpeg_data = Vec::with_capacity(data_len);
-        reader.get_mut().read_to_end(&mut jpeg_data)?;
         let bitmap_info = context.renderer.register_bitmap_jpeg_2(&jpeg_data)?;
         let bitmap = crate::display_object::Bitmap::new(
             context,
@@ -2295,31 +2177,14 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_bits_jpeg_3(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
+        define_bits: &swf::DefineBitsJpeg3,
     ) -> DecodeResult {
-        use std::io::Read;
-        let id = reader.read_u16()?;
-        let jpeg_len = reader.read_u32()? as usize;
-        let alpha_len = tag_len
-            .checked_sub(jpeg_len + 6)
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "Invalid jpeg length"))?;
-        let mut jpeg_data = Vec::with_capacity(jpeg_len);
-        let mut alpha_data = Vec::with_capacity(alpha_len);
-        reader
-            .get_mut()
-            .take(jpeg_len as u64)
-            .read_to_end(&mut jpeg_data)?;
-        reader
-            .get_mut()
-            .take(alpha_len as u64)
-            .read_to_end(&mut alpha_data)?;
         let bitmap_info = context
             .renderer
-            .register_bitmap_jpeg_3(&jpeg_data, &alpha_data)?;
+            .register_bitmap_jpeg_3(define_bits.data, define_bits.alpha_data)?;
         let bitmap = Bitmap::new(
             context,
-            id,
+            define_bits.id,
             bitmap_info.handle,
             bitmap_info.width,
             bitmap_info.height,
@@ -2327,80 +2192,18 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(id, Character::Bitmap(bitmap));
+            .register_character(define_bits.id, Character::Bitmap(bitmap));
         Ok(())
     }
 
     #[inline]
-    fn define_bits_jpeg_4(
+    fn define_button(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
+        swf_button: &swf::Button,
     ) -> DecodeResult {
-        use std::io::Read;
-        let id = reader.read_u16()?;
-        let jpeg_len = reader.read_u32()? as usize;
-        let _deblocking = reader.read_u16()?;
-        let alpha_len = tag_len
-            .checked_sub(jpeg_len + 6)
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "Invalid jpeg length"))?;
-        let mut jpeg_data = Vec::with_capacity(jpeg_len);
-        let mut alpha_data = Vec::with_capacity(alpha_len);
-        reader
-            .get_mut()
-            .take(jpeg_len as u64)
-            .read_to_end(&mut jpeg_data)?;
-        reader
-            .get_mut()
-            .take(alpha_len as u64)
-            .read_to_end(&mut alpha_data)?;
-        let bitmap_info = context
-            .renderer
-            .register_bitmap_jpeg_3(&jpeg_data, &alpha_data)?;
-        let bitmap = Bitmap::new(
-            context,
-            id,
-            bitmap_info.handle,
-            bitmap_info.width,
-            bitmap_info.height,
-        );
-        context
-            .library
-            .library_for_movie_mut(self.movie())
-            .register_character(id, Character::Bitmap(bitmap));
-        Ok(())
-    }
-
-    #[inline]
-    fn define_button_1(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-    ) -> DecodeResult {
-        let swf_button = reader.read_define_button_1()?;
         let button = Button::from_swf_tag(
-            &swf_button,
-            &self.static_data.swf,
-            &context.library,
-            context.gc_context,
-        );
-        context
-            .library
-            .library_for_movie_mut(self.movie())
-            .register_character(swf_button.id, Character::Button(button));
-        Ok(())
-    }
-
-    #[inline]
-    fn define_button_2(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-    ) -> DecodeResult {
-        let swf_button = reader.read_define_button_2()?;
-        let button = Button::from_swf_tag(
-            &swf_button,
+            swf_button,
             &self.static_data.swf,
             &context.library,
             context.gc_context,
@@ -2416,10 +2219,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_button_cxform(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
+        button_colors: swf::ButtonColorTransform,
     ) -> DecodeResult {
-        let button_colors = reader.read_define_button_cxform(tag_len)?;
         if let Some(button) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -2446,9 +2247,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_button_sound(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
+        button_sounds: swf::ButtonSounds,
     ) -> DecodeResult {
-        let button_sounds = reader.read_define_button_sound()?;
         if let Some(button) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -2476,9 +2276,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_edit_text(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
+        swf_edit_text: swf::EditText,
     ) -> DecodeResult {
-        let swf_edit_text = reader.read_define_edit_text()?;
         let edit_text = EditText::from_swf_tag(context, self.movie(), swf_edit_text);
         context
             .library
@@ -2491,9 +2290,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_font_1(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
+        font: swf::FontV1,
     ) -> DecodeResult {
-        let font = reader.read_define_font_1()?;
         let glyphs = font
             .glyphs
             .into_iter()
@@ -2522,7 +2320,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             context.gc_context,
             context.renderer,
             &font,
-            reader.encoding(),
+            context.swf.encoding(),
         )
         .unwrap();
         context
@@ -2536,42 +2334,19 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_font_2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
+        font: &swf::Font,
     ) -> DecodeResult {
-        let font = reader.read_define_font_2(2)?;
         let font_object = Font::from_swf_tag(
             context.gc_context,
             context.renderer,
-            &font,
-            reader.encoding(),
+            font,
+            context.swf.encoding(),
         )
         .unwrap();
         context
             .library
             .library_for_movie_mut(self.movie())
             .register_character(font.id, Character::Font(font_object));
-        Ok(())
-    }
-
-    #[inline]
-    fn define_font_3(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-    ) -> DecodeResult {
-        let font = reader.read_define_font_2(3)?;
-        let font_object = Font::from_swf_tag(
-            context.gc_context,
-            context.renderer,
-            &font,
-            reader.encoding(),
-        )
-        .unwrap();
-        context
-            .library
-            .library_for_movie_mut(self.movie())
-            .register_character(font.id, Character::Font(font_object));
-
         Ok(())
     }
 
@@ -2579,7 +2354,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_font_4(
         &mut self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
-        _reader: &mut SwfStream<'a>,
+        _font: &swf::Font4,
     ) -> DecodeResult {
         log::warn!("DefineFont4 tag (TLF text) is not implemented");
         Ok(())
@@ -2589,10 +2364,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_sound(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
+        sound: &swf::Sound,
     ) -> DecodeResult {
-        let sound = reader.read_define_sound()?;
-        if let Ok(handle) = context.audio.register_sound(&sound) {
+        if let Ok(handle) = context.audio.register_sound(sound) {
             context
                 .library
                 .library_for_movie_mut(self.movie())
@@ -2609,25 +2383,22 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_sprite(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
+        sprite: swf::Sprite,
     ) -> DecodeResult {
-        let id = reader.read_character_id()?;
-        let num_frames = reader.read_u16()?;
         let movie_clip = MovieClip::new_with_data(
             context.gc_context,
-            id,
+            sprite.id,
             self.static_data
                 .swf
-                .resize_to_reader(reader, tag_len - 4)
+                .to_subslice(sprite.data)
                 .ok_or_else(|| {
                     std::io::Error::new(
                         std::io::ErrorKind::Other,
                         "Cannot define sprite with invalid offset and length!",
                     )
                 })?,
-            num_frames,
+            sprite.num_frames,
         );
 
         movie_clip.preload(context, morph_shapes);
@@ -2635,7 +2406,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(id, Character::MovieClip(movie_clip));
+            .register_character(sprite.id, Character::MovieClip(movie_clip));
 
         Ok(())
     }
@@ -2644,11 +2415,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn define_text(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        version: u8,
+        text: &swf::Text,
     ) -> DecodeResult {
-        let text = reader.read_define_text(version)?;
-        let text_object = Text::from_swf_tag(context, self.movie(), &text);
+        let text_object = Text::from_swf_tag(context, self.movie(), text);
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -2657,10 +2426,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
-    fn script_limits(&mut self, reader: &mut SwfStream<'a>, avm: &mut Avm1<'gc>) -> DecodeResult {
-        let max_recursion_depth = reader.read_u16()?;
-        let _timeout_in_seconds = reader.read_u16()?;
-
+    fn script_limits(
+        &mut self,
+        avm: &mut Avm1<'gc>,
+        max_recursion_depth: u16,
+        _timeout_in_seconds: u16,
+    ) -> DecodeResult {
         avm.set_max_recursion_depth(max_recursion_depth);
 
         Ok(())
@@ -2670,11 +2441,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn export_assets(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
+        exports: swf::ExportAssets,
     ) -> DecodeResult {
-        let exports = reader.read_export_assets()?;
         for export in exports {
-            let name = export.name.to_str_lossy(reader.encoding());
+            let name = export.name.to_str_lossy(context.swf.encoding());
             let character = context
                 .library
                 .library_for_movie_mut(self.movie())
@@ -2692,17 +2462,15 @@ impl<'gc, 'a> MovieClipData<'gc> {
     #[inline]
     fn frame_label(
         &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         cur_frame: FrameNumber,
         static_data: &mut MovieClipStatic,
+        frame_label: &swf::FrameLabel,
     ) -> DecodeResult {
-        let frame_label = reader.read_frame_label(tag_len)?;
         // Frame labels are case insensitive (ASCII).
         let label = frame_label
             .label
-            .to_str_lossy(reader.encoding())
+            .to_str_lossy(context.swf.encoding())
             .to_ascii_lowercase();
         if let std::collections::hash_map::Entry::Vacant(v) = static_data.frame_labels.entry(label)
         {
@@ -2717,13 +2485,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn jpeg_tables(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
+        jpeg_data: swf::JpegTables,
     ) -> DecodeResult {
-        use std::io::Read;
-        // TODO(Herschel): Can we use a slice instead of copying?
-        let mut jpeg_data = Vec::with_capacity(tag_len);
-        reader.get_mut().read_to_end(&mut jpeg_data)?;
+        let jpeg_data = Vec::from(jpeg_data);
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -2735,15 +2499,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn preload_remove_object(
         &mut self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
         ids: &mut fnv::FnvHashMap<Depth, CharacterId>,
-        version: u8,
+        remove_object: swf::RemoveObject,
     ) -> DecodeResult {
-        let remove_object = if version == 1 {
-            reader.read_remove_object_1()
-        } else {
-            reader.read_remove_object_2()
-        }?;
         ids.remove(&remove_object.depth.into());
         Ok(())
     }
@@ -2752,7 +2510,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn preload_show_frame(
         &mut self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
-        _reader: &mut SwfStream<'a>,
         cur_frame: &mut FrameNumber,
     ) -> DecodeResult {
         *cur_frame += 1;

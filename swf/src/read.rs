@@ -633,7 +633,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_encoded_u32(&mut self) -> Result<u32> {
+    fn read_encoded_u32(&mut self) -> Result<u32> {
         let mut val = 0u32;
         for i in 0..5 {
             let byte = self.read_u8()?;
@@ -645,7 +645,7 @@ impl<'a> Reader<'a> {
         Ok(val)
     }
 
-    pub fn read_character_id(&mut self) -> Result<CharacterId> {
+    fn read_character_id(&mut self) -> Result<CharacterId> {
         let id = self.read_u16()?;
         Ok(id)
     }
@@ -657,7 +657,7 @@ impl<'a> Reader<'a> {
         Ok(Color { r, g, b, a: 255 })
     }
 
-    pub fn read_rgba(&mut self) -> Result<Color> {
+    fn read_rgba(&mut self) -> Result<Color> {
         let r = self.read_u8()?;
         let g = self.read_u8()?;
         let b = self.read_u8()?;
@@ -665,7 +665,7 @@ impl<'a> Reader<'a> {
         Ok(Color { r, g, b, a })
     }
 
-    pub fn read_color_transform_no_alpha(&mut self) -> Result<ColorTransform> {
+    fn read_color_transform_no_alpha(&mut self) -> Result<ColorTransform> {
         let mut bits = self.bits();
         let has_add = bits.read_bit()?;
         let has_mult = bits.read_bit()?;
@@ -780,7 +780,7 @@ impl<'a> Reader<'a> {
         Ok((tag_code, length))
     }
 
-    pub fn read_define_button_1(&mut self) -> Result<Button<'a>> {
+    fn read_define_button_1(&mut self) -> Result<Button<'a>> {
         let id = self.read_u16()?;
         let mut records = Vec::new();
         while let Some(record) = self.read_button_record(1)? {
@@ -799,7 +799,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_button_2(&mut self) -> Result<Button<'a>> {
+    fn read_define_button_2(&mut self) -> Result<Button<'a>> {
         let id = self.read_u16()?;
         let flags = self.read_u8()?;
         let is_track_as_menu = (flags & 0b1) != 0;
@@ -829,7 +829,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_button_cxform(&mut self, tag_length: usize) -> Result<ButtonColorTransform> {
+    fn read_define_button_cxform(&mut self, tag_length: usize) -> Result<ButtonColorTransform> {
         // SWF19 is incorrect here. You can have >1 color transforms in this tag. They apply
         // to the characters in a button in sequence.
 
@@ -851,7 +851,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_button_sound(&mut self) -> Result<ButtonSounds> {
+    fn read_define_button_sound(&mut self) -> Result<ButtonSounds> {
         let button_id = self.read_u16()?;
 
         // Some SWFs (third-party soundboard creator?) create SWFs with a malformed
@@ -949,7 +949,7 @@ impl<'a> Reader<'a> {
         ))
     }
 
-    pub fn read_csm_text_settings(&mut self) -> Result<CsmTextSettings> {
+    fn read_csm_text_settings(&mut self) -> Result<CsmTextSettings> {
         let id = self.read_character_id()?;
         let flags = self.read_u8()?;
         let thickness = self.read_f32()?;
@@ -969,7 +969,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_frame_label(&mut self, length: usize) -> Result<FrameLabel<'a>> {
+    fn read_frame_label(&mut self, length: usize) -> Result<FrameLabel<'a>> {
         let label = self.read_string()?;
         Ok(FrameLabel {
             is_anchor: self.version >= 6 && length > label.len() + 1 && self.read_u8()? != 0,
@@ -977,7 +977,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_scene_and_frame_label_data(
+    fn read_define_scene_and_frame_label_data(
         &mut self,
     ) -> Result<DefineSceneAndFrameLabelData<'a>> {
         let num_scenes = self.read_encoded_u32()? as usize;
@@ -1004,7 +1004,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_font_1(&mut self) -> Result<FontV1> {
+    fn read_define_font_1(&mut self) -> Result<FontV1> {
         let id = self.read_u16()?;
         let num_glyphs = self.read_u16()? / 2;
 
@@ -1166,7 +1166,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_font_4(&mut self) -> Result<Font4<'a>> {
+    fn read_define_font_4(&mut self) -> Result<Font4<'a>> {
         let id = self.read_character_id()?;
         let flags = self.read_u8()?;
         let name = self.read_string()?;
@@ -1281,7 +1281,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_morph_shape(&mut self, shape_version: u8) -> Result<DefineMorphShape> {
+    fn read_define_morph_shape(&mut self, shape_version: u8) -> Result<DefineMorphShape> {
         let id = self.read_character_id()?;
         let start_shape_bounds = self.read_rectangle()?;
         let end_shape_bounds = self.read_rectangle()?;
@@ -1573,7 +1573,7 @@ impl<'a> Reader<'a> {
         ))
     }
 
-    pub fn read_define_shape(&mut self, version: u8) -> Result<Shape> {
+    fn read_define_shape(&mut self, version: u8) -> Result<Shape> {
         let id = self.read_u16()?;
         let shape_bounds = self.read_rectangle()?;
         let (edge_bounds, has_fill_winding_rule, has_non_scaling_strokes, has_scaling_strokes) =
@@ -1614,7 +1614,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_sound(&mut self) -> Result<Sound<'a>> {
+    fn read_define_sound(&mut self) -> Result<Sound<'a>> {
         let id = self.read_u16()?;
         let format = self.read_sound_format()?;
         let num_samples = self.read_u32()?;
@@ -1627,7 +1627,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_sound_stream_head(&mut self) -> Result<SoundStreamHead> {
+    fn read_sound_stream_head(&mut self) -> Result<SoundStreamHead> {
         // TODO: Verify version requirements.
         let playback_format = self.read_sound_format()?;
         let stream_format = self.read_sound_format()?;
@@ -1909,7 +1909,7 @@ impl<'a> Reader<'a> {
         Ok(shape_record)
     }
 
-    pub fn read_define_sprite(&mut self) -> Result<Tag<'a>> {
+    fn read_define_sprite(&mut self) -> Result<Tag<'a>> {
         Ok(Tag::DefineSprite(Sprite {
             id: self.read_u16()?,
             num_frames: self.read_u16()?,
@@ -1928,7 +1928,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_export_assets(&mut self) -> Result<ExportAssets<'a>> {
+    fn read_export_assets(&mut self) -> Result<ExportAssets<'a>> {
         let num_exports = self.read_u16()?;
         let mut exports = Vec::with_capacity(num_exports.into());
         for _ in 0..num_exports {
@@ -2107,7 +2107,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_blend_mode(&mut self) -> Result<BlendMode> {
+    fn read_blend_mode(&mut self) -> Result<BlendMode> {
         Ok(match self.read_u8()? {
             0 | 1 => BlendMode::Normal,
             2 => BlendMode::Layer,
@@ -2207,7 +2207,7 @@ impl<'a> Reader<'a> {
         Ok(event_list)
     }
 
-    pub fn read_filter(&mut self) -> Result<Filter> {
+    fn read_filter(&mut self) -> Result<Filter> {
         let filter = match self.read_u8()? {
             0 => {
                 let color = self.read_rgba()?;
@@ -2372,7 +2372,7 @@ impl<'a> Reader<'a> {
         Ok(filter)
     }
 
-    pub fn read_sound_format(&mut self) -> Result<SoundFormat> {
+    fn read_sound_format(&mut self) -> Result<SoundFormat> {
         let flags = self.read_u8()?;
         let compression = match flags >> 4 {
             0 => AudioCompression::UncompressedUnknownEndian,
@@ -2402,7 +2402,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_sound_info(&mut self) -> Result<SoundInfo> {
+    fn read_sound_info(&mut self) -> Result<SoundInfo> {
         let flags = self.read_u8()?;
         let event = match (flags >> 4) & 0b11 {
             0b10 | 0b11 => SoundEvent::Stop,
@@ -2455,7 +2455,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_text(&mut self, version: u8) -> Result<Text> {
+    fn read_define_text(&mut self, version: u8) -> Result<Text> {
         let id = self.read_character_id()?;
         let bounds = self.read_rectangle()?;
         let matrix = self.read_matrix()?;
@@ -2538,7 +2538,7 @@ impl<'a> Reader<'a> {
         }))
     }
 
-    pub fn read_define_edit_text(&mut self) -> Result<EditText<'a>> {
+    fn read_define_edit_text(&mut self) -> Result<EditText<'a>> {
         let id = self.read_character_id()?;
         let bounds = self.read_rectangle()?;
         let flags = self.read_u8()?;
@@ -2678,7 +2678,7 @@ impl<'a> Reader<'a> {
         }))
     }
 
-    pub fn read_define_bits_lossless(&mut self, version: u8) -> Result<DefineBitsLossless<'a>> {
+    fn read_define_bits_lossless(&mut self, version: u8) -> Result<DefineBitsLossless<'a>> {
         let id = self.read_character_id()?;
         let format = match self.read_u8()? {
             3 => BitmapFormat::ColorMap8,
@@ -2705,7 +2705,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_product_info(&mut self) -> Result<ProductInfo> {
+    fn read_product_info(&mut self) -> Result<ProductInfo> {
         // Not documented in SWF19 reference.
         // See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
         Ok(ProductInfo {
@@ -2718,7 +2718,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_debug_id(&mut self) -> Result<DebugId> {
+    fn read_debug_id(&mut self) -> Result<DebugId> {
         // Not documented in SWF19 reference.
         // See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
         let mut debug_id = [0u8; 16];
@@ -2727,7 +2727,7 @@ impl<'a> Reader<'a> {
     }
 }
 
-pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
+fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
     let mut signature = [0u8; 3];
     input.read_exact(&mut signature)?;
     let compression = match &signature {
