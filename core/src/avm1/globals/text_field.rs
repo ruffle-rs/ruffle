@@ -122,6 +122,7 @@ pub fn create_proto<'gc>(
     with_text_field_props!(
         object, gc_context, fn_proto,
         "autoSize" => [auto_size, set_auto_size],
+        "background" => [background, set_background],
         "backgroundColor" => [background_color, set_background_color],
         "border" => [border, set_border],
         "borderColor" => [border_color, set_border_color],
@@ -388,6 +389,23 @@ pub fn set_html_text<'gc>(
     let text = value.coerce_to_string(activation)?;
     let _ = this.set_html_text(text.to_string(), &mut activation.context);
     // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
+    Ok(())
+}
+
+pub fn background<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.has_background().into())
+}
+
+pub fn set_background<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let has_background = value.as_bool(activation.current_swf_version());
+    this.set_has_background(activation.context.gc_context, has_background);
     Ok(())
 }
 
