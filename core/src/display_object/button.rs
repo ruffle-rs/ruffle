@@ -29,6 +29,7 @@ pub struct ButtonData<'gc> {
     initialized: bool,
     has_focus: bool,
     enabled: bool,
+    tab_index: u32,
 }
 
 impl<'gc> Button<'gc> {
@@ -70,6 +71,9 @@ impl<'gc> Button<'gc> {
             over_to_up_sound: None,
         };
 
+        // Button tabIndex is undefined by default
+        let tab_index: u32 = 0;
+
         Button(GcCell::allocate(
             gc_context,
             ButtonData {
@@ -87,6 +91,7 @@ impl<'gc> Button<'gc> {
                 },
                 has_focus: false,
                 enabled: true,
+                tab_index: tab_index,
             },
         ))
     }
@@ -196,6 +201,14 @@ impl<'gc> Button<'gc> {
             child.run_frame(context);
             self.replace_at_depth(context, child, depth.into());
         }
+    }
+
+    pub fn tab_index(self) -> u32 {
+        self.0.read().tab_index
+    }
+
+    pub fn set_tab_index(self, context: &mut UpdateContext<'_, 'gc, '_>, tab_index: u32) {
+        self.0.write(context.gc_context).tab_index = tab_index;
     }
 
     pub fn enabled(self) -> bool {

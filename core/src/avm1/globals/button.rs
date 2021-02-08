@@ -79,6 +79,7 @@ pub fn create_proto<'gc>(
     with_button_props!(
         object, gc_context, fn_proto,
         "enabled" => [enabled, set_enabled],
+        "tabIndex" => [tab_index, set_tab_index],
     );
 
     object.into()
@@ -107,5 +108,22 @@ fn set_enabled<'gc>(
 ) -> Result<(), Error<'gc>> {
     let enabled = value.as_bool(activation.current_swf_version());
     this.set_enabled(&mut activation.context, enabled);
+    Ok(())
+}
+
+fn tab_index<'gc>(
+    this: Button<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.tab_index().into())
+}
+
+fn set_tab_index<'gc>(
+    this: Button<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let tab_index = value.coerce_to_u32(activation)?;
+    this.set_tab_index(&mut activation.context, tab_index);
     Ok(())
 }
