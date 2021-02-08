@@ -10,7 +10,7 @@ use vp6_dec_rs::VP6State;
 
 /// A single preloaded video stream.
 pub enum VideoStream {
-    /// A VP6 video stream.
+    /// A VP6 video stream, with or without alpha channel.
     Vp6(VP6State, Option<BitmapHandle>),
 }
 
@@ -43,7 +43,12 @@ impl VideoBackend for SoftwareVideoBackend {
         _filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
         match codec {
-            VideoCodec::Vp6 => Ok(self.streams.insert(VideoStream::Vp6(VP6State::new(), None))),
+            VideoCodec::Vp6 => Ok(self
+                .streams
+                .insert(VideoStream::Vp6(VP6State::new(false), None))),
+            VideoCodec::Vp6WithAlpha => Ok(self
+                .streams
+                .insert(VideoStream::Vp6(VP6State::new(true), None))),
             _ => Err(format!("Unsupported video codec type {:?}", codec).into()),
         }
     }
