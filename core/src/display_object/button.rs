@@ -91,7 +91,7 @@ impl<'gc> Button<'gc> {
                 },
                 has_focus: false,
                 enabled: true,
-                tab_index: tab_index,
+                tab_index,
             },
         ))
     }
