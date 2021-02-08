@@ -531,6 +531,7 @@ swf_tests_approx! {
     (parse_float, "avm1/parse_float", 1, max_relative = 5.0 * f64::EPSILON),
     (edittext_letter_spacing, "avm1/edittext_letter_spacing", 1, epsilon = 15.0), // TODO: Discrepancy in wrapping in letterSpacing = 0.1 test.
     (edittext_align, "avm1/edittext_align", 1, epsilon = 3.0),
+    (edittext_autosize, "avm1/edittext_autosize", 1, epsilon = 4.0), // TODO Flash has _width higher by 4.0, probably padding logic mistake
     (edittext_margins, "avm1/edittext_margins", 1, epsilon = 5.0), // TODO: Discrepancy in wrapping.
     (edittext_tab_stops, "avm1/edittext_tab_stops", 1, epsilon = 5.0),
     (edittext_bullet, "avm1/edittext_bullet", 1, epsilon = 3.0),

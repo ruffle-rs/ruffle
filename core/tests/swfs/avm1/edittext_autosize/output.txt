@@ -1,0 +1,36 @@
+// no autosize
+//my_txt1._x
+50
+//my_txt1._width
+100
+//my_txt1._width + my_txt1._x
+150
+//my_txt1.textWidth
+190
+// autosize left
+//my_txt2._x
+50
+//my_txt2._width
+194.9
+//my_txt2._width + my_txt2._x
+244.9
+//my_txt2.textWidth
+190
+// autosize center
+//my_txt3._x
+2.55
+//my_txt3._width
+194.9
+//my_txt3._width + my_txt3._x
+197.45
+//my_txt3.textWidth
+190
+// autosize right
+//my_txt4._x
+-44.9
+//my_txt4._width
+194.9
+//my_txt4._width + my_txt4._x
+150
+//my_txt4.textWidth
+190
