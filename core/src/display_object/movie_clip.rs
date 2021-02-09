@@ -898,6 +898,7 @@ impl<'gc> MovieClip<'gc> {
         } else {
             // Single frame clips do not play.
             self.stop(context);
+            return;
         }
 
         let mc = self.0.read();
