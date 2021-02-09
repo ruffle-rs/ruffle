@@ -1760,7 +1760,13 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         let mut write = self.0.write(context.gc_context);
 
         if let Some(frame_id) = write.queued_script_frame {
-            if write.queued_script_frame != write.last_queued_script_frame {
+            let is_fresh_frame = write.last_queued_script_frame.is_none()
+                || write.queued_script_frame != write.last_queued_script_frame;
+
+            write.last_queued_script_frame = Some(frame_id);
+            write.queued_script_frame = None;
+
+            if is_fresh_frame {
                 let avm2_object = write.object.and_then(|o| o.as_avm2_object().ok());
 
                 if let Some(avm2_object) = avm2_object {
@@ -1785,8 +1791,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
         }
 
-        write.last_queued_script_frame = write.queued_script_frame;
-        write.queued_script_frame = None;
         drop(write);
 
         if let Some(container) = self.as_container() {
