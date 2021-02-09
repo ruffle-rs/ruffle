@@ -1464,7 +1464,7 @@ impl<W: Write> Writer<W> {
             let mut writer = Writer::new(&mut buf, self.version);
             writer.write_u16(sprite.id)?;
             writer.write_u16(sprite.num_frames)?;
-            writer.write_tag_list(&sprite.tags)?;
+            writer.output.write_all(&sprite.data)?;
         };
         self.write_tag_header(TagCode::DefineSprite, buf.len() as u32)?;
         self.output.write_all(&buf)?;

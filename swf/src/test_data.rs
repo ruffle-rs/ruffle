@@ -1860,13 +1860,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             Tag::DefineSprite(Sprite {
                 id: 1,
                 num_frames: 5,
-                tags: vec![
-                    Tag::ShowFrame,
-                    Tag::ShowFrame,
-                    Tag::ShowFrame,
-                    Tag::ShowFrame,
-                    Tag::ShowFrame,
-                ],
+                data: &[0x40, 0x00, 0x40, 0x00, 0x40, 0x00, 0x40, 0x00, 0x40, 0x00, 0x00, 0x00],
             }),
             read_tag_bytes_from_file("tests/swfs/DefineSprite.swf", TagCode::DefineSprite),
         ),

@@ -600,7 +600,7 @@ impl<'a> Reader<'a> {
 
             Some(TagCode::VideoFrame) => tag_reader.read_video_frame()?,
             Some(TagCode::ProductInfo) => Tag::ProductInfo(tag_reader.read_product_info()?),
-            _ => {
+            None => {
                 let data = tag_reader.read_slice_to_end();
                 Tag::Unknown { tag_code, data }
             }
@@ -1913,7 +1913,7 @@ impl<'a> Reader<'a> {
         Ok(Tag::DefineSprite(Sprite {
             id: self.read_u16()?,
             num_frames: self.read_u16()?,
-            tags: self.read_tag_list()?,
+            data: self.read_slice_to_end(),
         }))
     }
 
