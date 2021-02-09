@@ -1374,6 +1374,8 @@ impl<'gc> MovieClip<'gc> {
             .iter()
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
+
+        self.run_frame_scripts(context);
     }
 
     fn construct_as_avm1_object(
