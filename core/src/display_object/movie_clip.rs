@@ -1384,7 +1384,9 @@ impl<'gc> MovieClip<'gc> {
             .for_each(|goto| run_goto_command(self, context, goto));
 
         if !is_implicit {
-            self.run_frame_scripts(context);
+            self.root(context)
+                .unwrap_or_else(|| self.into())
+                .run_frame_scripts(context);
             self.exit_frame(context);
         }
     }
