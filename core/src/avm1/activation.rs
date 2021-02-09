@@ -788,12 +788,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         if let Some((clip, frame)) = call_frame {
             if frame <= u32::from(std::u16::MAX) {
-                for action in clip.actions_on_frame(&mut self.context, frame as u16) {
+                for action in clip.actions_on_frame(frame as u16).iter() {
                     let _ = self.run_child_frame_for_action(
                         "[Frame Call]",
                         clip.into(),
                         self.current_swf_version(),
-                        action,
+                        action.clone(),
                     )?;
                 }
             }

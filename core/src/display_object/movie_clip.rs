@@ -28,7 +28,7 @@ use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::{Ref, RefCell};
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, HashMap};
 use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::Tag;
@@ -52,6 +52,7 @@ pub struct MovieClipData<'gc> {
     tag_stream_pos: u64,
     current_frame: FrameNumber,
     audio_stream: Option<SoundInstanceHandle>,
+    actions_for_frame: fnv::FnvHashMap<FrameNumber, SmallVec<[SwfSlice; 2]>>,
     container: ChildContainer<'gc>,
     object: Option<AvmObject<'gc>>,
     clip_actions: Vec<ClipAction>,
@@ -88,6 +89,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
+                actions_for_frame: Default::default(),
                 container: ChildContainer::new(),
                 object: None,
                 clip_actions: Vec::new(),
@@ -120,6 +122,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
+                actions_for_frame: Default::default(),
                 container: ChildContainer::new(),
                 object: None,
                 clip_actions: Vec::new(),
@@ -255,6 +258,10 @@ impl<'gc> MovieClip<'gc> {
             }
             Tag::DefineText(text) => self.0.write(context.gc_context).define_text(context, &text),
             Tag::DoAbc(do_abc) => self.do_abc(context, do_abc),
+            Tag::DoAction(action) => self
+                .0
+                .write(context.gc_context)
+                .preload_do_action(context, cur_frame, action),
             Tag::DoInitAction { id, action_data } => self.do_init_action(context, id, action_data),
             Tag::SymbolClass(symbol_class_link) => self.symbol_class(context, &symbol_class_link),
             Tag::DefineSceneAndFrameLabelData(data) => {
@@ -824,44 +831,15 @@ impl<'gc> MovieClip<'gc> {
         mc.set_clip_actions(actions);
     }
 
-    /// Returns an iterator of AVM1 `DoAction` blocks on the given frame number.
+    /// Returns an smallvec of AVM1 `DoAction` blocks on the given frame number.
     /// Used by the AVM `Call` action.
-    pub fn actions_on_frame(
-        self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-        frame: FrameNumber,
-    ) -> impl DoubleEndedIterator<Item = SwfSlice> {
-        use swf::{read::Reader, TagCode};
-
-        let mut actions: SmallVec<[SwfSlice; 2]> = SmallVec::new();
-
-        // Iterate through this clip's tags, counting frames until we reach the target frame.
-        if frame > 0 && frame <= self.total_frames() {
-            let mut cur_frame = 1;
-            let clip = self.0.read();
-            let mut reader = clip.static_data.swf.read_from(0);
-            while cur_frame <= frame && !reader.get_ref().is_empty() {
-                let tag_callback = |reader: &mut Reader<'_>, tag_code, tag_len| {
-                    match tag_code {
-                        TagCode::ShowFrame => cur_frame += 1,
-                        TagCode::DoAction if cur_frame == frame => {
-                            // On the target frame, add any DoAction tags to the array.
-                            if let Some(code) =
-                                clip.static_data.swf.resize_to_reader(reader, tag_len)
-                            {
-                                actions.push(code)
-                            }
-                        }
-                        _ => (),
-                    }
-                    Ok(())
-                };
-
-                let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
-            }
-        }
-
-        actions.into_iter()
+    pub fn actions_on_frame(&self, frame: FrameNumber) -> SmallVec<[SwfSlice; 2]> {
+        // TODO(madsmtm): Fight the borrowchecker and don't copy the smallvecs here!
+        self.0
+            .read()
+            .actions_for_frame
+            .get(&frame)
+            .map_or_else(|| SmallVec::new(), |actions| actions.clone())
     }
 
     pub fn set_fill_style(
@@ -2426,6 +2404,28 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
+    fn preload_do_action(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        cur_frame: FrameNumber,
+        action: swf::DoAction,
+    ) -> DecodeResult {
+        let slice = self.static_data.swf.to_subslice(action).ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Cannot preload do action as subslice!",
+            )
+        })?;
+        match self.actions_for_frame.entry(cur_frame) {
+            Entry::Occupied(entry) => entry.into_mut().push(slice),
+            Entry::Vacant(entry) => {
+                entry.insert(smallvec![slice]);
+            }
+        }
+        Ok(())
+    }
+
+    #[inline]
     fn script_limits(
         &mut self,
         avm: &mut Avm1<'gc>,
@@ -2472,8 +2472,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .label
             .to_str_lossy(context.swf.encoding())
             .to_ascii_lowercase();
-        if let std::collections::hash_map::Entry::Vacant(v) = static_data.frame_labels.entry(label)
-        {
+        if let Entry::Vacant(v) = static_data.frame_labels.entry(label) {
             v.insert(cur_frame);
         } else {
             log::warn!("Movie clip {}: Duplicated frame label", self.id());
