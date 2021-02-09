@@ -695,6 +695,9 @@ impl<'gc> MovieClip<'gc> {
 
     /// Queues up a goto to the specified frame.
     /// `frame` should be 1-based.
+    ///
+    /// This is treated as an 'explicit' goto: frame scripts and other frame
+    /// lifecycle events will be retriggered.
     pub fn goto_frame(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -714,7 +717,7 @@ impl<'gc> MovieClip<'gc> {
         }
 
         if frame != self.current_frame() {
-            self.run_goto(self.into(), context, frame);
+            self.run_goto(self.into(), context, frame, false);
         }
     }
 
@@ -1067,7 +1070,7 @@ impl<'gc> MovieClip<'gc> {
     ) {
         match self.determine_next_frame() {
             NextFrame::Next => self.0.write(context.gc_context).current_frame += 1,
-            NextFrame::First => return self.run_goto(self_display_object, context, 1),
+            NextFrame::First => return self.run_goto(self_display_object, context, 1, true),
             NextFrame::Same => self.stop(context),
         }
 
@@ -1196,6 +1199,7 @@ impl<'gc> MovieClip<'gc> {
         self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: FrameNumber,
+        is_implicit: bool,
     ) {
         // Flash gotos are tricky:
         // 1) Conceptually, a goto should act like the playhead is advancing forward or
@@ -1357,6 +1361,10 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame < frame)
             .for_each(|goto| run_goto_command(self, context, goto));
 
+        if !is_implicit {
+            self.frame_constructed(context);
+        }
+
         // Next, run the final frame for the parent clip.
         // Re-run the final frame without display tags (DoAction, StartSound, etc.)
         // Note that this only happens if the frame exists and is loaded;
@@ -1375,7 +1383,10 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
 
-        self.run_frame_scripts(context);
+        if !is_implicit {
+            self.run_frame_scripts(context);
+            self.exit_frame(context);
+        }
     }
 
     fn construct_as_avm1_object(
