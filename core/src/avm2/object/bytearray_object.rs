@@ -7,6 +7,7 @@ use crate::avm2::scope::Scope;
 use crate::avm2::traits::Trait;
 use crate::avm2::string::AvmString;
 use crate::avm2::class::Class;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -23,18 +24,7 @@ pub struct ByteArrayObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
-    /// Underlying ByteArray 
-    bytes: Vec<u8>,
-
-    /// Current position to read/write from
-    position: u32,
-
-    /// This represents what endian to use while reading data
-    endian: String,
-
-    /// Boolean representing if the ByteArray is sharable. If false passing the ByteArray will create a brand new ByteArray, 
-    /// but if it's true it will keep the same underlying data.
-    shareable: bool,
+    storage: ByteArrayStorage
 }
 
 
@@ -47,18 +37,10 @@ impl<'gc> ByteArrayObject<'gc> {
 
         ByteArrayObject(GcCell::allocate(mc, ByteArrayObjectData { 
             base,
-            bytes: Vec::new(),
-            position: 0,
-            endian: "BIG_ENDIAN".to_string(),
-            shareable: false
+            storage: ByteArrayStorage::new()
         })).into()
     }
 
-    pub fn write_byte(&self, activation: &mut Activation<'_, 'gc, '_>, byte: u8) {
-        let mut b_array = self.0.write(activation.context.gc_context);
-
-        b_array.bytes.push(byte);
-    }
 
     /// Construct a primitive subclass.
     pub fn derive(
@@ -74,10 +56,7 @@ impl<'gc> ByteArrayObject<'gc> {
 
         Ok(ByteArrayObject(GcCell::allocate(mc, ByteArrayObjectData { 
             base,
-            bytes: Vec::new(),
-            position: 0,
-            endian: "BIG_ENDIAN".to_string(),
-            shareable: false
+            storage: ByteArrayStorage::new()
         })).into())
     }
     
@@ -115,21 +94,18 @@ fn derive(
 
     Ok(ByteArrayObject(GcCell::allocate(activation.context.gc_context, ByteArrayObjectData { 
         base,
-        bytes: Vec::new(),
-        position: 0,
-        endian: "BIG_ENDIAN".to_string(),
-        shareable: false
+        storage: ByteArrayStorage::new()
     })).into())
 }
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn as_bytearray(&self) -> Option<Ref<Vec<u8>>> {
-        Some(Ref::map(self.0.read(), |d| &d.bytes))
+    fn as_bytearray(&self) -> Option<Ref<ByteArrayStorage>> {
+        Some(Ref::map(self.0.read(), |d| &d.storage))
     }
     
-    fn as_bytearray_mut(&self, mc: MutationContext<'gc, '_>) -> Option<RefMut<Vec<u8>>> {
-        Some(RefMut::map(self.0.write(mc), |d| &mut d.bytes))
+    fn as_bytearray_mut(&self, mc: MutationContext<'gc, '_>) -> Option<RefMut<ByteArrayStorage>> {
+        Some(RefMut::map(self.0.write(mc), |d| &mut d.storage))
     }
 }

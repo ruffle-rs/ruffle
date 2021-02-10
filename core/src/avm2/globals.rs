@@ -48,6 +48,8 @@ fn trace<'gc>(
             message.push_str(&arg.clone().coerce_to_string(activation)?);
         }
     }
+
+    log::warn!("{}", &message);
     activation.context.log.avm_trace(&message);
 
     Ok(Value::Undefined)
