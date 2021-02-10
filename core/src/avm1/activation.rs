@@ -1460,7 +1460,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         if val.as_bool(self.current_swf_version()) {
-            self.seek(jump_offset, reader, data)?;
+            reader.seek(data.as_ref(), jump_offset);
         }
         Ok(FrameControl::Continue)
     }
@@ -1543,7 +1543,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         reader: &mut Reader<'b>,
         data: &'b SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.seek(jump_offset, reader, data)?;
+        reader.seek(data.as_ref(), jump_offset);
         Ok(FrameControl::Continue)
     }
 
@@ -3007,19 +3007,5 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             Ok(FrameControl::Continue)
         }
-    }
-
-    fn seek<'b>(
-        &self,
-        jump_offset: i16,
-        reader: &mut Reader<'b>,
-        data: &'b SwfSlice,
-    ) -> Result<(), Error<'gc>> {
-        let slice = data.movie.data();
-        let mut pos = reader.get_ref().as_ptr() as usize - slice.as_ptr() as usize;
-        pos = (pos as isize + isize::from(jump_offset)) as usize;
-        pos = pos.min(slice.len());
-        *reader.get_mut() = &slice[pos as usize..];
-        Ok(())
     }
 }

@@ -15,7 +15,6 @@ use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
 use gc_arena::{Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
-use std::io::Cursor;
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
     Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
@@ -507,10 +506,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let body: Result<_, Error> = method
             .body()
             .ok_or_else(|| "Cannot execute non-native method without body".into());
-        let mut read = Reader::new(Cursor::new(body?.code.as_ref()));
+        let body = body?;
+        let mut reader = Reader::new(&body.code);
 
         loop {
-            let result = self.do_next_opcode(method, &mut read);
+            let result = self.do_next_opcode(method, &mut reader, &body.code);
             match result {
                 Ok(FrameControl::Return(value)) => break Ok(value),
                 Ok(FrameControl::Continue) => {}
@@ -520,10 +520,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Run a single action from a given action reader.
-    fn do_next_opcode(
+    fn do_next_opcode<'b>(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         if self.context.update_start.elapsed() >= self.context.max_execution_duration {
             return Err(
@@ -635,21 +636,21 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::SubtractI => self.op_subtract_i(),
                 Op::Swap => self.op_swap(),
                 Op::URShift => self.op_urshift(),
-                Op::Jump { offset } => self.op_jump(offset, reader),
-                Op::IfTrue { offset } => self.op_if_true(offset, reader),
-                Op::IfFalse { offset } => self.op_if_false(offset, reader),
-                Op::IfStrictEq { offset } => self.op_if_strict_eq(offset, reader),
-                Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader),
-                Op::IfEq { offset } => self.op_if_eq(offset, reader),
-                Op::IfNe { offset } => self.op_if_ne(offset, reader),
-                Op::IfGe { offset } => self.op_if_ge(offset, reader),
-                Op::IfGt { offset } => self.op_if_gt(offset, reader),
-                Op::IfLe { offset } => self.op_if_le(offset, reader),
-                Op::IfLt { offset } => self.op_if_lt(offset, reader),
-                Op::IfNge { offset } => self.op_if_nge(offset, reader),
-                Op::IfNgt { offset } => self.op_if_ngt(offset, reader),
-                Op::IfNle { offset } => self.op_if_nle(offset, reader),
-                Op::IfNlt { offset } => self.op_if_nlt(offset, reader),
+                Op::Jump { offset } => self.op_jump(offset, reader, full_data),
+                Op::IfTrue { offset } => self.op_if_true(offset, reader, full_data),
+                Op::IfFalse { offset } => self.op_if_false(offset, reader, full_data),
+                Op::IfStrictEq { offset } => self.op_if_strict_eq(offset, reader, full_data),
+                Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader, full_data),
+                Op::IfEq { offset } => self.op_if_eq(offset, reader, full_data),
+                Op::IfNe { offset } => self.op_if_ne(offset, reader, full_data),
+                Op::IfGe { offset } => self.op_if_ge(offset, reader, full_data),
+                Op::IfGt { offset } => self.op_if_gt(offset, reader, full_data),
+                Op::IfLe { offset } => self.op_if_le(offset, reader, full_data),
+                Op::IfLt { offset } => self.op_if_lt(offset, reader, full_data),
+                Op::IfNge { offset } => self.op_if_nge(offset, reader, full_data),
+                Op::IfNgt { offset } => self.op_if_ngt(offset, reader, full_data),
+                Op::IfNle { offset } => self.op_if_nle(offset, reader, full_data),
+                Op::IfNlt { offset } => self.op_if_nlt(offset, reader, full_data),
                 Op::StrictEquals => self.op_strict_equals(),
                 Op::Equals => self.op_equals(),
                 Op::GreaterEquals => self.op_greater_equals(),
@@ -1834,219 +1835,234 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_jump(
+    fn op_jump<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
-        reader.seek(offset as i64)?;
+        reader.seek(full_data, offset);
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_true(
+    fn op_if_true<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop().coerce_to_boolean();
 
         if value {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_false(
+    fn op_if_false<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop().coerce_to_boolean();
 
         if !value {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_strict_eq(
+    fn op_if_strict_eq<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1 == value2 {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_strict_ne(
+    fn op_if_strict_ne<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1 != value2 {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_eq(
+    fn op_if_eq<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1.abstract_eq(&value2, self)? {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_ne(
+    fn op_if_ne<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if !value1.abstract_eq(&value2, self)? {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_ge(
+    fn op_if_ge<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1.abstract_lt(&value2, self)? == Some(false) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_gt(
+    fn op_if_gt<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value2.abstract_lt(&value1, self)? == Some(true) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_le(
+    fn op_if_le<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value2.abstract_lt(&value1, self)? == Some(false) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_lt(
+    fn op_if_lt<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1.abstract_lt(&value2, self)? == Some(true) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_nge(
+    fn op_if_nge<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1.abstract_lt(&value2, self)?.unwrap_or(true) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_ngt(
+    fn op_if_ngt<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if !value2.abstract_lt(&value1, self)?.unwrap_or(false) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_nle(
+    fn op_if_nle<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value2.abstract_lt(&value1, self)?.unwrap_or(true) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_nlt(
+    fn op_if_nlt<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if !value1.abstract_lt(&value2, self)?.unwrap_or(false) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
