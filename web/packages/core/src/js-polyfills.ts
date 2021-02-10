@@ -86,6 +86,34 @@ function polyfillWindow(): void {
 }
 
 /**
+ * Polyfills the `Reflect` object and members.
+ *
+ * Currently it's a minimal implementation with only `get` and `set`
+ * just enough for wasm-bindgen's stdlib to not crash on pages I've found.
+ *
+ */
+function tryPolyfillReflect(): void {
+    if (window.Reflect == undefined) {
+        // @ts-expect-error: {} indeed doesn't implement Reflect's interface.
+        window.Reflect = {};
+    }
+    if (typeof Reflect.get !== "function") {
+        Object.defineProperty(Reflect, "get", {
+            value: function (target: any, key: any) {
+                return target[key];
+            },
+        });
+    }
+    if (typeof Reflect.set !== "function") {
+        Object.defineProperty(Reflect, "set", {
+            value: function (target: any, key: any, value: any) {
+                target[key] = value;
+            },
+        });
+    }
+}
+
+/**
  * Determines whether a function is native or not.
  *
  * @param func The function to test.
@@ -122,4 +150,7 @@ export function setPolyfillsOnLoad(): void {
         // code like `window instanceof Window` will no longer work.
         polyfillWindow();
     }
+    // Some pages override native `Reflect` with a new object without some properties,
+    // which causes issues for wasm-bindgen's stdlib implementation.
+    tryPolyfillReflect();
 }
