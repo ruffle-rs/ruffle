@@ -89,7 +89,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub rng: &'a mut SmallRng,
 
     /// All loaded levels of the current player.
-    pub levels: &'a mut BTreeMap<u32, DisplayObject<'gc>>,
+    pub levels: &'a mut BTreeMap<u32, MovieClip<'gc>>,
 
     /// The display object that the mouse is currently hovering over.
     pub mouse_hovered_object: Option<DisplayObject<'gc>>,
@@ -163,7 +163,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             self.audio,
             self.gc_context,
             self.action_queue,
-            *self.levels.get(&0).unwrap(),
+            (*self.levels.get(&0).unwrap()).into(),
         );
     }
 

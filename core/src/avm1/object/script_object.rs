@@ -865,8 +865,7 @@ mod tests {
             let mut avm1 = Avm1::new(gc_context, swf_version);
             let mut avm2 = Avm2::new(gc_context);
             let swf = Arc::new(SwfMovie::empty(swf_version));
-            let root: DisplayObject<'_> =
-                MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
+            let root = MovieClip::new(SwfSlice::empty(swf.clone()), gc_context);
             root.set_depth(gc_context, 0);
             let mut levels = BTreeMap::new();
             levels.insert(0, root);
@@ -913,7 +912,7 @@ mod tests {
                 time_offset: &mut 0,
             };
 
-            root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
+            root.post_instantiation(&mut context, root.into(), None, Instantiator::Movie, false);
             root.set_name(context.gc_context, "");
 
             let base_clip = *context.levels.get(&0).unwrap();
@@ -923,7 +922,7 @@ mod tests {
                 ActivationIdentifier::root("[Test]"),
                 swf_version,
                 globals,
-                base_clip,
+                base_clip.into(),
             );
 
             test(&mut activation, object)

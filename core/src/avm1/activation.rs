@@ -347,7 +347,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let globals = context.avm1.global_object_cell();
         let level0 = *context.levels.get(&0).unwrap();
 
-        Self::from_nothing(context, id, version, globals, level0)
+        Self::from_nothing(context, id, version, globals, level0.into())
     }
 
     /// Add a stack frame that executes code in timeline scope
@@ -1238,17 +1238,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             match target[6..].parse::<u32>() {
                 Ok(level_id) => {
                     let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
-                    let level = self.resolve_level(level_id);
+                    let mut level = self.resolve_level(level_id);
 
                     if url.is_empty() {
                         //Blank URL on movie loads = unload!
-                        if let Some(mut mc) = level.as_movie_clip() {
-                            mc.replace_with_movie(self.context.gc_context, None)
-                        }
+                        level.replace_with_movie(self.context.gc_context, None)
                     } else {
                         let process = self.context.load_manager.load_movie_into_clip(
                             self.context.player.clone().unwrap(),
-                            level.as_movie_clip().expect("Attempted to load movie into not movie clip"),
+                            level,
                             fetch,
                             url,
                             None,
@@ -1364,7 +1362,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
                     let process = self.context.load_manager.load_movie_into_clip(
                         self.context.player.clone().unwrap(),
-                        level.as_movie_clip().expect("Attempted to load movie into not movie clip"),
+                        level,
                         fetch,
                         url.to_string(),
                         None,
@@ -2815,20 +2813,19 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// If the level does not exist, then it will be created and instantiated
     /// with a script object.
-    pub fn resolve_level(&mut self, level_id: u32) -> DisplayObject<'gc> {
+    pub fn resolve_level(&mut self, level_id: u32) -> MovieClip<'gc> {
         if let Some(level) = self.context.levels.get(&level_id) {
             *level
         } else {
-            let level: DisplayObject<'_> = MovieClip::new(
+            let level = MovieClip::new(
                 SwfSlice::empty(self.base_clip().movie().unwrap()),
                 self.context.gc_context,
-            )
-            .into();
+            );
 
             level.set_depth(self.context.gc_context, level_id as i32);
             level.set_default_root_name(&mut self.context);
             self.context.levels.insert(level_id, level);
-            level.post_instantiation(&mut self.context, level, None, Instantiator::Movie, false);
+            level.post_instantiation(&mut self.context, level.into(), None, Instantiator::Movie, false);
 
             level
         }

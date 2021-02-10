@@ -785,7 +785,7 @@ pub trait TDisplayObject<'gc>:
         name: &str,
         context: &mut UpdateContext<'_, 'gc, '_>,
         case_sensitive: bool,
-    ) -> Option<DisplayObject<'gc>> {
+    ) -> Option<MovieClip<'gc>> {
         if let Some(slice) = name.get(0..min(name.len(), 6)) {
             let is_level = if case_sensitive {
                 slice == "_level"

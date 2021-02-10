@@ -45,7 +45,7 @@ impl<'gc> FocusTracker<'gc> {
 
         let level0 = context.levels.get(&0).copied().unwrap();
         Avm1::notify_system_listeners(
-            level0,
+            level0.into(),
             context.swf.version(),
             context,
             "Selection",

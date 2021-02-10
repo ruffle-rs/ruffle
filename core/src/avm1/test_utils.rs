@@ -36,8 +36,7 @@ where
         let mut avm1 = Avm1::new(gc_context, swf_version);
         let mut avm2 = Avm2::new(gc_context);
         let swf = Arc::new(SwfMovie::empty(swf_version));
-        let root: DisplayObject<'gc> =
-            MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
+        let root = MovieClip::new(SwfSlice::empty(swf.clone()), gc_context);
         root.set_depth(gc_context, 0);
         let mut levels = BTreeMap::new();
         levels.insert(0, root);
@@ -82,12 +81,12 @@ where
             time_offset: &mut 0,
             audio_manager: &mut AudioManager::new(),
         };
-        root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
+        root.post_instantiation(&mut context, root.into(), None, Instantiator::Movie, false);
         root.set_name(context.gc_context, "");
 
         fn run_test<'a, 'gc: 'a, F>(
             activation: &mut Activation<'_, 'gc, '_>,
-            root: DisplayObject<'gc>,
+            root: MovieClip<'gc>,
             test: F,
         ) where
             F: FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
@@ -106,7 +105,7 @@ where
             ActivationIdentifier::root("[Test]"),
             swf_version,
             globals,
-            base_clip,
+            base_clip.into(),
         );
 
         run_test(&mut activation, root, test)

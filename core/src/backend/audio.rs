@@ -194,7 +194,7 @@ impl<'gc> AudioManager<'gc> {
         audio: &mut dyn AudioBackend,
         gc_context: gc_arena::MutationContext<'gc, '_>,
         action_queue: &mut crate::context::ActionQueue<'gc>,
-        root: DisplayObject<'gc>,
+        root: MovieClip<'gc>,
     ) {
         // Update the position of sounds, and remove any completed sounds.
         self.sounds.retain(|sound| {
@@ -208,7 +208,7 @@ impl<'gc> AudioManager<'gc> {
                 // Sound ended; fire end event.
                 if let Some(object) = sound.avm1_object {
                     action_queue.queue_actions(
-                        root,
+                        root.into(),
                         crate::context::ActionType::Method {
                             object: object.into(),
                             name: "onSoundComplete",

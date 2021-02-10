@@ -46,7 +46,7 @@ impl<'gc> Timers<'gc> {
             ActivationIdentifier::root("[Timer Callback]"),
             version,
             globals,
-            level0,
+            level0.into(),
         );
 
         // TODO: `this` is undefined for non-method timer callbacks, but our VM

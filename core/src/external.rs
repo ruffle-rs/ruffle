@@ -211,7 +211,7 @@ impl<'gc> Callback<'gc> {
                     Avm1ActivationIdentifier::root("[ExternalInterface]"),
                     swf_version,
                     globals,
-                    base_clip,
+                    base_clip.into(),
                 );
                 let this = this.coerce_to_object(&mut activation);
                 let args: Vec<Avm1Value> = args
