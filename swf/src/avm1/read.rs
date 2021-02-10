@@ -29,6 +29,13 @@ impl<'a> Reader<'a> {
         }
     }
 
+    pub fn seek(&mut self, data: &'a [u8], jump_offset: i16) {
+        let mut pos = self.input.as_ptr() as usize - data.as_ptr() as usize;
+        pos = (pos as isize + isize::from(jump_offset)) as usize;
+        pos = pos.min(data.len());
+        self.input = &data[pos as usize..];
+    }
+
     #[inline]
     pub fn encoding(&self) -> &'static Encoding {
         SwfStr::encoding_for_version(self.version)

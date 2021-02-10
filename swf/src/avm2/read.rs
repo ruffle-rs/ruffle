@@ -2,25 +2,23 @@ use crate::avm2::types::*;
 use crate::error::{Error, Result};
 use crate::read::SwfReadExt;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{self, Read, Seek, SeekFrom};
+use std::io::{self, Read};
 
-pub struct Reader<R: Read> {
-    input: R,
+pub struct Reader<'a> {
+    input: &'a [u8],
 }
 
-impl<R> Reader<R>
-where
-    R: Read + Seek,
-{
-    #[inline]
-    pub fn seek(&mut self, relative_offset: i64) -> std::io::Result<u64> {
-        self.input.seek(SeekFrom::Current(relative_offset as i64))
+impl<'a> Reader<'a> {
+    pub fn new(input: &'a [u8]) -> Self {
+        Self { input }
     }
-}
 
-impl<R: Read> Reader<R> {
-    pub fn new(input: R) -> Reader<R> {
-        Reader { input }
+    #[inline]
+    pub fn seek(&mut self, data: &'a [u8], relative_offset: i32) {
+        let mut pos = self.input.as_ptr() as usize - data.as_ptr() as usize;
+        pos = (pos as isize + relative_offset as isize) as usize;
+        pos = pos.min(data.len());
+        self.input = &data[pos as usize..];
     }
 
     pub fn read(&mut self) -> Result<AbcFile> {
@@ -861,7 +859,7 @@ impl<R: Read> Reader<R> {
     }
 }
 
-impl<'a, R: 'a + Read> SwfReadExt for Reader<R> {
+impl<'a> SwfReadExt for Reader<'a> {
     #[inline]
     fn read_u8(&mut self) -> io::Result<u8> {
         self.input.read_u8()
