@@ -1146,7 +1146,13 @@ impl<'gc> MovieClip<'gc> {
                 child.set_instantiated_by_timeline(context.gc_context, true);
                 child.set_depth(context.gc_context, depth);
                 child.set_parent(context.gc_context, Some(self_display_object));
-                child.set_place_frame(context.gc_context, self.current_frame());
+                if child.vm_type(context) == AvmType::Avm2 {
+                    // In AVM2 instantiation happens before frame advance so we
+                    // have to special-case that
+                    child.set_place_frame(context.gc_context, self.current_frame() + 1);
+                } else {
+                    child.set_place_frame(context.gc_context, self.current_frame());
+                }
                 if copy_previous_properties {
                     if let Some(prev_child) = prev_child {
                         child.copy_display_properties_from(context.gc_context, prev_child);
