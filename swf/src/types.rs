@@ -782,7 +782,7 @@ pub struct StartSound {
 pub struct Sprite<'a> {
     pub id: CharacterId,
     pub num_frames: u16,
-    pub tags: Vec<Tag<'a>>,
+    pub data: &'a [u8],
 }
 
 #[derive(Clone, Debug, PartialEq)]
