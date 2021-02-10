@@ -33,7 +33,7 @@ use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
-use swf::read::SwfReadExt;
+use swf::extensions::ReadSwfExt;
 use swf::{FillStyle, FrameLabelData, LineStyle, Tag};
 
 type FrameNumber = u16;
@@ -478,7 +478,7 @@ impl<'gc> MovieClip<'gc> {
         // giving us a `SwfSlice` for later parsing, so we have to replcate the
         // *entire* parsing code here. This sucks.
         let flags = reader.read_u32()?;
-        let name = reader.read_string()?.to_string_lossy(reader.encoding());
+        let name = reader.read_str()?.to_string_lossy(reader.encoding());
         let is_lazy_initialize = flags & 1 != 0;
         let domain = library.avm2_domain();
 
@@ -518,7 +518,7 @@ impl<'gc> MovieClip<'gc> {
 
         for _ in 0..num_symbols {
             let id = reader.read_u16()?;
-            let class_name = reader.read_string()?.to_string_lossy(reader.encoding());
+            let class_name = reader.read_str()?.to_string_lossy(reader.encoding());
 
             if let Some(name) =
                 Avm2QName::from_symbol_class(&class_name, activation.context.gc_context)

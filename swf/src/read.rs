@@ -6,6 +6,7 @@
     clippy::unreadable_literal
 )]
 
+use crate::extensions::ReadSwfExt;
 use crate::{
     error::{Error, Result},
     string::{Encoding, SwfStr},
@@ -181,18 +182,6 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     ))
 }
 
-pub trait SwfReadExt {
-    fn read_u8(&mut self) -> io::Result<u8>;
-    fn read_u16(&mut self) -> io::Result<u16>;
-    fn read_u32(&mut self) -> io::Result<u32>;
-    fn read_u64(&mut self) -> io::Result<u64>;
-    fn read_i8(&mut self) -> io::Result<i8>;
-    fn read_i16(&mut self) -> io::Result<i16>;
-    fn read_i32(&mut self) -> io::Result<i32>;
-    fn read_f32(&mut self) -> io::Result<f32>;
-    fn read_f64(&mut self) -> io::Result<f64>;
-}
-
 pub struct BitReader<'a, 'b> {
     bits: bitstream_io::BitReader<&'b mut &'a [u8], bitstream_io::BigEndian>,
 }
@@ -248,6 +237,13 @@ pub struct Reader<'a> {
     version: u8,
 }
 
+impl<'a> ReadSwfExt<'a> for Reader<'a> {
+    #[inline(always)]
+    fn as_mut_slice(&mut self) -> &mut &'a [u8] {
+        &mut self.input
+    }
+}
+
 impl<'a> Reader<'a> {
     #[inline]
     pub fn new(input: &'a [u8], version: u8) -> Reader<'a> {
@@ -286,50 +282,6 @@ impl<'a> Reader<'a> {
         BitReader {
             bits: bitstream_io::BitReader::new(&mut self.input),
         }
-    }
-
-    #[inline]
-    fn read_fixed8(&mut self) -> io::Result<f32> {
-        self.read_i16().map(|n| f32::from(n) / 256f32)
-    }
-
-    #[inline]
-    fn read_fixed16(&mut self) -> io::Result<f64> {
-        self.read_i32().map(|n| f64::from(n) / 65536f64)
-    }
-
-    fn read_slice(&mut self, len: usize) -> io::Result<&'a [u8]> {
-        if self.input.len() >= len {
-            let slice = &self.input[..len];
-            self.input = &self.input[len..];
-            Ok(slice)
-        } else {
-            Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "Not enough data for slice",
-            ))
-        }
-    }
-
-    fn read_slice_to_end(&mut self) -> &'a [u8] {
-        let len = self.input.len();
-        let slice = &self.input[..len];
-        self.input = &self.input[len..];
-        slice
-    }
-
-    pub fn read_string(&mut self) -> io::Result<&'a SwfStr> {
-        let s = SwfStr::from_bytes_null_terminated(&self.input).ok_or_else(|| {
-            io::Error::new(io::ErrorKind::UnexpectedEof, "Not enough data for string")
-        })?;
-        self.input = &self.input[s.len() + 1..];
-        Ok(s)
-    }
-
-    fn read_string_with_len(&mut self, len: usize) -> io::Result<&'a SwfStr> {
-        let bytes = &self.read_slice(len)?;
-        // TODO: Maybe just strip the possible trailing null char instead of looping here.
-        Ok(SwfStr::from_bytes_null_terminated(bytes).unwrap_or_else(|| SwfStr::from_bytes(bytes)))
     }
 
     /// Reads the next SWF tag from the stream.
@@ -438,19 +390,19 @@ impl<'a> Reader<'a> {
                 Tag::EnableTelemetry { password_hash }
             }
             Some(TagCode::ImportAssets) => {
-                let url = tag_reader.read_string()?;
+                let url = tag_reader.read_str()?;
                 let num_imports = tag_reader.read_u16()?;
                 let mut imports = Vec::with_capacity(num_imports as usize);
                 for _ in 0..num_imports {
                     imports.push(ExportedAsset {
                         id: tag_reader.read_u16()?,
-                        name: tag_reader.read_string()?,
+                        name: tag_reader.read_str()?,
                     });
                 }
                 Tag::ImportAssets { url, imports }
             }
             Some(TagCode::ImportAssets2) => {
-                let url = tag_reader.read_string()?;
+                let url = tag_reader.read_str()?;
                 tag_reader.read_u8()?; // Reserved; must be 1
                 tag_reader.read_u8()?; // Reserved; must be 0
                 let num_imports = tag_reader.read_u16()?;
@@ -458,7 +410,7 @@ impl<'a> Reader<'a> {
                 for _ in 0..num_imports {
                     imports.push(ExportedAsset {
                         id: tag_reader.read_u16()?,
-                        name: tag_reader.read_string()?,
+                        name: tag_reader.read_str()?,
                     });
                 }
                 Tag::ImportAssets { url, imports }
@@ -469,7 +421,7 @@ impl<'a> Reader<'a> {
                 Tag::JpegTables(data)
             }
 
-            Some(TagCode::Metadata) => Tag::Metadata(tag_reader.read_string()?),
+            Some(TagCode::Metadata) => Tag::Metadata(tag_reader.read_str()?),
 
             Some(TagCode::SetBackgroundColor) => Tag::SetBackgroundColor(tag_reader.read_rgb()?),
 
@@ -490,7 +442,7 @@ impl<'a> Reader<'a> {
             Some(TagCode::StartSound) => Tag::StartSound(tag_reader.read_start_sound_1()?),
 
             Some(TagCode::StartSound2) => Tag::StartSound2 {
-                class_name: tag_reader.read_string()?,
+                class_name: tag_reader.read_str()?,
                 sound_info: Box::new(tag_reader.read_sound_info()?),
             },
 
@@ -510,7 +462,7 @@ impl<'a> Reader<'a> {
 
             Some(TagCode::DoAbc) => {
                 let flags = tag_reader.read_u32()?;
-                let name = tag_reader.read_string()?;
+                let name = tag_reader.read_str()?;
                 let abc_data = tag_reader.read_slice_to_end();
                 Tag::DoAbc(DoAbc {
                     name,
@@ -530,10 +482,10 @@ impl<'a> Reader<'a> {
                 Tag::DoInitAction { id, action_data }
             }
 
-            Some(TagCode::EnableDebugger) => Tag::EnableDebugger(tag_reader.read_string()?),
+            Some(TagCode::EnableDebugger) => Tag::EnableDebugger(tag_reader.read_str()?),
             Some(TagCode::EnableDebugger2) => {
                 tag_reader.read_u16()?; // Reserved
-                Tag::EnableDebugger(tag_reader.read_string()?)
+                Tag::EnableDebugger(tag_reader.read_str()?)
             }
 
             Some(TagCode::ScriptLimits) => Tag::ScriptLimits {
@@ -552,7 +504,7 @@ impl<'a> Reader<'a> {
                 for _ in 0..num_symbols {
                     symbols.push(SymbolClassLink {
                         id: tag_reader.read_u16()?,
-                        class_name: tag_reader.read_string()?,
+                        class_name: tag_reader.read_str()?,
                     });
                 }
                 Tag::SymbolClass(symbols)
@@ -567,7 +519,7 @@ impl<'a> Reader<'a> {
             Some(TagCode::Protect) => {
                 Tag::Protect(if length > 0 {
                     tag_reader.read_u16()?; // TODO(Herschel): Two null bytes? Not specified in SWF19.
-                    Some(tag_reader.read_string()?)
+                    Some(tag_reader.read_str()?)
                 } else {
                     None
                 })
@@ -631,18 +583,6 @@ impl<'a> Reader<'a> {
             y_min: bits.read_sbits_twips(num_bits)?,
             y_max: bits.read_sbits_twips(num_bits)?,
         })
-    }
-
-    pub fn read_encoded_u32(&mut self) -> Result<u32> {
-        let mut val = 0u32;
-        for i in 0..5 {
-            let byte = self.read_u8()?;
-            val |= u32::from(byte & 0b01111111) << (i * 7);
-            if byte & 0b10000000 == 0 {
-                break;
-            }
-        }
-        Ok(val)
     }
 
     pub fn read_character_id(&mut self) -> Result<CharacterId> {
@@ -970,7 +910,7 @@ impl<'a> Reader<'a> {
     }
 
     pub fn read_frame_label(&mut self, length: usize) -> Result<FrameLabel<'a>> {
-        let label = self.read_string()?;
+        let label = self.read_str()?;
         Ok(FrameLabel {
             is_anchor: self.version >= 6 && length > label.len() + 1 && self.read_u8()? != 0,
             label,
@@ -985,7 +925,7 @@ impl<'a> Reader<'a> {
         for _ in 0..num_scenes {
             scenes.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
-                label: self.read_string()?,
+                label: self.read_str()?,
             });
         }
 
@@ -994,7 +934,7 @@ impl<'a> Reader<'a> {
         for _ in 0..num_frame_labels {
             frame_labels.push(FrameLabelData {
                 frame_num: self.read_encoded_u32()?,
-                label: self.read_string()?,
+                label: self.read_str()?,
             });
         }
 
@@ -1052,7 +992,7 @@ impl<'a> Reader<'a> {
         let name_len = self.read_u8()?;
         // SWF19 states that the font name should not have a terminating null byte,
         // but it often does (depends on Flash IDE version?)
-        let name = self.read_string_with_len(name_len.into())?;
+        let name = self.read_str_with_len(name_len.into())?;
 
         let num_glyphs = self.read_u16()? as usize;
         let mut glyphs = Vec::with_capacity(num_glyphs);
@@ -1169,7 +1109,7 @@ impl<'a> Reader<'a> {
     pub fn read_define_font_4(&mut self) -> Result<Font4<'a>> {
         let id = self.read_character_id()?;
         let flags = self.read_u8()?;
-        let name = self.read_string()?;
+        let name = self.read_str()?;
         let has_font_data = flags & 0b100 != 0;
         let data = if has_font_data {
             Some(self.read_slice_to_end())
@@ -1236,7 +1176,7 @@ impl<'a> Reader<'a> {
         let id = self.read_u16()?;
 
         let font_name_len = self.read_u8()?;
-        let font_name = self.read_string_with_len(font_name_len.into())?;
+        let font_name = self.read_str_with_len(font_name_len.into())?;
 
         let flags = self.read_u8()?;
         let use_wide_codes = flags & 0b1 != 0; // TODO(Herschel): Warn if false for version 2.
@@ -1276,8 +1216,8 @@ impl<'a> Reader<'a> {
     fn read_define_font_name(&mut self) -> Result<Tag<'a>> {
         Ok(Tag::DefineFontName {
             id: self.read_character_id()?,
-            name: self.read_string()?,
-            copyright_info: self.read_string()?,
+            name: self.read_str()?,
+            copyright_info: self.read_str()?,
         })
     }
 
@@ -1934,7 +1874,7 @@ impl<'a> Reader<'a> {
         for _ in 0..num_exports {
             exports.push(ExportedAsset {
                 id: self.read_u16()?,
-                name: self.read_string()?,
+                name: self.read_str()?,
             });
         }
         Ok(exports)
@@ -1993,7 +1933,7 @@ impl<'a> Reader<'a> {
         let has_character_id = (flags & 0b10) != 0;
         let has_class_name = (flags & 0b1000_00000000) != 0 || (is_image && !has_character_id);
         let class_name = if has_class_name {
-            Some(self.read_string()?)
+            Some(self.read_str()?)
         } else {
             None
         };
@@ -2020,7 +1960,7 @@ impl<'a> Reader<'a> {
             None
         };
         let name = if (flags & 0b10_0000) != 0 {
-            Some(self.read_string()?)
+            Some(self.read_str()?)
         } else {
             None
         };
@@ -2549,7 +2489,7 @@ impl<'a> Reader<'a> {
             None
         };
         let font_class_name = if flags2 & 0b10000000 != 0 {
-            Some(self.read_string()?)
+            Some(self.read_str()?)
         } else {
             None
         };
@@ -2585,9 +2525,9 @@ impl<'a> Reader<'a> {
         } else {
             None
         };
-        let variable_name = self.read_string()?;
+        let variable_name = self.read_str()?;
         let initial_text = if flags & 0b10000000 != 0 {
-            Some(self.read_string()?)
+            Some(self.read_str()?)
         } else {
             None
         };
@@ -2714,8 +2654,8 @@ impl<'a> Reader<'a> {
             edition: self.read_u32()?,
             major_version: self.read_u8()?,
             minor_version: self.read_u8()?,
-            build_number: self.get_mut().read_u64::<LittleEndian>()?,
-            compilation_date: self.get_mut().read_u64::<LittleEndian>()?,
+            build_number: self.read_u64()?,
+            compilation_date: self.read_u64()?,
         })
     }
 
@@ -3048,24 +2988,24 @@ pub mod tests {
         {
             let buf = b"Testing\0More testing\0\0Non-string data";
             let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_string().unwrap(), "Testing");
-            assert_eq!(reader.read_string().unwrap(), "More testing");
-            assert_eq!(reader.read_string().unwrap(), "");
-            assert!(reader.read_string().is_err());
+            assert_eq!(reader.read_str().unwrap(), "Testing");
+            assert_eq!(reader.read_str().unwrap(), "More testing");
+            assert_eq!(reader.read_str().unwrap(), "");
+            assert!(reader.read_str().is_err());
         }
         {
             let mut reader = Reader::new(&[], 1);
-            assert!(reader.read_string().is_err());
+            assert!(reader.read_str().is_err());
         }
         {
             let buf = b"\0Testing";
             let mut reader = Reader::new(&buf[..], 1);
-            assert_eq!(reader.read_string().unwrap(), "");
+            assert_eq!(reader.read_str().unwrap(), "");
         }
         {
             let buf = "12🤖12\0";
             let mut reader = Reader::new(buf.as_bytes(), 1);
-            assert_eq!(reader.read_string().unwrap(), "12🤖12");
+            assert_eq!(reader.read_str().unwrap(), "12🤖12");
         }
     }
 
@@ -3229,52 +3169,5 @@ pub mod tests {
                 panic!("Expected SwfParseError, got {:?}", result);
             }
         }
-    }
-}
-
-impl<'a> SwfReadExt for Reader<'a> {
-    #[inline]
-    fn read_u8(&mut self) -> io::Result<u8> {
-        self.input.read_u8()
-    }
-
-    #[inline]
-    fn read_u16(&mut self) -> io::Result<u16> {
-        self.input.read_u16::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_u32(&mut self) -> io::Result<u32> {
-        self.input.read_u32::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_u64(&mut self) -> io::Result<u64> {
-        self.input.read_u64::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_i8(&mut self) -> io::Result<i8> {
-        self.input.read_i8()
-    }
-
-    #[inline]
-    fn read_i16(&mut self) -> io::Result<i16> {
-        self.input.read_i16::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_i32(&mut self) -> io::Result<i32> {
-        self.input.read_i32::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_f32(&mut self) -> io::Result<f32> {
-        self.input.read_f32::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_f64(&mut self) -> io::Result<f64> {
-        self.input.read_f64::<LittleEndian>()
     }
 }
