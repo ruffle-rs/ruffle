@@ -1,11 +1,17 @@
 use crate::avm2::types::*;
 use crate::error::{Error, Result};
-use crate::read::SwfReadExt;
-use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{self, Read};
+use crate::extensions::ReadSwfExt;
+use std::io::Read;
 
 pub struct Reader<'a> {
     input: &'a [u8],
+}
+
+impl<'a> ReadSwfExt<'a> for Reader<'a> {
+    #[inline(always)]
+    fn as_mut_slice(&mut self) -> &mut &'a [u8] {
+        &mut self.input
+    }
 }
 
 impl<'a> Reader<'a> {
@@ -15,10 +21,7 @@ impl<'a> Reader<'a> {
 
     #[inline]
     pub fn seek(&mut self, data: &'a [u8], relative_offset: i32) {
-        let mut pos = self.input.as_ptr() as usize - data.as_ptr() as usize;
-        pos = (pos as isize + relative_offset as isize) as usize;
-        pos = pos.min(data.len());
-        self.input = &data[pos as usize..];
+        ReadSwfExt::seek(self, data, relative_offset as isize)
     }
 
     pub fn read(&mut self) -> Result<AbcFile> {
@@ -87,10 +90,6 @@ impl<'a> Reader<'a> {
             }
         }
         Ok(n)
-    }
-
-    fn read_u32(&mut self) -> Result<u32> {
-        self.read_u30()
     }
 
     fn read_i24(&mut self) -> Result<i32> {
@@ -209,7 +208,7 @@ impl<'a> Reader<'a> {
         let mut uints = Vec::with_capacity(len as usize);
         if len > 0 {
             for _ in 0..len - 1 {
-                uints.push(self.read_u32()?);
+                uints.push(self.read_u30()?);
             }
         }
 
@@ -856,53 +855,6 @@ impl<'a> Reader<'a> {
             type_name: self.read_index()?,
             variable_name: self.read_index()?,
         })
-    }
-}
-
-impl<'a> SwfReadExt for Reader<'a> {
-    #[inline]
-    fn read_u8(&mut self) -> io::Result<u8> {
-        self.input.read_u8()
-    }
-
-    #[inline]
-    fn read_u16(&mut self) -> io::Result<u16> {
-        self.input.read_u16::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_u32(&mut self) -> io::Result<u32> {
-        self.input.read_u32::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_u64(&mut self) -> io::Result<u64> {
-        self.input.read_u64::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_i8(&mut self) -> io::Result<i8> {
-        self.input.read_i8()
-    }
-
-    #[inline]
-    fn read_i16(&mut self) -> io::Result<i16> {
-        self.input.read_i16::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_i32(&mut self) -> io::Result<i32> {
-        self.input.read_i32::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_f32(&mut self) -> io::Result<f32> {
-        self.input.read_f32::<LittleEndian>()
-    }
-
-    #[inline]
-    fn read_f64(&mut self) -> io::Result<f64> {
-        self.input.read_f64::<LittleEndian>()
     }
 }
 
