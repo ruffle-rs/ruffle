@@ -5,7 +5,7 @@ use crate::avm1::{Avm1, AvmString, Object, TObject, Value};
 use crate::avm2::Domain as Avm2Domain;
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
-use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
+use crate::display_object::{DisplayObject, MorphShape, MovieClip, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
@@ -144,7 +144,7 @@ impl<'gc> LoadManager<'gc> {
     pub fn load_movie_into_clip(
         &mut self,
         player: Weak<Mutex<Player>>,
-        target_clip: DisplayObject<'gc>,
+        target_clip: MovieClip<'gc>,
         fetch: OwnedFuture<Vec<u8>, Error>,
         url: String,
         target_broadcaster: Option<Object<'gc>>,
@@ -283,7 +283,7 @@ pub enum Loader<'gc> {
         self_handle: Option<Handle>,
 
         /// The target movie clip to load the movie into.
-        target_clip: DisplayObject<'gc>,
+        target_clip: MovieClip<'gc>,
 
         /// Event broadcaster (typically a `MovieClipLoader`) to fire events
         /// into.
@@ -444,7 +444,7 @@ impl<'gc> Loader<'gc> {
                 .update(|uc| -> Result<(), Error> {
                     url = uc.navigator.resolve_relative_url(&url).into_owned();
 
-                    let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
+                    let (mut clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                         Some(Loader::Movie {
                             target_clip,
                             target_broadcaster,
@@ -454,15 +454,13 @@ impl<'gc> Loader<'gc> {
                         _ => unreachable!(),
                     };
 
-                    clip.as_movie_clip().unwrap().unload(uc);
+                    clip.unload(uc);
 
-                    clip.as_movie_clip()
-                        .unwrap()
-                        .replace_with_movie(uc.gc_context, None);
+                    clip.replace_with_movie(uc.gc_context, None);
 
                     if let Some(broadcaster) = broadcaster {
                         Avm1::run_stack_frame_for_method(
-                            clip,
+                            clip.into(),
                             broadcaster,
                             NEWEST_PLAYER_VERSION,
                             uc,
@@ -489,7 +487,7 @@ impl<'gc> Loader<'gc> {
                             .library_for_movie_mut(movie.clone())
                             .set_avm2_domain(domain);
 
-                        let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
+                        let (mut clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::Movie {
                                 target_clip,
                                 target_broadcaster,
@@ -501,7 +499,7 @@ impl<'gc> Loader<'gc> {
 
                         if let Some(broadcaster) = broadcaster {
                             Avm1::run_stack_frame_for_method(
-                                clip,
+                                clip.into(),
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
                                 uc,
@@ -515,15 +513,11 @@ impl<'gc> Loader<'gc> {
                             );
                         }
 
-                        let mut mc = clip
-                            .as_movie_clip()
-                            .expect("Attempted to load movie into not movie clip");
-
-                        mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
-                        mc.post_instantiation(uc, clip, None, Instantiator::Movie, false);
+                        clip.replace_with_movie(uc.gc_context, Some(movie.clone()));
+                        clip.post_instantiation(uc, clip.into(), None, Instantiator::Movie, false);
 
                         let mut morph_shapes = fnv::FnvHashMap::default();
-                        mc.preload(uc, &mut morph_shapes);
+                        clip.preload(uc, &mut morph_shapes);
 
                         // Finalize morph shapes.
                         for (id, static_data) in morph_shapes {
@@ -538,7 +532,7 @@ impl<'gc> Loader<'gc> {
 
                         if let Some(broadcaster) = broadcaster {
                             Avm1::run_stack_frame_for_method(
-                                clip,
+                                clip.into(),
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
                                 uc,
@@ -577,7 +571,7 @@ impl<'gc> Loader<'gc> {
 
                         if let Some(broadcaster) = broadcaster {
                             Avm1::run_stack_frame_for_method(
-                                clip,
+                                clip.into(),
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
                                 uc,
@@ -725,7 +719,7 @@ impl<'gc> Loader<'gc> {
             _ => return false,
         };
 
-        if !DisplayObject::ptr_eq(loaded_clip, clip) {
+        if !DisplayObject::ptr_eq(loaded_clip, clip.into()) {
             return false;
         }
 
@@ -735,7 +729,7 @@ impl<'gc> Loader<'gc> {
             LoaderStatus::Succeeded => {
                 if let Some(broadcaster) = broadcaster {
                     queue.queue_actions(
-                        clip,
+                        clip.into(),
                         ActionType::Method {
                             object: broadcaster,
                             name: "broadcastMessage",

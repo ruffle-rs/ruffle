@@ -1248,7 +1248,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     } else {
                         let process = self.context.load_manager.load_movie_into_clip(
                             self.context.player.clone().unwrap(),
-                            level,
+                            level.as_movie_clip().expect("Attempted to load movie into not movie clip"),
                             fetch,
                             url,
                             None,
@@ -1346,7 +1346,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     let fetch = self.context.navigator.fetch(&url, opts);
                     let process = self.context.load_manager.load_movie_into_clip(
                         self.context.player.clone().unwrap(),
-                        clip_target,
+                        clip_target.as_movie_clip().expect("Attempted to load movie into not movie clip"),
                         fetch,
                         url.to_string(),
                         None,
@@ -1364,7 +1364,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
                     let process = self.context.load_manager.load_movie_into_clip(
                         self.context.player.clone().unwrap(),
-                        level,
+                        level.as_movie_clip().expect("Attempted to load movie into not movie clip"),
                         fetch,
                         url.to_string(),
                         None,

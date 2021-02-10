@@ -1223,7 +1223,7 @@ fn load_movie<'gc>(
     let fetch = activation.context.navigator.fetch(&url, opts);
     let process = activation.context.load_manager.load_movie_into_clip(
         activation.context.player.clone().unwrap(),
-        DisplayObject::MovieClip(target),
+        target,
         fetch,
         url.to_string(),
         None,
