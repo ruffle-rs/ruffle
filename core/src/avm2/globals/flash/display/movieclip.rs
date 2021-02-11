@@ -6,7 +6,7 @@ use crate::avm2::class::Class;
 use crate::avm2::globals::flash::display::{framelabel, scene};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, Object, StageObject, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
@@ -535,6 +535,26 @@ pub fn next_scene<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `graphics`.
+pub fn graphics<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|o| o.as_display_object()) {
+        let graphics_proto = activation.context.avm2.prototypes().graphics;
+
+        return Ok(StageObject::for_display_object(
+            activation.context.gc_context,
+            dobj,
+            graphics_proto,
+        )
+        .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MovieClip`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -635,6 +655,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "nextScene"),
         Method::from_builtin(next_scene),
+    ));
+
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "graphics"),
+        Method::from_builtin(graphics),
     ));
 
     class
