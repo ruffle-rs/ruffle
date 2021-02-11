@@ -1,26 +1,34 @@
+use flate2::read::*;
+use flate2::Compression;
 use gc_arena::Collect;
-use std::mem;
+use std::cmp;
+use std::convert::{TryFrom, TryInto};
+use std::io;
+use std::io::prelude::*;
+use std::io::{Error, ErrorKind};
 
-
+#[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
+pub enum Endian {
+    Big,
+    Little,
+}
 
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub struct ByteArrayStorage {
-    /// Underlying ByteArray 
+    /// Underlying ByteArray
     bytes: Vec<u8>,
 
     // The current position to read/write from
     position: usize,
 
-    /// This represents what endian to use while reading data
-    endian: String,
+    /// This represents what endian to use while reading data.
+    endian: Endian,
 
-    /// Boolean representing if the ByteArray is sharable. If false passing the ByteArray will create a brand new ByteArray, 
-    /// but if it's true it will keep the same underlying data.
+    /// TODO: Make this do something
     shareable: bool,
 }
-
-
 
 impl ByteArrayStorage {
     /// Create a new ByteArrayStorage
@@ -28,40 +36,232 @@ impl ByteArrayStorage {
         ByteArrayStorage {
             bytes: Vec::new(),
             position: 0,
-            endian: "BIG_ENDIAN".to_string(),
-            shareable: false
+            endian: Endian::Big,
+            shareable: false,
         }
     }
 
-
     /// Write a byte at next position in the bytearray
     pub fn write_byte(&mut self, byte: u8) {
-
         let bytes_len = self.bytes.len();
         // Allocate space for the byte
         self.position += 1;
         if self.position > bytes_len {
-            self.bytes.resize(bytes_len + (self.position - bytes_len), 0);
+            self.bytes
+                .resize(bytes_len + (self.position - bytes_len), 0);
         }
-        mem::replace(&mut self.bytes[self.position - 1], byte);
-
+        self.bytes[self.position - 1] = byte;
     }
 
-    /// Write bytes at next position in bytearray
-    pub fn write_bytes(&mut self, other: Vec<u8>) {
-
-        let bytes_len = self.bytes.len();
-        let other_offset = self.position + other.len();
-        // Allocate enough space for the new bytes
-        if other_offset > bytes_len {
-            self.bytes.resize(bytes_len + (other_offset - bytes_len), 0);
+    /// Write bytes at next position in bytearray (This function is similar to whats in std::io::Cursor)
+    pub fn write_bytes(&mut self, buf: &[u8], offset: usize, update_pos: bool) {
+        // Make sure the internal buffer is as least as big as where we
+        // currently are
+        let len = self.bytes.len();
+        if len < offset {
+            // use `resize` so that the zero filling is as efficient as possible
+            self.bytes.resize(offset, 0);
         }
-        for (i, byte) in other.iter().enumerate(){
-            mem::replace(&mut self.bytes[self.position + i], *byte);
+        // Figure out what bytes will be used to overwrite what's currently
+        // there (left), and what will be appended on the end (right)
+        {
+            let space = self.bytes.len() - offset;
+            let (left, right) = buf.split_at(cmp::min(space, buf.len()));
+            self.bytes[offset..offset + left.len()].copy_from_slice(left);
+            self.bytes.extend_from_slice(right);
         }
-        // Set new position
-        self.position += other_offset - bytes_len;
 
+        // Bump us forward
+        if update_pos {
+            self.position = offset + buf.len();
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.bytes.clear();
+        // According to docs, this is where the bytearray should free resources
+        self.bytes.shrink_to_fit();
+        self.position = 0;
+    }
+
+    // Returns the bytearray compressed with zlib
+    pub fn zlib_compress(&mut self) -> io::Result<Vec<u8>> {
+        let mut buffer = Vec::new();
+        let mut compresser = ZlibEncoder::new(&*self.bytes, Compression::fast());
+        compresser.read_to_end(&mut buffer)?;
+        Ok(buffer)
+    }
+
+    // Returns the bytearray compressed with deflate
+    pub fn deflate_compress(&mut self) -> io::Result<Vec<u8>> {
+        let mut buffer = Vec::new();
+        let mut compresser = DeflateEncoder::new(&*self.bytes, Compression::fast());
+        compresser.read_to_end(&mut buffer)?;
+        Ok(buffer)
+    }
+
+    /// Will either shorten buffer or increase size of buffer
+    pub fn resize(&mut self, new_len: usize) {
+        match new_len.cmp(&self.bytes.len()) {
+            cmp::Ordering::Greater => self.bytes.resize(new_len, 0),
+            cmp::Ordering::Less => self.bytes.truncate(new_len),
+            cmp::Ordering::Equal => {}
+        }
+    }
+
+    // Reads exactly an amount of data
+    pub fn read_exactly(&mut self, amnt: usize) -> io::Result<&[u8]> {
+        if self.position + amnt > self.bytes.len() {
+            log::error!("ByteArray: Reached EOF");
+            return Err(Error::new(ErrorKind::UnexpectedEof, "Reached EOF"));
+        }
+        let val = Ok(&self.bytes[self.position..self.position + amnt]);
+        self.position += amnt;
+        val
+    }
+
+    pub fn read_utf(&mut self) -> io::Result<String> {
+        let len = self.read_unsigned_short()?;
+        let val = String::from_utf8_lossy(self.read_exactly(len as usize)?);
+        Ok(val.into_owned())
+    }
+
+    // Reads a i16 from the buffer
+    pub fn read_short(&mut self) -> io::Result<i16> {
+        Ok(match self.endian {
+            Endian::Big => i16::from_be_bytes(self.read_exactly(2)?.try_into().unwrap()),
+            Endian::Little => i16::from_le_bytes(self.read_exactly(2)?.try_into().unwrap()),
+        })
+    }
+
+    // Reads a u16 from the buffer
+    pub fn read_unsigned_short(&mut self) -> io::Result<u16> {
+        Ok(match self.endian {
+            Endian::Big => u16::from_be_bytes(self.read_exactly(2)?.try_into().unwrap()),
+            Endian::Little => u16::from_le_bytes(self.read_exactly(2)?.try_into().unwrap()),
+        })
+    }
+
+    // Reads a f64 from the buffer
+    pub fn read_double(&mut self) -> io::Result<f64> {
+        Ok(match self.endian {
+            Endian::Big => f64::from_be_bytes(self.read_exactly(8)?.try_into().unwrap()),
+            Endian::Little => f64::from_le_bytes(self.read_exactly(8)?.try_into().unwrap()),
+        })
+    }
+
+    // Reads a f32 from the buffer
+    pub fn read_float(&mut self) -> io::Result<f32> {
+        Ok(match self.endian {
+            Endian::Big => f32::from_be_bytes(self.read_exactly(4)?.try_into().unwrap()),
+            Endian::Little => f32::from_le_bytes(self.read_exactly(4)?.try_into().unwrap()),
+        })
+    }
+
+    // Reads a i32 from the buffer
+    pub fn read_int(&mut self) -> io::Result<i32> {
+        Ok(match self.endian {
+            Endian::Big => i32::from_be_bytes(self.read_exactly(4)?.try_into().unwrap()),
+            Endian::Little => i32::from_le_bytes(self.read_exactly(4)?.try_into().unwrap()),
+        })
+    }
+
+    // Reads a u32 from the buffer
+    pub fn read_unsigned_int(&mut self) -> io::Result<u32> {
+        Ok(match self.endian {
+            Endian::Big => u32::from_be_bytes(self.read_exactly(4)?.try_into().unwrap()),
+            Endian::Little => u32::from_le_bytes(self.read_exactly(4)?.try_into().unwrap()),
+        })
+    }
+
+    // Reads byte from buffer, returns false if zero, otherwise true
+    pub fn read_boolean(&mut self) -> io::Result<bool> {
+        Ok(*self.read_exactly(1)?.first().unwrap() != 0)
+    }
+
+    // Reads a i8 from the buffer
+    pub fn read_byte(&mut self) -> io::Result<i8> {
+        Ok(match self.endian {
+            Endian::Big => i8::from_be_bytes(self.read_exactly(1)?.try_into().unwrap()),
+            Endian::Little => i8::from_le_bytes(self.read_exactly(1)?.try_into().unwrap()),
+        })
+    }
+
+    // Reads a u8 from the buffer
+    pub fn read_unsigned_byte(&mut self) -> io::Result<u8> {
+        Ok(match self.endian {
+            Endian::Big => u8::from_be_bytes(self.read_exactly(1)?.try_into().unwrap()),
+            Endian::Little => u8::from_le_bytes(self.read_exactly(1)?.try_into().unwrap()),
+        })
+    }
+
+    // Writes a f32 to the buffer
+    pub fn write_float(&mut self, val: f32) {
+        let float_bytes = match self.endian {
+            Endian::Big => val.to_be_bytes(),
+            Endian::Little => val.to_le_bytes(),
+        };
+        self.write_bytes(&float_bytes, self.position, true);
+    }
+
+    // Writes a f64 to the buffer
+    pub fn write_double(&mut self, val: f64) {
+        let double_bytes = match self.endian {
+            Endian::Big => val.to_be_bytes(),
+            Endian::Little => val.to_le_bytes(),
+        };
+        self.write_bytes(&double_bytes, self.position, true);
+    }
+
+    // Writes a 1 byte to the buffer, either 1 or 0
+    pub fn write_boolean(&mut self, val: bool) {
+        self.write_bytes(&[val as u8; 1], self.position, true);
+    }
+
+    // Writes a i32 to the buffer
+    pub fn write_int(&mut self, val: i32) {
+        let int_bytes = match self.endian {
+            Endian::Big => val.to_be_bytes(),
+            Endian::Little => val.to_le_bytes(),
+        };
+        self.write_bytes(&int_bytes, self.position, true);
+    }
+
+    // Writes a u32 to the buffer
+    pub fn write_unsigned_int(&mut self, val: u32) {
+        let uint_bytes = match self.endian {
+            Endian::Big => val.to_be_bytes(),
+            Endian::Little => val.to_le_bytes(),
+        };
+        self.write_bytes(&uint_bytes, self.position, true);
+    }
+
+    // Writes a i16 to the buffer
+    pub fn write_short(&mut self, val: i16) {
+        let short_bytes = match self.endian {
+            Endian::Big => val.to_be_bytes(),
+            Endian::Little => val.to_le_bytes(),
+        };
+        self.write_bytes(&short_bytes, self.position, true);
+    }
+
+    // Writes a u16 to the buffer
+    pub fn write_unsigned_short(&mut self, val: u16) {
+        let ushort_bytes = match self.endian {
+            Endian::Big => val.to_be_bytes(),
+            Endian::Little => val.to_le_bytes(),
+        };
+        self.write_bytes(&ushort_bytes, self.position, true);
+    }
+
+    // Writes a UTF String into the buffer, with its length as a prefix
+    pub fn write_utf(&mut self, utf_string: &str) {
+        if let Ok(str_size) = u16::try_from(utf_string.len()) {
+            self.write_unsigned_short(str_size);
+            self.write_bytes(utf_string.as_bytes(), self.position, true);
+        } else {
+            log::error!("ByteArray: UTF String length must fit into a short");
+        }
     }
 
     pub fn bytes(&self) -> &Vec<u8> {
@@ -72,12 +272,28 @@ impl ByteArrayStorage {
         self.position
     }
 
-    pub fn reborrow(&self) -> ByteArrayStorage{
+    pub fn set_position(&mut self, pos: usize) {
+        self.position = pos;
+    }
+
+    pub fn add_position(&mut self, amnt: usize) {
+        self.position += amnt;
+    }
+
+    pub fn endian(&self) -> &Endian {
+        &self.endian
+    }
+
+    pub fn set_endian(&mut self, new_endian: Endian) {
+        self.endian = new_endian;
+    }
+
+    pub fn reborrow(&self) -> ByteArrayStorage {
         ByteArrayStorage {
             bytes: self.bytes.clone(),
             position: self.position,
             endian: self.endian.clone(),
-            shareable: self.shareable
+            shareable: self.shareable,
         }
     }
 }
