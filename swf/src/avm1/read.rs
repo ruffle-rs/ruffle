@@ -4,6 +4,7 @@ use crate::avm1::{opcode::OpCode, types::*};
 use crate::error::{Error, Result};
 use crate::extensions::ReadSwfExt;
 use crate::{FrameNumber, SwfStr};
+use std::iter::from_fn;
 
 #[allow(dead_code)]
 pub struct Reader<'a> {
@@ -100,7 +101,9 @@ impl<'a> Reader<'a> {
                 OpCode::CastOp => Action::CastOp,
                 OpCode::CharToAscii => Action::CharToAscii,
                 OpCode::CloneSprite => Action::CloneSprite,
-                OpCode::ConstantPool => Action::ConstantPool(self.read_constant_pool()?),
+                OpCode::ConstantPool => {
+                    Action::ConstantPool(self.read_constant_pool()?.collect::<Result<_>>()?)
+                }
                 OpCode::Decrement => Action::Decrement,
                 OpCode::DefineFunction => {
                     Action::DefineFunction(self.read_define_function(length)?)
@@ -153,7 +156,7 @@ impl<'a> Reader<'a> {
                 OpCode::Pop => Action::Pop,
                 OpCode::PreviousFrame => Action::PreviousFrame,
                 // TODO: Verify correct version for complex types.
-                OpCode::Push => Action::Push(self.read_push(*length)?),
+                OpCode::Push => Action::Push(self.read_push(*length)?.collect::<Result<_>>()?),
                 OpCode::PushDuplicate => Action::PushDuplicate,
                 OpCode::RandomNumber => Action::RandomNumber,
                 OpCode::RemoveSprite => Action::RemoveSprite,
@@ -202,12 +205,11 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    fn read_constant_pool(&mut self) -> Result<Vec<&'a SwfStr>> {
-        let mut constants = vec![];
-        for _ in 0..self.read_u16()? {
-            constants.push(self.read_str()?);
-        }
-        Ok(constants)
+    fn read_constant_pool<'b>(
+        &'b mut self,
+    ) -> Result<impl Iterator<Item = Result<&'a SwfStr>> + 'b> {
+        let len = self.read_u16()?;
+        Ok((0..len).map(move |_| self.read_str()))
     }
 
     #[inline]
@@ -265,27 +267,32 @@ impl<'a> Reader<'a> {
         self.read_i16()
     }
 
-    fn read_push(&mut self, length: usize) -> Result<Vec<Value<'a>>> {
-        let end_pos = (self.input.as_ptr() as usize + length) as *const u8;
-        let mut values = Vec::with_capacity(4);
-        while self.input.as_ptr() < end_pos {
-            values.push(self.read_push_value()?);
-        }
-        Ok(values)
+    fn read_push<'b>(
+        &'b mut self,
+        length: usize,
+    ) -> Result<impl Iterator<Item = Result<Value<'a>>> + 'b> {
+        let mut slice = self.read_slice(length)?;
+        Ok(from_fn(move || {
+            if let Ok(value_type) = slice.read_u8() {
+                Some(Reader::read_push_value(&mut slice, value_type))
+            } else {
+                None
+            }
+        }))
     }
 
-    fn read_push_value(&mut self) -> Result<Value<'a>> {
-        let value = match self.read_u8()? {
-            0 => Value::Str(self.read_str()?),
-            1 => Value::Float(self.read_f32()?),
+    fn read_push_value(input: &mut &'a [u8], value_type: u8) -> Result<Value<'a>> {
+        let value = match value_type {
+            0 => Value::Str(input.read_str()?),
+            1 => Value::Float(input.read_f32()?),
             2 => Value::Null,
             3 => Value::Undefined,
-            4 => Value::Register(self.read_u8()?),
-            5 => Value::Bool(self.read_u8()? != 0),
-            6 => Value::Double(self.read_f64_me()?),
-            7 => Value::Int(self.read_i32()?),
-            8 => Value::ConstantPool(self.read_u8()?.into()),
-            9 => Value::ConstantPool(self.read_u16()?),
+            4 => Value::Register(input.read_u8()?),
+            5 => Value::Bool(input.read_u8()? != 0),
+            6 => Value::Double(input.read_f64_me()?),
+            7 => Value::Int(input.read_i32()?),
+            8 => Value::ConstantPool(input.read_u8()?.into()),
+            9 => Value::ConstantPool(input.read_u16()?),
             _ => return Err(Error::invalid_data("Invalid value type in ActionPush")),
         };
         Ok(value)
