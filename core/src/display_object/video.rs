@@ -57,6 +57,7 @@ pub struct VideoData<'gc> {
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub enum VideoSource {
+    /// A video bitstream embedded inside of a SWF movie.
     SWF {
         /// The movie that defined this video stream.
         movie: Arc<SwfMovie>,
@@ -64,7 +65,7 @@ pub enum VideoSource {
         /// The video stream definition.
         streamdef: DefineVideoStream,
 
-        /// The H.263 bitstream indexed by video frame ID.
+        /// The locations of each embedded sub-bitstream for each video frame.
         ///
         /// Each frame consists of a start and end parameter which can be used
         /// to reconstruct a reference to the embedded bitstream.

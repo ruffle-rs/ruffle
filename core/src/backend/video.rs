@@ -111,10 +111,10 @@ pub struct NullVideoBackend {
 ///
 /// Specifically:
 ///
-///  * Registering a video stream fails silently
+///  * Registering a video stream succeeds but does nothing
 ///  * All video frames are silently marked as keyframes
-///  * Video stream decoding fails (since we can't pump arbitrary bitmaps into
-///    arbitrary renderers)
+///  * Video stream decoding fails with an error that video decoding is
+///    unimplemented
 impl NullVideoBackend {
     pub fn new() -> Self {
         Self {

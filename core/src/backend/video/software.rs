@@ -10,11 +10,8 @@ use swf::{VideoCodec, VideoDeblocking};
 /// A single preloaded video stream.
 pub enum VideoStream {}
 
-/// Desktop video backend.
-///
-/// TODO: Currently, this just proxies out to `ruffle_h263`, in the future it
-/// should support desktop media playback APIs so we can take advantage of
-/// hardware-accelerated video decoding.
+/// Software video backend that proxies to CPU-only codec implementations that
+/// ship with Ruffle.
 pub struct SoftwareVideoBackend {
     streams: Arena<VideoStream>,
 }
