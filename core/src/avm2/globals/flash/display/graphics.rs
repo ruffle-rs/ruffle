@@ -298,6 +298,36 @@ pub fn line_to<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Graphics.moveTo`.
+pub fn move_to<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(dobj) = this.as_display_object() {
+            if let Some(mc) = dobj.as_movie_clip() {
+                let x = Twips::from_pixels(
+                    args.get(0)
+                        .cloned()
+                        .unwrap_or(Value::Undefined)
+                        .coerce_to_number(activation)?,
+                );
+                let y = Twips::from_pixels(
+                    args.get(1)
+                        .cloned()
+                        .unwrap_or(Value::Undefined)
+                        .coerce_to_number(activation)?,
+                );
+
+                mc.draw_command(&mut activation.context, DrawCommand::MoveTo { x, y });
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Graphics`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -333,6 +363,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "lineTo"),
         Method::from_builtin(line_to),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public(), "moveTo"),
+        Method::from_builtin(move_to),
     ));
 
     class
