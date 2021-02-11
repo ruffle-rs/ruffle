@@ -3,6 +3,7 @@
 use crate::avm1::{opcode::OpCode, types::*};
 use crate::error::{Error, Result};
 use crate::extensions::ReadSwfExt;
+use crate::{FrameNumber, SwfStr};
 
 #[allow(dead_code)]
 pub struct Reader<'a> {
@@ -99,16 +100,14 @@ impl<'a> Reader<'a> {
                 OpCode::CastOp => Action::CastOp,
                 OpCode::CharToAscii => Action::CharToAscii,
                 OpCode::CloneSprite => Action::CloneSprite,
-                OpCode::ConstantPool => {
-                    let mut constants = vec![];
-                    for _ in 0..self.read_u16()? {
-                        constants.push(self.read_str()?);
-                    }
-                    Action::ConstantPool(constants)
-                }
+                OpCode::ConstantPool => Action::ConstantPool(self.read_constant_pool()?),
                 OpCode::Decrement => Action::Decrement,
-                OpCode::DefineFunction => self.read_define_function(length)?,
-                OpCode::DefineFunction2 => self.read_define_function_2(length)?,
+                OpCode::DefineFunction => {
+                    Action::DefineFunction(self.read_define_function(length)?)
+                }
+                OpCode::DefineFunction2 => {
+                    Action::DefineFunction2(self.read_define_function_2(length)?)
+                }
                 OpCode::DefineLocal => Action::DefineLocal,
                 OpCode::DefineLocal2 => Action::DefineLocal2,
                 OpCode::Delete => Action::Delete,
@@ -123,52 +122,20 @@ impl<'a> Reader<'a> {
                 OpCode::GetMember => Action::GetMember,
                 OpCode::GetProperty => Action::GetProperty,
                 OpCode::GetTime => Action::GetTime,
-                OpCode::GetUrl => Action::GetUrl(GetUrl {
-                    url: self.read_str()?,
-                    target: self.read_str()?,
-                }),
-                OpCode::GetUrl2 => {
-                    let flags = self.read_u8()?;
-                    Action::GetUrl2(GetUrl2 {
-                        is_load_vars: flags & 0b10_0000_00 != 0,
-                        is_target_sprite: flags & 0b01_0000_00 != 0,
-                        send_vars_method: match flags & 0b11 {
-                            0 => SendVarsMethod::None,
-                            1 => SendVarsMethod::Get,
-                            2 => SendVarsMethod::Post,
-                            _ => {
-                                return Err(Error::invalid_data(
-                                    "Invalid HTTP method in ActionGetUrl2",
-                                ));
-                            }
-                        },
-                    })
-                }
+                OpCode::GetUrl => Action::GetUrl(self.read_get_url()?),
+                OpCode::GetUrl2 => Action::GetUrl2(self.read_get_url_2()?),
                 OpCode::GetVariable => Action::GetVariable,
-                OpCode::GotoFrame => {
-                    let frame = self.read_u16()?;
-                    Action::GotoFrame(frame)
-                }
-                OpCode::GotoFrame2 => {
-                    let flags = self.read_u8()?;
-                    Action::GotoFrame2(GotoFrame2 {
-                        set_playing: flags & 0b1 != 0,
-                        scene_offset: if flags & 0b10 != 0 {
-                            self.read_u16()?
-                        } else {
-                            0
-                        },
-                    })
-                }
-                OpCode::GotoLabel => Action::GotoLabel(self.read_str()?),
+                OpCode::GotoFrame => Action::GotoFrame(self.read_goto_frame()?),
+                OpCode::GotoFrame2 => Action::GotoFrame2(self.read_goto_frame_2()?),
+                OpCode::GotoLabel => Action::GotoLabel(self.read_goto_label()?),
                 OpCode::Greater => Action::Greater,
-                OpCode::If => Action::If(self.read_i16()?),
+                OpCode::If => Action::If(self.read_instruction_offset()?),
                 OpCode::ImplementsOp => Action::ImplementsOp,
                 OpCode::Increment => Action::Increment,
                 OpCode::InitArray => Action::InitArray,
                 OpCode::InitObject => Action::InitObject,
                 OpCode::InstanceOf => Action::InstanceOf,
-                OpCode::Jump => Action::Jump(self.read_i16()?),
+                OpCode::Jump => Action::Jump(self.read_instruction_offset()?),
                 OpCode::Less => Action::Less,
                 OpCode::Less2 => Action::Less2,
                 OpCode::MBAsciiToChar => Action::MBAsciiToChar,
@@ -186,21 +153,21 @@ impl<'a> Reader<'a> {
                 OpCode::Pop => Action::Pop,
                 OpCode::PreviousFrame => Action::PreviousFrame,
                 // TODO: Verify correct version for complex types.
-                OpCode::Push => self.read_push(*length)?,
+                OpCode::Push => Action::Push(self.read_push(*length)?),
                 OpCode::PushDuplicate => Action::PushDuplicate,
                 OpCode::RandomNumber => Action::RandomNumber,
                 OpCode::RemoveSprite => Action::RemoveSprite,
                 OpCode::Return => Action::Return,
                 OpCode::SetMember => Action::SetMember,
                 OpCode::SetProperty => Action::SetProperty,
-                OpCode::SetTarget => Action::SetTarget(self.read_str()?),
+                OpCode::SetTarget => Action::SetTarget(self.read_set_target()?),
                 OpCode::SetTarget2 => Action::SetTarget2,
                 OpCode::SetVariable => Action::SetVariable,
                 OpCode::StackSwap => Action::StackSwap,
                 OpCode::StartDrag => Action::StartDrag,
                 OpCode::Stop => Action::Stop,
                 OpCode::StopSounds => Action::StopSounds,
-                OpCode::StoreRegister => Action::StoreRegister(self.read_u8()?),
+                OpCode::StoreRegister => Action::StoreRegister(self.read_store_register()?),
                 OpCode::StrictEquals => Action::StrictEquals,
                 OpCode::StringAdd => Action::StringAdd,
                 OpCode::StringEquals => Action::StringEquals,
@@ -216,20 +183,11 @@ impl<'a> Reader<'a> {
                 OpCode::ToNumber => Action::ToNumber,
                 OpCode::ToString => Action::ToString,
                 OpCode::Trace => Action::Trace,
-                OpCode::Try => self.read_try(length)?,
+                OpCode::Try => Action::Try(self.read_try(length)?),
                 OpCode::TypeOf => Action::TypeOf,
-                OpCode::WaitForFrame => Action::WaitForFrame(WaitForFrame {
-                    frame: self.read_u16()?,
-                    num_actions_to_skip: self.read_u8()?,
-                }),
-                OpCode::WaitForFrame2 => Action::WaitForFrame2(WaitForFrame2 {
-                    num_actions_to_skip: self.read_u8()?,
-                }),
-                OpCode::With => {
-                    let code_length = usize::from(self.read_u16()?);
-                    *length += code_length;
-                    Action::With(self.read_slice(code_length)?)
-                }
+                OpCode::WaitForFrame => Action::WaitForFrame(self.read_wait_for_frame()?),
+                OpCode::WaitForFrame2 => Action::WaitForFrame2(self.read_wait_for_frame_2()?),
+                OpCode::With => Action::With(self.read_with(length)?),
             }
         } else {
             let data = self.read_unknown_action(*length)?;
@@ -243,13 +201,77 @@ impl<'a> Reader<'a> {
         self.read_slice(length)
     }
 
-    fn read_push(&mut self, length: usize) -> Result<Action<'a>> {
+    #[inline]
+    fn read_constant_pool(&mut self) -> Result<Vec<&'a SwfStr>> {
+        let mut constants = vec![];
+        for _ in 0..self.read_u16()? {
+            constants.push(self.read_str()?);
+        }
+        Ok(constants)
+    }
+
+    #[inline]
+    fn read_get_url(&mut self) -> Result<GetUrl<'a>> {
+        Ok(GetUrl {
+            url: self.read_str()?,
+            target: self.read_str()?,
+        })
+    }
+
+    #[inline]
+    fn read_get_url_2(&mut self) -> Result<GetUrl2> {
+        let flags = self.read_u8()?;
+        let send_vars_method = match flags & 0b11 {
+            0 => SendVarsMethod::None,
+            1 => SendVarsMethod::Get,
+            2 => SendVarsMethod::Post,
+            _ => {
+                return Err(Error::invalid_data("Invalid HTTP method in ActionGetUrl2"));
+            }
+        };
+        Ok(GetUrl2 {
+            is_load_vars: flags & 0b10_0000_00 != 0,
+            is_target_sprite: flags & 0b01_0000_00 != 0,
+            send_vars_method,
+        })
+    }
+
+    #[inline]
+    fn read_goto_frame(&mut self) -> Result<FrameNumber> {
+        Ok(self.read_u16()?)
+    }
+
+    #[inline]
+    fn read_goto_frame_2(&mut self) -> Result<GotoFrame2> {
+        let flags = self.read_u8()?;
+        let scene_offset = if flags & 0b10 != 0 {
+            self.read_u16()?
+        } else {
+            0
+        };
+        Ok(GotoFrame2 {
+            set_playing: flags & 0b1 != 0,
+            scene_offset,
+        })
+    }
+
+    #[inline]
+    fn read_goto_label(&mut self) -> Result<&'a SwfStr> {
+        Ok(self.read_str()?)
+    }
+
+    #[inline]
+    fn read_instruction_offset(&mut self) -> Result<InstructionOffset> {
+        self.read_i16()
+    }
+
+    fn read_push(&mut self, length: usize) -> Result<Vec<Value<'a>>> {
         let end_pos = (self.input.as_ptr() as usize + length) as *const u8;
         let mut values = Vec::with_capacity(4);
         while self.input.as_ptr() < end_pos {
             values.push(self.read_push_value()?);
         }
-        Ok(Action::Push(values))
+        Ok(values)
     }
 
     fn read_push_value(&mut self) -> Result<Value<'a>> {
@@ -269,7 +291,17 @@ impl<'a> Reader<'a> {
         Ok(value)
     }
 
-    fn read_define_function(&mut self, action_length: &mut usize) -> Result<Action<'a>> {
+    #[inline]
+    fn read_set_target(&mut self) -> Result<&'a SwfStr> {
+        self.read_str()
+    }
+
+    #[inline]
+    fn read_store_register(&mut self) -> Result<u8> {
+        self.read_u8()
+    }
+
+    fn read_define_function(&mut self, action_length: &mut usize) -> Result<DefineFunction<'a>> {
         let name = self.read_str()?;
         let num_params = self.read_u16()?;
         let mut params = Vec::with_capacity(num_params as usize);
@@ -279,14 +311,14 @@ impl<'a> Reader<'a> {
         // code_length isn't included in the DefineFunction's action length.
         let code_length = usize::from(self.read_u16()?);
         *action_length += code_length;
-        Ok(Action::DefineFunction(DefineFunction {
+        Ok(DefineFunction {
             name,
             params,
             actions: self.read_slice(code_length)?,
-        }))
+        })
     }
 
-    fn read_define_function_2(&mut self, action_length: &mut usize) -> Result<Action<'a>> {
+    fn read_define_function_2(&mut self, action_length: &mut usize) -> Result<DefineFunction2<'a>> {
         let name = self.read_str()?;
         let num_params = self.read_u16()?;
         let register_count = self.read_u8()?; // Number of registers
@@ -302,7 +334,7 @@ impl<'a> Reader<'a> {
         // code_length isn't included in the DefineFunction's length.
         let code_length = usize::from(self.read_u16()?);
         *action_length += code_length;
-        Ok(Action::DefineFunction2(DefineFunction2 {
+        Ok(DefineFunction2 {
             name,
             params,
             register_count,
@@ -316,10 +348,10 @@ impl<'a> Reader<'a> {
             suppress_this: flags & 0b10 != 0,
             preload_this: flags & 0b1 != 0,
             actions: self.read_slice(code_length)?,
-        }))
+        })
     }
 
-    fn read_try(&mut self, length: &mut usize) -> Result<Action<'a>> {
+    fn read_try(&mut self, length: &mut usize) -> Result<TryBlock<'a>> {
         let flags = self.read_u8()?;
         let try_length = usize::from(self.read_u16()?);
         let catch_length = usize::from(self.read_u16()?);
@@ -333,7 +365,7 @@ impl<'a> Reader<'a> {
         let try_actions = self.read_slice(try_length)?;
         let catch_actions = self.read_slice(catch_length)?;
         let finally_actions = self.read_slice(finally_length)?;
-        Ok(Action::Try(TryBlock {
+        Ok(TryBlock {
             try_actions,
             catch: if flags & 0b1 != 0 {
                 Some((catch_var, catch_actions))
@@ -345,14 +377,36 @@ impl<'a> Reader<'a> {
             } else {
                 None
             },
-        }))
+        })
+    }
+
+    #[inline]
+    fn read_wait_for_frame(&mut self) -> Result<WaitForFrame> {
+        Ok(WaitForFrame {
+            frame: self.read_u16()?,
+            num_actions_to_skip: self.read_u8()?,
+        })
+    }
+
+    #[inline]
+    fn read_wait_for_frame_2(&mut self) -> Result<WaitForFrame2> {
+        Ok(WaitForFrame2 {
+            num_actions_to_skip: self.read_u8()?,
+        })
+    }
+
+    #[inline]
+    fn read_with(&mut self, length: &mut usize) -> Result<ActionsData<'a>> {
+        let code_length = usize::from(self.read_u16()?);
+        *length += code_length;
+        Ok(self.read_slice(code_length)?)
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::string::{SwfStr, WINDOWS_1252};
+    use crate::string::WINDOWS_1252;
     use crate::test_data;
 
     #[test]
