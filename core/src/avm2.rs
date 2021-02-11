@@ -33,6 +33,7 @@ mod names;
 mod object;
 mod property;
 mod property_map;
+mod regexp;
 mod return_value;
 mod scope;
 mod script;

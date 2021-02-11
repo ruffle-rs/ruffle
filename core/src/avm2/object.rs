@@ -7,6 +7,7 @@ use crate::avm2::domain::Domain;
 use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::regexp::RegExp;
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
@@ -26,6 +27,7 @@ mod event_object;
 mod function_object;
 mod namespace_object;
 mod primitive_object;
+mod regexp_object;
 mod script_object;
 mod stage_object;
 mod xml_object;
@@ -37,6 +39,7 @@ pub use crate::avm2::object::event_object::EventObject;
 pub use crate::avm2::object::function_object::{implicit_deriver, FunctionObject};
 pub use crate::avm2::object::namespace_object::NamespaceObject;
 pub use crate::avm2::object::primitive_object::PrimitiveObject;
+pub use crate::avm2::object::regexp_object::RegExpObject;
 pub use crate::avm2::object::script_object::ScriptObject;
 pub use crate::avm2::object::stage_object::StageObject;
 pub use crate::avm2::object::xml_object::XmlObject;
@@ -57,6 +60,7 @@ pub use crate::avm2::object::xml_object::XmlObject;
         EventObject(EventObject<'gc>),
         DispatchObject(DispatchObject<'gc>),
         XmlObject(XmlObject<'gc>),
+        RegExpObject(RegExpObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -881,6 +885,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object as a mutable primitive value.
     fn as_primitive_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<Value<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a regexp.
+    fn as_regexp(&self) -> Option<Ref<RegExp<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a mutable regexp.
+    fn as_regexp_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<RegExp<'gc>>> {
         None
     }
 }

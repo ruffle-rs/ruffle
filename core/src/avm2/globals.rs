@@ -27,6 +27,7 @@ mod math;
 mod namespace;
 mod number;
 mod object;
+mod regexp;
 mod string;
 mod r#uint;
 mod xml;
@@ -458,6 +459,13 @@ pub fn load_player_globals<'gc>(
         activation,
         math::create_class(mc),
         implicit_deriver,
+        domain,
+        script,
+    )?;
+    class(
+        activation,
+        regexp::create_class(mc),
+        regexp::regexp_deriver,
         domain,
         script,
     )?;
