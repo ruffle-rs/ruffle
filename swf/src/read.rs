@@ -10,6 +10,7 @@ use crate::extensions::ReadSwfExt;
 use crate::{
     error::{Error, Result},
     string::{Encoding, SwfStr},
+    tag_code::TagCode,
     types::*,
 };
 use bitstream_io::BitRead;
@@ -308,7 +309,6 @@ impl<'a> Reader<'a> {
 
     fn read_tag_with_code(&mut self, tag_code: u16, length: usize) -> Result<Tag<'a>> {
         let mut tag_reader = Reader::new(self.read_slice(length)?, self.version);
-        use crate::tag_code::TagCode;
         let tag = match TagCode::from_u16(tag_code) {
             Some(TagCode::End) => Tag::End,
             Some(TagCode::ShowFrame) => Tag::ShowFrame,
@@ -552,7 +552,7 @@ impl<'a> Reader<'a> {
 
             Some(TagCode::VideoFrame) => tag_reader.read_video_frame()?,
             Some(TagCode::ProductInfo) => Tag::ProductInfo(tag_reader.read_product_info()?),
-            _ => {
+            None => {
                 let data = tag_reader.read_slice_to_end();
                 Tag::Unknown { tag_code, data }
             }
