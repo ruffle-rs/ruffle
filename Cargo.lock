@@ -3024,7 +3024,6 @@ dependencies = [
  "approx",
  "bitflags",
  "bitstream-io 1.0.0",
- "byteorder",
  "chrono",
  "downcast-rs",
  "encoding_rs",
