@@ -127,6 +127,23 @@ pub fn curve_to<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Graphics.endFill`.
+pub fn end_fill<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(dobj) = this.as_display_object() {
+            if let Some(mc) = dobj.as_movie_clip() {
+                mc.set_fill_style(&mut activation.context, None);
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Graphics`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -150,6 +167,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "curveTo"),
         Method::from_builtin(curve_to),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public(), "endFill"),
+        Method::from_builtin(end_fill),
     ));
 
     class
