@@ -157,7 +157,7 @@ impl SwfStr {
     /// assert_eq!(s.as_bytes(), [0xF0, 0x9F, 0x92, 0x96]);
     /// ```
     #[inline]
-    pub fn as_bytes(&self) -> &[u8] {
+    pub const fn as_bytes(&self) -> &[u8] {
         &self.string
     }
 
@@ -174,7 +174,7 @@ impl SwfStr {
     /// let s = SwfStr::from_utf8_str("💖");
     /// assert!(!s.is_empty());
     #[inline]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.string.is_empty()
     }
 
@@ -195,7 +195,7 @@ impl SwfStr {
     /// assert_eq!(s.len(), 4);
     /// ```
     #[inline]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.string.len()
     }
 

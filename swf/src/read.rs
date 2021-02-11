@@ -247,7 +247,7 @@ impl<'a> ReadSwfExt<'a> for Reader<'a> {
 
 impl<'a> Reader<'a> {
     #[inline]
-    pub fn new(input: &'a [u8], version: u8) -> Reader<'a> {
+    pub const fn new(input: &'a [u8], version: u8) -> Reader<'a> {
         Reader { input, version }
     }
 
@@ -261,13 +261,13 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    pub fn version(&self) -> u8 {
+    pub const fn version(&self) -> u8 {
         self.version
     }
 
     /// Returns a reference to the underlying `Reader`.
     #[inline]
-    pub fn get_ref(&self) -> &'a [u8] {
+    pub const fn get_ref(&self) -> &'a [u8] {
         self.input
     }
 
