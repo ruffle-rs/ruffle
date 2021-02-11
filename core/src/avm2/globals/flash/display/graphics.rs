@@ -64,6 +64,23 @@ pub fn begin_fill<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Graphics.clear`
+pub fn clear<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(dobj) = this.as_display_object() {
+            if let Some(mc) = dobj.as_movie_clip() {
+                mc.clear(&mut activation.context)
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Graphics`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -79,6 +96,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "beginFill"),
         Method::from_builtin(begin_fill),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public(), "clear"),
+        Method::from_builtin(clear),
     ));
 
     class
