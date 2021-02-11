@@ -13,20 +13,21 @@ use crate::backend::{
     ui::UiBackend,
     video::VideoBackend,
 };
-use crate::display_object::{EditText, Level, MovieClip, SoundTransform};
+use crate::display_object::{EditText, MovieClip, SoundTransform};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
 use crate::prelude::*;
+use crate::levels::{LevelsData, Level};
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::transform::TransformStack;
 use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
@@ -93,7 +94,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub rng: &'a mut SmallRng,
 
     /// All loaded levels of the current player.
-    pub levels: &'a mut BTreeMap<u32, Level<'gc>>,
+    pub levels: &'a mut LevelsData<'gc>,
 
     /// The display object that the mouse is currently hovering over.
     pub mouse_hovered_object: Option<DisplayObject<'gc>>,
@@ -167,7 +168,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             self.audio,
             self.gc_context,
             self.action_queue,
-            self.levels.get(&0).unwrap().root(),
+            self.levels.level_at(0).unwrap(),
         );
     }
 
@@ -237,14 +238,13 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 
     /// Methods to add/remove nodes to/from the global execution list.
     pub fn add_to_execution_list(&mut self, node: DisplayObject<'gc>) {
-        if let Some(level) = self.levels.get_mut(&node.level()) {
-            if let Some(head) = level.exec_list() {
-                head.set_prev_exec(self.gc_context, Some(node));
-                node.set_next_exec(self.gc_context, Some(head));
-            }
-            level.set_exec_list(Some(node));
+        if let Some(level) = self.levels.get_mut(node.level()) {
+            let head = level.last_child();
+            head.set_prev_exec(self.gc_context, Some(node));
+            node.set_next_exec(self.gc_context, Some(head));
+            level.set_last_child(node);
         } else {
-            self.levels.insert(node.level(), Level::new(node));
+            self.levels.push(self.gc_context, &mut Level::new(node));
         }
     }
 
@@ -268,11 +268,10 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         node.set_prev_exec(self.gc_context, None);
         node.set_next_exec(self.gc_context, None);
 
-        if let Some(level) = self.levels.get_mut(&node.level()) {
-            if let Some(head) = level.exec_list() {
-                if DisplayObject::ptr_eq(head, node) {
-                    level.set_exec_list(next);
-                }
+        if let Some(level) = self.levels.get_mut(node.level()) {
+            if DisplayObject::ptr_eq(level.last_child(), node) {
+                // TODO: can we safely unwrap here?
+                level.set_last_child(next.unwrap());
             }
         }
     }

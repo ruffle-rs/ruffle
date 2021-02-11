@@ -10,8 +10,9 @@ use crate::avm1::{
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{
-    DisplayObject, Level, MovieClip, TDisplayObject, TDisplayObjectContainer,
+    DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
+use crate::levels::{Level, LevelId};
 use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::prelude::Depth;
 use crate::tag_utils::SwfSlice;
@@ -346,7 +347,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Self {
         let version = context.swf.version();
         let globals = context.avm1.global_object_cell();
-        let level0 = context.levels.get(&0).unwrap().root();
+        let level0 = context.levels.level_at(0).unwrap();
 
         Self::from_nothing(context, id, version, globals, level0)
     }
@@ -2808,9 +2809,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// If the level does not exist, then it will be created and instantiated
     /// with a script object.
-    pub fn resolve_level(&mut self, level_id: u32) -> DisplayObject<'gc> {
-        if let Some(level) = self.context.levels.get(&level_id) {
-            level.root()
+    pub fn resolve_level(&mut self, level_id: LevelId) -> DisplayObject<'gc> {
+        if let Some(level) = self.context.levels.level_at(level_id) {
+            level
         } else {
             let root: DisplayObject<'_> = MovieClip::new(
                 SwfSlice::empty(self.base_clip().movie().unwrap()),
@@ -2821,7 +2822,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             root.set_depth(self.context.gc_context, level_id as Depth);
             root.set_level(self.context.gc_context, level_id);
             root.set_default_root_name(&mut self.context);
-            self.context.levels.insert(level_id, Level::new(root));
+            self.context.levels.push(self.context.gc_context, &mut Level::new(root));
             self.context.add_to_execution_list(root);
             root.post_instantiation(&mut self.context, root, None, Instantiator::Movie, false);
 

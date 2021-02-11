@@ -11,6 +11,7 @@ pub use log::{error, info, trace, warn};
 pub use std::ops::{Bound, RangeBounds};
 pub use swf::Matrix;
 pub use swf::{CharacterId, Color, Twips};
+pub use crate::levels::LevelId;
 
 /// A depth for a Flash display object in AVM1.
 /// This is different than defined in `swf`; during execution, clips
