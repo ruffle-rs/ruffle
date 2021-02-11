@@ -49,7 +49,6 @@ fn trace<'gc>(
         }
     }
 
-    log::warn!("{}", &message);
     activation.context.log.avm_trace(&message);
 
     Ok(Value::Undefined)
@@ -561,16 +560,18 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
     // package `flash.utils`
-    activation
-        .context
-        .avm2
-        .system_prototypes
-        .as_mut()
-        .unwrap()
-        .bytearray = class(
+    class(
         activation,
         flash::utils::bytearray::create_class(mc),
         bytearray_deriver,
+        domain,
+        script,
+    )?;
+
+    class(
+        activation,
+        flash::utils::endian::create_class(mc),
+        implicit_deriver,
         domain,
         script,
     )?;
