@@ -1,4 +1,5 @@
 use std::{borrow, error, fmt, io};
+use crate::tag_code::TagCode;
 
 /// A `Result` from reading SWF data.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -51,14 +52,6 @@ impl Error {
     }
     /// Helper method to create `Error::SwfParseError`.
     #[inline]
-    pub fn swf_parse_error(tag_code: u16) -> Self {
-        Error::SwfParseError {
-            tag_code,
-            source: None,
-        }
-    }
-    /// Helper method to create `Error::SwfParseError`.
-    #[inline]
     pub fn swf_parse_error_with_source(tag_code: u16, source: impl error::Error + 'static) -> Self {
         Error::SwfParseError {
             tag_code,
@@ -90,10 +83,9 @@ impl fmt::Display for Error {
                 Ok(())
             }
             Error::SwfParseError { tag_code, source } => {
-                let tag = crate::tag_code::TagCode::from_u16(*tag_code);
                 "Error parsing SWF tag ".fmt(f)?;
-                if let Some(tag) = tag {
-                    write!(f, "{:?}", tag)?;
+                if let Some(tag_code) = TagCode::from_u16(*tag_code) {
+                    write!(f, "{:?}", tag_code)?;
                 } else {
                     write!(f, "Unknown({})", tag_code)?;
                 };
