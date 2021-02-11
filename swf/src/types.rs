@@ -98,7 +98,7 @@ impl Twips {
     /// let twips = Twips::zero();
     /// assert_eq!(twips.get(), 0);
     /// ```
-    pub fn zero() -> Self {
+    pub const fn zero() -> Self {
         Self(0)
     }
 
@@ -112,7 +112,7 @@ impl Twips {
     /// let twips = Twips::new(47);
     /// assert_eq!(twips.get(), 47);
     /// ```
-    pub fn get(self) -> i32 {
+    pub const fn get(self) -> i32 {
         self.0
     }
 
@@ -170,7 +170,7 @@ impl Twips {
     /// assert_eq!(Twips::new(i32::MIN).saturating_sub(Twips::new(5)), Twips::new(i32::MIN));
     /// assert_eq!(Twips::new(i32::MAX).saturating_sub(Twips::new(-100)), Twips::new(i32::MAX));
     /// ```
-    pub fn saturating_sub(self, rhs: Self) -> Self {
+    pub const fn saturating_sub(self, rhs: Self) -> Self {
         Self(self.0.saturating_sub(rhs.0))
     }
 }
@@ -287,7 +287,7 @@ impl Color {
     /// let green = Color::from_rgb(0x00FF00, 255);
     /// let blue = Color::from_rgb(0x0000FF, 255);
     /// ```
-    pub fn from_rgb(rgb: u32, alpha: u8) -> Self {
+    pub const fn from_rgb(rgb: u32, alpha: u8) -> Self {
         Self {
             r: ((rgb & 0xFF_0000) >> 16) as u8,
             g: ((rgb & 0x00_FF00) >> 8) as u8,
@@ -318,7 +318,7 @@ impl Color {
     /// let color2 = Color::from_rgb(0xFF00FF, 0);
     /// assert_eq!(color1.to_rgb(), color2.to_rgb());
     /// ```
-    pub fn to_rgb(&self) -> u32 {
+    pub const fn to_rgb(&self) -> u32 {
         ((self.r as u32) << 16) | ((self.g as u32) << 8) | (self.b as u32)
     }
 }
@@ -336,7 +336,7 @@ pub struct ColorTransform {
 }
 
 impl ColorTransform {
-    pub fn new() -> ColorTransform {
+    pub const fn new() -> ColorTransform {
         ColorTransform {
             r_multiply: 1f32,
             g_multiply: 1f32,
@@ -874,7 +874,7 @@ pub struct LineStyle {
 }
 
 impl LineStyle {
-    pub fn new_v1(width: Twips, color: Color) -> LineStyle {
+    pub const fn new_v1(width: Twips, color: Color) -> LineStyle {
         LineStyle {
             width,
             color,

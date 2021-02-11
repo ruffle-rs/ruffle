@@ -45,7 +45,7 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    pub fn get_ref(&self) -> &'a [u8] {
+    pub const fn get_ref(&self) -> &'a [u8] {
         self.input
     }
 
