@@ -1827,10 +1827,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.read().drawing.self_bounds()
     }
 
-    fn hit_test_bounds(&self, point: (Twips, Twips)) -> bool {
-        self.world_bounds().contains(point)
-    }
-
     fn hit_test_shape(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,

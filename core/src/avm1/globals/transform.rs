@@ -187,8 +187,7 @@ fn pixel_bounds<'gc>(
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // This is equivalent to `clip.getBounds()`.
-    let to_global_matrix = clip.local_to_global_matrix();
-    let bounds = clip.bounds_with_transform(&to_global_matrix);
+    let bounds = clip.world_bounds();
 
     // Return Rectangle object.
     let args = [

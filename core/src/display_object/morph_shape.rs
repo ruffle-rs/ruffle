@@ -42,6 +42,14 @@ impl<'gc> MorphShape<'gc> {
     pub fn set_ratio(&mut self, gc_context: MutationContext<'gc, '_>, ratio: u16) {
         self.0.write(gc_context).ratio = ratio;
     }
+
+    fn self_bounds(&self, ratio: u16) -> BoundingBox {
+        if let Some(frame) = self.0.read().static_data.frames.get(&ratio) {
+            frame.bounds.clone()
+        } else {
+            BoundingBox::default()
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
@@ -70,12 +78,11 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn self_bounds(&self) -> BoundingBox {
-        // TODO: Use the bounds of the current ratio.
-        if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
-            frame.bounds.clone()
-        } else {
-            BoundingBox::default()
-        }
+        self.self_bounds(0)
+    }
+
+    fn self_bounds_with_morph(&self) -> BoundingBox {
+        self.self_bounds(self.ratio())
     }
 
     fn hit_test_shape(
@@ -83,7 +90,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         _context: &mut UpdateContext<'_, 'gc, '_>,
         point: (Twips, Twips),
     ) -> bool {
-        if self.world_bounds().contains(point) {
+        if self.world_bounds_with_morph().contains(point) {
             if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
                 let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;

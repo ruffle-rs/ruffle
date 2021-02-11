@@ -444,43 +444,60 @@ pub trait TDisplayObject<'gc>:
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
 
     /// The untransformed inherent bounding box of this object.
-    /// These bounds do **not** include child DisplayObjects.
+    /// These bounds do *not* include child DisplayObjects.
     /// To get the bounds including children, use `bounds`, `local_bounds`, or `world_bounds`.
     ///
-    /// Implementors must override this method.
-    /// Leaf DisplayObjects should return their bounds.
-    /// Composite DisplayObjects that only contain children should return `&Default::default()`
+    /// Composite DisplayObjects that only contain children should return `&Default::default()`.
     fn self_bounds(&self) -> BoundingBox;
+
+    /// Like `self_bounds`, but with MorphShape ratio taken into account.
+    /// Defaults to just `self_bounds`, as it's only relavant for MorphShape.
+    fn self_bounds_with_morph(&self) -> BoundingBox {
+        self.self_bounds()
+    }
 
     /// The untransformed bounding box of this object including children.
     fn bounds(&self) -> BoundingBox {
-        self.bounds_with_transform(&Matrix::default())
+        self.bounds_with_transform(&Matrix::default(), false)
     }
 
     /// The local bounding box of this object including children, in its parent's coordinate system.
     fn local_bounds(&self) -> BoundingBox {
-        self.bounds_with_transform(&self.matrix())
+        self.bounds_with_transform(&self.matrix(), false)
     }
 
     /// The world bounding box of this object including children, relative to the stage.
     fn world_bounds(&self) -> BoundingBox {
-        self.bounds_with_transform(&self.local_to_global_matrix())
+        self.bounds_with_transform(&self.local_to_global_matrix(), false)
+    }
+
+    /// Like `world_bounds`, but with MorphShape ratio taken into account.
+    fn world_bounds_with_morph(&self) -> BoundingBox {
+        self.bounds_with_transform(&self.local_to_global_matrix(), true)
     }
 
     /// Gets the bounds of this object and all children, transformed by a given matrix.
     /// This function recurses down and transforms the AABB each child before adding
     /// it to the bounding box. This gives a tighter AABB then if we simply transformed
     /// the overall AABB.
-    fn bounds_with_transform(&self, matrix: &Matrix) -> BoundingBox {
-        let mut bounds = self.self_bounds().transform(matrix);
-
+    ///
+    /// `with_morph` specifies whether or not to take MorphShape ratio into account.
+    /// In most cases it's ignored and `false` should be passed.
+    ///
+    /// Do not use directly, use `bounds`, `local_bounds`, or `world_bounds`.
+    fn bounds_with_transform(&self, matrix: &Matrix, with_morph: bool) -> BoundingBox {
+        let mut bounds = if with_morph {
+            self.self_bounds_with_morph()
+        } else {
+            self.self_bounds()
+        }
+        .transform(matrix);
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_execution_list() {
                 let matrix = *matrix * *child.matrix();
-                bounds.union(&child.bounds_with_transform(&matrix));
+                bounds.union(&child.bounds_with_transform(&matrix, with_morph));
             }
         }
-
         bounds
     }
 
@@ -507,19 +524,12 @@ pub trait TDisplayObject<'gc>:
             matrix = *display_object.matrix() * matrix;
             node = display_object.parent();
         }
-
         matrix
     }
 
     /// Returns the matrix for transforming from global stage to this object's local space.
     fn global_to_local_matrix(&self) -> Matrix {
-        let mut node = self.parent();
-        let mut matrix = *self.matrix();
-        while let Some(display_object) = node {
-            matrix = *display_object.matrix() * matrix;
-            node = display_object.parent();
-        }
-
+        let mut matrix = self.local_to_global_matrix();
         matrix.invert();
         matrix
     }
@@ -580,7 +590,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the pixel width of this display object in local space.
     /// The width is based on the AABB of the object.
-    /// Returned by the ActionScript `_width`/`width` properties.
+    /// Returned by the `_width`/`width` ActionScript properties.
     fn width(&self) -> f64 {
         let bounds = self.local_bounds();
         (bounds.x_max.saturating_sub(bounds.x_min)).to_pixels()
@@ -588,7 +598,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the pixel width of this display object in local space.
     /// The width is based on the AABB of the object.
-    /// Set by the ActionScript `_width`/`width` properties.
+    /// Set by the `_width`/`width` ActionScript properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let object_bounds = self.bounds();
@@ -620,14 +630,14 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Gets the pixel height of the AABB containing this display object in local space.
-    /// Returned by the ActionScript `_height`/`height` properties.
+    /// Returned by the `_height`/`height` ActionScript properties.
     fn height(&self) -> f64 {
         let bounds = self.local_bounds();
         (bounds.y_max.saturating_sub(bounds.y_min)).to_pixels()
     }
 
     /// Sets the pixel height of this display object in local space.
-    /// Set by the ActionScript `_height`/`height` properties.
+    /// Set by the `_height`/`height` ActionScript properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let object_bounds = self.bounds();
@@ -1005,7 +1015,7 @@ pub trait TDisplayObject<'gc>:
         placing_movie: Option<Arc<SwfMovie>>,
         place_object: &swf::PlaceObject,
     ) {
-        // PlaceObject tags only apply if this onject has not been dynamically moved by AS code.
+        // PlaceObject tags only apply if this object has not been dynamically moved by AS code.
         if !self.transformed_by_script() {
             if let Some(matrix) = &place_object.matrix {
                 self.set_matrix(context.gc_context, &matrix);
