@@ -2567,6 +2567,7 @@ impl<W: Write> Writer<W> {
             VideoCodec::ScreenVideo => 3,
             VideoCodec::VP6 => 4,
             VideoCodec::VP6WithAlpha => 5,
+            VideoCodec::ScreenVideoV2 => 6,
         })?;
         Ok(())
     }
