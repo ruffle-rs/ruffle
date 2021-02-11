@@ -1183,7 +1183,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let ret = if let Some(target) = self.target_clip() {
             if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
                 let display_properties = self.context.avm1.display_properties;
-                let props = display_properties.write(self.context.gc_context);
+                let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
                     property.get(self, clip)?
                 } else {
