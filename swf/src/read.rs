@@ -298,89 +298,78 @@ impl<'a> Reader<'a> {
     /// ```
     pub fn read_tag(&mut self) -> Result<Tag<'a>> {
         let (tag_code, length) = self.read_tag_code_and_length()?;
-        let tag = self.read_tag_with_code(tag_code, length);
 
-        if let Err(e) = tag {
-            return Err(Error::swf_parse_error_with_source(tag_code, e));
+        if let Some(tag_code) = TagCode::from_u16(tag_code) {
+            self.read_tag_with_code(tag_code, length)
+        } else {
+            self.read_slice(length)
+                .map(|data| Tag::Unknown { tag_code, data })
         }
-
-        tag
+        .map_err(|e| Error::swf_parse_error(tag_code, e))
     }
 
-    fn read_tag_with_code(&mut self, tag_code: u16, length: usize) -> Result<Tag<'a>> {
+    fn read_tag_with_code(&mut self, tag_code: TagCode, length: usize) -> Result<Tag<'a>> {
         let mut tag_reader = Reader::new(self.read_slice(length)?, self.version);
-        let tag = match TagCode::from_u16(tag_code) {
-            Some(TagCode::End) => Tag::End,
-            Some(TagCode::ShowFrame) => Tag::ShowFrame,
-            Some(TagCode::CsmTextSettings) => {
-                Tag::CsmTextSettings(tag_reader.read_csm_text_settings()?)
-            }
-            Some(TagCode::DefineBinaryData) => {
+        let tag = match tag_code {
+            TagCode::End => Tag::End,
+            TagCode::ShowFrame => Tag::ShowFrame,
+            TagCode::CsmTextSettings => Tag::CsmTextSettings(tag_reader.read_csm_text_settings()?),
+            TagCode::DefineBinaryData => {
                 let id = tag_reader.read_u16()?;
                 tag_reader.read_u32()?; // Reserved
                 let data = tag_reader.read_slice_to_end();
                 Tag::DefineBinaryData { id, data }
             }
-            Some(TagCode::DefineBits) => {
+            TagCode::DefineBits => {
                 let id = tag_reader.read_u16()?;
                 let jpeg_data = tag_reader.read_slice_to_end();
                 Tag::DefineBits { id, jpeg_data }
             }
-            Some(TagCode::DefineBitsJpeg2) => {
+            TagCode::DefineBitsJpeg2 => {
                 let id = tag_reader.read_u16()?;
                 let jpeg_data = tag_reader.read_slice_to_end();
                 Tag::DefineBitsJpeg2 { id, jpeg_data }
             }
-            Some(TagCode::DefineBitsJpeg3) => tag_reader.read_define_bits_jpeg_3(3)?,
-            Some(TagCode::DefineBitsJpeg4) => tag_reader.read_define_bits_jpeg_3(4)?,
-            Some(TagCode::DefineButton) => {
+            TagCode::DefineBitsJpeg3 => tag_reader.read_define_bits_jpeg_3(3)?,
+            TagCode::DefineBitsJpeg4 => tag_reader.read_define_bits_jpeg_3(4)?,
+            TagCode::DefineButton => {
                 Tag::DefineButton(Box::new(tag_reader.read_define_button_1()?))
             }
-            Some(TagCode::DefineButton2) => {
+            TagCode::DefineButton2 => {
                 Tag::DefineButton2(Box::new(tag_reader.read_define_button_2()?))
             }
-            Some(TagCode::DefineButtonCxform) => {
+            TagCode::DefineButtonCxform => {
                 Tag::DefineButtonColorTransform(tag_reader.read_define_button_cxform(length)?)
             }
-            Some(TagCode::DefineButtonSound) => {
+            TagCode::DefineButtonSound => {
                 Tag::DefineButtonSound(Box::new(tag_reader.read_define_button_sound()?))
             }
-            Some(TagCode::DefineEditText) => {
+            TagCode::DefineEditText => {
                 Tag::DefineEditText(Box::new(tag_reader.read_define_edit_text()?))
             }
-            Some(TagCode::DefineFont) => {
-                Tag::DefineFont(Box::new(tag_reader.read_define_font_1()?))
-            }
-            Some(TagCode::DefineFont2) => {
-                Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(2)?))
-            }
-            Some(TagCode::DefineFont3) => {
-                Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(3)?))
-            }
-            Some(TagCode::DefineFont4) => Tag::DefineFont4(tag_reader.read_define_font_4()?),
-            Some(TagCode::DefineFontAlignZones) => tag_reader.read_define_font_align_zones()?,
-            Some(TagCode::DefineFontInfo) => tag_reader.read_define_font_info(1)?,
-            Some(TagCode::DefineFontInfo2) => tag_reader.read_define_font_info(2)?,
-            Some(TagCode::DefineFontName) => tag_reader.read_define_font_name()?,
-            Some(TagCode::DefineMorphShape) => {
+            TagCode::DefineFont => Tag::DefineFont(Box::new(tag_reader.read_define_font_1()?)),
+            TagCode::DefineFont2 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(2)?)),
+            TagCode::DefineFont3 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(3)?)),
+            TagCode::DefineFont4 => Tag::DefineFont4(tag_reader.read_define_font_4()?),
+            TagCode::DefineFontAlignZones => tag_reader.read_define_font_align_zones()?,
+            TagCode::DefineFontInfo => tag_reader.read_define_font_info(1)?,
+            TagCode::DefineFontInfo2 => tag_reader.read_define_font_info(2)?,
+            TagCode::DefineFontName => tag_reader.read_define_font_name()?,
+            TagCode::DefineMorphShape => {
                 Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(1)?))
             }
-            Some(TagCode::DefineMorphShape2) => {
+            TagCode::DefineMorphShape2 => {
                 Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(2)?))
             }
-            Some(TagCode::DefineShape) => Tag::DefineShape(tag_reader.read_define_shape(1)?),
-            Some(TagCode::DefineShape2) => Tag::DefineShape(tag_reader.read_define_shape(2)?),
-            Some(TagCode::DefineShape3) => Tag::DefineShape(tag_reader.read_define_shape(3)?),
-            Some(TagCode::DefineShape4) => Tag::DefineShape(tag_reader.read_define_shape(4)?),
-            Some(TagCode::DefineSound) => {
-                Tag::DefineSound(Box::new(tag_reader.read_define_sound()?))
-            }
-            Some(TagCode::DefineText) => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
-            Some(TagCode::DefineText2) => {
-                Tag::DefineText(Box::new(tag_reader.read_define_text(2)?))
-            }
-            Some(TagCode::DefineVideoStream) => tag_reader.read_define_video_stream()?,
-            Some(TagCode::EnableTelemetry) => {
+            TagCode::DefineShape => Tag::DefineShape(tag_reader.read_define_shape(1)?),
+            TagCode::DefineShape2 => Tag::DefineShape(tag_reader.read_define_shape(2)?),
+            TagCode::DefineShape3 => Tag::DefineShape(tag_reader.read_define_shape(3)?),
+            TagCode::DefineShape4 => Tag::DefineShape(tag_reader.read_define_shape(4)?),
+            TagCode::DefineSound => Tag::DefineSound(Box::new(tag_reader.read_define_sound()?)),
+            TagCode::DefineText => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
+            TagCode::DefineText2 => Tag::DefineText(Box::new(tag_reader.read_define_text(2)?)),
+            TagCode::DefineVideoStream => tag_reader.read_define_video_stream()?,
+            TagCode::EnableTelemetry => {
                 tag_reader.read_u16()?; // Reserved
                 let password_hash = if length > 2 {
                     tag_reader.read_slice(32)?
@@ -389,7 +378,7 @@ impl<'a> Reader<'a> {
                 };
                 Tag::EnableTelemetry { password_hash }
             }
-            Some(TagCode::ImportAssets) => {
+            TagCode::ImportAssets => {
                 let url = tag_reader.read_str()?;
                 let num_imports = tag_reader.read_u16()?;
                 let mut imports = Vec::with_capacity(num_imports as usize);
@@ -401,7 +390,7 @@ impl<'a> Reader<'a> {
                 }
                 Tag::ImportAssets { url, imports }
             }
-            Some(TagCode::ImportAssets2) => {
+            TagCode::ImportAssets2 => {
                 let url = tag_reader.read_str()?;
                 tag_reader.read_u8()?; // Reserved; must be 1
                 tag_reader.read_u8()?; // Reserved; must be 0
@@ -416,51 +405,51 @@ impl<'a> Reader<'a> {
                 Tag::ImportAssets { url, imports }
             }
 
-            Some(TagCode::JpegTables) => {
+            TagCode::JpegTables => {
                 let data = tag_reader.read_slice_to_end();
                 Tag::JpegTables(data)
             }
 
-            Some(TagCode::Metadata) => Tag::Metadata(tag_reader.read_str()?),
+            TagCode::Metadata => Tag::Metadata(tag_reader.read_str()?),
 
-            Some(TagCode::SetBackgroundColor) => Tag::SetBackgroundColor(tag_reader.read_rgb()?),
+            TagCode::SetBackgroundColor => Tag::SetBackgroundColor(tag_reader.read_rgb()?),
 
-            Some(TagCode::SoundStreamBlock) => {
+            TagCode::SoundStreamBlock => {
                 let data = tag_reader.read_slice_to_end();
                 Tag::SoundStreamBlock(data)
             }
 
-            Some(TagCode::SoundStreamHead) => Tag::SoundStreamHead(
+            TagCode::SoundStreamHead => Tag::SoundStreamHead(
                 // TODO: Disallow certain compressions.
                 Box::new(tag_reader.read_sound_stream_head()?),
             ),
 
-            Some(TagCode::SoundStreamHead2) => {
+            TagCode::SoundStreamHead2 => {
                 Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_head()?))
             }
 
-            Some(TagCode::StartSound) => Tag::StartSound(tag_reader.read_start_sound_1()?),
+            TagCode::StartSound => Tag::StartSound(tag_reader.read_start_sound_1()?),
 
-            Some(TagCode::StartSound2) => Tag::StartSound2 {
+            TagCode::StartSound2 => Tag::StartSound2 {
                 class_name: tag_reader.read_str()?,
                 sound_info: Box::new(tag_reader.read_sound_info()?),
             },
 
-            Some(TagCode::DebugId) => Tag::DebugId(tag_reader.read_debug_id()?),
+            TagCode::DebugId => Tag::DebugId(tag_reader.read_debug_id()?),
 
-            Some(TagCode::DefineBitsLossless) => {
+            TagCode::DefineBitsLossless => {
                 Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(1)?)
             }
-            Some(TagCode::DefineBitsLossless2) => {
+            TagCode::DefineBitsLossless2 => {
                 Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(2)?)
             }
 
-            Some(TagCode::DefineScalingGrid) => Tag::DefineScalingGrid {
+            TagCode::DefineScalingGrid => Tag::DefineScalingGrid {
                 id: tag_reader.read_u16()?,
                 splitter_rect: tag_reader.read_rectangle()?,
             },
 
-            Some(TagCode::DoAbc) => {
+            TagCode::DoAbc => {
                 let flags = tag_reader.read_u32()?;
                 let name = tag_reader.read_str()?;
                 let abc_data = tag_reader.read_slice_to_end();
@@ -471,34 +460,34 @@ impl<'a> Reader<'a> {
                 })
             }
 
-            Some(TagCode::DoAction) => {
+            TagCode::DoAction => {
                 let action_data = tag_reader.read_slice_to_end();
                 Tag::DoAction(action_data)
             }
 
-            Some(TagCode::DoInitAction) => {
+            TagCode::DoInitAction => {
                 let id = tag_reader.read_u16()?;
                 let action_data = tag_reader.read_slice_to_end();
                 Tag::DoInitAction { id, action_data }
             }
 
-            Some(TagCode::EnableDebugger) => Tag::EnableDebugger(tag_reader.read_str()?),
-            Some(TagCode::EnableDebugger2) => {
+            TagCode::EnableDebugger => Tag::EnableDebugger(tag_reader.read_str()?),
+            TagCode::EnableDebugger2 => {
                 tag_reader.read_u16()?; // Reserved
                 Tag::EnableDebugger(tag_reader.read_str()?)
             }
 
-            Some(TagCode::ScriptLimits) => Tag::ScriptLimits {
+            TagCode::ScriptLimits => Tag::ScriptLimits {
                 max_recursion_depth: tag_reader.read_u16()?,
                 timeout_in_seconds: tag_reader.read_u16()?,
             },
 
-            Some(TagCode::SetTabIndex) => Tag::SetTabIndex {
+            TagCode::SetTabIndex => Tag::SetTabIndex {
                 depth: tag_reader.read_u16()?,
                 tab_index: tag_reader.read_u16()?,
             },
 
-            Some(TagCode::SymbolClass) => {
+            TagCode::SymbolClass => {
                 let num_symbols = tag_reader.read_u16()?;
                 let mut symbols = Vec::with_capacity(num_symbols as usize);
                 for _ in 0..num_symbols {
@@ -510,13 +499,11 @@ impl<'a> Reader<'a> {
                 Tag::SymbolClass(symbols)
             }
 
-            Some(TagCode::ExportAssets) => Tag::ExportAssets(tag_reader.read_export_assets()?),
+            TagCode::ExportAssets => Tag::ExportAssets(tag_reader.read_export_assets()?),
 
-            Some(TagCode::FileAttributes) => {
-                Tag::FileAttributes(tag_reader.read_file_attributes()?)
-            }
+            TagCode::FileAttributes => Tag::FileAttributes(tag_reader.read_file_attributes()?),
 
-            Some(TagCode::Protect) => {
+            TagCode::Protect => {
                 Tag::Protect(if length > 0 {
                     tag_reader.read_u16()?; // TODO(Herschel): Two null bytes? Not specified in SWF19.
                     Some(tag_reader.read_str()?)
@@ -525,37 +512,33 @@ impl<'a> Reader<'a> {
                 })
             }
 
-            Some(TagCode::DefineSceneAndFrameLabelData) => Tag::DefineSceneAndFrameLabelData(
+            TagCode::DefineSceneAndFrameLabelData => Tag::DefineSceneAndFrameLabelData(
                 tag_reader.read_define_scene_and_frame_label_data()?,
             ),
 
-            Some(TagCode::FrameLabel) => Tag::FrameLabel(tag_reader.read_frame_label(length)?),
+            TagCode::FrameLabel => Tag::FrameLabel(tag_reader.read_frame_label(length)?),
 
-            Some(TagCode::DefineSprite) => tag_reader.read_define_sprite()?,
+            TagCode::DefineSprite => tag_reader.read_define_sprite()?,
 
-            Some(TagCode::PlaceObject) => {
+            TagCode::PlaceObject => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object(length)?))
             }
-            Some(TagCode::PlaceObject2) => {
+            TagCode::PlaceObject2 => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(2)?))
             }
-            Some(TagCode::PlaceObject3) => {
+            TagCode::PlaceObject3 => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(3)?))
             }
-            Some(TagCode::PlaceObject4) => {
+            TagCode::PlaceObject4 => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(4)?))
             }
 
-            Some(TagCode::RemoveObject) => Tag::RemoveObject(tag_reader.read_remove_object_1()?),
+            TagCode::RemoveObject => Tag::RemoveObject(tag_reader.read_remove_object_1()?),
 
-            Some(TagCode::RemoveObject2) => Tag::RemoveObject(tag_reader.read_remove_object_2()?),
+            TagCode::RemoveObject2 => Tag::RemoveObject(tag_reader.read_remove_object_2()?),
 
-            Some(TagCode::VideoFrame) => tag_reader.read_video_frame()?,
-            Some(TagCode::ProductInfo) => Tag::ProductInfo(tag_reader.read_product_info()?),
-            None => {
-                let data = tag_reader.read_slice_to_end();
-                Tag::Unknown { tag_code, data }
-            }
+            TagCode::VideoFrame => tag_reader.read_video_frame()?,
+            TagCode::ProductInfo => Tag::ProductInfo(tag_reader.read_product_info()?),
         };
 
         if !tag_reader.input.is_empty() {
@@ -564,11 +547,7 @@ impl<'a> Reader<'a> {
             // But sometimes tools will export SWF tags that are larger than they should be.
             // TODO: It might be worthwhile to have a "strict mode" to determine
             // whether this should error or not.
-            log::warn!(
-                "Data remaining in buffer when parsing {} ({})",
-                TagCode::name(tag_code),
-                tag_code
-            );
+            log::warn!("Data remaining in buffer when parsing {:?}", tag_code);
         }
 
         Ok(tag)
