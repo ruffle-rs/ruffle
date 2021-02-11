@@ -1229,6 +1229,7 @@ pub enum VideoCodec {
     ScreenVideo,
     VP6,
     VP6WithAlpha,
+    ScreenVideoV2,
 }
 
 #[derive(Clone, Debug, PartialEq)]

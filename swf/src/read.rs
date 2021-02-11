@@ -2627,6 +2627,7 @@ impl<'a> Reader<'a> {
             3 => VideoCodec::ScreenVideo,
             4 => VideoCodec::VP6,
             5 => VideoCodec::VP6WithAlpha,
+            6 => VideoCodec::ScreenVideoV2,
             _ => return Err(Error::invalid_data("Invalid video codec.")),
         };
         Ok(Tag::DefineVideoStream(DefineVideoStream {
