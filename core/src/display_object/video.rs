@@ -3,7 +3,7 @@
 use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
 use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
 use crate::backend::render::BitmapHandle;
-use crate::backend::video::{EncodedFrame, FrameDependency, VideoStreamHandle};
+use crate::backend::video::{EncodedFrame, VideoStreamHandle};
 use crate::bounding_box::BoundingBox;
 use crate::collect::CollectWrapper;
 use crate::context::{RenderContext, UpdateContext};
@@ -267,7 +267,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                     );
 
                     match dep {
-                        Ok(FrameDependency::Keyframe) => {
+                        Ok(d) if d.is_keyframe() => {
                             keyframes.insert(*frame_id);
                         }
                         Ok(_) => {}

@@ -33,15 +33,28 @@ impl<'a> EncodedFrame<'a> {
 }
 
 /// What dependencies a given video frame has on any previous frames.
+#[derive(Copy, Clone, Debug)]
 pub enum FrameDependency {
     /// This frame has no reference frames and can be seeked to at any time.
-    Keyframe,
+    None,
 
-    /// This frame has one reference frame which must be completely decoded
-    /// before this frame can be decoded.
+    /// This frame has some number of reference frames that prohibit any
+    /// out-of-order decoding.
     ///
-    /// The reference frame is the previous frame in the video stream.
-    LastFrame,
+    /// The only legal way to decode a `Past` frame is to decode every prior
+    /// frame from the last `None` frame. In the event that there is no prior
+    /// `None` frame, then video decoding should start from the beginning.
+    Past,
+}
+
+impl FrameDependency {
+    /// Determine if this given frame is a keyframe.
+    ///
+    /// A keyframe is a frame that can be independently seeked to without
+    /// decoding any prior or future frames.
+    pub fn is_keyframe(self) -> bool {
+        matches!(self, FrameDependency::None)
+    }
 }
 
 /// A backend that provides access to some number of video decoders.
@@ -112,7 +125,7 @@ pub struct NullVideoBackend {
 /// Specifically:
 ///
 ///  * Registering a video stream succeeds but does nothing
-///  * All video frames are silently marked as keyframes
+///  * All video frames are silently marked as keyframes (`None` dependency)
 ///  * Video stream decoding fails with an error that video decoding is
 ///    unimplemented
 impl NullVideoBackend {
@@ -145,7 +158,7 @@ impl VideoBackend for NullVideoBackend {
         _stream: VideoStreamHandle,
         _encoded_frame: EncodedFrame<'_>,
     ) -> Result<FrameDependency, Error> {
-        Ok(FrameDependency::Keyframe)
+        Ok(FrameDependency::None)
     }
 
     fn decode_video_stream_frame(
