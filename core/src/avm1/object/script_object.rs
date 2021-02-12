@@ -72,6 +72,8 @@ impl<'gc> Watcher<'gc> {
 #[collect(no_drop)]
 pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
     prototype: Option<Object<'gc>>,
     values: PropertyMap<Property<'gc>>,
@@ -79,16 +81,6 @@ pub struct ScriptObjectData<'gc> {
     type_of: &'static str,
     array: ArrayStorage<'gc>,
     watchers: PropertyMap<Watcher<'gc>>,
-}
-
-unsafe impl<'gc> Collect for ScriptObjectData<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.prototype.trace(cc);
-        self.values.trace(cc);
-        self.array.trace(cc);
-        self.interfaces.trace(cc);
-        self.watchers.trace(cc);
-    }
 }
 
 impl fmt::Debug for ScriptObjectData<'_> {
