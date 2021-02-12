@@ -1625,7 +1625,8 @@ struct EditTextStatic {
     swf: Arc<SwfMovie>,
     text: EditTextStaticData,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Collect)]
+#[collect(require_static)]
 struct EditTextStaticData {
     id: CharacterId,
     bounds: swf::Rectangle,
@@ -1647,12 +1648,6 @@ struct EditTextStaticData {
     was_static: bool,
     is_html: bool,
     is_device_font: bool,
-}
-
-unsafe impl<'gc> Collect for EditTextStaticData {
-    fn needs_trace() -> bool {
-        false
-    }
 }
 
 #[derive(Copy, Clone, Debug)]
