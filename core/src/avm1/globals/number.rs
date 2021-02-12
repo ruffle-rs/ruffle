@@ -61,7 +61,7 @@ pub fn create_number_object<'gc>(
     object.define_value(
         gc_context,
         "MAX_VALUE",
-        std::f64::MAX.into(),
+        f64::MAX.into(),
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
@@ -77,21 +77,21 @@ pub fn create_number_object<'gc>(
     object.define_value(
         gc_context,
         "NaN",
-        std::f64::NAN.into(),
+        f64::NAN.into(),
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.define_value(
         gc_context,
         "NEGATIVE_INFINITY",
-        std::f64::NEG_INFINITY.into(),
+        f64::NEG_INFINITY.into(),
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     object.define_value(
         gc_context,
         "POSITIVE_INFINITY",
-        std::f64::INFINITY.into(),
+        f64::INFINITY.into(),
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 

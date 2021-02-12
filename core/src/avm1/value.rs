@@ -7,7 +7,6 @@ use crate::ecma_conversions::{
     f64_to_wrapping_u32,
 };
 use std::borrow::Cow;
-use std::f64::NAN;
 
 #[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
@@ -141,8 +140,8 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Undefined if activation.current_swf_version() < 7 => 0.0,
             Value::Null if activation.current_swf_version() < 7 => 0.0,
-            Value::Undefined => NAN,
-            Value::Null => NAN,
+            Value::Undefined => f64::NAN,
+            Value::Null => f64::NAN,
             Value::Bool(false) => 0.0,
             Value::Bool(true) => 1.0,
             Value::Number(v) => *v,
@@ -168,7 +167,7 @@ impl<'gc> Value<'gc> {
                             b'd' | b'D' => 13,
                             b'e' | b'E' => 14,
                             b'f' | b'F' => 15,
-                            _ => return NAN,
+                            _ => return f64::NAN,
                         }
                     }
                     f64::from(n as i32)
@@ -188,13 +187,13 @@ impl<'gc> Value<'gc> {
                     }
                     f64::from(n as i32)
                 }
-                "" => NAN,
+                "" => f64::NAN,
                 _ => v
                     .trim_start_matches(|c| c == '\t' || c == '\n' || c == '\r' || c == ' ')
                     .parse()
-                    .unwrap_or(NAN),
+                    .unwrap_or(f64::NAN),
             },
-            Value::Object(_) => NAN,
+            Value::Object(_) => f64::NAN,
         }
     }
 
@@ -507,8 +506,6 @@ mod test {
     use crate::avm1::test_utils::with_avm;
     use crate::avm1::{AvmString, Value};
 
-    use std::f64::{INFINITY, NAN, NEG_INFINITY};
-
     #[test]
     fn to_primitive_num() {
         with_avm(6, |activation, _this| -> Result<(), Error> {
@@ -614,13 +611,13 @@ mod test {
 
             assert_eq!(a.abstract_lt(b, activation).unwrap(), Value::Bool(true));
 
-            let nan = Value::Number(NAN);
+            let nan = Value::Number(f64::NAN);
             assert_eq!(a.abstract_lt(nan, activation).unwrap(), Value::Undefined);
 
-            let inf = Value::Number(INFINITY);
+            let inf = Value::Number(f64::INFINITY);
             assert_eq!(a.abstract_lt(inf, activation).unwrap(), Value::Bool(true));
 
-            let neg_inf = Value::Number(NEG_INFINITY);
+            let neg_inf = Value::Number(f64::NEG_INFINITY);
             assert_eq!(
                 a.abstract_lt(neg_inf, activation).unwrap(),
                 Value::Bool(false)
@@ -641,13 +638,13 @@ mod test {
 
             assert_eq!(b.abstract_lt(a, activation).unwrap(), Value::Bool(false));
 
-            let nan = Value::Number(NAN);
+            let nan = Value::Number(f64::NAN);
             assert_eq!(nan.abstract_lt(a, activation).unwrap(), Value::Undefined);
 
-            let inf = Value::Number(INFINITY);
+            let inf = Value::Number(f64::INFINITY);
             assert_eq!(inf.abstract_lt(a, activation).unwrap(), Value::Bool(false));
 
-            let neg_inf = Value::Number(NEG_INFINITY);
+            let neg_inf = Value::Number(f64::NEG_INFINITY);
             assert_eq!(
                 neg_inf.abstract_lt(a, activation).unwrap(),
                 Value::Bool(true)
@@ -708,9 +705,9 @@ mod test {
         assert_eq!(f64_to_wrapping_u16(66535.9), 999);
         assert_eq!(f64_to_wrapping_u16(-9980.7), 55556);
         assert_eq!(f64_to_wrapping_u16(-196608.0), 0);
-        assert_eq!(f64_to_wrapping_u16(std::f64::NAN), 0);
-        assert_eq!(f64_to_wrapping_u16(std::f64::INFINITY), 0);
-        assert_eq!(f64_to_wrapping_u16(std::f64::NEG_INFINITY), 0);
+        assert_eq!(f64_to_wrapping_u16(f64::NAN), 0);
+        assert_eq!(f64_to_wrapping_u16(f64::INFINITY), 0);
+        assert_eq!(f64_to_wrapping_u16(f64::NEG_INFINITY), 0);
     }
 
     #[test]
@@ -726,9 +723,9 @@ mod test {
         assert_eq!(f64_to_wrapping_i16(-32769.9), 32767);
         assert_eq!(f64_to_wrapping_i16(-33268.1), 32268);
         assert_eq!(f64_to_wrapping_i16(-196608.0), 0);
-        assert_eq!(f64_to_wrapping_i16(std::f64::NAN), 0);
-        assert_eq!(f64_to_wrapping_i16(std::f64::INFINITY), 0);
-        assert_eq!(f64_to_wrapping_i16(std::f64::NEG_INFINITY), 0);
+        assert_eq!(f64_to_wrapping_i16(f64::NAN), 0);
+        assert_eq!(f64_to_wrapping_i16(f64::INFINITY), 0);
+        assert_eq!(f64_to_wrapping_i16(f64::NEG_INFINITY), 0);
     }
 
     #[test]
@@ -742,9 +739,9 @@ mod test {
         assert_eq!(f64_to_wrapping_u32(4294968295.9), 999);
         assert_eq!(f64_to_wrapping_u32(-4289411740.3), 5555556);
         assert_eq!(f64_to_wrapping_u32(-12884901888.0), 0);
-        assert_eq!(f64_to_wrapping_u32(std::f64::NAN), 0);
-        assert_eq!(f64_to_wrapping_u32(std::f64::INFINITY), 0);
-        assert_eq!(f64_to_wrapping_u32(std::f64::NEG_INFINITY), 0);
+        assert_eq!(f64_to_wrapping_u32(f64::NAN), 0);
+        assert_eq!(f64_to_wrapping_u32(f64::INFINITY), 0);
+        assert_eq!(f64_to_wrapping_u32(f64::NEG_INFINITY), 0);
     }
 
     #[test]
@@ -759,9 +756,9 @@ mod test {
         assert_eq!(f64_to_wrapping_i32(2147484648.3), -2147482648);
         assert_eq!(f64_to_wrapping_i32(-8589934591.2), 1);
         assert_eq!(f64_to_wrapping_i32(4294966896.1), -400);
-        assert_eq!(f64_to_wrapping_i32(std::f64::NAN), 0);
-        assert_eq!(f64_to_wrapping_i32(std::f64::INFINITY), 0);
-        assert_eq!(f64_to_wrapping_i32(std::f64::NEG_INFINITY), 0);
+        assert_eq!(f64_to_wrapping_i32(f64::NAN), 0);
+        assert_eq!(f64_to_wrapping_i32(f64::INFINITY), 0);
+        assert_eq!(f64_to_wrapping_i32(f64::NEG_INFINITY), 0);
     }
 
     #[test]
@@ -772,9 +769,9 @@ mod test {
         assert_eq!(f64_to_string(1.0), "1");
         assert_eq!(f64_to_string(1.4), "1.4");
         assert_eq!(f64_to_string(-990.123), "-990.123");
-        assert_eq!(f64_to_string(std::f64::NAN), "NaN");
-        assert_eq!(f64_to_string(std::f64::INFINITY), "Infinity");
-        assert_eq!(f64_to_string(std::f64::NEG_INFINITY), "-Infinity");
+        assert_eq!(f64_to_string(f64::NAN), "NaN");
+        assert_eq!(f64_to_string(f64::INFINITY), "Infinity");
+        assert_eq!(f64_to_string(f64::NEG_INFINITY), "-Infinity");
         assert_eq!(f64_to_string(9.9999e14), "999990000000000");
         assert_eq!(f64_to_string(-9.9999e14), "-999990000000000");
         assert_eq!(f64_to_string(1e15), "1e+15");

@@ -626,7 +626,7 @@ impl dasp::signal::Signal for EnvelopeSignal {
                 .next()
                 .clone()
                 .unwrap_or(swf::SoundEnvelopePoint {
-                    sample: std::u32::MAX,
+                    sample: u32::MAX,
                     left_volume: self.prev_point.left_volume,
                     right_volume: self.prev_point.right_volume,
                 });

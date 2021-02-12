@@ -768,15 +768,15 @@ fn round_to_i32(f: f32) -> i32 {
     if f.is_finite() {
         let a = f.abs();
         if f < 2_147_483_648.0_f32 {
-            let k = 1.0 / std::f32::EPSILON;
+            let k = 1.0 / f32::EPSILON;
             let out = if a < k { ((a + k) - k).copysign(f) } else { f };
             out as i32
         } else {
             // Out-of-range clamps to MIN.
-            std::i32::MIN
+            i32::MIN
         }
     } else {
-        // NAN/Infinity goes to 0.
+        // NaN/Infinity goes to 0.
         0
     }
 }

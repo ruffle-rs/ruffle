@@ -478,7 +478,7 @@ fn start<'gc>(
         .unwrap_or(&Value::Number(1.0))
         .coerce_to_f64(activation)?;
 
-    // TODO: Handle loops > std::u16::MAX.
+    // TODO: Handle loops > u16::MAX.
     let loops = (loops as u16).max(1);
 
     use swf::{SoundEvent, SoundInfo};

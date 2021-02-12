@@ -863,7 +863,7 @@ impl Ruffle {
                 if instance.borrow().canvas_width != canvas_width
                     || instance.borrow().canvas_height != canvas_height
                     || (instance.borrow().device_pixel_ratio - device_pixel_ratio).abs()
-                        >= std::f64::EPSILON
+                        >= f64::EPSILON
                 {
                     let mut mut_instance = instance.borrow_mut();
                     // If a canvas resizes, its drawing context will get scaled. You must reset

@@ -5,7 +5,6 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
 use rand::Rng;
-use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
 macro_rules! wrap_std {
     ( $object: ident, $gc_context: ident, $proto: ident, $($name:expr => $std:path),* ) => {{
@@ -16,7 +15,7 @@ macro_rules! wrap_std {
                     if let Some(input) = args.get(0) {
                         Ok($std(input.coerce_to_f64(activation)?).into())
                     } else {
-                        Ok(NAN.into())
+                        Ok(f64::NAN.into())
                     }
                 },
                 $gc_context,
@@ -42,7 +41,7 @@ fn atan2<'gc>(
             return Ok(y.coerce_to_f64(activation)?.atan2(0.0).into());
         }
     }
-    Ok(NAN.into())
+    Ok(f64::NAN.into())
 }
 
 fn pow<'gc>(
@@ -54,12 +53,12 @@ fn pow<'gc>(
         if let Some(x) = args.get(1) {
             let x = x.coerce_to_f64(activation)?;
             if x.is_nan() {
-                return Ok(NAN.into());
+                return Ok(f64::NAN.into());
             }
             return Ok(y.coerce_to_f64(activation)?.powf(x).into());
         }
     }
-    Ok(NAN.into())
+    Ok(f64::NAN.into())
 }
 
 fn round<'gc>(
@@ -74,7 +73,7 @@ fn round<'gc>(
         let ret = (x + 0.5).floor();
         return Ok(ret.into());
     }
-    Ok(NAN.into())
+    Ok(f64::NAN.into())
 }
 
 fn max<'gc>(
@@ -92,13 +91,13 @@ fn max<'gc>(
                         Ok(a.coerce_to_f64(activation)?.into())
                     }
                 }
-                _ => Ok(NAN.into()),
+                _ => Ok(f64::NAN.into()),
             }
         } else {
-            Ok(NAN.into())
+            Ok(f64::NAN.into())
         };
     }
-    Ok(NEG_INFINITY.into())
+    Ok(f64::NEG_INFINITY.into())
 }
 
 fn min<'gc>(
@@ -116,13 +115,13 @@ fn min<'gc>(
                         Ok(b.coerce_to_f64(activation)?.into())
                     }
                 }
-                _ => Ok(NAN.into()),
+                _ => Ok(f64::NAN.into()),
             }
         } else {
-            Ok(NAN.into())
+            Ok(f64::NAN.into())
         };
     }
-    Ok(INFINITY.into())
+    Ok(f64::INFINITY.into())
 }
 
 pub fn random<'gc>(
@@ -265,8 +264,8 @@ mod tests {
 
     test_method!(test_abs, "abs", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [-50.0] => 50.0,
             [25.0] => 25.0
         }
@@ -274,8 +273,8 @@ mod tests {
 
     test_method!(test_acos, "acos", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [-1.0] => f64::acos(-1.0),
             [0.0] => f64::acos(0.0),
             [1.0] => f64::acos(1.0)
@@ -284,8 +283,8 @@ mod tests {
 
     test_method!(test_asin, "asin", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [-1.0] => f64::asin(-1.0),
             [0.0] => f64::asin(0.0),
             [1.0] => f64::asin(1.0)
@@ -294,8 +293,8 @@ mod tests {
 
     test_method!(test_atan, "atan", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [-1.0] => f64::atan(-1.0),
             [0.0] => f64::atan(0.0),
             [1.0] => f64::atan(1.0)
@@ -304,16 +303,16 @@ mod tests {
 
     test_method!(test_ceil, "ceil", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [12.5] => 13.0
         }
     );
 
     test_method!(test_cos, "cos", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [0.0] => 1.0,
             [std::f64::consts::PI] => f64::cos(std::f64::consts::PI)
         }
@@ -321,8 +320,8 @@ mod tests {
 
     test_method!(test_exp, "exp", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [1.0] => f64::exp(1.0),
             [2.0] => f64::exp(2.0)
         }
@@ -330,15 +329,15 @@ mod tests {
 
     test_method!(test_floor, "floor", setup,
         [19] => {
-            [] => NAN,
-            [Value::Undefined] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Undefined] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [Value::Bool(false)] => 0.0,
             [Value::Bool(true)] => 1.0,
             [12.5] => 12.0
         },
         [6] => {
-            [] => NAN,
+            [] => f64::NAN,
             [Value::Undefined] => 0.0,
             [Value::Null] => 0.0,
             [Value::Bool(false)] => 0.0,
@@ -349,9 +348,9 @@ mod tests {
 
     test_method!(test_round, "round", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
-            [Value::Undefined] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
+            [Value::Undefined] => f64::NAN,
             [12.5] => 13.0,
             [23.2] => 23.0,
             [23.5] => 24.0,
@@ -359,22 +358,22 @@ mod tests {
             [-23.2] => -23.0,
             [-23.5] => -23.0,
             [-23.7] => -24.0,
-            [std::f64::NAN] => std::f64::NAN,
-            [std::f64::INFINITY] => std::f64::INFINITY,
-            [std::f64::NEG_INFINITY] => std::f64::NEG_INFINITY
+            [f64::NAN] => f64::NAN,
+            [f64::INFINITY] => f64::INFINITY,
+            [f64::NEG_INFINITY] => f64::NEG_INFINITY
         },
         [5, 6] => {
-            [] => NAN,
+            [] => f64::NAN,
             [Value::Null] => 0.0,
             [Value::Undefined] => 0.0,
-            [std::f64::NAN] => std::f64::NAN
+            [f64::NAN] => f64::NAN
         }
     );
 
     test_method!(test_sin, "sin", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [0.0] => f64::sin(0.0),
             [std::f64::consts::PI / 2.0] => f64::sin(std::f64::consts::PI / 2.0)
         }
@@ -382,8 +381,8 @@ mod tests {
 
     test_method!(test_sqrt, "sqrt", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [0.0] => f64::sqrt(0.0),
             [5.0] => f64::sqrt(5.0)
         }
@@ -391,8 +390,8 @@ mod tests {
 
     test_method!(test_tan, "tan", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [0.0] => f64::tan(0.0),
             [1.0] => f64::tan(1.0)
         }
@@ -400,12 +399,12 @@ mod tests {
 
     test_method!(test_pow, "pow", setup,
         [5, 6, 7, 8] => {
-            [] => NAN,
-            [1.0] => NAN,
-            [NAN] => NAN,
-            [Value::Null] => NAN,
-            [Value::Undefined] => NAN,
-            ["5"] => NAN,
+            [] => f64::NAN,
+            [1.0] => f64::NAN,
+            [f64::NAN] => f64::NAN,
+            [Value::Null] => f64::NAN,
+            [Value::Undefined] => f64::NAN,
+            ["5"] => f64::NAN,
             [1.0, 2.0] => 1.0,
             [3.0, 2.0, 1.0] => 9.0
         },
@@ -414,15 +413,15 @@ mod tests {
             [Value::Undefined, 3.0] => 0.0
         },
         [7, 8] => {
-            [1.0, Value::Null] => NAN,
-            [Value::Undefined, 3.0] => NAN
+            [1.0, Value::Null] => f64::NAN,
+            [Value::Undefined, 3.0] => f64::NAN
         }
     );
 
     test_method!(test_log, "log", setup,
         [19] => {
-            [] => NAN,
-            [Value::Null] => NAN,
+            [] => f64::NAN,
+            [Value::Null] => f64::NAN,
             [2.0] => f64::ln(2.0),
             [0.0] => f64::ln(0.0),
             [1.0] => f64::ln(1.0)
@@ -431,12 +430,12 @@ mod tests {
 
     test_method!(test_max, "max", setup,
         [5, 6, 7, 8] => {
-            [] => NEG_INFINITY,
-            [1.0] => NAN,
-            [NAN] => NAN,
-            [Value::Null] => NAN,
-            [Value::Undefined] => NAN,
-            ["5"] => NAN,
+            [] => f64::NEG_INFINITY,
+            [1.0] => f64::NAN,
+            [f64::NAN] => f64::NAN,
+            [Value::Null] => f64::NAN,
+            [Value::Undefined] => f64::NAN,
+            ["5"] => f64::NAN,
             [1.0, 2.0] => 2.0,
             [3.0, 2.0, 1.0] => 3.0
         },
@@ -445,19 +444,19 @@ mod tests {
             [Value::Undefined, 3.0] => 3.0
         },
         [7, 8] => {
-            [1.0, Value::Null] => NAN,
-            [Value::Undefined, 3.0] => NAN
+            [1.0, Value::Null] => f64::NAN,
+            [Value::Undefined, 3.0] => f64::NAN
         }
     );
 
     test_method!(test_min, "min", setup,
         [5, 6, 7, 8] => {
-            [] => INFINITY,
-            [1.0] => NAN,
-            [NAN] => NAN,
-            [Value::Null] => NAN,
-            [Value::Undefined] => NAN,
-            ["5"] => NAN,
+            [] => f64::INFINITY,
+            [1.0] => f64::NAN,
+            [f64::NAN] => f64::NAN,
+            [Value::Null] => f64::NAN,
+            [Value::Undefined] => f64::NAN,
+            ["5"] => f64::NAN,
             [1.0, 2.0] => 1.0,
             [3.0, 2.0, 1.0] => 2.0
         },
@@ -466,8 +465,8 @@ mod tests {
             [Value::Undefined, 3.0] => 0.0
         },
         [7, 8] => {
-            [1.0, Value::Null] => NAN,
-            [Value::Undefined, 3.0] => NAN
+            [1.0, Value::Null] => f64::NAN,
+            [Value::Undefined, 3.0] => f64::NAN
         }
     );
 
@@ -480,18 +479,18 @@ mod tests {
                 Some(activation.context.avm1.prototypes().function),
             );
 
-            assert_eq!(atan2(activation, math, &[]).unwrap(), NAN.into());
+            assert_eq!(atan2(activation, math, &[]).unwrap(), f64::NAN.into());
             assert_eq!(
                 atan2(activation, math, &[1.0.into(), Value::Null]).unwrap(),
-                NAN.into()
+                f64::NAN.into()
             );
             assert_eq!(
                 atan2(activation, math, &[1.0.into(), Value::Undefined]).unwrap(),
-                NAN.into()
+                f64::NAN.into()
             );
             assert_eq!(
                 atan2(activation, math, &[Value::Undefined, 1.0.into()]).unwrap(),
-                NAN.into()
+                f64::NAN.into()
             );
             Ok(())
         });

@@ -10,7 +10,6 @@ use crate::avm2::{Avm2, Error};
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use gc_arena::{Collect, MutationContext};
 use std::cell::Ref;
-use std::f64::NAN;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
 /// Indicate what kind of primitive coercion would be preferred when coercing
@@ -169,7 +168,7 @@ pub fn abc_uint(translation_unit: TranslationUnit<'_>, index: Index<u32>) -> Res
 
 pub fn abc_double(translation_unit: TranslationUnit<'_>, index: Index<f64>) -> Result<f64, Error> {
     if index.0 == 0 {
-        return Ok(NAN);
+        return Ok(f64::NAN);
     }
 
     translation_unit
