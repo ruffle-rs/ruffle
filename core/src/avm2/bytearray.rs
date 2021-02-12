@@ -297,7 +297,6 @@ impl<'gc> ByteArrayStorage {
         }
     }
 
-
     pub fn get(&self, item: usize) -> Option<u8> {
         self.bytes.get(item).cloned()
     }

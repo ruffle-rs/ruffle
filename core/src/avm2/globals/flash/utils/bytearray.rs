@@ -496,7 +496,10 @@ pub fn write_float<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        let num = args.get(0).unwrap_or(&Value::Undefined).coerce_to_number(activation)?;
+        let num = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_number(activation)?;
         bytearray.write_float(num as f32);
     }
     Ok(Value::Undefined)
@@ -511,7 +514,10 @@ pub fn write_double<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        let num = args.get(0).unwrap_or(&Value::Undefined).coerce_to_number(activation)?;
+        let num = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_number(activation)?;
         bytearray.write_double(num);
     }
     Ok(Value::Undefined)
@@ -541,7 +547,10 @@ pub fn write_int<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        let num = args.get(0).unwrap_or(&Value::Undefined).coerce_to_i32(activation)?;
+        let num = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
         bytearray.write_int(num);
     }
     Ok(Value::Undefined)
@@ -556,7 +565,10 @@ pub fn write_unsigned_int<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        let num = args.get(0).unwrap_or(&Value::Undefined).coerce_to_u32(activation)?;
+        let num = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_u32(activation)?;
         bytearray.write_unsigned_int(num);
     }
     Ok(Value::Undefined)
@@ -571,7 +583,10 @@ pub fn write_short<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        let num = args.get(0).unwrap_or(&Value::Undefined).coerce_to_i32(activation)?;
+        let num = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
         bytearray.write_short(num as i16);
     }
     Ok(Value::Undefined)
@@ -586,10 +601,13 @@ pub fn write_multibyte<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        let string = args.get(0).unwrap_or(&Value::Undefined).coerce_to_string(activation)?;
+        let string = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_string(activation)?;
         let mut charset_label = "utf-8";
         if let Some(Value::String(charset)) = args.get(1) {
-             charset_label = charset;
+            charset_label = charset;
         }
         let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
         let (encoded_bytes, _, _) = encoder.encode(string.as_str());
@@ -607,7 +625,10 @@ pub fn read_multibyte<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        let len = args.get(0).unwrap_or(&Value::Undefined).coerce_to_u32(activation)?;
+        let len = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_u32(activation)?;
         let mut charset_label = "utf-8";
         if let Some(Value::String(charset)) = args.get(1) {
             charset_label = charset;
@@ -630,7 +651,10 @@ pub fn write_utf_bytes<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        let string = args.get(0).unwrap_or(&Value::Undefined).coerce_to_string(activation)?;
+        let string = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_string(activation)?;
         bytearray.write_bytes(string.as_bytes());
     }
     Ok(Value::Undefined)
