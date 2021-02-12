@@ -1650,17 +1650,11 @@ struct EditTextStaticData {
     is_device_font: bool,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Collect)]
+#[collect(require_static)]
 pub struct TextSelection {
     from: usize,
     to: usize,
-}
-
-unsafe impl Collect for TextSelection {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
-    }
 }
 
 impl TextSelection {
