@@ -4,11 +4,23 @@ use smallvec::SmallVec;
 use std::num::NonZeroU32;
 use swf::{CharacterId, FillStyle, LineStyle, Matrix, Shape, ShapeRecord, Twips};
 
-pub fn calculate_shape_bounds(
-    shape_records: &[swf::ShapeRecord],
-    styles: &swf::ShapeStyles,
-) -> swf::Rectangle {
-    let mut bounds = swf::Rectangle {
+// TODO: This is somewhat duplicate of BoundingBox::union. Maybe it's worth to unify
+// swf::Rectangle and BoundingBox, so the various methods would be available here?
+fn update_rect(rect: &mut swf::Rectangle, x: Twips, y: Twips, radius: Twips) {
+    rect.x_min = Twips::min(rect.x_min, x - radius);
+    rect.x_max = Twips::max(rect.x_max, x + radius);
+    rect.y_min = Twips::min(rect.y_min, y - radius);
+    rect.y_max = Twips::max(rect.y_max, y + radius);
+}
+
+pub fn calculate_shape_bounds(shape: &mut Shape) {
+    let mut shape_bounds = swf::Rectangle {
+        x_min: Twips::new(i32::MAX),
+        y_min: Twips::new(i32::MAX),
+        x_max: Twips::new(i32::MIN),
+        y_max: Twips::new(i32::MIN),
+    };
+    let mut edge_bounds = swf::Rectangle {
         x_min: Twips::new(i32::MAX),
         y_min: Twips::new(i32::MAX),
         x_max: Twips::new(i32::MIN),
@@ -18,10 +30,10 @@ pub fn calculate_shape_bounds(
     let mut x = Twips::new(0);
     let mut y = Twips::new(0);
 
-    let mut stroke_width = Twips::zero();
-    let mut line_styles = &styles.line_styles;
+    let mut radius = Twips::zero();
+    let mut line_styles = &shape.styles.line_styles;
 
-    for record in shape_records {
+    for record in &shape.shape {
         match record {
             swf::ShapeRecord::StyleChange(style_change) => {
                 if let Some(new_styles) = &style_change.new_styles {
@@ -32,14 +44,12 @@ pub fn calculate_shape_bounds(
                     x = move_x;
                     y = move_y;
                     // TODO: remove?
-                    bounds.x_min = Twips::min(bounds.x_min, x);
-                    bounds.x_max = Twips::max(bounds.x_max, x);
-                    bounds.y_min = Twips::min(bounds.y_min, y);
-                    bounds.y_max = Twips::max(bounds.y_max, y);
+                    update_rect(&mut shape_bounds, x, y, stroke_width);
+                    update_rect(&mut edge_bounds, x, y, Twips::zero());
                 }
 
                 if let Some(i) = style_change.line_style {
-                    stroke_width = if i > 0 {
+                    radius = if i > 0 {
                         if let Some(line_style) = line_styles.get(i as usize - 1) {
                             line_style.width / 2
                         } else {
@@ -53,10 +63,8 @@ pub fn calculate_shape_bounds(
             swf::ShapeRecord::StraightEdge { delta_x, delta_y } => {
                 x += *delta_x;
                 y += *delta_y;
-                bounds.x_min = Twips::min(bounds.x_min, x - stroke_width);
-                bounds.x_max = Twips::max(bounds.x_max, x + stroke_width);
-                bounds.y_min = Twips::min(bounds.y_min, y - stroke_width);
-                bounds.y_max = Twips::max(bounds.y_max, y + stroke_width);
+                update_rect(&mut shape_bounds, x, y, radius);
+                update_rect(&mut edge_bounds, x, y, Twips::zero());
             }
             swf::ShapeRecord::CurvedEdge {
                 control_delta_x,
@@ -66,23 +74,17 @@ pub fn calculate_shape_bounds(
             } => {
                 x += *control_delta_x;
                 y += *control_delta_y;
-                bounds.x_min = Twips::min(bounds.x_min, x - stroke_width);
-                bounds.x_max = Twips::max(bounds.x_max, x + stroke_width);
-                bounds.y_min = Twips::min(bounds.y_min, y - stroke_width);
-                bounds.y_max = Twips::max(bounds.y_max, y + stroke_width);
+                update_rect(&mut shape_bounds, x, y, radius);
+                update_rect(&mut edge_bounds, x, y, Twips::zero());
                 x += *anchor_delta_x;
                 y += *anchor_delta_y;
-                bounds.x_min = Twips::min(bounds.x_min, x - stroke_width);
-                bounds.x_max = Twips::max(bounds.x_max, x + stroke_width);
-                bounds.y_min = Twips::min(bounds.y_min, y - stroke_width);
-                bounds.y_max = Twips::max(bounds.y_max, y + stroke_width);
+                update_rect(&mut shape_bounds, x, y, radius);
+                update_rect(&mut edge_bounds, x, y, Twips::zero());
             }
         }
     }
-    if bounds.x_max < bounds.x_min || bounds.y_max < bounds.y_min {
-        bounds = Default::default();
-    }
-    bounds
+    shape.shape_bounds = shape_bounds;
+    shape.edge_bounds = edge_bounds;
 }
 
 /// `DrawPath` represents a solid fill or a stroke.
@@ -603,22 +605,22 @@ mod tests {
 
     /// Convenience method to quickly make a shape,
     fn build_shape(records: Vec<ShapeRecord>) -> swf::Shape {
-        let styles = swf::ShapeStyles {
-            fill_styles: FILL_STYLES.to_vec(),
-            line_styles: LINE_STYLES.to_vec(),
-        };
-        let bounds = calculate_shape_bounds(&records[..], &styles);
-        swf::Shape {
+        let mut shape = swf::Shape {
             version: 2,
             id: 1,
-            shape_bounds: bounds.clone(),
-            edge_bounds: bounds,
+            shape_bounds: Default::default(),
+            edge_bounds: Default::default(),
             has_fill_winding_rule: false,
             has_non_scaling_strokes: false,
             has_scaling_strokes: true,
-            styles,
+            styles: swf::ShapeStyles {
+                fill_styles: FILL_STYLES.to_vec(),
+                line_styles: LINE_STYLES.to_vec(),
+            },
             shape: records,
-        }
+        };
+        calculate_shape_bounds(&mut shape);
+        shape
     }
 
     /// A simple solid square.
@@ -1359,20 +1361,26 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
         })],
         line_styles: vec![],
     };
-    let bounds = glyph
-        .bounds
-        .clone()
-        .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
-        .unwrap_or_else(|| calculate_shape_bounds(&glyph.shape_records[..], &styles));
-    swf::Shape {
+    let mut shape = swf::Shape {
         version: 2,
         id: 0,
-        shape_bounds: bounds.clone(),
-        edge_bounds: bounds,
+        shape_bounds: Default::default(),
+        edge_bounds: Default::default(),
         has_fill_winding_rule: false,
         has_non_scaling_strokes: false,
         has_scaling_strokes: true,
         styles,
         shape: glyph.shape_records.clone(),
+    };
+    if let Some(bounds) = glyph
+        .bounds
+        .clone()
+        .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
+    {
+        shape.shape_bounds = bounds.clone();
+        shape.edge_bounds = bounds;
+    } else {
+        calculate_shape_bounds(&mut shape);
     }
+    shape
 }

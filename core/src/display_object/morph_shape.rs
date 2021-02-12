@@ -25,7 +25,7 @@ impl<'gc> MorphShape<'gc> {
         gc_context: gc_arena::MutationContext<'gc, '_>,
         static_data: MorphShapeStatic,
     ) -> Self {
-        MorphShape(GcCell::allocate(
+        Self(GcCell::allocate(
             gc_context,
             MorphShapeData {
                 base: Default::default(),
@@ -45,7 +45,7 @@ impl<'gc> MorphShape<'gc> {
 
     fn self_bounds(&self, ratio: u16) -> BoundingBox {
         if let Some(frame) = self.0.read().static_data.frames.get(&ratio) {
-            frame.bounds.clone()
+            frame.shape.shape_bounds.clone().into()
         } else {
             BoundingBox::default()
         }
@@ -99,7 +99,6 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
                 log::warn!("Missing ratio for morph shape");
             }
         }
-
         false
     }
 }
@@ -108,7 +107,6 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 struct Frame {
     shape_handle: ShapeHandle,
     shape: swf::Shape,
-    bounds: BoundingBox,
 }
 
 /// Static data shared between all instances of a morph shape.
@@ -147,8 +145,6 @@ impl MorphShapeStatic {
             // Already registered.
             return;
         }
-
-        let library = context.library.library_for_movie(Arc::clone(&self.movie));
 
         // Interpolate MorphShapes into a Shape.
         use swf::{FillStyle, LineStyle, ShapeRecord, ShapeStyles};
@@ -245,7 +241,6 @@ impl MorphShapeStatic {
                     shape.push(ShapeRecord::StyleChange(style_change));
                     Self::update_pos(&mut end_x, &mut end_y, s);
                     end = end_iter.next();
-                    continue;
                 }
                 _ => {
                     shape.push(lerp_edges(s, e, a, b));
@@ -257,27 +252,26 @@ impl MorphShapeStatic {
             }
         }
 
-        let styles = ShapeStyles {
-            fill_styles,
-            line_styles,
-        };
-        let bounds = crate::shape_utils::calculate_shape_bounds(&shape[..], &styles);
-        let shape = swf::Shape {
+        let mut shape = swf::Shape {
             version: 4,
             id: 0,
-            shape_bounds: bounds.clone(),
-            edge_bounds: bounds.clone(),
+            shape_bounds: Default::default(),
+            edge_bounds: Default::default(),
             has_fill_winding_rule: false,
             has_non_scaling_strokes: false,
             has_scaling_strokes: true,
-            styles,
+            styles: ShapeStyles {
+                fill_styles,
+                line_styles,
+            },
             shape,
         };
+        crate::shape_utils::calculate_shape_bounds(&mut shape);
 
+        let library = context.library.library_for_movie(Arc::clone(&self.movie));
         let frame = Frame {
             shape_handle: context.renderer.register_shape((&shape).into(), library),
             shape,
-            bounds: bounds.into(),
         };
         self.frames.insert(ratio, frame);
     }

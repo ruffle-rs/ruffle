@@ -171,6 +171,9 @@ impl Default for BoundingBox {
 
 impl From<swf::Rectangle> for BoundingBox {
     fn from(rect: swf::Rectangle) -> Self {
+        if rect.x_max < rect.x_min || rect.y_max < rect.y_min {
+            return Default::default();
+        }
         Self {
             x_min: rect.x_min,
             y_min: rect.y_min,
@@ -183,6 +186,9 @@ impl From<swf::Rectangle> for BoundingBox {
 
 impl From<&swf::Rectangle> for BoundingBox {
     fn from(rect: &swf::Rectangle) -> Self {
+        if rect.x_max < rect.x_min || rect.y_max < rect.y_min {
+            return Default::default();
+        }
         Self {
             x_min: rect.x_min,
             y_min: rect.y_min,
