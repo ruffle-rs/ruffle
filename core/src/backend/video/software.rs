@@ -56,7 +56,7 @@ impl VideoBackend for SoftwareVideoBackend {
     fn preload_video_stream_frame(
         &mut self,
         stream: VideoStreamHandle,
-        _encoded_frame: EncodedFrame<'_>,
+        encoded_frame: EncodedFrame<'_>,
     ) -> Result<FrameDependency, Error> {
         let stream = self
             .streams
@@ -65,8 +65,17 @@ impl VideoBackend for SoftwareVideoBackend {
 
         match stream {
             VideoStream::Vp6(_state, _last_bitmap) => {
-                // TODO actually parse the frame header and report correctly
-                Ok(FrameDependency::None)
+                // Luckily the very first bit of the encoded frames is exactly
+                // this flag, so we don't have to bother asking any "proper"
+                // decoder or parser.
+                Ok(
+                    if !encoded_frame.data.is_empty() && (encoded_frame.data[0] & 0b_1000_0000) == 0
+                    {
+                        FrameDependency::None
+                    } else {
+                        FrameDependency::Past
+                    },
+                )
             }
         }
     }
