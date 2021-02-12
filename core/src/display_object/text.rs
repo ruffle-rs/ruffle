@@ -197,18 +197,12 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 
 /// Static data shared between all instances of a text object.
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Collect)]
+#[collect(require_static)]
 struct TextStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
     bounds: BoundingBox,
     text_transform: Matrix,
     text_blocks: Vec<swf::TextRecord>,
-}
-
-unsafe impl<'gc> gc_arena::Collect for TextStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
-    }
 }
