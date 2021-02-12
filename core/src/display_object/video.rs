@@ -149,12 +149,9 @@ impl<'gc> Video<'gc> {
     }
 
     /// Seek to a particular frame in the video stream.
-    pub fn seek(self, context: &mut UpdateContext<'_, 'gc, '_>, mut frame_id: u32) {
+    pub fn seek(self, context: &mut UpdateContext<'_, 'gc, '_>, frame_id: u32) {
         let read = self.0.read();
-        let source = read.source;
-        let stream = if let VideoStream::Instantiated(stream) = &read.stream {
-            stream
-        } else {
+        if let VideoStream::Uninstantiated(_) = &read.stream {
             drop(read);
 
             let mut write = self.0.write(context.gc_context);
@@ -162,18 +159,61 @@ impl<'gc> Video<'gc> {
 
             return;
         };
+
         let last_frame = read.decoded_frame.as_ref().map(|(lf, _)| *lf);
-        let is_unordered_seek = frame_id != 0 && Some(frame_id) != last_frame.map(|lf| lf + 1);
-        if is_unordered_seek {
-            frame_id = read
+
+        if last_frame == Some(frame_id) {
+            return; // we are already there, no-op
+        }
+
+        let is_ordered_seek = frame_id == 0 || Some(frame_id) == last_frame.map(|lf| lf + 1);
+
+        // When seeking to a frame that is not right after the previously shown,
+        // nor is it a keyframe, we have to first seek through all frames
+        // starting with the preceding keyframe.
+        let sweep_from = if is_ordered_seek {
+            frame_id // no need to sweep
+        } else {
+            let prev_keyframe_id = read
                 .keyframes
                 .range(..=frame_id)
                 .rev()
                 .next()
                 .copied()
                 .unwrap_or(0);
-        }
 
+            // Start sweeping from either the preceding keyframe, or continue from
+            // where we last were if that is closer to where we want to be.
+            if let Some(lf) = last_frame {
+                if frame_id > lf {
+                    // When seeking forward, there is a chance that continuing from
+                    // the last frame gets us there faster (if the skip is small).
+                    u32::max(prev_keyframe_id, lf + 1)
+                } else {
+                    prev_keyframe_id
+                }
+            } else {
+                prev_keyframe_id
+            }
+        };
+
+        drop(read);
+
+        for fr in sweep_from..=frame_id {
+            self.do_seek(context, fr)
+        }
+    }
+
+    /// The internals of `seek` factored out, separate from the sweeping mechanism.
+    fn do_seek(self, context: &mut UpdateContext<'_, 'gc, '_>, frame_id: u32) {
+        let read = self.0.read();
+        let source = read.source;
+        let stream = if let VideoStream::Instantiated(stream) = &read.stream {
+            stream
+        } else {
+            log::error!("Attempted to sync uninstantiated video stream!");
+            return;
+        };
         let res = match &*source.read() {
             VideoSource::Swf {
                 movie,
