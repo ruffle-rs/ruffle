@@ -94,9 +94,11 @@ enum FrameControl<'gc> {
     Return(ReturnType<'gc>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
 pub struct ActivationIdentifier<'a> {
     parent: Option<&'a ActivationIdentifier<'a>>,
+    #[collect(require_static)]
     name: Cow<'static, str>,
     depth: u16,
     function_count: u16,
@@ -170,14 +172,6 @@ impl<'a> ActivationIdentifier<'a> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for ActivationIdentifier<'gc> {
-    fn needs_trace() -> bool {
-        false
-    }
-
-    #[inline]
-    fn trace(&self, _cc: gc_arena::CollectionContext) {}
-}
 
 pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// Represents the SWF version of a given function.
