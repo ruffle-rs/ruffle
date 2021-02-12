@@ -1,16 +1,16 @@
 <p align="center">
- <a href="https://ruffle.rs"><img src="https://ruffle.rs/assets/logo.png" alt="Ruffle"></a>
+   <a href="https://ruffle.rs"><img src="https://ruffle.rs/assets/logo.png" alt="Ruffle"></a>
 </p>
 <p align="center">
- <a href="https://github.com/ruffle-rs/ruffle/actions">
-  <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Rust?label=rust%20build" alt="Rust Build Status" />
-  <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Web?label=web%20build" alt="Web Build Status" />
- </a>
-  <a href="https://discord.gg/J8hgCQN">
-      <img src="https://img.shields.io/discord/610531541889581066" alt="Ruffle Discord">
-  </a>
-  <br>
-  <strong><a href="https://ruffle.rs">website</a> | <a href="https://ruffle.rs/demo">demo</a> | <a href="https://github.com/ruffle-rs/ruffle/releases">nightly builds</a> | <a href="https://github.com/ruffle-rs/ruffle/wiki">wiki</a></strong>
+   <a href="https://github.com/ruffle-rs/ruffle/actions">
+   <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Rust?label=rust%20build" alt="Rust Build Status" />
+   <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Web?label=web%20build" alt="Web Build Status" />
+   </a>
+   <a href="https://discord.gg/J8hgCQN">
+   <img src="https://img.shields.io/discord/610531541889581066" alt="Ruffle Discord">
+   </a>
+   <br>
+   <strong><a href="https://ruffle.rs">website</a> | <a href="https://ruffle.rs/demo">demo</a> | <a href="https://github.com/ruffle-rs/ruffle/releases">nightly builds</a> | <a href="https://github.com/ruffle-rs/ruffle/wiki">wiki</a></strong>
 </p>
 
 # Ruffle
@@ -73,27 +73,27 @@ You can support the development of Ruffle via [GitHub Sponsors](https://github.c
 Sincere thanks to the diamond level sponsors of Ruffle:
 
 <p align="center">
-  <a href="https://www.newgrounds.com">
-    <img src="https://ruffle.rs/assets/sponsors/newgrounds.png" alt="Newgrounds.com">
-  </a>
-  <a href="https://www.cpmstar.com">
-    <img src="https://ruffle.rs/assets/sponsors/cpmstar.png" alt="CPMStar">
-  </a>
-  <a href="https://deepnight.net">
-    <img src="https://ruffle.rs/assets/sponsors/deepnight.png" alt="Sébastien Bénard">
-  </a>
-  <a href="https://www.crazygames.com">
-    <img src="https://ruffle.rs/assets/sponsors/crazygames.png" alt="Crazy Games">
-  </a>
-  <a href="https://www.coolmathgames.com">
-    <img src="https://ruffle.rs/assets/sponsors/coolmathgames.png" alt="Cool Math Games">
-  </a>
-  <a href="https://www.nytimes.com/">
-    <img src="https://ruffle.rs/assets/sponsors/nyt.png" alt="The New York Times">
-  </a>
-  <a href="https://www.armorgames.com/">
-    <img src="https://ruffle.rs/assets/sponsors/armorgames.png" alt="Armor Games">
-  </a>
+   <a href="https://www.newgrounds.com">
+   <img src="https://ruffle.rs/assets/sponsors/newgrounds.png" alt="Newgrounds.com">
+   </a>
+   <a href="https://www.cpmstar.com">
+   <img src="https://ruffle.rs/assets/sponsors/cpmstar.png" alt="CPMStar">
+   </a>
+   <a href="https://deepnight.net">
+   <img src="https://ruffle.rs/assets/sponsors/deepnight.png" alt="Sébastien Bénard">
+   </a>
+   <a href="https://www.crazygames.com">
+   <img src="https://ruffle.rs/assets/sponsors/crazygames.png" alt="Crazy Games">
+   </a>
+   <a href="https://www.coolmathgames.com">
+   <img src="https://ruffle.rs/assets/sponsors/coolmathgames.png" alt="Cool Math Games">
+   </a>
+   <a href="https://www.nytimes.com/">
+   <img src="https://ruffle.rs/assets/sponsors/nyt.png" alt="The New York Times">
+   </a>
+   <a href="https://www.armorgames.com/">
+   <img src="https://ruffle.rs/assets/sponsors/armorgames.png" alt="Armor Games">
+   </a>
 </p>
 
 ## License
