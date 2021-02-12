@@ -849,8 +849,8 @@ pub enum GradientSpread {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum GradientInterpolation {
-    RGB,
-    LinearRGB,
+    Rgb,
+    LinearRgb,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -1227,8 +1227,8 @@ pub enum VideoDeblocking {
 pub enum VideoCodec {
     H263,
     ScreenVideo,
-    VP6,
-    VP6WithAlpha,
+    Vp6,
+    Vp6WithAlpha,
     ScreenVideoV2,
 }
 

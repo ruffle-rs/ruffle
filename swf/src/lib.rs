@@ -6,7 +6,12 @@
 //!
 //! This library consists of a `read` module for decoding SWF data, and a `write` library for
 //! writing SWF data.
-#![allow(clippy::unusual_byte_groupings)]
+#![allow(
+    renamed_and_removed_lints,
+    clippy::unknown_clippy_lints,
+    clippy::unusual_byte_groupings,
+    clippy::upper_case_acronyms
+)]
 
 extern crate byteorder;
 #[cfg(feature = "flate2")]

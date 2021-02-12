@@ -737,7 +737,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             c: -0.024429321,
                         },
                         spread: GradientSpread::Pad,
-                        interpolation: GradientInterpolation::RGB,
+                        interpolation: GradientInterpolation::Rgb,
                         records: vec![
                             GradientRecord {
                                 ratio: 0,
@@ -840,7 +840,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             c: 0.0,
                         },
                         spread: GradientSpread::Pad,
-                        interpolation: GradientInterpolation::RGB,
+                        interpolation: GradientInterpolation::Rgb,
                         records: vec![
                             GradientRecord {
                                 ratio: 56,
@@ -958,7 +958,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                                 c: 0.0,
                             },
                             spread: GradientSpread::Pad,
-                            interpolation: GradientInterpolation::RGB,
+                            interpolation: GradientInterpolation::Rgb,
                             records: vec![
                                 GradientRecord {
                                     ratio: 0,
@@ -1081,7 +1081,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                                 c: -0.15675354,
                             },
                             spread: GradientSpread::Pad,
-                            interpolation: GradientInterpolation::RGB,
+                            interpolation: GradientInterpolation::Rgb,
                             records: vec![
                                 GradientRecord {
                                     ratio: 0,
@@ -1217,7 +1217,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             c: 0.0,
                         },
                         spread: GradientSpread::Reflect,
-                        interpolation: GradientInterpolation::LinearRGB,
+                        interpolation: GradientInterpolation::LinearRgb,
                         records: vec![
                             GradientRecord {
                                 ratio: 0,
@@ -1305,7 +1305,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             c: -0.084503174,
                         },
                         spread: GradientSpread::Reflect,
-                        interpolation: GradientInterpolation::LinearRGB,
+                        interpolation: GradientInterpolation::LinearRgb,
                         records: vec![
                             GradientRecord {
                                 ratio: 0,
@@ -1514,7 +1514,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             c: 0f32,
                         },
                         spread: GradientSpread::Pad,
-                        interpolation: GradientInterpolation::RGB,
+                        interpolation: GradientInterpolation::Rgb,
                         records: vec![
                             GradientRecord {
                                 ratio: 0,
@@ -1637,7 +1637,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                                     c: 0f32,
                                 },
                                 spread: GradientSpread::Pad,
-                                interpolation: GradientInterpolation::LinearRGB,
+                                interpolation: GradientInterpolation::LinearRgb,
                                 records: vec![
                                     GradientRecord {
                                         ratio: 0,
@@ -1701,7 +1701,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                                     c: 0f32,
                                 },
                                 spread: GradientSpread::Pad,
-                                interpolation: GradientInterpolation::RGB,
+                                interpolation: GradientInterpolation::Rgb,
                                 records: vec![
                                     GradientRecord {
                                         ratio: 0,

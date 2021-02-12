@@ -78,7 +78,7 @@ impl SwfMovie {
 
     /// Construct a movie based on the contents of the SWF datastream.
     pub fn from_data(swf_data: &[u8], url: Option<String>) -> Result<Self, Error> {
-        let swf_buf = swf::read::decompress_swf(&swf_data[..])?;
+        let swf_buf = swf::read::decompress_swf(swf_data)?;
         let encoding = swf::SwfStr::encoding_for_version(swf_buf.header.version);
         Ok(Self {
             header: swf_buf.header,

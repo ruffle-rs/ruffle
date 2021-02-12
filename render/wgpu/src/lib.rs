@@ -175,13 +175,13 @@ unsafe impl Zeroable for ColorAdjustments {}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
-struct GPUVertex {
+struct GpuVertex {
     position: [f32; 2],
     color: [f32; 4],
 }
 
-unsafe impl Pod for GPUVertex {}
-unsafe impl Zeroable for GPUVertex {}
+unsafe impl Pod for GpuVertex {}
+unsafe impl Zeroable for GpuVertex {}
 
 impl WgpuRenderBackend<SwapChainTarget> {
     pub fn for_window<W: HasRawWindowHandle>(
@@ -349,7 +349,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             shape_id: CharacterId,
             draw: IncompleteDrawType,
             draws: &mut Vec<Draw>,
-            lyon_mesh: &mut VertexBuffers<GPUVertex, u32>,
+            lyon_mesh: &mut VertexBuffers<GpuVertex, u32>,
             device: &wgpu::Device,
             pipelines: &Pipelines,
         ) {
@@ -1328,19 +1328,19 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
 fn create_quad_buffers(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, wgpu::Buffer) {
     let vertices = [
-        GPUVertex {
+        GpuVertex {
             position: [0.0, 0.0],
             color: [1.0, 1.0, 1.0, 1.0],
         },
-        GPUVertex {
+        GpuVertex {
             position: [1.0, 0.0],
             color: [1.0, 1.0, 1.0, 1.0],
         },
-        GPUVertex {
+        GpuVertex {
             position: [1.0, 1.0],
             color: [1.0, 1.0, 1.0, 1.0],
         },
-        GPUVertex {
+        GpuVertex {
             position: [0.0, 1.0],
             color: [1.0, 1.0, 1.0, 1.0],
         },
@@ -1401,7 +1401,7 @@ fn swf_gradient_to_uniforms(
     }
 
     // Convert colors from sRGB to linear space if necessary.
-    if gradient.interpolation == GradientInterpolation::LinearRGB {
+    if gradient.interpolation == GradientInterpolation::LinearRgb {
         for color in &mut colors[0..gradient.records.len()] {
             *color = srgb_to_linear(*color);
         }
@@ -1411,7 +1411,7 @@ fn swf_gradient_to_uniforms(
         gradient_type,
         ratios,
         colors,
-        interpolation: (gradient.interpolation == GradientInterpolation::LinearRGB) as i32,
+        interpolation: (gradient.interpolation == GradientInterpolation::LinearRgb) as i32,
         num_colors: gradient.records.len() as u32,
         repeat_mode: gradient_spread_mode_index(gradient.spread),
         focal_point,
@@ -1430,18 +1430,18 @@ struct RuffleVertexCtor {
     color: [f32; 4],
 }
 
-impl FillVertexConstructor<GPUVertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, vertex: FillVertex) -> GPUVertex {
-        GPUVertex {
+impl FillVertexConstructor<GpuVertex> for RuffleVertexCtor {
+    fn new_vertex(&mut self, vertex: FillVertex) -> GpuVertex {
+        GpuVertex {
             position: [vertex.position().x, vertex.position().y],
             color: self.color,
         }
     }
 }
 
-impl StrokeVertexConstructor<GPUVertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, vertex: StrokeVertex) -> GPUVertex {
-        GPUVertex {
+impl StrokeVertexConstructor<GpuVertex> for RuffleVertexCtor {
+    fn new_vertex(&mut self, vertex: StrokeVertex) -> GpuVertex {
+        GpuVertex {
             position: [vertex.position().x, vertex.position().y],
             color: self.color,
         }

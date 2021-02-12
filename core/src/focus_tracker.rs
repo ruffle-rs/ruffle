@@ -3,8 +3,8 @@ use crate::context::UpdateContext;
 pub use crate::display_object::{DisplayObject, TDisplayObject};
 use gc_arena::{Collect, GcCell, MutationContext};
 
-#[collect(no_drop)]
 #[derive(Clone, Copy, Collect, Debug)]
+#[collect(no_drop)]
 pub struct FocusTracker<'gc>(GcCell<'gc, Option<DisplayObject<'gc>>>);
 
 impl<'gc> FocusTracker<'gc> {

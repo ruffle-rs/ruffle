@@ -16,7 +16,7 @@ use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
-use crate::xml::XMLDocument;
+use crate::xml::XmlDocument;
 use chrono::Utc;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::{cell::Ref, sync::Arc};
@@ -63,7 +63,7 @@ pub struct EditTextData<'gc> {
     /// appropriate set of format spans, which is used for actual rendering.
     /// The HTML is only retained if there is also a stylesheet already defined
     /// on the `EditText`, else it is discarded during the lowering process.
-    document: XMLDocument<'gc>,
+    document: XmlDocument<'gc>,
 
     /// The underlying text format spans of the `EditText`.
     ///
@@ -157,7 +157,7 @@ impl<'gc> EditText<'gc> {
         let is_password = swf_tag.is_password;
         let is_editable = !swf_tag.is_read_only;
         let is_html = swf_tag.is_html;
-        let document = XMLDocument::new(context.gc_context);
+        let document = XmlDocument::new(context.gc_context);
         let text = swf_tag.initial_text.clone().unwrap_or_default();
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
         let encoding = swf_movie.encoding();
@@ -384,7 +384,7 @@ impl<'gc> EditText<'gc> {
     ) -> Result<(), Error> {
         if self.is_html() {
             let html_string = text.replace("<sbr>", "\n").replace("<br>", "\n");
-            let document = XMLDocument::new(context.gc_context);
+            let document = XmlDocument::new(context.gc_context);
 
             if let Err(err) =
                 document
@@ -401,7 +401,7 @@ impl<'gc> EditText<'gc> {
         Ok(())
     }
 
-    pub fn html_tree(self, context: &mut UpdateContext<'_, 'gc, '_>) -> XMLDocument<'gc> {
+    pub fn html_tree(self, context: &mut UpdateContext<'_, 'gc, '_>) -> XmlDocument<'gc> {
         self.0.read().text_spans.raise_to_html(context.gc_context)
     }
 
@@ -415,7 +415,7 @@ impl<'gc> EditText<'gc> {
     /// In stylesheet mode, the opposite is true: text spans are an
     /// intermediate, user-facing text span APIs don't work, and the document
     /// is retained.
-    pub fn set_html_tree(self, doc: XMLDocument<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn set_html_tree(self, doc: XmlDocument<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut write = self.0.write(context.gc_context);
 
         write.document = doc;

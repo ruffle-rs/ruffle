@@ -532,7 +532,7 @@ impl WebGlRenderBackend {
                     ratios[..num_colors].copy_from_slice(&gradient.ratios[..num_colors]);
                     colors[..num_colors].copy_from_slice(&gradient.colors[..num_colors]);
                     // Convert to linear color space if this is a linear-interpolated gradient.
-                    if gradient.interpolation == swf::GradientInterpolation::LinearRGB {
+                    if gradient.interpolation == swf::GradientInterpolation::LinearRgb {
                         for color in &mut colors[..num_colors] {
                             *color = srgb_to_linear(*color);
                         }
@@ -1177,7 +1177,7 @@ impl RenderBackend for WebGlRenderBackend {
                     program.uniform1i(
                         &self.gl,
                         ShaderUniform::GradientInterpolation,
-                        (gradient.interpolation == swf::GradientInterpolation::LinearRGB) as i32,
+                        (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
                     );
                 }
                 DrawType::Bitmap(bitmap) => {

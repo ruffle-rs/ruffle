@@ -14,7 +14,7 @@ use std::fmt;
 /// should not be used for user-specified namespaces.
 #[derive(Clone, Collect, PartialEq, Eq, PartialOrd, Ord)]
 #[collect(no_drop)]
-pub struct XMLName {
+pub struct XmlName {
     /// The name of the XML namespace this name is scoped to.
     ///
     /// Names without a namespace use the default namespace.
@@ -25,10 +25,10 @@ pub struct XMLName {
     name: String,
 }
 
-impl XMLName {
+impl XmlName {
     /// Construct an XML name from its parts (name and namespace).
     pub fn from_parts(namespace: Option<&str>, name: &str) -> Self {
-        XMLName {
+        XmlName {
             namespace: namespace.map(|s| s.to_string()),
             name: name.to_string(),
         }
@@ -88,7 +88,7 @@ impl XMLName {
 
     /// Compares both names as case-insensitve ASCII (for use in HTML parsing).
     /// TODO: We shouldn't need this when we have a proper HTML parser.
-    pub fn eq_ignore_ascii_case(&self, other: &XMLName) -> bool {
+    pub fn eq_ignore_ascii_case(&self, other: &XmlName) -> bool {
         if !self.name.eq_ignore_ascii_case(&other.name) {
             return false;
         }
@@ -101,9 +101,9 @@ impl XMLName {
     }
 }
 
-impl fmt::Debug for XMLName {
+impl fmt::Debug for XmlName {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("XMLName")
+        f.debug_struct("XmlName")
             .field("namespace", &self.namespace)
             .field("name", &self.name)
             .finish()

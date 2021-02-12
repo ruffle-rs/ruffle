@@ -1817,8 +1817,8 @@ impl<'a> Reader<'a> {
             _ => return Err(Error::invalid_data("Invalid gradient spread mode")),
         };
         let interpolation = match flags & 0b11_0000 {
-            0b00_0000 => GradientInterpolation::RGB,
-            0b01_0000 => GradientInterpolation::LinearRGB,
+            0b00_0000 => GradientInterpolation::Rgb,
+            0b01_0000 => GradientInterpolation::LinearRgb,
             _ => return Err(Error::invalid_data("Invalid gradient interpolation mode")),
         };
         let num_records = usize::from(flags & 0b1111);
@@ -2625,8 +2625,8 @@ impl<'a> Reader<'a> {
         let codec = match self.read_u8()? {
             2 => VideoCodec::H263,
             3 => VideoCodec::ScreenVideo,
-            4 => VideoCodec::VP6,
-            5 => VideoCodec::VP6WithAlpha,
+            4 => VideoCodec::Vp6,
+            5 => VideoCodec::Vp6WithAlpha,
             6 => VideoCodec::ScreenVideoV2,
             _ => return Err(Error::invalid_data("Invalid video codec.")),
         };
@@ -3063,8 +3063,8 @@ pub mod tests {
             assert_eq!(reader.read_string().unwrap(), "");
         }
         {
-            let buf = "12🤖12\0".as_bytes();
-            let mut reader = Reader::new(&buf[..], 1);
+            let buf = "12🤖12\0";
+            let mut reader = Reader::new(buf.as_bytes(), 1);
             assert_eq!(reader.read_string().unwrap(), "12🤖12");
         }
     }

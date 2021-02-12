@@ -324,7 +324,7 @@ impl AudioBackend for CpalAudioBackend {
                 u16::from(swf_sound.data[0]) | (u16::from(swf_sound.data[1]) << 8);
             (skip_sample_frames, &swf_sound.data[2..])
         } else {
-            (0, &swf_sound.data[..])
+            (0, swf_sound.data)
         };
 
         let sound = Sound {

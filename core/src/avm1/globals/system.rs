@@ -13,19 +13,19 @@ use std::convert::TryFrom;
 
 /// Available cpu architectures
 pub enum CpuArchitecture {
-    PowerPC,
+    PowerPc,
     X86,
-    SPARC,
-    ARM,
+    Sparc,
+    Arm,
 }
 
 impl fmt::Display for CpuArchitecture {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            CpuArchitecture::PowerPC => "PowerPC",
+            CpuArchitecture::PowerPc => "PowerPC",
             CpuArchitecture::X86 => "x86",
-            CpuArchitecture::SPARC => "SPARC",
-            CpuArchitecture::ARM => "ARM",
+            CpuArchitecture::Sparc => "SPARC",
+            CpuArchitecture::Arm => "ARM",
         })
     }
 }
@@ -56,10 +56,10 @@ pub enum OperatingSystem {
     WindowsNt,
     Windows98,
     Windows95,
-    WindowsCE,
+    WindowsCe,
     WindowsUnknown,
     Linux,
-    MacOS,
+    MacOs,
 }
 
 impl fmt::Display for OperatingSystem {
@@ -70,10 +70,10 @@ impl fmt::Display for OperatingSystem {
             OperatingSystem::WindowsNt => "Windows NT",
             OperatingSystem::Windows98 => "Windows 98/ME",
             OperatingSystem::Windows95 => "Windows 95",
-            OperatingSystem::WindowsCE => "Windows CE",
+            OperatingSystem::WindowsCe => "Windows CE",
             OperatingSystem::WindowsUnknown => "Windows",
             OperatingSystem::Linux => "Linux",
-            OperatingSystem::MacOS => "MacOS",
+            OperatingSystem::MacOs => "MacOS",
         })
     }
 }

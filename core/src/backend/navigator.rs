@@ -72,10 +72,10 @@ pub fn url_from_relative_url(base: &str, relative: &str) -> Result<Url, ParseErr
 #[derive(Copy, Clone)]
 pub enum NavigationMethod {
     /// Indicates that navigation should generate a GET request.
-    GET,
+    Get,
 
     /// Indicates that navigation should generate a POST request.
-    POST,
+    Post,
 }
 
 impl NavigationMethod {
@@ -83,15 +83,15 @@ impl NavigationMethod {
     pub fn from_send_vars_method(s: SendVarsMethod) -> Option<Self> {
         match s {
             SendVarsMethod::None => None,
-            SendVarsMethod::Get => Some(Self::GET),
-            SendVarsMethod::Post => Some(Self::POST),
+            SendVarsMethod::Get => Some(Self::Get),
+            SendVarsMethod::Post => Some(Self::Post),
         }
     }
 
     pub fn from_method_str(method: &str) -> Option<Self> {
         match method {
-            "GET" => Some(Self::GET),
-            "POST" => Some(Self::POST),
+            "GET" => Some(Self::Get),
+            "POST" => Some(Self::Post),
             _ => None,
         }
     }
@@ -113,7 +113,7 @@ impl RequestOptions {
     /// Construct request options for a GET request.
     pub fn get() -> Self {
         Self {
-            method: NavigationMethod::GET,
+            method: NavigationMethod::Get,
             body: None,
         }
     }
@@ -121,7 +121,7 @@ impl RequestOptions {
     /// Construct request options for a POST request.
     pub fn post(body: Option<(Vec<u8>, String)>) -> Self {
         Self {
-            method: NavigationMethod::POST,
+            method: NavigationMethod::Post,
             body,
         }
     }

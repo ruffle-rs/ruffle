@@ -5,7 +5,7 @@ use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::tag_utils::SwfMovie;
-use crate::xml::{Step, XMLDocument, XMLName, XMLNode};
+use crate::xml::{Step, XmlDocument, XmlName, XmlNode};
 use gc_arena::{Collect, MutationContext};
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
@@ -280,11 +280,11 @@ impl TextFormat {
     /// loaded with all of the *currently existing* styles at this point in the
     /// lowering process. Any property not implied by markup will be retained
     /// in this format.
-    pub fn from_presentational_markup(node: XMLNode<'_>, mut tf: TextFormat) -> Self {
+    pub fn from_presentational_markup(node: XmlNode<'_>, mut tf: TextFormat) -> Self {
         match node.tag_name() {
-            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("p")) => {
+            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("p")) => {
                 match node
-                    .attribute_value_ignore_ascii_case(&XMLName::from_str("align"))
+                    .attribute_value_ignore_ascii_case(&XmlName::from_str("align"))
                     .as_deref()
                 {
                     Some("left") => tf.align = Some(swf::TextAlign::Left),
@@ -293,34 +293,34 @@ impl TextFormat {
                     _ => {}
                 }
             }
-            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("a")) => {
+            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("a")) => {
                 if let Some(href) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("href"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("href"))
                 {
                     tf.url = Some(href);
                 }
 
                 if let Some(target) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("target"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("target"))
                 {
                     tf.target = Some(target);
                 }
             }
-            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("font")) => {
+            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("font")) => {
                 if let Some(face) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("face"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("face"))
                 {
                     tf.font = Some(face);
                 }
 
                 if let Some(size) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("size"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("size"))
                 {
                     tf.size = size.parse().ok();
                 }
 
                 if let Some(color) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("color"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("color"))
                 {
                     if color.starts_with('#') {
                         let rval = color.get(1..3).and_then(|v| u8::from_str_radix(v, 16).ok());
@@ -334,13 +334,13 @@ impl TextFormat {
                 }
 
                 if let Some(letter_spacing) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("letterSpacing"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("letterSpacing"))
                 {
                     tf.letter_spacing = letter_spacing.parse().ok();
                 }
 
                 tf.kerning = match node
-                    .attribute_value_ignore_ascii_case(&XMLName::from_str("kerning"))
+                    .attribute_value_ignore_ascii_case(&XmlName::from_str("kerning"))
                     .as_deref()
                 {
                     Some("1") => Some(true),
@@ -348,53 +348,53 @@ impl TextFormat {
                     _ => tf.kerning,
                 }
             }
-            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("b")) => {
+            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("b")) => {
                 tf.bold = Some(true);
             }
-            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("i")) => {
+            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("i")) => {
                 tf.italic = Some(true);
             }
-            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("u")) => {
+            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("u")) => {
                 tf.underline = Some(true);
             }
-            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("li")) => {
+            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("li")) => {
                 tf.bullet = Some(true);
             }
-            Some(name) if name.eq_ignore_ascii_case(&XMLName::from_str("textformat")) => {
+            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("textformat")) => {
                 //TODO: Spec says these are all in twips. That doesn't seem to
                 //match Flash 8.
                 if let Some(left_margin) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("leftmargin"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("leftmargin"))
                 {
                     tf.left_margin = left_margin.parse().ok();
                 }
 
                 if let Some(right_margin) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("rightmargin"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("rightmargin"))
                 {
                     tf.right_margin = right_margin.parse().ok();
                 }
 
                 if let Some(indent) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("indent"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("indent"))
                 {
                     tf.indent = indent.parse().ok();
                 }
 
                 if let Some(blockindent) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("blockindent"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("blockindent"))
                 {
                     tf.block_indent = blockindent.parse().ok();
                 }
 
                 if let Some(leading) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("leading"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("leading"))
                 {
                     tf.leading = leading.parse().ok();
                 }
 
                 if let Some(tabstops) =
-                    node.attribute_value_ignore_ascii_case(&XMLName::from_str("tabstops"))
+                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("tabstops"))
                 {
                     tf.tab_stops = Some(
                         tabstops
@@ -1265,7 +1265,7 @@ impl FormatSpans {
     /// a handful of presentational attributes in the HTML tree to generate
     /// styling. There's also a `lower_from_css` that respects both
     /// presentational markup and CSS stylesheets.
-    pub fn lower_from_html(&mut self, tree: XMLDocument<'_>) {
+    pub fn lower_from_html(&mut self, tree: XmlDocument<'_>) {
         let mut format_stack = vec![self.default_format.clone()];
         let mut last_successful_format = None;
 
@@ -1349,8 +1349,8 @@ impl FormatSpans {
     }
 
     #[allow(clippy::float_cmp)]
-    pub fn raise_to_html<'gc>(&self, mc: MutationContext<'gc, '_>) -> XMLDocument<'gc> {
-        let document = XMLDocument::new(mc);
+    pub fn raise_to_html<'gc>(&self, mc: MutationContext<'gc, '_>) -> XmlDocument<'gc> {
+        let document = XmlDocument::new(mc);
         let mut root = document.as_node();
 
         let mut last_span = self.span(0);
@@ -1378,12 +1378,12 @@ impl FormatSpans {
                 || ls.tab_stops != span.tab_stops
                 || last_text_format_element.is_none()
             {
-                let new_tf = XMLNode::new_element(mc, "TEXTFORMAT", document);
+                let new_tf = XmlNode::new_element(mc, "TEXTFORMAT", document);
 
                 if ls.left_margin != 0.0 {
                     new_tf.set_attribute_value(
                         mc,
-                        &XMLName::from_str("LEFTMARGIN"),
+                        &XmlName::from_str("LEFTMARGIN"),
                         &format!("{}", span.left_margin),
                     );
                 }
@@ -1391,7 +1391,7 @@ impl FormatSpans {
                 if ls.right_margin != 0.0 {
                     new_tf.set_attribute_value(
                         mc,
-                        &XMLName::from_str("RIGHTMARGIN"),
+                        &XmlName::from_str("RIGHTMARGIN"),
                         &format!("{}", span.right_margin),
                     );
                 }
@@ -1399,7 +1399,7 @@ impl FormatSpans {
                 if ls.indent != 0.0 {
                     new_tf.set_attribute_value(
                         mc,
-                        &XMLName::from_str("INDENT"),
+                        &XmlName::from_str("INDENT"),
                         &format!("{}", span.indent),
                     );
                 }
@@ -1407,7 +1407,7 @@ impl FormatSpans {
                 if ls.block_indent != 0.0 {
                     new_tf.set_attribute_value(
                         mc,
-                        &XMLName::from_str("BLOCKINDENT"),
+                        &XmlName::from_str("BLOCKINDENT"),
                         &format!("{}", span.block_indent),
                     );
                 }
@@ -1415,7 +1415,7 @@ impl FormatSpans {
                 if ls.leading != 0.0 {
                     new_tf.set_attribute_value(
                         mc,
-                        &XMLName::from_str("LEADING"),
+                        &XmlName::from_str("LEADING"),
                         &format!("{}", span.leading),
                     );
                 }
@@ -1423,7 +1423,7 @@ impl FormatSpans {
                 if !ls.tab_stops.is_empty() {
                     new_tf.set_attribute_value(
                         mc,
-                        &XMLName::from_str("TABSTOPS"),
+                        &XmlName::from_str("TABSTOPS"),
                         &span
                             .tab_stops
                             .iter()
@@ -1450,7 +1450,7 @@ impl FormatSpans {
                 if can_span_create_bullets && span.bullet
                     || !can_span_create_bullets && last_span.map(|ls| ls.bullet).unwrap_or(false)
                 {
-                    let new_li = XMLNode::new_element(mc, "LI", document);
+                    let new_li = XmlNode::new_element(mc, "LI", document);
 
                     last_bullet = Some(new_li);
                     last_paragraph = None;
@@ -1467,11 +1467,11 @@ impl FormatSpans {
                 }
 
                 if ls.align != span.align || last_paragraph.is_none() {
-                    let new_p = XMLNode::new_element(mc, "P", document);
+                    let new_p = XmlNode::new_element(mc, "P", document);
 
                     new_p.set_attribute_value(
                         mc,
-                        &XMLName::from_str("ALIGN"),
+                        &XmlName::from_str("ALIGN"),
                         match span.align {
                             swf::TextAlign::Left => "LEFT",
                             swf::TextAlign::Center => "CENTER",
@@ -1500,16 +1500,16 @@ impl FormatSpans {
                     || ls.kerning != span.kerning
                     || last_font.is_none()
                 {
-                    let new_font = XMLNode::new_element(mc, "FONT", document);
+                    let new_font = XmlNode::new_element(mc, "FONT", document);
 
                     if ls.font != span.font || last_font.is_none() {
-                        new_font.set_attribute_value(mc, &XMLName::from_str("FACE"), &span.font);
+                        new_font.set_attribute_value(mc, &XmlName::from_str("FACE"), &span.font);
                     }
 
                     if ls.size != span.size || last_font.is_none() {
                         new_font.set_attribute_value(
                             mc,
-                            &XMLName::from_str("SIZE"),
+                            &XmlName::from_str("SIZE"),
                             &format!("{}", span.size),
                         );
                     }
@@ -1517,7 +1517,7 @@ impl FormatSpans {
                     if ls.color != span.color || last_font.is_none() {
                         new_font.set_attribute_value(
                             mc,
-                            &XMLName::from_str("COLOR"),
+                            &XmlName::from_str("COLOR"),
                             &format!(
                                 "#{:0>2X}{:0>2X}{:0>2X}",
                                 span.color.r, span.color.g, span.color.b
@@ -1528,7 +1528,7 @@ impl FormatSpans {
                     if ls.letter_spacing != span.letter_spacing || last_font.is_none() {
                         new_font.set_attribute_value(
                             mc,
-                            &XMLName::from_str("LETTERSPACING"),
+                            &XmlName::from_str("LETTERSPACING"),
                             &format!("{}", span.letter_spacing),
                         );
                     }
@@ -1536,7 +1536,7 @@ impl FormatSpans {
                     if ls.kerning != span.kerning || last_font.is_none() {
                         new_font.set_attribute_value(
                             mc,
-                            &XMLName::from_str("KERNING"),
+                            &XmlName::from_str("KERNING"),
                             if span.kerning { "1" } else { "0" },
                         );
                     }
@@ -1557,12 +1557,12 @@ impl FormatSpans {
                 }
 
                 if !span.url.is_empty() && (ls.url != span.url || last_a.is_none()) {
-                    let new_a = XMLNode::new_element(mc, "A", document);
+                    let new_a = XmlNode::new_element(mc, "A", document);
 
-                    new_a.set_attribute_value(mc, &XMLName::from_str("HREF"), &span.url);
+                    new_a.set_attribute_value(mc, &XmlName::from_str("HREF"), &span.url);
 
                     if !span.target.is_empty() {
-                        new_a.set_attribute_value(mc, &XMLName::from_str("TARGET"), &span.target);
+                        new_a.set_attribute_value(mc, &XmlName::from_str("TARGET"), &span.target);
                     }
 
                     last_font
@@ -1584,7 +1584,7 @@ impl FormatSpans {
                 }
 
                 if span.bold && last_b.is_none() {
-                    let new_b = XMLNode::new_element(mc, "B", document);
+                    let new_b = XmlNode::new_element(mc, "B", document);
 
                     last_a
                         .or(last_font)
@@ -1605,7 +1605,7 @@ impl FormatSpans {
                 }
 
                 if span.italic && last_i.is_none() {
-                    let new_i = XMLNode::new_element(mc, "I", document);
+                    let new_i = XmlNode::new_element(mc, "I", document);
 
                     last_b
                         .or(last_a)
@@ -1625,7 +1625,7 @@ impl FormatSpans {
                 }
 
                 if span.underline && last_u.is_none() {
-                    let new_u = XMLNode::new_element(mc, "U", document);
+                    let new_u = XmlNode::new_element(mc, "U", document);
 
                     last_i
                         .or(last_b)
@@ -1644,7 +1644,7 @@ impl FormatSpans {
                 }
 
                 let span_text = if last_bullet.is_some() {
-                    XMLNode::new_text(mc, line, document)
+                    XmlNode::new_text(mc, line, document)
                 } else {
                     let line_start = line.as_ptr() as usize - text.as_ptr() as usize;
                     let line_with_newline = if line_start > 0 {
@@ -1654,7 +1654,7 @@ impl FormatSpans {
                         line
                     };
 
-                    XMLNode::new_text(mc, line_with_newline, document)
+                    XmlNode::new_text(mc, line_with_newline, document)
                 };
 
                 last_u
