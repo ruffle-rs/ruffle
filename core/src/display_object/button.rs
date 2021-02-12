@@ -570,7 +570,8 @@ enum ButtonTracking {
 
 /// Static data shared between all instances of a button.
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
 struct ButtonStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
@@ -582,11 +583,4 @@ struct ButtonStatic {
     over_to_down_sound: Option<swf::ButtonSound>,
     down_to_over_sound: Option<swf::ButtonSound>,
     over_to_up_sound: Option<swf::ButtonSound>,
-}
-
-unsafe impl gc_arena::Collect for ButtonStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
-    }
 }
