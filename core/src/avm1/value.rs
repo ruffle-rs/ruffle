@@ -6,8 +6,8 @@ use crate::ecma_conversions::{
     f64_to_string, f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16,
     f64_to_wrapping_u32,
 };
-use std::borrow::Cow;
 use gc_arena::Collect;
+use std::borrow::Cow;
 
 #[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]

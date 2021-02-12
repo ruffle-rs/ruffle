@@ -172,7 +172,8 @@ impl<'a> ActivationIdentifier<'a> {
     }
 }
 
-
+#[derive(Collect)]
+#[collect(unsafe_drop)]
 pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// Represents the SWF version of a given function.
     ///
