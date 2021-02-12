@@ -5,7 +5,7 @@ use crate::avm2::return_value::ReturnValue;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use bitflags::bitflags;
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::Collect;
 
 bitflags! {
     /// Attributes of properties in the AVM runtime.
@@ -20,7 +20,8 @@ bitflags! {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub enum Property<'gc> {
     Virtual {
         get: Option<Object<'gc>>,
@@ -35,19 +36,6 @@ pub enum Property<'gc> {
         slot_id: u32,
         attributes: Attribute,
     },
-}
-
-unsafe impl<'gc> Collect for Property<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        match self {
-            Property::Virtual { get, set, .. } => {
-                get.trace(cc);
-                set.trace(cc);
-            }
-            Property::Stored { value, .. } => value.trace(cc),
-            Property::Slot { .. } => {}
-        }
-    }
 }
 
 impl<'gc> Property<'gc> {
