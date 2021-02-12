@@ -24,6 +24,13 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+fn set_logger() {
+    let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format_timestamp(None)
+        .is_test(true)
+        .try_init();
+}
+
 type Error = Box<dyn std::error::Error>;
 
 // This macro generates test cases for a given list of SWFs.
@@ -33,6 +40,7 @@ macro_rules! swf_tests {
         #[test]
         $(#[$attr])*
         fn $name() -> Result<(), Error> {
+            set_logger();
             test_swf(
                 concat!("tests/swfs/", $path, "/test.swf"),
                 $num_frames,
@@ -52,6 +60,7 @@ macro_rules! swf_tests_approx {
         #[test]
         $(#[$attr])*
         fn $name() -> Result<(), Error> {
+            set_logger();
             test_swf_approx(
                 concat!("tests/swfs/", $path, "/test.swf"),
                 $num_frames,
@@ -536,6 +545,7 @@ swf_tests_approx! {
 
 #[test]
 fn external_interface_avm1() -> Result<(), Error> {
+    set_logger();
     test_swf(
         "tests/swfs/avm1/external_interface/test.swf",
         1,
@@ -589,6 +599,7 @@ fn external_interface_avm1() -> Result<(), Error> {
 
 #[test]
 fn shared_object_avm1() -> Result<(), Error> {
+    set_logger();
     // Test SharedObject persistence. Run an SWF that saves data
     // to a shared object twice and verify that the data is saved.
     let mut memory_storage_backend: Box<dyn StorageBackend> =
@@ -627,6 +638,7 @@ fn shared_object_avm1() -> Result<(), Error> {
 
 #[test]
 fn timeout_avm1() -> Result<(), Error> {
+    set_logger();
     test_swf(
         "tests/swfs/avm1/timeout/test.swf",
         1,
