@@ -106,6 +106,8 @@ struct Frame {
 
 /// Static data shared between all instances of a morph shape.
 #[allow(dead_code)]
+#[derive(Collect)]
+#[collect(require_static)]
 pub struct MorphShapeStatic {
     id: CharacterId,
     start: swf::MorphShape,
@@ -297,13 +299,6 @@ impl MorphShapeStatic {
                 }
             }
         }
-    }
-}
-
-unsafe impl<'gc> gc_arena::Collect for MorphShapeStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
     }
 }
 
