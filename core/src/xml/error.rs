@@ -1,6 +1,6 @@
 //! Error types used in XML handling
 
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::Collect;
 use quick_xml::Error as QXError;
 use std::error::Error as StdError;
 use std::fmt::Error as FmtError;
@@ -77,13 +77,9 @@ impl From<QXError> for Error {
 /// We can't clone `quick_xml` errors, nor can we clone several of the error
 /// types it wraps over, so this creates an RC boxed version of the error that
 /// can then be used elsewhere.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
 pub struct ParseError(Rc<QXError>);
-
-unsafe impl Collect for ParseError {
-    /// ParseError does not contain GC pointers.
-    fn trace(&self, _cc: CollectionContext<'_>) {}
-}
 
 impl ParseError {
     ///Convert a quick_xml error into a `ParseError`.
