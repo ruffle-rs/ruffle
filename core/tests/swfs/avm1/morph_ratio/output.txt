@@ -1,0 +1,35 @@
+// hitTest(180, 50)
+false
+// hitTest(180, 50, true)
+false
+// getBounds(_root).xMax
+132.15
+// _width
+114
+
+// hitTest(180, 50)
+false
+// hitTest(180, 50, true)
+true
+// getBounds(_root).xMax
+132.15
+// _width
+114
+
+// hitTest(180, 50)
+true
+// hitTest(180, 50, true)
+true
+// getBounds(_root).xMax
+327.3
+// _width
+309.15
+
+// hitTest(180, 50)
+true
+// hitTest(180, 50, true)
+true
+// getBounds(_root).xMax
+327.3
+// _width
+309.15

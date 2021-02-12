@@ -1832,7 +1832,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         point: (Twips, Twips),
     ) -> bool {
-        if self.world_bounds().contains(point) {
+        if self.world_bounds_with_morph().contains(point) {
             for child in self.iter_execution_list() {
                 if child.hit_test_shape(context, point) {
                     return true;

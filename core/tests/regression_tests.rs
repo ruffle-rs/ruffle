@@ -95,6 +95,7 @@ swf_tests! {
     (empty_movieclip_can_attach_movies, "avm1/empty_movieclip_can_attach_movies", 1),
     (duplicate_movie_clip, "avm1/duplicate_movie_clip", 1),
     (mouse_listeners, "avm1/mouse_listeners", 1),
+    #[ignore] (morph_ratio, "avm1/morph_ratio", 5),
     (do_init_action, "avm1/do_init_action", 3),
     (execution_order1, "avm1/execution_order1", 3),
     (execution_order2, "avm1/execution_order2", 15),
