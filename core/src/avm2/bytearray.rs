@@ -30,7 +30,7 @@ pub struct ByteArrayStorage {
     shareable: bool,
 }
 
-impl ByteArrayStorage {
+impl<'gc> ByteArrayStorage {
     /// Create a new ByteArrayStorage
     pub fn new() -> ByteArrayStorage {
         ByteArrayStorage {
@@ -294,6 +294,25 @@ impl ByteArrayStorage {
             self.write_bytes(utf_string.as_bytes());
         } else {
             log::error!("ByteArray: UTF String length must fit into a short");
+        }
+    }
+
+
+    pub fn get(&self, item: usize) -> Option<u8> {
+        self.bytes.get(item).cloned()
+    }
+
+    pub fn set(&mut self, item: usize, value: u8) {
+        if self.bytes.len() < (item + 1) {
+            self.bytes.resize(item + 1, 0)
+        }
+
+        *self.bytes.get_mut(item).unwrap() = value;
+    }
+
+    pub fn delete(&mut self, item: usize) {
+        if let Some(i) = self.bytes.get_mut(item) {
+            *i = 0;
         }
     }
 

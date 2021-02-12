@@ -9,7 +9,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
+use crate::impl_avm2_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -63,7 +63,135 @@ impl<'gc> ByteArrayObject<'gc> {
 }
 impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     impl_avm2_custom_object!(base);
-    impl_avm2_custom_object_properties!(base);
+
+    fn get_property_local(
+        self,
+        receiver: Object<'gc>,
+        name: &QName<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        let read = self.0.read();
+
+        if name.namespace().is_public() {
+            if let Ok(index) = name.local_name().parse::<usize>() {
+                
+                return Ok(if let Some(val) = read.storage.get(index){
+                    Value::Unsigned(val as u32)
+                } else {
+                    Value::Undefined
+                });
+                
+            }
+        }
+
+        let rv = read.base.get_property_local(receiver, name, activation)?;
+
+        drop(read);
+
+        rv.resolve(activation)
+    }
+
+    fn set_property_local(
+        self,
+        receiver: Object<'gc>,
+        name: &QName<'gc>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let mut write = self.0.write(activation.context.gc_context);
+
+        if name.namespace().is_public() {
+            if let Ok(index) = name.local_name().parse::<usize>() {
+                write.storage.set(index, value.coerce_to_u32(activation)? as u8);
+
+                return Ok(());
+            }
+        }
+
+        let rv = write
+            .base
+            .set_property_local(receiver, name, value, activation)?;
+
+        drop(write);
+
+        rv.resolve(activation)?;
+
+        Ok(())
+    }
+
+    fn init_property_local(
+        self,
+        receiver: Object<'gc>,
+        name: &QName<'gc>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let mut write = self.0.write(activation.context.gc_context);
+
+        if name.namespace().is_public() {
+            if let Ok(index) = name.local_name().parse::<usize>() {
+                write.storage.set(index, value.coerce_to_u32(activation)? as u8);
+
+                return Ok(());
+            }
+        }
+
+        let rv = write
+            .base
+            .init_property_local(receiver, name, value, activation)?;
+
+        drop(write);
+
+        rv.resolve(activation)?;
+
+        Ok(())
+    }
+
+    fn is_property_overwritable(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &QName<'gc>,
+    ) -> bool {
+        self.0.write(gc_context).base.is_property_overwritable(name)
+    }
+
+    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
+        if name.namespace().is_public() {
+            if let Ok(index) = name.local_name().parse::<usize>() {
+                self.0.write(gc_context).storage.delete(index);
+                return true;
+            }
+        }
+
+        self.0.write(gc_context).base.delete_property(name)
+    }
+
+    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+        if name.namespace().is_public() {
+            if let Ok(index) = name.local_name().parse::<usize>() {
+                return Ok(self.0.read().storage.get(index).is_some());
+            }
+        }
+
+        self.0.read().base.has_own_property(name)
+    }
+
+    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
+        if let Ok(index) = local_name.parse::<usize>() {
+            if self.0.read().storage.get(index).is_some() {
+                return Ok(Some(Namespace::public()));
+            }
+        }
+
+        self.0.read().base.resolve_any(local_name)
+    }
+
+    fn resolve_any_trait(
+        self,
+        local_name: AvmString<'gc>,
+    ) -> Result<Option<Namespace<'gc>>, Error> {
+        self.0.read().base.resolve_any_trait(local_name)
+    }
 
     fn construct(
         &self,
