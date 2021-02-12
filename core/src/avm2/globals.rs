@@ -103,7 +103,6 @@ pub struct SystemPrototypes<'gc> {
     pub xml_list: Object<'gc>,
     pub display_object: Object<'gc>,
     pub shape: Object<'gc>,
-    pub bytearray: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -142,7 +141,6 @@ impl<'gc> SystemPrototypes<'gc> {
             xml_list: empty,
             display_object: empty,
             shape: empty,
-            bytearray: empty,
         }
     }
 }
