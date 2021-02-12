@@ -11,6 +11,8 @@ bitflags! {
     /// Attributes of properties in the AVM runtime.
     ///
     /// TODO: Replace with AVM2 properties for traits
+    #[derive(Collect)]
+    #[collect(require_static)]
     pub struct Attribute: u8 {
         const DONT_DELETE = 1 << 0;
         const READ_ONLY   = 1 << 1;
