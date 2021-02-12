@@ -4,34 +4,59 @@ use smallvec::SmallVec;
 use std::num::NonZeroU32;
 use swf::{CharacterId, FillStyle, LineStyle, Matrix, Shape, ShapeRecord, Twips};
 
-pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle {
+pub fn calculate_shape_bounds(
+    shape_records: &[swf::ShapeRecord],
+    styles: &swf::ShapeStyles,
+) -> swf::Rectangle {
     let mut bounds = swf::Rectangle {
         x_min: Twips::new(i32::MAX),
         y_min: Twips::new(i32::MAX),
         x_max: Twips::new(i32::MIN),
         y_max: Twips::new(i32::MIN),
     };
+
     let mut x = Twips::new(0);
     let mut y = Twips::new(0);
+
+    let mut stroke_width = Twips::zero();
+    let mut line_styles = &styles.line_styles;
+
     for record in shape_records {
         match record {
             swf::ShapeRecord::StyleChange(style_change) => {
+                if let Some(new_styles) = &style_change.new_styles {
+                    line_styles = &new_styles.line_styles;
+                }
+
                 if let Some((move_x, move_y)) = style_change.move_to {
                     x = move_x;
                     y = move_y;
+                    // TODO: remove?
                     bounds.x_min = Twips::min(bounds.x_min, x);
                     bounds.x_max = Twips::max(bounds.x_max, x);
                     bounds.y_min = Twips::min(bounds.y_min, y);
                     bounds.y_max = Twips::max(bounds.y_max, y);
                 }
+
+                if let Some(i) = style_change.line_style {
+                    stroke_width = if i > 0 {
+                        if let Some(line_style) = line_styles.get(i as usize - 1) {
+                            line_style.width / 2
+                        } else {
+                            Twips::zero()
+                        }
+                    } else {
+                        Twips::zero()
+                    };
+                }
             }
             swf::ShapeRecord::StraightEdge { delta_x, delta_y } => {
                 x += *delta_x;
                 y += *delta_y;
-                bounds.x_min = Twips::min(bounds.x_min, x);
-                bounds.x_max = Twips::max(bounds.x_max, x);
-                bounds.y_min = Twips::min(bounds.y_min, y);
-                bounds.y_max = Twips::max(bounds.y_max, y);
+                bounds.x_min = Twips::min(bounds.x_min, x - stroke_width);
+                bounds.x_max = Twips::max(bounds.x_max, x + stroke_width);
+                bounds.y_min = Twips::min(bounds.y_min, y - stroke_width);
+                bounds.y_max = Twips::max(bounds.y_max, y + stroke_width);
             }
             swf::ShapeRecord::CurvedEdge {
                 control_delta_x,
@@ -41,16 +66,16 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
             } => {
                 x += *control_delta_x;
                 y += *control_delta_y;
-                bounds.x_min = Twips::min(bounds.x_min, x);
-                bounds.x_max = Twips::max(bounds.x_max, x);
-                bounds.y_min = Twips::min(bounds.y_min, y);
-                bounds.y_max = Twips::max(bounds.y_max, y);
+                bounds.x_min = Twips::min(bounds.x_min, x - stroke_width);
+                bounds.x_max = Twips::max(bounds.x_max, x + stroke_width);
+                bounds.y_min = Twips::min(bounds.y_min, y - stroke_width);
+                bounds.y_max = Twips::max(bounds.y_max, y + stroke_width);
                 x += *anchor_delta_x;
                 y += *anchor_delta_y;
-                bounds.x_min = Twips::min(bounds.x_min, x);
-                bounds.x_max = Twips::max(bounds.x_max, x);
-                bounds.y_min = Twips::min(bounds.y_min, y);
-                bounds.y_max = Twips::max(bounds.y_max, y);
+                bounds.x_min = Twips::min(bounds.x_min, x - stroke_width);
+                bounds.x_max = Twips::max(bounds.x_max, x + stroke_width);
+                bounds.y_min = Twips::min(bounds.y_min, y - stroke_width);
+                bounds.y_max = Twips::max(bounds.y_max, y + stroke_width);
             }
         }
     }
@@ -578,7 +603,11 @@ mod tests {
 
     /// Convenience method to quickly make a shape,
     fn build_shape(records: Vec<ShapeRecord>) -> swf::Shape {
-        let bounds = calculate_shape_bounds(&records[..]);
+        let styles = swf::ShapeStyles {
+            fill_styles: FILL_STYLES.to_vec(),
+            line_styles: LINE_STYLES.to_vec(),
+        };
+        let bounds = calculate_shape_bounds(&records[..], &styles);
         swf::Shape {
             version: 2,
             id: 1,
@@ -587,10 +616,7 @@ mod tests {
             has_fill_winding_rule: false,
             has_non_scaling_strokes: false,
             has_scaling_strokes: true,
-            styles: swf::ShapeStyles {
-                fill_styles: FILL_STYLES.to_vec(),
-                line_styles: LINE_STYLES.to_vec(),
-            },
+            styles,
             shape: records,
         }
     }
@@ -1324,11 +1350,20 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
     // SWF19 says this is true through SWFv7, but it seems like it might be generally true?
     // In any case, we have to be sure to calculate the shape bounds ourselves to make a proper
     // SVG.
+    let styles = swf::ShapeStyles {
+        fill_styles: vec![swf::FillStyle::Color(swf::Color {
+            r: 255,
+            g: 255,
+            b: 255,
+            a: 255,
+        })],
+        line_styles: vec![],
+    };
     let bounds = glyph
         .bounds
         .clone()
         .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
-        .unwrap_or_else(|| calculate_shape_bounds(&glyph.shape_records[..]));
+        .unwrap_or_else(|| calculate_shape_bounds(&glyph.shape_records[..], &styles));
     swf::Shape {
         version: 2,
         id: 0,
@@ -1337,15 +1372,7 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
         has_fill_winding_rule: false,
         has_non_scaling_strokes: false,
         has_scaling_strokes: true,
-        styles: swf::ShapeStyles {
-            fill_styles: vec![swf::FillStyle::Color(swf::Color {
-                r: 255,
-                g: 255,
-                b: 255,
-                a: 255,
-            })],
-            line_styles: vec![],
-        },
+        styles,
         shape: glyph.shape_records.clone(),
     }
 }

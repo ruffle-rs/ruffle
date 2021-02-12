@@ -193,7 +193,7 @@ impl MorphShapeStatic {
         // TODO: Feels like this could be cleaned up a bit.
         // We step through both the start records and end records, interpolating edges pairwise.
         // Fill style/line style changes should only appear in the start records.
-        // However, StyleChangeRecord move_to can appear it both start and end records,
+        // However, StyleChangeRecord move_to can appear in both start and end records,
         // and not necessarily in matching pairs; therefore, we have to keep track of the pen position
         // in case one side is missing a move_to; it will implicitly use the last pen position.
         while let (Some(s), Some(e)) = (start, end) {
@@ -261,8 +261,7 @@ impl MorphShapeStatic {
             fill_styles,
             line_styles,
         };
-
-        let bounds = crate::shape_utils::calculate_shape_bounds(&shape[..]);
+        let bounds = crate::shape_utils::calculate_shape_bounds(&shape[..], &styles);
         let shape = swf::Shape {
             version: 4,
             id: 0,
