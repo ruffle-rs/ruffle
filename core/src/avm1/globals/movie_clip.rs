@@ -431,8 +431,8 @@ fn begin_gradient_fill<'gc>(
             .and_then(|v| v.coerce_to_string(activation).ok())
             .as_deref()
         {
-            Some("linearRGB") => GradientInterpolation::LinearRGB,
-            _ => GradientInterpolation::RGB,
+            Some("linearRGB") => GradientInterpolation::LinearRgb,
+            _ => GradientInterpolation::Rgb,
         };
 
         let gradient = Gradient {
@@ -1162,8 +1162,8 @@ pub fn get_url<'gc>(
             None
         };
         let method = match args.get(2) {
-            Some(Value::String(s)) if *s == "GET" => Some(NavigationMethod::GET),
-            Some(Value::String(s)) if *s == "POST" => Some(NavigationMethod::POST),
+            Some(Value::String(s)) if *s == "GET" => Some(NavigationMethod::Get),
+            Some(Value::String(s)) if *s == "POST" => Some(NavigationMethod::Post),
             _ => None,
         };
         let vars_method = method.map(|m| (m, activation.locals_into_form_values()));

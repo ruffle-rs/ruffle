@@ -9,12 +9,12 @@ mod tree;
 #[cfg(test)]
 mod tests;
 
-pub use document::XMLDocument;
+pub use document::XmlDocument;
 pub use error::Error;
 pub use error::ParseError;
 pub use iterators::Step;
-pub use namespace::XMLName;
-pub use tree::XMLNode;
+pub use namespace::XmlName;
+pub use tree::XmlNode;
 
 pub const ELEMENT_NODE: u8 = 1;
 pub const TEXT_NODE: u8 = 3;

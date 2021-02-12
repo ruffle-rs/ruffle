@@ -229,7 +229,7 @@ fn send<'gc>(
         .get(1)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let method = NavigationMethod::from_method_str(&method_name).unwrap_or(NavigationMethod::POST);
+    let method = NavigationMethod::from_method_str(&method_name).unwrap_or(NavigationMethod::Post);
 
     use indexmap::IndexMap;
 
@@ -276,7 +276,7 @@ fn send_and_load<'gc>(
         .get(2)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let method = NavigationMethod::from_method_str(&method_name).unwrap_or(NavigationMethod::POST);
+    let method = NavigationMethod::from_method_str(&method_name).unwrap_or(NavigationMethod::Post);
 
     spawn_load_var_fetch(activation, target, &url, Some((this, method)))?;
 

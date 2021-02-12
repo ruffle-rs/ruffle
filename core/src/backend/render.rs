@@ -395,7 +395,7 @@ pub fn decode_define_bits_lossless(
     swf_tag: &swf::DefineBitsLossless,
 ) -> Result<Bitmap, Box<dyn std::error::Error>> {
     // Decompress the image data (DEFLATE compression).
-    let mut decoded_data = decompress_zlib(&swf_tag.data[..])?;
+    let mut decoded_data = decompress_zlib(swf_tag.data)?;
 
     // Swizzle/de-palettize the bitmap.
     let out_data = match (swf_tag.version, swf_tag.format) {

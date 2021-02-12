@@ -1,4 +1,4 @@
-use crate::{Error, GPUVertex, MaskState};
+use crate::{Error, GpuVertex, MaskState};
 use enum_map::{enum_map, EnumMap};
 use wgpu::vertex_attr_array;
 
@@ -43,7 +43,7 @@ impl Pipelines {
             device.create_shader_module(&wgpu::include_spirv!("../shaders/bitmap.frag.spv"));
 
         let vertex_buffers_description = [wgpu::VertexBufferDescriptor {
-            stride: std::mem::size_of::<GPUVertex>() as u64,
+            stride: std::mem::size_of::<GpuVertex>() as u64,
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: &vertex_attr_array![
                 0 => Float2,

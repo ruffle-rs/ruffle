@@ -1,6 +1,4 @@
-#![allow(clippy::useless_attribute)]
-
-#[allow(dead_code)]
+#[allow(dead_code, clippy::useless_attribute)]
 #[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum OpCode {
     End = 0x00,

@@ -1,17 +1,17 @@
 //! Iterator types for XML trees
 
-use crate::xml::XMLNode;
+use crate::xml::XmlNode;
 
 /// Iterator that yields direct children of an XML node.
 pub struct ChildIter<'gc> {
-    base: XMLNode<'gc>,
+    base: XmlNode<'gc>,
     index: usize,
     back_index: usize,
 }
 
 impl<'gc> ChildIter<'gc> {
     /// Construct a new `ChildIter` that lists the children of an XML node.
-    pub fn for_node(base: XMLNode<'gc>) -> Self {
+    pub fn for_node(base: XmlNode<'gc>) -> Self {
         Self {
             base,
             index: 0,
@@ -20,13 +20,13 @@ impl<'gc> ChildIter<'gc> {
     }
 
     /// Yield the base element whose children are being read out of.
-    pub fn base(&self) -> XMLNode<'gc> {
+    pub fn base(&self) -> XmlNode<'gc> {
         self.base
     }
 }
 
 impl<'gc> Iterator for ChildIter<'gc> {
-    type Item = XMLNode<'gc>;
+    type Item = XmlNode<'gc>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index < self.back_index {
@@ -59,23 +59,23 @@ impl<'gc> DoubleEndedIterator for ChildIter<'gc> {
 pub enum Step<'gc> {
     /// `WalkIter` has discovered a new element and will begin to yield its
     /// children's steps.
-    In(XMLNode<'gc>),
+    In(XmlNode<'gc>),
 
     /// `WalkIter` has discovered a non-element node that cannot have children.
     ///
     /// Note that elements will never be stepped around, even if they are
     /// empty. They will be stepped in and out.
-    Around(XMLNode<'gc>),
+    Around(XmlNode<'gc>),
 
     /// `WalkIter` has exhausted the children of an element, stepping out of
     /// it.
-    Out(XMLNode<'gc>),
+    Out(XmlNode<'gc>),
 }
 
 impl<'gc> Step<'gc> {
     /// Discard the information regarding how we approached a given node, and
     /// just return the underlying `XMLNode`.
-    pub fn unwrap(self) -> XMLNode<'gc> {
+    pub fn unwrap(self) -> XmlNode<'gc> {
         match self {
             Self::In(node) | Self::Around(node) | Self::Out(node) => node,
         }
@@ -114,7 +114,7 @@ pub struct WalkIter<'gc> {
 
 impl<'gc> WalkIter<'gc> {
     /// Construct a new `WalkIter` that lists a tree out in `Step`s.
-    pub fn for_node(base: XMLNode<'gc>) -> Self {
+    pub fn for_node(base: XmlNode<'gc>) -> Self {
         Self {
             stack: vec![ChildIter::for_node(base)],
         }
@@ -144,7 +144,7 @@ impl<'gc> Iterator for WalkIter<'gc> {
 
 /// Iterator that yields indirect descendents of an XML node.
 pub struct AnscIter<'gc> {
-    next: Option<XMLNode<'gc>>,
+    next: Option<XmlNode<'gc>>,
 }
 
 impl<'gc> AnscIter<'gc> {
@@ -152,13 +152,13 @@ impl<'gc> AnscIter<'gc> {
     ///
     /// This function should be called with the parent of the node being
     /// iterated.
-    pub fn for_node(next: Option<XMLNode<'gc>>) -> Self {
+    pub fn for_node(next: Option<XmlNode<'gc>>) -> Self {
         Self { next }
     }
 }
 
 impl<'gc> Iterator for AnscIter<'gc> {
-    type Item = XMLNode<'gc>;
+    type Item = XmlNode<'gc>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let parent = self.next;

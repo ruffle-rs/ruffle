@@ -111,8 +111,8 @@ impl NavigatorBackend for WebNavigatorBackend {
                     let _ = form.set_attribute(
                         "method",
                         match navmethod {
-                            NavigationMethod::GET => "get",
-                            NavigationMethod::POST => "post",
+                            NavigationMethod::Get => "get",
+                            NavigationMethod::Post => "post",
                         },
                     );
 
@@ -165,8 +165,8 @@ impl NavigatorBackend for WebNavigatorBackend {
             let mut init = RequestInit::new();
 
             init.method(match options.method() {
-                NavigationMethod::GET => "GET",
-                NavigationMethod::POST => "POST",
+                NavigationMethod::Get => "GET",
+                NavigationMethod::Post => "POST",
             });
 
             if let Some((data, mime)) = options.body() {

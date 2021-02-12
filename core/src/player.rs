@@ -141,7 +141,7 @@ type Renderer = Box<dyn RenderBackend>;
 type Storage = Box<dyn StorageBackend>;
 type Locale = Box<dyn LocaleBackend>;
 type Log = Box<dyn LogBackend>;
-type UI = Box<dyn UiBackend>;
+type Ui = Box<dyn UiBackend>;
 
 pub struct Player {
     /// The version of the player we're emulating.
@@ -169,7 +169,7 @@ pub struct Player {
     storage: Storage,
     locale: Locale,
     log: Log,
-    ui: UI,
+    ui: Ui,
 
     transform_stack: TransformStack,
     view_matrix: Matrix,
@@ -238,7 +238,7 @@ impl Player {
         storage: Storage,
         locale: Locale,
         log: Log,
-        ui: UI,
+        ui: Ui,
     ) -> Result<Arc<Mutex<Self>>, Error> {
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
         let movie_width = 550;
@@ -1025,11 +1025,11 @@ impl Player {
         self.renderer
     }
 
-    pub fn ui(&self) -> &UI {
+    pub fn ui(&self) -> &Ui {
         &self.ui
     }
 
-    pub fn ui_mut(&mut self) -> &mut UI {
+    pub fn ui_mut(&mut self) -> &mut Ui {
         &mut self.ui
     }
 

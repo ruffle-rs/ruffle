@@ -1,8 +1,8 @@
 //! XML Document
 
-use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
+use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
 use crate::avm1::Object;
-use crate::xml::{Error, ParseError, XMLName, XMLNode};
+use crate::xml::{Error, ParseError, XmlName, XmlNode};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesDecl, Event};
 use quick_xml::{Error as QXError, Writer};
@@ -13,13 +13,13 @@ use std::io::Cursor;
 /// The entirety of an XML document.
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct XMLDocument<'gc>(GcCell<'gc, XMLDocumentData<'gc>>);
+pub struct XmlDocument<'gc>(GcCell<'gc, XmlDocumentData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct XMLDocumentData<'gc> {
+pub struct XmlDocumentData<'gc> {
     /// The root node of the XML document.
-    root: Option<XMLNode<'gc>>,
+    root: Option<XmlNode<'gc>>,
 
     /// Whether or not the document has a document declaration.
     has_xmldecl: bool,
@@ -34,14 +34,14 @@ pub struct XMLDocumentData<'gc> {
     standalone: Option<String>,
 
     /// The XML doctype, if set.
-    doctype: Option<XMLNode<'gc>>,
+    doctype: Option<XmlNode<'gc>>,
 
     /// The document's ID map.
     ///
     /// When nodes are parsed into the document by way of `parseXML` or the
     /// document constructor, they get put into this list here, which is used
     /// to populate the document's `idMap`.
-    idmap: BTreeMap<String, XMLNode<'gc>>,
+    idmap: BTreeMap<String, XmlNode<'gc>>,
 
     /// The script object associated with this XML node, if any.
     idmap_script_object: Option<Object<'gc>>,
@@ -50,12 +50,12 @@ pub struct XMLDocumentData<'gc> {
     last_parse_error: Option<ParseError>,
 }
 
-impl<'gc> XMLDocument<'gc> {
+impl<'gc> XmlDocument<'gc> {
     /// Construct a new, empty XML document.
     pub fn new(mc: MutationContext<'gc, '_>) -> Self {
         let document = Self(GcCell::allocate(
             mc,
-            XMLDocumentData {
+            XmlDocumentData {
                 root: None,
                 has_xmldecl: false,
                 version: "1.0".to_string(),
@@ -67,7 +67,7 @@ impl<'gc> XMLDocument<'gc> {
                 last_parse_error: None,
             },
         ));
-        let root = XMLNode::new_document_root(mc, document);
+        let root = XmlNode::new_document_root(mc, document);
 
         document.0.write(mc).root = Some(root);
 
@@ -77,7 +77,7 @@ impl<'gc> XMLDocument<'gc> {
     /// Yield the document in node form.
     ///
     /// If the document does not have a node, then this function will panic.
-    pub fn as_node(self) -> XMLNode<'gc> {
+    pub fn as_node(self) -> XmlNode<'gc> {
         self.0
             .read()
             .root
@@ -93,7 +93,7 @@ impl<'gc> XMLDocument<'gc> {
         let self_read = self.0.read();
         Self(GcCell::allocate(
             gc_context,
-            XMLDocumentData {
+            XmlDocumentData {
                 root: None,
                 has_xmldecl: self_read.has_xmldecl,
                 version: self_read.version.clone(),
@@ -117,17 +117,17 @@ impl<'gc> XMLDocument<'gc> {
     pub fn link_root_node(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
-        proposed_root: XMLNode<'gc>,
+        proposed_root: XmlNode<'gc>,
     ) {
         match (
             &mut *self.0.write(gc_context),
             proposed_root.is_document_root(),
         ) {
-            (XMLDocumentData { root, .. }, true) if root.is_none() => {
+            (XmlDocumentData { root, .. }, true) if root.is_none() => {
                 *root = Some(proposed_root);
             }
-            (XMLDocumentData { root, .. }, false) if root.is_none() => {
-                *root = Some(XMLNode::new_document_root(gc_context, *self));
+            (XmlDocumentData { root, .. }, false) if root.is_none() => {
+                *root = Some(XmlNode::new_document_root(gc_context, *self));
             }
             _ => {}
         }
@@ -140,7 +140,7 @@ impl<'gc> XMLDocument<'gc> {
     pub fn link_doctype(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
-        proposed_doctype: XMLNode<'gc>,
+        proposed_doctype: XmlNode<'gc>,
     ) {
         let mut self_write = self.0.write(gc_context);
 
@@ -150,7 +150,7 @@ impl<'gc> XMLDocument<'gc> {
     }
 
     /// Retrieve the first DocType node in the document.
-    pub fn doctype(self) -> Option<XMLNode<'gc>> {
+    pub fn doctype(self) -> Option<XmlNode<'gc>> {
         self.0.read().doctype
     }
 
@@ -205,7 +205,7 @@ impl<'gc> XMLDocument<'gc> {
     pub fn idmap_script_object(&mut self, gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
         let mut object = self.0.read().idmap_script_object;
         if object.is_none() {
-            object = Some(XMLIDMapObject::from_xml_document(gc_context, *self));
+            object = Some(XmlIdMapObject::from_xml_document(gc_context, *self));
             self.0.write(gc_context).idmap_script_object = object;
         }
 
@@ -213,8 +213,8 @@ impl<'gc> XMLDocument<'gc> {
     }
 
     /// Update the idmap object with a given new node.
-    pub fn update_idmap(&mut self, mc: MutationContext<'gc, '_>, node: XMLNode<'gc>) {
-        if let Some(id) = node.attribute_value(&XMLName::from_str("id")) {
+    pub fn update_idmap(&mut self, mc: MutationContext<'gc, '_>, node: XmlNode<'gc>) {
+        if let Some(id) = node.attribute_value(&XmlName::from_str("id")) {
             self.0.write(mc).idmap.insert(id, node);
         }
     }
@@ -225,7 +225,7 @@ impl<'gc> XMLDocument<'gc> {
     /// parsing*. Nodes which obtained the `id` after the fact, or nodes with
     /// the `id` that were added to the document after the fact, will not be
     /// returned by this function.
-    pub fn get_node_by_id(self, id: &str) -> Option<XMLNode<'gc>> {
+    pub fn get_node_by_id(self, id: &str) -> Option<XmlNode<'gc>> {
         self.0.read().idmap.get(id).copied()
     }
 
@@ -270,9 +270,9 @@ impl<'gc> XMLDocument<'gc> {
     }
 }
 
-impl<'gc> fmt::Debug for XMLDocument<'gc> {
+impl<'gc> fmt::Debug for XmlDocument<'gc> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("XMLDocument")
+        f.debug_struct("XmlDocument")
             .field("root", &self.0.read().root)
             .finish()
     }

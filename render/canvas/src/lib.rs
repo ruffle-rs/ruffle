@@ -873,13 +873,13 @@ fn swf_shape_to_svg(
                             GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
                             GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
                         };
-                        if gradient.interpolation == GradientInterpolation::LinearRGB {
+                        if gradient.interpolation == GradientInterpolation::LinearRgb {
                             has_linear_rgb_gradient = true;
                             svg_path = svg_path.set("filter", "url('#_linearrgb')");
                         }
                         for record in &gradient.records {
                             let color =
-                                if gradient.interpolation == GradientInterpolation::LinearRGB {
+                                if gradient.interpolation == GradientInterpolation::LinearRgb {
                                     srgb_to_linear(record.color.clone())
                                 } else {
                                     record.color.clone()
@@ -935,13 +935,13 @@ fn swf_shape_to_svg(
                             GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
                             GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
                         };
-                        if gradient.interpolation == GradientInterpolation::LinearRGB {
+                        if gradient.interpolation == GradientInterpolation::LinearRgb {
                             has_linear_rgb_gradient = true;
                             svg_path = svg_path.set("filter", "url('#_linearrgb')");
                         }
                         for record in &gradient.records {
                             let color =
-                                if gradient.interpolation == GradientInterpolation::LinearRGB {
+                                if gradient.interpolation == GradientInterpolation::LinearRgb {
                                     srgb_to_linear(record.color.clone())
                                 } else {
                                     record.color.clone()
@@ -1001,13 +1001,13 @@ fn swf_shape_to_svg(
                             GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
                             GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
                         };
-                        if gradient.interpolation == GradientInterpolation::LinearRGB {
+                        if gradient.interpolation == GradientInterpolation::LinearRgb {
                             has_linear_rgb_gradient = true;
                             svg_path = svg_path.set("filter", "url('#_linearrgb')");
                         }
                         for record in &gradient.records {
                             let color =
-                                if gradient.interpolation == GradientInterpolation::LinearRGB {
+                                if gradient.interpolation == GradientInterpolation::LinearRgb {
                                     srgb_to_linear(record.color.clone())
                                 } else {
                                     record.color.clone()

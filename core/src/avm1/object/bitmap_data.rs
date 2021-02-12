@@ -14,11 +14,11 @@ use std::ops::Range;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
 /// Uses the fixed parameters m = 2,147,483,647 and a = 16,807
-pub struct LehmerRNG {
+pub struct LehmerRng {
     x: u32,
 }
 
-impl LehmerRNG {
+impl LehmerRng {
     pub fn with_seed(seed: u32) -> Self {
         Self { x: seed }
     }
@@ -333,7 +333,7 @@ impl BitmapData {
             seed as u32
         };
 
-        let mut rng = LehmerRNG::with_seed(true_seed);
+        let mut rng = LehmerRng::with_seed(true_seed);
 
         for y in 0..self.height() {
             for x in 0..self.width() {

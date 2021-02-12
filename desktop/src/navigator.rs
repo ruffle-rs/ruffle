@@ -134,8 +134,8 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 let client = client.ok_or(Error::NetworkUnavailable)?;
 
                 let request = match options.method() {
-                    NavigationMethod::GET => Request::get(processed_url.to_string()),
-                    NavigationMethod::POST => Request::post(processed_url.to_string()),
+                    NavigationMethod::Get => Request::get(processed_url.to_string()),
+                    NavigationMethod::Post => Request::post(processed_url.to_string()),
                 };
 
                 let (body_data, _) = options.body().clone().unwrap_or_default();

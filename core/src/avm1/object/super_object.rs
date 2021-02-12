@@ -17,12 +17,12 @@ use std::borrow::Cow;
 /// A `SuperObject` references all data from another object, but with one layer
 /// of prototyping removed. It's as if the given object had been constructed
 /// with its parent class.
-#[collect(no_drop)]
 #[derive(Copy, Clone, Collect, Debug)]
+#[collect(no_drop)]
 pub struct SuperObject<'gc>(GcCell<'gc, SuperObjectData<'gc>>);
 
-#[collect(no_drop)]
 #[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
 pub struct SuperObjectData<'gc> {
     /// The object present as `this` throughout the superchain.
     child: Object<'gc>,

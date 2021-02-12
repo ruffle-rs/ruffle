@@ -21,13 +21,13 @@ use crate::avm1::object::glow_filter::GlowFilterObject;
 use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
 use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
 use crate::avm1::object::transform_object::TransformObject;
-use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
-use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
-use crate::avm1::object::xml_object::XMLObject;
+use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
+use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
+use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{ScriptObject, SoundObject, StageObject, Value};
 use crate::avm_warn;
 use crate::display_object::DisplayObject;
-use crate::xml::XMLNode;
+use crate::xml::XmlNode;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::borrow::Cow;
@@ -67,9 +67,9 @@ pub mod xml_object;
         SoundObject(SoundObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
-        XMLObject(XMLObject<'gc>),
-        XMLAttributesObject(XMLAttributesObject<'gc>),
-        XMLIDMapObject(XMLIDMapObject<'gc>),
+        XmlObject(XmlObject<'gc>),
+        XmlAttributesObject(XmlAttributesObject<'gc>),
+        XmlIdMapObject(XmlIdMapObject<'gc>),
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
@@ -432,7 +432,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get the underlying XML node for this object, if it exists.
-    fn as_xml_node(&self) -> Option<XMLNode<'gc>> {
+    fn as_xml_node(&self) -> Option<XmlNode<'gc>> {
         None
     }
 

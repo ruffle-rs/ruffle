@@ -803,7 +803,7 @@ impl AudioBackend for WebAudioBackend {
             let skip_sample_frames = u16::from(sound.data[0]) | (u16::from(sound.data[1]) << 8);
             (skip_sample_frames, &sound.data[2..])
         } else {
-            (0, &sound.data[..])
+            (0, sound.data)
         };
 
         let sound = Sound {

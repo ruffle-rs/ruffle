@@ -4,13 +4,13 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::script_object::ScriptObject;
-use crate::avm1::object::xml_object::XMLObject;
+use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
 use crate::xml;
-use crate::xml::{XMLDocument, XMLNode};
+use crate::xml::{XmlDocument, XmlNode};
 use gc_arena::MutationContext;
 use quick_xml::Error as ParseError;
 
@@ -35,7 +35,7 @@ pub const XML_MISMATCHED_END: f64 = -10.0;
 /// not. Those nodes are filtered from all attributes that return XML nodes to
 /// act as if those nodes did not exist. For example, `prevSibling` skips
 /// past incompatible nodes, etc.
-fn is_as2_compatible(node: XMLNode<'_>) -> bool {
+fn is_as2_compatible(node: XmlNode<'_>) -> bool {
     node.is_document_root() || node.is_element() || node.is_text()
 }
 
@@ -45,7 +45,7 @@ pub fn xmlnode_constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let blank_document = XMLDocument::new(activation.context.gc_context);
+    let blank_document = XmlDocument::new(activation.context.gc_context);
 
     match (
         args.get(0)
@@ -55,13 +55,13 @@ pub fn xmlnode_constructor<'gc>(
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
             let mut xmlelement =
-                XMLNode::new_element(activation.context.gc_context, strval, blank_document);
+                XmlNode::new_element(activation.context.gc_context, strval, blank_document);
             xmlelement.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlelement);
         }
         (Some(Ok(3)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
             let mut xmlelement =
-                XMLNode::new_text(activation.context.gc_context, strval, blank_document);
+                XmlNode::new_text(activation.context.gc_context, strval, blank_document);
             xmlelement.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlelement);
         }
@@ -537,7 +537,7 @@ pub fn create_xmlnode_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xmlnode_proto = XMLObject::empty_node(gc_context, Some(proto));
+    let xmlnode_proto = XmlObject::empty_node(gc_context, Some(proto));
 
     xmlnode_proto.add_property(
         gc_context,
@@ -790,7 +790,7 @@ pub fn xml_constructor<'gc>(
         this.as_xml_node(),
     ) {
         (Some(Ok(ref string)), Some(ref mut this_node)) => {
-            let xmldoc = XMLDocument::new(activation.context.gc_context);
+            let xmldoc = XmlDocument::new(activation.context.gc_context);
             let mut xmlnode = xmldoc.as_node();
             xmlnode.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlnode);
@@ -812,7 +812,7 @@ pub fn xml_constructor<'gc>(
             }
         }
         (None, Some(ref mut this_node)) => {
-            let xmldoc = XMLDocument::new(activation.context.gc_context);
+            let xmldoc = XmlDocument::new(activation.context.gc_context);
             let mut xmlnode = xmldoc.as_node();
             xmlnode.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlnode);
@@ -832,15 +832,15 @@ pub fn xml_create_element<'gc>(
     let document = if let Some(node) = this.as_xml_node() {
         node.document()
     } else {
-        XMLDocument::new(activation.context.gc_context)
+        XmlDocument::new(activation.context.gc_context)
     };
 
     let nodename = args
         .get(0)
         .map(|v| v.coerce_to_string(activation).unwrap_or_default())
         .unwrap_or_default();
-    let mut xml_node = XMLNode::new_element(activation.context.gc_context, &nodename, document);
-    let object = XMLObject::from_xml_node(
+    let mut xml_node = XmlNode::new_element(activation.context.gc_context, &nodename, document);
+    let object = XmlObject::from_xml_node(
         activation.context.gc_context,
         xml_node,
         Some(activation.context.avm1.prototypes().xml_node),
@@ -859,15 +859,15 @@ pub fn xml_create_text_node<'gc>(
     let document = if let Some(node) = this.as_xml_node() {
         node.document()
     } else {
-        XMLDocument::new(activation.context.gc_context)
+        XmlDocument::new(activation.context.gc_context)
     };
 
     let text_node = args
         .get(0)
         .map(|v| v.coerce_to_string(activation).unwrap_or_default())
         .unwrap_or_default();
-    let mut xml_node = XMLNode::new_text(activation.context.gc_context, &text_node, document);
-    let object = XMLObject::from_xml_node(
+    let mut xml_node = XmlNode::new_text(activation.context.gc_context, &text_node, document);
+    let object = XmlObject::from_xml_node(
         activation.context.gc_context,
         xml_node,
         Some(activation.context.avm1.prototypes().xml_node),
@@ -1078,7 +1078,7 @@ pub fn create_xml_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_proto = XMLObject::empty_node(gc_context, Some(proto));
+    let xml_proto = XmlObject::empty_node(gc_context, Some(proto));
 
     xml_proto.add_property(
         gc_context,

@@ -10,7 +10,7 @@ use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
-use crate::xml::XMLNode;
+use crate::xml::XmlNode;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext, MutationContext};
 use generational_arena::{Arena, Index};
@@ -234,11 +234,11 @@ impl<'gc> LoadManager<'gc> {
     pub fn load_xml_into_node(
         &mut self,
         player: Weak<Mutex<Player>>,
-        target_node: XMLNode<'gc>,
+        target_node: XmlNode<'gc>,
         active_clip: DisplayObject<'gc>,
         fetch: OwnedFuture<Vec<u8>, Error>,
     ) -> OwnedFuture<(), Error> {
-        let loader = Loader::XML {
+        let loader = Loader::Xml {
             self_handle: None,
             active_clip,
             target_node,
@@ -319,7 +319,7 @@ pub enum Loader<'gc> {
     },
 
     /// Loader that is loading XML data into an XML tree.
-    XML {
+    Xml {
         /// The handle to refer to this loader instance.
         self_handle: Option<Handle>,
 
@@ -332,7 +332,7 @@ pub enum Loader<'gc> {
         active_clip: DisplayObject<'gc>,
 
         /// The target node whose contents will be replaced with the parsed XML.
-        target_node: XMLNode<'gc>,
+        target_node: XmlNode<'gc>,
     },
 }
 
@@ -350,7 +350,7 @@ unsafe impl<'gc> Collect for Loader<'gc> {
             }
             Loader::Form { target_object, .. } => target_object.trace(cc),
             Loader::LoadVars { target_object, .. } => target_object.trace(cc),
-            Loader::XML { target_node, .. } => target_node.trace(cc),
+            Loader::Xml { target_node, .. } => target_node.trace(cc),
         }
     }
 }
@@ -366,7 +366,7 @@ impl<'gc> Loader<'gc> {
             Loader::Movie { self_handle, .. } => *self_handle = Some(handle),
             Loader::Form { self_handle, .. } => *self_handle = Some(handle),
             Loader::LoadVars { self_handle, .. } => *self_handle = Some(handle),
-            Loader::XML { self_handle, .. } => *self_handle = Some(handle),
+            Loader::Xml { self_handle, .. } => *self_handle = Some(handle),
         }
     }
 
@@ -758,7 +758,7 @@ impl<'gc> Loader<'gc> {
         fetch: OwnedFuture<Vec<u8>, Error>,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
-            Loader::XML { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
+            Loader::Xml { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
             _ => return Box::pin(async { Err(Error::NotXmlLoader) }),
         };
 
@@ -774,7 +774,7 @@ impl<'gc> Loader<'gc> {
                 player.lock().expect("Could not lock player!!").update(
                     |uc| -> Result<(), Error> {
                         let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
-                            Some(Loader::XML {
+                            Some(Loader::Xml {
                                 target_node,
                                 active_clip,
                                 ..
@@ -810,7 +810,7 @@ impl<'gc> Loader<'gc> {
                 player.lock().expect("Could not lock player!!").update(
                     |uc| -> Result<(), Error> {
                         let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
-                            Some(Loader::XML {
+                            Some(Loader::Xml {
                                 target_node,
                                 active_clip,
                                 ..

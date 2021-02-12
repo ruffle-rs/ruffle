@@ -2397,15 +2397,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     .finish();
 
                 match method {
-                    NavigationMethod::GET if url.find('?').is_none() => (
+                    NavigationMethod::Get if url.find('?').is_none() => (
                         Cow::Owned(format!("{}?{}", url, qstring)),
                         RequestOptions::get(),
                     ),
-                    NavigationMethod::GET => (
+                    NavigationMethod::Get => (
                         Cow::Owned(format!("{}&{}", url, qstring)),
                         RequestOptions::get(),
                     ),
-                    NavigationMethod::POST => (
+                    NavigationMethod::Post => (
                         url,
                         RequestOptions::post(Some((
                             qstring.as_bytes().to_owned(),

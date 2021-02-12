@@ -1781,8 +1781,8 @@ impl<W: Write> Writer<W> {
         };
 
         flags |= match &gradient.interpolation {
-            GradientInterpolation::RGB => 0b00_0000,
-            GradientInterpolation::LinearRGB => 0b_01_0000,
+            GradientInterpolation::Rgb => 0b00_0000,
+            GradientInterpolation::LinearRgb => 0b_01_0000,
         };
 
         flags |= (gradient.records.len() as u8) & 0b1111;
@@ -2565,8 +2565,8 @@ impl<W: Write> Writer<W> {
         self.write_u8(match video.codec {
             VideoCodec::H263 => 2,
             VideoCodec::ScreenVideo => 3,
-            VideoCodec::VP6 => 4,
-            VideoCodec::VP6WithAlpha => 5,
+            VideoCodec::Vp6 => 4,
+            VideoCodec::Vp6WithAlpha => 5,
             VideoCodec::ScreenVideoV2 => 6,
         })?;
         Ok(())

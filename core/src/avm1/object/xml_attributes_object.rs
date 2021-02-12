@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, Value};
-use crate::xml::{XMLName, XMLNode};
+use crate::xml::{XmlName, XmlNode};
 use gc_arena::{Collect, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
@@ -18,36 +18,36 @@ use crate::avm_warn;
 /// separately.
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct XMLAttributesObject<'gc>(ScriptObject<'gc>, XMLNode<'gc>);
+pub struct XmlAttributesObject<'gc>(ScriptObject<'gc>, XmlNode<'gc>);
 
-impl<'gc> XMLAttributesObject<'gc> {
-    /// Construct an XMLAttributesObject for an already existing node's
+impl<'gc> XmlAttributesObject<'gc> {
+    /// Construct an XmlAttributesObject for an already existing node's
     /// attributes.
     pub fn from_xml_node(
         gc_context: MutationContext<'gc, '_>,
-        xml_node: XMLNode<'gc>,
+        xml_node: XmlNode<'gc>,
     ) -> Object<'gc> {
-        XMLAttributesObject(ScriptObject::object(gc_context, None), xml_node).into()
+        XmlAttributesObject(ScriptObject::object(gc_context, None), xml_node).into()
     }
 
     fn base(&self) -> ScriptObject<'gc> {
         match self {
-            XMLAttributesObject(base, ..) => *base,
+            XmlAttributesObject(base, ..) => *base,
         }
     }
 
-    fn node(&self) -> XMLNode<'gc> {
+    fn node(&self) -> XmlNode<'gc> {
         match self {
-            XMLAttributesObject(_, node) => *node,
+            XmlAttributesObject(_, node) => *node,
         }
     }
 }
 
-impl fmt::Debug for XMLAttributesObject<'_> {
+impl fmt::Debug for XmlAttributesObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            XMLAttributesObject(base, node) => f
-                .debug_tuple("XMLAttributesObject")
+            XmlAttributesObject(base, node) => f
+                .debug_tuple("XmlAttributesObject")
                 .field(base)
                 .field(node)
                 .finish(),
@@ -55,7 +55,7 @@ impl fmt::Debug for XMLAttributesObject<'_> {
     }
 }
 
-impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
+impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
     fn get_local(
         &self,
         name: &str,
@@ -64,7 +64,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self
             .node()
-            .attribute_value(&XMLName::from_str(name))
+            .attribute_value(&XmlName::from_str(name))
             .map(|s| AvmString::new(activation.context.gc_context, s).into())
             .unwrap_or_else(|| Value::Undefined))
     }
@@ -77,7 +77,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         self.node().set_attribute_value(
             activation.context.gc_context,
-            &XMLName::from_str(name),
+            &XmlName::from_str(name),
             &value.coerce_to_string(activation)?,
         );
         self.base().set(name, value, activation)
@@ -115,7 +115,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
 
     fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.node()
-            .delete_attribute(activation.context.gc_context, &XMLName::from_str(name));
+            .delete_attribute(activation.context.gc_context, &XmlName::from_str(name));
         self.base().delete(activation, name)
     }
 
@@ -201,7 +201,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
 
     fn has_own_property(&self, _activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.node()
-            .attribute_value(&XMLName::from_str(name))
+            .attribute_value(&XmlName::from_str(name))
             .is_some()
     }
 
@@ -239,7 +239,7 @@ impl<'gc> TObject<'gc> for XMLAttributesObject<'gc> {
         Some(self.base())
     }
 
-    fn as_xml_node(&self) -> Option<XMLNode<'gc>> {
+    fn as_xml_node(&self) -> Option<XmlNode<'gc>> {
         Some(self.node())
     }
 
