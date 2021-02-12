@@ -40,7 +40,6 @@ impl<'gc> ByteArrayObject<'gc> {
         .into()
     }
 
-    /// Construct a primitive subclass.
     pub fn derive(
         base_proto: Object<'gc>,
         mc: MutationContext<'gc, '_>,
