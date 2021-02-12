@@ -149,7 +149,7 @@ impl<'gc> Video<'gc> {
     }
 
     /// Seek to a particular frame in the video stream.
-    pub fn seek(self, context: &mut UpdateContext<'_, 'gc, '_>, frame_id: u32) {
+    pub fn seek(self, context: &mut UpdateContext<'_, 'gc, '_>, mut frame_id: u32) {
         let read = self.0.read();
         if let VideoStream::Uninstantiated(_) = &read.stream {
             drop(read);
@@ -159,6 +159,11 @@ impl<'gc> Video<'gc> {
 
             return;
         };
+
+        {
+            let VideoSource::SWF { movie: _, streamdef, frames: _ } = &*read.source.read();
+            frame_id = frame_id % streamdef.num_frames as u32;
+        }
 
         let last_frame = read.decoded_frame.as_ref().map(|(lf, _)| *lf);
 
