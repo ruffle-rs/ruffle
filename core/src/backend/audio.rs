@@ -165,6 +165,8 @@ impl Default for NullAudioBackend {
     }
 }
 
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct AudioManager<'gc> {
     /// The list of actively playing sounds.
     sounds: Vec<SoundInstance<'gc>>,
@@ -370,13 +372,6 @@ impl<'gc> Default for AudioManager<'gc> {
     }
 }
 
-unsafe impl<'gc> Collect for AudioManager<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        for sound in &self.sounds {
-            sound.trace(cc);
-        }
-    }
-}
 #[derive(Clone)]
 pub struct SoundInstance<'gc> {
     /// The handle to the sound instance in the audio backend.
