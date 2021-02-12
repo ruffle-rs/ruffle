@@ -1,4 +1,11 @@
+package {
+    public class Test {
+        public function Test() {}
+    }
+}
+
 import flash.utils.ByteArray;
+import flash.utils.Endian;
 
 var test = new ByteArray();
 test.writeUTFBytes("HELLO TEST");
@@ -35,4 +42,6 @@ test2.clear();
 test2.writeUTF("THIS IS A TEST UTF STRING");
 test2.position = 0;
 trace(test2.readUTF());
-stop();
+trace(test2[1]);
+test2[0] = 90;
+trace(test2.toString());
