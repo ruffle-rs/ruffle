@@ -34,6 +34,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Once;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{
@@ -135,6 +136,9 @@ pub struct Config {
 
     #[serde(rename = "logLevel")]
     log_level: log::Level,
+
+    #[serde(rename = "maxExecutionDuration")]
+    max_execution_duration: Duration,
 }
 
 impl Default for Config {
@@ -146,6 +150,7 @@ impl Default for Config {
             upgrade_to_https: true,
             warn_on_unsupported_content: true,
             log_level: log::Level::Error,
+            max_execution_duration: Duration::from_secs(15),
         }
     }
 }
@@ -467,6 +472,7 @@ impl Ruffle {
             }
             core.set_letterbox(config.letterbox);
             core.set_warn_on_unsupported_content(config.warn_on_unsupported_content);
+            core.set_max_execution_duration(config.max_execution_duration);
         }
 
         // Create instance.
