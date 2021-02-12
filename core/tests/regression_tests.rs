@@ -519,16 +519,16 @@ swf_tests_approx! {
     (stage_object_properties, "avm1/stage_object_properties", 6, epsilon = 0.051),
     (stage_object_properties_swf6, "avm1/stage_object_properties_swf6", 4, epsilon = 0.051),
     (movieclip_getbounds, "avm1/movieclip_getbounds", 1, epsilon = 0.051),
-    (parse_float, "avm1/parse_float", 1, max_relative = 5.0 * std::f64::EPSILON),
+    (parse_float, "avm1/parse_float", 1, max_relative = 5.0 * f64::EPSILON),
     (edittext_letter_spacing, "avm1/edittext_letter_spacing", 1, epsilon = 15.0), // TODO: Discrepancy in wrapping in letterSpacing = 0.1 test.
     (edittext_align, "avm1/edittext_align", 1, epsilon = 3.0),
     (edittext_margins, "avm1/edittext_margins", 1, epsilon = 5.0), // TODO: Discrepancy in wrapping.
     (edittext_tab_stops, "avm1/edittext_tab_stops", 1, epsilon = 5.0),
     (edittext_bullet, "avm1/edittext_bullet", 1, epsilon = 3.0),
     (edittext_underline, "avm1/edittext_underline", 1, epsilon = 4.0),
-    (as3_coerce_string_precision, "avm2/coerce_string_precision", 1, max_relative = 30.0 * std::f64::EPSILON),
+    (as3_coerce_string_precision, "avm2/coerce_string_precision", 1, max_relative = 30.0 * f64::EPSILON),
     (as3_divide, "avm2/divide", 1, epsilon = 0.0), // TODO: Discrepancy in float formatting.
-    (as3_math, "avm2/math", 1, max_relative = 30.0 * std::f64::EPSILON),
+    (as3_math, "avm2/math", 1, max_relative = 30.0 * f64::EPSILON),
     (as3_displayobject_height, "avm2/displayobject_height", 7, epsilon = 0.06), // TODO: height/width appears to be off by 1 twip sometimes
     (as3_displayobject_width, "avm2/displayobject_width", 7, epsilon = 0.06),
     (as3_displayobject_rotation, "avm2/displayobject_rotation", 1, epsilon = 0.0000000001),

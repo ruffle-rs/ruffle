@@ -6,7 +6,6 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
-use std::f64::NAN;
 
 pub fn point_to_object<'gc>(
     point: (f64, f64),
@@ -138,7 +137,7 @@ fn distance<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 2 {
-        return Ok(NAN.into());
+        return Ok(f64::NAN.into());
     }
 
     let a = args
@@ -173,7 +172,7 @@ fn interpolate<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 3 {
-        return point_to_object((NAN, NAN), activation);
+        return point_to_object((f64::NAN, f64::NAN), activation);
     }
 
     let a = value_to_point(args.get(0).unwrap().to_owned(), activation)?;

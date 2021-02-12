@@ -7,7 +7,6 @@ use crate::avm1::globals::point::{construct_new_point, point_to_object, value_to
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
-use std::f64::NAN;
 
 fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -249,7 +248,7 @@ fn union<'gc>(
                 other.get("height", activation)?.coerce_to_f64(activation)?,
             )
         } else {
-            (NAN, NAN, NAN, NAN)
+            (f64::NAN, f64::NAN, f64::NAN, f64::NAN)
         };
     let other_right = other_left + other_width;
     let other_bottom = other_top + other_height;
@@ -405,7 +404,7 @@ fn intersection<'gc>(
                 other.get("height", activation)?.coerce_to_f64(activation)?,
             )
         } else {
-            (NAN, NAN, NAN, NAN)
+            (f64::NAN, f64::NAN, f64::NAN, f64::NAN)
         };
     let other_right = other_left + other_width;
     let other_bottom = other_top + other_height;
@@ -542,7 +541,7 @@ fn set_right<'gc>(
     let right = if let Some(arg) = args.get(0) {
         arg.coerce_to_f64(activation)?
     } else {
-        NAN
+        f64::NAN
     };
     let x = this.get("x", activation)?.coerce_to_f64(activation)?;
 
@@ -569,7 +568,7 @@ fn set_bottom<'gc>(
     let bottom = if let Some(arg) = args.get(0) {
         arg.coerce_to_f64(activation)?
     } else {
-        NAN
+        f64::NAN
     };
     let y = this.get("y", activation)?.coerce_to_f64(activation)?;
 

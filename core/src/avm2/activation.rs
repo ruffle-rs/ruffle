@@ -743,7 +743,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_push_nan(&mut self) -> Result<FrameControl<'gc>, Error> {
-        self.context.avm2.push(std::f64::NAN);
+        self.context.avm2.push(f64::NAN);
         Ok(FrameControl::Continue)
     }
 

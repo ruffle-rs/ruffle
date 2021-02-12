@@ -10,7 +10,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
-use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
 macro_rules! math_constants {
     ($class:ident, $($name:expr => $value:expr),*) => {{
@@ -45,7 +44,7 @@ macro_rules! math_wrap_std {
                         if let Some(input) = args.get(0) {
                             Ok($std(input.coerce_to_number(activation)?).into())
                         } else {
-                            Ok(std::f64::NAN.into())
+                            Ok(f64::NAN.into())
                         }
                     }
                 ),
@@ -140,7 +139,7 @@ fn round<'gc>(
         let ret = (x + 0.5).floor();
         return Ok(ret.into());
     }
-    Ok(NAN.into())
+    Ok(f64::NAN.into())
 }
 
 fn atan2<'gc>(
@@ -164,11 +163,11 @@ fn max<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let mut cur_max = NEG_INFINITY;
+    let mut cur_max = f64::NEG_INFINITY;
     for arg in args {
         let val = arg.coerce_to_number(activation)?;
         if val.is_nan() {
-            return Ok(NAN.into());
+            return Ok(f64::NAN.into());
         } else if val > cur_max {
             cur_max = val;
         };
@@ -181,11 +180,11 @@ fn min<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let mut cur_min = INFINITY;
+    let mut cur_min = f64::INFINITY;
     for arg in args {
         let val = arg.coerce_to_number(activation)?;
         if val.is_nan() {
-            return Ok(NAN.into());
+            return Ok(f64::NAN.into());
         } else if val < cur_min {
             cur_min = val;
         }

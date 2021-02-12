@@ -15,7 +15,6 @@ use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::f64::NAN;
 
 mod array;
 mod boolean;
@@ -431,7 +430,7 @@ pub fn load_player_globals<'gc>(
     function(mc, "", "isNaN", is_nan, fn_proto, domain, script)?;
     constant(mc, "", "undefined", Value::Undefined, domain, script)?;
     constant(mc, "", "null", Value::Null, domain, script)?;
-    constant(mc, "", "NaN", NAN.into(), domain, script)?;
+    constant(mc, "", "NaN", f64::NAN.into(), domain, script)?;
     constant(mc, "", "Infinity", f64::INFINITY.into(), domain, script)?;
 
     class(

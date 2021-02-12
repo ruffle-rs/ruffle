@@ -6,10 +6,10 @@ use swf::{CharacterId, FillStyle, LineStyle, Matrix, Shape, ShapeRecord, Twips};
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle {
     let mut bounds = swf::Rectangle {
-        x_min: Twips::new(std::i32::MAX),
-        y_min: Twips::new(std::i32::MAX),
-        x_max: Twips::new(std::i32::MIN),
-        y_max: Twips::new(std::i32::MIN),
+        x_min: Twips::new(i32::MAX),
+        y_min: Twips::new(i32::MAX),
+        x_max: Twips::new(i32::MIN),
+        y_max: Twips::new(i32::MIN),
     };
     let mut x = Twips::new(0);
     let mut y = Twips::new(0);

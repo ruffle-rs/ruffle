@@ -7,7 +7,6 @@ use crate::avm1::{AvmString, Object, TObject, Value};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
 use gc_arena::{Collect, MutationContext};
 use num_traits::ToPrimitive;
-use std::f64::NAN;
 
 macro_rules! implement_local_getters {
     ($gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),*) => {
@@ -20,7 +19,7 @@ macro_rules! implement_local_getters {
                             let local = date.with_timezone(&activation.context.locale.get_timezone());
                             Ok($fn(&local).into())
                         } else {
-                            Ok(NAN.into())
+                            Ok(f64::NAN.into())
                         }
                     } else {
                         Ok(Value::Undefined)
@@ -64,7 +63,7 @@ macro_rules! implement_utc_getters {
                         if let Some(date) = this.date_time() {
                             Ok($fn(&date).into())
                         } else {
-                            Ok(NAN.into())
+                            Ok(f64::NAN.into())
                         }
                     } else {
                         Ok(Value::Undefined)
@@ -546,7 +545,7 @@ impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
         if let Some(date) = date {
             date.timestamp_millis() as f64
         } else {
-            NAN
+            f64::NAN
         }
     }
 }
@@ -662,7 +661,7 @@ fn get_timezone_offset<'gc>(
     let date = if let Some(date) = this.date_time() {
         date.with_timezone(&activation.context.locale.get_timezone())
     } else {
-        return Ok(NAN.into());
+        return Ok(f64::NAN.into());
     };
 
     let seconds = date.offset().utc_minus_local() as f32;
@@ -677,7 +676,7 @@ fn set_date<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
         this.set_date_time(activation.context.gc_context, None);
-        Ok(NAN.into())
+        Ok(f64::NAN.into())
     } else {
         let timezone = activation.context.locale.get_timezone();
         let timestamp = DateAdjustment::new(activation, &timezone)
@@ -694,7 +693,7 @@ fn set_utc_date<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
         this.set_date_time(activation.context.gc_context, None);
-        Ok(NAN.into())
+        Ok(f64::NAN.into())
     } else {
         let timestamp = DateAdjustment::new(activation, &Utc)
             .day(args.get(0))?
@@ -862,7 +861,7 @@ fn set_time<'gc>(
     }
 
     this.set_date_time(activation.context.gc_context, None);
-    Ok(NAN.into())
+    Ok(f64::NAN.into())
 }
 
 fn set_full_year<'gc>(

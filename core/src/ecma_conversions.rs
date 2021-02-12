@@ -7,9 +7,9 @@ use std::borrow::Cow;
 pub fn f64_to_string(n: f64) -> Cow<'static, str> {
     if n.is_nan() {
         Cow::Borrowed("NaN")
-    } else if n == std::f64::INFINITY {
+    } else if n == f64::INFINITY {
         Cow::Borrowed("Infinity")
-    } else if n == std::f64::NEG_INFINITY {
+    } else if n == f64::NEG_INFINITY {
         Cow::Borrowed("-Infinity")
     } else if n != 0.0 && (n.abs() >= 1e15 || n.abs() < 1e-5) {
         // Exponential notation.

@@ -223,9 +223,9 @@ fn char_code_at<'gc>(
         this.encode_utf16()
             .nth(i as usize)
             .map(f64::from)
-            .unwrap_or(std::f64::NAN)
+            .unwrap_or(f64::NAN)
     } else {
-        std::f64::NAN
+        f64::NAN
     };
     Ok(ret.into())
 }
@@ -392,7 +392,7 @@ fn split<'gc>(
     let delimiter_val = args.get(0).unwrap_or(&Value::Undefined);
     let delimiter = delimiter_val.coerce_to_string(activation)?;
     let limit = match args.get(1) {
-        None | Some(Value::Undefined) => std::usize::MAX,
+        None | Some(Value::Undefined) => usize::MAX,
         Some(n) => std::cmp::max(0, n.coerce_to_i32(activation)?) as usize,
     };
     let array = ScriptObject::array(
