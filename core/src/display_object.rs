@@ -42,7 +42,8 @@ pub use movie_clip::{MovieClip, Scene};
 pub use text::Text;
 pub use video::Video;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayObject<'gc>>,
     place_frame: u16,
@@ -102,17 +103,6 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             sound_transform: Default::default(),
             flags: DisplayObjectFlags::VISIBLE,
         }
-    }
-}
-
-unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.parent.trace(cc);
-        self.prev_sibling.trace(cc);
-        self.next_sibling.trace(cc);
-        self.masker.trace(cc);
-        self.maskee.trace(cc);
     }
 }
 
@@ -1491,7 +1481,8 @@ bitflags! {
 /// Every value is a percentage (0-100), but out of range values are allowed.
 /// In AVM1, this is returned by `Sound.getTransform`.
 /// In AVM2, this is returned by `Sprite.soundTransform`.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Collect)]
+#[collect(require_static)]
 pub struct SoundTransform {
     pub volume: i32,
     pub left_to_left: i32,
