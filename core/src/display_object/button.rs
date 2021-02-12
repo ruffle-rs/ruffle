@@ -17,7 +17,8 @@ use swf::ButtonActionCondition;
 #[collect(no_drop)]
 pub struct Button<'gc>(GcCell<'gc, ButtonData<'gc>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct ButtonData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: GcCell<'gc, ButtonStatic>,
@@ -544,20 +545,8 @@ impl<'gc> ButtonData<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for ButtonData<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.container.trace(cc);
-        for child in self.hit_area.values() {
-            child.trace(cc);
-        }
-        self.base.trace(cc);
-        self.static_data.trace(cc);
-        self.object.trace(cc);
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
+#[collect(require_static)]
 #[allow(dead_code)]
 enum ButtonState {
     Up,
@@ -572,7 +561,8 @@ struct ButtonAction {
     key_code: Option<ButtonKeyCode>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
+#[collect(require_static)]
 enum ButtonTracking {
     Push,
     Menu,
