@@ -400,7 +400,8 @@ pub struct RenderContext<'a, 'gc> {
 }
 
 /// The type of action being run.
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub enum ActionType<'gc> {
     /// Normal frame or event actions.
     Normal { bytecode: SwfSlice },
@@ -491,25 +492,6 @@ impl fmt::Debug for ActionType<'_> {
                 .field("reciever", reciever)
                 .field("args", args)
                 .finish(),
-        }
-    }
-}
-
-unsafe impl<'gc> Collect for ActionType<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        match self {
-            ActionType::Construct { constructor, .. } => {
-                constructor.trace(cc);
-            }
-            ActionType::Method { object, args, .. } => {
-                object.trace(cc);
-                args.trace(cc);
-            }
-            ActionType::NotifyListeners { args, .. } => {
-                args.trace(cc);
-            }
-            _ => {}
         }
     }
 }
