@@ -64,24 +64,14 @@ pub fn write_bytes<'gc>(
     if let Some(Value::Object(second_array)) = args.get(0) {
         let combining_storage = second_array.as_bytearray().unwrap().reborrow();
         let combining_bytes = combining_storage.bytes();
-        let mut signed_offset = args
+        let offset = args
             .get(1)
-            .unwrap_or(&Value::Integer(0))
-            .coerce_to_i32(activation)?;
-        let mut signed_length = args
+            .unwrap_or(&Value::Unsigned(0))
+            .coerce_to_u32(activation)? as usize;
+        let length = args
             .get(2)
-            .unwrap_or(&Value::Integer(combining_bytes.len() as i32))
-            .coerce_to_i32(activation)?;
-
-        // This is so we can convert to an unsigned int without anything crazy happening
-        if signed_offset < 0 {
-            signed_offset = 0
-        }
-        if signed_length < 0 {
-            signed_length = 0
-        }
-        let offset = signed_offset as usize;
-        let length = signed_length as usize;
+            .unwrap_or(&Value::Unsigned(0))
+            .coerce_to_u32(activation)? as usize;
 
         // In the docs it says "If offset or length is out of range, they are clamped to the beginning and end of the bytes array."
         // However, in the actual flash player, it seems to just raise an error.
@@ -94,10 +84,7 @@ pub fn write_bytes<'gc>(
             .unwrap()
             .as_bytearray_mut(activation.context.gc_context)
         {
-            let pos = bytearray.position();
-            {
-                bytearray.write_bytes(&combining_bytes[offset..length + offset], pos, true);
-            }
+            bytearray.write_bytes(if length != 0 {&combining_bytes[offset..length + offset]} else {&combining_bytes[offset..]});
         }
     }
 
@@ -117,26 +104,14 @@ pub fn read_bytes<'gc>(
         .as_bytearray_mut(activation.context.gc_context)
     {
         let combining_bytes = bytearray.bytes();
-        let mut signed_offset = args
+        offset = args
             .get(1)
-            .unwrap_or(&Value::Integer(0))
-            .coerce_to_i32(activation)
-            .unwrap();
-        let mut signed_length = args
+            .unwrap_or(&Value::Unsigned(0))
+            .coerce_to_u32(activation)? as usize;
+        let length = args
             .get(2)
-            .unwrap_or(&Value::Integer(combining_bytes.len() as i32))
-            .coerce_to_i32(activation)
-            .unwrap();
-
-        // This is so we can convert to an unsigned int without anything crazy happening
-        if signed_offset < 0 {
-            signed_offset = 0
-        }
-        if signed_length < 0 {
-            signed_length = 0
-        }
-        offset = signed_offset as usize;
-        let length = signed_length as usize;
+            .unwrap_or(&Value::Unsigned(0))
+            .coerce_to_u32(activation)? as usize;
 
         if bytearray.position() + length > combining_bytes.len() {
             log::error!("ByteArray: Reached EOF");
@@ -144,7 +119,7 @@ pub fn read_bytes<'gc>(
         }
 
         merging_buffer =
-            combining_bytes[bytearray.position()..length + bytearray.position()].to_vec();
+            if length != 0 {combining_bytes[bytearray.position()..length + bytearray.position()].to_vec()} else {combining_bytes[bytearray.position()..].to_vec()};
         {
             bytearray.add_position(merging_buffer.len());
         }
@@ -156,9 +131,9 @@ pub fn read_bytes<'gc>(
             .unwrap();
         // Offset should not be greater then the buffer
         if merging_storage.bytes().len() < offset {
-            offset = merging_storage.bytes().len();
+            return Ok(Value::Undefined);
         }
-        merging_storage.write_bytes(&merging_buffer, offset, false);
+        merging_storage.write_bytes_at(&merging_buffer, offset);
     }
     Ok(Value::Undefined)
 }
@@ -618,10 +593,7 @@ pub fn write_multibyte<'gc>(
             }
             let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
             let (encoded_bytes, _, _) = encoder.encode(string);
-            let pos = bytearray.position();
-            {
-                bytearray.write_bytes(&encoded_bytes.into_owned(), pos, true);
-            }
+            bytearray.write_bytes(&encoded_bytes.into_owned());
         }
     }
     Ok(Value::Undefined)
@@ -664,9 +636,8 @@ pub fn write_utf_bytes<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        let pos = bytearray.position();
         if let Value::String(string) = args.get(0).unwrap_or(&Value::Undefined) {
-            bytearray.write_bytes(string.as_bytes(), pos, true);
+            bytearray.write_bytes(string.as_bytes());
         }
     }
     Ok(Value::Undefined)
@@ -689,8 +660,66 @@ pub fn compress<'gc>(
             };
             if let Ok(buffer) = compressed {
                 bytearray.clear();
-                bytearray.write_bytes(&buffer, 0, true);
+                bytearray.write_bytes(&buffer);
             }
+        }
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn uncompress<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut bytearray) = this
+        .unwrap()
+        .as_bytearray_mut(activation.context.gc_context)
+    {
+        if let Value::String(string) = args.get(0).unwrap_or(&Value::Undefined) {
+            let compressed = match string.as_str() {
+                "zlib" => bytearray.zlib_decompress(),
+                "deflate" => bytearray.deflate_decompress(),
+                &_ => return Ok(Value::Undefined),
+            };
+            if let Ok(buffer) = compressed {
+                bytearray.clear();
+                bytearray.write_bytes(&buffer);
+            }
+        }
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn deflate<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut bytearray) = this
+        .unwrap()
+        .as_bytearray_mut(activation.context.gc_context)
+    {
+        if let Ok(buffer) = bytearray.deflate_compress() {
+            bytearray.clear();
+            bytearray.write_bytes(&buffer);
+        }
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn inflate<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut bytearray) = this
+        .unwrap()
+        .as_bytearray_mut(activation.context.gc_context)
+    {
+        if let Ok(buffer) = bytearray.deflate_decompress() {
+            bytearray.clear();
+            bytearray.write_bytes(&buffer);
         }
     }
     Ok(Value::Undefined)
@@ -821,9 +850,26 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::as3_namespace(), "uncompress"),
+        Method::from_builtin(uncompress),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::as3_namespace(), "inflate"),
+        Method::from_builtin(inflate),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
+        QName::new(Namespace::as3_namespace(), "deflate"),
+        Method::from_builtin(deflate),
+    ));
+
+    class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::as3_namespace(), "writeMultiByte"),
         Method::from_builtin(write_multibyte),
     ));
+
+    
 
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::as3_namespace(), "readMultiByte"),

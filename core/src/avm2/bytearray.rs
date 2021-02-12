@@ -54,7 +54,29 @@ impl ByteArrayStorage {
     }
 
     /// Write bytes at next position in bytearray (This function is similar to whats in std::io::Cursor)
-    pub fn write_bytes(&mut self, buf: &[u8], offset: usize, update_pos: bool) {
+    pub fn write_bytes(&mut self, buf: &[u8]) {
+        // Make sure the internal buffer is as least as big as where we
+        // currently are
+
+        let len = self.bytes.len();
+        if len < self.position {
+            // use `resize` so that the zero filling is as efficient as possible
+            self.bytes.resize(self.position, 0);
+        }
+        // Figure out what bytes will be used to overwrite what's currently
+        // there (left), and what will be appended on the end (right)
+        {
+            let space = self.bytes.len() - self.position;
+            let (left, right) = buf.split_at(cmp::min(space, buf.len()));
+            self.bytes[self.position..self.position + left.len()].copy_from_slice(left);
+            self.bytes.extend_from_slice(right);
+        }
+
+        // Bump us forward
+        self.position += buf.len();
+    }
+
+    pub fn write_bytes_at(&mut self, buf: &[u8], offset: usize) {
         // Make sure the internal buffer is as least as big as where we
         // currently are
         let len = self.bytes.len();
@@ -69,11 +91,6 @@ impl ByteArrayStorage {
             let (left, right) = buf.split_at(cmp::min(space, buf.len()));
             self.bytes[offset..offset + left.len()].copy_from_slice(left);
             self.bytes.extend_from_slice(right);
-        }
-
-        // Bump us forward
-        if update_pos {
-            self.position = offset + buf.len();
         }
     }
 
@@ -96,6 +113,22 @@ impl ByteArrayStorage {
     pub fn deflate_compress(&mut self) -> io::Result<Vec<u8>> {
         let mut buffer = Vec::new();
         let mut compresser = DeflateEncoder::new(&*self.bytes, Compression::fast());
+        compresser.read_to_end(&mut buffer)?;
+        Ok(buffer)
+    }
+
+     // Returns the bytearray decompressed with zlib
+     pub fn zlib_decompress(&mut self) -> io::Result<Vec<u8>> {
+        let mut buffer = Vec::new();
+        let mut compresser = ZlibDecoder::new(&*self.bytes);
+        compresser.read_to_end(&mut buffer)?;
+        Ok(buffer)
+    }
+
+    // Returns the bytearray decompressed with deflate
+    pub fn deflate_decompress(&mut self) -> io::Result<Vec<u8>> {
+        let mut buffer = Vec::new();
+        let mut compresser = DeflateDecoder::new(&*self.bytes);
         compresser.read_to_end(&mut buffer)?;
         Ok(buffer)
     }
@@ -201,7 +234,7 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&float_bytes, self.position, true);
+        self.write_bytes(&float_bytes);
     }
 
     // Writes a f64 to the buffer
@@ -210,12 +243,12 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&double_bytes, self.position, true);
+        self.write_bytes(&double_bytes);
     }
 
     // Writes a 1 byte to the buffer, either 1 or 0
     pub fn write_boolean(&mut self, val: bool) {
-        self.write_bytes(&[val as u8; 1], self.position, true);
+        self.write_bytes(&[val as u8; 1]);
     }
 
     // Writes a i32 to the buffer
@@ -224,7 +257,7 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&int_bytes, self.position, true);
+        self.write_bytes(&int_bytes);
     }
 
     // Writes a u32 to the buffer
@@ -233,7 +266,7 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&uint_bytes, self.position, true);
+        self.write_bytes(&uint_bytes);
     }
 
     // Writes a i16 to the buffer
@@ -242,7 +275,7 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&short_bytes, self.position, true);
+        self.write_bytes(&short_bytes);
     }
 
     // Writes a u16 to the buffer
@@ -251,14 +284,14 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&ushort_bytes, self.position, true);
+        self.write_bytes(&ushort_bytes);
     }
 
     // Writes a UTF String into the buffer, with its length as a prefix
     pub fn write_utf(&mut self, utf_string: &str) {
         if let Ok(str_size) = u16::try_from(utf_string.len()) {
             self.write_unsigned_short(str_size);
-            self.write_bytes(utf_string.as_bytes(), self.position, true);
+            self.write_bytes(utf_string.as_bytes());
         } else {
             log::error!("ByteArray: UTF String length must fit into a short");
         }
