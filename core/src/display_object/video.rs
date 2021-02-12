@@ -37,7 +37,7 @@ pub struct VideoData<'gc> {
     source: GcCell<'gc, VideoSource>,
 
     /// The decoder stream that this video source is associated to.
-    stream: Option<CollectWrapper<VideoStreamHandle>>,
+    stream: VideoStream,
 
     /// The last decoded frame in the video stream.
     decoded_frame: Option<(u32, CollectWrapper<BitmapHandle>)>,
@@ -52,6 +52,20 @@ pub struct VideoData<'gc> {
     /// the prior keyframe. The first frame in the stream will always be
     /// treated as a keyframe regardless of it being flagged as one.
     keyframes: BTreeSet<u32>,
+}
+
+/// An optionally-instantiated video stream.
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
+pub enum VideoStream {
+    /// An uninstanted video stream.
+    ///
+    /// The stream index parameter is what frame we should seek to once the
+    /// stream is instantiated.
+    Uninstantiated(u32),
+
+    /// An instantiated video stream.
+    Instantiated(VideoStreamHandle),
 }
 
 #[derive(Clone, Debug, Collect)]
@@ -94,7 +108,7 @@ impl<'gc> Video<'gc> {
             VideoData {
                 base: Default::default(),
                 source,
-                stream: None,
+                stream: VideoStream::Uninstantiated(0),
                 decoded_frame: None,
                 object: None,
                 keyframes: BTreeSet::new(),
@@ -138,10 +152,14 @@ impl<'gc> Video<'gc> {
     pub fn seek(self, context: &mut UpdateContext<'_, 'gc, '_>, mut frame_id: u32) {
         let read = self.0.read();
         let source = read.source;
-        let stream = if let Some(stream) = &read.stream {
+        let stream = if let VideoStream::Instantiated(stream) = &read.stream {
             stream
         } else {
-            log::error!("Attempted to sync uninstantiated video stream!");
+            drop(read);
+
+            let mut write = self.0.write(context.gc_context);
+            write.stream = VideoStream::Uninstantiated(frame_id);
+
             return;
         };
         let last_frame = read.decoded_frame.as_ref().map(|(lf, _)| *lf);
@@ -170,7 +188,7 @@ impl<'gc> Video<'gc> {
                     };
                     context
                         .video
-                        .decode_video_stream_frame(stream.0, encframe, context.renderer)
+                        .decode_video_stream_frame(*stream, encframe, context.renderer)
                         .map(|bi| bi.handle)
                 }
                 None => {
@@ -259,11 +277,19 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                     }
                 }
 
-                (Some(CollectWrapper(stream)), movie.clone(), keyframes)
+                (stream, movie.clone(), keyframes)
             }
         };
 
-        write.stream = stream;
+        let starting_seek = if let VideoStream::Uninstantiated(seek_to) = write.stream {
+            seek_to
+        } else {
+            log::warn!("Reinstantiating already-instantiated video stream!");
+
+            0
+        };
+
+        write.stream = VideoStream::Instantiated(stream);
         write.keyframes = keyframes;
 
         if write.object.is_none() {
@@ -290,7 +316,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
         drop(write);
 
-        self.seek(context, 0);
+        self.seek(context, starting_seek);
 
         if run_frame {
             self.run_frame(context);
