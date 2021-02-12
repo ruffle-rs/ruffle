@@ -58,7 +58,7 @@ pub struct VideoData<'gc> {
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub enum VideoStream {
-    /// An uninstanted video stream.
+    /// An uninstantiated video stream.
     ///
     /// The stream index parameter is what frame we should seek to once the
     /// stream is instantiated.
