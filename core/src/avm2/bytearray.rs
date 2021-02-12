@@ -117,8 +117,8 @@ impl ByteArrayStorage {
         Ok(buffer)
     }
 
-     // Returns the bytearray decompressed with zlib
-     pub fn zlib_decompress(&mut self) -> io::Result<Vec<u8>> {
+    // Returns the bytearray decompressed with zlib
+    pub fn zlib_decompress(&mut self) -> io::Result<Vec<u8>> {
         let mut buffer = Vec::new();
         let mut compresser = ZlibDecoder::new(&*self.bytes);
         compresser.read_to_end(&mut buffer)?;

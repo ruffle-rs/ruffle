@@ -84,7 +84,11 @@ pub fn write_bytes<'gc>(
             .unwrap()
             .as_bytearray_mut(activation.context.gc_context)
         {
-            bytearray.write_bytes(if length != 0 {&combining_bytes[offset..length + offset]} else {&combining_bytes[offset..]});
+            bytearray.write_bytes(if length != 0 {
+                &combining_bytes[offset..length + offset]
+            } else {
+                &combining_bytes[offset..]
+            });
         }
     }
 
@@ -118,8 +122,11 @@ pub fn read_bytes<'gc>(
             return Ok(Value::Undefined);
         }
 
-        merging_buffer =
-            if length != 0 {combining_bytes[bytearray.position()..length + bytearray.position()].to_vec()} else {combining_bytes[bytearray.position()..].to_vec()};
+        merging_buffer = if length != 0 {
+            combining_bytes[bytearray.position()..length + bytearray.position()].to_vec()
+        } else {
+            combining_bytes[bytearray.position()..].to_vec()
+        };
         {
             bytearray.add_position(merging_buffer.len());
         }
@@ -868,8 +875,6 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         QName::new(Namespace::as3_namespace(), "writeMultiByte"),
         Method::from_builtin(write_multibyte),
     ));
-
-    
 
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::as3_namespace(), "readMultiByte"),
