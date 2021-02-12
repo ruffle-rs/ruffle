@@ -35,7 +35,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         mc,
     );
 
-    class.write(mc).set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
+    class
+        .write(mc)
+        .set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
     class.write(mc).define_class_trait(Trait::from_const(
         QName::new(Namespace::public(), "LITTLE_ENDIAN"),
         QName::new(Namespace::public(), "String").into(),
