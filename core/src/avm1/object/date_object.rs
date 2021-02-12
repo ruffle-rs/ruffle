@@ -10,18 +10,15 @@ use std::fmt;
 #[collect(no_drop)]
 pub struct DateObject<'gc>(GcCell<'gc, DateObjectData<'gc>>);
 
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct DateObjectData<'gc> {
     /// The underlying script object.
     base: ScriptObject<'gc>,
 
     /// The DateTime represented by this object
+    #[collect(require_static)]
     date_time: Option<DateTime<Utc>>,
-}
-
-unsafe impl<'gc> Collect for DateObjectData<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.base.trace(cc);
-    }
 }
 
 impl fmt::Debug for DateObject<'_> {
