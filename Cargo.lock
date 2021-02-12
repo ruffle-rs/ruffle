@@ -1395,6 +1395,7 @@ dependencies = [
 [[package]]
 name = "gc-arena"
 version = "0.2.0"
+source = "git+https://github.com/Aaron1011/gc-arena?branch=add-collect-impls#8f526a41c4738e2d970eab2b64e9fa512390ed2b"
 dependencies = [
  "gc-arena-derive",
 ]
@@ -1402,6 +1403,7 @@ dependencies = [
 [[package]]
 name = "gc-arena-derive"
 version = "0.2.0"
+source = "git+https://github.com/Aaron1011/gc-arena?branch=add-collect-impls#8f526a41c4738e2d970eab2b64e9fa512390ed2b"
 dependencies = [
  "proc-macro2",
  "quote",
