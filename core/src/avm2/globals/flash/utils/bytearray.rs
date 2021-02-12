@@ -767,7 +767,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "toString"),
+        QName::new(Namespace::public(), "toString"),
         Method::from_builtin(to_string),
     ));
 
