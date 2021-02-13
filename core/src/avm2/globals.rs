@@ -694,5 +694,14 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
+    // package `flash.text`
+    class(
+        activation,
+        flash::text::textfield::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
+
     Ok(())
 }
