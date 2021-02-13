@@ -167,6 +167,17 @@ export interface BaseLoadOptions {
      * @default true
      */
     contextMenu?: boolean;
+
+    /**
+     * Maximum amount of time a script can take before scripting
+     * is disabled.
+     *
+     * @default {"secs": 15, "nanos": 0}
+     */
+    maxExecutionDuration?: {
+        secs: number;
+        nanos: number;
+    };
 }
 
 /**
