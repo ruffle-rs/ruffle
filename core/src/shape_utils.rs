@@ -43,9 +43,6 @@ pub fn calculate_shape_bounds(shape: &mut Shape) {
                 if let Some((move_x, move_y)) = style_change.move_to {
                     x = move_x;
                     y = move_y;
-                    // TODO: remove?
-                    update_rect(&mut shape_bounds, x, y, stroke_width);
-                    update_rect(&mut edge_bounds, x, y, Twips::zero());
                 }
 
                 if let Some(i) = style_change.line_style {
@@ -61,6 +58,8 @@ pub fn calculate_shape_bounds(shape: &mut Shape) {
                 }
             }
             swf::ShapeRecord::StraightEdge { delta_x, delta_y } => {
+                update_rect(&mut shape_bounds, x, y, radius);
+                update_rect(&mut edge_bounds, x, y, Twips::zero());
                 x += *delta_x;
                 y += *delta_y;
                 update_rect(&mut shape_bounds, x, y, radius);
@@ -72,6 +71,8 @@ pub fn calculate_shape_bounds(shape: &mut Shape) {
                 anchor_delta_x,
                 anchor_delta_y,
             } => {
+                update_rect(&mut shape_bounds, x, y, radius);
+                update_rect(&mut edge_bounds, x, y, Twips::zero());
                 x += *control_delta_x;
                 y += *control_delta_y;
                 update_rect(&mut shape_bounds, x, y, radius);
@@ -780,8 +781,8 @@ pub fn shape_hit_test(
     let mut y = Twips::new(0);
     let mut winding = 0;
 
-    let mut has_fill_style0: bool = false;
-    let mut has_fill_style1: bool = false;
+    let mut has_fill_style0 = false;
+    let mut has_fill_style1 = false;
 
     let min_width = f64::from(stroke_minimum_width(local_matrix));
     let mut stroke_width = None;
