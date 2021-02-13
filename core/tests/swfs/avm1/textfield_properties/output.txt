@@ -38,3 +38,8 @@ undefined
 // txt.textColor:
 4210752
 
+// txt.background:
+false
+// txt.background = true:
+true
+
