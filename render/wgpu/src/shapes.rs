@@ -6,7 +6,7 @@ use ruffle_core::backend::audio::swf::CharacterId;
 use wgpu::BufferSize;
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct GradientUniforms {
     pub colors: [[f32; 4]; 16],
     pub ratios: [f32; 16],
@@ -16,9 +16,6 @@ pub struct GradientUniforms {
     pub interpolation: i32,
     pub focal_point: f32,
 }
-
-unsafe impl Pod for GradientUniforms {}
-unsafe impl Zeroable for GradientUniforms {}
 
 #[derive(Debug)]
 pub struct Mesh {
