@@ -29,13 +29,6 @@ const config = {
     logLevel: "warn",
 };
 
-function hideSample() {
-    sampleFileInput.selectedIndex = 0;
-    authorContainer.style.display = "none";
-    author.textContent = "";
-    author.href = "";
-}
-
 function ensurePlayer() {
     if (player) {
         player.remove();
@@ -44,7 +37,10 @@ function ensurePlayer() {
     player.id = "player";
     main.append(player);
 
-    hideSample();
+    sampleFileInput.selectedIndex = 0;
+    authorContainer.style.display = "none";
+    author.textContent = "";
+    author.href = "";
 }
 
 async function loadFile(file) {

@@ -204,7 +204,6 @@ ruffleShadowTemplate.innerHTML = `
             list-style: none;
             padding: 0;
             margin: 0;
-            display: none;
         }
 
         #context-menu .menu_item {

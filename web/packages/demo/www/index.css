@@ -31,10 +31,11 @@ body {
     z-index: 1;
     pointer-events: none;
     border: 8px dashed var(--ruffle-orange);
-    border-radius: 35px;
+    border-radius: 30px;
     opacity: 0;
     transition: opacity 0.3s ease-in;
     display: none;
+    margin: 10px 5px;
 }
 
 #overlay.drag {
@@ -146,6 +147,6 @@ body {
 
     #nav {
         min-height: 85px;
-        flex-direction: column;
+        flex-flow: column;
     }
 }
