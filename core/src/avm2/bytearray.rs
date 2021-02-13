@@ -30,7 +30,7 @@ pub struct ByteArrayStorage {
     shareable: bool,
 }
 
-impl<'gc> ByteArrayStorage {
+impl ByteArrayStorage {
     /// Create a new ByteArrayStorage
     pub fn new() -> ByteArrayStorage {
         ByteArrayStorage {
