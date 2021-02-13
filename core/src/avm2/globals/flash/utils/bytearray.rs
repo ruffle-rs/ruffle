@@ -605,10 +605,10 @@ pub fn write_multibyte<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_string(activation)?;
-        let mut charset_label = "utf-8";
-        if let Some(Value::String(charset)) = args.get(1) {
-            charset_label = charset;
-        }
+        let charset_label = args
+            .get(1)
+            .unwrap_or(&AvmString::new(activation.context.gc_context, "UTF-8").into())
+            .coerce_to_string(activation)?;
         let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
         let (encoded_bytes, _, _) = encoder.encode(string.as_str());
         bytearray.write_bytes(&encoded_bytes.into_owned());
@@ -629,10 +629,10 @@ pub fn read_multibyte<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
-        let mut charset_label = "utf-8";
-        if let Some(Value::String(charset)) = args.get(1) {
-            charset_label = charset;
-        }
+        let charset_label = args
+            .get(1)
+            .unwrap_or(&AvmString::new(activation.context.gc_context, "UTF-8").into())
+            .coerce_to_string(activation)?;
         if let Ok(bytes) = bytearray.read_exactly(len as usize) {
             let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
             let (decoded_str, _, _) = encoder.decode(bytes);
