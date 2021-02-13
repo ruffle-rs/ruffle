@@ -250,7 +250,7 @@ pub fn bytes_available<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn bytes_length<'gc>(
+pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -261,7 +261,7 @@ pub fn bytes_length<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn set_bytes_length<'gc>(
+pub fn set_length<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -910,12 +910,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     class.write(mc).define_instance_trait(Trait::from_getter(
         QName::new(Namespace::as3_namespace(), "length"),
-        Method::from_builtin(bytes_length),
+        Method::from_builtin(length),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_setter(
         QName::new(Namespace::as3_namespace(), "length"),
-        Method::from_builtin(set_bytes_length),
+        Method::from_builtin(set_length),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_getter(
