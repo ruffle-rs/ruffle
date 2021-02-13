@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
@@ -750,6 +750,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         Method::from_builtin(class_init),
         mc,
     );
+
+    class.write(mc).set_attributes(ClassAttributes::SEALED);
 
     class.write(mc).define_instance_trait(Trait::from_method(
         QName::new(Namespace::as3_namespace(), "writeByte"),
