@@ -104,6 +104,7 @@ pub struct SystemPrototypes<'gc> {
     pub display_object: Object<'gc>,
     pub shape: Object<'gc>,
     pub point: Object<'gc>,
+    pub textfield: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -143,6 +144,7 @@ impl<'gc> SystemPrototypes<'gc> {
             display_object: empty,
             shape: empty,
             point: empty,
+            textfield: empty,
         }
     }
 }
@@ -695,7 +697,13 @@ pub fn load_player_globals<'gc>(
     )?;
 
     // package `flash.text`
-    class(
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
+        .textfield = class(
         activation,
         flash::text::textfield::create_class(mc),
         implicit_deriver,
