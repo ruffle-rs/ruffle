@@ -7,8 +7,7 @@
         "16": "icons/16.png",
         "32": "icons/32.png",
         "48": "icons/48.png",
-        "128": "icons/128.png",
-        "180": "icons/180.png"
+        "128": "icons/128.png"
     },
     "permissions": [ "storage" ],
     "content_scripts": [
