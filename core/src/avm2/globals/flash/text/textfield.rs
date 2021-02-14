@@ -4,10 +4,14 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::Object;
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::display_object::EditText;
+use crate::tag_utils::SwfMovie;
+use crate::vminterface::AvmType;
 use gc_arena::{GcCell, MutationContext};
+use std::sync::Arc;
 
 /// Implements `flash.text.TextField`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -17,6 +21,23 @@ pub fn instance_init<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
+
+        if this.as_display_object().is_none() {
+            let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
+            let new_do = EditText::new(
+                &mut activation.context,
+                movie.clone(),
+                0.0,
+                0.0,
+                100.0,
+                100.0,
+            );
+
+            let movie_library = activation.context.library.library_for_movie_mut(movie);
+            movie_library.check_avm_type(AvmType::Avm2).unwrap();
+
+            this.init_display_object(activation.context.gc_context, new_do.into());
+        }
     }
 
     Ok(Value::Undefined)
