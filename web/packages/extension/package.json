@@ -1,11 +1,13 @@
 {
     "name": "ruffle-extension",
     "version": "0.1.0",
-    "description": "Extension packaging for Ruffle Flash Emulator",
+    "description": "Extension packaging for Ruffle Flash emulator",
     "license": "(MIT OR Apache-2.0)",
     "private": true,
     "scripts": {
-        "build": "node tools/build_all.js"
+        "build": "npm run build:generic && npm run build:firefox",
+        "build:generic": "node tools/build_generic.js",
+        "build:firefox": "node tools/build_firefox.js"
     },
     "dependencies": {
         "ruffle-core": "^0.1.0"

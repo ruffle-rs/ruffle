@@ -6,12 +6,17 @@ const webpack_config = require("../webpack.config");
 
 function build() {
     return new Promise((resolve, reject) => {
-        const compiler = webpack(webpack_config());
-        compiler.run((err) => {
+        webpack(webpack_config(), (err, stats) => {
             if (err) {
-                return reject(err);
+                console.error(err);
+                reject();
+                return;
             }
-
+            if (stats.hasErrors()) {
+                console.error(stats.toString({ colors: true }));
+                reject();
+                return;
+            }
             resolve();
         });
     });
@@ -26,27 +31,26 @@ async function zip(destination, manifest) {
     const output = fs.createWriteStream(destination);
     const archive = archiver("zip", {});
 
-    output.on("close", function () {
+    output.on("close", () => {
         console.log(
-            `Extension is ${archive.pointer()} total bytes when packaged`
+            `Extension is ${archive.pointer()} total bytes when packaged.`
         );
     });
 
-    archive.on("error", function (err) {
+    archive.on("error", (err) => {
         throw err;
     });
 
-    archive.on("warning", function (err) {
-        if (err.code === "ENOENT") {
-            console.warn(`Warning whilst zipping extension: ${err}`);
-        } else {
+    archive.on("warning", (err) => {
+        if (err.code !== "ENOENT") {
             throw err;
         }
+        console.warn(`Warning whilst zipping extension: ${err}`);
     });
 
     archive.pipe(output);
 
-    archive.directory(path.resolve(__dirname, `../assets`), "");
+    archive.directory(path.resolve(__dirname, "../assets"), "");
     archive.append(Buffer.from(JSON.stringify(manifest)), {
         name: "manifest.json",
     });
