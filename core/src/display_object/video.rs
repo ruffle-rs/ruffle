@@ -72,7 +72,7 @@ pub enum VideoStream {
 #[collect(require_static)]
 pub enum VideoSource {
     /// A video bitstream embedded inside of a SWF movie.
-    SWF {
+    Swf {
         /// The movie that defined this video stream.
         movie: Arc<SwfMovie>,
 
@@ -96,7 +96,7 @@ impl<'gc> Video<'gc> {
     ) -> Self {
         let source = GcCell::allocate(
             mc,
-            VideoSource::SWF {
+            VideoSource::Swf {
                 movie,
                 streamdef,
                 frames: BTreeMap::new(),
@@ -128,7 +128,7 @@ impl<'gc> Video<'gc> {
             .write(context.gc_context))
         .borrow_mut()
         {
-            VideoSource::SWF {
+            VideoSource::Swf {
                 movie,
                 streamdef: _streamdef,
                 frames,
@@ -175,7 +175,7 @@ impl<'gc> Video<'gc> {
         }
 
         let res = match &*source.read() {
-            VideoSource::SWF {
+            VideoSource::Swf {
                 movie,
                 streamdef,
                 frames,
@@ -234,7 +234,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         let mut write = self.0.write(context.gc_context);
 
         let (stream, movie, keyframes) = match &*write.source.read() {
-            VideoSource::SWF {
+            VideoSource::Swf {
                 streamdef,
                 movie,
                 frames,
@@ -325,7 +325,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
     fn id(&self) -> CharacterId {
         match (*self.0.read().source.read()).borrow() {
-            VideoSource::SWF { streamdef, .. } => streamdef.id,
+            VideoSource::Swf { streamdef, .. } => streamdef.id,
         }
     }
 
@@ -333,7 +333,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         let mut bounding_box = BoundingBox::default();
 
         match (*self.0.read().source.read()).borrow() {
-            VideoSource::SWF { streamdef, .. } => {
+            VideoSource::Swf { streamdef, .. } => {
                 bounding_box.set_width(Twips::from_pixels(streamdef.width as f64));
                 bounding_box.set_height(Twips::from_pixels(streamdef.height as f64));
             }
