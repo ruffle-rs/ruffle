@@ -213,15 +213,11 @@ function setMessageListener(listener) {
     }
 }
 
-function getExtensionUrl() {
-    if (chrome && chrome.extension && chrome.extension.getURL) {
-        return chrome.extension
-            .getURL("dist/ruffle.js")
-            .replace("dist/ruffle.js", "");
+function getExtensionUrl(path) {
+    if (chrome && chrome.runtime && chrome.runtime.getURL) {
+        return chrome.runtime.getURL(path);
     } else if (browser && browser.runtime && browser.runtime.getURL) {
-        return browser.runtime
-            .getURL("dist/ruffle.js")
-            .replace("dist/ruffle.js", "");
+        return browser.runtime.getURL(path);
     } else {
         console.error("Couldn't get extension URL");
     }

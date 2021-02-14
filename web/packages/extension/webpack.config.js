@@ -16,7 +16,7 @@ module.exports = (env, argv) => {
         entry: {
             main: path.resolve(__dirname, "src/main.js"),
             options: path.resolve(__dirname, "src/options.js"),
-            lv0: path.resolve(__dirname, "src/lv0.js"),
+            content: path.resolve(__dirname, "src/content.js"),
             ruffle: path.resolve(__dirname, "src/index.js"),
         },
         output: {
@@ -26,6 +26,10 @@ module.exports = (env, argv) => {
         },
         module: {
             rules: [
+                {
+                    resource: path.resolve(__dirname, "src/pluginPolyfill.js"),
+                    type: "asset/source",
+                },
                 {
                     test: /\.wasm$/i,
                     use: ["file-loader"],
