@@ -72,7 +72,7 @@ if (typeof chrome !== "undefined") {
         getURL: (path) => chrome.runtime.getURL(path),
     };
 
-    openOptionsPage = () => chrome.tabs.create({ url: "/settings.html" });
+    openOptionsPage = () => chrome.tabs.create({ url: "/options.html" });
 } else if (typeof browser !== "undefined") {
     i18n = {
         getMessage: (name) => browser.i18n.getMessage(name),
