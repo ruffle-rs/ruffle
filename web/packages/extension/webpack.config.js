@@ -14,16 +14,14 @@ module.exports = (env, argv) => {
     return {
         mode,
         entry: {
-            ruffle: path.resolve(__dirname, "src/index.js"),
             main: path.resolve(__dirname, "src/main.js"),
             options: path.resolve(__dirname, "src/options.js"),
             lv0: path.resolve(__dirname, "src/lv0.js"),
+            ruffle: path.resolve(__dirname, "src/index.js"),
         },
         output: {
-            path: path.resolve(__dirname, "assets/dist"),
-            filename: "[name].js",
+            path: path.resolve(__dirname, "assets/dist/"),
             publicPath: "",
-            chunkFilename: "core.ruffle.js",
             clean: true,
         },
         module: {
