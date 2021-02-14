@@ -17,7 +17,7 @@ module.exports = (env, argv) => {
             main: path.resolve(__dirname, "src/main.js"),
             options: path.resolve(__dirname, "src/options.js"),
             content: path.resolve(__dirname, "src/content.js"),
-            ruffle: path.resolve(__dirname, "src/index.js"),
+            ruffle: path.resolve(__dirname, "src/ruffle.js"),
         },
         output: {
             path: path.resolve(__dirname, "assets/dist/"),

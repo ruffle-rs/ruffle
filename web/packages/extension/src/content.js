@@ -12,11 +12,9 @@ function injectScriptURL(url) {
     (document.head || document.documentElement).append(script);
 }
 
+// TODO: read settings
 const isEnabled = true;
 if (isEnabled) {
-    injectScriptRaw(require("./pluginPolyfill"));
-    const path = "dist/ruffle.js";
-    const url = getExtensionUrl(path);
-    injectScriptRaw(`const ruffleRuntimePath = ${JSON.stringify(url.replace(path, ""))}`);
-    injectScriptURL(url);
+    injectScriptRaw(require("./pluginPolyfill")); // TODO: use plugin-polyfill.ts
+    injectScriptURL(getExtensionUrl("dist/ruffle.js"));
 }
