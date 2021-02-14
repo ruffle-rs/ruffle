@@ -1,7 +1,14 @@
 //! `EditText` display object and support code.
 
-use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::{Avm1, AvmString, Object, StageObject, TObject, Value};
+use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
+use crate::avm1::{
+    Avm1, AvmString, Object as Avm1Object, StageObject as Avm1StageObject, TObject as Avm1TObject,
+    Value as Avm1Value,
+};
+use crate::avm2::{
+    Activation as Avm2Activation, Namespace as Avm2Namespace, Object as Avm2Object,
+    QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject,
+};
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
@@ -15,7 +22,7 @@ use crate::string_utils;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
-use crate::vminterface::Instantiator;
+use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use crate::xml::XmlDocument;
 use chrono::Utc;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -126,13 +133,13 @@ pub struct EditTextData<'gc> {
     bounds: BoundingBox,
 
     /// The AVM1 object handle
-    object: Option<Object<'gc>>,
+    object: Option<AvmObject<'gc>>,
 
     /// The variable path that this text field is bound to (AVM1 only).
     variable: Option<String>,
 
     /// The display object that the variable binding is bound to.
-    bound_stage_object: Option<StageObject<'gc>>,
+    bound_stage_object: Option<Avm1StageObject<'gc>>,
 
     /// Whether this text field is firing is variable binding (to prevent infinite loops).
     firing_variable_binding: bool,
@@ -635,7 +642,11 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub fn set_variable(self, variable: Option<String>, activation: &mut Activation<'_, 'gc, '_>) {
+    pub fn set_variable(
+        self,
+        variable: Option<String>,
+        activation: &mut Avm1Activation<'_, 'gc, '_>,
+    ) {
         // Clear previous binding.
         if let Some(stage_object) = self
             .0
@@ -945,7 +956,7 @@ impl<'gc> EditText<'gc> {
     /// This is called when the text field is created, and, if the text field is in the unbound list, anytime a display object is created.
     pub fn try_bind_text_field_variable(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Avm1Activation<'_, 'gc, '_>,
         set_initial_value: bool,
     ) -> bool {
         if let Some(var_path) = self.variable() {
@@ -1026,7 +1037,7 @@ impl<'gc> EditText<'gc> {
 
     /// Propagates a text change to the bound display object.
     ///
-    pub fn propagate_text_binding(self, activation: &mut Activation<'_, 'gc, '_>) {
+    pub fn propagate_text_binding(self, activation: &mut Avm1Activation<'_, 'gc, '_>) {
         if !self.0.read().firing_variable_binding {
             self.0
                 .write(activation.context.gc_context)
@@ -1205,7 +1216,7 @@ impl<'gc> EditText<'gc> {
             if changed {
                 let globals = context.avm1.global_object_cell();
                 let swf_version = context.swf.header().version;
-                let mut activation = Activation::from_nothing(
+                let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Propagate Text Binding]"),
                     swf_version,
@@ -1218,16 +1229,15 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    fn initialize_as_broadcaster(&self, activation: &mut Activation<'_, 'gc, '_>) {
-        let write = self.0.write(activation.context.gc_context);
-        if let Some(object) = write.object {
+    fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc, '_>) {
+        if let Avm1Value::Object(object) = self.object() {
             activation.context.avm1.broadcaster_functions().initialize(
                 activation.context.gc_context,
                 object,
                 activation.context.avm1.prototypes().array,
             );
 
-            if let Ok(Value::Object(listeners)) = object.get("_listeners", activation) {
+            if let Ok(Avm1Value::Object(listeners)) = object.get("_listeners", activation) {
                 if listeners.length() == 0 {
                     // Add the TextField as its own listener to match Flash's behavior
                     // This makes it so that the TextField's handlers are called before other listeners'.
@@ -1242,15 +1252,86 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    fn on_changed(&self, activation: &mut Activation<'_, 'gc, '_>) {
-        let object = self.0.read().object;
-        if let Some(object) = object {
+    fn on_changed(&self, activation: &mut Avm1Activation<'_, 'gc, '_>) {
+        if let Avm1Value::Object(object) = self.object() {
             let _ = object.call_method(
                 "broadcastMessage",
                 &["onChanged".into(), object.into()],
                 activation,
             );
         }
+    }
+
+    /// Construct the text field's AVM1 representation.
+    fn construct_as_avm1_object(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        display_object: DisplayObject<'gc>,
+        run_frame: bool,
+    ) {
+        let mut text = self.0.write(context.gc_context);
+        if text.object.is_none() {
+            let object: Avm1Object<'gc> = Avm1StageObject::for_display_object(
+                context.gc_context,
+                display_object,
+                Some(context.avm1.prototypes().text_field),
+            )
+            .into();
+
+            text.object = Some(object.into());
+        }
+        drop(text);
+
+        Avm1::run_with_stack_frame_for_display_object(
+            (*self).into(),
+            context.swf.version(),
+            context,
+            |activation| {
+                // If this text field has a variable set, initialize text field binding.
+                if !self.try_bind_text_field_variable(activation, true) {
+                    activation.context.unbound_text_fields.push(*self);
+                }
+                // People can bind to properties of TextFields the same as other display objects.
+                self.bind_text_field_variables(activation);
+
+                self.initialize_as_broadcaster(activation);
+            },
+        );
+
+        if run_frame {
+            self.run_frame(context);
+        }
+    }
+
+    /// Construct the text field's AVM2 representation.
+    fn construct_as_avm2_object(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        display_object: DisplayObject<'gc>,
+    ) {
+        let mut proto = context.avm2.prototypes().textfield;
+        let object: Avm2Object<'gc> =
+            Avm2StageObject::for_display_object(context.gc_context, display_object, proto).into();
+
+        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+        let constr = proto
+            .get_property(
+                proto,
+                &Avm2QName::new(Avm2Namespace::public(), "constructor"),
+                &mut activation,
+            )
+            .unwrap()
+            .coerce_to_object(&mut activation)
+            .unwrap();
+
+        if let Err(e) = constr.call(Some(object), &[], &mut activation, Some(proto)) {
+            log::error!(
+                "Got {} when constructing AVM2 side of dynamic text field",
+                e
+            );
+        }
+
+        self.0.write(activation.context.gc_context).object = Some(object.into());
     }
 }
 
@@ -1277,24 +1358,13 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        _init_object: Option<Object<'gc>>,
+        _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
         self.set_default_instance_name(context);
 
         let mut text = self.0.write(context.gc_context);
-        if text.object.is_none() {
-            let object = StageObject::for_display_object(
-                context.gc_context,
-                display_object,
-                Some(context.avm1.prototypes().text_field),
-            )
-            .into();
-
-            text.object = Some(object);
-        }
-
         text.document = text
             .document
             .as_node()
@@ -1307,33 +1377,33 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
         drop(text);
 
-        Avm1::run_with_stack_frame_for_display_object(
-            (*self).into(),
-            context.swf.version(),
-            context,
-            |activation| {
-                // If this text field has a variable set, initialize text field binding.
-                if !self.try_bind_text_field_variable(activation, true) {
-                    activation.context.unbound_text_fields.push(*self);
-                }
-                // People can bind to properties of TextFields the same as other display objects.
-                self.bind_text_field_variables(activation);
+        let movie = self.movie().unwrap();
+        let library = context.library.library_for_movie_mut(movie);
+        let vm_type = library.avm_type();
 
-                self.initialize_as_broadcaster(activation);
-            },
-        );
-
-        if run_frame {
-            self.run_frame(context);
+        if vm_type == AvmType::Avm2 {
+            self.construct_as_avm2_object(context, display_object);
+        } else if vm_type == AvmType::Avm1 {
+            self.construct_as_avm1_object(context, display_object, run_frame);
         }
     }
 
-    fn object(&self) -> Value<'gc> {
+    fn object(&self) -> Avm1Value<'gc> {
         self.0
             .read()
             .object
-            .map(Value::from)
-            .unwrap_or(Value::Undefined)
+            .and_then(|o| o.as_avm1_object().ok())
+            .map(Avm1Value::from)
+            .unwrap_or(Avm1Value::Undefined)
+    }
+
+    fn object2(&self) -> Avm2Value<'gc> {
+        self.0
+            .read()
+            .object
+            .and_then(|o| o.as_avm2_object().ok())
+            .map(Avm2Value::from)
+            .unwrap_or(Avm2Value::Undefined)
     }
 
     fn self_bounds(&self) -> BoundingBox {
@@ -1512,7 +1582,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         // Unregister any text fields that may be bound to *this* text field.
-        if let Value::Object(object) = self.object() {
+        if let Avm1Value::Object(object) = self.object() {
             if let Some(stage_object) = object.as_stage_object() {
                 stage_object.unregister_text_field_bindings(context);
             }
