@@ -46,7 +46,7 @@ async function zip(destination, manifest) {
 
     archive.pipe(output);
 
-    archive.directory(path.resolve(__dirname, `../build`), "");
+    archive.directory(path.resolve(__dirname, `../assets`), "");
     archive.append(Buffer.from(JSON.stringify(manifest)), {
         name: "manifest.json",
     });

@@ -20,7 +20,7 @@ module.exports = (env, argv) => {
             lv0: path.resolve(__dirname, "src/lv0.js"),
         },
         output: {
-            path: path.resolve(__dirname, "build/dist"),
+            path: path.resolve(__dirname, "assets/dist"),
             filename: "[name].js",
             publicPath: "",
             chunkFilename: "core.ruffle.js",
