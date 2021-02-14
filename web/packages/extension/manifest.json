@@ -25,8 +25,5 @@
         "default_popup": "popup.html",
         "browser_style": true
     },
-    "options_ui": {
-        "page": "settings.html",
-        "open_in_tab": true
-    }
+    "options_page": "options.html"
 }

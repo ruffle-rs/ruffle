@@ -14,10 +14,10 @@ module.exports = (env, argv) => {
     return {
         mode,
         entry: {
-            ruffle: path.resolve(__dirname, "js/index.js"),
-            main: path.resolve(__dirname, "js/main.js"),
-            settings: path.resolve(__dirname, "js/settings.js"),
-            lv0: path.resolve(__dirname, "js/lv0.js"),
+            ruffle: path.resolve(__dirname, "src/index.js"),
+            main: path.resolve(__dirname, "src/main.js"),
+            options: path.resolve(__dirname, "src/options.js"),
+            lv0: path.resolve(__dirname, "src/lv0.js"),
         },
         output: {
             path: path.resolve(__dirname, "build/dist"),

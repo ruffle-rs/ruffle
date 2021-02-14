@@ -183,7 +183,7 @@ function tabSendmessage() {
 
 function openSettingsPage() {
     if (chrome && chrome.tabs && chrome.tabs.create) {
-        chrome.tabs.create({ url: "/settings.html" });
+        chrome.tabs.create({ url: "/options.html" });
         /* Open the settings page manually */
     } else if (browser && browser.runtime && browser.runtime.openOptionsPage) {
         browser.runtime.openOptionsPage();
