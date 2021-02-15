@@ -137,7 +137,7 @@ impl<'gc> Button<'gc> {
             self.iter_render_list().map(|o| o.depth()).collect();
 
         let movie = self.movie().unwrap();
-        let level = self.level();
+        let level_id = self.level_id();
         let mut write = self.0.write(context.gc_context);
         write.state = state;
         let swf_state = match state {
@@ -170,7 +170,7 @@ impl<'gc> Button<'gc> {
                         {
                             // New child that did not previously exist, create it.
                             child.set_parent(context.gc_context, Some(self.into()));
-                            child.set_level(context.gc_context, level);
+                            child.set_level_id(context.gc_context, level_id);
                             child.set_depth(context.gc_context, record.depth.into());
 
                             children.push((child, record.depth));
@@ -295,7 +295,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
                         Ok(child) => {
                             child.set_matrix(context.gc_context, &record.matrix);
                             child.set_parent(context.gc_context, Some(self_display_object));
-                            child.set_level(context.gc_context, self_display_object.level());
+                            child.set_level_id(context.gc_context, self_display_object.level_id());
                             child.set_depth(context.gc_context, record.depth.into());
                             new_children.push((child, record.depth.into()));
                         }

@@ -16,11 +16,11 @@ use crate::backend::{
 use crate::display_object::{EditText, MovieClip, SoundTransform};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
+use crate::levels::{Level, LevelsData};
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
 use crate::prelude::*;
-use crate::levels::{LevelsData, Level};
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::transform::TransformStack;
 use core::fmt;
@@ -168,7 +168,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             self.audio,
             self.gc_context,
             self.action_queue,
-            self.levels.level_at(0).unwrap(),
+            self.levels.at(0).unwrap(),
         );
     }
 
@@ -238,13 +238,13 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 
     /// Methods to add/remove nodes to/from the global execution list.
     pub fn add_to_execution_list(&mut self, node: DisplayObject<'gc>) {
-        if let Some(level) = self.levels.get_mut(node.level()) {
+        if let Some(level) = self.levels.get_mut(node.level_id()) {
             let head = level.last_child();
             head.set_prev_exec(self.gc_context, Some(node));
             node.set_next_exec(self.gc_context, Some(head));
             level.set_last_child(node);
         } else {
-            self.levels.push(self.gc_context, &mut Level::new(node));
+            self.levels.insert(self.gc_context, Level::new(node));
         }
     }
 
@@ -268,7 +268,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         node.set_prev_exec(self.gc_context, None);
         node.set_next_exec(self.gc_context, None);
 
-        if let Some(level) = self.levels.get_mut(node.level()) {
+        if let Some(level) = self.levels.get_mut(node.level_id()) {
             if DisplayObject::ptr_eq(level.last_child(), node) {
                 // TODO: can we safely unwrap here?
                 level.set_last_child(next.unwrap());

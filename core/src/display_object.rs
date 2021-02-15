@@ -48,7 +48,7 @@ pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayObject<'gc>>,
     place_frame: u16,
     depth: Depth,
-    level: LevelId,
+    level_id: LevelId,
     transform: Transform,
     name: String,
     clip_depth: Depth,
@@ -90,7 +90,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             parent: Default::default(),
             place_frame: Default::default(),
             depth: Default::default(),
-            level: Default::default(),
+            level_id: Default::default(),
             transform: Default::default(),
             name: Default::default(),
             clip_depth: Default::default(),
@@ -124,12 +124,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.depth = depth;
     }
 
-    fn level(&self) -> LevelId {
-        self.level
+    fn level_id(&self) -> LevelId {
+        self.level_id
     }
 
-    fn set_level(&mut self, level: LevelId) {
-        self.level = level;
+    fn set_level_id(&mut self, id: LevelId) {
+        self.level_id = id;
     }
 
     fn place_frame(&self) -> u16 {
@@ -456,8 +456,8 @@ pub trait TDisplayObject<'gc>:
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth;
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
-    fn level(&self) -> LevelId;
-    fn set_level(&self, gc_context: MutationContext<'gc, '_>, level: LevelId);
+    fn level_id(&self) -> LevelId;
+    fn set_level_id(&self, gc_context: MutationContext<'gc, '_>, id: LevelId);
 
     /// The untransformed inherent bounding box of this object.
     /// These bounds do **not** include child DisplayObjects.
@@ -762,7 +762,7 @@ pub trait TDisplayObject<'gc>:
             };
             if is_level {
                 if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<LevelId>().ok()) {
-                    return context.levels.level_at(level_id);
+                    return context.levels.at(level_id);
                 }
             }
         }
@@ -1285,11 +1285,11 @@ macro_rules! impl_display_object_sansbounds {
         fn set_depth(&self, gc_context: gc_arena::MutationContext<'gc, '_>, depth: Depth) {
             self.0.write(gc_context).$field.set_depth(depth)
         }
-        fn level(&self) -> LevelId {
-            self.0.read().$field.level()
+        fn level_id(&self) -> LevelId {
+            self.0.read().$field.level_id()
         }
-        fn set_level(&self, gc_context: gc_arena::MutationContext<'gc, '_>, level: LevelId) {
-            self.0.write(gc_context).$field.set_level(level)
+        fn set_level_id(&self, gc_context: gc_arena::MutationContext<'gc, '_>, id: LevelId) {
+            self.0.write(gc_context).$field.set_level_id(id)
         }
         fn place_frame(&self) -> u16 {
             self.0.read().$field.place_frame()
