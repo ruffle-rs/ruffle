@@ -12,7 +12,7 @@
         "@wdio/mocha-framework": "^7.0.3",
         "@wdio/spec-reporter": "^6.1.12",
         "@wdio/static-server-service": "^6.0.16",
-        "@wdio/sync": "^6.1.8",
+        "@wdio/sync": "^7.0.3",
         "archiver": "^5.0.0",
         "babel-eslint": "^10.1.0",
         "chai": "^4.2.0",
