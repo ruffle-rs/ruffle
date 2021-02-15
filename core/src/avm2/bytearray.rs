@@ -48,7 +48,7 @@ impl ByteArrayStorage {
         self.position += 1;
         if self.position > bytes_len {
             self.bytes
-                .resize(bytes_len + (self.position - bytes_len), 0);
+                .resize(self.position, 0);
         }
         self.bytes[self.position - 1] = byte;
     }
