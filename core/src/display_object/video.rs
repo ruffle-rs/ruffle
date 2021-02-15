@@ -160,9 +160,12 @@ impl<'gc> Video<'gc> {
             return;
         };
 
-        {
-            let VideoSource::SWF { movie: _, streamdef, frames: _ } = &*read.source.read();
-            frame_id = frame_id % streamdef.num_frames as u32;
+        let num_frames = match &*read.source.read() {
+            VideoSource::Swf { streamdef, .. } => Some(streamdef.num_frames),
+        };
+
+        if let Some(num_frames) = num_frames {
+            frame_id %= num_frames as u32;
         }
 
         let last_frame = read.decoded_frame.as_ref().map(|(lf, _)| *lf);
