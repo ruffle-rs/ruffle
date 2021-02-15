@@ -10,7 +10,7 @@
         "@wdio/cli": "^7.0.3",
         "@wdio/local-runner": "^6.1.12",
         "@wdio/mocha-framework": "^7.0.3",
-        "@wdio/spec-reporter": "^6.1.12",
+        "@wdio/spec-reporter": "^7.0.4",
         "@wdio/static-server-service": "^6.0.16",
         "@wdio/sync": "^7.0.3",
         "archiver": "^5.0.0",
