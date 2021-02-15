@@ -1706,7 +1706,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             return ClipEventResult::NotHandled;
         }
 
-        if !self.enabled() && !matches!(event, ClipEvent::KeyPress { .. }) {
+        if !self.enabled()
+            && event.is_button_event()
+            && !matches!(event, ClipEvent::KeyPress { .. })
+        {
             return ClipEventResult::NotHandled;
         }
 
