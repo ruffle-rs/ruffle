@@ -112,9 +112,9 @@ pub fn read_bytes<'gc>(
         .as_bytearray_mut(activation.context.gc_context)
         .unwrap()
         .position();
-    let mut offset = 0;
+    let mut merging_offset = 0;
     if let Some(Value::Object(second_array)) = args.get(0) {
-        offset = args
+        let offset = args
             .get(1)
             .unwrap_or(&Value::Unsigned(0))
             .coerce_to_u32(activation)? as usize;
@@ -141,13 +141,13 @@ pub fn read_bytes<'gc>(
         } else {
             current_bytes[position..].to_vec()
         };
-
+        merging_offset = to_write.len();
         merging_storage.write_bytes_at(&to_write, offset);
     }
     this.unwrap()
         .as_bytearray_mut(activation.context.gc_context)
         .unwrap()
-        .add_position(offset);
+        .add_position(merging_offset);
     Ok(Value::Undefined)
 }
 pub fn write_utf<'gc>(
