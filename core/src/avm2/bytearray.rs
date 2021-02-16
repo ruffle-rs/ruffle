@@ -337,13 +337,4 @@ impl ByteArrayStorage {
     pub fn set_endian(&mut self, new_endian: Endian) {
         self.endian = new_endian;
     }
-
-    pub fn reborrow(&self) -> ByteArrayStorage {
-        ByteArrayStorage {
-            bytes: self.bytes.clone(),
-            position: self.position,
-            endian: self.endian.clone(),
-            shareable: self.shareable,
-        }
-    }
 }

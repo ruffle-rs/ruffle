@@ -62,8 +62,8 @@ pub fn write_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(Value::Object(second_array)) = args.get(0) {
-        let combining_storage = second_array.as_bytearray().unwrap().reborrow();
-        let combining_bytes = combining_storage.bytes();
+        let combining_bytes = second_array.as_bytearray().unwrap().bytes().clone();
+
         let offset = args
             .get(1)
             .unwrap_or(&Value::Unsigned(0))
@@ -101,13 +101,19 @@ pub fn read_bytes<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let mut merging_buffer: Vec<u8> = Vec::new();
-    let mut offset = 0;
-    if let Some(mut bytearray) = this
+    let current_bytes = this
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
-    {
-        let combining_bytes = bytearray.bytes();
+        .unwrap()
+        .bytes()
+        .clone();
+    let position = this
+        .unwrap()
+        .as_bytearray_mut(activation.context.gc_context)
+        .unwrap()
+        .position();
+    let mut offset = 0;
+    if let Some(Value::Object(second_array)) = args.get(0) {
         offset = args
             .get(1)
             .unwrap_or(&Value::Unsigned(0))
@@ -117,34 +123,33 @@ pub fn read_bytes<'gc>(
             .unwrap_or(&Value::Unsigned(0))
             .coerce_to_u32(activation)? as usize;
 
-        if bytearray.position() + length > combining_bytes.len() {
+        if position + length > current_bytes.len() {
             log::error!("ByteArray: Reached EOF");
             return Ok(Value::Undefined);
         }
-
-        merging_buffer = if length != 0 {
-            combining_bytes[bytearray.position()..length + bytearray.position()].to_vec()
-        } else {
-            combining_bytes[bytearray.position()..].to_vec()
-        };
-        {
-            bytearray.add_position(merging_buffer.len());
-        }
-    }
-    // We borrow the 2 bytearrays seperately in case they are trying to add 2 of the same bytearrays together (would panic otherwise)
-    if let Some(Value::Object(second_array)) = args.get(0) {
         let mut merging_storage = second_array
             .as_bytearray_mut(activation.context.gc_context)
             .unwrap();
+
         // Offset should not be greater then the buffer
         if merging_storage.bytes().len() < offset {
             return Ok(Value::Undefined);
         }
-        merging_storage.write_bytes_at(&merging_buffer, offset);
+
+        let to_write = if length != 0 {
+            current_bytes[position..length + position].to_vec()
+        } else {
+            current_bytes[position..].to_vec()
+        };
+
+        merging_storage.write_bytes_at(&to_write, offset);
     }
+    this.unwrap()
+        .as_bytearray_mut(activation.context.gc_context)
+        .unwrap()
+        .add_position(offset);
     Ok(Value::Undefined)
 }
-
 pub fn write_utf<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
