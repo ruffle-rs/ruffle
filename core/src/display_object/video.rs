@@ -149,6 +149,12 @@ impl<'gc> Video<'gc> {
     }
 
     /// Seek to a particular frame in the video stream.
+    ///
+    /// This function ensures that the given `frame_id` is valid by first
+    /// wrapping it to the underlying video stream's boundaries, and then
+    /// snapping it to the last independently seekable frame. Then, all frames
+    /// from that keyframe up to the (wrapped) requested frame are decoded in
+    /// order. This matches Flash Player behavior.
     pub fn seek(self, context: &mut UpdateContext<'_, 'gc, '_>, mut frame_id: u32) {
         let read = self.0.read();
         if let VideoStream::Uninstantiated(_) = &read.stream {
@@ -208,20 +214,25 @@ impl<'gc> Video<'gc> {
         drop(read);
 
         for fr in sweep_from..=frame_id {
-            self.do_seek(context, fr)
+            self.seek_internal(context, fr)
         }
     }
 
-    /// The internals of `seek` factored out, separate from the sweeping mechanism.
-    fn do_seek(self, context: &mut UpdateContext<'_, 'gc, '_>, frame_id: u32) {
+    /// Decode a single frame of video.
+    ///
+    /// This function makes no attempt to ensure that the proposed seek is
+    /// valid, hence the fact that it's not `pub`. To do a seek that accounts
+    /// for keyframes, see `Video.seek`.
+    fn seek_internal(self, context: &mut UpdateContext<'_, 'gc, '_>, frame_id: u32) {
         let read = self.0.read();
         let source = read.source;
         let stream = if let VideoStream::Instantiated(stream) = &read.stream {
             stream
         } else {
-            log::error!("Attempted to sync uninstantiated video stream!");
+            log::error!("Attempted to seek uninstantiated video stream.");
             return;
         };
+
         let res = match &*source.read() {
             VideoSource::Swf {
                 movie,
