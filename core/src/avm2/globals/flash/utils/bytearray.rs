@@ -313,7 +313,11 @@ pub fn set_endian<'gc>(
         {
             "bigEndian" => bytearray.set_endian(Endian::Big),
             "littleEndian" => bytearray.set_endian(Endian::Little),
-            _ => return Err(Box::from("Parameter type must be one of the accepted values.")),
+            _ => {
+                return Err(Box::from(
+                    "Parameter type must be one of the accepted values.",
+                ))
+            }
         }
     }
     Ok(Value::Undefined)
@@ -443,7 +447,7 @@ pub fn read_utf_bytes<'gc>(
         if let Some(Value::Integer(len)) = args.get(0) {
             if *len < 0 {
                 log::error!("ByteArray: Did not get proper length");
-                return Err(Box::from("Reached EOF"))
+                return Err(Box::from("Reached EOF"));
             }
             return Ok(AvmString::new(
                 activation.context.gc_context,

@@ -1,3 +1,4 @@
+use crate::avm2::Error;
 use flate2::read::*;
 use flate2::Compression;
 use gc_arena::Collect;
@@ -5,7 +6,6 @@ use std::cmp;
 use std::convert::{TryFrom, TryInto};
 use std::io;
 use std::io::prelude::*;
-use crate::avm2::Error;
 
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
@@ -24,7 +24,7 @@ pub struct ByteArrayStorage {
     position: usize,
 
     /// This represents what endian to use while reading data.
-    endian: Endian
+    endian: Endian,
 }
 
 impl ByteArrayStorage {
@@ -33,7 +33,7 @@ impl ByteArrayStorage {
         ByteArrayStorage {
             bytes: Vec::new(),
             position: 0,
-            endian: Endian::Big
+            endian: Endian::Big,
         }
     }
 
