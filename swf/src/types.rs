@@ -40,7 +40,7 @@ pub struct Header {
     pub uncompressed_length: u32,
     pub stage_size: Rectangle,
     pub frame_rate: f32,
-    pub num_frames: u16,
+    pub num_frames: FrameNumber,
 }
 
 /// The compression format used internally by the SWF file.
@@ -395,6 +395,7 @@ pub struct FrameLabelData<'a> {
 
 pub type Depth = u16;
 pub type CharacterId = u16;
+pub type FrameNumber = u16;
 
 #[derive(Debug, PartialEq)]
 pub struct PlaceObject<'a> {
@@ -781,7 +782,7 @@ pub struct StartSound {
 #[derive(Debug, PartialEq)]
 pub struct Sprite<'a> {
     pub id: CharacterId,
-    pub num_frames: u16,
+    pub num_frames: FrameNumber,
     pub tags: Vec<Tag<'a>>,
 }
 
@@ -1205,7 +1206,7 @@ pub enum BitmapFormat {
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefineVideoStream {
     pub id: CharacterId,
-    pub num_frames: u16,
+    pub num_frames: FrameNumber,
     pub width: u16,
     pub height: u16,
     pub is_smoothed: bool,
@@ -1235,7 +1236,7 @@ pub enum VideoCodec {
 #[derive(Clone, Debug, PartialEq)]
 pub struct VideoFrame<'a> {
     pub stream_id: CharacterId,
-    pub frame_num: u16,
+    pub frame_num: FrameNumber,
     pub data: &'a [u8],
 }
 

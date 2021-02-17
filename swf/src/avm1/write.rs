@@ -112,11 +112,11 @@ impl<W: Write> Writer<W> {
                 }
             }
             Action::Decrement => self.write_action_header(OpCode::Decrement, 0)?,
-            Action::DefineFunction {
+            Action::DefineFunction(DefineFunction {
                 ref name,
                 ref params,
                 ref actions,
-            } => {
+            }) => {
                 // 1 zero byte for string name, 1 zero byte per param, 2 bytes for # of params,
                 // 2 bytes for code length
                 let len =
@@ -189,19 +189,19 @@ impl<W: Write> Writer<W> {
             Action::GetMember => self.write_action_header(OpCode::GetMember, 0)?,
             Action::GetProperty => self.write_action_header(OpCode::GetProperty, 0)?,
             Action::GetTime => self.write_action_header(OpCode::GetTime, 0)?,
-            Action::GetUrl {
+            Action::GetUrl(GetUrl {
                 ref url,
                 ref target,
-            } => {
+            }) => {
                 self.write_action_header(OpCode::GetUrl, url.len() + target.len() + 2)?;
                 self.write_string(*url)?;
                 self.write_string(*target)?;
             }
-            Action::GetUrl2 {
+            Action::GetUrl2(GetUrl2 {
                 send_vars_method,
                 is_target_sprite,
                 is_load_vars,
-            } => {
+            }) => {
                 self.write_action_header(OpCode::GetUrl2, 1)?;
                 let flags = (match send_vars_method {
                     SendVarsMethod::None => 0,
@@ -216,10 +216,10 @@ impl<W: Write> Writer<W> {
                 self.write_action_header(OpCode::GotoFrame, 2)?;
                 self.write_u16(frame)?;
             }
-            Action::GotoFrame2 {
+            Action::GotoFrame2(GotoFrame2 {
                 set_playing,
                 scene_offset,
-            } => {
+            }) => {
                 if scene_offset != 0 {
                     self.write_action_header(OpCode::GotoFrame2, 3)?;
                     self.write_u8(if set_playing { 0b11 } else { 0b01 })?;
@@ -234,7 +234,7 @@ impl<W: Write> Writer<W> {
                 self.write_string(*label)?;
             }
             Action::Greater => self.write_action_header(OpCode::Greater, 0)?,
-            Action::If { offset } => {
+            Action::If(offset) => {
                 self.write_action_header(OpCode::If, 2)?;
                 self.write_i16(offset)?;
             }
@@ -243,7 +243,7 @@ impl<W: Write> Writer<W> {
             Action::InitArray => self.write_action_header(OpCode::InitArray, 0)?,
             Action::InitObject => self.write_action_header(OpCode::InitObject, 0)?,
             Action::InstanceOf => self.write_action_header(OpCode::InstanceOf, 0)?,
-            Action::Jump { offset } => {
+            Action::Jump(offset) => {
                 self.write_action_header(OpCode::Jump, 2)?;
                 self.write_i16(offset)?;
             }
@@ -369,21 +369,21 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(&action_buf)?;
             }
             Action::TypeOf => self.write_action_header(OpCode::TypeOf, 0)?,
-            Action::WaitForFrame {
+            Action::WaitForFrame(WaitForFrame {
                 frame,
                 num_actions_to_skip,
-            } => {
+            }) => {
                 self.write_action_header(OpCode::WaitForFrame, 3)?;
                 self.write_u16(frame)?;
                 self.write_u8(num_actions_to_skip)?;
             }
-            Action::WaitForFrame2 {
+            Action::WaitForFrame2(WaitForFrame2 {
                 num_actions_to_skip,
-            } => {
+            }) => {
                 self.write_action_header(OpCode::WaitForFrame2, 1)?;
                 self.write_u8(num_actions_to_skip)?;
             }
-            Action::With { ref actions } => {
+            Action::With(ref actions) => {
                 self.write_action_header(OpCode::With, actions.len())?;
                 self.output.write_all(&actions)?;
             }

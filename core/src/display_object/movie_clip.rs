@@ -34,9 +34,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{FillStyle, FrameLabelData, LineStyle, Tag};
-
-type FrameNumber = u16;
+use swf::{FillStyle, FrameLabelData, FrameNumber, LineStyle, Tag};
 
 /// A movie clip is a display object with its own timeline that runs independently of the root timeline.
 /// The SWF19 spec calls this "Sprite" and the SWF tag defines it is "DefineSprite".

@@ -1,4 +1,9 @@
 use crate::string::SwfStr;
+use crate::types::FrameNumber;
+
+pub type ActionsData<'a> = &'a [u8];
+
+pub type RegisterIndex = u8;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action<'a> {
@@ -20,12 +25,8 @@ pub enum Action<'a> {
     CloneSprite,
     ConstantPool(Vec<&'a SwfStr>),
     Decrement,
-    DefineFunction {
-        name: &'a SwfStr,
-        params: Vec<&'a SwfStr>,
-        actions: &'a [u8],
-    },
-    DefineFunction2(Function<'a>),
+    DefineFunction(DefineFunction<'a>),
+    DefineFunction2(DefineFunction2<'a>),
     DefineLocal,
     DefineLocal2,
     Delete,
@@ -40,34 +41,20 @@ pub enum Action<'a> {
     GetMember,
     GetProperty,
     GetTime,
-    GetUrl {
-        url: &'a SwfStr,
-        target: &'a SwfStr,
-    },
-    GetUrl2 {
-        send_vars_method: SendVarsMethod,
-        is_target_sprite: bool,
-        is_load_vars: bool,
-    },
+    GetUrl(GetUrl<'a>),
+    GetUrl2(GetUrl2),
     GetVariable,
-    GotoFrame(u16),
-    GotoFrame2 {
-        set_playing: bool,
-        scene_offset: u16,
-    },
+    GotoFrame(FrameNumber),
+    GotoFrame2(GotoFrame2),
     GotoLabel(&'a SwfStr),
     Greater,
-    If {
-        offset: i16,
-    },
+    If(InstructionOffset),
     ImplementsOp,
     Increment,
     InitArray,
     InitObject,
     InstanceOf,
-    Jump {
-        offset: i16,
-    },
+    Jump(InstructionOffset),
     Less,
     Less2,
     MBAsciiToChar,
@@ -98,7 +85,7 @@ pub enum Action<'a> {
     StartDrag,
     Stop,
     StopSounds,
-    StoreRegister(u8),
+    StoreRegister(RegisterIndex),
     StrictEquals,
     StringAdd,
     StringEquals,
@@ -116,20 +103,10 @@ pub enum Action<'a> {
     Trace,
     Try(TryBlock<'a>),
     TypeOf,
-    WaitForFrame {
-        frame: u16,
-        num_actions_to_skip: u8,
-    },
-    WaitForFrame2 {
-        num_actions_to_skip: u8,
-    },
-    With {
-        actions: &'a [u8],
-    },
-    Unknown {
-        opcode: u8,
-        data: &'a [u8],
-    },
+    WaitForFrame(WaitForFrame),
+    WaitForFrame2(WaitForFrame2),
+    With(ActionsData<'a>),
+    Unknown { opcode: u8, data: ActionsData<'a> },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -141,7 +118,7 @@ pub enum Value<'a> {
     Float(f32),
     Double(f64),
     Str(&'a SwfStr),
-    Register(u8),
+    Register(RegisterIndex),
     ConstantPool(u16),
 }
 
@@ -153,9 +130,16 @@ pub enum SendVarsMethod {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Function<'a> {
+pub struct DefineFunction<'a> {
     pub name: &'a SwfStr,
-    pub register_count: u8,
+    pub params: Vec<&'a SwfStr>,
+    pub actions: ActionsData<'a>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DefineFunction2<'a> {
+    pub name: &'a SwfStr,
+    pub register_count: RegisterIndex,
     pub params: Vec<FunctionParam<'a>>,
     pub preload_parent: bool,
     pub preload_root: bool,
@@ -166,24 +150,56 @@ pub struct Function<'a> {
     pub suppress_this: bool,
     pub preload_this: bool,
     pub preload_global: bool,
-    pub actions: &'a [u8],
+    pub actions: ActionsData<'a>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionParam<'a> {
     pub name: &'a SwfStr,
-    pub register_index: Option<u8>,
+    pub register_index: Option<RegisterIndex>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct GetUrl<'a> {
+    pub url: &'a SwfStr,
+    pub target: &'a SwfStr,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GetUrl2 {
+    pub send_vars_method: SendVarsMethod,
+    pub is_target_sprite: bool,
+    pub is_load_vars: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GotoFrame2 {
+    pub set_playing: bool,
+    pub scene_offset: u16,
+}
+
+pub type InstructionOffset = i16;
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct TryBlock<'a> {
-    pub try_actions: &'a [u8],
-    pub catch: Option<(CatchVar<'a>, &'a [u8])>,
-    pub finally: Option<&'a [u8]>,
+    pub try_actions: ActionsData<'a>,
+    pub catch: Option<(CatchVar<'a>, ActionsData<'a>)>,
+    pub finally: Option<ActionsData<'a>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CatchVar<'a> {
     Var(&'a SwfStr),
-    Register(u8),
+    Register(RegisterIndex),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct WaitForFrame {
+    pub frame: FrameNumber,
+    pub num_actions_to_skip: u8,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct WaitForFrame2 {
+    pub num_actions_to_skip: u8,
 }

@@ -123,13 +123,13 @@ impl<'a> Reader<'a> {
                 OpCode::GetMember => Action::GetMember,
                 OpCode::GetProperty => Action::GetProperty,
                 OpCode::GetTime => Action::GetTime,
-                OpCode::GetUrl => Action::GetUrl {
+                OpCode::GetUrl => Action::GetUrl(GetUrl {
                     url: self.read_str()?,
                     target: self.read_str()?,
-                },
+                }),
                 OpCode::GetUrl2 => {
                     let flags = self.read_u8()?;
-                    Action::GetUrl2 {
+                    Action::GetUrl2(GetUrl2 {
                         is_load_vars: flags & 0b10_0000_00 != 0,
                         is_target_sprite: flags & 0b01_0000_00 != 0,
                         send_vars_method: match flags & 0b11 {
@@ -142,7 +142,7 @@ impl<'a> Reader<'a> {
                                 ));
                             }
                         },
-                    }
+                    })
                 }
                 OpCode::GetVariable => Action::GetVariable,
                 OpCode::GotoFrame => {
@@ -151,28 +151,24 @@ impl<'a> Reader<'a> {
                 }
                 OpCode::GotoFrame2 => {
                     let flags = self.read_u8()?;
-                    Action::GotoFrame2 {
+                    Action::GotoFrame2(GotoFrame2 {
                         set_playing: flags & 0b1 != 0,
                         scene_offset: if flags & 0b10 != 0 {
                             self.read_u16()?
                         } else {
                             0
                         },
-                    }
+                    })
                 }
                 OpCode::GotoLabel => Action::GotoLabel(self.read_str()?),
                 OpCode::Greater => Action::Greater,
-                OpCode::If => Action::If {
-                    offset: self.read_i16()?,
-                },
+                OpCode::If => Action::If(self.read_i16()?),
                 OpCode::ImplementsOp => Action::ImplementsOp,
                 OpCode::Increment => Action::Increment,
                 OpCode::InitArray => Action::InitArray,
                 OpCode::InitObject => Action::InitObject,
                 OpCode::InstanceOf => Action::InstanceOf,
-                OpCode::Jump => Action::Jump {
-                    offset: self.read_i16()?,
-                },
+                OpCode::Jump => Action::Jump(self.read_i16()?),
                 OpCode::Less => Action::Less,
                 OpCode::Less2 => Action::Less2,
                 OpCode::MBAsciiToChar => Action::MBAsciiToChar,
@@ -222,33 +218,29 @@ impl<'a> Reader<'a> {
                 OpCode::Trace => Action::Trace,
                 OpCode::Try => self.read_try(length)?,
                 OpCode::TypeOf => Action::TypeOf,
-                OpCode::WaitForFrame => Action::WaitForFrame {
+                OpCode::WaitForFrame => Action::WaitForFrame(WaitForFrame {
                     frame: self.read_u16()?,
                     num_actions_to_skip: self.read_u8()?,
-                },
+                }),
+                OpCode::WaitForFrame2 => Action::WaitForFrame2(WaitForFrame2 {
+                    num_actions_to_skip: self.read_u8()?,
+                }),
                 OpCode::With => {
                     let code_length = usize::from(self.read_u16()?);
                     *length += code_length;
-                    Action::With {
-                        actions: self.read_slice(code_length)?,
-                    }
+                    Action::With(self.read_slice(code_length)?)
                 }
-                OpCode::WaitForFrame2 => Action::WaitForFrame2 {
-                    num_actions_to_skip: self.read_u8()?,
-                },
             }
         } else {
-            self.read_unknown_action(opcode, *length)?
+            let data = self.read_unknown_action(*length)?;
+            Action::Unknown { opcode, data }
         };
 
         Ok(Some(action))
     }
 
-    fn read_unknown_action(&mut self, opcode: u8, length: usize) -> Result<Action<'a>> {
-        Ok(Action::Unknown {
-            opcode,
-            data: self.read_slice(length)?,
-        })
+    fn read_unknown_action(&mut self, length: usize) -> Result<ActionsData<'a>> {
+        self.read_slice(length)
     }
 
     fn read_push(&mut self, length: usize) -> Result<Action<'a>> {
@@ -287,11 +279,11 @@ impl<'a> Reader<'a> {
         // code_length isn't included in the DefineFunction's action length.
         let code_length = usize::from(self.read_u16()?);
         *action_length += code_length;
-        Ok(Action::DefineFunction {
+        Ok(Action::DefineFunction(DefineFunction {
             name,
             params,
             actions: self.read_slice(code_length)?,
-        })
+        }))
     }
 
     fn read_define_function_2(&mut self, action_length: &mut usize) -> Result<Action<'a>> {
@@ -310,7 +302,7 @@ impl<'a> Reader<'a> {
         // code_length isn't included in the DefineFunction's length.
         let code_length = usize::from(self.read_u16()?);
         *action_length += code_length;
-        Ok(Action::DefineFunction2(Function {
+        Ok(Action::DefineFunction2(DefineFunction2 {
             name,
             params,
             register_count,
@@ -402,14 +394,14 @@ pub mod tests {
         let action = reader.read_action().unwrap().unwrap();
         assert_eq!(
             action,
-            Action::DefineFunction {
+            Action::DefineFunction(DefineFunction {
                 name: SwfStr::from_str_with_encoding("foo", WINDOWS_1252).unwrap(),
                 params: vec![],
                 actions: &[0x96, 0x06, 0x00, 0x00, 0x74, 0x65, 0x73, 0x74, 0x00, 0x26],
-            }
+            })
         );
 
-        if let Action::DefineFunction { actions, .. } = action {
+        if let Action::DefineFunction(DefineFunction { actions, .. }) = action {
             let mut reader = Reader::new(actions, 5);
             let action = reader.read_action().unwrap().unwrap();
             assert_eq!(
