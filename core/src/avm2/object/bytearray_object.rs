@@ -27,7 +27,7 @@ pub struct ByteArrayObjectData<'gc> {
 }
 
 impl<'gc> ByteArrayObject<'gc> {
-    pub fn constuct(mc: MutationContext<'gc, '_>, base_proto: Option<Object<'gc>>) -> Object<'gc> {
+    pub fn construct(mc: MutationContext<'gc, '_>, base_proto: Option<Object<'gc>>) -> Object<'gc> {
         let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::NoClass);
 
         ByteArrayObject(GcCell::allocate(
@@ -201,7 +201,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ByteArrayObject(*self);
-        Ok(ByteArrayObject::constuct(
+        Ok(ByteArrayObject::construct(
             activation.context.gc_context,
             Some(this),
         ))
