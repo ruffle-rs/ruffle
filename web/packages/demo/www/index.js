@@ -11,7 +11,7 @@ window.RufflePlayer = PublicAPI.negotiate(
 let ruffle;
 let player;
 
-const container = document.getElementById("main");
+const main = document.getElementById("main");
 const overlay = document.getElementById("overlay");
 const authorContainer = document.getElementById("author-container");
 const author = document.getElementById("author");
@@ -29,11 +29,72 @@ const config = {
     logLevel: "warn",
 };
 
-window.addEventListener("DOMContentLoaded", async () => {
-    ruffle = window.RufflePlayer.newest();
+function ensurePlayer() {
+    if (player) {
+        player.remove();
+    }
     player = ruffle.createPlayer();
     player.id = "player";
-    container.append(player);
+    main.append(player);
+
+    sampleFileInput.selectedIndex = 0;
+    authorContainer.style.display = "none";
+    author.textContent = "";
+    author.href = "";
+}
+
+async function loadFile(file) {
+    if (!file) {
+        return;
+    }
+    ensurePlayer();
+    const data = await new Response(file).arrayBuffer();
+    player.load({ data, ...config });
+}
+
+function sampleFileSelected() {
+    const swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
+    if (swfData) {
+        authorContainer.style.display = "block";
+        author.textContent = swfData.author;
+        author.href = swfData.authorLink;
+        localFileInput.value = null;
+        player.load({ url: swfData.location, ...config });
+    } else {
+        ensurePlayer();
+    }
+}
+
+localFileInput.addEventListener("change", (event) => {
+    loadFile(event.target.files[0]);
+});
+
+sampleFileInput.addEventListener("change", sampleFileSelected);
+
+main.addEventListener("dragenter", () => {
+    overlay.classList.add("drag");
+});
+main.addEventListener("dragleave", () => {
+    overlay.classList.remove("drag");
+});
+main.addEventListener("dragover", (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+});
+main.addEventListener("drop", (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    overlay.classList.remove("drag");
+    loadFile(event.dataTransfer.files[0]);
+});
+
+window.addEventListener("load", () => {
+    overlay.style.display = "initial";
+});
+
+window.addEventListener("DOMContentLoaded", async () => {
+    ruffle = window.RufflePlayer.newest();
+    ensurePlayer();
 
     const response = await fetch("swfs.json");
     if (!response.ok) {
@@ -65,70 +126,6 @@ window.addEventListener("DOMContentLoaded", async () => {
             options.findIndex((swfData) => swfData.value.endsWith(initialFile)),
             0
         );
-    } else {
-        // Load a random file.
-        sampleFileInput.selectedIndex =
-            Math.floor(Math.random() * data.swfs.length) + 1;
+        sampleFileSelected();
     }
-    sampleFileSelected();
 });
-
-window.addEventListener("load", () => {
-    overlay.style.display = "block";
-});
-
-sampleFileInput.addEventListener("change", sampleFileSelected);
-localFileInput.addEventListener("change", (event) => {
-    loadFile(event.target.files[0]);
-});
-container.addEventListener("dragenter", () => {
-    overlay.classList.add("drag");
-});
-container.addEventListener("dragleave", () => {
-    overlay.classList.remove("drag");
-});
-container.addEventListener("dragover", (event) => {
-    event.stopPropagation();
-    event.preventDefault();
-});
-container.addEventListener("drop", (event) => {
-    event.stopPropagation();
-    event.preventDefault();
-    overlay.classList.remove("drag");
-    loadFile(event.dataTransfer.files[0]);
-});
-
-function sampleFileSelected() {
-    const swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
-    if (swfData) {
-        authorContainer.style.display = "block";
-        author.textContent = swfData.author;
-        author.href = swfData.authorLink;
-        localFileInput.value = null;
-        player.load({ url: swfData.location, ...config });
-    } else {
-        if (player) {
-            player.remove();
-        }
-        player = ruffle.createPlayer();
-        player.id = "player";
-        container.append(player);
-        authorContainer.style.display = "none";
-        author.textContent = "";
-        author.href = "";
-    }
-}
-
-async function loadFile(file) {
-    if (!file) {
-        return;
-    }
-
-    sampleFileInput.selectedIndex = 0;
-    authorContainer.style.display = "none";
-    author.textContent = "";
-    author.href = "";
-
-    const data = await new Response(file).arrayBuffer();
-    player.load({ data, ...config });
-}

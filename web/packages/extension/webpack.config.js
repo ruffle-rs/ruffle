@@ -1,8 +1,8 @@
 /* eslint-env node */
 
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const CopyPlugin = require("copy-webpack-plugin");
 const path = require("path");
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = (env, argv) => {
     let mode = "production";
@@ -13,6 +13,19 @@ module.exports = (env, argv) => {
     console.log(`Building ${mode}...`);
 
     return {
+        mode,
+        entry: {
+            ruffle: path.resolve(__dirname, "js/index.js"),
+            main: path.resolve(__dirname, "js/main.js"),
+            settings: path.resolve(__dirname, "js/settings.js"),
+            lv0: path.resolve(__dirname, "js/lv0.js"),
+        },
+        output: {
+            path: path.resolve(__dirname, "build/dist"),
+            filename: "[name].js",
+            publicPath: "",
+            chunkFilename: "core.ruffle.js",
+        },
         module: {
             rules: [
                 {
@@ -21,22 +34,9 @@ module.exports = (env, argv) => {
                 },
             ],
         },
-        entry: {
-            ruffle: path.resolve(__dirname, "js/index.js"),
-            main: path.resolve(__dirname, "js/main.js"),
-            settings: path.resolve(__dirname, "js/settings.js"),
-            lv0: path.resolve(__dirname, "js/lv0.js"),
-        },
-        output: {
-            publicPath: "",
-            path: path.resolve(__dirname, "build/dist"),
-            filename: "[name].js",
-            chunkFilename: "core.ruffle.js",
-        },
-        mode: mode,
         plugins: [
             new CleanWebpackPlugin(),
-            new CopyPlugin({
+            new CopyWebpackPlugin({
                 patterns: [{ from: "LICENSE*" }, { from: "README.md" }],
             }),
         ],
