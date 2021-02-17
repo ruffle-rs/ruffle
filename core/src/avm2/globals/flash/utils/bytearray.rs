@@ -62,7 +62,12 @@ pub fn write_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(Value::Object(second_array)) = args.get(0) {
-        let combining_bytes = second_array.as_bytearray().unwrap().bytes().clone();
+        let bytes_param = second_array.as_bytearray();
+        let combining_bytes = if bytes_param.is_none() {
+            return Err(Box::from("ArgumentError: Parameter must be a bytearray"));
+        } else {
+            bytes_param.unwrap().bytes().clone()
+        };
 
         let offset = args
             .get(1)
@@ -77,7 +82,7 @@ pub fn write_bytes<'gc>(
         // However, in the actual flash player, it seems to just raise an error.
         if offset + length > combining_bytes.len() {
             log::error!("ByteArray: Reached EOF");
-            return Ok(Value::Undefined);
+            return Err(Box::from("ByteArray: Reached EOF"));
         }
 
         if let Some(mut bytearray) = this
@@ -127,22 +132,24 @@ pub fn read_bytes<'gc>(
             log::error!("ByteArray: Reached EOF");
             return Err(Box::from("ByteArray: Reached EOF"));
         }
-        let mut merging_storage = second_array
-            .as_bytearray_mut(activation.context.gc_context)
-            .unwrap();
+        if let Some(mut merging_storage) =
+            second_array.as_bytearray_mut(activation.context.gc_context)
+        {
+            // Offset should not be greater then the buffer
+            if merging_storage.bytes().len() < offset {
+                return Ok(Value::Undefined);
+            }
 
-        // Offset should not be greater then the buffer
-        if merging_storage.bytes().len() < offset {
-            return Ok(Value::Undefined);
-        }
-
-        let to_write = if length != 0 {
-            current_bytes[position..length + position].to_vec()
+            let to_write = if length != 0 {
+                current_bytes[position..length + position].to_vec()
+            } else {
+                current_bytes[position..].to_vec()
+            };
+            merging_offset = to_write.len();
+            merging_storage.write_bytes_at(&to_write, offset);
         } else {
-            current_bytes[position..].to_vec()
-        };
-        merging_offset = to_write.len();
-        merging_storage.write_bytes_at(&to_write, offset);
+            return Err(Box::from("ArgumentError: Parameter must be a bytearray"));
+        }
     }
     this.unwrap()
         .as_bytearray_mut(activation.context.gc_context)
