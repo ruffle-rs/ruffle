@@ -183,14 +183,14 @@ pub fn read_utf<'gc>(
     Ok(Value::Undefined)
 }
 pub fn to_string<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(bytearray) = this.unwrap().as_bytearray() {
         let bytes = bytearray.bytes();
         let (new_string, _, _) = UTF_8.decode(bytes);
-        return Ok(new_string.into_owned().as_str().into());
+        return Ok(AvmString::new(activation.context.gc_context, new_string).into());
     }
     Ok(Value::Undefined)
 }
@@ -285,7 +285,7 @@ pub fn set_length<'gc>(
 }
 
 pub fn endian<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -640,8 +640,7 @@ pub fn read_multibyte<'gc>(
         if let Ok(bytes) = bytearray.read_exactly(len as usize) {
             let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
             let (decoded_str, _, _) = encoder.decode(bytes);
-            let new_string = decoded_str.into_owned().clone();
-            return Ok(new_string.as_str().into());
+            return Ok(AvmString::new(activation.context.gc_context, decoded_str).into());
         }
     }
     Ok(Value::Undefined)
