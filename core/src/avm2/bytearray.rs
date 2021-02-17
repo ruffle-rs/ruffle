@@ -24,10 +24,7 @@ pub struct ByteArrayStorage {
     position: usize,
 
     /// This represents what endian to use while reading data.
-    endian: Endian,
-
-    /// TODO: Make this do something
-    shareable: bool,
+    endian: Endian
 }
 
 impl ByteArrayStorage {
@@ -36,8 +33,7 @@ impl ByteArrayStorage {
         ByteArrayStorage {
             bytes: Vec::new(),
             position: 0,
-            endian: Endian::Big,
-            shareable: false,
+            endian: Endian::Big
         }
     }
 
