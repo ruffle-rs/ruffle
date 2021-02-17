@@ -127,25 +127,19 @@ pub enum MaskState {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct Transforms {
     world_matrix: [[f32; 4]; 4],
 }
 
-unsafe impl Pod for Transforms {}
-unsafe impl Zeroable for Transforms {}
-
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct TextureTransforms {
     u_matrix: [[f32; 4]; 4],
 }
 
-unsafe impl Pod for TextureTransforms {}
-unsafe impl Zeroable for TextureTransforms {}
-
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct ColorAdjustments {
     mult_color: [f32; 4],
     add_color: [f32; 4],
@@ -170,18 +164,12 @@ impl From<ColorTransform> for ColorAdjustments {
     }
 }
 
-unsafe impl Pod for ColorAdjustments {}
-unsafe impl Zeroable for ColorAdjustments {}
-
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct GpuVertex {
     position: [f32; 2],
     color: [f32; 4],
 }
-
-unsafe impl Pod for GpuVertex {}
-unsafe impl Zeroable for GpuVertex {}
 
 impl WgpuRenderBackend<SwapChainTarget> {
     pub fn for_window<W: HasRawWindowHandle>(

@@ -12,13 +12,10 @@ pub struct Globals {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct GlobalsUniform {
     view_matrix: [[f32; 4]; 4],
 }
-
-unsafe impl Pod for GlobalsUniform {}
-unsafe impl Zeroable for GlobalsUniform {}
 
 impl Globals {
     pub fn new(device: &wgpu::Device) -> Self {
