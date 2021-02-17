@@ -14,7 +14,7 @@ use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Gc, GcCell, MutationContext};
 use indexmap::IndexMap;
 use rand::Rng;
 use smallvec::SmallVec;
@@ -179,8 +179,6 @@ unsafe impl<'gc> gc_arena::Collect for ActivationIdentifier<'gc> {
     fn trace(&self, _cc: gc_arena::CollectionContext) {}
 }
 
-#[derive(Collect)]
-#[collect(unsafe_drop)]
 pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// Represents the SWF version of a given function.
     ///

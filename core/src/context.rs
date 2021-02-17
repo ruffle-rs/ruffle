@@ -23,7 +23,7 @@ use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::transform::TransformStack;
 use core::fmt;
-use gc_arena::{Collect, CollectionContext, MutationContext};
+use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
 use std::collections::{BTreeMap, HashMap, VecDeque};
@@ -233,37 +233,6 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 
     pub fn set_sound_transforms_dirty(&mut self) {
         self.audio_manager.set_sound_transforms_dirty()
-    }
-}
-
-unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context> {
-    fn trace(&self, cc: CollectionContext) {
-        self.action_queue.trace(cc);
-        self.background_color.trace(cc);
-        self.library.trace(cc);
-        self.player_version.trace(cc);
-        self.needs_render.trace(cc);
-        self.swf.trace(cc);
-        self.audio.trace(cc);
-        self.audio_manager.trace(cc);
-        self.navigator.trace(cc);
-        self.renderer.trace(cc);
-        self.ui.trace(cc);
-        self.storage.trace(cc);
-        self.rng.trace(cc);
-        self.levels.trace(cc);
-        self.mouse_hovered_object.trace(cc);
-        self.mouse_position.trace(cc);
-        self.drag_object.trace(cc);
-        self.load_manager.trace(cc);
-        self.system.trace(cc);
-        self.instance_counter.trace(cc);
-        self.shared_objects.trace(cc);
-        self.unbound_text_fields.trace(cc);
-        self.timers.trace(cc);
-        self.avm1.trace(cc);
-        self.avm2.trace(cc);
-        self.focus_tracker.trace(cc);
     }
 }
 
