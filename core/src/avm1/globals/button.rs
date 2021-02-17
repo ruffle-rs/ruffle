@@ -79,6 +79,7 @@ pub fn create_proto<'gc>(
     with_button_props!(
         object, gc_context, fn_proto,
         "enabled" => [enabled, set_enabled],
+        "useHandCursor" => [use_hand_cursor, set_use_hand_cursor],
     );
 
     object.into()
@@ -107,5 +108,22 @@ fn set_enabled<'gc>(
 ) -> Result<(), Error<'gc>> {
     let enabled = value.as_bool(activation.current_swf_version());
     this.set_enabled(&mut activation.context, enabled);
+    Ok(())
+}
+
+fn use_hand_cursor<'gc>(
+    this: Button<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.use_hand_cursor().into())
+}
+
+fn set_use_hand_cursor<'gc>(
+    this: Button<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let use_hand_cursor = value.as_bool(activation.current_swf_version());
+    this.set_use_hand_cursor(&mut activation.context, use_hand_cursor);
     Ok(())
 }

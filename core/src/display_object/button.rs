@@ -1,4 +1,5 @@
 use crate::avm1::{Object, StageObject, Value};
+use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::ChildContainer;
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
@@ -29,6 +30,7 @@ pub struct ButtonData<'gc> {
     initialized: bool,
     has_focus: bool,
     enabled: bool,
+    use_hand_cursor: bool,
 }
 
 impl<'gc> Button<'gc> {
@@ -87,6 +89,7 @@ impl<'gc> Button<'gc> {
                 },
                 has_focus: false,
                 enabled: true,
+                use_hand_cursor: true,
             },
         ))
     }
@@ -207,6 +210,18 @@ impl<'gc> Button<'gc> {
         if !enabled {
             self.set_state(context, ButtonState::Up);
         }
+    }
+
+    pub fn use_hand_cursor(self) -> bool {
+        self.0.read().use_hand_cursor
+    }
+
+    pub fn set_use_hand_cursor(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        use_hand_cursor: bool,
+    ) {
+        self.0.write(context.gc_context).use_hand_cursor = use_hand_cursor;
     }
 }
 
@@ -347,6 +362,14 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             }
         }
         None
+    }
+
+    fn mouse_cursor(&self) -> MouseCursor {
+        if self.use_hand_cursor() {
+            MouseCursor::Hand
+        } else {
+            MouseCursor::Arrow
+        }
     }
 
     fn object(&self) -> Value<'gc> {

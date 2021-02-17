@@ -520,6 +520,7 @@ swf_tests! {
     (as3_string_char_at, "avm2/string_char_at", 1),
     (as3_string_char_code_at, "avm2/string_char_code_at", 1),
     (as3_typeof, "avm2/typeof", 1),
+    (use_hand_cursor, "avm1/use_hand_cursor", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

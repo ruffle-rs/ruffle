@@ -8,6 +8,7 @@ use crate::avm2::{
     StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::backend::audio::{PreloadStreamHandle, SoundHandle, SoundInstanceHandle};
+use crate::backend::ui::MouseCursor;
 use bitflags::bitflags;
 
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
@@ -64,6 +65,7 @@ pub struct MovieClipData<'gc> {
     is_focusable: bool,
     has_focus: bool,
     enabled: bool,
+    use_hand_cursor: bool,
 }
 
 unsafe impl<'gc> Collect for MovieClipData<'gc> {
@@ -100,6 +102,7 @@ impl<'gc> MovieClip<'gc> {
                 is_focusable: false,
                 has_focus: false,
                 enabled: true,
+                use_hand_cursor: true,
             },
         ))
     }
@@ -132,6 +135,7 @@ impl<'gc> MovieClip<'gc> {
                 is_focusable: false,
                 has_focus: false,
                 enabled: true,
+                use_hand_cursor: true,
             },
         ))
     }
@@ -1575,6 +1579,18 @@ impl<'gc> MovieClip<'gc> {
     pub fn set_enabled(self, context: &mut UpdateContext<'_, 'gc, '_>, enabled: bool) {
         self.0.write(context.gc_context).enabled = enabled;
     }
+
+    pub fn use_hand_cursor(self) -> bool {
+        self.0.read().use_hand_cursor
+    }
+
+    pub fn set_use_hand_cursor(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        use_hand_cursor: bool,
+    ) {
+        self.0.write(context.gc_context).use_hand_cursor = use_hand_cursor;
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -1700,6 +1716,14 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         None
+    }
+
+    fn mouse_cursor(&self) -> MouseCursor {
+        if self.use_hand_cursor() {
+            MouseCursor::Hand
+        } else {
+            MouseCursor::Arrow
+        }
     }
 
     fn handle_clip_event(

@@ -220,6 +220,7 @@ pub fn create_proto<'gc>(
         "enabled" => [enabled, set_enabled],
         "focusEnabled" => [focus_enabled, set_focus_enabled],
         "_lockroot" => [lock_root, set_lock_root],
+        "useHandCursor" => [use_hand_cursor, set_use_hand_cursor],
     );
 
     object.into()
@@ -1337,5 +1338,22 @@ fn set_lock_root<'gc>(
 ) -> Result<(), Error<'gc>> {
     let lock_root = value.as_bool(activation.current_swf_version());
     this.set_lock_root(activation.context.gc_context, lock_root);
+    Ok(())
+}
+
+fn use_hand_cursor<'gc>(
+    this: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.use_hand_cursor().into())
+}
+
+fn set_use_hand_cursor<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let use_hand_cursor = value.as_bool(activation.current_swf_version());
+    this.set_use_hand_cursor(&mut activation.context, use_hand_cursor);
     Ok(())
 }
