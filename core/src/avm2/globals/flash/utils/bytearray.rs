@@ -278,8 +278,7 @@ pub fn set_length<'gc>(
         let len = args
             .get(0)
             .unwrap_or(&Value::Unsigned(0))
-            .coerce_to_u32(activation)
-            .unwrap() as usize;
+            .coerce_to_u32(activation)? as usize;
         bytearray.resize(len);
     }
     Ok(Value::Undefined)
