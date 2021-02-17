@@ -125,7 +125,7 @@ pub fn read_bytes<'gc>(
 
         if position + length > current_bytes.len() {
             log::error!("ByteArray: Reached EOF");
-            return Ok(Value::Undefined);
+            return Err(Box::from("ByteArray: Reached EOF"));
         }
         let mut merging_storage = second_array
             .as_bytearray_mut(activation.context.gc_context)
@@ -176,9 +176,7 @@ pub fn read_utf<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        if let Ok(utf_string) = bytearray.read_utf() {
-            return Ok(AvmString::new(activation.context.gc_context, utf_string).into());
-        }
+        return Ok(AvmString::new(activation.context.gc_context, bytearray.read_utf()?).into());
     }
     Ok(Value::Undefined)
 }
@@ -315,7 +313,7 @@ pub fn set_endian<'gc>(
         {
             "bigEndian" => bytearray.set_endian(Endian::Big),
             "littleEndian" => bytearray.set_endian(Endian::Little),
-            _ => log::error!("Parameter type must be one of the accepted values."),
+            _ => return Err(Box::from("Parameter type must be one of the accepted values.")),
         }
     }
     Ok(Value::Undefined)
@@ -330,9 +328,7 @@ pub fn read_short<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        if let Ok(num) = bytearray.read_short() {
-            return Ok(Value::Integer(num as i32));
-        }
+        return Ok(Value::Integer(bytearray.read_short()? as i32));
     }
     Ok(Value::Undefined)
 }
@@ -346,9 +342,7 @@ pub fn read_unsigned_short<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        if let Ok(num) = bytearray.read_unsigned_short() {
-            return Ok(Value::Unsigned(num as u32));
-        }
+        return Ok(Value::Unsigned(bytearray.read_unsigned_short()? as u32));
     }
     Ok(Value::Undefined)
 }
@@ -362,9 +356,7 @@ pub fn read_double<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        if let Ok(num) = bytearray.read_double() {
-            return Ok(Value::Number(num));
-        }
+        return Ok(Value::Number(bytearray.read_double()?));
     }
     Ok(Value::Undefined)
 }
@@ -378,9 +370,7 @@ pub fn read_float<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        if let Ok(num) = bytearray.read_float() {
-            return Ok(Value::Number(num as f64));
-        }
+        return Ok(Value::Number(bytearray.read_float()? as f64));
     }
     Ok(Value::Undefined)
 }
@@ -394,9 +384,7 @@ pub fn read_int<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        if let Ok(num) = bytearray.read_int() {
-            return Ok(Value::Integer(num));
-        }
+        return Ok(Value::Integer(bytearray.read_int()?));
     }
     Ok(Value::Undefined)
 }
@@ -410,9 +398,7 @@ pub fn read_unsigned_int<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        if let Ok(num) = bytearray.read_unsigned_int() {
-            return Ok(Value::Unsigned(num));
-        }
+        return Ok(Value::Unsigned(bytearray.read_unsigned_int()?));
     }
     Ok(Value::Undefined)
 }
@@ -426,9 +412,7 @@ pub fn read_boolean<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        if let Ok(num) = bytearray.read_boolean() {
-            return Ok(Value::Bool(num));
-        }
+        return Ok(Value::Bool(bytearray.read_boolean()?));
     }
     Ok(Value::Undefined)
 }
@@ -442,9 +426,7 @@ pub fn read_byte<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        if let Ok(num) = bytearray.read_byte() {
-            return Ok(Value::Integer(num as i32));
-        }
+        return Ok(Value::Integer(bytearray.read_byte()? as i32));
     }
     Ok(Value::Undefined)
 }
@@ -461,15 +443,13 @@ pub fn read_utf_bytes<'gc>(
         if let Some(Value::Integer(len)) = args.get(0) {
             if *len < 0 {
                 log::error!("ByteArray: Did not get proper length");
-                return Ok(Value::Undefined);
+                return Err(Box::from("Reached EOF"))
             }
-            if let Ok(bytes) = bytearray.read_exactly(*len as usize) {
-                return Ok(AvmString::new(
-                    activation.context.gc_context,
-                    String::from_utf8_lossy(&bytes),
-                )
-                .into());
-            }
+            return Ok(AvmString::new(
+                activation.context.gc_context,
+                String::from_utf8_lossy(&bytearray.read_exactly(*len as usize)?),
+            )
+            .into());
         }
     }
     Ok(Value::Undefined)
@@ -484,9 +464,7 @@ pub fn read_unsigned_byte<'gc>(
         .unwrap()
         .as_bytearray_mut(activation.context.gc_context)
     {
-        if let Ok(num) = bytearray.read_unsigned_byte() {
-            return Ok(Value::Unsigned(num as u32));
-        }
+        return Ok(Value::Unsigned(bytearray.read_unsigned_byte()? as u32));
     }
     Ok(Value::Undefined)
 }

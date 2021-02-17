@@ -5,7 +5,7 @@ use std::cmp;
 use std::convert::{TryFrom, TryInto};
 use std::io;
 use std::io::prelude::*;
-use std::io::{Error, ErrorKind};
+use crate::avm2::Error;
 
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
@@ -138,24 +138,24 @@ impl ByteArrayStorage {
     }
 
     // Reads exactly an amount of data
-    pub fn read_exactly(&mut self, amnt: usize) -> io::Result<&[u8]> {
+    pub fn read_exactly(&mut self, amnt: usize) -> Result<&[u8], Error> {
         if self.position + amnt > self.bytes.len() {
             log::error!("ByteArray: Reached EOF");
-            return Err(Error::new(ErrorKind::UnexpectedEof, "Reached EOF"));
+            return Err(Box::from("Reached EOF"));
         }
         let val = Ok(&self.bytes[self.position..self.position + amnt]);
         self.position += amnt;
         val
     }
 
-    pub fn read_utf(&mut self) -> io::Result<String> {
+    pub fn read_utf(&mut self) -> Result<String, Error> {
         let len = self.read_unsigned_short()?;
         let val = String::from_utf8_lossy(self.read_exactly(len as usize)?);
         Ok(val.into_owned())
     }
 
     // Reads a i16 from the buffer
-    pub fn read_short(&mut self) -> io::Result<i16> {
+    pub fn read_short(&mut self) -> Result<i16, Error> {
         Ok(match self.endian {
             Endian::Big => i16::from_be_bytes(self.read_exactly(2)?.try_into().unwrap()),
             Endian::Little => i16::from_le_bytes(self.read_exactly(2)?.try_into().unwrap()),
@@ -163,7 +163,7 @@ impl ByteArrayStorage {
     }
 
     // Reads a u16 from the buffer
-    pub fn read_unsigned_short(&mut self) -> io::Result<u16> {
+    pub fn read_unsigned_short(&mut self) -> Result<u16, Error> {
         Ok(match self.endian {
             Endian::Big => u16::from_be_bytes(self.read_exactly(2)?.try_into().unwrap()),
             Endian::Little => u16::from_le_bytes(self.read_exactly(2)?.try_into().unwrap()),
@@ -171,7 +171,7 @@ impl ByteArrayStorage {
     }
 
     // Reads a f64 from the buffer
-    pub fn read_double(&mut self) -> io::Result<f64> {
+    pub fn read_double(&mut self) -> Result<f64, Error> {
         Ok(match self.endian {
             Endian::Big => f64::from_be_bytes(self.read_exactly(8)?.try_into().unwrap()),
             Endian::Little => f64::from_le_bytes(self.read_exactly(8)?.try_into().unwrap()),
@@ -179,7 +179,7 @@ impl ByteArrayStorage {
     }
 
     // Reads a f32 from the buffer
-    pub fn read_float(&mut self) -> io::Result<f32> {
+    pub fn read_float(&mut self) -> Result<f32, Error> {
         Ok(match self.endian {
             Endian::Big => f32::from_be_bytes(self.read_exactly(4)?.try_into().unwrap()),
             Endian::Little => f32::from_le_bytes(self.read_exactly(4)?.try_into().unwrap()),
@@ -187,7 +187,7 @@ impl ByteArrayStorage {
     }
 
     // Reads a i32 from the buffer
-    pub fn read_int(&mut self) -> io::Result<i32> {
+    pub fn read_int(&mut self) -> Result<i32, Error> {
         Ok(match self.endian {
             Endian::Big => i32::from_be_bytes(self.read_exactly(4)?.try_into().unwrap()),
             Endian::Little => i32::from_le_bytes(self.read_exactly(4)?.try_into().unwrap()),
@@ -195,7 +195,7 @@ impl ByteArrayStorage {
     }
 
     // Reads a u32 from the buffer
-    pub fn read_unsigned_int(&mut self) -> io::Result<u32> {
+    pub fn read_unsigned_int(&mut self) -> Result<u32, Error> {
         Ok(match self.endian {
             Endian::Big => u32::from_be_bytes(self.read_exactly(4)?.try_into().unwrap()),
             Endian::Little => u32::from_le_bytes(self.read_exactly(4)?.try_into().unwrap()),
@@ -203,12 +203,12 @@ impl ByteArrayStorage {
     }
 
     // Reads byte from buffer, returns false if zero, otherwise true
-    pub fn read_boolean(&mut self) -> io::Result<bool> {
+    pub fn read_boolean(&mut self) -> Result<bool, Error> {
         Ok(*self.read_exactly(1)?.first().unwrap() != 0)
     }
 
     // Reads a i8 from the buffer
-    pub fn read_byte(&mut self) -> io::Result<i8> {
+    pub fn read_byte(&mut self) -> Result<i8, Error> {
         Ok(match self.endian {
             Endian::Big => i8::from_be_bytes(self.read_exactly(1)?.try_into().unwrap()),
             Endian::Little => i8::from_le_bytes(self.read_exactly(1)?.try_into().unwrap()),
@@ -216,7 +216,7 @@ impl ByteArrayStorage {
     }
 
     // Reads a u8 from the buffer
-    pub fn read_unsigned_byte(&mut self) -> io::Result<u8> {
+    pub fn read_unsigned_byte(&mut self) -> Result<u8, Error> {
         Ok(match self.endian {
             Endian::Big => u8::from_be_bytes(self.read_exactly(1)?.try_into().unwrap()),
             Endian::Little => u8::from_le_bytes(self.read_exactly(1)?.try_into().unwrap()),
