@@ -80,7 +80,6 @@ impl<'a> Reader<'a> {
     #[inline]
     #[allow(clippy::inconsistent_digit_grouping)]
     fn read_op(&mut self, opcode: u8, length: &mut usize) -> Result<Option<Action<'a>>> {
-        use num_traits::FromPrimitive;
         let action = if let Some(op) = OpCode::from_u8(opcode) {
             match op {
                 OpCode::End => return Ok(None),
@@ -200,12 +199,13 @@ impl<'a> Reader<'a> {
         Ok(Some(action))
     }
 
-    fn read_unknown_action(&mut self, length: usize) -> Result<ActionsData<'a>> {
+    #[inline]
+    pub fn read_unknown_action(&mut self, length: usize) -> Result<ActionsData<'a>> {
         self.read_slice(length)
     }
 
     #[inline]
-    fn read_constant_pool<'b>(
+    pub fn read_constant_pool<'b>(
         &'b mut self,
     ) -> Result<impl Iterator<Item = Result<&'a SwfStr>> + 'b> {
         let len = self.read_u16()?;
@@ -213,7 +213,7 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    fn read_get_url(&mut self) -> Result<GetUrl<'a>> {
+    pub fn read_get_url(&mut self) -> Result<GetUrl<'a>> {
         Ok(GetUrl {
             url: self.read_str()?,
             target: self.read_str()?,
@@ -221,7 +221,7 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    fn read_get_url_2(&mut self) -> Result<GetUrl2> {
+    pub fn read_get_url_2(&mut self) -> Result<GetUrl2> {
         let flags = self.read_u8()?;
         let send_vars_method = match flags & 0b11 {
             0 => SendVarsMethod::None,
@@ -239,12 +239,12 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    fn read_goto_frame(&mut self) -> Result<FrameNumber> {
+    pub fn read_goto_frame(&mut self) -> Result<FrameNumber> {
         Ok(self.read_u16()?)
     }
 
     #[inline]
-    fn read_goto_frame_2(&mut self) -> Result<GotoFrame2> {
+    pub fn read_goto_frame_2(&mut self) -> Result<GotoFrame2> {
         let flags = self.read_u8()?;
         let scene_offset = if flags & 0b10 != 0 {
             self.read_u16()?
@@ -258,16 +258,17 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    fn read_goto_label(&mut self) -> Result<&'a SwfStr> {
+    pub fn read_goto_label(&mut self) -> Result<&'a SwfStr> {
         Ok(self.read_str()?)
     }
 
     #[inline]
-    fn read_instruction_offset(&mut self) -> Result<InstructionOffset> {
+    pub fn read_instruction_offset(&mut self) -> Result<InstructionOffset> {
         self.read_i16()
     }
 
-    fn read_push<'b>(
+    #[inline]
+    pub fn read_push<'b>(
         &'b mut self,
         length: usize,
     ) -> Result<impl Iterator<Item = Result<Value<'a>>> + 'b> {
@@ -281,6 +282,7 @@ impl<'a> Reader<'a> {
         }))
     }
 
+    #[inline]
     fn read_push_value(input: &mut &'a [u8], value_type: u8) -> Result<Value<'a>> {
         let value = match value_type {
             0 => Value::Str(input.read_str()?),
@@ -299,16 +301,19 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    fn read_set_target(&mut self) -> Result<&'a SwfStr> {
+    pub fn read_set_target(&mut self) -> Result<&'a SwfStr> {
         self.read_str()
     }
 
     #[inline]
-    fn read_store_register(&mut self) -> Result<u8> {
+    pub fn read_store_register(&mut self) -> Result<u8> {
         self.read_u8()
     }
 
-    fn read_define_function(&mut self, action_length: &mut usize) -> Result<DefineFunction<'a>> {
+    pub fn read_define_function(
+        &mut self,
+        action_length: &mut usize,
+    ) -> Result<DefineFunction<'a>> {
         let name = self.read_str()?;
         let num_params = self.read_u16()?;
         let mut params = Vec::with_capacity(num_params as usize);
@@ -325,7 +330,10 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_define_function_2(&mut self, action_length: &mut usize) -> Result<DefineFunction2<'a>> {
+    pub fn read_define_function_2(
+        &mut self,
+        action_length: &mut usize,
+    ) -> Result<DefineFunction2<'a>> {
         let name = self.read_str()?;
         let num_params = self.read_u16()?;
         let register_count = self.read_u8()?; // Number of registers
@@ -358,7 +366,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_try(&mut self, length: &mut usize) -> Result<TryBlock<'a>> {
+    pub fn read_try(&mut self, length: &mut usize) -> Result<TryBlock<'a>> {
         let flags = self.read_u8()?;
         let try_length = usize::from(self.read_u16()?);
         let catch_length = usize::from(self.read_u16()?);
@@ -388,7 +396,7 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    fn read_wait_for_frame(&mut self) -> Result<WaitForFrame> {
+    pub fn read_wait_for_frame(&mut self) -> Result<WaitForFrame> {
         Ok(WaitForFrame {
             frame: self.read_u16()?,
             num_actions_to_skip: self.read_u8()?,
@@ -396,14 +404,14 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    fn read_wait_for_frame_2(&mut self) -> Result<WaitForFrame2> {
+    pub fn read_wait_for_frame_2(&mut self) -> Result<WaitForFrame2> {
         Ok(WaitForFrame2 {
             num_actions_to_skip: self.read_u8()?,
         })
     }
 
     #[inline]
-    fn read_with(&mut self, length: &mut usize) -> Result<ActionsData<'a>> {
+    pub fn read_with(&mut self, length: &mut usize) -> Result<ActionsData<'a>> {
         let code_length = usize::from(self.read_u16()?);
         *length += code_length;
         Ok(self.read_slice(code_length)?)

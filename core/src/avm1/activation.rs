@@ -22,9 +22,10 @@ use std::borrow::Cow;
 use std::cell::{Ref, RefMut};
 use std::convert::TryFrom;
 use std::fmt;
+use swf::avm1::opcode::OpCode;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{
-    Action, CatchVar, DefineFunction, DefineFunction2, GetUrl, GetUrl2, GotoFrame2, RegisterIndex,
+    CatchVar, DefineFunction, DefineFunction2, GetUrl, GetUrl2, GotoFrame2, RegisterIndex,
     SendVarsMethod, TryBlock, Value as SwfValue, WaitForFrame, WaitForFrame2,
 };
 use swf::{FrameNumber, SwfStr};
@@ -462,150 +463,212 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if reader.get_ref().as_ptr() as usize >= data.as_ref().as_ptr_range().end as usize {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
-        } else if let Some(action) = reader.read_action()? {
-            avm_debug!(
-                self.context.avm1,
-                "({}) Action: {:?}",
-                self.id.depth(),
-                action
-            );
-
-            match action {
-                Action::Add => self.action_add(),
-                Action::Add2 => self.action_add_2(),
-                Action::And => self.action_and(),
-                Action::AsciiToChar => self.action_ascii_to_char(),
-                Action::BitAnd => self.action_bit_and(),
-                Action::BitLShift => self.action_bit_lshift(),
-                Action::BitOr => self.action_bit_or(),
-                Action::BitRShift => self.action_bit_rshift(),
-                Action::BitURShift => self.action_bit_urshift(),
-                Action::BitXor => self.action_bit_xor(),
-                Action::Call => self.action_call(),
-                Action::CallFunction => self.action_call_function(),
-                Action::CallMethod => self.action_call_method(),
-                Action::CastOp => self.action_cast_op(),
-                Action::CharToAscii => self.action_char_to_ascii(),
-                Action::CloneSprite => self.action_clone_sprite(),
-                Action::ConstantPool(constant_pool) => {
-                    self.action_constant_pool(&constant_pool[..])
-                }
-                Action::Decrement => self.action_decrement(),
-                Action::DefineFunction(DefineFunction {
-                    name,
-                    params,
-                    actions,
-                }) => self.action_define_function(
-                    name,
-                    &params[..],
-                    data.to_unbounded_subslice(actions).unwrap(),
-                ),
-                Action::DefineFunction2(func) => self.action_define_function_2(&func, &data),
-                Action::DefineLocal => self.action_define_local(),
-                Action::DefineLocal2 => self.action_define_local_2(),
-                Action::Delete => self.action_delete(),
-                Action::Delete2 => self.action_delete_2(),
-                Action::Divide => self.action_divide(),
-                Action::EndDrag => self.action_end_drag(),
-                Action::Enumerate => self.action_enumerate(),
-                Action::Enumerate2 => self.action_enumerate_2(),
-                Action::Equals => self.action_equals(),
-                Action::Equals2 => self.action_equals_2(),
-                Action::Extends => self.action_extends(),
-                Action::GetMember => self.action_get_member(),
-                Action::GetProperty => self.action_get_property(),
-                Action::GetTime => self.action_get_time(),
-                Action::GetVariable => self.action_get_variable(),
-                Action::GetUrl(GetUrl { url, target }) => self.action_get_url(url, target),
-                Action::GetUrl2(GetUrl2 {
-                    send_vars_method,
-                    is_target_sprite,
-                    is_load_vars,
-                }) => self.action_get_url_2(send_vars_method, is_target_sprite, is_load_vars),
-                Action::GotoFrame(frame) => self.action_goto_frame(frame),
-                Action::GotoFrame2(GotoFrame2 {
-                    set_playing,
-                    scene_offset,
-                }) => self.action_goto_frame_2(set_playing, scene_offset),
-                Action::Greater => self.action_greater(),
-                Action::GotoLabel(label) => self.action_goto_label(label),
-                Action::If(offset) => self.action_if(offset, reader, data),
-                Action::Increment => self.action_increment(),
-                Action::InitArray => self.action_init_array(),
-                Action::InitObject => self.action_init_object(),
-                Action::ImplementsOp => self.action_implements_op(),
-                Action::InstanceOf => self.action_instance_of(),
-                Action::Jump(offset) => self.action_jump(offset, reader, data),
-                Action::Less => self.action_less(),
-                Action::Less2 => self.action_less_2(),
-                Action::MBAsciiToChar => self.action_mb_ascii_to_char(),
-                Action::MBCharToAscii => self.action_mb_char_to_ascii(),
-                Action::MBStringLength => self.action_mb_string_length(),
-                Action::MBStringExtract => self.action_mb_string_extract(),
-                Action::Modulo => self.action_modulo(),
-                Action::Multiply => self.action_multiply(),
-                Action::NextFrame => self.action_next_frame(),
-                Action::NewMethod => self.action_new_method(),
-                Action::NewObject => self.action_new_object(),
-                Action::Not => self.action_not(),
-                Action::Or => self.action_or(),
-                Action::Play => self.action_play(),
-                Action::Pop => self.action_pop(),
-                Action::PreviousFrame => self.action_prev_frame(),
-                Action::Push(values) => self.action_push(&values[..]),
-                Action::PushDuplicate => self.action_push_duplicate(),
-                Action::RandomNumber => self.action_random_number(),
-                Action::RemoveSprite => self.action_remove_sprite(),
-                Action::Return => self.action_return(),
-                Action::SetMember => self.action_set_member(),
-                Action::SetProperty => self.action_set_property(),
-                Action::SetTarget(target) => {
-                    self.action_set_target(&target.to_str_lossy(self.encoding()))
-                }
-                Action::SetTarget2 => self.action_set_target2(),
-                Action::SetVariable => self.action_set_variable(),
-                Action::StackSwap => self.action_stack_swap(),
-                Action::StartDrag => self.action_start_drag(),
-                Action::Stop => self.action_stop(),
-                Action::StopSounds => self.action_stop_sounds(),
-                Action::StoreRegister(register) => self.action_store_register(register),
-                Action::StrictEquals => self.action_strict_equals(),
-                Action::StringAdd => self.action_string_add(),
-                Action::StringEquals => self.action_string_equals(),
-                Action::StringExtract => self.action_string_extract(),
-                Action::StringGreater => self.action_string_greater(),
-                Action::StringLength => self.action_string_length(),
-                Action::StringLess => self.action_string_less(),
-                Action::Subtract => self.action_subtract(),
-                Action::TargetPath => self.action_target_path(),
-                Action::ToggleQuality => self.toggle_quality(),
-                Action::ToInteger => self.action_to_integer(),
-                Action::ToNumber => self.action_to_number(),
-                Action::ToString => self.action_to_string(),
-                Action::Trace => self.action_trace(),
-                Action::TypeOf => self.action_type_of(),
-                Action::WaitForFrame(WaitForFrame {
-                    frame,
-                    num_actions_to_skip,
-                }) => self.action_wait_for_frame(frame, num_actions_to_skip, reader),
-                Action::WaitForFrame2(WaitForFrame2 {
-                    num_actions_to_skip,
-                }) => self.action_wait_for_frame_2(num_actions_to_skip, reader),
-                Action::With(actions) => {
-                    self.action_with(data.to_unbounded_subslice(actions).unwrap())
-                }
-                Action::Throw => self.action_throw(),
-                Action::Try(try_block) => self.action_try(&try_block, &data),
-                _ => self.unknown_op(action),
-            }
         } else {
-            //The explicit end opcode was encountered so return here
-            Ok(FrameControl::Return(ReturnType::Implicit))
+            // TODO(madsmtm): Duplicates a lot of stuff in reader.read_action - clean this up!
+            let (opcode, mut length) = reader.read_opcode_and_length()?;
+            let start = reader.get_ref();
+
+            // TODO(madsmtm): Clean this up and remove this parameter
+            let mut should_check_length = true;
+
+            let framecontrol = if let Some(opcode) = OpCode::from_u8(opcode) {
+                // We parse opcodes directly to avoid the performance hit that creating an
+                // Action enum causes. Additionally, this makes it easier to avoid allocations
+                self.dispatch_from_opcode(data, reader, &mut length, &mut should_check_length, opcode)
+            } else {
+                reader
+                    .read_unknown_action(length)
+                    .map_err(|e| e.into())
+                    .and_then(|data| self.unknown_op(opcode, data))
+            };
+
+            let framecontrol = match framecontrol {
+                Err(Error::InvalidSwf(e)) => {
+                    Err(swf::error::Error::avm1_parse_error_with_source(opcode, e).into())
+                }
+                _ => framecontrol,
+            };
+
+            // Verify that we parsed the correct amount of data.
+            let end_pos = (start.as_ptr() as usize + length) as *const u8;
+            if should_check_length && reader.get_ref().as_ptr() != end_pos {
+                // We incorrectly parsed this action.
+                // Re-sync to the expected end of the action and throw an error.
+                *reader.get_mut() = &start[length.min(start.len())..];
+                return Err(swf::error::Error::avm1_parse_error(opcode).into());
+            }
+            framecontrol
         }
     }
 
-    fn unknown_op(&mut self, action: Action) -> Result<FrameControl<'gc>, Error<'gc>> {
-        avm_error!(self, "Unknown AVM1 opcode: {:?}", action);
+    #[inline]
+    fn dispatch_from_opcode<'b>(
+        &mut self,
+        data: &'b SwfSlice,
+        reader: &mut Reader<'b>,
+        length: &mut usize,
+        should_check_length: &mut bool,
+        opcode: OpCode,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        match opcode {
+            OpCode::Add => self.action_add(),
+            OpCode::Add2 => self.action_add_2(),
+            OpCode::And => self.action_and(),
+            OpCode::AsciiToChar => self.action_ascii_to_char(),
+            OpCode::BitAnd => self.action_bit_and(),
+            OpCode::BitLShift => self.action_bit_lshift(),
+            OpCode::BitOr => self.action_bit_or(),
+            OpCode::BitRShift => self.action_bit_rshift(),
+            OpCode::BitURShift => self.action_bit_urshift(),
+            OpCode::BitXor => self.action_bit_xor(),
+            OpCode::Call => self.action_call(),
+            OpCode::CallFunction => self.action_call_function(),
+            OpCode::CallMethod => self.action_call_method(),
+            OpCode::CastOp => self.action_cast_op(),
+            OpCode::CharToAscii => self.action_char_to_ascii(),
+            OpCode::CloneSprite => self.action_clone_sprite(),
+            OpCode::ConstantPool => self.action_constant_pool(reader),
+            OpCode::Decrement => self.action_decrement(),
+            OpCode::DefineFunction => {
+                let DefineFunction {
+                    name,
+                    params,
+                    actions,
+                } = reader.read_define_function(length)?;
+                self.action_define_function(
+                    name,
+                    &params[..],
+                    data.to_unbounded_subslice(actions).unwrap(),
+                )
+            }
+            OpCode::DefineFunction2 => {
+                self.action_define_function_2(&reader.read_define_function_2(length)?, &data)
+            }
+            OpCode::DefineLocal => self.action_define_local(),
+            OpCode::DefineLocal2 => self.action_define_local_2(),
+            OpCode::Delete => self.action_delete(),
+            OpCode::Delete2 => self.action_delete_2(),
+            OpCode::Divide => self.action_divide(),
+            OpCode::End => Ok(FrameControl::Return(ReturnType::Implicit)),
+            OpCode::EndDrag => self.action_end_drag(),
+            OpCode::Enumerate => self.action_enumerate(),
+            OpCode::Enumerate2 => self.action_enumerate_2(),
+            OpCode::Equals => self.action_equals(),
+            OpCode::Equals2 => self.action_equals_2(),
+            OpCode::Extends => self.action_extends(),
+            OpCode::GetMember => self.action_get_member(),
+            OpCode::GetProperty => self.action_get_property(),
+            OpCode::GetTime => self.action_get_time(),
+            OpCode::GetVariable => self.action_get_variable(),
+            OpCode::GetUrl => {
+                let GetUrl { url, target } = reader.read_get_url()?;
+                self.action_get_url(url, target)
+            }
+            OpCode::GetUrl2 => {
+                let GetUrl2 {
+                    send_vars_method,
+                    is_target_sprite,
+                    is_load_vars,
+                } = reader.read_get_url_2()?;
+                self.action_get_url_2(send_vars_method, is_target_sprite, is_load_vars)
+            }
+            OpCode::GotoFrame => self.action_goto_frame(reader.read_goto_frame()?),
+            OpCode::GotoFrame2 => {
+                let GotoFrame2 {
+                    set_playing,
+                    scene_offset,
+                } = reader.read_goto_frame_2()?;
+                self.action_goto_frame_2(set_playing, scene_offset)
+            }
+            OpCode::Greater => self.action_greater(),
+            OpCode::GotoLabel => self.action_goto_label(reader.read_goto_label()?),
+            OpCode::If => {
+                *should_check_length = false;
+                self.action_if(reader.read_instruction_offset()?, reader, data)
+            },
+            OpCode::Increment => self.action_increment(),
+            OpCode::InitArray => self.action_init_array(),
+            OpCode::InitObject => self.action_init_object(),
+            OpCode::ImplementsOp => self.action_implements_op(),
+            OpCode::InstanceOf => self.action_instance_of(),
+            OpCode::Jump => {
+                *should_check_length = false;
+                self.action_jump(reader.read_instruction_offset()?, reader, data)
+            },
+            OpCode::Less => self.action_less(),
+            OpCode::Less2 => self.action_less_2(),
+            OpCode::MBAsciiToChar => self.action_mb_ascii_to_char(),
+            OpCode::MBCharToAscii => self.action_mb_char_to_ascii(),
+            OpCode::MBStringLength => self.action_mb_string_length(),
+            OpCode::MBStringExtract => self.action_mb_string_extract(),
+            OpCode::Modulo => self.action_modulo(),
+            OpCode::Multiply => self.action_multiply(),
+            OpCode::NextFrame => self.action_next_frame(),
+            OpCode::NewMethod => self.action_new_method(),
+            OpCode::NewObject => self.action_new_object(),
+            OpCode::Not => self.action_not(),
+            OpCode::Or => self.action_or(),
+            OpCode::Play => self.action_play(),
+            OpCode::Pop => self.action_pop(),
+            OpCode::PreviousFrame => self.action_prev_frame(),
+            OpCode::Push => self.action_push(reader, *length),
+            OpCode::PushDuplicate => self.action_push_duplicate(),
+            OpCode::RandomNumber => self.action_random_number(),
+            OpCode::RemoveSprite => self.action_remove_sprite(),
+            OpCode::Return => self.action_return(),
+            OpCode::SetMember => self.action_set_member(),
+            OpCode::SetProperty => self.action_set_property(),
+            OpCode::SetTarget => {
+                self.action_set_target(&reader.read_set_target()?.to_str_lossy(self.encoding()))
+            }
+            OpCode::SetTarget2 => self.action_set_target2(),
+            OpCode::SetVariable => self.action_set_variable(),
+            OpCode::StackSwap => self.action_stack_swap(),
+            OpCode::StartDrag => self.action_start_drag(),
+            OpCode::Stop => self.action_stop(),
+            OpCode::StopSounds => self.action_stop_sounds(),
+            OpCode::StoreRegister => self.action_store_register(reader.read_store_register()?),
+            OpCode::StrictEquals => self.action_strict_equals(),
+            OpCode::StringAdd => self.action_string_add(),
+            OpCode::StringEquals => self.action_string_equals(),
+            OpCode::StringExtract => self.action_string_extract(),
+            OpCode::StringGreater => self.action_string_greater(),
+            OpCode::StringLength => self.action_string_length(),
+            OpCode::StringLess => self.action_string_less(),
+            OpCode::Subtract => self.action_subtract(),
+            OpCode::TargetPath => self.action_target_path(),
+            OpCode::ToggleQuality => self.toggle_quality(),
+            OpCode::ToInteger => self.action_to_integer(),
+            OpCode::ToNumber => self.action_to_number(),
+            OpCode::ToString => self.action_to_string(),
+            OpCode::Trace => self.action_trace(),
+            OpCode::TypeOf => self.action_type_of(),
+            OpCode::WaitForFrame => {
+                *should_check_length = false;
+                let WaitForFrame {
+                    frame,
+                    num_actions_to_skip,
+                } = reader.read_wait_for_frame()?;
+                self.action_wait_for_frame(frame, num_actions_to_skip, reader)
+            }
+            OpCode::WaitForFrame2 => {
+                *should_check_length = false;
+                let WaitForFrame2 {
+                    num_actions_to_skip,
+                } = reader.read_wait_for_frame_2()?;
+                self.action_wait_for_frame_2(num_actions_to_skip, reader)
+            }
+            OpCode::With => self.action_with(
+                data.to_unbounded_subslice(reader.read_with(length)?)
+                    .unwrap(),
+            ),
+            OpCode::Throw => self.action_throw(),
+            OpCode::Try => self.action_try(&reader.read_try(length)?, &data),
+        }
+    }
+
+    fn unknown_op(&mut self, opcode: u8, _data: &[u8]) -> Result<FrameControl<'gc>, Error<'gc>> {
+        avm_error!(self, "Unknown AVM1 opcode: {:?}", opcode);
         Ok(FrameControl::Continue)
     }
 
@@ -888,18 +951,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_constant_pool(
         &mut self,
-        constant_pool: &[&'_ SwfStr],
+        reader: &mut Reader,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.context.avm1.constant_pool = GcCell::allocate(
-            self.context.gc_context,
-            constant_pool
-                .iter()
-                .map(|s| {
+        let constant_pool = reader
+            .read_constant_pool()?
+            .map(|r| {
+                r.map(|s| {
                     AvmString::new(self.context.gc_context, s.to_string_lossy(self.encoding()))
                         .into()
                 })
-                .collect(),
-        );
+            })
+            .collect::<Result<_, _>>()?;
+        self.context.avm1.constant_pool = GcCell::allocate(self.context.gc_context, constant_pool);
         self.set_constant_pool(self.context.avm1.constant_pool);
 
         Ok(FrameControl::Continue)
@@ -1772,22 +1835,27 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_push(&mut self, values: &[SwfValue]) -> Result<FrameControl<'gc>, Error<'gc>> {
-        for value in values {
+    fn action_push(
+        &mut self,
+        reader: &mut Reader,
+        length: usize,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        for value in reader.read_push(length)? {
+            let value = value?;
             let value = match value {
                 SwfValue::Undefined => Value::Undefined,
                 SwfValue::Null => Value::Null,
-                SwfValue::Bool(v) => Value::Bool(*v),
-                SwfValue::Int(v) => f64::from(*v).into(),
-                SwfValue::Float(v) => f64::from(*v).into(),
-                SwfValue::Double(v) => (*v).into(),
+                SwfValue::Bool(v) => Value::Bool(v),
+                SwfValue::Int(v) => f64::from(v).into(),
+                SwfValue::Float(v) => f64::from(v).into(),
+                SwfValue::Double(v) => v.into(),
                 SwfValue::Str(v) => {
                     AvmString::new(self.context.gc_context, v.to_string_lossy(self.encoding()))
                         .into()
                 }
-                SwfValue::Register(v) => self.current_register(*v),
+                SwfValue::Register(v) => self.current_register(v),
                 SwfValue::ConstantPool(i) => {
-                    if let Some(value) = self.constant_pool().read().get(*i as usize) {
+                    if let Some(value) = self.constant_pool().read().get(i as usize) {
                         *value
                     } else {
                         avm_warn!(

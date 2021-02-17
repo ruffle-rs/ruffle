@@ -116,3 +116,9 @@ pub enum OpCode {
     Call = 0x9E,
     GotoFrame2 = 0x9F,
 }
+
+impl OpCode {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+}
