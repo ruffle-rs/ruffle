@@ -20,7 +20,7 @@ lyon = "0.17.5"
 dasp = {version = "0.11.0", git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = ["interpolate", "interpolate-linear", "signal"]}
 winit = "0.24.0"
 webbrowser = "0.5.5"
-url = "2.2.0"
+url = "2.2.1"
 clipboard = "0.5.0"
 dirs = "3.0"
 isahc = "1.1.0"
