@@ -459,14 +459,17 @@ pub fn read_utf_bytes<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            let len = args.get(0).unwrap_or(&Value::Undefined).coerce_to_u32(activation)?;
+            let len = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u32(activation)?;
             return Ok(AvmString::new(
                 activation.context.gc_context,
                 String::from_utf8_lossy(&bytearray.read_exactly(len as usize)?),
             )
             .into());
-            }
         }
+    }
 
     Ok(Value::Undefined)
 }
