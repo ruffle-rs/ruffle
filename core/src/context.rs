@@ -33,9 +33,7 @@ use std::time::Duration;
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` crates this when it begins a tick and passes it through the call stack to
 /// children and the VM.
-#[derive(Collect)]
-#[collect(no_drop)]
-pub struct UpdateContext<'a, 'gc: 'a, 'gc_context> {
+pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The queue of actions that will be run after the display list updates.
     /// Display objects and actions can push actions onto the queue.
     pub action_queue: &'a mut ActionQueue<'gc>,
@@ -107,14 +105,12 @@ pub struct UpdateContext<'a, 'gc: 'a, 'gc_context> {
     pub drag_object: &'a mut Option<crate::player::DragObject<'gc>>,
 
     /// The dimensions of the stage.
-    #[collect(require_static)]
     pub stage_size: (Twips, Twips),
 
     /// Weak reference to the player.
     ///
     /// Recipients of an update context may upgrade the reference to ensure
     /// that the player lives across I/O boundaries.
-    #[collect(require_static)]
     pub player: Option<Weak<Mutex<Player>>>,
 
     /// The player's load manager.
@@ -148,12 +144,10 @@ pub struct UpdateContext<'a, 'gc: 'a, 'gc_context> {
     pub external_interface: &'a mut ExternalInterface<'gc>,
 
     /// The instant at which the current update started.
-    #[collect(require_static)]
     pub update_start: Instant,
 
     /// The maximum amount of time that can be called before a `Error::ExecutionTimeout`
     /// is raised. This defaults to 15 seconds but can be changed.
-    #[collect(require_static)]
     pub max_execution_duration: Duration,
 
     /// A tracker for the current keyboard focused element
