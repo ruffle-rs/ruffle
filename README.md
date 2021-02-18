@@ -94,6 +94,12 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   <a href="https://www.armorgames.com/">
     <img src="https://ruffle.rs/assets/sponsors/armorgames.png" alt="Armor Games">
   </a>
+  <a href="https://www.ondaeduca.com/">
+    <img src="https://ruffle.rs/assets/sponsors/ondaeduca.png" alt="Onda Educa">
+  </a>
+  <a href="https://www.twoplayergames.org/">
+    <img src="https://ruffle.rs/assets/sponsors/twoplayergames.png" alt="TwoPlayerGames.org">
+  </a>
 </p>
 
 ## License
