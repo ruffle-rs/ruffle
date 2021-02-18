@@ -5,11 +5,6 @@
 export const ruffleShadowTemplate = document.createElement("template");
 ruffleShadowTemplate.innerHTML = `
     <style>
-        :root {
-            --ruffle-blue: #37528c;
-            --ruffle-orange: #ffad33;
-        }
-
         :host {
             display: inline-block;
             /* Default width/height; this will get overridden by user styles/attributes */
@@ -21,39 +16,36 @@ ruffleShadowTemplate.innerHTML = `
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
+            position: relative;
         }
 
         /* All of these use the dimensions specified by the embed */
         #container,
+        #container canvas,
         #play_button,
         #unmute_overlay,
         #unmute_overlay .background,
         #panic,
         #message_overlay {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            width: inherit;
+            height: inherit;
         }
 
         #container {
+            position: relative;
             overflow: hidden;
-        }
-
-        #container canvas {
-            width: 100%;
-            height: 100%;
         }
 
         #play_button,
         #unmute_overlay {
+            position: absolute;
             cursor: pointer;
             display: none;
         }
 
         #unmute_overlay .background {
-            background: black;
+            position: absolute;
+            background-color: #000;
             opacity: 0.7;
         }
 
@@ -76,6 +68,7 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #panic {
+            position: absolute;
             font-size: 20px;
             text-align: center;
             /* Inverted colours from play button! */
@@ -84,7 +77,7 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #panic a {
-            color: var(--ruffle-blue);
+            color: #37528C;
             font-weight: bold;
         }
 
@@ -132,9 +125,9 @@ ruffleShadowTemplate.innerHTML = `
 
         #message_overlay {
             position: absolute;
-            background: var(--ruffle-blue);
-            color: var(--ruffle-orange);
-            opacity: 1;
+            background-color: #37528C;
+            color: #FFAD33;
+            opacity: 1.0;
             z-index: 2;
             display: flex;
             align-items: center;
@@ -162,9 +155,9 @@ ruffleShadowTemplate.innerHTML = `
 
         #message_overlay a, #message_overlay button {
             cursor: pointer;
-            background: var(--ruffle-blue);
-            color: var(--ruffle-orange);
-            border: 2px solid var(--ruffle-orange);
+            background-color: #37528C;
+            color: #FFAD33;
+            border: 2px solid #FFAD33;
             font-weight: bold;
             font-size: 1.25em;
             border-radius: 0.6em;
@@ -174,28 +167,13 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #message_overlay a:hover, #message_overlay button:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        #continue-btn {
-             cursor: pointer;
-             background: var(--ruffle-blue);
-             color: var(--ruffle-orange);
-             border: 2px solid var(--ruffle-orange);
-             font-weight: bold;
-             font-size: 20px;
-             border-radius: 20px;
-             padding: 10px;
-        }
-
-        #continue-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.3);
         }
 
         #context-menu {
             display: none;
             color: black;
-            background: #fafafa;
+            background-color: #FAFAFA;
             border: 1px solid gray;
             box-shadow: 0px 5px 10px -5px black;
             position: absolute;
@@ -221,7 +199,7 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #context-menu .active:hover {
-            background: lightgray;
+            background-color: lightgray;
         }
 
         #context-menu .menu_separator hr {
