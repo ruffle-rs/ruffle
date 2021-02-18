@@ -459,19 +459,14 @@ pub fn read_utf_bytes<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            if let Some(Value::Integer(len)) = args.get(0) {
-                if *len < 0 {
-                    log::error!("ByteArray: Did not get proper length");
-                    return Err(Box::from("Reached EOF"));
-                }
-                return Ok(AvmString::new(
-                    activation.context.gc_context,
-                    String::from_utf8_lossy(&bytearray.read_exactly(*len as usize)?),
-                )
-                .into());
+            let len = args.get(0).unwrap_or(&Value::Undefined).coerce_to_u32(activation)?;
+            return Ok(AvmString::new(
+                activation.context.gc_context,
+                String::from_utf8_lossy(&bytearray.read_exactly(len as usize)?),
+            )
+            .into());
             }
         }
-    }
 
     Ok(Value::Undefined)
 }
