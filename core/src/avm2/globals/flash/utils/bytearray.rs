@@ -63,7 +63,7 @@ pub fn write_bytes<'gc>(
     if let Some(Value::Object(second_array)) = args.get(0) {
         let combining_bytes = match second_array.as_bytearray() {
             Some(b) => b.bytes().clone(),
-            None => return Err(Box::from("ArgumentError: Parameter must be a bytearray")),
+            None => return Err("ArgumentError: Parameter must be a bytearray".into()),
         };
 
         let offset = args
@@ -79,7 +79,7 @@ pub fn write_bytes<'gc>(
         // However, in the actual flash player, it seems to just raise an error.
         if offset + length > combining_bytes.len() {
             log::error!("ByteArray: Reached EOF");
-            return Err(Box::from("ByteArray: Reached EOF"));
+            return Err("ByteArray: Reached EOF".into());
         }
         if let Some(this) = this {
             if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
@@ -124,7 +124,7 @@ pub fn read_bytes<'gc>(
 
             if position + length > current_bytes.len() {
                 log::error!("ByteArray: Reached EOF");
-                return Err(Box::from("ByteArray: Reached EOF"));
+                return Err("ByteArray: Reached EOF".into());
             }
             if let Some(mut merging_storage) =
                 second_array.as_bytearray_mut(activation.context.gc_context)
@@ -142,7 +142,7 @@ pub fn read_bytes<'gc>(
                 merging_offset = to_write.len();
                 merging_storage.write_bytes_at(&to_write, offset);
             } else {
-                return Err(Box::from("ArgumentError: Parameter must be a bytearray"));
+                return Err("ArgumentError: Parameter must be a bytearray".into());
             }
         }
         this.as_bytearray_mut(activation.context.gc_context)
@@ -328,11 +328,7 @@ pub fn set_endian<'gc>(
             {
                 "bigEndian" => bytearray.set_endian(Endian::Big),
                 "littleEndian" => bytearray.set_endian(Endian::Little),
-                _ => {
-                    return Err(Box::from(
-                        "Parameter type must be one of the accepted values.",
-                    ))
-                }
+                _ => return Err("Parameter type must be one of the accepted values.".into()),
             }
         }
     }
