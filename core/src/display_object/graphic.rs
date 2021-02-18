@@ -137,6 +137,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         &self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         point: (Twips, Twips),
+        _options: HitTestOptions,
     ) -> bool {
         // Transform point to local coordinates and test.
         if self.world_bounds().contains(point) {

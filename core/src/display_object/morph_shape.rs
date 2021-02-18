@@ -82,6 +82,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         &self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         point: (Twips, Twips),
+        _options: HitTestOptions,
     ) -> bool {
         if self.world_bounds().contains(point) {
             if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {

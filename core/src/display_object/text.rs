@@ -131,6 +131,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         mut point: (Twips, Twips),
+        _options: HitTestOptions,
     ) -> bool {
         if self.world_bounds().contains(point) {
             // Texts using the "Advanced text rendering" always hit test using their bounding box.

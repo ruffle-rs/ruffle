@@ -1113,6 +1113,7 @@ pub trait TDisplayObject<'gc>:
         &self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         pos: (Twips, Twips),
+        _options: HitTestOptions,
     ) -> bool {
         // Default to using bounding box.
         self.hit_test_bounds(pos)
@@ -1578,6 +1579,17 @@ bitflags! {
         /// it becomes the _root of itself and of any children
         const LOCK_ROOT                = 1 << 6;
     }
+}
+
+/// Defines how hit testing should be performed.
+/// Used for mouse picking and ActionScript's hitTestClip functions.
+#[derive(Debug, Copy, Clone)]
+pub struct HitTestOptions {
+    /// Ignore objects used as masks (setMask / clipDepth).
+    pub skip_mask: bool,
+
+    /// Ignore objects with the ActionScript's visibility flag turned off.
+    pub skip_invisible: bool,
 }
 
 /// Represents the sound transfomr of sounds played inside a Flash MovieClip.

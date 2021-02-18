@@ -133,7 +133,14 @@ pub fn hit_test<'gc>(
                 .avm1_root(&activation.context)?
                 .local_to_global((Twips::from_pixels(x), Twips::from_pixels(y)));
             let ret = if shape {
-                movie_clip.hit_test_shape(&mut activation.context, point)
+                movie_clip.hit_test_shape(
+                    &mut activation.context,
+                    point,
+                    HitTestOptions {
+                        skip_mask: true,
+                        skip_invisible: false,
+                    },
+                )
             } else {
                 movie_clip.hit_test_bounds(point)
             };
