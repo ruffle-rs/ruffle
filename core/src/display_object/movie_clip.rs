@@ -1804,10 +1804,49 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         point: (Twips, Twips),
+        options: HitTestOptions,
     ) -> bool {
+        if options.skip_invisible && !self.visible() && self.maskee().is_none() {
+            return false;
+        }
+
+        if options.skip_mask && self.maskee().is_some() {
+            return false;
+        }
+
         if self.world_bounds().contains(point) {
-            for child in self.iter_execution_list() {
-                if child.hit_test_shape(context, point) {
+            if let Some(masker) = self.masker() {
+                if !masker.hit_test_shape(
+                    context,
+                    point,
+                    HitTestOptions {
+                        skip_mask: false,
+                        skip_invisible: true,
+                    },
+                ) {
+                    return false;
+                }
+            }
+
+            let mut clip_depth = 0;
+
+            for child in self.iter_render_list() {
+                if child.clip_depth() > 0 {
+                    if child.hit_test_shape(
+                        context,
+                        point,
+                        HitTestOptions {
+                            skip_mask: true,
+                            skip_invisible: true,
+                        },
+                    ) {
+                        clip_depth = 0;
+                    } else {
+                        clip_depth = child.clip_depth();
+                    }
+                } else if child.depth() > clip_depth
+                    && child.hit_test_shape(context, point, options)
+                {
                     return true;
                 }
             }
@@ -1829,6 +1868,19 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         point: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {
         if self.visible() {
+            if let Some(masker) = self.masker() {
+                if !masker.hit_test_shape(
+                    context,
+                    point,
+                    HitTestOptions {
+                        skip_mask: false,
+                        skip_invisible: true,
+                    },
+                ) {
+                    return None;
+                }
+            }
+
             if self.world_bounds().contains(point) {
                 // This movieclip operates in "button mode" if it has a mouse handler,
                 // either via on(..) or via property mc.onRelease, etc.
@@ -1848,18 +1900,52 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     }
                 };
 
-                if is_button_mode && self.hit_test_shape(context, point) {
+                if is_button_mode
+                    && self.hit_test_shape(
+                        context,
+                        point,
+                        HitTestOptions {
+                            skip_mask: self.maskee().is_none(),
+                            skip_invisible: true,
+                        },
+                    )
+                {
                     return Some(self_node);
                 }
             }
 
             // Maybe we could skip recursing down at all if !world_bounds.contains(point),
             // but a child button can have an invisible hit area outside the parent's bounds.
+            let mut hit_depth = 0;
+            let mut result = None;
+
             for child in self.iter_render_list().rev() {
-                let result = child.mouse_pick(context, child, point);
-                if result.is_some() {
-                    return result;
+                if child.clip_depth() > 0 {
+                    if result.is_some() && child.clip_depth() >= hit_depth {
+                        if child.hit_test_shape(
+                            context,
+                            point,
+                            HitTestOptions {
+                                skip_mask: true,
+                                skip_invisible: true,
+                            },
+                        ) {
+                            return result;
+                        } else {
+                            result = None;
+                        }
+                    }
+                } else if result.is_none() {
+                    result = child.mouse_pick(context, child, point);
+
+                    if result.is_some() {
+                        hit_depth = child.depth();
+                    }
                 }
+            }
+
+            if result.is_some() {
+                return result;
             }
         }
 

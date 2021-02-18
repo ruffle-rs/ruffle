@@ -337,9 +337,10 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         point: (Twips, Twips),
+        options: HitTestOptions,
     ) -> bool {
         for child in self.iter_execution_list() {
-            if child.hit_test_shape(context, point) {
+            if child.hit_test_shape(context, point, options) {
                 return true;
             }
         }
@@ -363,7 +364,14 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             }
 
             for child in self.0.read().hit_area.values() {
-                if child.hit_test_shape(context, point) {
+                if child.hit_test_shape(
+                    context,
+                    point,
+                    HitTestOptions {
+                        skip_mask: true,
+                        skip_invisible: true,
+                    },
+                ) {
                     return Some(self_node);
                 }
             }

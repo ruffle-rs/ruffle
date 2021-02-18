@@ -1606,7 +1606,17 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         point: (Twips, Twips),
     ) -> Option<DisplayObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
-        if self.visible() && self.is_selectable() && self.hit_test_shape(context, point) {
+        if self.visible()
+            && self.is_selectable()
+            && self.hit_test_shape(
+                context,
+                point,
+                HitTestOptions {
+                    skip_mask: true,
+                    skip_invisible: true,
+                },
+            )
+        {
             Some(self_node)
         } else {
             None
