@@ -12,7 +12,8 @@ use swf::Twips;
 #[collect(no_drop)]
 pub struct MorphShape<'gc>(GcCell<'gc, MorphShapeData<'gc>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, MorphShapeStatic>,
@@ -96,14 +97,6 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for MorphShapeData<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.base.trace(cc);
-        self.static_data.trace(cc);
-    }
-}
-
 /// A precalculated intermediate frame for a morph shape.
 struct Frame {
     shape_handle: ShapeHandle,
@@ -113,6 +106,8 @@ struct Frame {
 
 /// Static data shared between all instances of a morph shape.
 #[allow(dead_code)]
+#[derive(Collect)]
+#[collect(require_static)]
 pub struct MorphShapeStatic {
     id: CharacterId,
     start: swf::MorphShape,
@@ -304,13 +299,6 @@ impl MorphShapeStatic {
                 }
             }
         }
-    }
-}
-
-unsafe impl<'gc> gc_arena::Collect for MorphShapeStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
     }
 }
 

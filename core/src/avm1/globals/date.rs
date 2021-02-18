@@ -77,16 +77,11 @@ macro_rules! implement_utc_getters {
     };
 }
 
+#[derive(Collect)]
+#[collect(require_static)]
 enum YearType {
     Full,
     Adjust(Box<dyn Fn(i64) -> i64>),
-}
-
-unsafe impl Collect for YearType {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
-    }
 }
 
 impl YearType {

@@ -2,7 +2,7 @@ use crate::avm1::globals::create_globals;
 use crate::avm1::object::{search_prototype, stage_object};
 use crate::context::UpdateContext;
 use crate::prelude::*;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 
 use swf::avm1::read::Reader;
 
@@ -76,6 +76,8 @@ macro_rules! avm_error {
     )
 }
 
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct Avm1<'gc> {
     /// The Flash Player version we're emulating.
     player_version: u8,
@@ -117,22 +119,6 @@ pub struct Avm1<'gc> {
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
-}
-
-unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.globals.trace(cc);
-        self.constant_pool.trace(cc);
-        //self.system_listeners.trace(cc);
-        self.prototypes.trace(cc);
-        self.display_properties.trace(cc);
-        self.stack.trace(cc);
-
-        for register in &self.registers {
-            register.trace(cc);
-        }
-    }
 }
 
 impl<'gc> Avm1<'gc> {

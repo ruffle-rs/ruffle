@@ -291,6 +291,8 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 }
 
 /// A queued ActionScript call.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct QueuedActions<'gc> {
     /// The movie clip this ActionScript is running on.
     pub clip: DisplayObject<'gc>,
@@ -300,14 +302,6 @@ pub struct QueuedActions<'gc> {
 
     /// Whether this is an unload action, which can still run if the clip is removed.
     pub is_unload: bool,
-}
-
-unsafe impl<'gc> Collect for QueuedActions<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.clip.trace(cc);
-        self.action_type.trace(cc);
-    }
 }
 
 /// Action and gotos need to be queued up to execute at the end of the frame.
@@ -400,7 +394,8 @@ pub struct RenderContext<'a, 'gc> {
 }
 
 /// The type of action being run.
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub enum ActionType<'gc> {
     /// Normal frame or event actions.
     Normal { bytecode: SwfSlice },
@@ -491,25 +486,6 @@ impl fmt::Debug for ActionType<'_> {
                 .field("reciever", reciever)
                 .field("args", args)
                 .finish(),
-        }
-    }
-}
-
-unsafe impl<'gc> Collect for ActionType<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        match self {
-            ActionType::Construct { constructor, .. } => {
-                constructor.trace(cc);
-            }
-            ActionType::Method { object, args, .. } => {
-                object.trace(cc);
-                args.trace(cc);
-            }
-            ActionType::NotifyListeners { args, .. } => {
-                args.trace(cc);
-            }
-            _ => {}
         }
     }
 }

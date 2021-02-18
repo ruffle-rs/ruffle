@@ -9,8 +9,8 @@ license = "MIT OR Apache-2.0"
 bitstream-io = "1.0.0"
 flate2 = "1.0.20"
 fnv = "1.0.7"
-gc-arena = "0.2.0"
-gc-arena-derive = "0.2.0"
+gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
+gc-arena-derive = { git = "https://github.com/ruffle-rs/gc-arena" }
 generational-arena = "0.2.8"
 gif = "0.11.1"
 indexmap = "1.6.1"

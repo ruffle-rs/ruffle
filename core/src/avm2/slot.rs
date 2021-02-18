@@ -3,10 +3,11 @@
 use crate::avm2::property::Attribute;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::Collect;
 
 /// Represents a single slot on an object.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub enum Slot<'gc> {
     /// An unoccupied slot.
     ///
@@ -21,15 +22,6 @@ pub enum Slot<'gc> {
         value: Value<'gc>,
         attributes: Attribute,
     },
-}
-
-unsafe impl<'gc> Collect for Slot<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        match self {
-            Self::Unoccupied => {}
-            Self::Occupied { value, .. } => value.trace(cc),
-        }
-    }
 }
 
 impl<'gc> Default for Slot<'gc> {

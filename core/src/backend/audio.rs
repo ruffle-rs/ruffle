@@ -6,7 +6,7 @@ use crate::{
     },
 };
 use downcast_rs::Downcast;
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::Collect;
 use generational_arena::{Arena, Index};
 
 pub mod decoders;
@@ -165,6 +165,8 @@ impl Default for NullAudioBackend {
     }
 }
 
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct AudioManager<'gc> {
     /// The list of actively playing sounds.
     sounds: Vec<SoundInstance<'gc>>,
@@ -370,20 +372,16 @@ impl<'gc> Default for AudioManager<'gc> {
     }
 }
 
-unsafe impl<'gc> Collect for AudioManager<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        for sound in &self.sounds {
-            sound.trace(cc);
-        }
-    }
-}
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub struct SoundInstance<'gc> {
     /// The handle to the sound instance in the audio backend.
+    #[collect(require_static)]
     instance: SoundInstanceHandle,
 
     /// The handle to the sound definition in the audio backend.
     /// This will be `None` for stream sounds.
+    #[collect(require_static)]
     sound: Option<SoundHandle>,
 
     /// The display object that this sound is playing in, if any.
@@ -392,13 +390,6 @@ pub struct SoundInstance<'gc> {
 
     /// The AVM1 `Sound` object associated with this sound, if any.
     pub avm1_object: Option<SoundObject<'gc>>,
-}
-
-unsafe impl<'gc> Collect for SoundInstance<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        self.display_object.trace(cc);
-        self.avm1_object.trace(cc);
-    }
 }
 
 /// A sound transform for a playing sound, for use by audio backends.

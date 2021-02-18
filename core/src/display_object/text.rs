@@ -12,7 +12,8 @@ use std::sync::Arc;
 #[collect(no_drop)]
 pub struct Text<'gc>(GcCell<'gc, TextData<'gc>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, TextStatic>,
@@ -194,28 +195,14 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for TextData<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.base.trace(cc);
-        self.static_data.trace(cc);
-    }
-}
-
 /// Static data shared between all instances of a text object.
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Collect)]
+#[collect(require_static)]
 struct TextStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
     bounds: BoundingBox,
     text_transform: Matrix,
     text_blocks: Vec<swf::TextRecord>,
-}
-
-unsafe impl<'gc> gc_arena::Collect for TextStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
-    }
 }

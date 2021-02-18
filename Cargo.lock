@@ -1395,8 +1395,7 @@ dependencies = [
 [[package]]
 name = "gc-arena"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7262a3f0bd866ed41d13f7a5147d5fe2278f6860aeab66bd72e9f2f770fc3e8"
+source = "git+https://github.com/ruffle-rs/gc-arena#4931b3bc25b2b74174ff5eb9c34ae0dda732778b"
 dependencies = [
  "gc-arena-derive",
 ]
@@ -1404,8 +1403,7 @@ dependencies = [
 [[package]]
 name = "gc-arena-derive"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5a1fd9d509709237f7673fe8fa4a2fcf8136bf5bd43b67bab6af267a9850524"
+source = "git+https://github.com/ruffle-rs/gc-arena#4931b3bc25b2b74174ff5eb9c34ae0dda732778b"
 dependencies = [
  "proc-macro2",
  "quote",

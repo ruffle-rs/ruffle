@@ -47,12 +47,14 @@ type FrameNumber = u16;
 #[collect(no_drop)]
 pub struct MovieClip<'gc>(GcCell<'gc, MovieClipData<'gc>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct MovieClipData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
     current_frame: FrameNumber,
+    #[collect(require_static)]
     audio_stream: Option<SoundInstanceHandle>,
     container: ChildContainer<'gc>,
     object: Option<AvmObject<'gc>>,
@@ -66,18 +68,6 @@ pub struct MovieClipData<'gc> {
     has_focus: bool,
     enabled: bool,
     use_hand_cursor: bool,
-}
-
-unsafe impl<'gc> Collect for MovieClipData<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.container.trace(cc);
-        self.base.trace(cc);
-        self.static_data.trace(cc);
-        self.object.trace(cc);
-        self.avm2_constructor.trace(cc);
-        self.frame_scripts.trace(cc);
-    }
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -3204,6 +3194,8 @@ impl<'a> GotoPlaceObject<'a> {
 
 bitflags! {
     /// Boolean state flags used by `MovieClip`.
+    #[derive(Collect)]
+    #[collect(require_static)]
     struct MovieClipFlags: u8 {
         /// Whether this `MovieClip` has run its initial frame.
         const INITIALIZED             = 1 << 0;
@@ -3221,7 +3213,8 @@ bitflags! {
 
 /// Actions that are attached to a `MovieClip` event in
 /// an `onClipEvent`/`on` handler.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Collect)]
+#[collect(require_static)]
 pub struct ClipAction {
     /// The event that triggers this handler.
     event: ClipEvent,

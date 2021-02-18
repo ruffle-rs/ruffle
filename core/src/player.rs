@@ -1491,19 +1491,17 @@ impl Player {
     }
 }
 
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct DragObject<'gc> {
     /// The display object being dragged.
     pub display_object: DisplayObject<'gc>,
 
     /// The offset from the mouse position to the center of the clip.
+    #[collect(require_static)]
     pub offset: (Twips, Twips),
 
     /// The bounding rectangle where the clip will be maintained.
+    #[collect(require_static)]
     pub constraint: BoundingBox,
-}
-
-unsafe impl<'gc> gc_arena::Collect for DragObject<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.display_object.trace(cc);
-    }
 }

@@ -18,7 +18,8 @@ use swf::ButtonActionCondition;
 #[collect(no_drop)]
 pub struct Button<'gc>(GcCell<'gc, ButtonData<'gc>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct ButtonData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: GcCell<'gc, ButtonStatic>,
@@ -567,20 +568,8 @@ impl<'gc> ButtonData<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for ButtonData<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.container.trace(cc);
-        for child in self.hit_area.values() {
-            child.trace(cc);
-        }
-        self.base.trace(cc);
-        self.static_data.trace(cc);
-        self.object.trace(cc);
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
+#[collect(require_static)]
 #[allow(dead_code)]
 enum ButtonState {
     Up,
@@ -595,7 +584,8 @@ struct ButtonAction {
     key_code: Option<ButtonKeyCode>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
+#[collect(require_static)]
 enum ButtonTracking {
     Push,
     Menu,
@@ -603,7 +593,8 @@ enum ButtonTracking {
 
 /// Static data shared between all instances of a button.
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
 struct ButtonStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
@@ -615,11 +606,4 @@ struct ButtonStatic {
     over_to_down_sound: Option<swf::ButtonSound>,
     down_to_over_sound: Option<swf::ButtonSound>,
     over_to_up_sound: Option<swf::ButtonSound>,
-}
-
-unsafe impl gc_arena::Collect for ButtonStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
-    }
 }

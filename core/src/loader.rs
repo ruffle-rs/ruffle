@@ -259,7 +259,8 @@ impl<'gc> Default for LoadManager<'gc> {
 }
 
 /// The completion status of a `Loader` loading a movie.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Collect)]
+#[collect(require_static)]
 pub enum LoaderStatus {
     /// The movie hasn't been loaded yet.
     Pending,
@@ -270,16 +271,20 @@ pub enum LoaderStatus {
 }
 
 /// A struct that holds garbage-collected pointers for asynchronous code.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub enum Loader<'gc> {
     /// Loader that is loading the root movie of a player.
     RootMovie {
         /// The handle to refer to this loader instance.
+        #[collect(require_static)]
         self_handle: Option<Handle>,
     },
 
     /// Loader that is loading a new movie into a movieclip.
     Movie {
         /// The handle to refer to this loader instance.
+        #[collect(require_static)]
         self_handle: Option<Handle>,
 
         /// The target movie clip to load the movie into.
@@ -303,6 +308,7 @@ pub enum Loader<'gc> {
     /// Loader that is loading form data into an AVM1 object scope.
     Form {
         /// The handle to refer to this loader instance.
+        #[collect(require_static)]
         self_handle: Option<Handle>,
 
         /// The target AVM1 object to load form data into.
@@ -312,6 +318,7 @@ pub enum Loader<'gc> {
     /// Loader that is loading form data into an AVM1 LoadVars object.
     LoadVars {
         /// The handle to refer to this loader instance.
+        #[collect(require_static)]
         self_handle: Option<Handle>,
 
         /// The target AVM1 object to load form data into.
@@ -321,6 +328,7 @@ pub enum Loader<'gc> {
     /// Loader that is loading XML data into an XML tree.
     Xml {
         /// The handle to refer to this loader instance.
+        #[collect(require_static)]
         self_handle: Option<Handle>,
 
         /// The active movie clip at the time of load invocation.
@@ -334,25 +342,6 @@ pub enum Loader<'gc> {
         /// The target node whose contents will be replaced with the parsed XML.
         target_node: XmlNode<'gc>,
     },
-}
-
-unsafe impl<'gc> Collect for Loader<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        match self {
-            Loader::RootMovie { .. } => {}
-            Loader::Movie {
-                target_clip,
-                target_broadcaster,
-                ..
-            } => {
-                target_clip.trace(cc);
-                target_broadcaster.trace(cc);
-            }
-            Loader::Form { target_object, .. } => target_object.trace(cc),
-            Loader::LoadVars { target_object, .. } => target_object.trace(cc),
-            Loader::Xml { target_node, .. } => target_node.trace(cc),
-        }
-    }
 }
 
 impl<'gc> Loader<'gc> {

@@ -6,9 +6,11 @@ use crate::ecma_conversions::{
     f64_to_string, f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16,
     f64_to_wrapping_u32,
 };
+use gc_arena::Collect;
 use std::borrow::Cow;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Collect)]
+#[collect(no_drop)]
 #[allow(dead_code)]
 pub enum Value<'gc> {
     Undefined,
@@ -91,16 +93,6 @@ impl<'gc> From<u32> for Value<'gc> {
 impl<'gc> From<usize> for Value<'gc> {
     fn from(value: usize) -> Self {
         Value::Number(value as f64)
-    }
-}
-
-unsafe impl<'gc> gc_arena::Collect for Value<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        match self {
-            Value::String(string) => string.trace(cc),
-            Value::Object(object) => object.trace(cc),
-            _ => {}
-        }
     }
 }
 

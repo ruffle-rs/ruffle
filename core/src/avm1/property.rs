@@ -4,10 +4,13 @@ use crate::avm1::object::Object;
 use crate::avm1::Value;
 use bitflags::bitflags;
 use core::fmt;
+use gc_arena::Collect;
 
 bitflags! {
     /// Attributes of properties in the AVM runtime.
     /// The values are significant and should match the order used by `object::as_set_prop_flags`.
+    #[derive(Collect)]
+    #[collect(require_static)]
     pub struct Attribute: u8 {
         const DONT_ENUM   = 1 << 0;
         const DONT_DELETE = 1 << 1;
@@ -16,7 +19,8 @@ bitflags! {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub enum Property<'gc> {
     Virtual {
         get: Object<'gc>,
@@ -104,18 +108,6 @@ impl<'gc> Property<'gc> {
         match self {
             Property::Virtual { .. } => true,
             Property::Stored { .. } => false,
-        }
-    }
-}
-
-unsafe impl<'gc> gc_arena::Collect for Property<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        match self {
-            Property::Virtual { get, set, .. } => {
-                get.trace(cc);
-                set.trace(cc);
-            }
-            Property::Stored { value, .. } => value.trace(cc),
         }
     }
 }

@@ -14,6 +14,8 @@ use std::fmt;
 #[collect(no_drop)]
 pub struct SoundObject<'gc>(GcCell<'gc, SoundObjectData<'gc>>);
 
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct SoundObjectData<'gc> {
     /// The underlying script object.
     ///
@@ -22,9 +24,11 @@ pub struct SoundObjectData<'gc> {
     base: ScriptObject<'gc>,
 
     /// The sound that is attached to this object.
+    #[collect(require_static)]
     sound: Option<SoundHandle>,
 
     /// The instance of the last played sound on this object.
+    #[collect(require_static)]
     sound_instance: Option<SoundInstanceHandle>,
 
     /// Sounds in AVM1 are tied to a specific movie clip.
@@ -35,13 +39,6 @@ pub struct SoundObjectData<'gc> {
 
     /// Duration of the currently attached sound in milliseconds.
     duration: u32,
-}
-
-unsafe impl<'gc> Collect for SoundObjectData<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.base.trace(cc);
-        self.owner.trace(cc);
-    }
 }
 
 impl fmt::Debug for SoundObject<'_> {

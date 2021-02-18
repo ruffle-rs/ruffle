@@ -1625,7 +1625,8 @@ struct EditTextStatic {
     swf: Arc<SwfMovie>,
     text: EditTextStaticData,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Collect)]
+#[collect(require_static)]
 struct EditTextStaticData {
     id: CharacterId,
     bounds: swf::Rectangle,
@@ -1649,23 +1650,11 @@ struct EditTextStaticData {
     is_device_font: bool,
 }
 
-unsafe impl<'gc> Collect for EditTextStaticData {
-    fn needs_trace() -> bool {
-        false
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Collect)]
+#[collect(require_static)]
 pub struct TextSelection {
     from: usize,
     to: usize,
-}
-
-unsafe impl Collect for TextSelection {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
-    }
 }
 
 impl TextSelection {

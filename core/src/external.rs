@@ -7,7 +7,7 @@ use crate::avm1::{
     AvmString as Avm1String, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
 };
 use crate::context::UpdateContext;
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::Collect;
 use std::collections::BTreeMap;
 
 /// An intermediate format of representing shared data between ActionScript and elsewhere.
@@ -252,17 +252,12 @@ where
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Collect)]
+#[collect(no_drop)]
 pub struct ExternalInterface<'gc> {
+    #[collect(require_static)]
     providers: Vec<Box<dyn ExternalInterfaceProvider>>,
     callbacks: BTreeMap<String, Callback<'gc>>,
-}
-
-unsafe impl Collect for ExternalInterface<'_> {
-    #[inline]
-    fn trace(&self, cc: CollectionContext) {
-        self.callbacks.trace(cc);
-    }
 }
 
 impl<'gc> ExternalInterface<'gc> {
