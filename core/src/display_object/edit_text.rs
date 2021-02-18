@@ -198,7 +198,7 @@ impl<'gc> EditText<'gc> {
             swf_tag.is_device_font,
         );
 
-        let has_background = false;
+        let has_background = swf_tag.has_border;
         let background_color = 0xFFFFFF; // Default is white
         let has_border = swf_tag.has_border;
         let border_color = 0; // Default is black
@@ -678,15 +678,19 @@ impl<'gc> EditText<'gc> {
 
         write.drawing.clear();
 
-        if write.has_border {
+        if write.has_border || write.has_background {
             let bounds = write.bounds.clone();
             let border_color = write.border_color;
             let background_color = write.background_color;
 
-            write.drawing.set_line_style(Some(swf::LineStyle::new_v1(
-                Twips::new(1),
-                swf::Color::from_rgb(border_color, 0xFF),
-            )));
+            if write.has_border {
+                write.drawing.set_line_style(Some(swf::LineStyle::new_v1(
+                    Twips::new(1),
+                    swf::Color::from_rgb(border_color, 0xFF),
+                )));
+            } else {
+                write.drawing.set_line_style(None);
+            }
             if write.has_background {
                 write
                     .drawing
