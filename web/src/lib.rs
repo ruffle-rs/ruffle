@@ -1010,12 +1010,12 @@ fn js_to_external_value(js: &JsValue) -> ExternalValue {
     } else if let Some(value) = js.as_bool() {
         ExternalValue::Bool(value)
     } else if let Some(array) = js.dyn_ref::<Array>() {
-        let mut values = Vec::new();
-        for value in array.values() {
-            if let Ok(value) = value {
-                values.push(js_to_external_value(&value));
-            }
-        }
+        let values: Vec<_> = array
+            .values()
+            .into_iter()
+            .flatten()
+            .map(|v| js_to_external_value(&v))
+            .collect();
         ExternalValue::List(values)
     } else if let Some(object) = js.dyn_ref::<Object>() {
         let mut values = BTreeMap::new();
@@ -1136,12 +1136,10 @@ pub fn set_panic_handler() {
 
 fn populate_movie_parameters(input: &JsValue, output: &mut PropertyMap<String>) {
     if let Ok(keys) = js_sys::Reflect::own_keys(input) {
-        for key in keys.values() {
-            if let Ok(key) = key {
-                if let Ok(value) = js_sys::Reflect::get(input, &key) {
-                    if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
-                        output.insert(&key, value, false);
-                    }
+        for key in keys.values().into_iter().flatten() {
+            if let Ok(value) = js_sys::Reflect::get(input, &key) {
+                if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
+                    output.insert(&key, value, false);
                 }
             }
         }
