@@ -12,7 +12,8 @@ ruffleShadowTemplate.innerHTML = `
 
         :host {
             display: inline-block;
-            /* Default width/height; this will get overridden by user styles/attributes */
+            position: relative;
+            /* Default width/height; this will get overridden by user styles/attributes. */
             width: 550px;
             height: 400px;
             font-family: Arial, sans-serif;
@@ -23,7 +24,7 @@ ruffleShadowTemplate.innerHTML = `
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* All of these use the dimensions specified by the embed */
+        /* All of these use the dimensions specified by the embed. */
         #container,
         #play_button,
         #unmute_overlay,
@@ -78,9 +79,9 @@ ruffleShadowTemplate.innerHTML = `
         #panic {
             font-size: 20px;
             text-align: center;
-            /* Inverted colours from play button! */
+            /* Inverted colors from play button! */
             background: linear-gradient(180deg, rgba(253,58,64,1) 0%, rgba(253,161,56,1) 100%);
-            color: #FFF;
+            color: white;
         }
 
         #panic a {
