@@ -140,8 +140,7 @@ impl ByteArrayStorage {
     // Reads exactly an amount of data
     pub fn read_exactly(&mut self, amnt: usize) -> Result<&[u8], Error> {
         if self.position + amnt > self.bytes.len() {
-            log::error!("ByteArray: Reached EOF");
-            return Err("Reached EOF".into());
+            return Err("EOFError: Reached EOF".into());
         }
         let val = Ok(&self.bytes[self.position..self.position + amnt]);
         self.position += amnt;

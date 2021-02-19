@@ -78,8 +78,7 @@ pub fn write_bytes<'gc>(
         // In the docs it says "If offset or length is out of range, they are clamped to the beginning and end of the bytes array."
         // However, in the actual flash player, it seems to just raise an error.
         if offset + length > combining_bytes.len() {
-            log::error!("ByteArray: Reached EOF");
-            return Err("ByteArray: Reached EOF".into());
+            return Err("EOFError: Reached EOF".into());
         }
         if let Some(this) = this {
             if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
@@ -123,8 +122,7 @@ pub fn read_bytes<'gc>(
                 .coerce_to_u32(activation)? as usize;
 
             if position + length > current_bytes.len() {
-                log::error!("ByteArray: Reached EOF");
-                return Err("ByteArray: Reached EOF".into());
+                return Err("EOFError: Reached EOF".into());
             }
             if let Some(mut merging_storage) =
                 second_array.as_bytearray_mut(activation.context.gc_context)
