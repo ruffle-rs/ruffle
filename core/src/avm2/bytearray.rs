@@ -283,13 +283,14 @@ impl ByteArrayStorage {
     }
 
     // Writes a UTF String into the buffer, with its length as a prefix
-    pub fn write_utf(&mut self, utf_string: &str) {
+    pub fn write_utf(&mut self, utf_string: &str) -> Result<(), Error> {
         if let Ok(str_size) = u16::try_from(utf_string.len()) {
             self.write_unsigned_short(str_size);
             self.write_bytes(utf_string.as_bytes());
         } else {
-            log::error!("ByteArray: UTF String length must fit into a short");
+            return Err("RangeError: UTF String length must fit into a short".into());
         }
+        Ok(())
     }
 
     pub fn get(&self, item: usize) -> Option<u8> {

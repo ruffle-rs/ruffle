@@ -161,7 +161,7 @@ pub fn write_utf<'gc>(
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             if let Some(utf_string) = args.get(0) {
                 let utf_string = utf_string.coerce_to_string(activation)?;
-                bytearray.write_utf(&utf_string.as_str());
+                bytearray.write_utf(&utf_string.as_str())?;
             }
         }
     }
