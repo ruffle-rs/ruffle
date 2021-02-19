@@ -960,7 +960,7 @@ pub trait TDisplayObject<'gc>:
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Unload children.
         if let Some(ctr) = self.as_container() {
-            // TODO: fix order?
+            // TODO: in what order?
             for child in ctr.iter_render_list() {
                 child.unload(context);
             }

@@ -718,15 +718,13 @@ impl Player {
             _ => None,
         };
 
-        if button_event.is_some() {
+        if let Some(button_event) = button_event {
             self.mutate_with_update_context(|context| {
                 let levels: Vec<Level<'_>> = context.levels.iter().copied().collect();
                 for level in levels {
-                    if let Some(button_event) = button_event {
-                        let state = level.root().handle_clip_event(context, button_event);
-                        if state == ClipEventResult::Handled {
-                            return;
-                        }
+                    let state = level.root().handle_clip_event(context, button_event);
+                    if state == ClipEventResult::Handled {
+                        return;
                     }
                 }
             });

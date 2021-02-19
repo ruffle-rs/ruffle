@@ -354,6 +354,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     ) -> Option<DisplayObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
         if self.visible() {
+            // TODO: in what order?
             for child in self.iter_render_list().rev() {
                 let result = child.mouse_pick(context, child, point);
                 if result.is_some() {
@@ -415,6 +416,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         }
 
         if event.propagates() {
+            // TODO: in what order?
             for child in self.iter_render_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;

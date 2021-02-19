@@ -1873,6 +1873,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             // Maybe we could skip recursing down at all if !world_bounds.contains(point),
             // but a child button can have an invisible hit area outside the parent's bounds.
             for child in self.iter_render_list().rev() {
+                // TODO: in what order?
                 let result = child.mouse_pick(context, child, point);
                 if result.is_some() {
                     return result;
@@ -1908,7 +1909,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         if event.propagates() {
-            for child in self.iter_render_list() {
+            // TODO: in what order?
+            for (_, child) in self.iter_children_by_depth() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
                 }
@@ -1969,7 +1971,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        // TODO: fix order?
+        // TODO: in what order?
         for child in self.iter_render_list() {
             child.unload(context);
         }
