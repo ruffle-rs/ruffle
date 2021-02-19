@@ -1087,16 +1087,16 @@ impl<'gc> MovieClip<'gc> {
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
             TagCode::DoAction => self.do_action(self_display_object, context, reader, tag_len),
             TagCode::PlaceObject if run_display_actions && vm_type == AvmType::Avm1 => {
-                self.place_object(self_display_object, context, reader, tag_len, 1)
+                self.place_object(context, reader, tag_len, 1)
             }
             TagCode::PlaceObject2 if run_display_actions && vm_type == AvmType::Avm1 => {
-                self.place_object(self_display_object, context, reader, tag_len, 2)
+                self.place_object(context, reader, tag_len, 2)
             }
             TagCode::PlaceObject3 if run_display_actions && vm_type == AvmType::Avm1 => {
-                self.place_object(self_display_object, context, reader, tag_len, 3)
+                self.place_object(context, reader, tag_len, 3)
             }
             TagCode::PlaceObject4 if run_display_actions && vm_type == AvmType::Avm1 => {
-                self.place_object(self_display_object, context, reader, tag_len, 4)
+                self.place_object(context, reader, tag_len, 4)
             }
             TagCode::RemoveObject if run_display_actions => self.remove_object(context, reader, 1),
             TagCode::RemoveObject2 if run_display_actions => self.remove_object(context, reader, 2),
@@ -1123,10 +1123,8 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Instantiate a given child object on the timeline at a given depth.
-    #[allow(clippy::too_many_arguments)]
     fn instantiate_child(
         self,
-        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
         depth: Depth,
@@ -1337,7 +1335,6 @@ impl<'gc> MovieClip<'gc> {
                 }
                 _ => {
                     if let Some(child) = clip.instantiate_child(
-                        self_display_object,
                         context,
                         params.id(),
                         params.depth(),
@@ -3039,7 +3036,6 @@ impl<'gc, 'a> MovieClip<'gc> {
 
     fn place_object(
         self,
-        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
         tag_len: usize,
@@ -3054,7 +3050,6 @@ impl<'gc, 'a> MovieClip<'gc> {
         match place_object.action {
             PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id) => {
                 if let Some(child) = self.instantiate_child(
-                    self_display_object,
                     context,
                     id,
                     place_object.depth.into(),
