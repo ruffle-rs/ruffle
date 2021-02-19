@@ -12,15 +12,12 @@ impl<'gc> LevelsData<'gc> {
     pub fn insert(&mut self, gc_context: MutationContext<'gc, '_>, level: Level<'gc>) {
         if let Some(level0) = self.get(0) {
             let prev = level0.root();
-            let next = prev.next_exec();
-
-            level.last_child().set_prev_exec(gc_context, Some(prev));
-            level.root().set_next_exec(gc_context, next);
-
-            prev.set_next_exec(gc_context, Some(level.last_child()));
-            if let Some(next) = next {
+            if let Some(next) = prev.next_exec() {
+                level.root().set_next_exec(gc_context, Some(next));
                 next.set_prev_exec(gc_context, Some(level.root()));
             }
+            level.last_child().set_prev_exec(gc_context, Some(prev));
+            prev.set_next_exec(gc_context, Some(level.last_child()));
         }
         self.0.insert(level.id(), level);
     }

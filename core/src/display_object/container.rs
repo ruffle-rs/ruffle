@@ -371,6 +371,11 @@ macro_rules! impl_display_object_container {
             child: DisplayObject<'gc>,
             depth: Depth,
         ) -> Option<DisplayObject<'gc>> {
+            child.set_parent(context.gc_context, Some(self.into()));
+            child.set_depth(context.gc_context, depth);
+            child.set_level_id(context.gc_context, self.level_id());
+            child.set_place_frame(context.gc_context, 0);
+
             let mut write = self.0.write(context.gc_context);
 
             let prev_child = write.$field.insert_child_into_depth_list(depth, child);
@@ -418,12 +423,6 @@ macro_rules! impl_display_object_container {
                 context.remove_from_execution_list(removed_child);
             }
             context.add_to_execution_list(child);
-
-            child.set_parent(context.gc_context, Some(self.into()));
-            child.set_level_id(context.gc_context, self.level_id());
-            child.set_place_frame(context.gc_context, 0);
-            child.set_depth(context.gc_context, depth);
-
             if let Some(removed_child) = removed_child {
                 removed_child.unload(context);
                 removed_child.set_parent(context.gc_context, None);

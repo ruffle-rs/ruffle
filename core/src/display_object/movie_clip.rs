@@ -1141,34 +1141,31 @@ impl<'gc> MovieClip<'gc> {
             // Remove previous child from children list,
             // and add new child onto front of the list.
             let prev_child = self.replace_at_depth(context, child, depth);
-            {
-                // Set initial properties for child.
-                child.set_instantiated_by_timeline(context.gc_context, true);
-                child.set_depth(context.gc_context, depth);
-                child.set_parent(context.gc_context, Some(self_display_object));
-                child.set_level_id(context.gc_context, self_display_object.level_id());
-                if child.vm_type(context) == AvmType::Avm2 {
-                    // In AVM2 instantiation happens before frame advance so we
-                    // have to special-case that
-                    child.set_place_frame(context.gc_context, self.current_frame() + 1);
-                } else {
-                    child.set_place_frame(context.gc_context, self.current_frame());
+
+            // Set initial properties for child.
+            child.set_instantiated_by_timeline(context.gc_context, true);
+            if child.vm_type(context) == AvmType::Avm2 {
+                // In AVM2 instantiation happens before frame advance so we
+                // have to special-case that
+                child.set_place_frame(context.gc_context, self.current_frame() + 1);
+            } else {
+                child.set_place_frame(context.gc_context, self.current_frame());
+            }
+            if copy_previous_properties {
+                if let Some(prev_child) = prev_child {
+                    child.copy_display_properties_from(context.gc_context, prev_child);
                 }
-                if copy_previous_properties {
-                    if let Some(prev_child) = prev_child {
-                        child.copy_display_properties_from(context.gc_context, prev_child);
-                    }
-                }
-                // Run first frame.
-                child.apply_place_object(context, self.movie(), place_object);
-                child.construct_frame(context);
-                child.post_instantiation(context, child, None, Instantiator::Movie, false);
-                // In AVM1, children are added in `run_frame` so this is necessary.
-                // In AVM2 we add them in `construct_frame` so calling this causes
-                // duplicate frames
-                if child.vm_type(context) == AvmType::Avm1 {
-                    child.run_frame(context);
-                }
+            }
+
+            // Run first frame.
+            child.apply_place_object(context, self.movie(), place_object);
+            child.construct_frame(context);
+            child.post_instantiation(context, child, None, Instantiator::Movie, false);
+            // In AVM1, children are added in `run_frame` so this is necessary.
+            // In AVM2 we add them in `construct_frame` so calling this causes
+            // duplicate frames
+            if child.vm_type(context) == AvmType::Avm1 {
+                child.run_frame(context);
             }
 
             dispatch_added_event_only(child, context);

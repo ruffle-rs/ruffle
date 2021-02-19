@@ -240,6 +240,10 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     pub fn add_to_execution_list(&mut self, node: DisplayObject<'gc>) {
         if let Some(level) = self.levels.get_mut(node.level_id()) {
             let head = level.last_child();
+            if let Some(prev) = head.prev_exec() {
+                prev.set_next_exec(self.gc_context, Some(node));
+                node.set_prev_exec(self.gc_context, Some(prev));
+            }
             head.set_prev_exec(self.gc_context, Some(node));
             node.set_next_exec(self.gc_context, Some(head));
             level.set_last_child(node);
