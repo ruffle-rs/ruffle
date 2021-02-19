@@ -1,4 +1,4 @@
 dist/
-/pkg/
+pkg/
 docs/
 package-lock.json
