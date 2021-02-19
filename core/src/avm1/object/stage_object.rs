@@ -195,9 +195,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             );
         }
 
-        if obj.base.has_own_property(activation, name) {
+        let base = obj.base;
+        let display_object = obj.display_object;
+        drop(obj);
+
+        if base.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
-            obj.base.internal_set(
+            base.internal_set(
                 name,
                 value,
                 activation,
@@ -206,11 +210,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             )
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 2) Display object properties such as _x, _y
-            property.set(activation, obj.display_object, value)?;
+            property.set(activation, display_object, value)?;
             Ok(())
         } else {
             // 3) TODO: Prototype
-            obj.base.internal_set(
+            base.internal_set(
                 name,
                 value,
                 activation,
