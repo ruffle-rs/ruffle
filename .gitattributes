@@ -1,14 +1,11 @@
 # Enforce LF line endings for text files
 *      text=auto eol=lf
 
-# Set *.as files as ActionScript on Github, vs github's guess of AngelScript
-*.as linguist-language=ActionScript
+# Set *.as files as ActionScript, vs. GitHub's guess of AngelScript
+*.as   linguist-language=ActionScript
 
 # Binary files
 *.png  binary
 *.fla  binary
-*.swc  binary
 *.swf  binary
-*.jpg  binary
-*.jpeg binary
-*.png  binary
+*.swc  binary
