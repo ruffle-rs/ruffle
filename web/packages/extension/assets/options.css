@@ -1,0 +1,88 @@
+:root {
+    --ruffle-blue: #37528c;
+    --ruffle-dark-blue: #184778;
+    --ruffle-orange: #ffad33;
+    --ruffle-dark-orange: #966214;
+}
+
+body {
+    background: var(--ruffle-blue);
+    font: 14px Arial, sans-serif;
+    margin: auto;
+    color: white;
+}
+
+.header {
+    background: var(--ruffle-dark-blue);
+    text-align: center;
+    padding: 16px;
+    box-shadow: 0 0 15px #0008;
+}
+
+.logo {
+    transition-duration: 0.5s;
+}
+
+.logo:hover {
+    opacity: 0.5;
+}
+
+.container {
+    width: 50%;
+    margin: 16px auto;
+}
+
+/* Based on "Pure CSS Slider Checkboxes": https://codepen.io/Qvcool/pen/bdzVYW */
+.option {
+    position: relative;
+    margin-top: 24px;
+    line-height: 20px;
+}
+
+.option input {
+    position: absolute;
+    width: 40px;
+    height: 20px;
+    top: 0;
+    right: 0;
+    margin: 0;
+    cursor: pointer;
+    z-index: 1;
+    opacity: 0;
+}
+
+.option label {
+    vertical-align: middle;
+}
+
+.option label::before, .option label::after {
+    content: "";
+    position: absolute;
+    border-radius: 10px;
+    transition: background 0.2s, right 0.2s;
+}
+
+.option label::before {
+    height: 20px;
+    width: 40px;
+    top: 0;
+    right: 0;
+    background: #888;
+}
+
+.option label::after {
+    height: 18px;
+    width: 18px;
+    top: 1px;
+    right: 21px;
+    background: #ccc;
+}
+
+input:checked + label::before {
+    background: var(--ruffle-dark-orange);
+}
+
+input:checked + label::after {
+    background: var(--ruffle-orange);
+    right: 1px;
+}

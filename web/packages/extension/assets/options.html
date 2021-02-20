@@ -1,117 +1,28 @@
 <!DOCTYPE html>
+
 <html>
     <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Ruffle Settings</title>
-        <script type="text/javascript" src="dist/main.js"></script>
-        <style>
-            *, *:before, *:after {
-                box-sizing: border-box;
-            }
-        
-            body {
-                font-family: Arial, sans-serif;
-                font-size: 14px;
-                margin: 0;
-                background-color: #37528C;
-            }
-            
-            a {
-                color: #FFAD33;
-                font-weight: bold;
-                margin: 0 12px;
-            }
-        
-            .Ruffle-logo {
-                text-align: center;
-                padding: 16px 0;
-                background-color: #184778;
-                box-shadow: 0 0 15px #0008;
-            }
-        
-            .Ruffle-user_settings {
-                width: 384px;
-                color: #FFF;
-                text-align: left;
-                margin: 16px auto;
-            }
-        
-            .Ruffle-user_setting {
-                display: flex;
-                padding: 12px;
-            }
-        
-            .Ruffle-checkbox_with_slider {
-                display: none;
-            }
-        
-            .Ruffle-user_setting_text {
-                flex-grow: 1;
-            }
-        
-            .Ruffle-checkbox_slider {
-                display: inline-block;
-                position: relative;
-                flex-shrink: 0;
-        
-                width: 30px;
-                height: 7px;
-                border-radius: 5px;
-                margin: 4px 0px auto 15px;
-        
-                background-color: #966214;
-                box-shadow: 0 2px 1px #0008;
-            }
-        
-            .Ruffle-checkbox_slider:after {
-                content: "";
-                display: block;
-                position: absolute;
-                left: 20%;
-                top: 50%;
-                transform: translate(-50%, -50%);
-        
-                background-color: #FFAD33;
-                box-shadow: 0 1px 1px #0008;
-                width: 15px;
-                height: 15px;
-                border-radius: 100%;
-        
-                transition: left 0.1s;
-            }
-        
-            .Ruffle-checkbox_with_slider:checked ~ .Ruffle-checkbox_slider:after {
-                left: 80%;
-            }
-            
-            .Ruffle-links {
-                position: absolute;
-                text-align: center;
-                width: 100%;
-                bottom: 24px;
-            }
-        </style>
+        <link rel="stylesheet" href="options.css" />
     </head>
     <body>
-        <div class="Ruffle-logo">
-            <a href="https://ruffle.rs/"><img src="images/logo.png" alt="Ruffle" width="224"></a>
+        <div class="header">
+            <a href="https://ruffle.rs/" target="_blank">
+                <img src="images/logo.png" alt="Ruffle" width="224" data-canonical-src="images/logo.png" class="logo" />
+            </a>
         </div>
-        
-        <form class="Ruffle-user_settings">
-            <label class="Ruffle-user_setting" for="ruffle_enable">
-                <input class="Ruffle-checkbox_with_slider" type="checkbox" name="ruffle_enable" id="ruffle_enable">
-                <span class="Ruffle-user_setting_text"></span>
-                <div class="Ruffle-checkbox_slider"></div>
-            </label>
-            <label class="Ruffle-user_setting" for="ignore_optout">
-                <input class="Ruffle-checkbox_with_slider" type="checkbox" name="ignore_optout" id="ignore_optout">
-                <span class="Ruffle-user_setting_text"></span>
-                <div class="Ruffle-checkbox_slider"></div>
-            </label>
-        </form>
-        
-        <div class="Ruffle-links">
-            <a href="https://github.com/ruffle-rs/ruffle">GitHub</a>
-            <a href="https://ruffle.rs/">Ruffle.rs</a>
+        <div class="container">
+            <div class="option">
+                <input type="checkbox" id="ruffle_enable" checked />
+                <label for="ruffle_enable">Play Flash content in Ruffle</label>
+            </div>
+
+            <div class="option">
+                <input type="checkbox" id="ignore_optout" />
+                <label for="ignore_optout">Ignore website compatibility warnings</label>
+            </div>
         </div>
     </body>
 </html>
