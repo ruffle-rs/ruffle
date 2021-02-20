@@ -16,7 +16,7 @@ use crate::backend::{
 use crate::display_object::{EditText, MovieClip, SoundTransform};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
-use crate::levels::{Level, LevelsData};
+use crate::levels::LevelsData;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
@@ -234,50 +234,6 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 
     pub fn set_sound_transforms_dirty(&mut self) {
         self.audio_manager.set_sound_transforms_dirty()
-    }
-
-    /// Methods to add/remove nodes to/from the global execution list.
-    pub fn add_to_execution_list(&mut self, node: DisplayObject<'gc>) {
-        if let Some(level) = self.levels.get_mut(node.level_id()) {
-            let head = level.last_child();
-            if let Some(prev) = head.prev_exec() {
-                prev.set_next_exec(self.gc_context, Some(node));
-                node.set_prev_exec(self.gc_context, Some(prev));
-            }
-            head.set_prev_exec(self.gc_context, Some(node));
-            node.set_next_exec(self.gc_context, Some(head));
-            level.set_last_child(node);
-        } else {
-            self.levels.insert(self.gc_context, Level::new(node));
-        }
-    }
-
-    pub fn remove_from_execution_list(&mut self, node: DisplayObject<'gc>) {
-        if let Some(ctr) = node.as_container() {
-            for child in ctr.iter_render_list() {
-                self.remove_from_execution_list(child);
-            }
-        }
-
-        let prev = node.prev_exec();
-        let next = node.next_exec();
-
-        if let Some(prev) = prev {
-            prev.set_next_exec(self.gc_context, next);
-        }
-        if let Some(next) = next {
-            next.set_prev_exec(self.gc_context, prev);
-        }
-
-        node.set_prev_exec(self.gc_context, None);
-        node.set_next_exec(self.gc_context, None);
-
-        if let Some(level) = self.levels.get_mut(node.level_id()) {
-            if DisplayObject::ptr_eq(level.last_child(), node) {
-                // TODO: can we safely unwrap here?
-                level.set_last_child(next.unwrap());
-            }
-        }
     }
 }
 

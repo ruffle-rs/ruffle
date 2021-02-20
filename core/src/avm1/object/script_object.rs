@@ -838,7 +838,7 @@ mod tests {
     use crate::context::UpdateContext;
     use crate::display_object::MovieClip;
     use crate::focus_tracker::FocusTracker;
-    use crate::levels::{Level, LevelsData};
+    use crate::levels::LevelsData;
     use crate::library::Library;
     use crate::loader::LoadManager;
     use crate::prelude::*;
@@ -863,7 +863,7 @@ mod tests {
                 MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
             root.set_depth(gc_context, 0);
             let mut levels = LevelsData::default();
-            levels.insert(gc_context, Level::new(root));
+            levels.insert(gc_context, root);
 
             let object = ScriptObject::object(gc_context, Some(avm1.prototypes().object)).into();
             let globals = avm1.global_object_cell();
@@ -911,7 +911,7 @@ mod tests {
             root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
             root.set_name(context.gc_context, "");
 
-            let base_clip = context.levels.get(0).unwrap().root();
+            let base_clip = context.levels.at(0).unwrap();
             let swf_version = context.swf.version();
             let mut activation = Activation::from_nothing(
                 context,

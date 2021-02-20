@@ -11,7 +11,7 @@ use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
-use crate::levels::{Level, LevelId};
+use crate::levels::LevelId;
 use crate::prelude::Depth;
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
@@ -2822,7 +2822,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             root.set_default_root_name(&mut self.context);
             self.context
                 .levels
-                .insert(self.context.gc_context, Level::new(root));
+                .insert(self.context.gc_context, root);
             root.post_instantiation(&mut self.context, root, None, Instantiator::Movie, false);
 
             root

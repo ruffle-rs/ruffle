@@ -22,7 +22,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEv
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::focus_tracker::FocusTracker;
-use crate::levels::{Level, LevelsData};
+use crate::levels::LevelsData;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
@@ -334,7 +334,7 @@ impl Player {
             );
             context
                 .levels
-                .insert(context.gc_context, Level::new(fake_root.into()));
+                .insert(context.gc_context, fake_root.into());
 
             Avm2::load_player_globals(context)
         })?;
@@ -415,7 +415,7 @@ impl Player {
             root.construct_frame(context);
             root.post_instantiation(context, root, flashvars, Instantiator::Movie, false);
             root.set_default_root_name(context);
-            context.levels.insert(context.gc_context, Level::new(root));
+            context.levels.insert(context.gc_context, root);
 
             // Load and parse the device font.
             let device_font =
@@ -646,11 +646,11 @@ impl Player {
                             &mut activation,
                         );
 
-                        for level in levels.iter() {
-                            let object = level.root().object().coerce_to_object(&mut activation);
+                        for root in levels.iter_roots() {
+                            let object = root.object().coerce_to_object(&mut activation);
                             dumper.print_variables(
-                                &format!("Level #{}:", level.id()),
-                                &format!("_level{}", level.id()),
+                                &format!("Level #{}:", root.level_id()),
+                                &format!("_level{}", root.level_id()),
                                 &object,
                                 &mut activation,
                             );
@@ -720,9 +720,9 @@ impl Player {
 
         if let Some(button_event) = button_event {
             self.mutate_with_update_context(|context| {
-                let levels: Vec<Level<'_>> = context.levels.iter().copied().collect();
-                for level in levels {
-                    let state = level.root().handle_clip_event(context, button_event);
+                let roots: Vec<DisplayObject<'_>> = context.levels.iter_roots().collect();
+                for root in roots {
+                    let state = root.handle_clip_event(context, button_event);
                     if state == ClipEventResult::Handled {
                         return;
                     }
@@ -768,9 +768,9 @@ impl Player {
 
             // Fire clip event on all clips.
             if let Some(clip_event) = clip_event {
-                let levels: Vec<Level<'_>> = context.levels.iter().copied().collect();
-                for level in levels {
-                    level.root().handle_clip_event(context, clip_event);
+                let roots: Vec<DisplayObject<'_>> = context.levels.iter_roots().collect();
+                for root in roots {
+                    root.handle_clip_event(context, clip_event);
                 }
             }
 
@@ -866,13 +866,11 @@ impl Player {
         let hover_changed = self.mutate_with_update_context(|context| {
             // Check hovered object.
             let mut new_hovered = None;
-            // TODO: don't use rev?
-            for level in context.levels.clone().iter().rev() {
+            // TODO: use rev?
+            for root in context.levels.clone().iter_roots() {
                 if new_hovered.is_none() {
                     new_hovered =
-                        level
-                            .root()
-                            .mouse_pick(context, level.root(), (mouse_pos.0, mouse_pos.1));
+                        root.mouse_pick(context, root, (mouse_pos.0, mouse_pos.1));
                 } else {
                     break;
                 }
@@ -1004,8 +1002,8 @@ impl Player {
                 allow_mask: true,
             };
 
-            for level in root_data.levels.iter() {
-                level.root().render(&mut render_context);
+            for root in root_data.levels.iter_roots() {
+                root.render(&mut render_context);
             }
         });
         transform_stack.pop();

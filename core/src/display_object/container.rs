@@ -420,9 +420,9 @@ macro_rules! impl_display_object_container {
             drop(write);
 
             if let Some(removed_child) = removed_child {
-                context.remove_from_execution_list(removed_child);
+                context.levels.remove_from_execution_list(context.gc_context, removed_child);
             }
-            context.add_to_execution_list(child);
+            context.levels.add_to_execution_list(context.gc_context, child);
             if let Some(removed_child) = removed_child {
                 removed_child.unload(context);
                 removed_child.set_parent(context.gc_context, None);
@@ -483,7 +483,7 @@ macro_rules! impl_display_object_container {
             let inserted = write.$field.insert_at_id(child, index);
             drop(write);
             if inserted {
-                context.add_to_execution_list(child);
+                context.levels.add_to_execution_list(context.gc_context, child);
             }
 
             if parent_changed {
@@ -531,7 +531,7 @@ macro_rules! impl_display_object_container {
             }
             drop(write);
             if from_lists.contains(Lists::EXECUTION) {
-                context.remove_from_execution_list(child);
+                context.levels.remove_from_execution_list(context.gc_context, child);
 
                 child.unload(context);
 
@@ -570,7 +570,7 @@ macro_rules! impl_display_object_container {
                 write.$field.remove_child_from_depth_list(removed);
                 drop(write);
 
-                context.remove_from_execution_list(removed);
+                context.levels.remove_from_execution_list(context.gc_context, removed);
 
                 removed.unload(context);
 
