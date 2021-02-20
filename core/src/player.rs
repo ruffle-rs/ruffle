@@ -556,6 +556,51 @@ impl Player {
         self.is_playing
     }
 
+    pub fn is_playing_root_movie(&mut self) -> bool {
+        self.gc_arena.mutate(|_gc_context, gc_root| {
+            let root_data = gc_root.0.read();
+            if let Some(mc) = root_data.stage.root_clip().as_movie_clip() {
+                mc.playing()
+            } else {
+                false
+            }
+        })
+    }
+
+    pub fn toggle_play_root_movie(&mut self) {
+        self.mutate_with_update_context(|context| {
+            if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+                // TODO: no clue if we handle audio properly here?
+                if mc.playing() {
+                    mc.stop(context);
+                } else {
+                    mc.play(context);
+                }
+            }
+        });
+    }
+    pub fn rewind_root_movie(&mut self) {
+        self.mutate_with_update_context(|context| {
+            if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+                mc.goto_frame(context, 1, true)
+            }
+        });
+    }
+    pub fn forward_root_movie(&mut self) {
+        self.mutate_with_update_context(|context| {
+            if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+                mc.next_frame(context);
+            }
+        });
+    }
+    pub fn back_root_movie(&mut self) {
+        self.mutate_with_update_context(|context| {
+            if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+                mc.prev_frame(context);
+            }
+        });
+    }
+
     pub fn set_is_playing(&mut self, v: bool) {
         if v {
             // Allow auto-play after user gesture for web backends.

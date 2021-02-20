@@ -663,6 +663,7 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private contextMenuItems(): ContextMenuItem[] {
+
         const items = [];
         if (this.fullscreenEnabled) {
             if (this.isFullscreen) {
@@ -677,6 +678,28 @@ export class RufflePlayer extends HTMLElement {
                 });
             }
         }
+        if (this.instance) {
+            let is_playing_root_movie = this.instance.is_playing_root_movie();
+            items.push({
+                text: is_playing_root_movie ? `Play (☑)` : `Play (☐)`,
+                onClick: () => this.instance?.toggle_play_root_movie(),
+            });
+            items.push({
+                text: `Rewind`,
+                onClick: () => this.instance?.rewind_root_movie(),
+                separator: false,
+            });
+            items.push({
+                text: `Forward`,
+                onClick: () => this.instance?.forward_root_movie(),
+                separator: false,
+            });
+            items.push({
+                text: `Back`,
+                onClick: () => this.instance?.back_root_movie(),
+            });
+        }
+
         items.push({
             text: `About Ruffle (%VERSION_NAME%)`,
             onClick() {

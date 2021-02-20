@@ -272,6 +272,57 @@ impl Ruffle {
         })
     }
 
+    pub fn is_playing_root_movie(&mut self) -> bool {
+        INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
+            let is_playing_root_movie = instance
+                .borrow()
+                .core
+                .lock()
+                .unwrap()
+                .is_playing_root_movie();
+            is_playing_root_movie
+        })
+    }
+
+    pub fn toggle_play_root_movie(&mut self) {
+        INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
+            instance
+                .borrow()
+                .core
+                .lock()
+                .unwrap()
+                .toggle_play_root_movie();
+        });
+    }
+
+    pub fn rewind_root_movie(&mut self) {
+        INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
+            instance.borrow().core.lock().unwrap().rewind_root_movie();
+        });
+    }
+
+    pub fn forward_root_movie(&mut self) {
+        INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
+            instance.borrow().core.lock().unwrap().forward_root_movie();
+        });
+    }
+
+    pub fn back_root_movie(&mut self) {
+        INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
+            instance.borrow().core.lock().unwrap().back_root_movie();
+        });
+    }
+
     pub fn destroy(&mut self) {
         // Remove instance from the active list.
         if let Some(instance) = INSTANCES.with(|instances| {
