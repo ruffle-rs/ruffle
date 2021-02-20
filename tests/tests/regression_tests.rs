@@ -3,6 +3,9 @@
 //! Trace output can be compared with correct output from the official Flash Player.
 
 use approx::assert_relative_eq;
+use ruffle_core::backend::render::RenderBackend;
+use ruffle_core::backend::video::SoftwareVideoBackend;
+use ruffle_core::backend::video::VideoBackend;
 use ruffle_core::backend::{
     audio::NullAudioBackend,
     locale::NullLocaleBackend,
@@ -18,12 +21,21 @@ use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
+use ruffle_render_wgpu::target::TextureTarget;
+use ruffle_render_wgpu::wgpu;
+use ruffle_render_wgpu::WgpuRenderBackend;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+fn get_img_platform_suffix(info: &wgpu::AdapterInfo) -> String {
+    format!("{}-{}", std::env::consts::OS, info.name)
+}
+
+const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
 
 fn set_logger() {
     let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -34,9 +46,20 @@ fn set_logger() {
 
 type Error = Box<dyn std::error::Error>;
 
+macro_rules! val_or_false {
+    ($val:literal) => {
+        $val
+    };
+    () => {
+        false
+    };
+}
+
 // This macro generates test cases for a given list of SWFs.
+// If 'img' is true, then we will render an image of the final frame
+// of the SWF, and compare it against a reference image on disk.
 macro_rules! swf_tests {
-    ($($(#[$attr:meta])* ($name:ident, $path:expr, $num_frames:literal),)*) => {
+    ($($(#[$attr:meta])* ($name:ident, $path:expr, $num_frames:literal $(, img = $img:literal)? ),)*) => {
         $(
         #[test]
         $(#[$attr])*
@@ -46,6 +69,7 @@ macro_rules! swf_tests {
                 concat!("tests/swfs/", $path, "/test.swf"),
                 $num_frames,
                 concat!("tests/swfs/", $path, "/output.txt"),
+                val_or_false!($($img)?)
             )
         }
         )*
@@ -87,7 +111,7 @@ swf_tests! {
     (as2_bitxor, "avm1/bitxor", 1),
     (function_base_clip, "avm1/function_base_clip", 2),
     (call, "avm1/call", 2),
-    (color, "avm1/color", 1),
+    (color, "avm1/color", 1, img = true),
     (clip_events, "avm1/clip_events", 4),
     (unload_clip_event, "avm1/unload_clip_event", 2),
     (create_empty_movie_clip, "avm1/create_empty_movie_clip", 2),
@@ -683,6 +707,7 @@ fn external_interface_avm1() -> Result<(), Error> {
             ));
             Ok(())
         },
+        false,
     )
 }
 
@@ -706,6 +731,7 @@ fn shared_object_avm1() -> Result<(), Error> {
             std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
             Ok(())
         },
+        false,
     )?;
 
     // Verify that the flash cookie matches the expected one
@@ -729,6 +755,7 @@ fn shared_object_avm1() -> Result<(), Error> {
             Ok(())
         },
         |_player| Ok(()),
+        false,
     )?;
 
     Ok(())
@@ -749,6 +776,7 @@ fn timeout_avm1() -> Result<(), Error> {
             Ok(())
         },
         |_| Ok(()),
+        false,
     )
 }
 
@@ -768,6 +796,7 @@ fn stage_scale_mode() -> Result<(), Error> {
             Ok(())
         },
         |_| Ok(()),
+        false,
     )
 }
 
@@ -801,13 +830,19 @@ macro_rules! assert_eq {
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
-fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Result<(), Error> {
+fn test_swf(
+    swf_path: &str,
+    num_frames: u32,
+    expected_output_path: &str,
+    check_img: bool,
+) -> Result<(), Error> {
     test_swf_with_hooks(
         swf_path,
         num_frames,
         expected_output_path,
         |_| Ok(()),
         |_| Ok(()),
+        check_img,
     )
 }
 
@@ -819,6 +854,7 @@ fn test_swf_with_hooks(
     expected_output_path: &str,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
+    check_img: bool,
 ) -> Result<(), Error> {
     let mut expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
 
@@ -827,7 +863,7 @@ fn test_swf_with_hooks(
         expected_output = expected_output[0..expected_output.len() - "\n".len()].to_string();
     }
 
-    let trace_log = run_swf(swf_path, num_frames, before_start, before_end)?;
+    let trace_log = run_swf(swf_path, num_frames, before_start, before_end, check_img)?;
     assert_eq!(
         trace_log, expected_output,
         "ruffle output != flash player output"
@@ -845,7 +881,7 @@ fn test_swf_approx(
     expected_output_path: &str,
     approx_assert_fn: impl Fn(f64, f64),
 ) -> Result<(), Error> {
-    let trace_log = run_swf(swf_path, num_frames, |_| Ok(()), |_| Ok(()))?;
+    let trace_log = run_swf(swf_path, num_frames, |_| Ok(()), |_| Ok(()), false)?;
     let mut expected_data = std::fs::read_to_string(expected_output_path)?;
 
     // Strip a trailing newline if it has one.
@@ -893,20 +929,55 @@ fn run_swf(
     num_frames: u32,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
+    mut check_img: bool,
 ) -> Result<String, Error> {
+    check_img &= RUN_IMG_TESTS;
+
     let base_path = Path::new(swf_path).parent().unwrap();
     let (mut executor, channel) = NullExecutor::new();
     let movie = SwfMovie::from_path(swf_path, None)?;
     let frame_time = 1000.0 / movie.frame_rate().to_f64();
     let trace_output = Rc::new(RefCell::new(Vec::new()));
 
+    let mut platform_id = None;
+    let backend_bit = wgpu::BackendBit::PRIMARY;
+
+    let (render_backend, video_backend): (Box<dyn RenderBackend>, Box<dyn VideoBackend>) =
+        if check_img {
+            let instance = wgpu::Instance::new(backend_bit);
+
+            let descriptors = WgpuRenderBackend::<TextureTarget>::build_descriptors(
+                backend_bit,
+                instance,
+                None,
+                Default::default(),
+                None,
+            )?;
+
+            platform_id = Some(get_img_platform_suffix(&descriptors.info));
+
+            let target = TextureTarget::new(
+                &descriptors.device,
+                (
+                    movie.width().to_pixels() as u32,
+                    movie.height().to_pixels() as u32,
+                ),
+            );
+
+            let render_backend = Box::new(WgpuRenderBackend::new(descriptors, target)?);
+            let video_backend = Box::new(SoftwareVideoBackend::new());
+            (render_backend, video_backend)
+        } else {
+            (Box::new(NullRenderer), Box::new(NullVideoBackend::new()))
+        };
+
     let player = Player::new(
-        Box::new(NullRenderer),
+        render_backend,
         Box::new(NullAudioBackend::new()),
         Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
         Box::new(MemoryStorageBackend::default()),
         Box::new(NullLocaleBackend::new()),
-        Box::new(NullVideoBackend::new()),
+        video_backend,
         Box::new(TestLogBackend::new(trace_output.clone())),
         Box::new(NullUiBackend::new()),
     )?;
@@ -922,6 +993,62 @@ fn run_swf(
         player.lock().unwrap().run_frame();
         player.lock().unwrap().update_timers(frame_time);
         executor.poll_all().unwrap();
+    }
+
+    // Render the image to disk
+    // FIXME: Determine how we want to compare against on on-disk image
+    if check_img {
+        player.lock().unwrap().render();
+        let mut player_lock = player.lock().unwrap();
+        let renderer = player_lock
+            .renderer_mut()
+            .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
+            .unwrap();
+        let target = renderer.target();
+        let image = target
+            .capture(renderer.device())
+            .expect("Failed to capture image");
+
+        // The swf path ends in '<swf_name>/test.swf' - extract `swf_name`
+        let mut swf_path_buf = PathBuf::from(swf_path);
+        swf_path_buf.pop();
+
+        let swf_name = swf_path_buf.file_name().unwrap().to_string_lossy();
+        let img_name = format!("{}-{}.png", swf_name, platform_id.unwrap());
+
+        let mut img_path = swf_path_buf.clone();
+        img_path.push(&img_name);
+
+        let result = match image::open(&img_path) {
+            Ok(existing_img) => {
+                if existing_img
+                    .as_rgba8()
+                    .expect("Expected 8-bit RGBA image")
+                    .as_raw()
+                    == image.as_raw()
+                {
+                    Ok(())
+                } else {
+                    Err(format!(
+                        "Test output does not match existing image `{:?}`",
+                        img_path
+                    ))
+                }
+            }
+            Err(err) => Err(format!(
+                "Error occured when trying to read existing image `{:?}`: {}",
+                img_path, err
+            )),
+        };
+
+        if let Err(err) = result {
+            let new_img_path = img_path.with_file_name(img_name + ".updated");
+            image.save_with_format(&new_img_path, image::ImageFormat::Png)?;
+            panic!(
+                "Image test failed - saved new image to `{:?}`\n{}",
+                new_img_path, err
+            );
+        }
     }
 
     before_end(player)?;

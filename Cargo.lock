@@ -3494,8 +3494,10 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "env_logger",
+ "image",
  "pretty_assertions 0.6.1",
  "ruffle_core",
+ "ruffle_render_wgpu",
 ]
 
 [[package]]
