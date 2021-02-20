@@ -879,7 +879,9 @@ export class RufflePlayer extends HTMLElement {
 
         const errorText = errorArray.join("");
 
-        const issueTitle = `Error on ${document.location.href}`;
+        // Remove query params for the issue title.
+        const pageUrl = document.location.href.split(/[?#]/)[0];
+        const issueTitle = `Error on ${pageUrl}`;
         let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
             issueTitle
         )}&body=`;
