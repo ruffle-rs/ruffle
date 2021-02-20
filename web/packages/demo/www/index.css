@@ -6,24 +6,20 @@
 body {
     position: absolute;
     top: 0;
+    bottom: 0;
     left: 0;
-    margin: 0;
+    right: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
+    margin: 0;
     font-family: "Lato", sans-serif;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: black;
+    flex-flow: column;
+    background: black;
 }
 
 #main {
     position: relative;
-    width: 100%;
-    height: 100%;
-    align-self: center;
-    max-height: calc(100vh - 70px);
+    flex: 1;
 }
 
 #overlay {
@@ -32,14 +28,14 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    box-sizing: border-box;
     z-index: 1;
     pointer-events: none;
     border: 8px dashed var(--ruffle-orange);
-    border-radius: 35px;
+    border-radius: 30px;
     opacity: 0;
-    display: none;
     transition: opacity 0.3s ease-in;
+    display: none;
+    margin: 10px 5px;
 }
 
 #overlay.drag {
@@ -61,26 +57,28 @@ body {
 }
 
 #player {
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: auto;
+    margin: 10px;
 }
 
 #nav {
     width: 100%;
     background: var(--ruffle-blue);
-    border: 0;
-    border-color: darkgray;
-    border-bottom: 2px var(--ruffle-blue);
-    border-style: solid;
-    box-shadow: 0 5px 5px var(--ruffle-blue);
+    box-shadow: 0 3px 6px 5px var(--ruffle-blue);
     display: flex;
-    flex-direction: row;
     justify-content: space-around;
     align-items: center;
     align-self: flex-start;
     color: white;
     min-height: 45px;
-    margin-bottom: 15px;
+    padding-top: 5px;
+    margin-bottom: 5px;
 }
 
 #title {
@@ -93,18 +91,14 @@ body {
 }
 
 #title img {
-    display: inline-block;
     height: 32px;
     margin-top: 5px;
 }
 
-#file-picker {
-    margin-top: 7px;
-}
-
 #file-picker select,
-#file-picker input {
-    margin: 0 5px;
+#file-picker input,
+#author {
+    margin-left: 5px;
 }
 
 #local-file-container {
@@ -119,12 +113,10 @@ body {
 
 #author-container {
     display: none;
-    font-size: 13px;
-    text-align: left;
+    font-size: small;
 }
 
 #author {
-    padding-left: 5px;
     color: var(--ruffle-orange);
 }
 
@@ -136,10 +128,6 @@ body {
 
     #nav {
         min-height: 65px;
-    }
-
-    #player {
-        height: calc(100vh - 90px) !important;
     }
 }
 
@@ -159,7 +147,6 @@ body {
 
     #nav {
         min-height: 85px;
-        flex-direction: column;
-        padding-bottom: 2px;
+        flex-flow: column;
     }
 }
