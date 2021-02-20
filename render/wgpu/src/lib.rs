@@ -42,6 +42,7 @@ pub use wgpu;
 
 pub struct Descriptors {
     pub device: wgpu::Device,
+    pub info: wgpu::AdapterInfo,
     queue: wgpu::Queue,
     globals: Globals,
     pipelines: Pipelines,
@@ -50,7 +51,11 @@ pub struct Descriptors {
 }
 
 impl Descriptors {
-    pub fn new(device: wgpu::Device, queue: wgpu::Queue) -> Result<Self, Error> {
+    pub fn new(
+        device: wgpu::Device,
+        queue: wgpu::Queue,
+        info: wgpu::AdapterInfo,
+    ) -> Result<Self, Error> {
         // TODO: Allow this to be set from command line/settings file.
         let msaa_sample_count = 4;
 
@@ -65,6 +70,7 @@ impl Descriptors {
 
         Ok(Self {
             device,
+            info,
             queue,
             globals,
             pipelines,
@@ -378,7 +384,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             },
             trace_path,
         ))?;
-        Descriptors::new(device, queue)
+        Descriptors::new(device, queue, adapter.get_info())
     }
 
     pub fn descriptors(self) -> Descriptors {

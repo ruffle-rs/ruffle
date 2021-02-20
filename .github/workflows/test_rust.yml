@@ -8,14 +8,18 @@ on:
 
 jobs:
   build:
-    name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os.name }}
+    runs-on: ${{ matrix.os.name }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' }}
     strategy:
       fail-fast: false
       matrix:
         rust_version: ["stable", "beta", "nightly"]
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [
+          {name: ubuntu-latest, img_tests: true },
+          {name: windows-latest, img_tests: true },
+          {name: macOS-latest, img_tests: false }
+        ]
 
     steps:
       - uses: actions/checkout@v2
@@ -29,15 +33,33 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os.name == 'ubuntu-latest'
         run: |
+          sudo add-apt-repository ppa:kisak/kisak-mesa -y
           sudo apt-get update
-          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
+          sudo apt-get dist-upgrade
+          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev mesa-vulkan-drivers=21.1.3~kisak1~f
 
-      - name: Run tests
+      - name: Run tests with image tests
+        if: ${{ matrix.os.img_tests }}
         uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --features imgtests
+
+      - name: Run tests without image tests
+        if: ${{ !matrix.os.img_tests }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+
+      - name: Upload images
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: swf_images
+          path: tests/**/*.png.updated
 
       - name: Check clippy
         uses: actions-rs/cargo@v1
@@ -50,3 +72,4 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+
