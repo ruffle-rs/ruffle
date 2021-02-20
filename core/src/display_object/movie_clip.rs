@@ -1777,18 +1777,17 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut index = 0;
         let mut write = self.0.write(context.gc_context);
+        let avm2_object = write.object.and_then(|o| o.as_avm2_object().ok());
 
-        if let Some(frame_id) = write.queued_script_frame {
-            let is_fresh_frame = write.last_queued_script_frame.is_none()
-                || write.queued_script_frame != write.last_queued_script_frame;
+        if let Some(avm2_object) = avm2_object {
+            if let Some(frame_id) = write.queued_script_frame {
+                let is_fresh_frame = write.last_queued_script_frame.is_none()
+                    || write.queued_script_frame != write.last_queued_script_frame;
 
-            write.last_queued_script_frame = Some(frame_id);
-            write.queued_script_frame = None;
+                write.last_queued_script_frame = Some(frame_id);
+                write.queued_script_frame = None;
 
-            if is_fresh_frame {
-                let avm2_object = write.object.and_then(|o| o.as_avm2_object().ok());
-
-                if let Some(avm2_object) = avm2_object {
+                if is_fresh_frame {
                     while let Some(fs) = write.frame_scripts.get(index) {
                         if fs.frame_id == frame_id {
                             let callable = fs.callable;
