@@ -3,13 +3,11 @@
 use crate::avm1::{opcode::OpCode, types::*};
 use crate::error::{Error, Result};
 use crate::extensions::ReadSwfExt;
-use crate::string::{Encoding, SwfStr, UTF_8, WINDOWS_1252};
 
 #[allow(dead_code)]
 pub struct Reader<'a> {
     input: &'a [u8],
     version: u8,
-    encoding: &'static Encoding,
 }
 
 impl<'a> ReadSwfExt<'a> for Reader<'a> {
@@ -21,27 +19,13 @@ impl<'a> ReadSwfExt<'a> for Reader<'a> {
 
 impl<'a> Reader<'a> {
     #[inline]
-    pub fn new(input: &'a [u8], version: u8) -> Self {
-        Self {
-            input,
-            version,
-            encoding: if version > 5 {
-                UTF_8
-            } else {
-                // TODO: Allow configurable encoding
-                WINDOWS_1252
-            },
-        }
+    pub const fn new(input: &'a [u8], version: u8) -> Self {
+        Self { input, version }
     }
 
     #[inline]
     pub fn seek(&mut self, data: &'a [u8], jump_offset: i16) {
         ReadSwfExt::seek(self, data, jump_offset as isize)
-    }
-
-    #[inline]
-    pub fn encoding(&self) -> &'static Encoding {
-        SwfStr::encoding_for_version(self.version)
     }
 
     #[inline]
@@ -376,6 +360,7 @@ impl<'a> Reader<'a> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::string::{SwfStr, WINDOWS_1252};
     use crate::test_data;
 
     #[test]
