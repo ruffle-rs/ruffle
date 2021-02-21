@@ -998,9 +998,11 @@ export class RufflePlayer extends HTMLElement {
         );
         if (viewDetails) {
             viewDetails.onclick = () => {
-                this.container.querySelector(
-                    "#panic-body"
-                )!.innerHTML = `<textarea>${errorText}</textarea>`;
+                const panicBody = <HTMLDivElement>(
+                    this.container.querySelector("#panic-body")
+                );
+                panicBody.classList.add("details");
+                panicBody.innerHTML = `<textarea>${errorText}</textarea>`;
                 return false;
             };
         }
