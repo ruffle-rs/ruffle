@@ -1,6 +1,5 @@
 import {
     getI18nMessage,
-    addStorageChangeListener,
     sendMessageToTab,
     openOptionsPage,
     reloadTab,
@@ -9,10 +8,11 @@ import {
 import { bindBooleanOptions } from "./common";
 
 let activeTab;
-let reloadButton;
+let savedOptions;
 let tabOptions;
+let reloadButton;
 
-async function queryStatus(listener) {
+async function queryTabStatus(listener) {
     listener("status_init");
 
     let tabs;
@@ -42,9 +42,7 @@ async function queryStatus(listener) {
 
     let response;
     try {
-        response = await sendMessageToTab(activeTab.id, {
-            action: "get_page_options",
-        });
+        response = await sendMessageToTab(activeTab.id, {});
     } catch (e) {
         listener("status_result_protected");
         reloadButton.disabled = true;
@@ -56,16 +54,16 @@ async function queryStatus(listener) {
         return;
     }
 
-    tabOptions = response.tabSettings;
-    optionsChanged();
-
     if (response.loaded) {
         listener("status_result_running");
-    } else if (response.tabSettings.ruffleEnable) {
+    } else if (response.tabOptions.ruffleEnable) {
         listener("status_result_optout");
     } else {
         listener("status_result_disabled");
     }
+
+    tabOptions = response.tabOptions;
+    optionsChanged();
 }
 
 function objectsEqual(x, y) {
@@ -84,18 +82,20 @@ function objectsEqual(x, y) {
     return true;
 }
 
-function optionsChanged(options) {
+function optionsChanged() {
     if (!tabOptions) {
         return;
     }
 
-    const isDifferent = !objectsEqual(options, tabOptions);
+    const isDifferent = !objectsEqual(savedOptions, tabOptions);
     reloadButton.disabled = !isDifferent;
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-    bindBooleanOptions();
-    addStorageChangeListener(optionsChanged);
+    bindBooleanOptions((options) => {
+        savedOptions = options;
+        optionsChanged();
+    });
 
     const optionsButton = document.getElementById("options-button");
     optionsButton.textContent = getI18nMessage("open_settings_page");
@@ -107,14 +107,14 @@ window.addEventListener("DOMContentLoaded", () => {
         await reloadTab(activeTab.id);
         // TODO: wait for tab to load?
         setTimeout(() => {
-            queryStatus((status) => {
+            queryTabStatus((status) => {
                 statusElement.textContent = getI18nMessage(status);
             });
         }, 1000);
     });
 
     const statusElement = document.getElementById("status");
-    queryStatus((status) => {
+    queryTabStatus((status) => {
         statusElement.textContent = getI18nMessage(status);
     });
 });

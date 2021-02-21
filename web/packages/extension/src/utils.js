@@ -51,7 +51,7 @@ export async function getSyncStorage(keys) {
     return { ...DEFAULT_SETTINGS, ...data };
 }
 
-export async function setSyncStorage(items) {
+export function setSyncStorage(items) {
     if (
         chrome &&
         chrome.storage &&
@@ -92,7 +92,7 @@ export function addStorageChangeListener(listener) {
     }
 }
 
-export async function reloadTab(tabId) {
+export function reloadTab(tabId) {
     if (chrome && chrome.tabs && chrome.tabs.reload) {
         const tabs = chrome.tabs;
         return promisify(tabs.reload.bind(tabs, tabId));
@@ -103,7 +103,7 @@ export async function reloadTab(tabId) {
     }
 }
 
-export async function queryTabs(query) {
+export function queryTabs(query) {
     if (chrome && chrome.tabs && chrome.tabs.query) {
         const tabs = chrome.tabs;
         return promisify(tabs.query.bind(tabs, query));
@@ -116,7 +116,8 @@ export async function queryTabs(query) {
 
 export function sendMessageToTab(tabId, message, options) {
     if (chrome && chrome.tabs && chrome.tabs.sendMessage) {
-        chrome.tabs.sendMessage(tabId, message, options);
+        const tabs = chrome.tabs;
+        return promisify(tabs.sendMessage.bind(tabs, tabId, message, options));
     } else if (browser && browser.tabs && browser.tabs.sendMessage) {
         browser.tabs.sendMessage(tabId, message, options);
     } else {

@@ -6,9 +6,7 @@ import {
 } from "./utils";
 
 function camelize(string) {
-    return string
-        .toLowerCase()
-        .replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase());
+    return string.replace(/[^a-z\d](.)/gi, (_, char) => char.toUpperCase());
 }
 
 function getBooleanElements() {
@@ -25,7 +23,7 @@ function getBooleanElements() {
     return elements;
 }
 
-export async function bindBooleanOptions() {
+export async function bindBooleanOptions(onChange) {
     const elements = getBooleanElements();
 
     // Bind initial values.
@@ -57,5 +55,12 @@ export async function bindBooleanOptions() {
             elements[key].checkbox.checked = option.newValue;
             options[key] = option.newValue;
         }
+        if (onChange) {
+            onChange(options);
+        }
     });
+
+    if (onChange) {
+        onChange(options);
+    }
 }
