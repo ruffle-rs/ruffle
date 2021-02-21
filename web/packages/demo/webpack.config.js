@@ -36,10 +36,7 @@ module.exports = (env, argv) => {
         plugins: [
             new CopyWebpackPlugin({
                 patterns: [
-                    {
-                        from: path.resolve(__dirname, "www/index.html"),
-                        to: "index.html",
-                    },
+                    { from: path.resolve(__dirname, "www/index.html") },
                     { from: "LICENSE*" },
                     { from: "README.md" },
                 ],

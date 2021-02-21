@@ -52,7 +52,7 @@ async function loadFile(file) {
     player.load({ data, ...config });
 }
 
-function sampleFileSelected() {
+function loadSample() {
     const swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
     if (swfData) {
         authorContainer.style.display = "block";
@@ -69,7 +69,7 @@ localFileInput.addEventListener("change", (event) => {
     loadFile(event.target.files[0]);
 });
 
-sampleFileInput.addEventListener("change", sampleFileSelected);
+sampleFileInput.addEventListener("change", () => loadSample());
 
 main.addEventListener("dragenter", () => {
     overlay.classList.add("drag");
@@ -119,13 +119,13 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
     sampleFileInputContainer.style.display = "inline-block";
 
-    const initialFile = new URLSearchParams(window.location.search).get("file");
+    const initialFile = new URL(window.location).searchParams.get("file");
     if (initialFile) {
         const options = Array.from(sampleFileInput.options);
         sampleFileInput.selectedIndex = Math.max(
             options.findIndex((swfData) => swfData.value.endsWith(initialFile)),
             0
         );
-        sampleFileSelected();
+        loadSample();
     }
 });
