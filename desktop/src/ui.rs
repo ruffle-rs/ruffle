@@ -82,6 +82,7 @@ impl UiBackend for DesktopUiBackend {
         match key {
             KeyCode::Unknown => false,
             KeyCode::Backspace => self.keys_down.contains(&VirtualKeyCode::Back),
+            KeyCode::Tab => self.keys_down.contains(&VirtualKeyCode::Tab),
             KeyCode::Return => self.keys_down.contains(&VirtualKeyCode::Return),
             KeyCode::Shift => {
                 self.keys_down.contains(&VirtualKeyCode::LShift)
@@ -241,6 +242,7 @@ impl UiBackend for DesktopUiBackend {
 fn winit_to_ruffle_key_code(key_code: VirtualKeyCode) -> Option<KeyCode> {
     Some(match key_code {
         VirtualKeyCode::Back => KeyCode::Backspace,
+        VirtualKeyCode::Tab => KeyCode::Tab,
         VirtualKeyCode::Return => KeyCode::Return,
         VirtualKeyCode::LShift | VirtualKeyCode::RShift => KeyCode::Shift,
         VirtualKeyCode::LControl | VirtualKeyCode::RControl => KeyCode::Control,
@@ -357,7 +359,6 @@ fn winit_key_to_char(key_code: VirtualKeyCode, is_shift_down: bool) -> Option<ch
         (VirtualKeyCode::Key7, _) => '7',
         (VirtualKeyCode::Key8, _) => '8',
         (VirtualKeyCode::Key9, _) => '9',
-
         (VirtualKeyCode::A, false) => 'a',
         (VirtualKeyCode::A, true) => 'A',
         (VirtualKeyCode::B, false) => 'b',

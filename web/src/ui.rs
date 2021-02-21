@@ -69,6 +69,7 @@ impl UiBackend for WebUiBackend {
         match key {
             KeyCode::Unknown => false,
             KeyCode::Backspace => self.keys_down.contains("Backspace"),
+            KeyCode::Tab => self.keys_down.contains("Tab"),
             KeyCode::Return => self.keys_down.contains("Enter"),
             KeyCode::Shift => {
                 self.keys_down.contains("ShiftLeft") || self.keys_down.contains("ShiftRight")
@@ -215,6 +216,7 @@ impl UiBackend for WebUiBackend {
 pub fn web_to_ruffle_key_code(key_code: &str) -> Option<KeyCode> {
     Some(match key_code {
         "Backspace" => KeyCode::Backspace,
+        "Tab" => KeyCode::Tab,
         "Enter" => KeyCode::Return,
         "ShiftLeft" | "ShiftRight" => KeyCode::Shift,
         "ControlLeft" | "ControlRight" => KeyCode::Control,
