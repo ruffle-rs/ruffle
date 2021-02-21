@@ -39,7 +39,7 @@ regress = "0.3"
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "e39a8abc897289696672858e30bbc9e43b1c98ac" }
 json = "0.12.4"
 lzma-rs = {version = "0.2.0", optional = true }
-vp6-dec-rs = { git = "https://github.com/torokati44/vp6-dec-rs", branch = "main" }
+vp6-dec-rs = { git = "https://github.com/torokati44/vp6-dec-rs", branch = "main", features = ["allow-lgpl"] }
 
 [dependencies.jpeg-decoder]
 version = "0.1.22"
