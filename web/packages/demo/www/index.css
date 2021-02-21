@@ -64,7 +64,7 @@ body {
     right: 0;
     width: auto;
     height: auto;
-    margin: 10px;
+    margin: 10px 0;
 }
 
 #nav {
@@ -72,27 +72,23 @@ body {
     background: var(--ruffle-blue);
     box-shadow: 0 3px 6px 5px var(--ruffle-blue);
     display: flex;
-    justify-content: space-around;
     align-items: center;
-    align-self: flex-start;
+    justify-content: space-around;
     color: white;
-    min-height: 45px;
-    padding-top: 5px;
+    padding: 10px 0 5px 0;
     margin-bottom: 5px;
 }
 
 #title {
-    transition-duration: 0.5s;
+    transition: opacity 0.5s;
 }
 
 #title:hover {
     opacity: 0.5;
-    cursor: pointer;
 }
 
 #title img {
     height: 32px;
-    margin-top: 5px;
 }
 
 #file-picker select,
@@ -125,10 +121,6 @@ body {
     #sample-swfs-container {
         display: block;
     }
-
-    #nav {
-        min-height: 65px;
-    }
 }
 
 @media only screen and (max-width: 600px) {
@@ -146,7 +138,6 @@ body {
     }
 
     #nav {
-        min-height: 85px;
         flex-flow: column;
     }
 }

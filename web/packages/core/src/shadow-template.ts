@@ -78,7 +78,7 @@ ruffleShadowTemplate.innerHTML = `
             font-size: 20px;
             text-align: center;
             /* Inverted colors from play button! */
-            background: linear-gradient(180deg, rgba(253,58,64,1) 0%, rgba(253,161,56,1) 100%);
+            background: linear-gradient(180deg, #fd3a40 0%, #fda138 100%);
             color: white;
             display: flex;
             flex-flow: column;
@@ -157,7 +157,7 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #message_overlay a:hover, #message_overlay button:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: #ffffff4c;
         }
 
         #continue-btn {
@@ -172,7 +172,7 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #continue-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: #ffffff4c;
         }
 
         #context-menu {
