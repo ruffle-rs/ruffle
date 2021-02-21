@@ -287,7 +287,7 @@ pub fn set_length<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Unsigned(0))
                 .coerce_to_u32(activation)? as usize;
-            bytearray.resize(len);
+            bytearray.set_length(len);
         }
     }
 

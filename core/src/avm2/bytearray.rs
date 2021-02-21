@@ -128,13 +128,9 @@ impl ByteArrayStorage {
         Ok(buffer)
     }
 
-    /// Will either shorten buffer or increase size of buffer
-    pub fn resize(&mut self, new_len: usize) {
-        match new_len.cmp(&self.bytes.len()) {
-            cmp::Ordering::Greater => self.bytes.resize(new_len, 0),
-            cmp::Ordering::Less => self.bytes.truncate(new_len),
-            cmp::Ordering::Equal => {}
-        }
+    /// Set a new length for the bytearray
+    pub fn set_length(&mut self, new_len: usize) {
+        self.bytes.resize(new_len, 0);
     }
 
     // Reads exactly an amount of data
