@@ -5,12 +5,10 @@
 export const ruffleShadowTemplate = document.createElement("template");
 ruffleShadowTemplate.innerHTML = `
     <style>
-        :root {
+        :host {
             --ruffle-blue: #37528c;
             --ruffle-orange: #ffad33;
-        }
 
-        :host {
             display: inline-block;
             position: relative;
             /* Default width/height; this will get overridden by user styles/attributes. */
