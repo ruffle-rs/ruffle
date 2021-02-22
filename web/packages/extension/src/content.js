@@ -1,4 +1,4 @@
-const { getSyncStorage, getExtensionUrl } = require("./util");
+import { getSyncStorage, getExtensionUrl } from "./utils";
 
 function injectScriptRaw(src) {
     const script = document.createElement("script");

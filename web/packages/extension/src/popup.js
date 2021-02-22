@@ -1,6 +1,13 @@
-// import { } from "./utils";
+import {
+    getI18nMessage,
+    sendMessageToTab,
+    openOptionsPage,
+    reloadTab,
+    queryTabs,
+} from "./utils";
 import { bindBooleanOptions } from "./common";
 
+let activeTab;
 let reloadButton;
 let tabOptions;
 
@@ -29,7 +36,7 @@ async function queryStatus(listener) {
         return;
     }
 
-    const activeTab = tabs[0];
+    activeTab = tabs[0];
     listener("status_message_init");
 
     let response;

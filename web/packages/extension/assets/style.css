@@ -56,7 +56,8 @@ body {
     padding-right: 40px;
 }
 
-.option label::before, .option label::after {
+.option label::before,
+.option label::after {
     content: "";
     position: absolute;
     border-radius: 10px;

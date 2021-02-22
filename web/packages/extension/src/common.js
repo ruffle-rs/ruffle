@@ -1,7 +1,14 @@
+import {
+    getI18nMessage,
+    getSyncStorage,
+    setSyncStorage,
+    addStorageChangeListener,
+} from "./utils";
+
 function camelize(string) {
-    return string.toLowerCase().replace(/[^a-zA-Z0-9]+(.)/g, (_, char) =>
-        char.toUpperCase()
-    );
+    return string
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase());
 }
 
 export async function bindBooleanOptions(names, onChange) {
@@ -9,19 +16,20 @@ export async function bindBooleanOptions(names, onChange) {
     for (const name of names) {
         const checkbox = document.getElementById(name);
 
-        const label = checkbox.nextSibling;
+        const label = checkbox.nextElementSibling;
         label.textContent = getI18nMessage(`settings_${name}`);
 
+        const camelizedName = camelize(name);
         checkbox.addEventListener("click", () => {
             const value = checkbox.checked;
-            options[name] = value;
-            setSyncStorage({ [name]: value });
+            options[camelizedName] = value;
+            setSyncStorage({ [camelizedName]: value });
             if (onChange) {
                 onChange(options);
             }
         });
 
-        checkboxes[name] = checkbox;
+        checkboxes[camelizedName] = checkbox;
     }
 
     const options = await getSyncStorage(names.map(camelize));

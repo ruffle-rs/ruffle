@@ -89,7 +89,7 @@ export async function reloadTab(tabId) {
 
 export async function queryTabs(query) {
     if (chrome && chrome.tabs && chrome.tabs.query) {
-        return browser.tabs.query(query);
+        return chrome.tabs.query(query);
     } else if (browser && browser.tabs && browser.tabs.query) {
         return browser.tabs.query(query);
     } else {
