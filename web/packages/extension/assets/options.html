@@ -5,20 +5,30 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Ruffle Settings</title>
-        <link rel="stylesheet" href="options.css" />
+        <link rel="stylesheet" href="style.css" />
+        <style>
+            .options {
+                width: 400px;
+                margin: 16px auto;
+            }
+        </style>
     </head>
     <body>
         <div class="header">
             <a href="https://ruffle.rs/" target="_blank">
-                <img src="images/logo.png" alt="Ruffle" width="224" data-canonical-src="images/logo.png" class="logo" />
+                <img
+                    src="images/logo.png"
+                    alt="Ruffle"
+                    data-canonical-src="images/logo.png"
+                    class="logo"
+                    width="224" />
             </a>
         </div>
-        <div class="container">
+        <div class="options">
             <div class="option">
-                <input type="checkbox" id="ruffle_enable" checked />
+                <input type="checkbox" id="ruffle_enable" />
                 <label for="ruffle_enable">Play Flash content in Ruffle</label>
             </div>
-
             <div class="option">
                 <input type="checkbox" id="ignore_optout" />
                 <label for="ignore_optout">Ignore website compatibility warnings</label>
