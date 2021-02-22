@@ -14,7 +14,7 @@ module.exports = (env, argv) => {
     return {
         mode,
         entry: {
-            main: path.resolve(__dirname, "src/main.js"),
+            popup: path.resolve(__dirname, "src/popup.js"),
             options: path.resolve(__dirname, "src/options.js"),
             content: path.resolve(__dirname, "src/content.js"),
             ruffle: path.resolve(__dirname, "src/ruffle.js"),
