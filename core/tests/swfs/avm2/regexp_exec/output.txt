@@ -1,0 +1,19 @@
+// new RegExp("").exec("");
+
+// /d+/.exec("abc");
+null
+// /d+/.exec("abc123");
+123
+// /ABC/i.exec("abc");
+abc
+// /.bar/s.exec("foo\nbar");
+
+bar
+She,,e
+input She sells seashells by the seashore
+index 0
+lastIndex 3
+seashells,sea,ells
+input She sells seashells by the seashore
+index 10
+lastIndex 19
