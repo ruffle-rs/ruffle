@@ -528,6 +528,7 @@ swf_tests! {
     (as3_movieclip_displayevents_looping, "avm2/movieclip_displayevents_looping", 5),
     (as3_movieclip_displayevents_dblhandler, "avm2/movieclip_displayevents_dblhandler", 4),
     (as3_regexp_constr, "avm2/regexp_constr", 1),
+    (as3_regexp_test, "avm2/regexp_test", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

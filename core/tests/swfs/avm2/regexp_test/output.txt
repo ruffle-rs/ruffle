@@ -1,0 +1,27 @@
+// new RegExp("").test("");
+true
+// new RegExp("").test("abc");
+true
+// /d+/.test("abc");
+false
+// /d+/.test("abc 123");
+true
+// /ABC/.test("abc");
+false
+// /ABC/i.test("abc");
+true
+// /a.b/.test("a\nb");
+false
+// /a.b/s.test("a\nb");
+true
+// /^bar/.test("foo\nbar");
+false
+// /^bar/m.test("foo\nbar");
+true
+// var re = new RegExp("[0-9]{3}", "g");
+// re.lastIndex;
+0
+// re.test("0123456789");
+true
+// re.lastIndex;
+3
