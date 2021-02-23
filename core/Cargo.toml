@@ -23,7 +23,7 @@ swf = { path = "../swf" }
 bitflags = "1.2.1"
 smallvec = "1.6.1"
 num_enum = "0.5.1"
-quick-xml = "0.20.0"
+quick-xml = "0.22.0"
 downcast-rs = "1.2.0"
 url = "2.2.1"
 weak-table = "0.3.0"
