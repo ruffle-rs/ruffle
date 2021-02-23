@@ -1,7 +1,7 @@
-import { getI18Message } from "./utils";
+import { getI18nMessage } from "./utils";
 import { bindBooleanOptions } from "./common";
 
 window.addEventListener("DOMContentLoaded", () => {
-    document.title = getI18Message("settings_page");
-    bindBooleanOptions(["ruffle_enable", "ignore_optout"]);
+    document.title = getI18nMessage("settings_page");
+    bindBooleanOptions();
 });

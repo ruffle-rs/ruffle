@@ -1,5 +1,6 @@
 import {
     getI18nMessage,
+    addStorageChangeListener,
     sendMessageToTab,
     openOptionsPage,
     reloadTab,
@@ -93,7 +94,8 @@ function optionsChanged(options) {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-    bindBooleanOptions(["ruffle_enable", "ignore_optout"], optionsChanged);
+    bindBooleanOptions();
+    addStorageChangeListener(optionsChanged);
 
     const optionsButton = document.getElementById("options-button");
     optionsButton.textContent = getI18nMessage("open_settings_page");

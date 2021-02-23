@@ -11,40 +11,51 @@ function camelize(string) {
         .replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase());
 }
 
-export async function bindBooleanOptions(names, onChange) {
-    const checkboxes = {};
-    for (const name of names) {
-        const checkbox = document.getElementById(name);
+function getBooleanElements() {
+    const elements = {};
+    for (const option of document.getElementsByClassName("option")) {
+        const [checkbox] = option.getElementsByTagName("input");
+        if (checkbox.type !== "checkbox") {
+            continue;
+        }
+        const [label] = option.getElementsByTagName("label");
+        const key = camelize(checkbox.id);
+        elements[key] = { option, checkbox, label };
+    }
+    return elements;
+}
 
-        const label = checkbox.nextElementSibling;
-        label.textContent = getI18nMessage(`settings_${name}`);
+export async function bindBooleanOptions() {
+    const elements = getBooleanElements();
 
-        const camelizedName = camelize(name);
+    // Bind initial values.
+    const options = await getSyncStorage(Object.keys(elements));
+    for (const [key, value] of Object.entries(options)) {
+        elements[key].checkbox.checked = value;
+    }
+
+    for (const [key, { checkbox, label }] of Object.entries(elements)) {
+        // TODO: click/change/input?
         checkbox.addEventListener("click", () => {
             const value = checkbox.checked;
-            options[camelizedName] = value;
-            setSyncStorage({ [camelizedName]: value });
-            if (onChange) {
-                onChange(options);
-            }
+            options[key] = value;
+            setSyncStorage({ [key]: value });
         });
 
-        checkboxes[camelizedName] = checkbox;
+        label.textContent = getI18nMessage(`settings_${checkbox.id}`);
+
+        // Prevent transition on load.
+        // Method from https://stackoverflow.com/questions/11131875.
+        label.classList.add("notransition");
+        label.offsetHeight; // Trigger a reflow, flushing the CSS changes.
+        label.classList.remove("notransition");
     }
 
-    const options = await getSyncStorage(names.map(camelize));
-    for (const [name, value] of Object.entries(options)) {
-        checkboxes[name].checked = value;
-    }
-
-    if (onChange) {
-        onChange(options);
-        addStorageChangeListener((changes) => {
-            for (const [name, option] of Object.entries(changes)) {
-                checkboxes[name].checked = option.newValue;
-                options[name] = option.newValue;
-            }
-            onChange(options);
-        });
-    }
+    // Listen for future changes.
+    addStorageChangeListener((changes) => {
+        for (const [key, option] of Object.entries(changes)) {
+            elements[key].checkbox.checked = option.newValue;
+            options[key] = option.newValue;
+        }
+    });
 }

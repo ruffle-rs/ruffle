@@ -5,6 +5,13 @@
     --ruffle-dark-orange: #966214;
 }
 
+.notransition,
+.notransition *,
+.notransition::before,
+.notransition::after {
+    transition: none !important;
+}
+
 body {
     background: var(--ruffle-blue);
     font: 14px Arial, sans-serif;
@@ -13,6 +20,7 @@ body {
 }
 
 .header {
+    position: relative;
     background: var(--ruffle-dark-blue);
     text-align: center;
     padding: 16px;
@@ -20,7 +28,7 @@ body {
 }
 
 .logo {
-    transition-duration: 0.5s;
+    transition: opacity 0.5s;
 }
 
 .logo:hover {
