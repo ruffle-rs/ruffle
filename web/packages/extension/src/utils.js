@@ -3,6 +3,19 @@ const DEFAULT_SETTINGS = {
     ignoreOptout: false,
 };
 
+function promisify(func) {
+    return new Promise((resolve, reject) => {
+        func((result) => {
+            const error = chrome.runtime.lastError;
+            if (error) {
+                reject(error);
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
 export function getI18nMessage(name) {
     if (chrome && chrome.i18n && chrome.i18n.getMessage) {
         return chrome.i18n.getMessage(name);
@@ -21,7 +34,8 @@ export async function getSyncStorage(keys) {
         chrome.storage.sync &&
         chrome.storage.sync.get
     ) {
-        data = await chrome.storage.sync.get(keys);
+        const storage = chrome.storage.sync;
+        data = await promisify(storage.get.bind(storage, keys));
     } else if (
         browser &&
         browser.storage &&
@@ -44,7 +58,8 @@ export async function setSyncStorage(items) {
         chrome.storage.sync &&
         chrome.storage.sync.set
     ) {
-        return chrome.storage.sync.set(items);
+        const storage = chrome.storage.sync;
+        return promisify(storage.set.bind(storage, items));
     } else if (
         browser &&
         browser.storage &&
@@ -79,7 +94,8 @@ export function addStorageChangeListener(listener) {
 
 export async function reloadTab(tabId) {
     if (chrome && chrome.tabs && chrome.tabs.reload) {
-        return chrome.tabs.reload(tabId);
+        const tabs = chrome.tabs;
+        return promisify(tabs.reload.bind(tabs, tabId));
     } else if (browser && browser.tabs && browser.tabs.reload) {
         return browser.tabs.reload(tabId);
     } else {
@@ -89,7 +105,8 @@ export async function reloadTab(tabId) {
 
 export async function queryTabs(query) {
     if (chrome && chrome.tabs && chrome.tabs.query) {
-        return chrome.tabs.query(query);
+        const tabs = chrome.tabs;
+        return promisify(tabs.query.bind(tabs, query));
     } else if (browser && browser.tabs && browser.tabs.query) {
         return browser.tabs.query(query);
     } else {
