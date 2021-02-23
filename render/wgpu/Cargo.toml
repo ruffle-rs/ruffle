@@ -12,7 +12,7 @@ jpeg-decoder = "0.1.22"
 log = "0.4"
 lyon = "0.17.5"
 ruffle_core = { path = "../../core" }
-futures = "0.3.12"
+futures = "0.3.13"
 bytemuck = { version = "1.5.1", features = ["derive"] }
 raw-window-handle = "0.3.3"
 clap = { version = "3.0.0-beta.2", optional = true }
