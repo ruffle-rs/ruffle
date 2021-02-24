@@ -4,9 +4,11 @@ use crate::avm2::globals::SystemPrototypes;
 use crate::avm2::method::Method;
 use crate::avm2::object::EventObject;
 use crate::avm2::script::{Script, TranslationUnit};
+use crate::avm2::string::AvmString;
 use crate::context::UpdateContext;
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, MutationContext};
+use std::collections::HashMap;
 use std::rc::Rc;
 use swf::avm2::read::Reader;
 
@@ -73,7 +75,7 @@ pub struct Avm2<'gc> {
     ///
     /// TODO: These should be weak object pointers, but our current garbage
     /// collector does not support weak references.
-    broadcast_list: Vec<Object<'gc>>,
+    broadcast_list: HashMap<AvmString<'gc>, Vec<Object<'gc>>>,
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
@@ -88,7 +90,7 @@ impl<'gc> Avm2<'gc> {
             stack: Vec::new(),
             globals,
             system_prototypes: None,
-            broadcast_list: Vec::new(),
+            broadcast_list: HashMap::new(),
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
@@ -155,8 +157,15 @@ impl<'gc> Avm2<'gc> {
     pub fn register_broadcast_listener(
         context: &mut UpdateContext<'_, 'gc, '_>,
         object: Object<'gc>,
+        event_name: AvmString<'gc>,
     ) {
-        context.avm2.broadcast_list.push(object);
+        let bucket = context.avm2.broadcast_list.entry(event_name).or_default();
+
+        if bucket.iter().any(|x| Object::ptr_eq(*x, object)) {
+            return;
+        }
+
+        bucket.push(object);
     }
 
     /// Dispatch an event on all objects in the current execution list.
@@ -170,10 +179,22 @@ impl<'gc> Avm2<'gc> {
         event: Event<'gc>,
         on_class_proto: Object<'gc>,
     ) -> Result<(), Error> {
-        let el_length = context.avm2.broadcast_list.len();
+        let event_name = event.event_type();
+        let el_length = context
+            .avm2
+            .broadcast_list
+            .entry(event_name)
+            .or_default()
+            .len();
 
         for i in 0..el_length {
-            let object = context.avm2.broadcast_list.get(i).copied();
+            let object = context
+                .avm2
+                .broadcast_list
+                .get(&event_name)
+                .unwrap()
+                .get(i)
+                .copied();
 
             if let Some(object) = object {
                 if object.has_prototype_in_chain(on_class_proto, true)? {
