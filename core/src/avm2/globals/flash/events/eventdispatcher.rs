@@ -38,8 +38,6 @@ pub fn instance_init<'gc>(
             dispatch_list.into(),
             activation,
         )?;
-
-        Avm2::register_broadcast_listener(&mut activation.context, this);
     }
 
     Ok(Value::Undefined)
@@ -85,6 +83,8 @@ pub fn add_event_listener<'gc>(
             .as_dispatch_mut(activation.context.gc_context)
             .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
             .add_event_listener(event_type, priority, listener, use_capture);
+
+        Avm2::register_broadcast_listener(&mut activation.context, this, event_type);
     }
 
     Ok(Value::Undefined)
