@@ -10,7 +10,23 @@ import { bindBooleanOptions } from "./common";
 let activeTab;
 let savedOptions;
 let tabOptions;
+
+let statusIndicator;
+let statusText;
 let reloadButton;
+
+// prettier-ignore
+const STATUS_COLORS = {
+    "status_init": "gray",
+    "status_no_tab": "red",
+    "status_tabs_error": "red",
+    "status_message_init": "gray",
+    "status_result_protected": "gray",
+    "status_result_error": "red",
+    "status_result_running": "green",
+    "status_result_optout": "gray",
+    "status_result_disabled": "gray",
+};
 
 async function queryTabStatus(listener) {
     listener("status_init");
@@ -91,11 +107,21 @@ function optionsChanged() {
     reloadButton.disabled = !isDifferent;
 }
 
+function displayTabStatus() {
+    queryTabStatus((status) => {
+        statusIndicator.style.setProperty("--color", STATUS_COLORS[status]);
+        statusText.textContent = getI18nMessage(status);
+    });
+}
+
 window.addEventListener("DOMContentLoaded", () => {
     bindBooleanOptions((options) => {
         savedOptions = options;
         optionsChanged();
     });
+
+    statusIndicator = document.getElementById("status-indicator");
+    statusText = document.getElementById("status-text");
 
     const optionsButton = document.getElementById("options-button");
     optionsButton.textContent = getI18nMessage("open_settings_page");
@@ -107,14 +133,9 @@ window.addEventListener("DOMContentLoaded", () => {
         await reloadTab(activeTab.id);
         // TODO: wait for tab to load?
         setTimeout(() => {
-            queryTabStatus((status) => {
-                statusElement.textContent = getI18nMessage(status);
-            });
+            displayTabStatus();
         }, 1000);
     });
 
-    const statusElement = document.getElementById("status");
-    queryTabStatus((status) => {
-        statusElement.textContent = getI18nMessage(status);
-    });
+    displayTabStatus();
 });

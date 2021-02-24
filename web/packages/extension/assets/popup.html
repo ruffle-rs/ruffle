@@ -12,14 +12,7 @@
                 overflow: hidden;
             }
 
-            #status {
-                text-align: center;
-                background: white;
-                color: black;
-            }
-
-            #status,
-            .options {
+            .container {
                 padding: 16px;
             }
 
@@ -32,6 +25,23 @@
                 text-align: center;
                 background: var(--ruffle-orange);
                 color: black;
+            }
+
+            #status-container {
+                text-align: center;
+                background: white;
+                color: black;
+            }
+
+            #status-indicator {
+                --color: green;
+                display: inline-block;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                margin-right: 5px;
+                background: var(--color);
+                box-shadow: 0 0 10px var(--color);
             }
 
             #reload-button {
@@ -47,7 +57,7 @@
             }
 
             @media (prefers-color-scheme: dark) {
-                #status {
+                #status-container {
                     background: #333;
                     color: white;
                 }
@@ -65,8 +75,11 @@
                     width="200" />
             </a>
         </div>
-        <div id="status"></div>
-        <div class="options">
+        <div id="status-container" class="container">
+            <div id="status-indicator"></div>
+            <span id="status-text">Ruffle is running.</span>
+        </div>
+        <div class="container">
             <div class="option">
                 <input type="checkbox" id="ruffle_enable" />
                 <label for="ruffle_enable">Play Flash content in Ruffle</label>
