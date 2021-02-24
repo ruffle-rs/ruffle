@@ -22,24 +22,13 @@ async function fetchRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
     // libraries, if needed.
     setPolyfillsOnLoad();
 
-    // TODO: actual detection
-    let isExtension = true;
-
-    // We currently assume that if we are not executing inside the extension,
-    // then we can use webpack to get Ruffle.
-
-    try {
-        // wasm files are set to use file-loader,
-        // so this package will resolve to the URL of the wasm file.
-        const ruffleWasm = await import(
-            /* webpackMode: "eager" */
-            "../pkg/ruffle_web_bg.wasm"
-        );
-        await init(ruffleWasm.default);
-    } catch (e) {
-        e.ruffleIsExtension = isExtension;
-        throw e;
-    }
+    // wasm files are set to use file-loader,
+    // so this package will resolve to the URL of the wasm file.
+    const ruffleWasm = await import(
+        /* webpackMode: "eager" */
+        "../pkg/ruffle_web_bg.wasm"
+    );
+    await init(ruffleWasm.default);
 
     return Ruffle;
 }
