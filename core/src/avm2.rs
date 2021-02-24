@@ -48,6 +48,8 @@ pub use crate::avm2::names::{Namespace, QName};
 pub use crate::avm2::object::{Object, StageObject, TObject};
 pub use crate::avm2::value::Value;
 
+const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstructed"];
+
 /// Boxed error alias.
 ///
 /// As AVM2 is a far stricter VM than AVM1, this may eventually be replaced
@@ -148,17 +150,22 @@ impl<'gc> Avm2<'gc> {
 
     /// Add an object to the broadcast list.
     ///
-    /// This function does not (currently) check set membership, so multiple
-    /// registrations will result in multiple broadcasts on that object. Take
-    /// care to ensure that registration happens as close to the top of the
-    /// object hierarchy as possible. Currently, registration happens in
-    /// `EventDispatcher`, as that's the highest class that makes sense to send
-    /// broadcasts to.
+    /// Each broadcastable event contains it's own broadcast list. You must
+    /// register all objects that have event handlers with that event's
+    /// broadcast list by calling this function. Attempting to register a
+    /// broadcast listener for a non-broadcast event will do nothing.
+    ///
+    /// Attempts to register the same listener for the same event will also do
+    /// nothing.
     pub fn register_broadcast_listener(
         context: &mut UpdateContext<'_, 'gc, '_>,
         object: Object<'gc>,
         event_name: AvmString<'gc>,
     ) {
+        if !BROADCAST_WHITELIST.iter().any(|x| *x == event_name) {
+            return;
+        }
+
         let bucket = context.avm2.broadcast_list.entry(event_name).or_default();
 
         if bucket.iter().any(|x| Object::ptr_eq(*x, object)) {
@@ -174,12 +181,18 @@ impl<'gc> Avm2<'gc> {
     /// instances, implementers, and/or subclasses define the set of objects
     /// that will recieve the event. You can broadcast to just display objects,
     /// or specific interfaces, and so on.
+    ///
+    /// Attempts to broadcast a non-broadcast event will do nothing.
     pub fn broadcast_event(
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: Event<'gc>,
         on_class_proto: Object<'gc>,
     ) -> Result<(), Error> {
         let event_name = event.event_type();
+        if !BROADCAST_WHITELIST.iter().any(|x| *x == event_name) {
+            return Ok(());
+        }
+
         let el_length = context
             .avm2
             .broadcast_list
