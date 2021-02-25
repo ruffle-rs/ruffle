@@ -136,6 +136,41 @@ pub fn set_background_color<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn border<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.has_border().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_border<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let border = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_boolean();
+        this.set_has_border(activation.context.gc_context, border);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -163,6 +198,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "backgroundColor"),
         Method::from_builtin(set_background_color),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "border"),
+        Method::from_builtin(border),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "border"),
+        Method::from_builtin(set_border),
     ));
 
     class
