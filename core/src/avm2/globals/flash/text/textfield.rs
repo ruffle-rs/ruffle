@@ -101,6 +101,41 @@ pub fn set_autosize<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn background_color<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok((this.background_color() as f64).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_background_color<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let new_color = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+        this.set_background_color(activation.context.gc_context, new_color as u32);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -120,6 +155,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "autoSize"),
         Method::from_builtin(set_autosize),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "backgroundColor"),
+        Method::from_builtin(background_color),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "backgroundColor"),
+        Method::from_builtin(set_background_color),
     ));
 
     class
