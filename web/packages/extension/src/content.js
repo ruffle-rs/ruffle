@@ -18,7 +18,7 @@
  * into/from the main world.
  */
 
-import { getSyncStorage, getExtensionUrl, addMessageListener } from "./utils";
+import * as utils from "./utils";
 
 const pendingMessages = [];
 
@@ -91,14 +91,17 @@ function checkPageOptout() {
 }
 
 (async () => {
-    const options = await getSyncStorage(["ruffleEnable", "ignoreOptout"]);
+    const options = await utils.storage.sync.get([
+        "ruffleEnable",
+        "ignoreOptout",
+    ]);
     const pageOptout = checkPageOptout();
     const shouldLoad =
         options.ruffleEnable &&
         !window.RufflePlayer &&
         (options.ignoreOptout || !pageOptout);
 
-    addMessageListener((message, sender, sendResponse) => {
+    utils.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (shouldLoad) {
             sendMessageToPage(message).then((response) => {
                 sendResponse({
@@ -124,7 +127,7 @@ function checkPageOptout() {
         // Unfortunately, this might still be too late for some websites when using Chrome (#969).
         // TODO: This currently doesn't work because of CSP.
         // injectScriptRaw(require("./pluginPolyfill")); // TODO: use plugin-polyfill.ts
-        injectScriptURL(getExtensionUrl("dist/ruffle.js"));
+        injectScriptURL(utils.runtime.getURL("dist/ruffle.js"));
 
         window.addEventListener("message", (event) => {
             // We only accept messages from ourselves.

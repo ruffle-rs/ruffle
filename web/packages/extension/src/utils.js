@@ -16,151 +16,111 @@ function promisify(func) {
     });
 }
 
-export function getI18nMessage(name) {
-    if (chrome && chrome.i18n && chrome.i18n.getMessage) {
-        return chrome.i18n.getMessage(name);
-    } else if (browser && browser.i18n && browser.i18n.getMessage) {
-        return browser.i18n.getMessage(name);
-    } else {
-        throw new Error(`Failed to get i18n message: ${name}`);
-    }
-}
+export let i18n;
+export let storage;
+export let tabs;
+export let runtime;
+export let openOptionsPage;
 
-export async function getSyncStorage(keys) {
-    let data;
-    if (
-        chrome &&
-        chrome.storage &&
-        chrome.storage.sync &&
-        chrome.storage.sync.get
-    ) {
-        const storage = chrome.storage.sync;
-        data = await promisify(storage.get.bind(storage, keys));
-    } else if (
-        browser &&
-        browser.storage &&
-        browser.storage.sync &&
-        browser.storage.sync.get
-    ) {
-        data = await browser.storage.sync.get(keys);
-    } else {
-        throw new Error(`Failed to get storage: ${keys}`);
-    }
+if (typeof chrome !== "undefined") {
+    i18n = {
+        getMessage: (name) => chrome.i18n.getMessage(name),
+    };
 
-    // Copy over default settings if they don't exist yet.
-    return { ...DEFAULT_SETTINGS, ...data };
-}
+    const storageLocal = chrome.storage.local;
+    const storageSync = chrome.storage.sync;
+    storage = {
+        local: {
+            get: (keys) => promisify(storageLocal.get.bind(storageLocal, keys)),
+            remove: (keys) =>
+                promisify(storageLocal.remove.bind(storageLocal, keys)),
+            set: (items) =>
+                promisify(storageLocal.set.bind(storageLocal, items)),
+        },
+        sync: {
+            async get(keys) {
+                const data = await promisify(
+                    storageSync.get.bind(storageSync, keys)
+                );
+                // Copy over default settings if they don't exist yet.
+                return { ...DEFAULT_SETTINGS, ...data };
+            },
+            remove: (keys) =>
+                promisify(storageSync.remove.bind(storageSync, keys)),
+            set: (items) => promisify(storageSync.set.bind(storageSync, items)),
+        },
+        onChanged: {
+            addListener: (listener) =>
+                chrome.storage.onChanged.addListener(listener),
+        },
+    };
 
-export function setSyncStorage(items) {
-    if (
-        chrome &&
-        chrome.storage &&
-        chrome.storage.sync &&
-        chrome.storage.sync.set
-    ) {
-        const storage = chrome.storage.sync;
-        return promisify(storage.set.bind(storage, items));
-    } else if (
-        browser &&
-        browser.storage &&
-        browser.storage.sync &&
-        browser.storage.sync.set
-    ) {
-        return browser.storage.sync.set(items);
-    } else {
-        throw new Error(`Failed to set storage: ${items}`);
-    }
-}
+    tabs = {
+        reload: (tabId) =>
+            promisify(chrome.tabs.reload.bind(chrome.tabs, tabId)),
+        query: (query) => promisify(chrome.tabs.query.bind(chrome.tabs, query)),
+        sendMessage: (tabId, message, options) =>
+            promisify(
+                chrome.tabs.sendMessage.bind(
+                    chrome.tabs,
+                    tabId,
+                    message,
+                    options
+                )
+            ),
+    };
 
-export function addStorageChangeListener(listener) {
-    if (
-        chrome &&
-        chrome.storage &&
-        chrome.storage.onChanged &&
-        chrome.storage.onChanged.addListener
-    ) {
-        chrome.storage.onChanged.addListener(listener);
-    } else if (
-        browser &&
-        browser.storage &&
-        browser.storage.onChanged &&
-        browser.storage.onChanged.addListener
-    ) {
-        browser.storage.onChanged.addListener(listener);
-    } else {
-        throw new Error("Failed to add storage change listener.");
-    }
-}
+    runtime = {
+        onMessage: {
+            addListener: (listener) =>
+                chrome.runtime.onMessage.addListener(listener),
+        },
+        getURL: (path) => chrome.runtime.getURL(path),
+    };
 
-export function reloadTab(tabId) {
-    if (chrome && chrome.tabs && chrome.tabs.reload) {
-        const tabs = chrome.tabs;
-        return promisify(tabs.reload.bind(tabs, tabId));
-    } else if (browser && browser.tabs && browser.tabs.reload) {
-        return browser.tabs.reload(tabId);
-    } else {
-        throw new Error("Failed to reload tab.");
-    }
-}
+    openOptionsPage = () => chrome.tabs.create({ url: "/options.html" });
+} else if (typeof browser !== "undefined") {
+    i18n = {
+        getMessage: (name) => browser.i18n.getMessage(name),
+    };
 
-export function queryTabs(query) {
-    if (chrome && chrome.tabs && chrome.tabs.query) {
-        const tabs = chrome.tabs;
-        return promisify(tabs.query.bind(tabs, query));
-    } else if (browser && browser.tabs && browser.tabs.query) {
-        return browser.tabs.query(query);
-    } else {
-        throw new Error("Failed to query tabs.");
-    }
-}
+    storage = {
+        local: {
+            get: (keys) => browser.storage.local.get(keys),
+            remove: (keys) => browser.storage.local.set(keys),
+            set: (items) => browser.storage.local.set(items),
+        },
+        sync: {
+            get(keys) {
+                const data = browser.storage.sync.get(keys);
+                // Copy over default settings if they don't exist yet.
+                return { ...DEFAULT_SETTINGS, ...data };
+            },
+            remove: (keys) => browser.storage.sync.set(keys),
+            set: (items) => browser.storage.sync.set(items),
+        },
+        onChanged: {
+            addListener: (listener) =>
+                browser.storage.onChanged.addListener(listener),
+        },
+    };
 
-export function sendMessageToTab(tabId, message, options) {
-    if (chrome && chrome.tabs && chrome.tabs.sendMessage) {
-        const tabs = chrome.tabs;
-        return promisify(tabs.sendMessage.bind(tabs, tabId, message, options));
-    } else if (browser && browser.tabs && browser.tabs.sendMessage) {
-        browser.tabs.sendMessage(tabId, message, options);
-    } else {
-        throw new Error("Failed to send message to tab.");
-    }
-}
+    tabs = {
+        reload: (tabId) => browser.tabs.reload(tabId),
+        query: (query) => browser.tabs.query(query),
+        sendMessage: (tabId, message, options) =>
+            browser.tabs.sendMessage(tabId, message, options),
+    };
 
-export function openOptionsPage() {
-    if (chrome && chrome.tabs && chrome.tabs.create) {
-        chrome.tabs.create({ url: "/options.html" });
-    } else if (browser && browser.runtime && browser.runtime.openOptionsPage) {
-        browser.runtime.openOptionsPage();
-    } else {
-        throw new Error("Failed to open options page.");
-    }
-}
+    runtime = {
+        onMessage: {
+            addListener: (listener) =>
+                browser.runtime.onMessage.addListener(listener),
+        },
+        getURL: (path) => browser.runtime.getURL(path),
+    };
 
-export function addMessageListener(listener) {
-    if (
-        chrome &&
-        chrome.runtime &&
-        chrome.runtime.onMessage &&
-        chrome.runtime.onMessage.addListener
-    ) {
-        chrome.runtime.onMessage.addListener(listener);
-    } else if (
-        browser &&
-        browser.runtime &&
-        browser.runtime.onMessage &&
-        browser.runtime.onMessage.addListener
-    ) {
-        browser.runtime.onMessage.addListener(listener);
-    } else {
-        throw new Error("Failed to add message listener.");
-    }
-}
-
-export function getExtensionUrl(path) {
-    if (chrome && chrome.runtime && chrome.runtime.getURL) {
-        return chrome.runtime.getURL(path);
-    } else if (browser && browser.runtime && browser.runtime.getURL) {
-        return browser.runtime.getURL(path);
-    } else {
-        throw new Error("Faile to get extension URL.");
-    }
+    openOptionsPage = () => browser.runtime.openOptionsPage();
+} else {
+    throw new Error("Extension API not found.");
 }

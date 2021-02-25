@@ -1,7 +1,7 @@
-import { getI18nMessage } from "./utils";
+import * as utils from "./utils";
 import { bindBooleanOptions } from "./common";
 
 window.addEventListener("DOMContentLoaded", () => {
-    document.title = getI18nMessage("settings_page");
+    document.title = utils.i18n.getMessage("settings_page");
     bindBooleanOptions();
 });

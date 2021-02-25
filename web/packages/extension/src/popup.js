@@ -1,10 +1,4 @@
-import {
-    getI18nMessage,
-    sendMessageToTab,
-    openOptionsPage,
-    reloadTab,
-    queryTabs,
-} from "./utils";
+import * as utils from "./utils";
 import { bindBooleanOptions } from "./common";
 
 let activeTab;
@@ -33,7 +27,7 @@ async function queryTabStatus(listener) {
 
     let tabs;
     try {
-        tabs = await queryTabs({
+        tabs = await utils.tabs.query({
             currentWindow: true,
             active: true,
         });
@@ -58,7 +52,7 @@ async function queryTabStatus(listener) {
 
     let response;
     try {
-        response = await sendMessageToTab(activeTab.id, {});
+        response = await utils.tabs.sendMessage(activeTab.id, {});
     } catch (e) {
         listener("status_result_protected");
         reloadButton.disabled = true;
@@ -110,7 +104,7 @@ function optionsChanged() {
 function displayTabStatus() {
     queryTabStatus((status) => {
         statusIndicator.style.setProperty("--color", STATUS_COLORS[status]);
-        statusText.textContent = getI18nMessage(status);
+        statusText.textContent = utils.i18n.getMessage(status);
     });
 }
 
@@ -124,13 +118,13 @@ window.addEventListener("DOMContentLoaded", () => {
     statusText = document.getElementById("status-text");
 
     const optionsButton = document.getElementById("options-button");
-    optionsButton.textContent = getI18nMessage("open_settings_page");
-    optionsButton.addEventListener("click", () => openOptionsPage());
+    optionsButton.textContent = utils.i18n.getMessage("open_settings_page");
+    optionsButton.addEventListener("click", () => utils.openOptionsPage());
 
     reloadButton = document.getElementById("reload-button");
-    reloadButton.textContent = getI18nMessage("action_reload");
+    reloadButton.textContent = utils.i18n.getMessage("action_reload");
     reloadButton.addEventListener("click", async () => {
-        await reloadTab(activeTab.id);
+        await utils.tabs.reload(activeTab.id);
         // TODO: wait for tab to load?
         setTimeout(() => {
             displayTabStatus();

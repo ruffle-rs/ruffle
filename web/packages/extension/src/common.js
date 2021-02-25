@@ -1,9 +1,4 @@
-import {
-    getI18nMessage,
-    getSyncStorage,
-    setSyncStorage,
-    addStorageChangeListener,
-} from "./utils";
+import * as utils from "./utils";
 
 function camelize(string) {
     return string.replace(/[^a-z\d](.)/gi, (_, char) => char.toUpperCase());
@@ -27,7 +22,7 @@ export async function bindBooleanOptions(onChange) {
     const elements = getBooleanElements();
 
     // Bind initial values.
-    const options = await getSyncStorage(Object.keys(elements));
+    const options = await utils.storage.sync.get(Object.keys(elements));
     for (const [key, value] of Object.entries(options)) {
         elements[key].checkbox.checked = value;
     }
@@ -37,10 +32,10 @@ export async function bindBooleanOptions(onChange) {
         checkbox.addEventListener("click", () => {
             const value = checkbox.checked;
             options[key] = value;
-            setSyncStorage({ [key]: value });
+            utils.storage.sync.set({ [key]: value });
         });
 
-        label.textContent = getI18nMessage(`settings_${checkbox.id}`);
+        label.textContent = utils.i18n.getMessage(`settings_${checkbox.id}`);
 
         // Prevent transition on load.
         // Method from https://stackoverflow.com/questions/11131875.
@@ -50,7 +45,7 @@ export async function bindBooleanOptions(onChange) {
     }
 
     // Listen for future changes.
-    addStorageChangeListener((changes) => {
+    utils.storage.onChanged.addListener((changes) => {
         for (const [key, option] of Object.entries(changes)) {
             elements[key].checkbox.checked = option.newValue;
             options[key] = option.newValue;
