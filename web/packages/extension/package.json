@@ -6,14 +6,16 @@
     "private": true,
     "scripts": {
         "build": "npm run build:generic && npm run build:firefox",
-        "build:generic": "node tools/build_generic.js",
-        "build:firefox": "node tools/build_firefox.js"
+        "build:generic": "webpack --env generic && node tools/zip.js dist/ruffle_extension.zip",
+        "build:firefox": "webpack --env firefox && node tools/zip.js dist/firefox_unsigned.xpi && node tools/sign_xpi.js dist/firefox_unsigned.xpi dist/firefox.xpi"
     },
     "dependencies": {
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
+        "archiver": "^5.2.0",
         "file-loader": "^6.2.0",
-        "webpack": "^5.1.3"
+        "sign-addon": "^3.3.0",
+        "webpack-cli": "^4.0.0"
     }
 }
