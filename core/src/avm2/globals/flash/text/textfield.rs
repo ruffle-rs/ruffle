@@ -110,7 +110,7 @@ pub fn background_color<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        return Ok((this.background_color() as f64).into());
+        return Ok((this.background_color()).into());
     }
 
     Ok(Value::Undefined)
@@ -129,8 +129,8 @@ pub fn set_background_color<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        this.set_background_color(activation.context.gc_context, new_color as u32);
+            .coerce_to_u32(activation)?;
+        this.set_background_color(activation.context.gc_context, new_color);
     }
 
     Ok(Value::Undefined)
