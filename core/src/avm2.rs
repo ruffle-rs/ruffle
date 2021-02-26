@@ -44,10 +44,11 @@ mod traits;
 mod value;
 
 pub use crate::avm2::activation::Activation;
+pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::domain::Domain;
 pub use crate::avm2::events::Event;
 pub use crate::avm2::names::{Namespace, QName};
-pub use crate::avm2::object::{Object, StageObject, TObject};
+pub use crate::avm2::object::{ArrayObject, Object, ScriptObject, StageObject, TObject};
 pub use crate::avm2::value::Value;
 
 const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstructed"];

@@ -6,8 +6,9 @@ use crate::avm1::{
     Value as Avm1Value,
 };
 use crate::avm2::{
-    Activation as Avm2Activation, Error as Avm2Error, Namespace as Avm2Namespace,
-    Object as Avm2Object, QName as Avm2QName, TObject as Avm2TObject, Value as Avm2Value,
+    Activation as Avm2Activation, ArrayObject as Avm2ArrayObject, ArrayStorage as Avm2ArrayStorage,
+    Error as Avm2Error, Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName,
+    ScriptObject as Avm2ScriptObject, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
@@ -696,6 +697,186 @@ impl TextFormat {
         }
 
         Ok(object.into())
+    }
+
+    /// Construct a `TextFormat` AVM2 object from this text format object.
+    pub fn as_avm2_object<'gc>(
+        &self,
+        activation: &mut Avm2Activation<'_, 'gc, '_>,
+    ) -> Result<Avm2Object<'gc>, Avm2Error> {
+        let mut proto = activation.context.avm2.prototypes().textformat;
+        let constr = proto
+            .get_property(
+                proto,
+                &Avm2QName::new(Avm2Namespace::public(), "constructor"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+        let mut object = Avm2ScriptObject::object(activation.context.gc_context, proto);
+
+        constr.call(Some(object), &[], activation, Some(proto))?;
+
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "font"),
+            self.font
+                .clone()
+                .map(|v| AvmString::new(activation.context.gc_context, v).into())
+                .unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "size"),
+            self.size.map(|v| v.into()).unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "color"),
+            self.color
+                .clone()
+                .map(|v| (((v.r as u32) << 16) + ((v.g as u32) << 8) + v.b as u32).into())
+                .unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "align"),
+            self.align
+                .map(|v| {
+                    AvmString::new(
+                        activation.context.gc_context,
+                        match v {
+                            swf::TextAlign::Left => "left",
+                            swf::TextAlign::Center => "center",
+                            swf::TextAlign::Right => "right",
+                            swf::TextAlign::Justify => "justify",
+                        }
+                        .to_string(),
+                    )
+                    .into()
+                })
+                .unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "bold"),
+            self.bold.map(|v| v.into()).unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "italic"),
+            self.italic.map(|v| v.into()).unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "underline"),
+            self.underline.map(|v| v.into()).unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "leftMargin"),
+            self.left_margin
+                .map(|v| v.into())
+                .unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "rightMargin"),
+            self.right_margin
+                .map(|v| v.into())
+                .unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "indent"),
+            self.indent.map(|v| v.into()).unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "blockIndent"),
+            self.block_indent
+                .map(|v| v.into())
+                .unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "kerning"),
+            self.kerning.map(|v| v.into()).unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "leading"),
+            self.leading.map(|v| v.into()).unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "letterSpacing"),
+            self.letter_spacing
+                .map(|v| v.into())
+                .unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "bullet"),
+            self.bullet.map(|v| v.into()).unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "url"),
+            self.url
+                .clone()
+                .map(|v| AvmString::new(activation.context.gc_context, v).into())
+                .unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+        object.set_property(
+            object,
+            &Avm2QName::new(Avm2Namespace::public(), "target"),
+            self.target
+                .clone()
+                .map(|v| AvmString::new(activation.context.gc_context, v).into())
+                .unwrap_or(Avm2Value::Null),
+            activation,
+        )?;
+
+        if let Some(ts) = &self.tab_stops {
+            let tab_stop_storage = Avm2ArrayStorage::from_iter(ts.iter().copied());
+            let tab_stops = Avm2ArrayObject::from_array(
+                tab_stop_storage,
+                activation.context.avm2.prototypes().array,
+                activation.context.gc_context,
+            );
+
+            object.set_property(
+                object,
+                &Avm2QName::new(Avm2Namespace::public(), "tabStops"),
+                tab_stops.into(),
+                activation,
+            )?;
+        } else {
+            object.set_property(
+                object,
+                &Avm2QName::new(Avm2Namespace::public(), "tabStops"),
+                Avm2Value::Null,
+                activation,
+            )?;
+        }
+
+        Ok(object)
     }
 
     /// Given two text formats, construct a new `TextFormat` where only

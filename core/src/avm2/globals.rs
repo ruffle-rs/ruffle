@@ -105,6 +105,7 @@ pub struct SystemPrototypes<'gc> {
     pub shape: Object<'gc>,
     pub point: Object<'gc>,
     pub textfield: Object<'gc>,
+    pub textformat: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -145,6 +146,7 @@ impl<'gc> SystemPrototypes<'gc> {
             shape: empty,
             point: empty,
             textfield: empty,
+            textformat: empty,
         }
     }
 }
@@ -710,7 +712,13 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
-    class(
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
+        .textformat = class(
         activation,
         flash::text::textformat::create_class(mc),
         implicit_deriver,
