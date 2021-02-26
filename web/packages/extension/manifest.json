@@ -1,15 +1,15 @@
 {
     "manifest_version": 2,
     "name": "Ruffle",
-    "description": "__MSG_description__",
+    "version": null,
     "default_locale": "en",
-    "icons": {
-        "16": "images/icon16.png",
-        "32": "images/icon32.png",
-        "48": "images/icon48.png",
-        "128": "images/icon128.png"
+    "description": "__MSG_description__",
+    "homepage_url": "https://ruffle.rs/",
+
+    "browser_action": {
+        "default_popup": "popup.html",
+        "browser_style": true
     },
-    "permissions": [ "storage" ],
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
@@ -18,11 +18,17 @@
             "run_at": "document_start"
         }
     ],
-    "web_accessible_resources": ["dist/*"],
-    "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'unsafe-inline'",
-    "browser_action": {
-        "default_popup": "popup.html",
-        "browser_style": true
+    "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'unsafe-inline';",
+    "icons": {
+        "16": "images/icon16.png",
+        "32": "images/icon32.png",
+        "48": "images/icon48.png",
+        "128": "images/icon128.png"
     },
-    "options_page": "options.html"
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": true
+    },
+    "permissions": ["storage"],
+    "web_accessible_resources": ["dist/*"]
 }
