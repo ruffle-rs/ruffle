@@ -39,6 +39,18 @@ impl<'gc> ArrayStorage<'gc> {
         Self { storage }
     }
 
+    /// Convert any iterable stream of values or value-like items into array
+    /// storage.
+    pub fn from_iter<I, V>(values: I) -> Self
+    where
+        I: Iterator<Item = V>,
+        V: Into<Value<'gc>>,
+    {
+        let storage = values.map(|v| Some(v.into())).collect();
+
+        Self { storage }
+    }
+
     /// Wrap an existing storage Vec in an `ArrayStorage`.
     pub fn from_storage(storage: Vec<Option<Value<'gc>>>) -> Self {
         Self { storage }
