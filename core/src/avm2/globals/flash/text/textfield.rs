@@ -531,6 +531,38 @@ pub fn set_text_color<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn text_height<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let metrics = this.measure_text(&mut activation.context);
+        return Ok(metrics.1.to_pixels().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn text_width<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let metrics = this.measure_text(&mut activation.context);
+        return Ok(metrics.0.to_pixels().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -642,6 +674,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "textColor"),
         Method::from_builtin(set_text_color),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "textHeight"),
+        Method::from_builtin(text_height),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "textWidth"),
+        Method::from_builtin(text_width),
     ));
 
     class
