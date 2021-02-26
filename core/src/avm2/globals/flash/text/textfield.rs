@@ -481,6 +481,56 @@ pub fn set_text<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn text_color<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        if let Some(color) = this.new_text_format().color {
+            return Ok(color.to_rgb().into());
+        } else {
+            return Ok(0u32.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_text_color<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let text_color = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_u32(activation)?;
+        let desired_format = TextFormat {
+            color: Some(swf::Color::from_rgb(text_color, 0xFF)),
+            ..TextFormat::default()
+        };
+
+        this.set_text_format(
+            0,
+            this.text_length(),
+            desired_format.clone(),
+            &mut activation.context,
+        );
+        this.set_new_text_format(desired_format, &mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -584,6 +634,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "text"),
         Method::from_builtin(set_text),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "textColor"),
+        Method::from_builtin(text_color),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "textColor"),
+        Method::from_builtin(set_text_color),
     ));
 
     class
