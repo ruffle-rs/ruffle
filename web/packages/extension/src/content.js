@@ -125,8 +125,7 @@ function checkPageOptout() {
     if (shouldLoad) {
         // We must run the plugin polyfill before any flash detection scripts.
         // Unfortunately, this might still be too late for some websites when using Chrome (#969).
-        // TODO: This currently doesn't work because of CSP.
-        // injectScriptRaw(require("./pluginPolyfill")); // TODO: use plugin-polyfill.ts
+        injectScriptRaw(require("./pluginPolyfill")); // TODO: use plugin-polyfill.ts
         injectScriptURL(utils.runtime.getURL("dist/ruffle.js"));
 
         window.addEventListener("message", (event) => {
