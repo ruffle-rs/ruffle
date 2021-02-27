@@ -454,9 +454,9 @@ impl WebGlRenderBackend {
         gl.bind_framebuffer(Gl2::FRAMEBUFFER, None);
 
         self.msaa_buffers = Some(MsaaBuffers {
-            render_framebuffer,
             color_renderbuffer,
             stencil_renderbuffer,
+            render_framebuffer,
             color_framebuffer,
             framebuffer_texture,
         });
@@ -744,9 +744,9 @@ impl WebGlRenderBackend {
         self.bitmap_registry.insert(handle, bitmap);
 
         self.textures.push(Texture {
-            texture,
             width,
             height,
+            texture,
         });
 
         Ok(BitmapInfo {

@@ -749,9 +749,9 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         self.bitmap_registry.insert(handle, bitmap);
         self.textures.push(Texture {
-            texture,
             width,
             height,
+            texture,
             bind_group,
         });
 
