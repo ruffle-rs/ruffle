@@ -421,12 +421,8 @@ impl AudioBackend for CpalAudioBackend {
 
     fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<u32> {
         let sound_instances = self.sound_instances.lock().unwrap();
-        if let Some(_instance) = sound_instances.get(instance) {
-            // TODO: Return actual position
-            Some(0)
-        } else {
-            None
-        }
+        // TODO: Return actual position
+        sound_instances.get(instance).map(|_| 0)
     }
 
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32> {

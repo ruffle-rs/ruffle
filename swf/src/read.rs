@@ -1777,11 +1777,11 @@ impl<'a> Reader<'a> {
                 start_cap,
                 end_cap,
                 join_style,
+                fill_style,
                 allow_scale_x,
                 allow_scale_y,
                 is_pixel_hinted,
                 allow_close,
-                fill_style,
             })
         }
     }
@@ -2397,8 +2397,8 @@ impl<'a> Reader<'a> {
         Ok(SoundFormat {
             compression,
             sample_rate,
-            is_16_bit,
             is_stereo,
+            is_16_bit,
         })
     }
 
@@ -2671,8 +2671,8 @@ impl<'a> Reader<'a> {
         let data = self.read_slice(data_size)?;
         let alpha_data = self.read_slice_to_end();
         Ok(Tag::DefineBitsJpeg3(DefineBitsJpeg3 {
-            version,
             id,
+            version,
             deblocking,
             data,
             alpha_data,
