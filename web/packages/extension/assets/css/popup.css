@@ -1,0 +1,56 @@
+body {
+    width: 240px;
+    overflow: hidden;
+}
+
+.container {
+    padding: 16px;
+}
+
+button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    background: var(--ruffle-orange);
+    color: black;
+}
+
+#status-container {
+    text-align: center;
+    background: white;
+    color: black;
+}
+
+#status-indicator {
+    --color: green;
+
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+    background: var(--color);
+    box-shadow: 0 0 10px var(--color);
+}
+
+#reload-button {
+    height: 0;
+    padding: 0;
+    transition: height 0.2s ease-in;
+    overflow: hidden;
+}
+
+#reload-button:enabled {
+    height: calc(1em + 20px);
+    transition: height 0.2s ease-out;
+}
+
+@media (prefers-color-scheme: dark) {
+    #status-container {
+        background: #333;
+        color: white;
+    }
+}
