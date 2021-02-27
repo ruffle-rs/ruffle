@@ -26,18 +26,17 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::prelude::*;
-use crate::shape_utils::DrawCommand;
 use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
-use std::cell::{Ref, RefCell};
+use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{FillStyle, FrameLabelData, LineStyle, Tag};
+use swf::{FrameLabelData, Tag};
 
 type FrameNumber = u16;
 
@@ -1013,34 +1012,6 @@ impl<'gc> MovieClip<'gc> {
         actions.into_iter()
     }
 
-    pub fn set_fill_style(
-        self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        style: Option<FillStyle>,
-    ) {
-        let mut mc = self.0.write(context.gc_context);
-        mc.drawing.set_fill_style(style);
-    }
-
-    pub fn clear(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut mc = self.0.write(context.gc_context);
-        mc.drawing.clear();
-    }
-
-    pub fn set_line_style(
-        self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        style: Option<LineStyle>,
-    ) {
-        let mut mc = self.0.write(context.gc_context);
-        mc.drawing.set_line_style(style);
-    }
-
-    pub fn draw_command(self, context: &mut UpdateContext<'_, 'gc, '_>, command: DrawCommand) {
-        let mut mc = self.0.write(context.gc_context);
-        mc.drawing.draw_command(command);
-    }
-
     pub fn run_clip_event(
         self,
         context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
@@ -1934,6 +1905,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
         Some(self.into())
+    }
+
+    fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
+        Some(RefMut::map(self.0.write(gc_context), |s| &mut s.drawing))
     }
 
     fn post_instantiation(

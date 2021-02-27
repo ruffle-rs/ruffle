@@ -3,6 +3,7 @@ use crate::avm1::{
 };
 use crate::avm2::{Avm2, Event as Avm2Event, TObject as Avm2TObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
+use crate::drawing::Drawing;
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -989,6 +990,9 @@ pub trait TDisplayObject<'gc>:
         None
     }
     fn as_video(self) -> Option<Video<'gc>> {
+        None
+    }
+    fn as_drawing(&self, _gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
         None
     }
 
