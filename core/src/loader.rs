@@ -471,6 +471,7 @@ impl<'gc> Loader<'gc> {
                 player
                     .lock()
                     .expect("Could not lock player!!")
+                    .set_frame_rate(movie.header().frame_rate.into())
                     .update(|uc| {
                         let domain =
                             Avm2Domain::movie_domain(uc.gc_context, uc.avm2.global_domain());
