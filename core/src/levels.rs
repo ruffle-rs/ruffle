@@ -13,9 +13,9 @@ struct Level<'gc> {
 
 #[derive(Clone, Collect, Default)]
 #[collect(no_drop)]
-pub struct LevelsData<'gc>(BTreeMap<LevelId, Level<'gc>>);
+pub struct Levels<'gc>(BTreeMap<LevelId, Level<'gc>>);
 
-impl<'gc> LevelsData<'gc> {
+impl<'gc> Levels<'gc> {
     pub fn insert(&mut self, gc_context: MutationContext<'gc, '_>, root: DisplayObject<'gc>) {
         if let Some(level0) = self.0.get(&0) {
             let prev = level0.root;

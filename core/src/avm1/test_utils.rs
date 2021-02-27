@@ -14,7 +14,7 @@ use crate::backend::video::NullVideoBackend;
 use crate::context::ActionQueue;
 use crate::display_object::{MovieClip, TDisplayObject};
 use crate::focus_tracker::FocusTracker;
-use crate::levels::LevelsData;
+use crate::levels::Levels;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
@@ -41,7 +41,7 @@ where
         let root: DisplayObject<'gc> =
             MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
         root.set_depth(gc_context, 0);
-        let mut levels = LevelsData::default();
+        let mut levels = Levels::default();
         levels.insert(gc_context, root);
 
         let globals = avm1.global_object_cell();

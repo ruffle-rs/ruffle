@@ -16,7 +16,7 @@ use crate::backend::{
 use crate::display_object::{EditText, MovieClip, SoundTransform};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
-use crate::levels::LevelsData;
+use crate::levels::Levels;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
@@ -94,7 +94,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub rng: &'a mut SmallRng,
 
     /// All loaded levels of the current player.
-    pub levels: &'a mut LevelsData<'gc>,
+    pub levels: &'a mut Levels<'gc>,
 
     /// The display object that the mouse is currently hovering over.
     pub mouse_hovered_object: Option<DisplayObject<'gc>>,

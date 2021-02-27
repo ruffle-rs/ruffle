@@ -22,7 +22,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEv
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::focus_tracker::FocusTracker;
-use crate::levels::LevelsData;
+use crate::levels::Levels;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
@@ -60,7 +60,7 @@ struct GcRootData<'gc> {
     /// Each level is a `_root` MovieClip that holds a particular SWF movie, also accessible via
     /// the `_levelN` property.
     /// levels[0] represents the initial SWF file that was loaded.
-    levels: LevelsData<'gc>,
+    levels: Levels<'gc>,
 
     mouse_hovered_object: Option<DisplayObject<'gc>>, // TODO: Remove GcCell wrapped inside GcCell.
 
@@ -104,7 +104,7 @@ impl<'gc> GcRootData<'gc> {
     fn update_context_params(
         &mut self,
     ) -> (
-        &mut LevelsData<'gc>,
+        &mut Levels<'gc>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut Avm1<'gc>,
@@ -274,7 +274,7 @@ impl Player {
                     gc_context,
                     GcRootData {
                         library: Library::empty(gc_context),
-                        levels: LevelsData::default(),
+                        levels: Levels::default(),
                         mouse_hovered_object: None,
                         drag_object: None,
                         avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
