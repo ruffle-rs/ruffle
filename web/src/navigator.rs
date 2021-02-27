@@ -205,11 +205,15 @@ impl NavigatorBackend for WebNavigatorBackend {
             }
 
             let resp: Response = fetchval.unwrap().dyn_into().unwrap();
-            let data: ArrayBuffer = JsFuture::from(resp.array_buffer().unwrap())
-                .await
-                .unwrap()
-                .dyn_into()
-                .unwrap();
+            let data_result = JsFuture::from(resp.array_buffer().unwrap()).await;
+
+            if data_result.is_err() {
+                return Err(Error::NetworkError(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Could not fetch, got JS Error",
+                )));
+            }
+            let data = data_result.unwrap().dyn_into().unwrap();
             let jsarray = Uint8Array::new(&data);
             let mut rust_array = vec![0; jsarray.length() as usize];
             jsarray.copy_to(&mut rust_array);
