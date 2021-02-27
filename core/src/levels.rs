@@ -26,7 +26,13 @@ impl<'gc> LevelsData<'gc> {
             root.set_prev_exec(gc_context, Some(prev));
             prev.set_next_exec(gc_context, Some(root));
         }
-        self.0.insert(root.level_id(), Level { root, last_child: root });
+        self.0.insert(
+            root.level_id(),
+            Level {
+                root,
+                last_child: root,
+            },
+        );
     }
 
     pub fn remove(&mut self, gc_context: MutationContext<'gc, '_>, id: LevelId) {
@@ -46,7 +52,11 @@ impl<'gc> LevelsData<'gc> {
         }
     }
 
-    pub fn add_to_execution_list(&mut self, gc_context: MutationContext<'gc, '_>, node: DisplayObject<'gc>) {
+    pub fn add_to_execution_list(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        node: DisplayObject<'gc>,
+    ) {
         if let Some(level) = self.0.get_mut(&node.level_id()) {
             let head = level.last_child;
             if let Some(prev) = head.prev_exec() {
@@ -61,7 +71,11 @@ impl<'gc> LevelsData<'gc> {
         }
     }
 
-    pub fn remove_from_execution_list(&mut self, gc_context: MutationContext<'gc, '_>, node: DisplayObject<'gc>) {
+    pub fn remove_from_execution_list(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        node: DisplayObject<'gc>,
+    ) {
         if let Some(ctr) = node.as_container() {
             for child in ctr.iter_render_list() {
                 self.remove_from_execution_list(gc_context, child);

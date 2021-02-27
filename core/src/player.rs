@@ -332,9 +332,7 @@ impl Player {
                 Instantiator::Movie,
                 false,
             );
-            context
-                .levels
-                .insert(context.gc_context, fake_root.into());
+            context.levels.insert(context.gc_context, fake_root.into());
 
             Avm2::load_player_globals(context)
         })?;
@@ -869,8 +867,7 @@ impl Player {
             // TODO: use rev?
             for root in context.levels.clone().iter_roots() {
                 if new_hovered.is_none() {
-                    new_hovered =
-                        root.mouse_pick(context, root, (mouse_pos.0, mouse_pos.1));
+                    new_hovered = root.mouse_pick(context, root, (mouse_pos.0, mouse_pos.1));
                 } else {
                     break;
                 }

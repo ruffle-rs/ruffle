@@ -2820,9 +2820,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             root.set_depth(self.context.gc_context, level_id as Depth);
             root.set_level_id(self.context.gc_context, level_id);
             root.set_default_root_name(&mut self.context);
-            self.context
-                .levels
-                .insert(self.context.gc_context, root);
+            self.context.levels.insert(self.context.gc_context, root);
             root.post_instantiation(&mut self.context, root, None, Instantiator::Movie, false);
 
             root
