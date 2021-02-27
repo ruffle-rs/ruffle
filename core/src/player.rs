@@ -777,7 +777,7 @@ impl Player {
             // Fire event listener on appropriate object
             if let Some((listener_type, event_name, args)) = listener {
                 context.action_queue.queue_actions(
-                    context.levels.at(0).expect("root level"),
+                    context.levels.get(0).expect("root level"),
                     ActionType::NotifyListeners {
                         listener: listener_type,
                         method: event_name,
@@ -919,7 +919,7 @@ impl Player {
         let mut is_action_script_3 = false;
         self.mutate_with_update_context(|context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
-            let root = context.levels.at(0).expect("root level");
+            let root = context.levels.get(0).expect("root level");
             root.as_movie_clip()
                 .unwrap()
                 .preload(context, &mut morph_shapes);
@@ -1347,7 +1347,7 @@ impl Player {
 
             *current_frame = update_context
                 .levels
-                .at(0)
+                .get(0)
                 .and_then(|level| level.as_movie_clip())
                 .map(|clip| clip.current_frame());
 

@@ -89,8 +89,7 @@ impl<'gc> LevelsData<'gc> {
         }
     }
 
-    // TODO: impl Index?
-    pub fn at(&self, id: LevelId) -> Option<DisplayObject<'gc>> {
+    pub fn get(&self, id: LevelId) -> Option<DisplayObject<'gc>> {
         self.0.get(&id).map(|level| level.root)
     }
 

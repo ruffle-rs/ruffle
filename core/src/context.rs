@@ -168,7 +168,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             self.audio,
             self.gc_context,
             self.action_queue,
-            self.levels.at(0).unwrap(),
+            self.levels.get(0).unwrap(),
         );
     }
 

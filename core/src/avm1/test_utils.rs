@@ -102,7 +102,7 @@ where
             }
         }
 
-        let base_clip = context.levels.at(0).unwrap();
+        let base_clip = context.levels.get(0).unwrap();
         let swf_version = context.swf.version();
         let mut activation = Activation::from_nothing(
             context,

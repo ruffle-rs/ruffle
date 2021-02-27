@@ -762,7 +762,7 @@ pub trait TDisplayObject<'gc>:
             };
             if is_level {
                 if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<LevelId>().ok()) {
-                    return context.levels.at(level_id);
+                    return context.levels.get(level_id);
                 }
             }
         }

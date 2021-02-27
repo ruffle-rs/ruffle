@@ -345,7 +345,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Self {
         let version = context.swf.version();
         let globals = context.avm1.global_object_cell();
-        let level0 = context.levels.at(0).unwrap();
+        let level0 = context.levels.get(0).unwrap();
 
         Self::from_nothing(context, id, version, globals, level0)
     }
@@ -2808,7 +2808,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// If the level does not exist, then it will be created and instantiated
     /// with a script object.
     pub fn resolve_level(&mut self, level_id: LevelId) -> DisplayObject<'gc> {
-        if let Some(level) = self.context.levels.at(level_id) {
+        if let Some(level) = self.context.levels.get(level_id) {
             level
         } else {
             let root: DisplayObject<'_> = MovieClip::new(
