@@ -606,6 +606,42 @@ pub fn set_type<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn word_wrap<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.is_word_wrap().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_word_wrap<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let is_word_wrap = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_boolean();
+
+        this.set_word_wrap(is_word_wrap, &mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -733,6 +769,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "type"),
         Method::from_builtin(set_type),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "wordWrap"),
+        Method::from_builtin(word_wrap),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "wordWrap"),
+        Method::from_builtin(set_word_wrap),
     ));
 
     class
