@@ -563,6 +563,49 @@ pub fn text_width<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_type<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        match this.is_editable() {
+            true => return Ok("input".into()),
+            false => return Ok("dynamic".into()),
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_type<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let is_editable = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+
+        match is_editable.to_ascii_lowercase().as_str() {
+            "input" => this.set_editable(true, &mut activation.context),
+            "dynamic" => this.set_editable(false, &mut activation.context),
+            value => return Err(format!("Invalid TextField.type: {}", value).into()),
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -682,6 +725,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "textWidth"),
         Method::from_builtin(text_width),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "type"),
+        Method::from_builtin(get_type),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "type"),
+        Method::from_builtin(set_type),
     ));
 
     class
