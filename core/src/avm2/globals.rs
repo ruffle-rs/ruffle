@@ -739,6 +739,13 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
+    class(
+        activation,
+        flash::text::textfieldtype::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
 
     Ok(())
 }
