@@ -347,6 +347,13 @@ impl Player {
         Ok(player_box)
     }
 
+    /// Set the current frame rate
+    pub fn set_frame_rate(&mut self, nframe_rate: f64) -> &mut Player {
+        info!("Setting frame rate to {}", nframe_rate);
+        self.frame_rate = nframe_rate;
+        self
+    }
+
     /// Fetch the root movie.
     ///
     /// This should not be called if a root movie fetch has already been kicked
