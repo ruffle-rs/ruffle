@@ -20,6 +20,12 @@ pub struct Drawing {
     cursor: (Twips, Twips),
 }
 
+impl Default for Drawing {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drawing {
     pub fn new() -> Self {
         Self {

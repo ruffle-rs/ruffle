@@ -336,9 +336,10 @@ fn line_style<'gc>(
             Some("bevel") => LineJoinStyle::Bevel,
             _ => LineJoinStyle::Round,
         };
-        movie_clip.set_line_style(
-            &mut activation.context,
-            Some(LineStyle {
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .set_line_style(Some(LineStyle {
                 width,
                 color,
                 start_cap: cap_style,
@@ -349,10 +350,12 @@ fn line_style<'gc>(
                 allow_scale_y,
                 is_pixel_hinted,
                 allow_close: false,
-            }),
-        );
+            }));
     } else {
-        movie_clip.set_line_style(&mut activation.context, None);
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .set_line_style(None);
     }
     Ok(Value::Undefined)
 }
@@ -371,12 +374,15 @@ fn begin_fill<'gc>(
         } as f32
             / 100.0
             * 255.0;
-        movie_clip.set_fill_style(
-            &mut activation.context,
-            Some(FillStyle::Color(Color::from_rgb(rgb, alpha as u8))),
-        );
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .set_fill_style(Some(FillStyle::Color(Color::from_rgb(rgb, alpha as u8))));
     } else {
-        movie_clip.set_fill_style(&mut activation.context, None);
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .set_fill_style(None);
     }
     Ok(Value::Undefined)
 }
@@ -461,9 +467,15 @@ fn begin_gradient_fill<'gc>(
                 return Ok(Value::Undefined);
             }
         };
-        movie_clip.set_fill_style(&mut activation.context, Some(style));
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .set_fill_style(Some(style));
     } else {
-        movie_clip.set_fill_style(&mut activation.context, None);
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .set_fill_style(None);
     }
     Ok(Value::Undefined)
 }
@@ -476,13 +488,13 @@ fn move_to<'gc>(
     if let (Some(x), Some(y)) = (args.get(0), args.get(1)) {
         let x = x.coerce_to_f64(activation)?;
         let y = y.coerce_to_f64(activation)?;
-        movie_clip.draw_command(
-            &mut activation.context,
-            DrawCommand::MoveTo {
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .draw_command(DrawCommand::MoveTo {
                 x: Twips::from_pixels(x),
                 y: Twips::from_pixels(y),
-            },
-        );
+            });
     }
     Ok(Value::Undefined)
 }
@@ -495,13 +507,13 @@ fn line_to<'gc>(
     if let (Some(x), Some(y)) = (args.get(0), args.get(1)) {
         let x = x.coerce_to_f64(activation)?;
         let y = y.coerce_to_f64(activation)?;
-        movie_clip.draw_command(
-            &mut activation.context,
-            DrawCommand::LineTo {
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .draw_command(DrawCommand::LineTo {
                 x: Twips::from_pixels(x),
                 y: Twips::from_pixels(y),
-            },
-        );
+            });
     }
     Ok(Value::Undefined)
 }
@@ -518,15 +530,15 @@ fn curve_to<'gc>(
         let y1 = y1.coerce_to_f64(activation)?;
         let x2 = x2.coerce_to_f64(activation)?;
         let y2 = y2.coerce_to_f64(activation)?;
-        movie_clip.draw_command(
-            &mut activation.context,
-            DrawCommand::CurveTo {
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .draw_command(DrawCommand::CurveTo {
                 x1: Twips::from_pixels(x1),
                 y1: Twips::from_pixels(y1),
                 x2: Twips::from_pixels(x2),
                 y2: Twips::from_pixels(y2),
-            },
-        );
+            });
     }
     Ok(Value::Undefined)
 }
@@ -536,7 +548,10 @@ fn end_fill<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.set_fill_style(&mut activation.context, None);
+    movie_clip
+        .as_drawing(activation.context.gc_context)
+        .unwrap()
+        .set_fill_style(None);
     Ok(Value::Undefined)
 }
 
@@ -545,7 +560,10 @@ fn clear<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.clear(&mut activation.context);
+    movie_clip
+        .as_drawing(activation.context.gc_context)
+        .unwrap()
+        .clear();
     Ok(Value::Undefined)
 }
 

@@ -47,25 +47,20 @@ pub fn begin_fill<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if let Some(dobj) = this.as_display_object() {
-            if let Some(mc) = dobj.as_movie_clip() {
-                let color = args
-                    .get(0)
-                    .cloned()
-                    .unwrap_or(Value::Undefined)
-                    .coerce_to_u32(activation)?;
-                let alpha = args
-                    .get(1)
-                    .cloned()
-                    .unwrap_or_else(|| 1.0.into())
-                    .coerce_to_number(activation)?;
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let color = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_u32(activation)?;
+        let alpha = args
+            .get(1)
+            .cloned()
+            .unwrap_or_else(|| 1.0.into())
+            .coerce_to_number(activation)?;
 
-                mc.set_fill_style(
-                    &mut activation.context,
-                    Some(FillStyle::Color(color_from_args(color, alpha))),
-                );
-            }
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            draw.set_fill_style(Some(FillStyle::Color(color_from_args(color, alpha))));
         }
     }
 
@@ -78,11 +73,9 @@ pub fn clear<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if let Some(dobj) = this.as_display_object() {
-            if let Some(mc) = dobj.as_movie_clip() {
-                mc.clear(&mut activation.context)
-            }
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            draw.clear()
         }
     }
 
@@ -95,39 +88,34 @@ pub fn curve_to<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if let Some(dobj) = this.as_display_object() {
-            if let Some(mc) = dobj.as_movie_clip() {
-                let x1 = Twips::from_pixels(
-                    args.get(0)
-                        .cloned()
-                        .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)?,
-                );
-                let y1 = Twips::from_pixels(
-                    args.get(1)
-                        .cloned()
-                        .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)?,
-                );
-                let x2 = Twips::from_pixels(
-                    args.get(2)
-                        .cloned()
-                        .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)?,
-                );
-                let y2 = Twips::from_pixels(
-                    args.get(3)
-                        .cloned()
-                        .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)?,
-                );
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let x1 = Twips::from_pixels(
+            args.get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+        let y1 = Twips::from_pixels(
+            args.get(1)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+        let x2 = Twips::from_pixels(
+            args.get(2)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+        let y2 = Twips::from_pixels(
+            args.get(3)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
 
-                mc.draw_command(
-                    &mut activation.context,
-                    DrawCommand::CurveTo { x1, y1, x2, y2 },
-                );
-            }
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            draw.draw_command(DrawCommand::CurveTo { x1, y1, x2, y2 });
         }
     }
 
@@ -140,11 +128,9 @@ pub fn end_fill<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if let Some(dobj) = this.as_display_object() {
-            if let Some(mc) = dobj.as_movie_clip() {
-                mc.set_fill_style(&mut activation.context, None);
-            }
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            draw.set_fill_style(None);
         }
     }
 
@@ -200,67 +186,66 @@ pub fn line_style<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if let Some(dobj) = this.as_display_object() {
-            if let Some(mc) = dobj.as_movie_clip() {
-                let thickness = args
-                    .get(0)
-                    .cloned()
-                    .unwrap_or_else(|| f64::NAN.into())
-                    .coerce_to_number(activation)?;
-                if thickness.is_nan() {
-                    mc.set_line_style(&mut activation.context, None);
-                } else {
-                    let color = args
-                        .get(1)
-                        .cloned()
-                        .unwrap_or_else(|| 0.into())
-                        .coerce_to_u32(activation)?;
-                    let alpha = args
-                        .get(2)
-                        .cloned()
-                        .unwrap_or_else(|| 1.0.into())
-                        .coerce_to_number(activation)?;
-                    let is_pixel_hinted = args
-                        .get(3)
-                        .cloned()
-                        .unwrap_or_else(|| false.into())
-                        .coerce_to_boolean();
-                    let scale_mode = args
-                        .get(4)
-                        .cloned()
-                        .unwrap_or_else(|| "normal".into())
-                        .coerce_to_string(activation)?;
-                    let caps =
-                        caps_to_cap_style(activation, args.get(5).cloned().unwrap_or(Value::Null))?;
-                    let joints = args.get(6).cloned().unwrap_or(Value::Null);
-                    let miter_limit = args
-                        .get(7)
-                        .cloned()
-                        .unwrap_or_else(|| 3.0.into())
-                        .coerce_to_number(activation)?;
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let thickness = args
+            .get(0)
+            .cloned()
+            .unwrap_or_else(|| f64::NAN.into())
+            .coerce_to_number(activation)?;
 
-                    let width = Twips::from_pixels(thickness.min(255.0).max(0.0));
-                    let color = color_from_args(color, alpha);
-                    let join_style = joints_to_join_style(activation, joints, miter_limit as f32)?;
-                    let (allow_scale_x, allow_scale_y) =
-                        scale_mode_to_allow_scale_bits(&scale_mode)?;
+        if thickness.is_nan() {
+            if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+                draw.set_line_style(None);
+            }
+        } else {
+            let color = args
+                .get(1)
+                .cloned()
+                .unwrap_or_else(|| 0.into())
+                .coerce_to_u32(activation)?;
+            let alpha = args
+                .get(2)
+                .cloned()
+                .unwrap_or_else(|| 1.0.into())
+                .coerce_to_number(activation)?;
+            let is_pixel_hinted = args
+                .get(3)
+                .cloned()
+                .unwrap_or_else(|| false.into())
+                .coerce_to_boolean();
+            let scale_mode = args
+                .get(4)
+                .cloned()
+                .unwrap_or_else(|| "normal".into())
+                .coerce_to_string(activation)?;
+            let caps = caps_to_cap_style(activation, args.get(5).cloned().unwrap_or(Value::Null))?;
+            let joints = args.get(6).cloned().unwrap_or(Value::Null);
+            let miter_limit = args
+                .get(7)
+                .cloned()
+                .unwrap_or_else(|| 3.0.into())
+                .coerce_to_number(activation)?;
 
-                    let line_style = LineStyle {
-                        width,
-                        color,
-                        start_cap: caps,
-                        end_cap: caps,
-                        join_style,
-                        fill_style: None,
-                        allow_scale_x,
-                        allow_scale_y,
-                        is_pixel_hinted,
-                        allow_close: true,
-                    };
+            let width = Twips::from_pixels(thickness.min(255.0).max(0.0));
+            let color = color_from_args(color, alpha);
+            let join_style = joints_to_join_style(activation, joints, miter_limit as f32)?;
+            let (allow_scale_x, allow_scale_y) = scale_mode_to_allow_scale_bits(&scale_mode)?;
 
-                    mc.set_line_style(&mut activation.context, Some(line_style));
-                }
+            let line_style = LineStyle {
+                width,
+                color,
+                start_cap: caps,
+                end_cap: caps,
+                join_style,
+                fill_style: None,
+                allow_scale_x,
+                allow_scale_y,
+                is_pixel_hinted,
+                allow_close: true,
+            };
+
+            if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+                draw.set_line_style(Some(line_style));
             }
         }
     }
@@ -274,24 +259,22 @@ pub fn line_to<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if let Some(dobj) = this.as_display_object() {
-            if let Some(mc) = dobj.as_movie_clip() {
-                let x = Twips::from_pixels(
-                    args.get(0)
-                        .cloned()
-                        .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)?,
-                );
-                let y = Twips::from_pixels(
-                    args.get(1)
-                        .cloned()
-                        .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)?,
-                );
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let x = Twips::from_pixels(
+            args.get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+        let y = Twips::from_pixels(
+            args.get(1)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
 
-                mc.draw_command(&mut activation.context, DrawCommand::LineTo { x, y });
-            }
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            draw.draw_command(DrawCommand::LineTo { x, y });
         }
     }
 
@@ -304,24 +287,22 @@ pub fn move_to<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if let Some(dobj) = this.as_display_object() {
-            if let Some(mc) = dobj.as_movie_clip() {
-                let x = Twips::from_pixels(
-                    args.get(0)
-                        .cloned()
-                        .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)?,
-                );
-                let y = Twips::from_pixels(
-                    args.get(1)
-                        .cloned()
-                        .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)?,
-                );
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let x = Twips::from_pixels(
+            args.get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+        let y = Twips::from_pixels(
+            args.get(1)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
 
-                mc.draw_command(&mut activation.context, DrawCommand::MoveTo { x, y });
-            }
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            draw.draw_command(DrawCommand::MoveTo { x, y });
         }
     }
 
