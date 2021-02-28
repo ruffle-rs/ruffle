@@ -1500,6 +1500,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             tracker.set(None, context);
         }
 
+        if let Some(node) = self.maskee() {
+            node.set_masker(context.gc_context, None, true);
+        } else if let Some(node) = self.masker() {
+            node.set_maskee(context.gc_context, None, true);
+        }
+
         // Unbind any display objects bound to this text.
         if let Some(stage_object) = self.0.write(context.gc_context).bound_stage_object.take() {
             stage_object.clear_text_field_binding(context.gc_context, *self);
