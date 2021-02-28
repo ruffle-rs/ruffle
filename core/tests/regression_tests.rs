@@ -163,6 +163,7 @@ swf_tests! {
     (lessthan2_swf7, "avm1/lessthan2_swf7", 1),
     (logical_ops_swf4, "avm1/logical_ops_swf4", 1),
     (logical_ops_swf8, "avm1/logical_ops_swf8", 1),
+    (movieclip_get_instance_at_depth, "avm1/movieclip_get_instance_at_depth", 1),
     (movieclip_depth_methods, "avm1/movieclip_depth_methods", 3),
     (get_variable_in_scope, "avm1/get_variable_in_scope", 1),
     (movieclip_init_object, "avm1/movieclip_init_object", 1),
