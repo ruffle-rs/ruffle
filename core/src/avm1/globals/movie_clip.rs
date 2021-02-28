@@ -176,6 +176,7 @@ pub fn create_proto<'gc>(
         "getBounds" => get_bounds,
         "getBytesLoaded" => get_bytes_loaded,
         "getBytesTotal" => get_bytes_total,
+        "getInstanceAtDepth" => get_instance_at_depth,
         "getNextHighestDepth" => get_next_highest_depth,
         "getRect" => get_rect,
         "getURL" => get_url,
@@ -816,6 +817,41 @@ fn get_bytes_total<'gc>(
         .movie()
         .map(|mv| (mv.header().uncompressed_length).into())
         .unwrap_or(Value::Undefined))
+}
+
+fn get_instance_at_depth<'gc>(
+    movie_clip: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if activation.current_swf_version() >= 7 {
+        let depth = if let Some(depth) = args.get(0) {
+            depth
+                .coerce_to_i32(activation)?
+                .wrapping_add(AVM_DEPTH_BIAS)
+        } else {
+            avm_error!(
+                activation,
+                "MovieClip.get_instance_at_depth: Too few parameters"
+            );
+            return Ok(Value::Undefined);
+        };
+        match movie_clip.child_by_depth(depth) {
+            Some(child) => {
+                // If the child doesn't have a corresponding AVM object, return mc itself.
+                // NOTE: this behavior was guessed from observing behavior for Text and Graphic;
+                // I didn't test other variants like Bitmap, MorphSpahe, Video
+                // or objects that weren't fully initialized yet.
+                match child.object() {
+                    Value::Undefined => Ok(movie_clip.object()),
+                    obj => Ok(obj),
+                }
+            }
+            None => Ok(Value::Undefined),
+        }
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 fn get_next_highest_depth<'gc>(
