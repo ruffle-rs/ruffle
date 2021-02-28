@@ -517,6 +517,11 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             let tracker = context.focus_tracker;
             tracker.set(None, context);
         }
+        if let Some(node) = self.maskee() {
+            node.set_masker(context.gc_context, None, true);
+        } else if let Some(node) = self.masker() {
+            node.set_maskee(context.gc_context, None, true);
+        }
         self.set_removed(context.gc_context, true);
     }
 }

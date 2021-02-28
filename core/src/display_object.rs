@@ -990,6 +990,12 @@ pub trait TDisplayObject<'gc>:
             }
         }
 
+        if let Some(node) = self.maskee() {
+            node.set_masker(context.gc_context, None, true);
+        } else if let Some(node) = self.masker() {
+            node.set_maskee(context.gc_context, None, true);
+        }
+
         // Unregister any text field variable bindings, and replace them on the unbound list.
         if let Avm1Value::Object(object) = self.object() {
             if let Some(stage_object) = object.as_stage_object() {
