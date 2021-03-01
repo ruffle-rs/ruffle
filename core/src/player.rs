@@ -351,6 +351,7 @@ impl Player {
     pub fn set_frame_rate(&mut self, nframe_rate: f64) -> &mut Player {
         info!("Setting frame rate to {}", nframe_rate);
         self.frame_rate = nframe_rate;
+        self.audio.set_frame_rate(nframe_rate);
         self
     }
 
