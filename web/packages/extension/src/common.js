@@ -22,7 +22,7 @@ export async function bindBooleanOptions(onChange) {
     const elements = getBooleanElements();
 
     // Bind initial values.
-    const options = await utils.storage.sync.get(Object.keys(elements));
+    const options = await utils.getOptions(Object.keys(elements));
     for (const [key, value] of Object.entries(options)) {
         elements[key].checkbox.checked = value;
     }
@@ -45,11 +45,19 @@ export async function bindBooleanOptions(onChange) {
     }
 
     // Listen for future changes.
-    utils.storage.onChanged.addListener((changes) => {
+    utils.storage.onChanged.addListener((changes, namespace) => {
+        if (namespace !== "sync") {
+            return;
+        }
+
         for (const [key, option] of Object.entries(changes)) {
+            if (!elements[key]) {
+                continue;
+            }
             elements[key].checkbox.checked = option.newValue;
             options[key] = option.newValue;
         }
+
         if (onChange) {
             onChange(options);
         }

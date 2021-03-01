@@ -34,13 +34,9 @@ function sendMessageToPage(data) {
         data,
     };
     window.postMessage(message, "*");
-    let resolve, reject;
-    const promise = new Promise((res, rej) => {
-        resolve = res;
-        reject = rej;
+    return new Promise((resolve, reject) => {
+        pendingMessages.push({ resolve, reject });
     });
-    pendingMessages.push({ promise, resolve, reject });
-    return promise;
 }
 
 /**
@@ -91,10 +87,7 @@ function checkPageOptout() {
 }
 
 (async () => {
-    const options = await utils.storage.sync.get([
-        "ruffleEnable",
-        "ignoreOptout",
-    ]);
+    const options = await utils.getOptions(["ruffleEnable", "ignoreOptout"]);
     const pageOptout = checkPageOptout();
     const shouldLoad =
         options.ruffleEnable &&
@@ -138,6 +131,7 @@ function checkPageOptout() {
             if (type === "TO_RUFFLE") {
                 const request = pendingMessages[index];
                 if (request) {
+                    pendingMessages[index] = null;
                     request.resolve(data);
                 } else {
                     // TODO: Handle page-initiated messages.

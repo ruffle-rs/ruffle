@@ -1,4 +1,4 @@
-const DEFAULT_SETTINGS = {
+const DEFAULT_OPTIONS = {
     ruffleEnable: true,
     ignoreOptout: false,
 };
@@ -38,13 +38,7 @@ if (typeof chrome !== "undefined") {
                 promisify(storageLocal.set.bind(storageLocal, items)),
         },
         sync: {
-            async get(keys) {
-                const data = await promisify(
-                    storageSync.get.bind(storageSync, keys)
-                );
-                // Copy over default settings if they don't exist yet.
-                return { ...DEFAULT_SETTINGS, ...data };
-            },
+            get: (keys) => promisify(storageSync.get.bind(storageSync, keys)),
             remove: (keys) =>
                 promisify(storageSync.remove.bind(storageSync, keys)),
             set: (items) => promisify(storageSync.set.bind(storageSync, items)),
@@ -91,11 +85,7 @@ if (typeof chrome !== "undefined") {
             set: (items) => browser.storage.local.set(items),
         },
         sync: {
-            get(keys) {
-                const data = browser.storage.sync.get(keys);
-                // Copy over default settings if they don't exist yet.
-                return { ...DEFAULT_SETTINGS, ...data };
-            },
+            get: (keys) => browser.storage.sync.get(keys),
             remove: (keys) => browser.storage.sync.set(keys),
             set: (items) => browser.storage.sync.set(items),
         },
@@ -123,4 +113,11 @@ if (typeof chrome !== "undefined") {
     openOptionsPage = () => browser.runtime.openOptionsPage();
 } else {
     throw new Error("Extension API not found.");
+}
+
+export async function getOptions(keys) {
+    const options = await storage.sync.get(keys);
+
+    // Copy over default options if they don't exist yet.
+    return { ...DEFAULT_OPTIONS, ...options };
 }
