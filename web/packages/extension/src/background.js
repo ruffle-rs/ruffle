@@ -1,10 +1,16 @@
+import * as utils from "./utils";
+
 function isSwf(details) {
-    const typeHeader = details.responseHeaders.find(({name}) => name.toLowerCase() === "content-type");
+    const typeHeader = details.responseHeaders.find(
+        ({ name }) => name.toLowerCase() === "content-type"
+    );
     if (!typeHeader) {
         return false;
     }
 
-    const mime = typeHeader.value.toLowerCase().match(/^\s*(.*?)\s*(?:;.*)?$/)[1];
+    const mime = typeHeader.value
+        .toLowerCase()
+        .match(/^\s*(.*?)\s*(?:;.*)?$/)[1];
 
     // Some sites (e.g. swfchan.net) might (wrongly?) send octet-stream, so check file extension too.
     if (mime === "application/octet-stream") {
@@ -17,23 +23,46 @@ function isSwf(details) {
 }
 
 function onHeadersReceived(details) {
-    if (!isSwf(details)) {
-        return;
+    if (isSwf(details)) {
+        const baseUrl = utils.runtime.getURL("player.html");
+        return { redirectUrl: `${baseUrl}?url=${details.url}` };
     }
-
-    const baseUrl = chrome.runtime.getURL("player.html");
-    return { redirectUrl: `${baseUrl}?url=${details.url}` };
 }
 
-// TODO: Support Firefox.
-// TODO: Only if configured.
-chrome.webRequest.onHeadersReceived.addListener(
-    onHeadersReceived,
-    {
-        urls: ["<all_urls>"],
-        types: ["main_frame"],
-    },
-    ["blocking", "responseHeaders"]
-);
+function enable() {
+    (chrome || browser).webRequest.onHeadersReceived.addListener(
+        onHeadersReceived,
+        {
+            urls: ["<all_urls>"],
+            types: ["main_frame"],
+        },
+        ["blocking", "responseHeaders"]
+    );
+}
 
-// TODO: chrome.webRequest.onHeadersReceived.removeListener(onHeadersReceived);
+function disable() {
+    (chrome || browser).webRequest.onHeadersReceived.removeListener(
+        onHeadersReceived
+    );
+}
+
+(async () => {
+    const { ruffleEnable } = await utils.getOptions(["ruffleEnable"]);
+
+    if (ruffleEnable) {
+        enable();
+    }
+
+    utils.storage.onChanged.addListener((changes, namespace) => {
+        if (
+            namespace === "sync" &&
+            Object.prototype.hasOwnProperty.call(changes, "ruffleEnable")
+        ) {
+            if (changes.ruffleEnable.newValue) {
+                enable();
+            } else {
+                disable();
+            }
+        }
+    });
+})();
