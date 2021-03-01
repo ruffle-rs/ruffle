@@ -10,6 +10,10 @@
         "default_popup": "popup.html",
         "browser_style": true
     },
+    "background": {
+        "scripts": ["dist/background.js"],
+        "persistent": true
+    },
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
@@ -18,7 +22,7 @@
             "run_at": "document_start"
         }
     ],
-    "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'unsafe-inline';",
+    "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'unsafe-inline'; connect-src *;",
     "icons": {
         "16": "images/icon16.png",
         "32": "images/icon32.png",
@@ -30,6 +34,11 @@
         "page": "options.html",
         "open_in_tab": true
     },
-    "permissions": ["storage"],
-    "web_accessible_resources": ["dist/*"]
+    "permissions": [
+        "storage",
+        "<all_urls>",
+        "webRequest",
+        "webRequestBlocking"
+    ],
+    "web_accessible_resources": ["*"]
 }
