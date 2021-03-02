@@ -389,3 +389,14 @@ impl NavigatorBackend for NullNavigatorBackend {
         url
     }
 }
+
+pub fn is_fetch_domain_banned(url: &str) -> bool {
+    if let Ok(parsed_url) = Url::parse(url) {
+        if let Some(domain) = parsed_url.domain() {
+            if domain.ends_with("mochiads.com") {
+                return true;
+            }
+        }
+    }
+    false
+}

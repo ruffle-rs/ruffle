@@ -3,7 +3,7 @@
 use crate::custom_event::RuffleEvent;
 use isahc::{config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request};
 use ruffle_core::backend::navigator::{
-    NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
+    is_fetch_domain_banned, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -131,6 +131,14 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     .map_err(Error::NetworkError)
             }),
             _ => Box::pin(async move {
+                if is_fetch_domain_banned(&processed_url) {
+                    log::error!("Request to {} was blocked by Ruffle.", url);
+                    return Err(Error::FetchError(format!(
+                        "Request to {} was blocked by Ruffle.",
+                        url
+                    )));
+                }
+
                 let client = client.ok_or(Error::NetworkUnavailable)?;
 
                 let request = match options.method() {

@@ -1,7 +1,8 @@
 //! Navigator backend for web
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
-    url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
+    is_fetch_domain_banned, url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture,
+    RequestOptions,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -162,6 +163,14 @@ impl NavigatorBackend for WebNavigatorBackend {
         };
 
         Box::pin(async move {
+            if is_fetch_domain_banned(&url) {
+                log::error!("Request to {} was blocked by Ruffle.", url);
+                return Err(Error::FetchError(format!(
+                    "Request to {} was blocked by Ruffle.",
+                    url
+                )));
+            }
+
             let mut init = RequestInit::new();
 
             init.method(match options.method() {
