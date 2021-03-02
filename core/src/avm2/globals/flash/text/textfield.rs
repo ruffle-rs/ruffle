@@ -801,6 +801,51 @@ pub fn set_selection<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn set_text_format<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let tf = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let tf = TextFormat::from_avm2_object(tf, activation)?;
+        let mut begin_index = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_i32(activation)?;
+        let mut end_index = args
+            .get(2)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_i32(activation)?;
+
+        if begin_index < 0 {
+            begin_index = 0;
+        }
+
+        if end_index < 0 {
+            end_index = this.text_length() as i32;
+        }
+
+        this.set_text_format(
+            begin_index as usize,
+            end_index as usize,
+            tf,
+            &mut activation.context,
+        );
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -957,6 +1002,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "setSelection"),
         Method::from_builtin(set_selection),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public(), "setTextFormat"),
+        Method::from_builtin(set_text_format),
     ));
 
     class
