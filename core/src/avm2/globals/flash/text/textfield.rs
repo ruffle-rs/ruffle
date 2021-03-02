@@ -669,6 +669,41 @@ pub fn append_text<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_text_format<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let mut begin_index = args
+            .get(0)
+            .cloned()
+            .unwrap_or_else(|| Value::Integer(-1))
+            .coerce_to_i32(activation)?;
+        let mut end_index = args
+            .get(1)
+            .cloned()
+            .unwrap_or_else(|| Value::Integer(-1))
+            .coerce_to_i32(activation)?;
+
+        if begin_index < 0 {
+            begin_index = 0;
+        }
+
+        if end_index < 0 {
+            end_index = this.text_length() as i32;
+        }
+
+        let tf = this.text_format(begin_index as usize, end_index as usize);
+        return Ok(tf.as_avm2_object(activation)?.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -809,6 +844,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "appendText"),
         Method::from_builtin(append_text),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public(), "getTextFormat"),
+        Method::from_builtin(get_text_format),
     ));
 
     class
