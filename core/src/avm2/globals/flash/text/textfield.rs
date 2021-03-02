@@ -9,7 +9,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
+use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::AvmType;
@@ -704,6 +704,35 @@ pub fn get_text_format<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn replace_selected_text<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let value = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+        let selection = this
+            .selection()
+            .unwrap_or_else(|| TextSelection::for_position(0));
+
+        this.replace_text(
+            selection.start(),
+            selection.end(),
+            &value,
+            &mut activation.context,
+        );
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -848,6 +877,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "getTextFormat"),
         Method::from_builtin(get_text_format),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public(), "replaceSelectedText"),
+        Method::from_builtin(replace_selected_text),
     ));
 
     class
