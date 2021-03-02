@@ -769,6 +769,38 @@ pub fn replace_text<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn set_selection<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let begin_index = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_u32(activation)?;
+        let end_index = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_u32(activation)?;
+
+        this.set_selection(
+            Some(TextSelection::for_range(
+                begin_index as usize,
+                end_index as usize,
+            )),
+            activation.context.gc_context,
+        );
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -921,6 +953,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "replaceText"),
         Method::from_builtin(replace_text),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public(), "setSelection"),
+        Method::from_builtin(set_selection),
     ));
 
     class
