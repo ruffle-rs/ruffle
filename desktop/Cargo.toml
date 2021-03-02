@@ -13,7 +13,7 @@ ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 env_logger = "0.8.3"
 generational-arena = "0.2.8"
-image = "0.23.13"
+image = "0.23.14"
 jpeg-decoder = "0.1.22"
 log = "0.4"
 lyon = "0.17.5"
