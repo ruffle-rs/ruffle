@@ -44,8 +44,6 @@ impl NavigatorBackend for WebNavigatorBackend {
         window_spec: Option<String>,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
-        const JAVASCRIPT_PREFIX: &str = "javascript";
-
         if let Some(window) = window() {
             let url = match Url::parse(&url) {
                 Ok(parsed) => parsed,
@@ -58,7 +56,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             };
 
             // If allowScriptAccess is disabled, we should reject the javascript scheme
-            if !self.allow_script_access && url.scheme() == JAVASCRIPT_PREFIX {
+            if !self.allow_script_access && url.scheme() == "javascript" {
                 log::error!("The javascript scheme is not supported");
                 return;
             }
