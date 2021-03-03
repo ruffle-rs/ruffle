@@ -57,7 +57,7 @@ impl NavigatorBackend for WebNavigatorBackend {
 
             // If allowScriptAccess is disabled, we should reject the javascript scheme
             if !self.allow_script_access && url.scheme() == "javascript" {
-                log::warn!("The javascript scheme is not supported");
+                log::warn!("SWF tried to run a script, but script access is not allowed");
                 return;
             }
 
