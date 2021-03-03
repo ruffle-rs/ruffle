@@ -100,6 +100,9 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   <a href="https://www.twoplayergames.org/">
     <img src="https://ruffle.rs/assets/sponsors/twoplayergames.png" alt="TwoPlayerGames.org">
   </a>
+  <a href="https://www.wowgame.jp/">
+    <img src="https://ruffle.rs/assets/sponsors/wowgame.png" alt="wowgame.jp">
+  </a>
 </p>
 
 ## License
