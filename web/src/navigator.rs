@@ -7,7 +7,7 @@ use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
 use std::time::Duration;
-use url::Url;
+use url::{ParseError, Url};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{window, Blob, BlobPropertyBag, Performance, Request, RequestInit, Response};
@@ -35,22 +35,6 @@ impl WebNavigatorBackend {
             upgrade_to_https,
         }
     }
-
-    fn run_script(&self, js_code: &str) {
-        if self.allow_script_access {
-            let window = web_sys::window().expect("window()");
-            let document = window.document().expect("document()");
-            let body = document.body().expect("body()");
-
-            let script = document.create_element("script").unwrap();
-            script.set_inner_html(&js_code);
-
-            let _ = body.append_child(&script);
-            let _ = body.remove_child(&script);
-        } else {
-            log::error!("SWF tried to run a script, but script access is not allowed");
-        }
-    }
 }
 
 impl NavigatorBackend for WebNavigatorBackend {
@@ -60,39 +44,30 @@ impl NavigatorBackend for WebNavigatorBackend {
         window_spec: Option<String>,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
-        const JAVASCRIPT_PREFIX: &str = "javascript:";
+        const JAVASCRIPT_PREFIX: &str = "javascript";
 
         if let Some(window) = window() {
-            let url_trimmed = url.trim();
-            if url_trimmed
-                .get(..JAVASCRIPT_PREFIX.len())
-                .unwrap_or_default()
-                .eq_ignore_ascii_case(JAVASCRIPT_PREFIX)
-            {
-                let target = window_spec.unwrap_or_else(|| "".to_string());
-                if target.is_empty() || target == "_self" || target == "undefined" {
-                    self.run_script(&url);
+            let url = match Url::parse(&url) {
+                Ok(parsed) => parsed,
+                Err(ParseError::RelativeUrlWithoutBase) => {
+                    // If the url has no base, create a base for the url
+                    let base = Url::parse(&window.location().href().unwrap()).unwrap();
+                    base.join(&url).unwrap()
                 }
+                _ => return,
+            };
+
+            // If allowScriptAccess is disabled, we should reject the javascript scheme
+            if !self.allow_script_access && url.scheme() == JAVASCRIPT_PREFIX {
+                log::error!("The javascript scheme is not supported");
                 return;
             }
-
-            let window_url = if url.is_empty() {
-                "".to_string()
-            } else if url_trimmed.is_empty() {
-                "./".to_string()
-            } else {
-                url.to_string()
-            };
-
-            let form_url = if let Ok(parsed_url) = Url::parse(&url) {
-                self.pre_process_url(parsed_url).to_string()
-            } else {
-                url.to_string()
-            };
 
             //TODO: Should we return a result for failed opens? Does Flash care?
             match (vars_method, window_spec) {
                 (Some((navmethod, formvars)), window_spec) => {
+                    let form_url = self.pre_process_url(url).to_string();
+
                     let document = match window.document() {
                         Some(document) => document,
                         None => return,
@@ -136,14 +111,10 @@ impl NavigatorBackend for WebNavigatorBackend {
                     let _ = form.submit();
                 }
                 (_, Some(ref window_name)) if !window_name.is_empty() => {
-                    if !window_url.is_empty() {
-                        let _ = window.open_with_url_and_target(&window_url, window_name);
-                    }
+                    let _ = window.open_with_url_and_target(url.as_str(), window_name);
                 }
                 _ => {
-                    if !window_url.is_empty() {
-                        let _ = window.location().assign(&window_url);
-                    }
+                    let _ = window.location().assign(url.as_str());
                 }
             };
         }
