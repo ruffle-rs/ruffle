@@ -1,0 +1,60 @@
+//Creating left aligned text w/ wordwrap, multiline, no tab stops
+//field.textWidth
+286.25
+//field.textHeight
+18.3
+//Creating center aligned text w/ wordwrap, multiline, no tab stops
+//field.textWidth
+286.25
+//field.textHeight
+18.3
+//Creating right aligned text w/ wordwrap, multiline, no tab stops
+//field.textWidth
+286.25
+//field.textHeight
+18.3
+//Creating left aligned text w/ wordwrap, multiline, tab stops: 10, 15, 20
+//field.textWidth
+148.1
+//field.textHeight
+18.3
+//Creating center aligned text w/ wordwrap, multiline, tab stops: 10, 15, 20
+//field.textWidth
+148.1
+//field.textHeight
+18.3
+//Creating right aligned text w/ wordwrap, multiline, tab stops: 10, 15, 20
+//field.textWidth
+148.1
+//field.textHeight
+18.3
+//Creating left aligned text w/ wordwrap, multiline, tab stops: 100, 110, 150
+//field.textWidth
+268.95
+//field.textHeight
+18.3
+//Creating center aligned text w/ wordwrap, multiline, tab stops: 100, 110, 150
+//field.textWidth
+268.95
+//field.textHeight
+18.3
+//Creating right aligned text w/ wordwrap, multiline, tab stops: 100, 110, 150
+//field.textWidth
+268.95
+//field.textHeight
+18.3
+//Creating left aligned text w/ wordwrap, multiline, tab stops: 350, 370, 390
+//field.textWidth
+393.05
+//field.textHeight
+71.2
+//Creating center aligned text w/ wordwrap, multiline, tab stops: 350, 370, 390
+//field.textWidth
+393.05
+//field.textHeight
+71.2
+//Creating right aligned text w/ wordwrap, multiline, tab stops: 350, 370, 390
+//field.textWidth
+393.05
+//field.textHeight
+71.2
