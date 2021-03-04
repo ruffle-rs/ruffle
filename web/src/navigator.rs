@@ -44,6 +44,11 @@ impl NavigatorBackend for WebNavigatorBackend {
         window_spec: Option<String>,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
+        // If the URL is empty, we ignore the request
+        if url.is_empty() {
+            return;
+        }
+
         if let Some(window) = window() {
             let url = match Url::parse(&url) {
                 Ok(parsed) => parsed,
