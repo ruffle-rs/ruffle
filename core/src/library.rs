@@ -263,6 +263,15 @@ impl<'gc> MovieLibrary<'gc> {
         self.avm_type
     }
 
+    /// Forcibly set the AVM type of this movie.
+    ///
+    /// This is intended for display object types which can be created
+    /// dynamically but need a placeholder movie. You should *not* attempt to
+    /// change the AVM type of an actual SWF.
+    pub fn force_avm_type(&mut self, new_type: AvmType) {
+        self.avm_type = new_type;
+    }
+
     pub fn set_avm2_domain(&mut self, avm2_domain: Avm2Domain<'gc>) {
         self.avm2_domain = Some(avm2_domain);
     }

@@ -27,17 +27,13 @@ pub fn instance_init<'gc>(
 
         if this.as_display_object().is_none() {
             let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-            let new_do = EditText::new(
-                &mut activation.context,
-                movie.clone(),
-                0.0,
-                0.0,
-                100.0,
-                100.0,
-            );
+            let movie_library = activation
+                .context
+                .library
+                .library_for_movie_mut(movie.clone());
+            movie_library.force_avm_type(AvmType::Avm2);
 
-            let movie_library = activation.context.library.library_for_movie_mut(movie);
-            movie_library.check_avm_type(AvmType::Avm2).unwrap();
+            let new_do = EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0);
 
             this.init_display_object(activation.context.gc_context, new_do.into());
         }
