@@ -827,8 +827,16 @@ pub fn set_text_format<'gc>(
             begin_index = 0;
         }
 
+        if begin_index as usize > this.text_length() {
+            return Err("RangeError: The supplied index is out of bounds.".into());
+        }
+
         if end_index < 0 {
             end_index = this.text_length() as i32;
+        }
+
+        if end_index as usize > this.text_length() {
+            return Err("RangeError: The supplied index is out of bounds.".into());
         }
 
         this.set_text_format(
