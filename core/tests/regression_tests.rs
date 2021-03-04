@@ -533,6 +533,12 @@ swf_tests! {
     (as3_regexp_test, "avm2/regexp_test", 1),
     (as3_regexp_exec, "avm2/regexp_exec", 1),
     (as3_point, "avm2/point", 1),
+    (as3_edittext_default_format, "avm2/edittext_default_format", 1),
+    (as3_edittext_font_size, "avm2/edittext_font_size", 1),
+    (as3_edittext_html_entity, "avm2/edittext_html_entity", 1),
+    #[ignore] (as3_edittext_html_roundtrip, "avm2/edittext_html_roundtrip", 1),
+    (as3_edittext_leading, "avm2/edittext_leading", 1),
+    (as3_edittext_newline_stripping, "avm2/edittext_newline_stripping", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -557,6 +563,13 @@ swf_tests_approx! {
     (as3_displayobject_height, "avm2/displayobject_height", 7, epsilon = 0.06), // TODO: height/width appears to be off by 1 twip sometimes
     (as3_displayobject_width, "avm2/displayobject_width", 7, epsilon = 0.06),
     (as3_displayobject_rotation, "avm2/displayobject_rotation", 1, epsilon = 0.0000000001),
+    (as3_edittext_align, "avm2/edittext_align", 1, epsilon = 3.0),
+    (as3_edittext_autosize, "avm2/edittext_autosize", 1, epsilon = 4.0), // TODO Flash has _width higher by 4.0, probably padding logic mistake
+    (as3_edittext_bullet, "avm2/edittext_bullet", 1, epsilon = 3.0),
+    (as3_edittext_letter_spacing, "avm2/edittext_letter_spacing", 1, epsilon = 15.0), // TODO: Discrepancy in wrapping in letterSpacing = 0.1 test.
+    (as3_edittext_margins, "avm2/edittext_margins", 1, epsilon = 5.0), // TODO: Discrepancy in wrapping.
+    (as3_edittext_tab_stops, "avm2/edittext_tab_stops", 1, epsilon = 5.0),
+    (as3_edittext_underline, "avm2/edittext_underline", 1, epsilon = 4.0),
 }
 
 #[test]
