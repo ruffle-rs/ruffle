@@ -1,7 +1,7 @@
 /* eslint-env node */
 
 const path = require("path");
-const CopyWebpackPlugin = require("copy-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = (env, argv) => {
     let mode = "production";
@@ -34,7 +34,7 @@ module.exports = (env, argv) => {
         },
         devtool: "source-map",
         plugins: [
-            new CopyWebpackPlugin({
+            new CopyPlugin({
                 patterns: [
                     { from: path.resolve(__dirname, "www/index.html") },
                     { from: "LICENSE*" },
