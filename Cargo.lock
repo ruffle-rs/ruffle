@@ -3632,9 +3632,9 @@ dependencies = [
 
 [[package]]
 name = "svg"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcbef9cf3cf75dd7772fb1f40dd6d90278a5263454db94ee399500ee9918aaa7"
+checksum = "a95656b5b37251de210aa2751d538b6f31ce375bacf725a32223bfa6344e0776"
 
 [[package]]
 name = "swf"
