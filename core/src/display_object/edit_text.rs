@@ -14,7 +14,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
-use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
+use crate::font::{Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
@@ -820,8 +820,8 @@ impl<'gc> EditText<'gc> {
         let edit_text = self.0.read();
 
         (
-            round_down_to_pixel(edit_text.intrinsic_bounds.width()),
-            round_down_to_pixel(edit_text.intrinsic_bounds.height()),
+            edit_text.intrinsic_bounds.width(),
+            edit_text.intrinsic_bounds.height(),
         )
     }
 

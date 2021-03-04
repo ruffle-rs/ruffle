@@ -6,6 +6,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
+use crate::font::round_down_to_pixel;
 use crate::html::TextFormat;
 use gc_arena::MutationContext;
 
@@ -489,7 +490,7 @@ pub fn text_width<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let metrics = this.measure_text(&mut activation.context);
-    Ok(metrics.0.to_pixels().into())
+    Ok(round_down_to_pixel(metrics.0).to_pixels().into())
 }
 
 pub fn text_height<'gc>(
@@ -497,7 +498,7 @@ pub fn text_height<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let metrics = this.measure_text(&mut activation.context);
-    Ok(metrics.1.to_pixels().into())
+    Ok(round_down_to_pixel(metrics.1).to_pixels().into())
 }
 
 pub fn multiline<'gc>(
