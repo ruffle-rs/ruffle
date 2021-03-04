@@ -1,45 +1,45 @@
 //Creating left aligned text @ 10px
-W: 7.8
-H: 15.6
+7.8
+15.6
 //Creating left aligned text @ 12px
-W: 9.35
-H: 18.3
+9.35
+18.3
 //Creating left aligned text @ 20px
-W: 15.6
-H: 29.2
+15.6
+29.2
 //Creating left aligned text @ 30px
-W: 23.4
-H: 42.8
+23.4
+42.8
 //Creating left aligned text @ 100px
-W: 78.05
-H: 138.2
+78.05
+138.2
 //Creating left aligned text 'Qe' @ 10px
-W: 13.4
-H: 15.6
+13.4
+15.6
 //Creating left aligned text 'Qe' @ 12px
-W: 16.1
-H: 18.3
+16.1
+18.3
 //Creating left aligned text 'Qe' @ 20px
-W: 26.85
-H: 29.2
+26.85
+29.2
 //Creating left aligned text 'Qe' @ 30px
-W: 40.3
-H: 42.8
+40.3
+42.8
 //Creating left aligned text 'Qe' @ 100px
-W: 134.4
-H: 138.2
+134.4
+138.2
 //Creating left aligned text 'Q e' @ 10px
-W: 15.95
-H: 15.6
+15.95
+15.6
 //Creating left aligned text 'Q e' @ 12px
-W: 19.2
-H: 18.3
+19.2
+18.3
 //Creating left aligned text 'Q e' @ 20px
-W: 32
-H: 29.2
+32
+29.2
 //Creating left aligned text 'Q e' @ 30px
-W: 48.05
-H: 42.8
+48.05
+42.8
 //Creating left aligned text 'Q e' @ 100px
-W: 160.35
-H: 138.2
+160.35
+138.2
