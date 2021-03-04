@@ -348,6 +348,7 @@ pub fn set_html_text<'gc>(
             .coerce_to_string(activation)?
             .to_string();
 
+        this.set_is_html(&mut activation.context, true);
         this.set_html_text(html_text, &mut activation.context)?;
     }
 
@@ -471,6 +472,7 @@ pub fn set_text<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
 
+        this.set_is_html(&mut activation.context, false);
         this.set_text(text.to_string(), &mut activation.context)?;
     }
 
