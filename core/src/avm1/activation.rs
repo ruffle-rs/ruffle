@@ -1460,7 +1460,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         if val.as_bool(self.current_swf_version()) {
-            reader.seek(data.as_ref(), jump_offset);
+            reader.seek(data.movie.data(), jump_offset);
         }
         Ok(FrameControl::Continue)
     }
@@ -1543,7 +1543,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         reader: &mut Reader<'b>,
         data: &'b SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        reader.seek(data.as_ref(), jump_offset);
+        reader.seek(data.movie.data(), jump_offset);
         Ok(FrameControl::Continue)
     }
 
