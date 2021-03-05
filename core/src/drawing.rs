@@ -41,6 +41,50 @@ impl Drawing {
         }
     }
 
+    pub fn from_swf_shape(shape: &swf::Shape) -> Self {
+        let mut this = Self {
+            render_handle: Cell::new(None),
+            shape_bounds: shape.shape_bounds.clone().into(),
+            edge_bounds: shape.edge_bounds.clone().into(),
+            dirty: Cell::new(true),
+            fills: Vec::new(),
+            lines: Vec::new(),
+            current_fill: None,
+            current_line: None,
+            cursor: (Twips::zero(), Twips::zero()),
+        };
+
+        let shape = DistilledShape::from(shape);
+        for path in shape.paths {
+            match path {
+                DrawPath::Stroke {
+                    style,
+                    is_closed: _,
+                    commands,
+                } => {
+                    this.set_line_style(Some(style.clone()));
+
+                    for command in commands {
+                        this.draw_command(command);
+                    }
+
+                    this.set_line_style(None);
+                }
+                DrawPath::Fill { style, commands } => {
+                    this.set_fill_style(Some(style.clone()));
+
+                    for command in commands {
+                        this.draw_command(command);
+                    }
+
+                    this.set_fill_style(None);
+                }
+            }
+        }
+
+        this
+    }
+
     pub fn set_fill_style(&mut self, style: Option<FillStyle>) {
         // TODO: If current_fill is not closed, we should close it and also close current_line
 
