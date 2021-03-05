@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 const replace = require("replace-in-file");
 const childProcess = require("child_process");
 
