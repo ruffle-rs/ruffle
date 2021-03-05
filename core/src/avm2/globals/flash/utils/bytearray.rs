@@ -459,7 +459,7 @@ pub fn read_utf_bytes<'gc>(
                 .coerce_to_u32(activation)?;
             return Ok(AvmString::new(
                 activation.context.gc_context,
-                String::from_utf8_lossy(&bytearray.read_exactly(len as usize)?),
+                String::from_utf8_lossy(&bytearray.read_exact(len as usize)?),
             )
             .into());
         }
@@ -626,11 +626,10 @@ pub fn read_multibyte<'gc>(
                 .get(1)
                 .unwrap_or(&"UTF-8".into())
                 .coerce_to_string(activation)?;
-            if let Ok(bytes) = bytearray.read_exactly(len as usize) {
-                let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
-                let (decoded_str, _, _) = encoder.decode(bytes);
-                return Ok(AvmString::new(activation.context.gc_context, decoded_str).into());
-            }
+            let bytes = bytearray.read_exact(len as usize)?;
+            let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
+            let (decoded_str, _, _) = encoder.decode(bytes);
+            return Ok(AvmString::new(activation.context.gc_context, decoded_str).into());
         }
     }
 
