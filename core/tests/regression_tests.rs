@@ -416,6 +416,7 @@ swf_tests! {
     (as3_subtract, "avm2/subtract", 1),
     (as3_urshift, "avm2/urshift", 1),
     (as3_in, "avm2/in", 1),
+    (as3_bytearray, "avm2/bytearray", 1),
     (as3_array_constr, "avm2/array_constr", 1),
     (as3_array_access, "avm2/array_access", 1),
     (as3_array_storage, "avm2/array_storage", 1),

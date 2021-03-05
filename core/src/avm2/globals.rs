@@ -6,8 +6,8 @@ use crate::avm2::domain::Domain;
 use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
-    implicit_deriver, ArrayObject, DomainObject, FunctionObject, NamespaceObject, Object,
-    PrimitiveObject, ScriptObject, StageObject, TObject, XmlObject,
+    implicit_deriver, ArrayObject, ByteArrayObject, DomainObject, FunctionObject, NamespaceObject,
+    Object, PrimitiveObject, ScriptObject, StageObject, TObject, XmlObject,
 };
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
@@ -294,6 +294,15 @@ fn xml_deriver<'gc>(
     XmlObject::derive(base_proto, activation.context.gc_context, class, scope)
 }
 
+fn bytearray_deriver<'gc>(
+    base_proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    ByteArrayObject::derive(base_proto, activation.context.gc_context, class, scope)
+}
+
 fn stage_deriver<'gc>(
     base_proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
@@ -544,6 +553,22 @@ pub fn load_player_globals<'gc>(
     class(
         activation,
         flash::events::eventdispatcher::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
+    // package `flash.utils`
+    class(
+        activation,
+        flash::utils::bytearray::create_class(mc),
+        bytearray_deriver,
+        domain,
+        script,
+    )?;
+
+    class(
+        activation,
+        flash::utils::endian::create_class(mc),
         implicit_deriver,
         domain,
         script,
