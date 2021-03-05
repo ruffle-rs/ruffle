@@ -133,12 +133,12 @@ pub fn read_bytes<'gc>(
                 }
 
                 let to_write = if length != 0 {
-                    current_bytes[position..length + position].to_vec()
+                    &current_bytes[position..length + position]
                 } else {
-                    current_bytes[position..].to_vec()
+                    &current_bytes[position..]
                 };
                 merging_offset = to_write.len();
-                merging_storage.write_bytes_at(&to_write, offset);
+                merging_storage.write_bytes_at(to_write, offset);
             } else {
                 return Err("ArgumentError: Parameter must be a bytearray".into());
             }
