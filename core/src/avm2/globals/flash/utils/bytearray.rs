@@ -127,11 +127,6 @@ pub fn read_bytes<'gc>(
             if let Some(mut merging_storage) =
                 second_array.as_bytearray_mut(activation.context.gc_context)
             {
-                // Offset should not be greater then the buffer
-                if merging_storage.bytes().len() < offset {
-                    return Ok(Value::Undefined);
-                }
-
                 let to_write = if length != 0 {
                     &current_bytes[position..length + position]
                 } else {
