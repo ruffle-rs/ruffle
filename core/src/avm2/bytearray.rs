@@ -289,7 +289,7 @@ impl ByteArrayStorage {
     }
 
     pub fn get(&self, item: usize) -> Option<u8> {
-        self.bytes.get(item).cloned()
+        self.bytes.get(item).copied()
     }
 
     pub fn set(&mut self, item: usize, value: u8) {
