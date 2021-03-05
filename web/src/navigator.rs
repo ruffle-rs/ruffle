@@ -7,7 +7,7 @@ use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
 use std::time::Duration;
-use url::{ParseError, Url};
+use url::Url;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{window, Blob, BlobPropertyBag, Performance, Request, RequestInit, Response};
@@ -50,14 +50,15 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
 
         if let Some(window) = window() {
-            let url = match Url::parse(&url) {
-                Ok(parsed) => parsed,
-                Err(ParseError::RelativeUrlWithoutBase) => {
-                    // If the url has no base, create a base for the url
-                    let base = Url::parse(&window.location().href().unwrap()).unwrap();
-                    base.join(&url).unwrap()
+            let document = window.document().expect("Could not get document");
+            let url = if let Ok(Some(base_uri)) = document.base_uri() {
+                if let Ok(new_url) = url_from_relative_url(&base_uri, &url) {
+                    new_url
+                } else {
+                    return;
                 }
-                _ => return,
+            } else {
+                return;
             };
 
             // If allowScriptAccess is disabled, we should reject the javascript scheme
@@ -71,10 +72,6 @@ impl NavigatorBackend for WebNavigatorBackend {
                 (Some((navmethod, formvars)), window_spec) => {
                     let form_url = self.pre_process_url(url).to_string();
 
-                    let document = match window.document() {
-                        Some(document) => document,
-                        None => return,
-                    };
                     let body = match document.body() {
                         Some(body) => body,
                         None => return,
