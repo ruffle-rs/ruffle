@@ -341,8 +341,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().interfaces()
     }
 
-    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
-        self.0.write(context).set_interfaces(iface_list)
+    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+        self.0.write(gc_context).set_interfaces(iface_list)
     }
 
     fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {

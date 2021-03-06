@@ -522,36 +522,36 @@ impl<'gc> EditText<'gc> {
         self.0.read().has_background
     }
 
-    pub fn set_has_background(self, context: MutationContext<'gc, '_>, has_background: bool) {
-        self.0.write(context).has_background = has_background;
-        self.redraw_border(context);
+    pub fn set_has_background(self, gc_context: MutationContext<'gc, '_>, has_background: bool) {
+        self.0.write(gc_context).has_background = has_background;
+        self.redraw_border(gc_context);
     }
 
     pub fn background_color(self) -> u32 {
         self.0.read().background_color
     }
 
-    pub fn set_background_color(self, context: MutationContext<'gc, '_>, background_color: u32) {
-        self.0.write(context).background_color = background_color;
-        self.redraw_border(context);
+    pub fn set_background_color(self, gc_context: MutationContext<'gc, '_>, background_color: u32) {
+        self.0.write(gc_context).background_color = background_color;
+        self.redraw_border(gc_context);
     }
 
     pub fn has_border(self) -> bool {
         self.0.read().has_border
     }
 
-    pub fn set_has_border(self, context: MutationContext<'gc, '_>, has_border: bool) {
-        self.0.write(context).has_border = has_border;
-        self.redraw_border(context);
+    pub fn set_has_border(self, gc_context: MutationContext<'gc, '_>, has_border: bool) {
+        self.0.write(gc_context).has_border = has_border;
+        self.redraw_border(gc_context);
     }
 
     pub fn border_color(self) -> u32 {
         self.0.read().border_color
     }
 
-    pub fn set_border_color(self, context: MutationContext<'gc, '_>, border_color: u32) {
-        self.0.write(context).border_color = border_color;
-        self.redraw_border(context);
+    pub fn set_border_color(self, gc_context: MutationContext<'gc, '_>, border_color: u32) {
+        self.0.write(gc_context).border_color = border_color;
+        self.redraw_border(gc_context);
     }
 
     pub fn is_device_font(self) -> bool {
@@ -673,8 +673,8 @@ impl<'gc> EditText<'gc> {
     /// written into.
 
     /// Redraw the border of this `EditText`.
-    fn redraw_border(self, context: MutationContext<'gc, '_>) {
-        let mut write = self.0.write(context);
+    fn redraw_border(self, gc_context: MutationContext<'gc, '_>) {
+        let mut write = self.0.write(gc_context);
 
         write.drawing.clear();
 
@@ -1399,9 +1399,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.redraw_border(gc_context);
     }
 
-    fn set_matrix(&self, context: MutationContext<'gc, '_>, matrix: &Matrix) {
-        self.0.write(context).base.set_matrix(matrix);
-        self.redraw_border(context);
+    fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: &Matrix) {
+        self.0.write(gc_context).base.set_matrix(matrix);
+        self.redraw_border(gc_context);
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
@@ -1544,8 +1544,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         MouseCursor::IBeam
     }
 
-    fn on_focus_changed(&self, context: MutationContext<'gc, '_>, focused: bool) {
-        let mut text = self.0.write(context);
+    fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
+        let mut text = self.0.write(gc_context);
         text.has_focus = focused;
         if !focused {
             text.selection = None;

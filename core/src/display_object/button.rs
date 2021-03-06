@@ -507,8 +507,8 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         true
     }
 
-    fn on_focus_changed(&self, context: MutationContext<'gc, '_>, focused: bool) {
-        self.0.write(context).has_focus = focused;
+    fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
+        self.0.write(gc_context).has_focus = focused;
     }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {

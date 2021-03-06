@@ -828,9 +828,9 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Construct a duplicate layout box structure.
-    pub fn duplicate(&self, context: MutationContext<'gc, '_>) -> GcCell<'gc, Self> {
+    pub fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Self> {
         GcCell::allocate(
-            context,
+            gc_context,
             Self {
                 bounds: self.bounds,
                 content: self.content.clone(),

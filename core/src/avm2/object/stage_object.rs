@@ -386,7 +386,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.interfaces()
     }
 
-    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
-        self.0.write(context).base.set_interfaces(iface_list)
+    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+        self.0.write(gc_context).base.set_interfaces(iface_list)
     }
 }
