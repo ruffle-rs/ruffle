@@ -507,19 +507,12 @@ pub trait TDisplayObject<'gc>:
             matrix = *display_object.matrix() * matrix;
             node = display_object.parent();
         }
-
         matrix
     }
 
     /// Returns the matrix for transforming from global stage to this object's local space.
     fn global_to_local_matrix(&self) -> Matrix {
-        let mut node = self.parent();
-        let mut matrix = *self.matrix();
-        while let Some(display_object) = node {
-            matrix = *display_object.matrix() * matrix;
-            node = display_object.parent();
-        }
-
+        let mut matrix = self.local_to_global_matrix();
         matrix.invert();
         matrix
     }
@@ -1089,8 +1082,8 @@ pub trait TDisplayObject<'gc>:
 
     /// Tests if a given object's world bounds intersects with the world bounds
     /// of this object.
-    fn hit_test_object(&self, rhs: DisplayObject<'gc>) -> bool {
-        self.world_bounds().intersects(&rhs.world_bounds())
+    fn hit_test_object(&self, other: DisplayObject<'gc>) -> bool {
+        self.world_bounds().intersects(&other.world_bounds())
     }
 
     /// Tests if a given stage position point intersects within this object, considering the art.
@@ -1100,7 +1093,7 @@ pub trait TDisplayObject<'gc>:
         pos: (Twips, Twips),
     ) -> bool {
         // Default to using bounding box.
-        self.world_bounds().contains(pos)
+        self.hit_test_bounds(pos)
     }
 
     fn mouse_pick(

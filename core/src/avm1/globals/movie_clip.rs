@@ -146,10 +146,7 @@ pub fn hit_test<'gc>(
             false,
         )?;
         if let Some(other) = other {
-            return Ok(other
-                .world_bounds()
-                .intersects(&movie_clip.world_bounds())
-                .into());
+            return Ok(movie_clip.hit_test_object(other).into());
         }
     }
 
