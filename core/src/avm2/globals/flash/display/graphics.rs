@@ -309,6 +309,53 @@ pub fn move_to<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Graphics.drawRect`.
+pub fn draw_rect<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let x = Twips::from_pixels(
+            args.get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+        let y = Twips::from_pixels(
+            args.get(1)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+        let width = Twips::from_pixels(
+            args.get(2)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+        let height = Twips::from_pixels(
+            args.get(3)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_number(activation)?,
+        );
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            draw.draw_command(DrawCommand::MoveTo { x, y });
+            draw.draw_command(DrawCommand::LineTo { x: x + width, y });
+            draw.draw_command(DrawCommand::LineTo {
+                x: x + width,
+                y: y + height,
+            });
+            draw.draw_command(DrawCommand::LineTo { x, y: y + height });
+            draw.draw_command(DrawCommand::LineTo { x, y });
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Graphics`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -348,6 +395,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "moveTo"),
         Method::from_builtin(move_to),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public(), "drawRect"),
+        Method::from_builtin(draw_rect),
     ));
 
     class
