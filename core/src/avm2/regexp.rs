@@ -60,11 +60,7 @@ impl<'gc> RegExp<'gc> {
     }
 
     pub fn set_dotall(&mut self, value: bool) {
-        if value {
-            self.flags.0 |= RegExpFlags::DOTALL;
-        } else {
-            self.flags.0 -= RegExpFlags::DOTALL;
-        }
+        self.flags.0.set(RegExpFlags::DOTALL, value);
     }
 
     pub fn extended(&self) -> bool {
@@ -72,11 +68,7 @@ impl<'gc> RegExp<'gc> {
     }
 
     pub fn set_extended(&mut self, value: bool) {
-        if value {
-            self.flags.0 |= RegExpFlags::EXTENDED;
-        } else {
-            self.flags.0 -= RegExpFlags::EXTENDED;
-        }
+        self.flags.0.set(RegExpFlags::EXTENDED, value);
     }
 
     pub fn global(&self) -> bool {
@@ -84,11 +76,7 @@ impl<'gc> RegExp<'gc> {
     }
 
     pub fn set_global(&mut self, value: bool) {
-        if value {
-            self.flags.0 |= RegExpFlags::GLOBAL;
-        } else {
-            self.flags.0 -= RegExpFlags::GLOBAL;
-        }
+        self.flags.0.set(RegExpFlags::GLOBAL, value);
     }
 
     pub fn ignore_case(&self) -> bool {
@@ -96,11 +84,7 @@ impl<'gc> RegExp<'gc> {
     }
 
     pub fn set_ignore_case(&mut self, value: bool) {
-        if value {
-            self.flags.0 |= RegExpFlags::IGNORE_CASE;
-        } else {
-            self.flags.0 -= RegExpFlags::IGNORE_CASE;
-        }
+        self.flags.0.set(RegExpFlags::IGNORE_CASE, value);
     }
 
     pub fn multiline(&self) -> bool {
@@ -108,11 +92,7 @@ impl<'gc> RegExp<'gc> {
     }
 
     pub fn set_multiline(&mut self, value: bool) {
-        if value {
-            self.flags.0 |= RegExpFlags::MULTILINE;
-        } else {
-            self.flags.0 -= RegExpFlags::MULTILINE;
-        }
+        self.flags.0.set(RegExpFlags::MULTILINE, value);
     }
 
     pub fn test(&mut self, text: &str) -> bool {
