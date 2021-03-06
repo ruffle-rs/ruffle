@@ -495,47 +495,52 @@ impl<'gc> FunctionObject<'gc> {
     /// `prototype` refers to the explicit prototype of the function.
     /// The function and its prototype will be linked to each other.
     fn allocate_function(
-        context: MutationContext<'gc, '_>,
+        gc_context: MutationContext<'gc, '_>,
         function: Option<impl Into<Executable<'gc>>>,
         constructor: Option<impl Into<Executable<'gc>>>,
         fn_proto: Option<Object<'gc>>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
-        let function = Self::bare_function(context, function, constructor, fn_proto).into();
+        let function = Self::bare_function(gc_context, function, constructor, fn_proto).into();
 
         prototype.define_value(
-            context,
+            gc_context,
             "constructor",
             Value::Object(function),
             Attribute::DONT_ENUM,
         );
-        function.define_value(context, "prototype", prototype.into(), Attribute::empty());
+        function.define_value(
+            gc_context,
+            "prototype",
+            prototype.into(),
+            Attribute::empty(),
+        );
 
         function
     }
 
     /// Construct a regular function from an executable and associated protos.
     pub fn function(
-        context: MutationContext<'gc, '_>,
+        gc_context: MutationContext<'gc, '_>,
         function: impl Into<Executable<'gc>>,
         fn_proto: Option<Object<'gc>>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
         // Avoid type inference issues
         let none: Option<Executable> = None;
-        Self::allocate_function(context, Some(function), none, fn_proto, prototype)
+        Self::allocate_function(gc_context, Some(function), none, fn_proto, prototype)
     }
 
     /// Construct a regular and constructor function from an executable and associated protos.
     pub fn constructor(
-        context: MutationContext<'gc, '_>,
+        gc_context: MutationContext<'gc, '_>,
         constructor: impl Into<Executable<'gc>>,
         function: impl Into<Executable<'gc>>,
         fn_proto: Option<Object<'gc>>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
         Self::allocate_function(
-            context,
+            gc_context,
             Some(function),
             Some(constructor),
             fn_proto,

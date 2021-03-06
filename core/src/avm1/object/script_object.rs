@@ -706,8 +706,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().interfaces.clone()
     }
 
-    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
-        self.0.write(context).interfaces = iface_list;
+    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+        self.0.write(gc_context).interfaces = iface_list;
     }
 
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {

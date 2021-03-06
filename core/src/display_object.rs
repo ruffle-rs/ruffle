@@ -485,17 +485,17 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn place_frame(&self) -> u16;
-    fn set_place_frame(&self, context: MutationContext<'gc, '_>, frame: u16);
+    fn set_place_frame(&self, gc_context: MutationContext<'gc, '_>, frame: u16);
 
     fn transform(&self) -> Ref<Transform>;
     fn matrix(&self) -> Ref<Matrix>;
-    fn matrix_mut(&self, context: MutationContext<'gc, '_>) -> RefMut<Matrix>;
-    fn set_matrix(&self, context: MutationContext<'gc, '_>, matrix: &Matrix);
+    fn matrix_mut(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<Matrix>;
+    fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: &Matrix);
     fn color_transform(&self) -> Ref<ColorTransform>;
-    fn color_transform_mut(&self, context: MutationContext<'gc, '_>) -> RefMut<ColorTransform>;
+    fn color_transform_mut(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<ColorTransform>;
     fn set_color_transform(
         &self,
-        context: MutationContext<'gc, '_>,
+        gc_context: MutationContext<'gc, '_>,
         color_transform: &ColorTransform,
     );
 
@@ -618,12 +618,14 @@ pub trait TDisplayObject<'gc>:
         self.set_scale_x(gc_context, Percent::from_unit(new_scale_x));
         self.set_scale_y(gc_context, Percent::from_unit(new_scale_y));
     }
+
     /// Gets the pixel height of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_height`/`height` properties.
     fn height(&self) -> f64 {
         let bounds = self.local_bounds();
         (bounds.y_max.saturating_sub(bounds.y_min)).to_pixels()
     }
+
     /// Sets the pixel height of this display object in local space.
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
@@ -655,6 +657,7 @@ pub trait TDisplayObject<'gc>:
         self.set_scale_x(gc_context, Percent::from_unit(new_scale_x));
         self.set_scale_y(gc_context, Percent::from_unit(new_scale_y));
     }
+
     /// The opacity of this display object.
     /// 1 is fully opaque.
     /// Returned by the `_alpha`/`alpha` ActionScript properties.
@@ -664,8 +667,9 @@ pub trait TDisplayObject<'gc>:
     /// 1 is fully opaque.
     /// Set by the `_alpha`/`alpha` ActionScript properties.
     fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64);
+
     fn name(&self) -> Ref<str>;
-    fn set_name(&self, context: MutationContext<'gc, '_>, name: &str);
+    fn set_name(&self, gc_context: MutationContext<'gc, '_>, name: &str);
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
     fn path(&self) -> String {
@@ -709,24 +713,32 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn clip_depth(&self) -> Depth;
-    fn set_clip_depth(&self, context: MutationContext<'gc, '_>, depth: Depth);
+    fn set_clip_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
     fn parent(&self) -> Option<DisplayObject<'gc>>;
-    fn set_parent(&self, context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
+    fn set_parent(&self, gc_context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
-    fn set_prev_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
+    fn set_prev_sibling(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    );
     fn next_sibling(&self) -> Option<DisplayObject<'gc>>;
-    fn set_next_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
+    fn set_next_sibling(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    );
     fn masker(&self) -> Option<DisplayObject<'gc>>;
     fn set_masker(
         &self,
-        context: MutationContext<'gc, '_>,
+        gc_context: MutationContext<'gc, '_>,
         node: Option<DisplayObject<'gc>>,
         remove_old_link: bool,
     );
     fn maskee(&self) -> Option<DisplayObject<'gc>>;
     fn set_maskee(
         &self,
-        context: MutationContext<'gc, '_>,
+        gc_context: MutationContext<'gc, '_>,
         node: Option<DisplayObject<'gc>>,
         remove_old_link: bool,
     );
@@ -757,7 +769,7 @@ pub trait TDisplayObject<'gc>:
         None
     }
     fn removed(&self) -> bool;
-    fn set_removed(&self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_removed(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
     /// Whether this display object is visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
@@ -767,7 +779,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets whether this display object will be visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
-    fn set_visible(&self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_visible(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
     /// The sound transform for sounds played inside this display object.
     fn sound_transform(&self) -> Ref<SoundTransform>;
@@ -785,7 +797,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets whether this display object is used as the _root of itself and its children.
     /// Returned by the `_lockroot` ActionScript property.
-    fn set_lock_root(&self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_lock_root(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
     /// Whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
@@ -793,12 +805,12 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
-    fn set_transformed_by_script(&self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_transformed_by_script(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
     /// of being the currently focused object.
     /// This should only be called by the focus manager. To change a focus, go through that.
-    fn on_focus_changed(&self, _context: MutationContext<'gc, '_>, _focused: bool) {}
+    fn on_focus_changed(&self, _gc_context: MutationContext<'gc, '_>, _focused: bool) {}
 
     /// Whether or not this clip may be focusable for keyboard input.
     fn is_focusable(&self) -> bool {
@@ -813,7 +825,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets whether this display object has been created by ActionScript 3.
     /// When this flag is set, changes from SWF `RemoveObject` tags are
     /// ignored.
-    fn set_placed_by_script(&self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_placed_by_script(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
     /// Whether this display object has been instantiated by the timeline.
     /// When this flag is set, attempts to change the object's name from AVM2
@@ -823,7 +835,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets whether this display object has been instantiated by the timeline.
     /// When this flag is set, attempts to change the object's name from AVM2
     /// throw an exception.
-    fn set_instantiated_by_timeline(&self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_instantiated_by_timeline(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and

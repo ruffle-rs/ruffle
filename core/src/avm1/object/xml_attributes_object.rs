@@ -231,8 +231,8 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         self.base().interfaces()
     }
 
-    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
-        self.base().set_interfaces(context, iface_list)
+    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+        self.base().set_interfaces(gc_context, iface_list)
     }
 
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
