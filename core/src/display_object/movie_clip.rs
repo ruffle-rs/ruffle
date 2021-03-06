@@ -2077,11 +2077,7 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn set_playing(&mut self, value: bool) {
-        if value {
-            self.flags |= MovieClipFlags::PLAYING;
-        } else {
-            self.flags -= MovieClipFlags::PLAYING;
-        }
+        self.flags.set(MovieClipFlags::PLAYING, value);
     }
 
     fn programmatically_played(&self) -> bool {
@@ -2233,11 +2229,7 @@ impl<'gc> MovieClipData<'gc> {
 
     fn set_initialized(&mut self, value: bool) -> bool {
         let ret = self.flags.contains(MovieClipFlags::INITIALIZED);
-        if value {
-            self.flags |= MovieClipFlags::INITIALIZED;
-        } else {
-            self.flags -= MovieClipFlags::INITIALIZED;
-        }
+        self.flags.set(MovieClipFlags::INITIALIZED, value);
         !ret
     }
 

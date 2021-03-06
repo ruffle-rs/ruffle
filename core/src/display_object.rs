@@ -358,11 +358,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn set_removed(&mut self, value: bool) {
-        if value {
-            self.flags |= DisplayObjectFlags::REMOVED;
-        } else {
-            self.flags -= DisplayObjectFlags::REMOVED;
-        }
+        self.flags.set(DisplayObjectFlags::REMOVED, value);
     }
 
     fn sound_transform(&self) -> &SoundTransform {
@@ -378,11 +374,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn set_visible(&mut self, value: bool) {
-        if value {
-            self.flags |= DisplayObjectFlags::VISIBLE;
-        } else {
-            self.flags -= DisplayObjectFlags::VISIBLE;
-        }
+        self.flags.set(DisplayObjectFlags::VISIBLE, value);
     }
 
     fn lock_root(&self) -> bool {
@@ -390,11 +382,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn set_lock_root(&mut self, value: bool) {
-        if value {
-            self.flags |= DisplayObjectFlags::LOCK_ROOT;
-        } else {
-            self.flags -= DisplayObjectFlags::LOCK_ROOT;
-        }
+        self.flags.set(DisplayObjectFlags::LOCK_ROOT, value);
     }
 
     fn transformed_by_script(&self) -> bool {
@@ -403,11 +391,8 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn set_transformed_by_script(&mut self, value: bool) {
-        if value {
-            self.flags |= DisplayObjectFlags::TRANSFORMED_BY_SCRIPT;
-        } else {
-            self.flags -= DisplayObjectFlags::TRANSFORMED_BY_SCRIPT;
-        }
+        self.flags
+            .set(DisplayObjectFlags::TRANSFORMED_BY_SCRIPT, value);
     }
 
     fn placed_by_script(&self) -> bool {
@@ -415,11 +400,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn set_placed_by_script(&mut self, value: bool) {
-        if value {
-            self.flags |= DisplayObjectFlags::PLACED_BY_SCRIPT;
-        } else {
-            self.flags -= DisplayObjectFlags::PLACED_BY_SCRIPT;
-        }
+        self.flags.set(DisplayObjectFlags::PLACED_BY_SCRIPT, value);
     }
 
     fn instantiated_by_timeline(&self) -> bool {
@@ -428,11 +409,8 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn set_instantiated_by_timeline(&mut self, value: bool) {
-        if value {
-            self.flags |= DisplayObjectFlags::INSTANTIATED_BY_TIMELINE;
-        } else {
-            self.flags -= DisplayObjectFlags::INSTANTIATED_BY_TIMELINE;
-        }
+        self.flags
+            .set(DisplayObjectFlags::INSTANTIATED_BY_TIMELINE, value);
     }
 
     fn swf_version(&self) -> u8 {
