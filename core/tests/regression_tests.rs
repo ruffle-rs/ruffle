@@ -538,6 +538,7 @@ swf_tests! {
     (as3_edittext_html_entity, "avm2/edittext_html_entity", 1),
     #[ignore] (as3_edittext_html_roundtrip, "avm2/edittext_html_roundtrip", 1),
     (as3_edittext_newline_stripping, "avm2/edittext_newline_stripping", 1),
+    (as3_shape_drawrect, "avm2/shape_drawrect", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
