@@ -23,14 +23,12 @@ pub struct GraphicData<'gc> {
     static_data: gc_arena::Gc<'gc, GraphicStatic>,
     avm2_object: Option<Avm2Object<'gc>>,
     drawing: Drawing,
-    bounds: BoundingBox,
 }
 
 impl<'gc> Graphic<'gc> {
     /// Construct a `Graphic` from it's associated `Shape` tag.
     pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, swf_shape: swf::Shape) -> Self {
         let drawing = Drawing::from_swf_shape(&swf_shape);
-        let bounds = swf_shape.shape_bounds.clone().into();
         let static_data = GraphicStatic {
             id: swf_shape.id,
             shape: swf_shape,
@@ -43,7 +41,6 @@ impl<'gc> Graphic<'gc> {
                 static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
                 avm2_object: None,
                 drawing,
-                bounds,
             },
         ))
     }
@@ -79,7 +76,6 @@ impl<'gc> Graphic<'gc> {
                 static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
                 avm2_object: Some(avm2_object),
                 drawing,
-                bounds: Default::default(),
             },
         ))
     }
@@ -93,7 +89,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn self_bounds(&self) -> BoundingBox {
-        self.0.read().bounds.clone()
+        self.0.read().drawing.self_bounds()
     }
 
     fn run_frame(&self, _context: &mut UpdateContext) {
