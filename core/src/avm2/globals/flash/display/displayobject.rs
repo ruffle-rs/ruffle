@@ -9,7 +9,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{BoundsMode, TDisplayObject};
 use crate::types::{Degrees, Percent};
 use gc_arena::{GcCell, MutationContext};
 use swf::Twips;
@@ -466,7 +466,7 @@ pub fn hit_test_point<'gc>(
         if shape_flag {
             return Ok(dobj.hit_test_shape(&mut activation.context, (x, y)).into());
         } else {
-            return Ok(dobj.hit_test_bounds((x, y)).into());
+            return Ok(dobj.hit_test_bounds((x, y), &BoundsMode::Script).into());
         }
     }
 

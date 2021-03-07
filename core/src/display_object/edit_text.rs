@@ -4,7 +4,7 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::{Avm1, AvmString, Object, StageObject, TObject, Value};
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::display_object::{BoundsMode, DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
@@ -1336,7 +1336,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .unwrap_or(Value::Undefined)
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self, _mode: &BoundsMode) -> BoundingBox {
         self.0.read().bounds.clone()
     }
 
@@ -1405,7 +1405,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
-        if !self.world_bounds().intersects(&context.view_bounds) {
+        if !self
+            .world_bounds(&BoundsMode::Engine)
+            .intersects(&context.view_bounds)
+        {
             // Off-screen; culled
             return;
         }

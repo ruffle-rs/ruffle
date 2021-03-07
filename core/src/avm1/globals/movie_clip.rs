@@ -11,7 +11,7 @@ use crate::avm_error;
 use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{
-    Bitmap, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
+    Bitmap, BoundsMode, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
@@ -135,7 +135,7 @@ pub fn hit_test<'gc>(
             let ret = if shape {
                 movie_clip.hit_test_shape(&mut activation.context, point)
             } else {
-                movie_clip.hit_test_bounds(point)
+                movie_clip.hit_test_bounds(point, &BoundsMode::Script)
             };
             return Ok(ret.into());
         }
@@ -146,10 +146,7 @@ pub fn hit_test<'gc>(
             false,
         )?;
         if let Some(other) = other {
-            return Ok(other
-                .world_bounds()
-                .intersects(&movie_clip.world_bounds())
-                .into());
+            return Ok(movie_clip.hit_test_object(other).into());
         }
     }
 
@@ -1135,7 +1132,7 @@ fn get_bounds<'gc>(
     };
 
     if let Some(target) = target {
-        let bounds = movie_clip.bounds();
+        let bounds = movie_clip.bounds(&BoundsMode::Script);
         let out_bounds = if DisplayObject::ptr_eq(movie_clip.into(), target) {
             // Getting the clips bounds in its own coordinate space; no AABB transform needed.
             bounds

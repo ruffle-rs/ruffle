@@ -1,5 +1,5 @@
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::display_object::{BoundsMode, DisplayObjectBase, TDisplayObject};
 use crate::font::TextRenderSettings;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -123,7 +123,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         context.transform_stack.pop();
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self, _mode: &BoundsMode) -> BoundingBox {
         self.0.read().static_data.bounds.clone()
     }
 
@@ -132,7 +132,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         mut point: (Twips, Twips),
     ) -> bool {
-        if self.world_bounds().contains(point) {
+        if self.world_bounds(&BoundsMode::Engine).contains(point) {
             // Texts using the "Advanced text rendering" always hit test using their bounding box.
             if self.0.read().render_settings.is_advanced() {
                 return true;

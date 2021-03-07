@@ -1,6 +1,6 @@
 use crate::backend::render::ShapeHandle;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::display_object::{BoundsMode, DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
@@ -42,14 +42,6 @@ impl<'gc> MorphShape<'gc> {
     pub fn set_ratio(&mut self, gc_context: MutationContext<'gc, '_>, ratio: u16) {
         self.0.write(gc_context).ratio = ratio;
     }
-
-    fn self_bounds(&self, ratio: u16) -> BoundingBox {
-        if let Some(frame) = self.0.read().static_data.frames.get(&ratio) {
-            frame.shape.shape_bounds.clone().into()
-        } else {
-            BoundingBox::default()
-        }
-    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
@@ -77,12 +69,16 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         }
     }
 
-    fn self_bounds(&self) -> BoundingBox {
-        self.self_bounds(0)
-    }
-
-    fn self_bounds_with_morph(&self) -> BoundingBox {
-        self.self_bounds(self.ratio())
+    fn self_bounds(&self, mode: &BoundsMode) -> BoundingBox {
+        let ratio = match mode {
+            BoundsMode::Script => 0,
+            BoundsMode::Engine => self.ratio(),
+        };
+        if let Some(frame) = self.0.read().static_data.frames.get(&ratio) {
+            frame.shape.shape_bounds.clone().into()
+        } else {
+            BoundingBox::default()
+        }
     }
 
     fn hit_test_shape(
@@ -90,7 +86,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         _context: &mut UpdateContext<'_, 'gc, '_>,
         point: (Twips, Twips),
     ) -> bool {
-        if self.world_bounds_with_morph().contains(point) {
+        if self.world_bounds(&BoundsMode::Engine).contains(point) {
             if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
                 let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;
@@ -99,6 +95,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
                 log::warn!("Missing ratio for morph shape");
             }
         }
+
         false
     }
 }

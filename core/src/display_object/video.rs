@@ -7,7 +7,7 @@ use crate::backend::video::{EncodedFrame, VideoStreamHandle};
 use crate::bounding_box::BoundingBox;
 use crate::collect::CollectWrapper;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::display_object::{BoundsMode, DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::types::{Degrees, Percent};
@@ -388,7 +388,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self, _mode: &BoundsMode) -> BoundingBox {
         let mut bounding_box = BoundingBox::default();
 
         match (*self.0.read().source.read()).borrow() {
@@ -402,7 +402,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn render(&self, context: &mut RenderContext) {
-        if !self.world_bounds().intersects(&context.view_bounds) {
+        if !self
+            .world_bounds(&BoundsMode::Engine)
+            .intersects(&context.view_bounds)
+        {
             // Off-screen; culled
             return;
         }

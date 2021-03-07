@@ -2,7 +2,7 @@
 
 use crate::backend::render::BitmapHandle;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::display_object::{BoundsMode, DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::types::{Degrees, Percent};
 use gc_arena::{Collect, Gc, GcCell};
@@ -87,7 +87,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         self.0.read().static_data.id
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self, _mode: &BoundsMode) -> BoundingBox {
         BoundingBox {
             x_min: Twips::new(0),
             y_min: Twips::new(0),
@@ -114,7 +114,10 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 
     fn render_self(&self, context: &mut RenderContext) {
-        if !self.world_bounds().intersects(&context.view_bounds) {
+        if !self
+            .world_bounds(&BoundsMode::Engine)
+            .intersects(&context.view_bounds)
+        {
             // Off-screen; culled
             return;
         }

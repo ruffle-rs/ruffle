@@ -4,7 +4,7 @@ use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
     dispatch_added_event, dispatch_removed_event, ChildContainer,
 };
-use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::display_object::{BoundsMode, DisplayObjectBase, TDisplayObject};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
@@ -328,7 +328,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self, _mode: &BoundsMode) -> BoundingBox {
         // No inherent bounds; contains child DisplayObjects.
         BoundingBox::default()
     }

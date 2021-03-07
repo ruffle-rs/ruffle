@@ -7,7 +7,7 @@ use crate::avm1::globals::{color_transform, matrix};
 use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, TObject, Value};
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::display_object::{BoundsMode, DisplayObject, MovieClip, TDisplayObject};
 use gc_arena::MutationContext;
 
 macro_rules! with_transform_props {
@@ -187,7 +187,7 @@ fn pixel_bounds<'gc>(
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // This is equivalent to `clip.getBounds()`.
-    let bounds = clip.world_bounds();
+    let bounds = clip.world_bounds(&BoundsMode::Script);
 
     // Return Rectangle object.
     let args = [
