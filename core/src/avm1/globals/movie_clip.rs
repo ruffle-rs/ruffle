@@ -557,8 +557,8 @@ fn attach_movie<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let (export_name, new_instance_name, depth) = match &args[0..3] {
-        [export_name, new_instance_name, depth] => (
+    let (export_name, new_instance_name, depth) = match &args.get(0..3) {
+        Some([export_name, new_instance_name, depth]) => (
             export_name.coerce_to_string(activation)?,
             new_instance_name.coerce_to_string(activation)?,
             depth
@@ -613,8 +613,8 @@ fn create_empty_movie_clip<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let (new_instance_name, depth) = match &args[0..2] {
-        [new_instance_name, depth] => (
+    let (new_instance_name, depth) = match &args.get(0..2) {
+        Some([new_instance_name, depth]) => (
             new_instance_name.coerce_to_string(activation)?,
             depth
                 .coerce_to_i32(activation)?
@@ -725,8 +725,8 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
     args: &[Value<'gc>],
     depth_bias: i32,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let (new_instance_name, depth) = match &args[0..2] {
-        [new_instance_name, depth] => (
+    let (new_instance_name, depth) = match &args.get(0..2) {
+        Some([new_instance_name, depth]) => (
             new_instance_name.coerce_to_string(activation)?,
             depth.coerce_to_i32(activation)?.wrapping_add(depth_bias),
         ),
