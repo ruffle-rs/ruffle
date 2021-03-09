@@ -346,7 +346,7 @@ export class RufflePlayer extends HTMLElement {
             // Serious duck typing. In error conditions, let's not make assumptions.
             if (window.location.protocol === "file:") {
                 e.ruffleIndexError = PanicError.FileProtocol;
-            } else if (!e.ruffleIsExtension) {
+            } else {
                 e.ruffleIndexError = PanicError.WasmNotFound;
                 const message = String(e.message).toLowerCase();
                 if (message.includes("mime")) {

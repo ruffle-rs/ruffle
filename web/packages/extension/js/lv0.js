@@ -154,9 +154,7 @@ getSyncStorage(["ruffleEnable", "ignoreOptout"], function (data) {
             let ruffleSrcResp = await fetch(extPath + "dist/ruffle.js");
             if (ruffleSrcResp.ok) {
                 let ruffleSource =
-                    '(function () { var ruffleRuntimePath = "' +
-                    extPath +
-                    '";\nvar obfuscatedEventPrefix = "' +
+                    '(function () { var obfuscatedEventPrefix = "' +
                     obfuscatedEventPrefix +
                     '";\n' +
                     (await ruffleSrcResp.text()) +

@@ -22,36 +22,13 @@ async function fetchRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
     // libraries, if needed.
     setPolyfillsOnLoad();
 
-    let isExtension = true;
-
-    try {
-        // If ruffleRuntimePath is defined then we are executing inside the extension
-        // closure. In that case, we configure our local Webpack instance.
-        __webpack_public_path__ = ruffleRuntimePath + "dist/";
-    } catch (e) {
-        // Checking an undefined closure variable usually throws ReferenceError,
-        // so we need to catch it here and continue onward.
-        if (!(e instanceof ReferenceError)) {
-            throw e;
-        }
-        isExtension = false;
-    }
-
-    // We currently assume that if we are not executing inside the extension,
-    // then we can use webpack to get Ruffle.
-
-    try {
-        // wasm files are set to use file-loader,
-        // so this package will resolve to the URL of the wasm file.
-        const ruffleWasm = await import(
-            /* webpackMode: "eager" */
-            "../pkg/ruffle_web_bg.wasm"
-        );
-        await init(ruffleWasm.default);
-    } catch (e) {
-        e.ruffleIsExtension = isExtension;
-        throw e;
-    }
+    // wasm files are set to use file-loader,
+    // so this package will resolve to the URL of the wasm file.
+    const ruffleWasm = await import(
+        /* webpackMode: "eager" */
+        "../pkg/ruffle_web_bg.wasm"
+    );
+    await init(ruffleWasm.default);
 
     return Ruffle;
 }
