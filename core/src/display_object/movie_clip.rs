@@ -1698,7 +1698,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // New children will be constructed when they are instantiated and thus
         // if we construct before our children, they'll get double-constructed.
-        for child in self.iter_execution_list() {
+        // TODO: in what order?
+        for child in self.iter_render_list() {
             child.construct_frame(context);
         }
 
@@ -1715,22 +1716,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 let mut reader = data.read_from(mc.tag_stream_pos);
                 drop(mc);
 
-                let self_display_object: DisplayObject<'gc> = (*self).into();
-
                 use swf::TagCode;
                 let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
-                    TagCode::PlaceObject => {
-                        self.place_object(self_display_object, context, reader, tag_len, 1)
-                    }
-                    TagCode::PlaceObject2 => {
-                        self.place_object(self_display_object, context, reader, tag_len, 2)
-                    }
-                    TagCode::PlaceObject3 => {
-                        self.place_object(self_display_object, context, reader, tag_len, 3)
-                    }
-                    TagCode::PlaceObject4 => {
-                        self.place_object(self_display_object, context, reader, tag_len, 4)
-                    }
+                    TagCode::PlaceObject => self.place_object(context, reader, tag_len, 1),
+                    TagCode::PlaceObject2 => self.place_object(context, reader, tag_len, 2),
+                    TagCode::PlaceObject3 => self.place_object(context, reader, tag_len, 3),
+                    TagCode::PlaceObject4 => self.place_object(context, reader, tag_len, 4),
                     _ => Ok(()),
                 };
                 let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);

@@ -900,7 +900,8 @@ pub trait TDisplayObject<'gc>:
     /// Run any frame scripts (if they exist and this object needs to run them).
     fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if let Some(container) = self.as_container() {
-            for child in container.iter_execution_list() {
+            // TODO: in what order?
+            for child in container.iter_render_list() {
                 child.run_frame_scripts(context);
             }
         }
@@ -1216,8 +1217,8 @@ pub trait TDisplayObject<'gc>:
         let ancestor = ancestor.unwrap_or_else(|| self.into());
         context
             .levels
-            .values()
-            .any(|o| DisplayObject::ptr_eq(*o, ancestor))
+            .iter_roots()
+            .any(|o| DisplayObject::ptr_eq(o, ancestor))
     }
 
     /// Obtain the top-most parent of the display tree hierarchy, or some kind

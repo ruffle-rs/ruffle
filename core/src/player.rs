@@ -960,7 +960,7 @@ impl Player {
                 level.frame_constructed(update_context);
             }
 
-            for object in objects {
+            for object in objects.iter() {
                 object.run_frame(update_context);
             }
 
