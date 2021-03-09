@@ -5,5 +5,5 @@ pub mod events;
 pub mod geom;
 pub mod media;
 pub mod system;
-pub mod utils;
 pub mod text;
+pub mod utils;
