@@ -630,6 +630,7 @@ swf_tests! {
     (as3_font_embedded, "avm2/font_embedded", 1),
     (as3_font_hasglyphs, "avm2/font_hasglyphs", 1),
     (as3_simplebutton_symbolclass, "avm2/simplebutton_symbolclass", 3),
+    (as3_vector_int_access, "avm2/vector_int_access", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
