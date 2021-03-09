@@ -2,8 +2,10 @@ use crate::backend::render::ShapeHandle;
 use crate::bounding_box::BoundingBox;
 use crate::context::RenderContext;
 use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
+use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use std::cell::Cell;
+use std::sync::Arc;
 use swf::{FillStyle, LineStyle, Twips};
 
 #[derive(Clone, Debug, Collect)]
@@ -186,7 +188,7 @@ impl Drawing {
         self.dirty.set(true);
     }
 
-    pub fn render(&self, context: &mut RenderContext) {
+    pub fn render(&self, context: &mut RenderContext, movie: Option<Arc<SwfMovie>>) {
         if self.dirty.get() {
             self.dirty.set(false);
             let mut paths = Vec::new();
@@ -229,12 +231,13 @@ impl Drawing {
                 edge_bounds: self.edge_bounds.clone(),
                 id: 0,
             };
+            let library = movie.and_then(|m| context.library.library_for_movie(m));
 
             if let Some(handle) = self.render_handle.get() {
-                context.renderer.replace_shape(shape, None, handle);
+                context.renderer.replace_shape(shape, library, handle);
             } else {
                 self.render_handle
-                    .set(Some(context.renderer.register_shape(shape, None)));
+                    .set(Some(context.renderer.register_shape(shape, library)));
             }
         }
 

@@ -1790,7 +1790,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
-        self.0.read().drawing.render(context);
+        let movie = self.movie();
+
+        self.0.read().drawing.render(context, movie);
         self.render_children(context);
     }
 
@@ -2279,9 +2281,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         version: u8,
     ) -> DecodeResult {
+        let movie = self.movie();
         let swf_shape = reader.read_define_shape(version)?;
         let id = swf_shape.id;
-        let graphic = Graphic::from_swf_tag(context, swf_shape);
+        let graphic = Graphic::from_swf_tag(context, swf_shape, movie);
         context
             .library
             .library_for_movie_mut(self.movie())
