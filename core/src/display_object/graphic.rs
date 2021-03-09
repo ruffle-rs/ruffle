@@ -8,10 +8,12 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmType, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::RefMut;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -28,11 +30,16 @@ pub struct GraphicData<'gc> {
 
 impl<'gc> Graphic<'gc> {
     /// Construct a `Graphic` from it's associated `Shape` tag.
-    pub fn from_swf_tag(context: &mut UpdateContext<'_, 'gc, '_>, swf_shape: swf::Shape) -> Self {
+    pub fn from_swf_tag(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        swf_shape: swf::Shape,
+        movie: Arc<SwfMovie>,
+    ) -> Self {
         let drawing = Drawing::from_swf_shape(&swf_shape);
         let static_data = GraphicStatic {
             id: swf_shape.id,
             shape: swf_shape,
+            movie: Some(movie),
         };
 
         Graphic(GcCell::allocate(
@@ -67,6 +74,7 @@ impl<'gc> Graphic<'gc> {
                 },
                 shape: Vec::new(),
             },
+            movie: None,
         };
         let drawing = Drawing::new();
 
@@ -103,7 +111,10 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             return;
         }
 
-        self.0.read().drawing.render(context);
+        self.0
+            .read()
+            .drawing
+            .render(context, self.0.read().static_data.movie.clone());
     }
 
     fn hit_test_shape(
@@ -189,4 +200,5 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 struct GraphicStatic {
     id: CharacterId,
     shape: swf::Shape,
+    movie: Option<Arc<SwfMovie>>,
 }
