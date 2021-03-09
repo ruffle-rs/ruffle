@@ -2,15 +2,8 @@ module.exports = {
     getI18nString,
     setSyncStorage,
     getSyncStorage,
-    reloadTab,
-    dictEquality,
-    tabQuery,
-    tabSendmessage,
-    addStorageChangeListener,
-    openSettingsPage,
     setMessageListener,
     getExtensionUrl,
-    camelize,
 };
 
 // List of defaults for all settings.
@@ -90,109 +83,6 @@ function getSyncStorage(key, callback) {
     }
 }
 
-function addStorageChangeListener(listener) {
-    if (
-        chrome &&
-        chrome.storage &&
-        chrome.storage.onChanged &&
-        chrome.storage.onChanged.addListener
-    ) {
-        chrome.storage.onChanged.addListener(listener);
-    } else if (
-        browser &&
-        browser.storage &&
-        browser.storage.onChanged &&
-        browser.storage.onChanged.addListener
-    ) {
-        browser.storage.onChanged.addListener(listener);
-    } else {
-        console.error("Couldn't add setting change listener");
-    }
-}
-
-function reloadTab(tab, callback) {
-    if (chrome && chrome.tabs && chrome.tabs.reload) {
-        chrome.tabs.reload(tab, callback);
-    } else if (browser && browser.tabs && browser.tabs.reload) {
-        browser.tabs.reload(tab, callback);
-    } else {
-        console.error("Couldn't reload tab.");
-    }
-}
-
-function dictEquality(dict1, dict2) {
-    let isEqual = true;
-
-    for (var k in dict1) {
-        if (Object.prototype.hasOwnProperty.call(dict1, k)) {
-            isEqual = isEqual && dict1[k] === dict2[k];
-        }
-    }
-
-    for (let k in dict2) {
-        if (Object.prototype.hasOwnProperty.call(dict2, k)) {
-            isEqual = isEqual && dict1[k] === dict2[k];
-        }
-    }
-
-    return isEqual;
-}
-
-/**
- * Promise-based version of `chrome.tabs.query`.
- *
- * Mozilla does this by default in `browser.tabs` but Chrome is behind on this
- * sort of thing. Chrome won't even let us check if we're running in
- */
-function tabQuery() {
-    let myArgs = arguments;
-
-    if (window.browser && browser.tabs && browser.tabs.query) {
-        return browser.tabs.query.apply(this, arguments);
-    }
-
-    return new Promise(function (resolve) {
-        let newArguments = Array.prototype.slice.call(myArgs);
-        newArguments.push(resolve);
-        chrome.tabs.query.apply(this, newArguments);
-    });
-}
-
-/**
- * Promise-based version of `chrome.tabs.sendMessage`.
- */
-function tabSendmessage() {
-    let myArgs = arguments;
-
-    if (window.browser && browser.tabs && browser.tabs.sendMessage) {
-        return browser.tabs.sendMessage.apply(this, arguments);
-    }
-
-    return new Promise(function (resolve, reject) {
-        let newArguments = Array.prototype.slice.call(myArgs);
-        newArguments.push(function (response) {
-            if (chrome.runtime.lastError !== undefined) {
-                reject(chrome.runtime.lastError.message);
-            }
-
-            resolve(response);
-        });
-        chrome.tabs.sendMessage.apply(this, newArguments);
-    });
-}
-
-function openSettingsPage() {
-    if (chrome && chrome.tabs && chrome.tabs.create) {
-        chrome.tabs.create({ url: "/settings.html" });
-        /* Open the settings page manually */
-    } else if (browser && browser.runtime && browser.runtime.openOptionsPage) {
-        browser.runtime.openOptionsPage();
-        /* Have the browser open the settings page for us */
-    } else {
-        console.error("Can't open settings page");
-    }
-}
-
 function setMessageListener(listener) {
     if (
         chrome &&
@@ -221,10 +111,4 @@ function getExtensionUrl(path) {
     } else {
         console.error("Couldn't get extension URL");
     }
-}
-
-function camelize(str) {
-    return str.toLowerCase().replace(/[^a-zA-Z0-9]+(.)/g, (m, chr) => {
-        return chr.toUpperCase();
-    });
 }
