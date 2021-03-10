@@ -1,0 +1,9 @@
+/// var a: Vector.<String> = new <String>[1,2,3,4];
+/// a[0] = 5;
+/// a[1] = NaN;
+/// a[2] = "actually imma string";
+/// a[3] = true;
+5
+NaN
+actually imma string
+true

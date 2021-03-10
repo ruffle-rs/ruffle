@@ -1,3 +1,4 @@
-a
-b
-c
+/// var a: Vector.<int> = new <int>[1,2,3,];
+1
+2
+3

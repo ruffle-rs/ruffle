@@ -1,0 +1,4 @@
+/// var a: Vector.<Number> = new <Number>[];
+/// a.length = 2;
+0
+0
