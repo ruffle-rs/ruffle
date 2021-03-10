@@ -1,0 +1,9 @@
+/// var a: Vector.<Boolean> = new <Boolean>[1,2,3,4];
+/// a[0] = 1;
+/// a[1] = NaN;
+/// a[2] = "false";
+/// a[3] = true;
+true
+false
+true
+true

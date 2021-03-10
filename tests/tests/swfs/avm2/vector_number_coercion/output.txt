@@ -1,0 +1,9 @@
+/// var a: Vector.<Number> = new <Number>[1,2,3,4];
+/// a[0] = "5";
+/// a[1] = "NaN";
+/// a[2] = -5;
+/// a[3] = true;
+5
+NaN
+-5
+1
