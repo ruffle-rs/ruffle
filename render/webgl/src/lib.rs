@@ -1209,9 +1209,9 @@ impl RenderBackend for WebGlRenderBackend {
                         .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, filter);
                     self.gl
                         .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, filter);
-                    // On WebGL1, you are unable to change the wrapping parameter causes non-power-of-2 textures.
+                    // On WebGL1, you are unable to change the wrapping parameter of non-power-of-2 textures.
                     let wrap = if self.gl2.is_some() && bitmap.is_repeating {
-                        Gl::MIRRORED_REPEAT as i32
+                        Gl::REPEAT as i32
                     } else {
                         Gl::CLAMP_TO_EDGE as i32
                     };
