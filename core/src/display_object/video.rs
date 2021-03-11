@@ -388,7 +388,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self, _mode: &BoundsMode) -> BoundingBox {
         let mut bounding_box = BoundingBox::default();
 
         match (*self.0.read().source.read()).borrow() {
@@ -402,7 +402,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn render(&self, context: &mut RenderContext) {
-        if !self.world_bounds().intersects(&context.view_bounds) {
+        if !self
+            .world_bounds(&BoundsMode::Engine)
+            .intersects(&context.view_bounds)
+        {
             // Off-screen; culled
             return;
         }

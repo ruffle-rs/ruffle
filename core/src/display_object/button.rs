@@ -328,7 +328,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self, _mode: &BoundsMode) -> BoundingBox {
         // No inherent bounds; contains child DisplayObjects.
         BoundingBox::default()
     }

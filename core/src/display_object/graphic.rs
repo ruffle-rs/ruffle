@@ -106,7 +106,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.0.read().static_data.id
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self, _mode: &BoundsMode) -> BoundingBox {
         if let Some(drawing) = &self.0.read().drawing {
             drawing.self_bounds()
         } else {
@@ -119,7 +119,10 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn render_self(&self, context: &mut RenderContext) {
-        if !self.world_bounds().intersects(&context.view_bounds) {
+        if !self
+            .world_bounds(&BoundsMode::Engine)
+            .intersects(&context.view_bounds)
+        {
             // Off-screen; culled
             return;
         }
@@ -139,7 +142,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         point: (Twips, Twips),
     ) -> bool {
         // Transform point to local coordinates and test.
-        if self.world_bounds().contains(point) {
+        if self.world_bounds(&BoundsMode::Engine).contains(point) {
             let local_matrix = self.global_to_local_matrix();
             let point = local_matrix * point;
             if let Some(drawing) = &self.0.read().drawing {
