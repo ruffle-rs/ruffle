@@ -42,6 +42,7 @@ mod slot;
 mod string;
 mod traits;
 mod value;
+mod vector;
 
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
