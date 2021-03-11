@@ -139,8 +139,6 @@ getSyncStorage(["ruffleEnable", "ignoreOptout"], function (data) {
         }
     });
 
-    const extPath = getExtensionUrl();
-
     if (shouldLoadUntrustedWorld) {
         // We must run the plugin polyfill before any flash detection scripts.
         // Unfortunately, this might still be too late for some websites when using Chrome (issue #969).
@@ -151,22 +149,13 @@ getSyncStorage(["ruffleEnable", "ignoreOptout"], function (data) {
 
         // Load Ruffle script asynchronously. By doing so, we can inject extra variables and isolate them from the global scope.
         (async function () {
-            let ruffleSrcResp = await fetch(extPath + "dist/ruffle.js");
-            if (ruffleSrcResp.ok) {
-                let ruffleSource =
-                    '(function () { var obfuscatedEventPrefix = "' +
-                    obfuscatedEventPrefix +
-                    '";\n' +
-                    (await ruffleSrcResp.text()) +
-                    "}())";
-                let ruffleScript = document.createElement("script");
-                ruffleScript.appendChild(document.createTextNode(ruffleSource));
-                (document.head || document.documentElement).appendChild(
-                    ruffleScript
-                );
-            } else {
-                console.error("Critical error loading Ruffle into page");
-            }
+            const ruffleScript = document.createElement("script");
+            ruffleScript.src = getExtensionUrl(
+                `dist/ruffle.js?obfuscatedEventPrefix=${obfuscatedEventPrefix}`
+            );
+            (document.head || document.documentElement).appendChild(
+                ruffleScript
+            );
         })();
     }
 });
