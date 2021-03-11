@@ -1,0 +1,8 @@
+/// var a: Vector.<Superclass> = new <Superclass>[];
+/// a.length = 2;
+null
+null
+/// a[0] = new Superclass();
+/// a[1] = new Subclass();
+[object Superclass]
+[object Subclass]
