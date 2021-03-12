@@ -96,10 +96,10 @@ fn get_rgb<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(target) = target(activation, this)? {
         let color_transform = target.color_transform();
-        let r = (color_transform.r_add * 255.0) as u8;
-        let g = (color_transform.g_add * 255.0) as u8;
-        let b = (color_transform.b_add * 255.0) as u8;
-        Ok(i32::from_le_bytes([b, g, r, 0]).into())
+        let r = ((color_transform.r_add * 255.0) as i32) << 16;
+        let g = ((color_transform.g_add * 255.0) as i32) << 8;
+        let b = (color_transform.b_add * 255.0) as i32;
+        Ok((r | g | b).into())
     } else {
         Ok(Value::Undefined)
     }
@@ -137,21 +137,20 @@ fn set_rgb<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(target) = target(activation, this)? {
         target.set_transformed_by_script(activation.context.gc_context, true);
-        let mut color_transform = target.color_transform_mut(activation.context.gc_context);
+
         let rgb = args
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_f64(activation)? as i32;
-        let r = (((rgb >> 16) & 0xff) as f32) / 255.0;
-        let g = (((rgb >> 8) & 0xff) as f32) / 255.0;
-        let b = ((rgb & 0xff) as f32) / 255.0;
+        let [b, g, r, _] = rgb.to_le_bytes();
 
+        let mut color_transform = target.color_transform_mut(activation.context.gc_context);
         color_transform.r_mult = 0.0;
         color_transform.g_mult = 0.0;
         color_transform.b_mult = 0.0;
-        color_transform.r_add = r;
-        color_transform.g_add = g;
-        color_transform.b_add = b;
+        color_transform.r_add = r as f32 / 255.0;
+        color_transform.g_add = g as f32 / 255.0;
+        color_transform.b_add = b as f32 / 255.0;
     }
     Ok(Value::Undefined)
 }
