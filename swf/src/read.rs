@@ -560,7 +560,7 @@ impl<'a> Reader<'a> {
 
     pub fn read_rectangle(&mut self) -> Result<Rectangle> {
         let mut bits = self.bits();
-        let num_bits: u32 = bits.read_ubits(5)?;
+        let num_bits = bits.read_ubits(5)?;
         Ok(Rectangle {
             x_min: bits.read_sbits_twips(num_bits)?,
             x_max: bits.read_sbits_twips(num_bits)?,

@@ -2594,7 +2594,7 @@ impl<W: Write> Writer<W> {
 
     fn write_tag_code_and_length(&mut self, tag_code: u16, length: u32) -> Result<()> {
         // TODO: Test for tag code/length overflow.
-        let mut tag_code_and_length: u16 = tag_code << 6;
+        let mut tag_code_and_length = tag_code << 6;
         if length < 0b111111 {
             tag_code_and_length |= length as u16;
             self.write_u16(tag_code_and_length)?;
