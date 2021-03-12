@@ -130,7 +130,7 @@ pub fn event_phase<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(evt) = this.unwrap().as_event() {
-        let event_phase: u32 = evt.phase().into();
+        let event_phase = evt.phase() as u32;
         return Ok(event_phase.into());
     }
 

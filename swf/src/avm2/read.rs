@@ -92,6 +92,7 @@ impl<'a> Reader<'a> {
             | (i32::from(self.read_u8()? as i8) << 8)
             | (i32::from(self.read_u8()? as i8) << 16))
     }
+
     fn read_i32(&mut self) -> Result<i32> {
         self.read_encoded_i32()
     }

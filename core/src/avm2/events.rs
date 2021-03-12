@@ -17,24 +17,14 @@ use std::hash::{Hash, Hasher};
 pub enum EventPhase {
     /// The event has yet to be fired on the target and is descending the
     /// ancestors of the event target.
-    Capturing,
+    Capturing = 1,
 
     /// The event is currently firing on the target.
-    AtTarget,
+    AtTarget = 2,
 
     /// The event has already fired on the target and is ascending the
     /// ancestors of the event target.
-    Bubbling,
-}
-
-impl From<EventPhase> for u32 {
-    fn from(event: EventPhase) -> u32 {
-        match event {
-            EventPhase::Capturing => 1,
-            EventPhase::AtTarget => 2,
-            EventPhase::Bubbling => 3,
-        }
-    }
+    Bubbling = 3,
 }
 
 /// How this event is allowed to propagate.

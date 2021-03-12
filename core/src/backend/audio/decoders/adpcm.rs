@@ -134,7 +134,7 @@ impl<R: Read> AdpcmDecoder<R> {
 
         self.sample_num = (self.sample_num + 1) % 4095;
 
-        let data: i32 = self.inner.read::<u32>(self.bits_per_sample as u32)? as i32;
+        let data = self.inner.read::<u32>(self.bits_per_sample as u32)? as i32;
         self.left_step = Self::STEP_TABLE[self.left_step_index as usize];
 
         // (data + 0.5) * step / 2^(bits_per_sample - 2)

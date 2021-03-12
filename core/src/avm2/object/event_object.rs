@@ -102,7 +102,7 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
         let event_type = read.event.event_type();
         let bubbles = read.event.is_bubbling();
         let cancelable = read.event.is_cancelable();
-        let phase: u32 = read.event.phase().into();
+        let phase = read.event.phase() as u32;
 
         Ok(AvmString::new(
             mc,
