@@ -256,14 +256,16 @@ pub struct Rectangle {
 /// All components are stored as [`u8`] and have a color range of 0-255.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Color {
-    /// The red component value.
-    pub r: u8,
+    // The order (b, g, r, a) is important and allows better code optimizations.
+
+    /// The blue component value.
+    pub b: u8,
 
     /// The green component value.
     pub g: u8,
 
-    /// The blue component value.
-    pub b: u8,
+    /// The red component value.
+    pub r: u8,
 
     /// The alpha component value.
     pub a: u8,
