@@ -301,7 +301,7 @@ impl Player {
             viewport_height: movie_height,
             letterbox: Letterbox::Fullscreen,
 
-            mouse_pos: (Twips::new(0), Twips::new(0)),
+            mouse_pos: (Twips::zero(), Twips::zero()),
             is_mouse_down: false,
             mouse_cursor: MouseCursor::Arrow,
 
@@ -1205,8 +1205,8 @@ impl Player {
         self.view_bounds = if self.should_letterbox() {
             // No letterbox: movie area
             BoundingBox {
-                x_min: Twips::new(0),
-                y_min: Twips::new(0),
+                x_min: Twips::zero(),
+                y_min: Twips::zero(),
                 x_max: Twips::from_pixels(f64::from(self.movie_width)),
                 y_max: Twips::from_pixels(f64::from(self.movie_height)),
                 valid: true,

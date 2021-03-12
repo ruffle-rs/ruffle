@@ -114,7 +114,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         // and adds one. I'm not sure why.
         self.font
             .map(|f| f.get_leading_for_height(self.max_font_size))
-            .unwrap_or_else(|| Twips::new(0))
+            .unwrap_or_else(|| Twips::zero())
     }
 
     /// Calculate the line-to-line leading present on this line, including the
@@ -122,7 +122,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn line_leading_adjustment(&self) -> Twips {
         self.font
             .map(|f| f.get_leading_for_height(self.max_font_size))
-            .unwrap_or_else(|| Twips::new(0))
+            .unwrap_or_else(|| Twips::zero())
             + Twips::from_pixels(self.current_line_span.leading)
     }
 
