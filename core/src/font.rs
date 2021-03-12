@@ -262,7 +262,7 @@ impl<'gc> Font<'gc> {
     /// The `round` flag causes the returned coordinates to be rounded down to
     /// the nearest pixel.
     pub fn measure(&self, text: &str, params: EvalParameters, round: bool) -> (Twips, Twips) {
-        let mut size = (Twips::new(0), Twips::new(0));
+        let mut size = (Twips::zero(), Twips::zero());
 
         self.evaluate(
             text,
@@ -329,7 +329,7 @@ impl<'gc> Font<'gc> {
 
             if is_start_of_line && measure.0 > remaining_width {
                 //Failsafe for if we get a word wider than the field.
-                let mut last_passing_breakpoint = (Twips::new(0), Twips::new(0));
+                let mut last_passing_breakpoint = (Twips::zero(), Twips::zero());
 
                 let cur_slice = &text[word_start..];
                 let mut char_iter = cur_slice.char_indices();

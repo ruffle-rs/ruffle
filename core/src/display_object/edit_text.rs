@@ -702,11 +702,11 @@ impl<'gc> EditText<'gc> {
                 write.drawing.set_fill_style(None);
             }
             write.drawing.draw_command(DrawCommand::MoveTo {
-                x: Twips::new(0),
-                y: Twips::new(0),
+                x: Twips::zero(),
+                y: Twips::zero(),
             });
             write.drawing.draw_command(DrawCommand::LineTo {
-                x: Twips::new(0),
+                x: Twips::zero(),
                 y: bounds.y_max - bounds.y_min,
             });
             write.drawing.draw_command(DrawCommand::LineTo {
@@ -715,11 +715,11 @@ impl<'gc> EditText<'gc> {
             });
             write.drawing.draw_command(DrawCommand::LineTo {
                 x: bounds.x_max - bounds.x_min,
-                y: Twips::new(0),
+                y: Twips::zero(),
             });
             write.drawing.draw_command(DrawCommand::LineTo {
-                x: Twips::new(0),
-                y: Twips::new(0),
+                x: Twips::zero(),
+                y: Twips::zero(),
             });
         }
     }

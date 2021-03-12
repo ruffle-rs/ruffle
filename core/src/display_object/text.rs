@@ -83,7 +83,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             a: 0,
         };
         let mut font_id = 0;
-        let mut height = Twips::new(0);
+        let mut height = Twips::zero();
         let mut transform: Transform = Default::default();
         for block in &tf.static_data.text_blocks {
             if let Some(x) = block.x_offset {
@@ -146,7 +146,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             point = text_matrix * local_matrix * point;
 
             let mut font_id = 0;
-            let mut height = Twips::new(0);
+            let mut height = Twips::zero();
             let mut glyph_matrix = Matrix::default();
             for block in &tf.static_data.text_blocks {
                 if let Some(x) = block.x_offset {
