@@ -79,17 +79,7 @@ impl<'a> Reader<'a> {
     }
 
     fn read_u30(&mut self) -> Result<u32> {
-        let mut n = 0;
-        let mut i = 0;
-        loop {
-            let byte: u32 = self.read_u8()?.into();
-            n |= (byte & 0b0111_1111) << i;
-            i += 7;
-            if byte & 0b1000_0000 == 0 {
-                break;
-            }
-        }
-        Ok(n)
+        self.read_encoded_u32()
     }
 
     fn read_i24(&mut self) -> Result<i32> {
@@ -98,23 +88,7 @@ impl<'a> Reader<'a> {
             | (i32::from(self.read_u8()? as i8) << 16))
     }
     fn read_i32(&mut self) -> Result<i32> {
-        let mut n: i32 = 0;
-        let mut i = 0;
-        loop {
-            let byte: i32 = self.read_u8()?.into();
-            n |= (byte & 0b0111_1111) << i;
-            i += 7;
-
-            if byte & 0b1000_0000 == 0 {
-                if i < 32 {
-                    n <<= 32 - i;
-                    n >>= 32 - i;
-                }
-
-                break;
-            }
-        }
-        Ok(n)
+        self.read_encoded_i32()
     }
 
     fn read_string(&mut self) -> Result<String> {
@@ -889,5 +863,84 @@ pub mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn read_u30() {
+        let read = |data: &[u8]| Reader::new(data).read_u30().unwrap();
+        assert_eq!(read(&[0]), 0);
+        assert_eq!(read(&[2]), 2);
+        assert_eq!(read(&[0b1_0000001, 0b0_0000001]), 129);
+        assert_eq!(
+            read(&[0b1_0000001, 0b1_0000001, 0b0_1100111]),
+            0b1100111_0000001_0000001
+        );
+        assert_eq!(
+            read(&[
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b0000_1111
+            ]),
+            0b1111_0000000_0000000_0000000_0000000
+        );
+        assert_eq!(
+            read(&[
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1111_1111
+            ]),
+            0b1111_0000000_0000000_0000000_0000000
+        );
+    }
+
+    #[test]
+    fn read_i32() {
+        let read = |data: &[u8]| Reader::new(data).read_i32().unwrap();
+        assert_eq!(read(&[0]), 0);
+        assert_eq!(read(&[2]), 2);
+        assert_eq!(read(&[0b1_0000001, 0b0_0000001]), 129);
+        assert_eq!(
+            read(&[0b1_0000001, 0b1_0000001, 0b0_1100111]),
+            0b1111_1111111_1100111_0000001_0000001_u32 as i32
+        );
+        assert_eq!(
+            read(&[0b1_0000001, 0b1_0000001, 0b1_0000001, 0b0_1100111]),
+            0b1111_1100111_0000001_0000001_0000001_u32 as i32
+        );
+        // TODO: verify this matches Flash
+        assert_eq!(
+            read(&[
+                0b1_0000001,
+                0b1_0000001,
+                0b1_0000001,
+                0b1_0000001,
+                0b1_1000001
+            ]),
+            0b0001_0000001_0000001_0000001_0000001_u32 as i32
+        );
+        assert_eq!(
+            read(&[
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b0000_1111
+            ]),
+            0b1111_0000000_0000000_0000000_0000000_u32 as i32
+        );
+        assert_eq!(
+            read(&[
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1111_1111
+            ]),
+            0b1111_0000000_0000000_0000000_0000000_u32 as i32
+        );
     }
 }
