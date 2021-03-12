@@ -49,13 +49,12 @@ impl ShapeTessellator {
             match path {
                 DrawPath::Fill { style, commands } => match style {
                     FillStyle::Color(color) => {
-                        let color = ((color.a as u32) << 24)
-                            | ((color.b as u32) << 16)
-                            | ((color.g as u32) << 8)
-                            | (color.r as u32);
-
-                        let mut buffers_builder =
-                            BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
+                        let mut buffers_builder = BuffersBuilder::new(
+                            &mut lyon_mesh,
+                            RuffleVertexCtor {
+                                color: color.to_rgba(),
+                            },
+                        );
 
                         if let Err(e) = self.fill_tess.tessellate_path(
                             &ruffle_path_to_lyon_path(commands, true),
@@ -243,13 +242,12 @@ impl ShapeTessellator {
                     commands,
                     is_closed,
                 } => {
-                    let color = ((style.color.a as u32) << 24)
-                        | ((style.color.b as u32) << 16)
-                        | ((style.color.g as u32) << 8)
-                        | (style.color.r as u32);
-
-                    let mut buffers_builder =
-                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
+                    let mut buffers_builder = BuffersBuilder::new(
+                        &mut lyon_mesh,
+                        RuffleVertexCtor {
+                            color: style.color.to_rgba(),
+                        },
+                    );
 
                     // TODO(Herschel): 0 width indicates "hairline".
                     let width = if style.width.to_pixels() >= 1.0 {

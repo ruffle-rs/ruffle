@@ -81,7 +81,7 @@ impl Color {
     }
 
     pub fn argb(alpha: u8, red: u8, green: u8, blue: u8) -> Color {
-        Color(((alpha as i32) << 24) | (red as i32) << 16 | (green as i32) << 8 | (blue as i32))
+        Color(i32::from_le_bytes([blue, green, red, alpha]))
     }
 
     pub fn with_alpha(&self, alpha: u8) -> Color {
@@ -403,28 +403,28 @@ impl BitmapData {
                         .into();
 
                     let channel_shift: u32 = match source_channel {
-                        // Alpha
-                        8 => 24,
                         // red
                         1 => 16,
                         // green
                         2 => 8,
                         // blue
                         4 => 0,
+                        // alpha
+                        8 => 24,
                         _ => 0,
                     };
 
                     let source_part = (source_color >> channel_shift) & 0xFF;
 
                     let result_color: u32 = match dest_channel {
-                        // Alpha
-                        8 => (original_color & 0x00FFFFFF) | source_part << 24,
                         // red
                         1 => (original_color & 0xFF00FFFF) | source_part << 16,
                         // green
                         2 => (original_color & 0xFFFF00FF) | source_part << 8,
                         // blue
                         4 => (original_color & 0xFFFFFF00) | source_part,
+                        // alpha
+                        8 => (original_color & 0x00FFFFFF) | source_part << 24,
                         _ => original_color,
                     };
 

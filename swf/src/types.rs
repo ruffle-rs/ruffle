@@ -319,7 +319,11 @@ impl Color {
     /// assert_eq!(color1.to_rgb(), color2.to_rgb());
     /// ```
     pub const fn to_rgb(&self) -> u32 {
-        ((self.r as u32) << 16) | ((self.g as u32) << 8) | (self.b as u32)
+        u32::from_le_bytes([self.b, self.g, self.r, 0])
+    }
+
+    pub const fn to_rgba(&self) -> u32 {
+        u32::from_le_bytes([self.b, self.g, self.r, self.a])
     }
 }
 

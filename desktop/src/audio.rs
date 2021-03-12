@@ -320,8 +320,7 @@ impl AudioBackend for CpalAudioBackend {
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error> {
         // Slice off latency seek for MP3 data.
         let (skip_sample_frames, data) = if swf_sound.format.compression == AudioCompression::Mp3 {
-            let skip_sample_frames =
-                u16::from(swf_sound.data[0]) | (u16::from(swf_sound.data[1]) << 8);
+            let skip_sample_frames = u16::from_le_bytes([swf_sound.data[0], swf_sound.data[1]]);
             (skip_sample_frames, &swf_sound.data[2..])
         } else {
             (0, swf_sound.data)

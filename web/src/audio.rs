@@ -800,7 +800,7 @@ impl AudioBackend for WebAudioBackend {
     fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
         // Slice off latency seek for MP3 data.
         let (skip_sample_frames, data) = if sound.format.compression == AudioCompression::Mp3 {
-            let skip_sample_frames = u16::from(sound.data[0]) | (u16::from(sound.data[1]) << 8);
+            let skip_sample_frames = u16::from_le_bytes([sound.data[0], sound.data[1]]);
             (skip_sample_frames, &sound.data[2..])
         } else {
             (0, sound.data)
@@ -869,9 +869,8 @@ impl AudioBackend for WebAudioBackend {
                     // previous blocks had more samples than necessary, or because the stream
                     // is stopping (silence).
                     if audio_data.len() >= 4 {
-                        let num_sample_frames =
-                            u32::from(audio_data[0]) | (u32::from(audio_data[1]) << 8);
-                        stream.num_sample_frames += num_sample_frames;
+                        stream.num_sample_frames +=
+                            u16::from_le_bytes([audio_data[0], audio_data[1]]) as u32;
                         // MP3 streaming data:
                         // First two bytes = number of samples
                         // Second two bytes = 'latency seek' (amount to skip when seeking to this frame)

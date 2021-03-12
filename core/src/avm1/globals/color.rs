@@ -96,10 +96,10 @@ fn get_rgb<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(target) = target(activation, this)? {
         let color_transform = target.color_transform();
-        let r = ((color_transform.r_add * 255.0) as i32) << 16;
-        let g = ((color_transform.g_add * 255.0) as i32) << 8;
-        let b = (color_transform.b_add * 255.0) as i32;
-        Ok((r | g | b).into())
+        let r = (color_transform.r_add * 255.0) as u8;
+        let g = (color_transform.g_add * 255.0) as u8;
+        let b = (color_transform.b_add * 255.0) as u8;
+        Ok(i32::from_le_bytes([b, g, r, 0]).into())
     } else {
         Ok(Value::Undefined)
     }

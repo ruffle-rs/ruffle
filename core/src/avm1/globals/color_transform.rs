@@ -152,10 +152,10 @@ pub fn get_rgb<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ct) = this.as_color_transform_object() {
-        let rgb = ((ct.get_red_offset() as u32) << 16)
-            | ((ct.get_green_offset() as u32) << 8)
-            | (ct.get_blue_offset() as u32);
-        Ok(Value::Number(rgb.into()))
+        let r = ct.get_red_offset() as u8;
+        let g = ct.get_green_offset() as u8;
+        let b = ct.get_blue_offset() as u8;
+        Ok(u32::from_le_bytes([b, g, r, 0]).into())
     } else {
         Ok(Value::Undefined)
     }
@@ -163,7 +163,6 @@ pub fn get_rgb<'gc>(
 
 pub fn set_rgb<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
