@@ -241,7 +241,7 @@ impl BitmapData {
     }
 
     pub fn get_pixel_raw(&self, x: u32, y: u32) -> Option<Color> {
-        if x > self.width() || y > self.height() {
+        if x >= self.width() || y >= self.height() {
             return None;
         }
 
@@ -255,10 +255,10 @@ impl BitmapData {
     }
 
     pub fn get_pixel(&self, x: i32, y: i32) -> i32 {
-        if !self.is_point_in_bounds(x, y) {
-            0
-        } else {
+        if self.is_point_in_bounds(x, y) {
             self.get_pixel32(x, y).with_alpha(0x0).into()
+        } else {
+            0
         }
     }
 
@@ -478,14 +478,14 @@ impl BitmapData {
         mask: i32,
         color: i32,
     ) -> (u32, u32, u32, u32) {
-        let mut min_x = Option::<i32>::None;
-        let mut max_x = Option::<i32>::None;
-        let mut min_y = Option::<i32>::None;
-        let mut max_y = Option::<i32>::None;
+        let mut min_x = self.width();
+        let mut max_x = 0;
+        let mut min_y = self.height();
+        let mut max_y = 0;
 
         for x in 0..self.width() {
             for y in 0..self.height() {
-                let pixel_raw: i32 = self.get_pixel_raw(x, y).unwrap_or_else(|| 0.into()).into();
+                let pixel_raw: i32 = self.get_pixel_raw(x, y).unwrap().into();
                 let color_matches = if find_color {
                     (pixel_raw & mask) == color
                 } else {
@@ -493,34 +493,24 @@ impl BitmapData {
                 };
 
                 if color_matches {
-                    if (x as i32) < min_x.unwrap_or(self.width() as i32) {
-                        min_x = Some(x as i32)
-                    }
-                    if (x as i32) > max_x.unwrap_or(-1) {
-                        max_x = Some(x as i32 + 1)
-                    }
-
-                    if (y as i32) < min_y.unwrap_or(self.height() as i32) {
-                        min_y = Some(y as i32)
-                    }
-                    if (y as i32) > max_y.unwrap_or(-1) {
-                        max_y = Some(y as i32 + 1)
-                    }
+                    min_x = min_x.min(x);
+                    max_x = max_x.max(x);
+                    min_y = min_y.min(y);
+                    max_y = max_y.max(y);
                 }
             }
         }
 
-        let min_x = min_x.unwrap_or(0);
-        let min_y = min_y.unwrap_or(0);
-        let max_x = max_x.unwrap_or(0);
-        let max_y = max_y.unwrap_or(0);
-
-        let x = min_x as u32;
-        let y = min_y as u32;
-        let w = (max_x - min_x) as u32;
-        let h = (max_y - min_y) as u32;
-
-        (x, y, w, h)
+        // Flash treats a match of (0, 0) alone as none.
+        if max_x > 0 || max_y > 0 {
+            let x = min_x;
+            let y = min_y;
+            let w = max_x - min_x + 1;
+            let h = max_y - min_y + 1;
+            (x, y, w, h)
+        } else {
+            (0, 0, 0, 0)
+        }
     }
 
     pub fn copy_pixels(
