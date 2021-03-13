@@ -653,38 +653,26 @@ impl WebGlRenderBackend {
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapInfo, Error> {
+        let (format, data) = match &bitmap.data {
+            BitmapFormat::Rgb(data) => (Gl::RGB, data),
+            BitmapFormat::Rgba(data) => (Gl::RGBA, data),
+        };
+
         let texture = self.gl.create_texture().unwrap();
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
-        match &bitmap.data {
-            BitmapFormat::Rgb(data) => self
-                .gl
-                .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-                    Gl::TEXTURE_2D,
-                    0,
-                    Gl::RGB as i32,
-                    bitmap.width as i32,
-                    bitmap.height as i32,
-                    0,
-                    Gl::RGB,
-                    Gl::UNSIGNED_BYTE,
-                    Some(data),
-                )
-                .into_js_result()?,
-            BitmapFormat::Rgba(data) => self
-                .gl
-                .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-                    Gl::TEXTURE_2D,
-                    0,
-                    Gl::RGBA as i32,
-                    bitmap.width as i32,
-                    bitmap.height as i32,
-                    0,
-                    Gl::RGBA,
-                    Gl::UNSIGNED_BYTE,
-                    Some(data),
-                )
-                .into_js_result()?,
-        }
+        self.gl
+            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+                Gl::TEXTURE_2D,
+                0,
+                format as i32,
+                bitmap.width as i32,
+                bitmap.height as i32,
+                0,
+                format,
+                Gl::UNSIGNED_BYTE,
+                Some(data),
+            )
+            .into_js_result()?;
 
         // You must set the texture parameters for non-power-of-2 textures to function in WebGL1.
         self.gl
