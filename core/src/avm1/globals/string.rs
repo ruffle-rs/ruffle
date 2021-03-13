@@ -439,7 +439,11 @@ fn substr<'gc>(
 
     let len = match args.get(1) {
         None | Some(Value::Undefined) => this_len,
-        Some(n) => string_index_substr(args.get(0).unwrap().coerce_to_i32(activation)?, n.coerce_to_i32(activation)?, this_len),
+        Some(n) => string_index_substr(
+            args.get(0).unwrap().coerce_to_i32(activation)?,
+            n.coerce_to_i32(activation)?,
+            this_len,
+        ),
     };
 
     let ret = string_utils::utf16_iter_to_string(this.encode_utf16().skip(start_index).take(len));
