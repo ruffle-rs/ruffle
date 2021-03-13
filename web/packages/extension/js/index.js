@@ -7,37 +7,31 @@ window.RufflePlayer = PublicAPI.negotiate(
 );
 __webpack_public_path__ = publicPath(window.RufflePlayer.config, "extension");
 
-function getObfuscatedEventPrefix() {
-    if (
-        document.currentScript !== undefined &&
-        document.currentScript !== null &&
-        "src" in document.currentScript &&
-        document.currentScript.src !== ""
-    ) {
-        // Default to the directory where this script resides.
-        try {
-            return new URL(document.currentScript.src).searchParams.get(
-                "obfuscatedEventPrefix"
-            );
-        } catch (e) {
-            return null;
-        }
-    }
+let uniqueMessageSuffix = null;
+if (
+    document.currentScript !== undefined &&
+    document.currentScript !== null &&
+    "src" in document.currentScript &&
+    document.currentScript.src !== ""
+) {
+    // Default to the directory where this script resides.
+    try {
+        uniqueMessageSuffix = new URL(document.currentScript.src).searchParams.get(
+            "uniqueMessageSuffix"
+        );
+    } catch (_) {}
 }
-
-const obfuscatedEventPrefix = getObfuscatedEventPrefix();
-if (obfuscatedEventPrefix) {
-    document.addEventListener(obfuscatedEventPrefix + "_request", function (e) {
-        let body = JSON.parse(e.detail);
-        let response = {};
-
-        if (body.action === "get_page_options") {
-            //response.pageOptions = pageOptions;
+if (uniqueMessageSuffix) {
+    window.addEventListener("message", (event) => {
+        // We only accept messages from ourselves.
+        if (event.source !== window) {
+            return;
         }
 
-        let event = new CustomEvent(obfuscatedEventPrefix + "_response", {
-            detail: JSON.stringify(response),
-        });
-        document.dispatchEvent(event);
+        const { type, index, data } = event.data;
+        if (type === `FROM_RUFFLE${uniqueMessageSuffix}`) {
+            // Ping back.
+            window.postMessage({ type: `TO_RUFFLE${uniqueMessageSuffix}`, index, data }, "*");
+        }
     });
 }
