@@ -53,7 +53,7 @@ pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveOb
 pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::ScriptObject;
 pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
-pub use crate::avm2::object::vector_object::VectorObject;
+pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject};
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
 
 /// Represents an object that can be directly interacted with by the AVM2
