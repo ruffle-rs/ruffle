@@ -1,0 +1,21 @@
+// var str = hello world
+// str.substr(0, -1)
+hello worl
+// str.substr(0, -4)
+hello w
+// str.substr(8, -4)
+
+// str.substr(3, -3)
+
+// str.substr(3, -4)
+lo worl
+// str.substr(3, -5)
+lo wor
+// str.substr(4, -4)
+
+// str.substr(4, -5)
+o worl
+// str.substr(null, -1)
+hello worl
+// str.substr(undefined, -1)
+hello worl
