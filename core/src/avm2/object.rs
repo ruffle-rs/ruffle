@@ -35,6 +35,7 @@ mod primitive_object;
 mod regexp_object;
 mod script_object;
 mod stage_object;
+mod vector_object;
 mod xml_object;
 
 pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
@@ -52,6 +53,7 @@ pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveOb
 pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::ScriptObject;
 pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
+pub use crate::avm2::object::vector_object::VectorObject;
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
 
 /// Represents an object that can be directly interacted with by the AVM2
@@ -75,6 +77,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         ByteArrayObject(ByteArrayObject<'gc>),
         LoaderInfoObject(LoaderInfoObject<'gc>),
         ClassObject(ClassObject<'gc>),
+        VectorObject(VectorObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {

@@ -11,11 +11,11 @@ use gc_arena::Collect;
 /// Vector values are restricted to a single type, decided at the time of the
 /// construction of the vector's storage. The type is determined by the type
 /// argument associated with the class of the vector. Vector holes are
-/// evaluated to a default value based on the
+/// evaluated to a default value based on the type of the vector.
 ///
 /// A vector may also be configured to have a fixed size; when this is enabled,
 /// attempts to modify the length fail.
-#[derive(Collect)]
+#[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]
 pub struct VectorStorage<'gc> {
     /// The storage for vector values.
@@ -42,7 +42,7 @@ pub struct VectorStorage<'gc> {
 }
 
 impl<'gc> VectorStorage<'gc> {
-    fn new(length: usize, is_fixed: bool, value_type: Object<'gc>) -> Self {
+    pub fn new(length: usize, is_fixed: bool, value_type: Object<'gc>) -> Self {
         let mut storage = Vec::new();
 
         storage.resize(length, None);
@@ -77,10 +77,20 @@ impl<'gc> VectorStorage<'gc> {
         }
     }
 
+    /// Get the value type this vector coerces things to.
+    pub fn value_type(&self) -> Object<'gc> {
+        self.value_type
+    }
+
+    /// Check if a vector index is in bounds.
+    pub fn is_in_range(&self, pos: usize) -> bool {
+        pos < self.storage.len()
+    }
+
     /// Retrieve a value from the vector.
     ///
     /// If the value is `None`, the type default value will be substituted.
-    fn get(
+    pub fn get(
         &self,
         pos: usize,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -94,28 +104,17 @@ impl<'gc> VectorStorage<'gc> {
 
     /// Store a value into the vector.
     ///
-    /// If the value is not of the vector's type, then the value will be
-    /// coerced to fit as per `coerce`. This function yields an error if:
+    /// This function does no coercion as calling it requires mutably borrowing
+    /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
+    /// things). You must use the associated `coerce` fn before storing things
+    /// in the vector.
     ///
-    ///  * The coercion fails
-    ///  * The vector is of a non-coercible type, and the value is not an
-    ///    instance or subclass instance of the vector's type
-    ///  * The position is outside the length of the vector
-    fn set(
-        &mut self,
-        pos: usize,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
-        let coerced_value = match value.coerce_to_type(activation, self.value_type)? {
-            Value::Undefined => None,
-            Value::Null => None,
-            v => Some(v),
-        };
-
+    /// This function yields an error if the position is outside the length of
+    /// the vector.
+    pub fn set(&mut self, pos: usize, value: Option<Value<'gc>>) -> Result<(), Error> {
         self.storage
             .get_mut(pos)
-            .map(|v| *v = coerced_value)
+            .map(|v| *v = value)
             .ok_or_else(|| format!("RangeError: {} is outside the range of the vector", pos).into())
     }
 }

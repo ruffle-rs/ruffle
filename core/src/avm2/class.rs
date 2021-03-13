@@ -789,4 +789,8 @@ impl<'gc> Class<'gc> {
     pub fn is_generic(&self) -> bool {
         self.attributes.contains(ClassAttributes::GENERIC)
     }
+
+    pub fn params(&self) -> &[GcCell<'gc, Class<'gc>>] {
+        &self.params[..]
+    }
 }
