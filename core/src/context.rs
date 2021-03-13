@@ -305,6 +305,8 @@ pub struct QueuedActions<'gc> {
 }
 
 /// Action and gotos need to be queued up to execute at the end of the frame.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct ActionQueue<'gc> {
     /// Each priority is kept in a separate bucket.
     action_queue: Vec<VecDeque<QueuedActions<'gc>>>,
@@ -359,15 +361,6 @@ impl<'gc> ActionQueue<'gc> {
 impl<'gc> Default for ActionQueue<'gc> {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-unsafe impl<'gc> Collect for ActionQueue<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        for queue in &self.action_queue {
-            queue.iter().for_each(|o| o.trace(cc));
-        }
     }
 }
 
