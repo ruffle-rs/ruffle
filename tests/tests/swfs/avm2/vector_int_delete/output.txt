@@ -1,0 +1,11 @@
+/// var a: Vector.<int> = new <int>[2,3];
+2
+3
+/// delete a[0];
+true
+2
+3
+/// delete a[1];
+true
+2
+3
