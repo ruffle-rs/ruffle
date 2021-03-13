@@ -16,10 +16,12 @@ if (
 ) {
     // Default to the directory where this script resides.
     try {
-        uniqueMessageSuffix = new URL(document.currentScript.src).searchParams.get(
-            "uniqueMessageSuffix"
-        );
-    } catch (_) {}
+        uniqueMessageSuffix = new URL(
+            document.currentScript.src
+        ).searchParams.get("uniqueMessageSuffix");
+    } catch (_) {
+        // uniqueMessageSuffix remains null.
+    }
 }
 if (uniqueMessageSuffix) {
     window.addEventListener("message", (event) => {
@@ -31,7 +33,10 @@ if (uniqueMessageSuffix) {
         const { type, index, data } = event.data;
         if (type === `FROM_RUFFLE${uniqueMessageSuffix}`) {
             // Ping back.
-            window.postMessage({ type: `TO_RUFFLE${uniqueMessageSuffix}`, index, data }, "*");
+            window.postMessage(
+                { type: `TO_RUFFLE${uniqueMessageSuffix}`, index, data },
+                "*"
+            );
         }
     });
 }
