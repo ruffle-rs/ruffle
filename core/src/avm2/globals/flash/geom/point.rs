@@ -35,10 +35,10 @@ fn coords<'gc>(
 ) -> Result<(f64, f64), Error> {
     let x = this
         .get_property(*this, &QName::new(Namespace::public(), "x"), activation)?
-        .as_number(activation.context.gc_context)?;
+        .coerce_to_number(activation)?;
     let y = this
         .get_property(*this, &QName::new(Namespace::public(), "y"), activation)?
-        .as_number(activation.context.gc_context)?;
+        .coerce_to_number(activation)?;
     Ok((x, y))
 }
 
@@ -142,14 +142,15 @@ pub fn copy_from<'gc>(
 /// Implements `distance`
 pub fn distance<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
+    _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
-        if let Some(other) = args.get(0) {
-            let mut other_obj = other.coerce_to_object(activation)?;
-            let (our_x, our_y) = coords(&mut this, activation)?;
-            let (their_x, their_y) = coords(&mut other_obj, activation)?;
+    if let Some(first) = args.get(0) {
+        let mut first_object = first.coerce_to_object(activation)?;
+        if let Some(second) = args.get(1) {
+            let mut second_obj = second.coerce_to_object(activation)?;
+            let (our_x, our_y) = coords(&mut first_object, activation)?;
+            let (their_x, their_y) = coords(&mut second_obj, activation)?;
 
             return Ok(((our_x - their_x).powf(2.0) + (our_y - their_y).powf(2.0))
                 .sqrt()
@@ -211,7 +212,7 @@ pub fn normalize<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(mut this) = this {
         let current_length =
-            length(activation, Some(this), args)?.as_number(activation.context.gc_context)?;
+            length(activation, Some(this), args)?.coerce_to_number(activation)?;
         if current_length.is_finite() {
             let (old_x, old_y) = coords(&mut this, activation)?;
             let new_length = args
@@ -247,11 +248,11 @@ pub fn offset<'gc>(
         let dx = args
             .get(0)
             .unwrap_or(&0.into())
-            .as_number(activation.context.gc_context)?;
+            .coerce_to_number(activation)?;
         let dy = args
             .get(1)
             .unwrap_or(&0.into())
-            .as_number(activation.context.gc_context)?;
+            .coerce_to_number(activation)?;
 
         set_coords(&mut this, activation, (x + dx, y + dy))?;
     }
@@ -287,11 +288,11 @@ pub fn set_to<'gc>(
         let x = args
             .get(0)
             .unwrap_or(&0.into())
-            .as_number(activation.context.gc_context)?;
+            .coerce_to_number(activation)?;
         let y = args
             .get(1)
             .unwrap_or(&0.into())
-            .as_number(activation.context.gc_context)?;
+            .coerce_to_number(activation)?;
 
         set_coords(&mut this, activation, (x, y))?;
     }
