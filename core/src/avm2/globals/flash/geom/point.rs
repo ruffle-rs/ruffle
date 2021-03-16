@@ -87,7 +87,6 @@ pub fn length<'gc>(
 }
 
 /// Implements `add`
-/// /// TODO: how does overflow work
 pub fn add<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -314,7 +313,6 @@ pub fn set_to<'gc>(
 }
 
 /// Implements `subtract`
-/// TODO: how does overflow work
 pub fn subtract<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -361,9 +359,6 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    // write.set_attributes(ClassAttributes::SEALED);
-
-    //TODO: check namespaces
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "length"),
         Method::from_builtin(length),
