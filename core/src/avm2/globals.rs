@@ -663,6 +663,8 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
+
+    // package `flash.geom`
     activation
         .context
         .avm2
