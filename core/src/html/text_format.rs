@@ -17,6 +17,7 @@ use crate::xml::{Step, XmlDocument, XmlName, XmlNode};
 use gc_arena::{Collect, MutationContext};
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
+use std::iter::FromIterator;
 use std::sync::Arc;
 
 /// Replace HTML entities with their equivalent characters.
