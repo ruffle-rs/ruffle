@@ -782,6 +782,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     self.op_construct_prop(method, index, num_args)
                 }
                 Op::ConstructSuper { num_args } => self.op_construct_super(num_args),
+                Op::ApplyType { num_types } => self.op_apply_type(num_types),
                 Op::NewActivation => self.op_new_activation(),
                 Op::NewObject { num_args } => self.op_new_object(num_args),
                 Op::NewFunction { index } => self.op_new_function(method, index),
@@ -1604,6 +1605,21 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
 
         self.super_init(receiver, &args)?;
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_apply_type(&mut self, num_types: u32) -> Result<FrameControl<'gc>, Error> {
+        let args = self.context.avm2.pop_args(num_types);
+        let base = self.context.avm2.pop().coerce_to_object(self)?;
+
+        let mut args_classes = Vec::new();
+        for arg in args {
+            args_classes.push(arg.coerce_to_object(self)?)
+        }
+
+        let applied = base.apply(self, &args_classes[..])?;
+        self.context.avm2.push(applied);
 
         Ok(FrameControl::Continue)
     }
