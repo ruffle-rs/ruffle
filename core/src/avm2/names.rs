@@ -453,6 +453,21 @@ impl<'gc> Multiname<'gc> {
                 name: translation_unit.pool_string_option(name.0, mc)?,
                 params: Vec::new(),
             },
+            AbcMultiname::TypeName {
+                base_type,
+                parameters,
+            } => {
+                let mut base =
+                    Self::from_abc_multiname_static(translation_unit, base_type.clone(), mc)?;
+
+                for param_type in parameters {
+                    let param_multiname =
+                        Self::from_abc_multiname_static(translation_unit, param_type.clone(), mc)?;
+                    base.params.push(param_multiname);
+                }
+
+                base
+            }
             _ => return Err(format!("Multiname {} is not static", multiname_index.0).into()),
         })
     }
