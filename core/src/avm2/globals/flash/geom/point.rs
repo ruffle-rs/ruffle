@@ -170,8 +170,22 @@ pub fn equals<'gc>(
     if let Some(mut this) = this {
         if let Some(other) = args.get(0) {
             let mut other_obj = other.coerce_to_object(activation)?;
-            let (our_x, our_y) = coords(&mut this, activation)?;
-            let (their_x, their_y) = coords(&mut other_obj, activation)?;
+
+            let our_x =
+                this.get_property(this, &QName::new(Namespace::public(), "x"), activation)?;
+            let our_y =
+                this.get_property(this, &QName::new(Namespace::public(), "y"), activation)?;
+
+            let their_x = other_obj.get_property(
+                other_obj,
+                &QName::new(Namespace::public(), "x"),
+                activation,
+            )?;
+            let their_y = other_obj.get_property(
+                other_obj,
+                &QName::new(Namespace::public(), "y"),
+                activation,
+            )?;
 
             return Ok((our_x == their_x && our_y == their_y).into());
         }
@@ -211,8 +225,7 @@ pub fn normalize<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(mut this) = this {
-        let current_length =
-            length(activation, Some(this), args)?.coerce_to_number(activation)?;
+        let current_length = length(activation, Some(this), args)?.coerce_to_number(activation)?;
         if current_length.is_finite() {
             let (old_x, old_y) = coords(&mut this, activation)?;
             let new_length = args
@@ -275,7 +288,7 @@ pub fn polar<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_number(activation)?;
 
-    return create_point(activation, (length * angle.cos(), length * angle.sin()));
+    create_point(activation, (length * angle.cos(), length * angle.sin()))
 }
 
 /// Implements `setTo`
