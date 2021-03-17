@@ -1,7 +1,7 @@
 //! `flash.geom.Point` builtin/prototype
 
 use crate::avm1::AvmString;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::traits::Trait;
 use crate::avm2::{Activation, Error, Namespace, Object, QName, TObject, Value};
@@ -80,7 +80,7 @@ pub fn length<'gc>(
     if let Some(mut this) = this {
         let (x, y) = coords(&mut this, activation)?;
 
-        return Ok((x.powf(2.0) + y.powf(2.0)).sqrt().into());
+        return Ok((x * x + y * y).sqrt().into());
     }
 
     Ok(Value::Undefined)
@@ -161,6 +161,7 @@ pub fn distance<'gc>(
 }
 
 /// Implements `equals`
+#[allow(clippy::float_cmp)]
 pub fn equals<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -170,21 +171,8 @@ pub fn equals<'gc>(
         if let Some(other) = args.get(0) {
             let mut other_obj = other.coerce_to_object(activation)?;
 
-            let our_x =
-                this.get_property(this, &QName::new(Namespace::public(), "x"), activation)?;
-            let our_y =
-                this.get_property(this, &QName::new(Namespace::public(), "y"), activation)?;
-
-            let their_x = other_obj.get_property(
-                other_obj,
-                &QName::new(Namespace::public(), "x"),
-                activation,
-            )?;
-            let their_y = other_obj.get_property(
-                other_obj,
-                &QName::new(Namespace::public(), "y"),
-                activation,
-            )?;
+            let (our_x, our_y) = coords(&mut this, activation)?;
+            let (their_x, their_y) = coords(&mut other_obj, activation)?;
 
             return Ok((our_x == their_x && our_y == their_y).into());
         }
@@ -224,24 +212,18 @@ pub fn normalize<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(mut this) = this {
-        let current_length = length(activation, Some(this), args)?.coerce_to_number(activation)?;
-        if current_length.is_finite() {
+        let thickness = args
+            .get(0)
+            .unwrap_or(&0.into())
+            .coerce_to_number(activation)?;
+
+        let length = length(activation, Some(this), args)?.coerce_to_number(activation)?;
+
+        if length > 0.0 {
+            let inv_d = thickness / length;
+
             let (old_x, old_y) = coords(&mut this, activation)?;
-            let new_length = args
-                .get(0)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_number(activation)?;
-
-            let (x, y) = if current_length == 0.0 {
-                (old_x * new_length, old_y * new_length)
-            } else {
-                (
-                    old_x / current_length * new_length,
-                    old_y / current_length * new_length,
-                )
-            };
-
-            set_coords(&mut this, activation, (x, y))?;
+            set_coords(&mut this, activation, (old_x * inv_d, old_y * inv_d))?;
         }
     }
 
@@ -358,6 +340,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     );
 
     let mut write = class.write(mc);
+    write.set_attributes(ClassAttributes::SEALED);
 
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "length"),
