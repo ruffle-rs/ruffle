@@ -90,7 +90,7 @@ impl<'gc> ClassObject<'gc> {
         //TODO: Class prototypes are *not* instances of their class and should
         //not be allocated by the class allocator, but instead should be
         //regular objects
-        let mut class_proto = if let Some(superclass_object) = superclass_object {
+        let class_proto = if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object
                 .get_property(
                     superclass_object,
@@ -105,7 +105,6 @@ impl<'gc> ClassObject<'gc> {
 
         let fn_proto = activation.avm2().prototypes().function;
 
-        let class_read = class.read();
         let constructor = Executable::from_method(
             class.read().instance_init(),
             scope,
@@ -119,7 +118,7 @@ impl<'gc> ClassObject<'gc> {
             activation.context.gc_context,
         );
 
-        let mut class_object: Object<'gc> = ClassObject(GcCell::allocate(
+        let mut class_object = ClassObject(GcCell::allocate(
             activation.context.gc_context,
             ClassObjectData {
                 base: ScriptObjectData::base_new(Some(fn_proto), None),
@@ -130,75 +129,14 @@ impl<'gc> ClassObject<'gc> {
                 constructor,
                 native_constructor,
             },
-        ))
-        .into();
+        ));
 
-        class_object.install_slot(
-            activation.context.gc_context,
-            QName::new(Namespace::public(), "prototype"),
-            0,
-            class_proto.into(),
-            false,
-        );
-        class_proto.install_slot(
-            activation.context.gc_context,
-            QName::new(Namespace::public(), "constructor"),
-            0,
-            class_object.into(),
-            false,
-        );
+        class_object.link_prototype(activation, class_proto)?;
+        class_object.link_interfaces(activation)?;
+        class_object.install_traits(activation, class.read().class_traits())?;
+        class_object.run_class_initializer(activation)?;
 
-        let interface_names = class.read().interfaces().to_vec();
-        let mut interfaces = Vec::with_capacity(interface_names.len());
-        for interface_name in interface_names {
-            let interface = if let Some(scope) = scope {
-                scope.read().resolve(&interface_name, activation)?
-            } else {
-                None
-            };
-
-            if interface.is_none() {
-                return Err(format!("Could not resolve interface {:?}", interface_name).into());
-            }
-
-            let interface = interface.unwrap().coerce_to_object(activation)?;
-            if let Some(class) = interface.as_class() {
-                if !class.read().is_interface() {
-                    return Err(format!(
-                        "Class {:?} is not an interface and cannot be implemented by classes",
-                        class.read().name().local_name()
-                    )
-                    .into());
-                }
-            }
-
-            interfaces.push(interface);
-        }
-
-        if !interfaces.is_empty() {
-            class_object.set_interfaces(activation.context.gc_context, interfaces);
-        }
-
-        class_object.install_traits(activation, class_read.class_traits())?;
-
-        if !class_read.is_class_initialized() {
-            let class_initializer = class_read.class_init();
-            let class_init_fn = FunctionObject::from_method(
-                activation,
-                class_initializer,
-                scope,
-                Some(class_object),
-            );
-
-            drop(class_read);
-            class
-                .write(activation.context.gc_context)
-                .mark_class_initialized();
-
-            class_init_fn.call(Some(class_object), &[], activation, None)?;
-        }
-
-        Ok(class_object)
+        Ok(class_object.into())
     }
 
     /// Construct a builtin type from a Rust constructor and prototype.
@@ -273,6 +211,101 @@ impl<'gc> ClassObject<'gc> {
         );
 
         Ok((base, class_object))
+    }
+
+    /// Link this class to a prototype.
+    pub fn link_prototype(
+        mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        mut class_proto: Object<'gc>,
+    ) -> Result<(), Error> {
+        self.install_slot(
+            activation.context.gc_context,
+            QName::new(Namespace::public(), "prototype"),
+            0,
+            class_proto.into(),
+            false,
+        );
+        class_proto.install_slot(
+            activation.context.gc_context,
+            QName::new(Namespace::public(), "constructor"),
+            0,
+            self.into(),
+            false,
+        );
+
+        Ok(())
+    }
+
+    /// Link this class to it's interfaces.
+    pub fn link_interfaces(self, activation: &mut Activation<'_, 'gc, '_>) -> Result<(), Error> {
+        let class = self.0.read().class;
+        let scope = self.get_scope();
+
+        let interface_names = class.read().interfaces().to_vec();
+        let mut interfaces = Vec::with_capacity(interface_names.len());
+        for interface_name in interface_names {
+            let interface = if let Some(scope) = scope {
+                scope
+                    .write(activation.context.gc_context)
+                    .resolve(&interface_name, activation)?
+            } else {
+                None
+            };
+
+            if interface.is_none() {
+                return Err(format!("Could not resolve interface {:?}", interface_name).into());
+            }
+
+            let interface = interface.unwrap().coerce_to_object(activation)?;
+            if let Some(class) = interface.as_class() {
+                if !class.read().is_interface() {
+                    return Err(format!(
+                        "Class {:?} is not an interface and cannot be implemented by classes",
+                        class.read().name().local_name()
+                    )
+                    .into());
+                }
+            }
+
+            interfaces.push(interface);
+        }
+
+        if !interfaces.is_empty() {
+            self.set_interfaces(activation.context.gc_context, interfaces);
+        }
+
+        Ok(())
+    }
+
+    /// Run the class's initializer method.
+    pub fn run_class_initializer(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let object: Object<'gc> = self.into();
+
+        let class = self.0.read().class;
+        let class_read = class.read();
+
+        if !class_read.is_class_initialized() {
+            let class_initializer = class_read.class_init();
+            let class_init_fn = FunctionObject::from_method(
+                activation,
+                class_initializer,
+                self.get_scope(),
+                Some(object),
+            );
+
+            drop(class_read);
+            class
+                .write(activation.context.gc_context)
+                .mark_class_initialized();
+
+            class_init_fn.call(Some(object), &[], activation, None)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -445,5 +478,80 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .write(mc)
             .base
             .set_local_property_is_enumerable(name, is_enumerable)
+    }
+
+    fn apply(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        params: &[Object<'gc>],
+    ) -> Result<Object<'gc>, Error> {
+        let self_class = self
+            .as_class()
+            .ok_or("Attempted to apply type arguments to non-class!")?;
+
+        if !self_class.read().is_generic() {
+            return Err(format!("Class {:?} is not generic", self_class.read().name()).into());
+        }
+
+        if !self_class.read().params().is_empty() {
+            return Err(format!("Class {:?} was already applied", self_class.read().name()).into());
+        }
+
+        let mut class_params = Vec::new();
+        for param in params {
+            class_params.push(param.as_class().ok_or(format!(
+                "Cannot apply class {:?} with non-class parameter",
+                self_class.read().name()
+            ))?);
+        }
+
+        let parameterized_class = self_class
+            .read()
+            .with_type_params(&class_params, activation.context.gc_context);
+
+        let scope = self.get_scope();
+        let instance_allocator = self.0.read().instance_allocator.clone();
+        let superclass_object = self.0.read().superclass_object;
+
+        //TODO: Class prototypes are *not* instances of their class and should
+        //not be allocated by the class allocator, but instead should be
+        //regular objects
+        let class_proto = if let Some(superclass_object) = superclass_object {
+            let base_proto = superclass_object
+                .get_property(
+                    superclass_object,
+                    &QName::new(Namespace::public(), "prototype"),
+                    activation,
+                )?
+                .coerce_to_object(activation)?;
+            (instance_allocator.0)(superclass_object, base_proto, activation)?
+        } else {
+            ScriptObject::bare_object(activation.context.gc_context)
+        };
+
+        let fn_proto = activation.avm2().prototypes().function;
+
+        let constructor = self.0.read().constructor.clone();
+        let native_constructor = self.0.read().native_constructor.clone();
+
+        let mut class_object = ClassObject(GcCell::allocate(
+            activation.context.gc_context,
+            ClassObjectData {
+                base: ScriptObjectData::base_new(Some(fn_proto), None),
+                class: parameterized_class,
+                scope,
+                superclass_object,
+                instance_allocator,
+                constructor,
+                native_constructor,
+            },
+        ));
+
+        class_object.link_prototype(activation, class_proto)?;
+        class_object.link_interfaces(activation)?;
+        class_object.install_traits(activation, parameterized_class.read().class_traits())?;
+        class_object.run_class_initializer(activation)?;
+
+        Ok(class_object.into())
     }
 }
