@@ -675,7 +675,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn next_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.current_frame() < self.total_frames() {
+        if self.current_frame() < self.actual_num_frames() {
             self.goto_frame(context, self.current_frame() + 1, true);
         }
     }
@@ -893,13 +893,19 @@ impl<'gc> MovieClip<'gc> {
         values
     }
 
-    pub fn total_frames(self) -> FrameNumber {
+
+    pub fn actual_num_frames(self) -> FrameNumber {
         self.0.read().static_data.actual_num_frames
+    }
+
+
+    pub fn total_frames(self) -> FrameNumber {
+        self.0.read().static_data.total_frames
     }
 
     pub fn frames_loaded(self) -> FrameNumber {
         // TODO(Herschel): root needs to progressively stream in frames.
-        self.0.read().static_data.actual_num_frames
+        self.0.read().static_data.total_frames
     }
 
     pub fn set_avm2_constructor(
@@ -940,7 +946,7 @@ impl<'gc> MovieClip<'gc> {
         let frame = frame.unwrap();
 
         if scene <= frame {
-            let mut end = self.total_frames();
+            let mut end = self.actual_num_frames();
             for (
                 _label,
                 Scene {
@@ -1054,9 +1060,9 @@ impl<'gc> MovieClip<'gc> {
 
     /// Determine what the clip's next frame should be.
     fn determine_next_frame(self) -> NextFrame {
-        if self.current_frame() < self.total_frames() {
+        if self.current_frame() < self.actual_num_frames() {
             NextFrame::Next
-        } else if self.total_frames() > 1 {
+        } else if self.actual_num_frames() > 1 {
             NextFrame::First
         } else {
             NextFrame::Same
@@ -2085,6 +2091,10 @@ impl<'gc> MovieClipData<'gc> {
         self.current_frame
     }
 
+    pub fn actual_num_frames(&self) -> FrameNumber {
+        self.static_data.actual_num_frames
+    }
+
     fn total_frames(&self) -> FrameNumber {
         self.static_data.total_frames
     }
@@ -2107,7 +2117,7 @@ impl<'gc> MovieClipData<'gc> {
 
     fn play(&mut self) {
         // Can only play clips with multiple frames.
-        if self.total_frames() > 1 {
+        if self.actual_num_frames() > 1 {
             self.set_playing(true);
         }
     }
