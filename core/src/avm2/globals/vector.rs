@@ -5,7 +5,7 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{vector_allocator, Object};
+use crate::avm2::object::{vector_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -14,10 +14,26 @@ use gc_arena::{GcCell, MutationContext};
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
+
+        if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
+            let length = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Unsigned(0))
+                .coerce_to_u32(activation)? as usize;
+            let is_fixed = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Bool(false))
+                .coerce_to_boolean();
+
+            vector.resize(length)?;
+            vector.set_is_fixed(is_fixed);
+        }
     }
 
     Ok(Value::Undefined)

@@ -12,6 +12,7 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_instance};
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Vector objects.
 pub fn vector_allocator<'gc>(
@@ -216,5 +217,16 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             },
         ))
         .into())
+    }
+
+    fn as_vector_storage(&self) -> Option<Ref<VectorStorage<'gc>>> {
+        Some(Ref::map(self.0.read(), |vod| &vod.vector))
+    }
+
+    fn as_vector_storage_mut(
+        &self,
+        mc: MutationContext<'gc, '_>,
+    ) -> Option<RefMut<VectorStorage<'gc>>> {
+        Some(RefMut::map(self.0.write(mc), |vod| &mut vod.vector))
     }
 }

@@ -54,7 +54,11 @@ impl<'gc> VectorStorage<'gc> {
         }
     }
 
-    fn resize(&mut self, new_length: usize) -> Result<(), Error> {
+    pub fn set_is_fixed(&mut self, is_fixed: bool) {
+        self.is_fixed = is_fixed;
+    }
+
+    pub fn resize(&mut self, new_length: usize) -> Result<(), Error> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
