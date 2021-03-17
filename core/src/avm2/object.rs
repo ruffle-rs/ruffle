@@ -13,6 +13,7 @@ use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::{Hint, Value};
+use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -1099,6 +1100,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         _mc: MutationContext<'gc, '_>,
     ) -> Option<RefMut<ArrayStorage<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as vector storage.
+    fn as_vector_storage(&self) -> Option<Ref<VectorStorage<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as mutable vector storage.
+    fn as_vector_storage_mut(
+        &self,
+        _mc: MutationContext<'gc, '_>,
+    ) -> Option<RefMut<VectorStorage<'gc>>> {
         None
     }
 
