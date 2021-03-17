@@ -61,7 +61,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     ) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
 
-        if name.namespace().is_public() {
+        if name.namespace().is_package("") {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 return Ok(read
                     .vector
@@ -84,7 +84,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if name.namespace().is_public() {
+        if name.namespace().is_package("") {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 let type_of = self.0.read().vector.value_type();
                 let value = match value.coerce_to_type(activation, type_of)? {
@@ -122,7 +122,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if name.namespace().is_public() {
+        if name.namespace().is_package("") {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 let type_of = self.0.read().vector.value_type();
                 let value = match value.coerce_to_type(activation, type_of)? {
@@ -166,7 +166,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     }
 
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
-        if name.namespace().is_public() && name.local_name().parse::<usize>().is_ok() {
+        if name.namespace().is_package("") && name.local_name().parse::<usize>().is_ok() {
             return true;
         }
 
@@ -174,7 +174,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     }
 
     fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
-        if name.namespace().is_public() {
+        if name.namespace().is_package("") {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 return Ok(self.0.read().vector.is_in_range(index));
             }
@@ -186,7 +186,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
         if let Ok(index) = local_name.parse::<usize>() {
             if self.0.read().vector.is_in_range(index) {
-                return Ok(Some(Namespace::public()));
+                return Ok(Some(Namespace::package("")));
             }
         }
 

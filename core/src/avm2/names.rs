@@ -95,6 +95,14 @@ impl<'gc> Namespace<'gc> {
         self.is_public() || self.is_any()
     }
 
+    pub fn is_package(&self, package_name: impl Into<AvmString<'gc>>) -> bool {
+        if let Self::Package(my_name) = self {
+            return my_name == &package_name.into();
+        }
+
+        false
+    }
+
     /// Get the string value of this namespace, ignoring its type.
     ///
     /// TODO: Is this *actually* the namespace URI?
