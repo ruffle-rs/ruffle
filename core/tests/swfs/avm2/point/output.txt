@@ -1,0 +1,133 @@
+/// Constructors
+// new Point()
+(x=0, y=0)
+
+// new Point(1)
+(x=1, y=0)
+
+// new Point(1, 2)
+(x=1, y=2)
+
+// new Point({}, 2)
+(x=NaN, y=2)
+
+
+/// Add
+// point.add(new Point(1, 2))
+(x=1, y=2)
+
+// point
+(x=0, y=0)
+
+
+/// Subtract
+// point.subtract(new Point(1, 2))
+(x=-1, y=-2)
+
+// point
+(x=0, y=0)
+
+
+/// Distance
+// Point.distance(new Point(), new Point())
+0
+
+// Point.distance(new Point(-100, 200), new Point(100, 200))
+200
+
+/// Equals
+// point.equals(new Point(1, 2))
+false
+
+// point.equals(point)
+true
+
+// point
+(x=0, y=0)
+
+
+/// Clone
+// point
+(x=1, y=2)
+
+// clone
+(x=1, y=2)
+
+// point === clone
+false
+
+// point.equals(clone)
+true
+
+
+/// Interpolate
+// Point.interpolate(new Point(-100, -200), new Point(100, 200), -1)
+(x=300, y=600)
+
+// Point.interpolate(new Point(-100, -200), new Point(100, 200), 0)
+(x=100, y=200)
+
+// Point.interpolate(new Point(-100, -200), new Point(100, 200), 0.5)
+(x=0, y=0)
+
+// Point.interpolate(new Point(-100, -200), new Point(100, 200), 1)
+(x=-100, y=-200)
+
+// Point.interpolate(new Point(-100, -200), new Point(100, 200), 2)
+(x=-300, y=-600)
+
+/// length
+new Point().length
+0
+
+new Point(100, 0).length
+100
+
+new Point(0, -200).length
+200
+
+
+/// Normalize
+// new Point() normalize(10)
+(x=0, y=0)
+
+// new Point() normalize(-5)
+(x=0, y=0)
+
+// new Point(100, 200) normalize(10)
+(x=4.47213595499958, y=8.94427190999916)
+
+// new Point(100, 200) normalize(-5)
+(x=-2.23606797749979, y=-4.47213595499958)
+
+// new Point(-200, 100) normalize(10)
+(x=-8.94427190999916, y=4.47213595499958)
+
+// new Point(-200, 100) normalize(-5)
+(x=4.47213595499958, y=-2.23606797749979)
+
+// new Point(undefined, 100) normalize(1)
+(x=NaN, y=100)
+
+
+// new Point(100, null) normalize(1)
+(x=1, y=0)
+
+
+/// Offset
+// point = new Point()
+(x=0, y=0)
+
+// point.offset(100, 200)
+(x=100, y=200)
+
+// point.offset(-1000, -2000)
+(x=-900, y=-1800)
+
+/// polar
+// Point.polar(5, Math.atan(3/4))
+(x=4, y=3)
+
+// Point.polar(0, Math.atan(3/4))
+(x=0, y=0)
+

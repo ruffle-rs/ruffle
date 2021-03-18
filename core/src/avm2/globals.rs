@@ -103,6 +103,7 @@ pub struct SystemPrototypes<'gc> {
     pub xml_list: Object<'gc>,
     pub display_object: Object<'gc>,
     pub shape: Object<'gc>,
+    pub point: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -141,6 +142,7 @@ impl<'gc> SystemPrototypes<'gc> {
             xml_list: empty,
             display_object: empty,
             shape: empty,
+            point: empty,
         }
     }
 }
@@ -657,6 +659,21 @@ pub fn load_player_globals<'gc>(
         .scene = class(
         activation,
         flash::display::scene::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
+
+    // package `flash.geom`
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
+        .point = class(
+        activation,
+        flash::geom::point::create_class(mc),
         implicit_deriver,
         domain,
         script,
