@@ -1,6 +1,5 @@
 use bytemuck::{Pod, Zeroable};
 use ruffle_core::backend::render::BitmapHandle;
-use ruffle_core::backend::audio::swf::CharacterId;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -17,7 +16,6 @@ pub struct GradientUniforms {
 #[derive(Debug)]
 pub struct Mesh {
     pub draws: Vec<Draw>,
-    pub shape_id: CharacterId,
 }
 
 #[derive(Debug)]

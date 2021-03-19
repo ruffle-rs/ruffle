@@ -796,10 +796,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             });
         }
 
-        Mesh {
-            draws,
-            shape_id,
-        }
+        Mesh { draws }
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap, debug_str: &str) -> BitmapInfo {
