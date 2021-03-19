@@ -1,4 +1,5 @@
 use bytemuck::{Pod, Zeroable};
+use ruffle_core::backend::render::BitmapHandle;
 use ruffle_core::backend::audio::swf::CharacterId;
 
 #[repr(C)]
@@ -54,9 +55,9 @@ pub enum IncompleteDrawType {
     },
     Bitmap {
         texture_transform: [[f32; 4]; 4],
+        bitmap: BitmapHandle,
         is_smoothed: bool,
         is_repeating: bool,
-        texture_view: wgpu::TextureView,
     },
 }
 
