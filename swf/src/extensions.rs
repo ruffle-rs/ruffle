@@ -151,3 +151,9 @@ pub trait ReadSwfExt<'a> {
         Ok(SwfStr::from_bytes_null_terminated(bytes).unwrap_or_else(|| SwfStr::from_bytes(bytes)))
     }
 }
+
+impl<'a> ReadSwfExt<'a> for &'a [u8] {
+    fn as_mut_slice(&mut self) -> &mut &'a [u8] {
+        self
+    }
+}

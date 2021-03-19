@@ -67,7 +67,6 @@ impl Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use crate::num_traits::FromPrimitive;
         match self {
             Error::Avm1ParseError { opcode, source } => {
                 let op = crate::avm1::opcode::OpCode::from_u8(*opcode);

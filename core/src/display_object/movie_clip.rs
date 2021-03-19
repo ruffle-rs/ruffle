@@ -37,9 +37,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{FillStyle, FrameLabelData, LineStyle, Tag};
-
-type FrameNumber = u16;
+use swf::{FillStyle, FrameLabelData, FrameNumber, LineStyle, Tag};
 
 /// Indication of what frame `run_frame` should jump to next.
 #[derive(PartialEq, Eq)]

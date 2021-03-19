@@ -12,7 +12,10 @@ use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
-use swf::{avm1::types::FunctionParam, SwfStr};
+use swf::{
+    avm1::types::{FunctionParam, RegisterIndex},
+    SwfStr,
+};
 
 /// Represents a function defined in Ruffle's code.
 ///
@@ -56,7 +59,7 @@ pub struct Avm1Function<'gc> {
 
     /// The number of registers to allocate for this function's private register
     /// set. Any register beyond this ID will be served from the global one.
-    register_count: u8,
+    register_count: RegisterIndex,
 
     preload_parent: bool,
     preload_root: bool,
@@ -137,7 +140,7 @@ impl<'gc> Avm1Function<'gc> {
     pub fn from_df2(
         swf_version: u8,
         actions: SwfSlice,
-        swf_function: &swf::avm1::types::Function,
+        swf_function: &swf::avm1::types::DefineFunction2,
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
@@ -197,7 +200,7 @@ impl<'gc> Avm1Function<'gc> {
         self.scope
     }
 
-    pub fn register_count(&self) -> u8 {
+    pub fn register_count(&self) -> RegisterIndex {
         self.register_count
     }
 }
