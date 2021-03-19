@@ -434,16 +434,12 @@ fn substr<'gc>(
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
     let this_len = this.encode_utf16().count();
-    let start_index =
-        string_wrapping_index(args.get(0).unwrap().coerce_to_i32(activation)?, this_len);
+    let start_index_raw = args.get(0).unwrap().coerce_to_i32(activation)?;
+    let start_index = string_wrapping_index(start_index_raw, this_len);
 
     let len = match args.get(1) {
         None | Some(Value::Undefined) => this_len,
-        Some(n) => string_index_substr(
-            args.get(0).unwrap().coerce_to_i32(activation)?,
-            n.coerce_to_i32(activation)?,
-            this_len,
-        ),
+        Some(n) => string_index_substr(start_index_raw, n.coerce_to_i32(activation)?, this_len),
     };
 
     let ret = string_utils::utf16_iter_to_string(this.encode_utf16().skip(start_index).take(len));
