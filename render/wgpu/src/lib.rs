@@ -90,6 +90,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     current_frame: Option<Frame<'static, T>>,
     meshes: Vec<Mesh>,
     mask_state: MaskState,
+    shape_tessellator: ShapeTessellator,
     textures: Vec<Texture>,
     num_masks: u32,
     quad_vbo: wgpu::Buffer,
@@ -175,6 +176,301 @@ struct IncompleteDraw {
     draw: IncompleteDrawType,
     vertices: Vec<GpuVertex>,
     indices: Vec<u32>,
+}
+
+struct ShapeTessellator {
+    fill_tess: FillTessellator,
+    stroke_tess: StrokeTessellator,
+}
+
+impl ShapeTessellator {
+    fn new() -> Self {
+        Self {
+            fill_tess: FillTessellator::new(),
+            stroke_tess: StrokeTessellator::new(),
+        }
+    }
+
+    fn tessellate_shape<F>(&mut self, shape: DistilledShape, get_bitmap: F) -> Vec<IncompleteDraw>
+    where
+        F: Fn(swf::CharacterId) -> Option<(u32, u32, BitmapHandle)>,
+    {
+        use lyon::tessellation::{FillOptions, StrokeOptions};
+
+        let mut draws = Vec::new();
+
+        let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
+
+        fn flush_draw(
+            draw: IncompleteDrawType,
+            draws: &mut Vec<IncompleteDraw>,
+            lyon_mesh: &mut VertexBuffers<GpuVertex, u32>,
+        ) {
+            if lyon_mesh.vertices.is_empty() || lyon_mesh.indices.len() < 3 {
+                return;
+            }
+
+            let draw_mesh = std::mem::replace(lyon_mesh, VertexBuffers::new());
+            draws.push(IncompleteDraw {
+                draw,
+                vertices: draw_mesh.vertices,
+                indices: draw_mesh.indices,
+            });
+        }
+
+        for path in shape.paths {
+            match path {
+                DrawPath::Fill { style, commands } => match style {
+                    FillStyle::Color(color) => {
+                        let color = [
+                            f32::from(color.r) / 255.0,
+                            f32::from(color.g) / 255.0,
+                            f32::from(color.b) / 255.0,
+                            f32::from(color.a) / 255.0,
+                        ];
+
+                        let mut buffers_builder =
+                            BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
+
+                        if let Err(e) = self.fill_tess.tessellate_path(
+                            &ruffle_path_to_lyon_path(commands, true),
+                            &FillOptions::even_odd(),
+                            &mut buffers_builder,
+                        ) {
+                            // This may just be a degenerate path; skip it.
+                            log::error!("Tessellation failure: {:?}", e);
+                            continue;
+                        }
+                    }
+                    FillStyle::LinearGradient(gradient) => {
+                        flush_draw(
+                            IncompleteDrawType::Color,
+                            &mut draws,
+                            &mut lyon_mesh,
+                        );
+
+                        let mut buffers_builder = BuffersBuilder::new(
+                            &mut lyon_mesh,
+                            RuffleVertexCtor {
+                                color: [1.0, 1.0, 1.0, 1.0],
+                            },
+                        );
+
+                        if let Err(e) = self.fill_tess.tessellate_path(
+                            &ruffle_path_to_lyon_path(commands, true),
+                            &FillOptions::even_odd(),
+                            &mut buffers_builder,
+                        ) {
+                            // This may just be a degenerate path; skip it.
+                            log::error!("Tessellation failure: {:?}", e);
+                            continue;
+                        }
+
+                        let uniforms = swf_gradient_to_uniforms(0, gradient, 0.0);
+                        let matrix = swf_to_gl_matrix(gradient.matrix);
+
+                        flush_draw(
+                            IncompleteDrawType::Gradient {
+                                texture_transform: matrix,
+                                gradient: uniforms,
+                            },
+                            &mut draws,
+                            &mut lyon_mesh,
+                        );
+                    }
+                    FillStyle::RadialGradient(gradient) => {
+                        flush_draw(
+                            IncompleteDrawType::Color,
+                            &mut draws,
+                            &mut lyon_mesh,
+                        );
+
+                        let mut buffers_builder = BuffersBuilder::new(
+                            &mut lyon_mesh,
+                            RuffleVertexCtor {
+                                color: [1.0, 1.0, 1.0, 1.0],
+                            },
+                        );
+
+                        if let Err(e) = self.fill_tess.tessellate_path(
+                            &ruffle_path_to_lyon_path(commands, true),
+                            &FillOptions::even_odd(),
+                            &mut buffers_builder,
+                        ) {
+                            // This may just be a degenerate path; skip it.
+                            log::error!("Tessellation failure: {:?}", e);
+                            continue;
+                        }
+
+                        let uniforms = swf_gradient_to_uniforms(1, gradient, 0.0);
+                        let matrix = swf_to_gl_matrix(gradient.matrix);
+
+                        flush_draw(
+                            IncompleteDrawType::Gradient {
+                                texture_transform: matrix,
+                                gradient: uniforms,
+                            },
+                            &mut draws,
+                            &mut lyon_mesh,
+                        );
+                    }
+                    FillStyle::FocalGradient {
+                        gradient,
+                        focal_point,
+                    } => {
+                        flush_draw(
+                            IncompleteDrawType::Color,
+                            &mut draws,
+                            &mut lyon_mesh,
+                        );
+
+                        let mut buffers_builder = BuffersBuilder::new(
+                            &mut lyon_mesh,
+                            RuffleVertexCtor {
+                                color: [1.0, 1.0, 1.0, 1.0],
+                            },
+                        );
+
+                        if let Err(e) = self.fill_tess.tessellate_path(
+                            &ruffle_path_to_lyon_path(commands, true),
+                            &FillOptions::even_odd(),
+                            &mut buffers_builder,
+                        ) {
+                            // This may just be a degenerate path; skip it.
+                            log::error!("Tessellation failure: {:?}", e);
+                            continue;
+                        }
+
+                        let uniforms = swf_gradient_to_uniforms(2, gradient, *focal_point);
+                        let matrix = swf_to_gl_matrix(gradient.matrix);
+
+                        flush_draw(
+                            IncompleteDrawType::Gradient {
+                                texture_transform: matrix,
+                                gradient: uniforms,
+                            },
+                            &mut draws,
+                            &mut lyon_mesh,
+                        );
+                    }
+                    FillStyle::Bitmap {
+                        id,
+                        matrix,
+                        is_smoothed,
+                        is_repeating,
+                    } => {
+                        flush_draw(
+                            IncompleteDrawType::Color,
+                            &mut draws,
+                            &mut lyon_mesh,
+                        );
+
+                        let mut buffers_builder = BuffersBuilder::new(
+                            &mut lyon_mesh,
+                            RuffleVertexCtor {
+                                color: [1.0, 1.0, 1.0, 1.0],
+                            },
+                        );
+
+                        if let Err(e) = self.fill_tess.tessellate_path(
+                            &ruffle_path_to_lyon_path(commands, true),
+                            &FillOptions::even_odd(),
+                            &mut buffers_builder,
+                        ) {
+                            // This may just be a degenerate path; skip it.
+                            log::error!("Tessellation failure: {:?}", e);
+                            continue;
+                        }
+
+                        if let Some((bitmap_width, bitmap_height, bitmap)) = get_bitmap(*id) {
+                            let bitmap = IncompleteDrawType::Bitmap {
+                                texture_transform: swf_bitmap_to_gl_matrix(
+                                    *matrix,
+                                    bitmap_width,
+                                    bitmap_height,
+                                ),
+                                bitmap,
+                                is_smoothed: *is_smoothed,
+                                is_repeating: *is_repeating,
+                            };
+
+                            flush_draw(bitmap, &mut draws, &mut lyon_mesh);
+                        } else {
+                            log::error!("Couldn't fill shape with unknown bitmap {}", id);
+                        }
+                    }
+                },
+                DrawPath::Stroke {
+                    style,
+                    commands,
+                    is_closed,
+                } => {
+                    let color = [
+                        f32::from(style.color.r) / 255.0,
+                        f32::from(style.color.g) / 255.0,
+                        f32::from(style.color.b) / 255.0,
+                        f32::from(style.color.a) / 255.0,
+                    ];
+
+                    let mut buffers_builder =
+                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
+
+                    // TODO(Herschel): 0 width indicates "hairline".
+                    let width = if style.width.to_pixels() >= 1.0 {
+                        style.width.to_pixels() as f32
+                    } else {
+                        1.0
+                    };
+
+                    let mut options = StrokeOptions::default()
+                        .with_line_width(width)
+                        .with_start_cap(match style.start_cap {
+                            swf::LineCapStyle::None => tessellation::LineCap::Butt,
+                            swf::LineCapStyle::Round => tessellation::LineCap::Round,
+                            swf::LineCapStyle::Square => tessellation::LineCap::Square,
+                        })
+                        .with_end_cap(match style.end_cap {
+                            swf::LineCapStyle::None => tessellation::LineCap::Butt,
+                            swf::LineCapStyle::Round => tessellation::LineCap::Round,
+                            swf::LineCapStyle::Square => tessellation::LineCap::Square,
+                        });
+
+                    let line_join = match style.join_style {
+                        swf::LineJoinStyle::Round => tessellation::LineJoin::Round,
+                        swf::LineJoinStyle::Bevel => tessellation::LineJoin::Bevel,
+                        swf::LineJoinStyle::Miter(limit) => {
+                            // Avoid lyon assert with small miter limits.
+                            if limit >= StrokeOptions::MINIMUM_MITER_LIMIT {
+                                options = options.with_miter_limit(limit);
+                                tessellation::LineJoin::MiterClip
+                            } else {
+                                tessellation::LineJoin::Bevel
+                            }
+                        }
+                    };
+                    options = options.with_line_join(line_join);
+
+                    if let Err(e) = self.stroke_tess.tessellate_path(
+                        &ruffle_path_to_lyon_path(commands, is_closed),
+                        &options,
+                        &mut buffers_builder,
+                    ) {
+                        // This may just be a degenerate path; skip it.
+                        log::error!("Tessellation failure: {:?}", e);
+                        continue;
+                    }
+                }
+            }
+        }
+
+        flush_draw(
+            IncompleteDrawType::Color,
+            &mut draws,
+            &mut lyon_mesh,
+        );
+
+        draws
+    }
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -272,6 +568,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             depth_texture_view,
             current_frame: None,
             meshes: Vec::new(),
+            shape_tessellator: ShapeTessellator::new(),
             textures: Vec::new(),
 
             num_masks: 0,
@@ -324,290 +621,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         self.descriptors
     }
 
-    fn tessellate_shape<F>(&self, shape: DistilledShape, get_bitmap: F) -> Vec<IncompleteDraw>
-    where
-        F: Fn(swf::CharacterId) -> Option<(u32, u32, BitmapHandle)>,
-    {
-        use lyon::tessellation::{FillOptions, StrokeOptions};
-
-        let mut draws = Vec::new();
-
-        let mut fill_tess = FillTessellator::new();
-        let mut stroke_tess = StrokeTessellator::new();
-
-        let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
-
-        fn flush_draw(
-            draw: IncompleteDrawType,
-            draws: &mut Vec<IncompleteDraw>,
-            lyon_mesh: &mut VertexBuffers<GpuVertex, u32>,
-        ) {
-            if lyon_mesh.vertices.is_empty() || lyon_mesh.indices.len() < 3 {
-                return;
-            }
-
-            let draw_mesh = std::mem::replace(lyon_mesh, VertexBuffers::new());
-            draws.push(IncompleteDraw {
-                draw,
-                vertices: draw_mesh.vertices,
-                indices: draw_mesh.indices,
-            });
-        }
-
-        for path in shape.paths {
-            match path {
-                DrawPath::Fill { style, commands } => match style {
-                    FillStyle::Color(color) => {
-                        let color = [
-                            f32::from(color.r) / 255.0,
-                            f32::from(color.g) / 255.0,
-                            f32::from(color.b) / 255.0,
-                            f32::from(color.a) / 255.0,
-                        ];
-
-                        let mut buffers_builder =
-                            BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
-
-                        if let Err(e) = fill_tess.tessellate_path(
-                            &ruffle_path_to_lyon_path(commands, true),
-                            &FillOptions::even_odd(),
-                            &mut buffers_builder,
-                        ) {
-                            // This may just be a degenerate path; skip it.
-                            log::error!("Tessellation failure: {:?}", e);
-                            continue;
-                        }
-                    }
-                    FillStyle::LinearGradient(gradient) => {
-                        flush_draw(
-                            IncompleteDrawType::Color,
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-
-                        let mut buffers_builder = BuffersBuilder::new(
-                            &mut lyon_mesh,
-                            RuffleVertexCtor {
-                                color: [1.0, 1.0, 1.0, 1.0],
-                            },
-                        );
-
-                        if let Err(e) = fill_tess.tessellate_path(
-                            &ruffle_path_to_lyon_path(commands, true),
-                            &FillOptions::even_odd(),
-                            &mut buffers_builder,
-                        ) {
-                            // This may just be a degenerate path; skip it.
-                            log::error!("Tessellation failure: {:?}", e);
-                            continue;
-                        }
-
-                        let uniforms = swf_gradient_to_uniforms(0, gradient, 0.0);
-                        let matrix = swf_to_gl_matrix(gradient.matrix);
-
-                        flush_draw(
-                            IncompleteDrawType::Gradient {
-                                texture_transform: matrix,
-                                gradient: uniforms,
-                            },
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-                    }
-                    FillStyle::RadialGradient(gradient) => {
-                        flush_draw(
-                            IncompleteDrawType::Color,
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-
-                        let mut buffers_builder = BuffersBuilder::new(
-                            &mut lyon_mesh,
-                            RuffleVertexCtor {
-                                color: [1.0, 1.0, 1.0, 1.0],
-                            },
-                        );
-
-                        if let Err(e) = fill_tess.tessellate_path(
-                            &ruffle_path_to_lyon_path(commands, true),
-                            &FillOptions::even_odd(),
-                            &mut buffers_builder,
-                        ) {
-                            // This may just be a degenerate path; skip it.
-                            log::error!("Tessellation failure: {:?}", e);
-                            continue;
-                        }
-
-                        let uniforms = swf_gradient_to_uniforms(1, gradient, 0.0);
-                        let matrix = swf_to_gl_matrix(gradient.matrix);
-
-                        flush_draw(
-                            IncompleteDrawType::Gradient {
-                                texture_transform: matrix,
-                                gradient: uniforms,
-                            },
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-                    }
-                    FillStyle::FocalGradient {
-                        gradient,
-                        focal_point,
-                    } => {
-                        flush_draw(
-                            IncompleteDrawType::Color,
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-
-                        let mut buffers_builder = BuffersBuilder::new(
-                            &mut lyon_mesh,
-                            RuffleVertexCtor {
-                                color: [1.0, 1.0, 1.0, 1.0],
-                            },
-                        );
-
-                        if let Err(e) = fill_tess.tessellate_path(
-                            &ruffle_path_to_lyon_path(commands, true),
-                            &FillOptions::even_odd(),
-                            &mut buffers_builder,
-                        ) {
-                            // This may just be a degenerate path; skip it.
-                            log::error!("Tessellation failure: {:?}", e);
-                            continue;
-                        }
-
-                        let uniforms = swf_gradient_to_uniforms(2, gradient, *focal_point);
-                        let matrix = swf_to_gl_matrix(gradient.matrix);
-
-                        flush_draw(
-                            IncompleteDrawType::Gradient {
-                                texture_transform: matrix,
-                                gradient: uniforms,
-                            },
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-                    }
-                    FillStyle::Bitmap {
-                        id,
-                        matrix,
-                        is_smoothed,
-                        is_repeating,
-                    } => {
-                        flush_draw(
-                            IncompleteDrawType::Color,
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-
-                        let mut buffers_builder = BuffersBuilder::new(
-                            &mut lyon_mesh,
-                            RuffleVertexCtor {
-                                color: [1.0, 1.0, 1.0, 1.0],
-                            },
-                        );
-
-                        if let Err(e) = fill_tess.tessellate_path(
-                            &ruffle_path_to_lyon_path(commands, true),
-                            &FillOptions::even_odd(),
-                            &mut buffers_builder,
-                        ) {
-                            // This may just be a degenerate path; skip it.
-                            log::error!("Tessellation failure: {:?}", e);
-                            continue;
-                        }
-
-                        if let Some((bitmap_width, bitmap_height, bitmap)) = get_bitmap(*id) {
-                            let bitmap = IncompleteDrawType::Bitmap {
-                                texture_transform: swf_bitmap_to_gl_matrix(
-                                    *matrix,
-                                    bitmap_width,
-                                    bitmap_height,
-                                ),
-                                bitmap,
-                                is_smoothed: *is_smoothed,
-                                is_repeating: *is_repeating,
-                            };
-
-                            flush_draw(bitmap, &mut draws, &mut lyon_mesh);
-                        } else {
-                            log::error!("Couldn't fill shape with unknown bitmap {}", id);
-                        }
-                    }
-                },
-                DrawPath::Stroke {
-                    style,
-                    commands,
-                    is_closed,
-                } => {
-                    let color = [
-                        f32::from(style.color.r) / 255.0,
-                        f32::from(style.color.g) / 255.0,
-                        f32::from(style.color.b) / 255.0,
-                        f32::from(style.color.a) / 255.0,
-                    ];
-
-                    let mut buffers_builder =
-                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
-
-                    // TODO(Herschel): 0 width indicates "hairline".
-                    let width = if style.width.to_pixels() >= 1.0 {
-                        style.width.to_pixels() as f32
-                    } else {
-                        1.0
-                    };
-
-                    let mut options = StrokeOptions::default()
-                        .with_line_width(width)
-                        .with_start_cap(match style.start_cap {
-                            swf::LineCapStyle::None => tessellation::LineCap::Butt,
-                            swf::LineCapStyle::Round => tessellation::LineCap::Round,
-                            swf::LineCapStyle::Square => tessellation::LineCap::Square,
-                        })
-                        .with_end_cap(match style.end_cap {
-                            swf::LineCapStyle::None => tessellation::LineCap::Butt,
-                            swf::LineCapStyle::Round => tessellation::LineCap::Round,
-                            swf::LineCapStyle::Square => tessellation::LineCap::Square,
-                        });
-
-                    let line_join = match style.join_style {
-                        swf::LineJoinStyle::Round => tessellation::LineJoin::Round,
-                        swf::LineJoinStyle::Bevel => tessellation::LineJoin::Bevel,
-                        swf::LineJoinStyle::Miter(limit) => {
-                            // Avoid lyon assert with small miter limits.
-                            if limit >= StrokeOptions::MINIMUM_MITER_LIMIT {
-                                options = options.with_miter_limit(limit);
-                                tessellation::LineJoin::MiterClip
-                            } else {
-                                tessellation::LineJoin::Bevel
-                            }
-                        }
-                    };
-                    options = options.with_line_join(line_join);
-
-                    if let Err(e) = stroke_tess.tessellate_path(
-                        &ruffle_path_to_lyon_path(commands, is_closed),
-                        &options,
-                        &mut buffers_builder,
-                    ) {
-                        // This may just be a degenerate path; skip it.
-                        log::error!("Tessellation failure: {:?}", e);
-                        continue;
-                    }
-                }
-            }
-        }
-
-        flush_draw(
-            IncompleteDrawType::Color,
-            &mut draws,
-            &mut lyon_mesh,
-        );
-
-        draws
-    }
-
     fn register_shape_internal(
         &mut self,
         shape: DistilledShape,
@@ -615,7 +628,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     ) -> Mesh {
         let shape_id = shape.id; // TODO: remove?
         let textures = &self.textures;
-        let lyon_meshes = self.tessellate_shape(shape, |id| {
+        let lyon_meshes = self.shape_tessellator.tessellate_shape(shape, |id| {
             library
                 .and_then(|lib| lib.get_bitmap(id))
                 .and_then(|bitmap| {
