@@ -13,6 +13,7 @@ use crate::avm2::Error;
 use crate::tag_utils::SwfMovie;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::Ref;
 use std::sync::Arc;
 
 /// Represents a thing which can be loaded by a loader.
@@ -132,5 +133,16 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
             },
         ))
         .into())
+    }
+
+    /// Unwrap this object's loader stream
+    fn as_loader_stream(&self) -> Option<Ref<LoaderStream>> {
+        if self.0.read().loaded_stream.is_some() {
+            Some(Ref::map(self.0.read(), |v| {
+                v.loaded_stream.as_ref().unwrap()
+            }))
+        } else {
+            None
+        }
     }
 }
