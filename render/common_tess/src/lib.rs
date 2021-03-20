@@ -46,8 +46,12 @@ impl ShapeTessellator {
             match path {
                 DrawPath::Fill { style, commands } => match style {
                     swf::FillStyle::Color(color) => {
-                        let mut buffers_builder =
-                            BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color: *color });
+                        let mut buffers_builder = BuffersBuilder::new(
+                            &mut lyon_mesh,
+                            RuffleVertexCtor {
+                                color: color.clone(),
+                            },
+                        );
 
                         if let Err(e) = self.fill_tess.tessellate_path(
                             &ruffle_path_to_lyon_path(commands, true),
@@ -202,7 +206,9 @@ impl ShapeTessellator {
                 } => {
                     let mut buffers_builder = BuffersBuilder::new(
                         &mut lyon_mesh,
-                        RuffleVertexCtor { color: style.color },
+                        RuffleVertexCtor {
+                            color: style.color.clone(),
+                        },
                     );
 
                     // TODO(Herschel): 0 width indicates "hairline".
@@ -453,7 +459,7 @@ impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
         Vertex {
             x: vertex.position().x,
             y: vertex.position().y,
-            color: self.color,
+            color: self.color.clone(),
         }
     }
 }
@@ -463,7 +469,7 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
         Vertex {
             x: vertex.position().x,
             y: vertex.position().y,
-            color: self.color,
+            color: self.color.clone(),
         }
     }
 }
