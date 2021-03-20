@@ -709,8 +709,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_bit_and(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.context.avm1.pop().coerce_to_u32(self)?;
-        let b = self.context.avm1.pop().coerce_to_u32(self)?;
+        let a = self.context.avm1.pop().coerce_to_i32(self)?;
+        let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = a & b;
         self.context.avm1.push(result);
         Ok(FrameControl::Continue)
@@ -725,8 +725,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_bit_or(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.context.avm1.pop().coerce_to_u32(self)?;
-        let b = self.context.avm1.pop().coerce_to_u32(self)?;
+        let a = self.context.avm1.pop().coerce_to_i32(self)?;
+        let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = a | b;
         self.context.avm1.push(result);
         Ok(FrameControl::Continue)
@@ -749,8 +749,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_bit_xor(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.context.avm1.pop().coerce_to_u32(self)?;
-        let b = self.context.avm1.pop().coerce_to_u32(self)?;
+        let a = self.context.avm1.pop().coerce_to_i32(self)?;
+        let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b ^ a;
         self.context.avm1.push(result);
         Ok(FrameControl::Continue)
