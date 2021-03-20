@@ -4,12 +4,12 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{LoaderInfoObject, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::types::{Degrees, Percent};
 use gc_arena::{GcCell, MutationContext};
 use swf::Twips;
@@ -494,6 +494,32 @@ pub fn hit_test_object<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `loaderInfo` getter
+pub fn loader_info<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        if let Some(root) = dobj.root(&activation.context) {
+            if DisplayObject::ptr_eq(root, dobj) {
+                let movie = dobj.movie();
+
+                if let Some(movie) = movie {
+                    return Ok(LoaderInfoObject::from_movie(
+                        movie,
+                        activation.context.avm2.prototypes().loaderinfo,
+                        activation.context.gc_context,
+                    )?
+                    .into());
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -609,6 +635,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "hitTestObject"),
         Method::from_builtin(hit_test_object),
+    ));
+    write.define_instance_trait(Trait::from_method(
+        QName::new(Namespace::public(), "loaderInfo"),
+        Method::from_builtin(loader_info),
     ));
 
     class

@@ -107,6 +107,7 @@ pub struct SystemPrototypes<'gc> {
     pub textfield: Object<'gc>,
     pub textformat: Object<'gc>,
     pub graphics: Object<'gc>,
+    pub loaderinfo: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -149,6 +150,7 @@ impl<'gc> SystemPrototypes<'gc> {
             textfield: empty,
             textformat: empty,
             graphics: empty,
+            loaderinfo: empty,
         }
     }
 }
@@ -711,7 +713,13 @@ pub fn load_player_globals<'gc>(
         flash::display::capsstyle::create_class(mc),
         implicit_deriver,
     )?;
-    class(
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
+        .loaderinfo = class(
         activation,
         flash::display::loaderinfo::create_class(mc),
         flash::display::loaderinfo::loaderinfo_deriver,
