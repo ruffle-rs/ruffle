@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Rust?label=rust%20build" alt="Rust Build Status" />
   <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Web?label=web%20build" alt="Web Build Status" />
  </a>
-  <a href="https://discord.gg/J8hgCQN">
+  <a href="https://discord.gg/ruffle">
       <img src="https://img.shields.io/discord/610531541889581066" alt="Ruffle Discord">
   </a>
   <br>
@@ -102,6 +102,9 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   </a>
   <a href="https://www.wowgame.jp/">
     <img src="https://ruffle.rs/assets/sponsors/wowgame.png" alt="wowgame.jp">
+  </a>
+  <a href="http://kupogames.com/">
+    <img src="https://ruffle.rs/assets/sponsors/mattroszak.png" alt="Matt Roszak">
   </a>
 </p>
 
