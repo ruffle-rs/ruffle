@@ -10,8 +10,8 @@ wgpu = "0.7.0"
 image = "0.23.14"
 jpeg-decoder = "0.1.22"
 log = "0.4"
-lyon = "0.17.5"
 ruffle_core = { path = "../../core" }
+ruffle_render_common_tess = { path = "../common_tess" }
 futures = "0.3.13"
 bytemuck = { version = "1.5.1", features = ["derive"] }
 raw-window-handle = "0.3.3"

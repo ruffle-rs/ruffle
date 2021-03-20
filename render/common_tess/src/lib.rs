@@ -279,6 +279,16 @@ pub enum DrawType {
     Bitmap(Bitmap),
 }
 
+impl DrawType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Color => "Color",
+            Self::Gradient { .. } => "Gradient",
+            Self::Bitmap { .. } => "Bitmap",
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Gradient {
     pub matrix: [[f32; 3]; 3],
