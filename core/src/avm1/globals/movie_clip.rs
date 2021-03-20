@@ -986,7 +986,7 @@ fn set_mask<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mask = args
         .get(0)
-        .unwrap()
+        .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)
         .as_display_object();
     let mc = DisplayObject::MovieClip(movie_clip);
