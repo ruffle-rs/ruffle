@@ -46,8 +46,6 @@ macro_rules! swf_tests {
                 concat!("tests/swfs/", $path, "/test.swf"),
                 $num_frames,
                 concat!("tests/swfs/", $path, "/output.txt"),
-                |_| Ok(()),
-                |_| Ok(()),
             )
         }
         )*
@@ -67,9 +65,6 @@ macro_rules! swf_tests_approx {
                 $num_frames,
                 concat!("tests/swfs/", $path, "/output.txt"),
                 |actual, expected| assert_relative_eq!(actual, expected $(, $opt = $val)*),
-                //$relative_epsilon,
-                |_| Ok(()),
-                |_| Ok(()),
             )
         }
         )*
@@ -581,7 +576,7 @@ swf_tests_approx! {
 #[test]
 fn external_interface_avm1() -> Result<(), Error> {
     set_logger();
-    test_swf(
+    test_swf_with_hooks(
         "tests/swfs/avm1/external_interface/test.swf",
         1,
         "tests/swfs/avm1/external_interface/output.txt",
@@ -641,7 +636,7 @@ fn shared_object_avm1() -> Result<(), Error> {
         Box::new(MemoryStorageBackend::default());
 
     // Initial run; no shared object data.
-    test_swf(
+    test_swf_with_hooks(
         "tests/swfs/avm1/shared_object/test.swf",
         1,
         "tests/swfs/avm1/shared_object/output1.txt",
@@ -655,7 +650,7 @@ fn shared_object_avm1() -> Result<(), Error> {
     )?;
 
     // Re-run the SWF, verifying that the shared object persists.
-    test_swf(
+    test_swf_with_hooks(
         "tests/swfs/avm1/shared_object/test.swf",
         1,
         "tests/swfs/avm1/shared_object/output2.txt",
@@ -674,7 +669,7 @@ fn shared_object_avm1() -> Result<(), Error> {
 #[test]
 fn timeout_avm1() -> Result<(), Error> {
     set_logger();
-    test_swf(
+    test_swf_with_hooks(
         "tests/swfs/avm1/timeout/test.swf",
         1,
         "tests/swfs/avm1/timeout/output.txt",
@@ -719,7 +714,19 @@ macro_rules! assert_eq {
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
-fn test_swf(
+fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Result<(), Error> {
+    test_swf_with_hooks(
+        swf_path,
+        num_frames,
+        expected_output_path,
+        |_| Ok(()),
+        |_| Ok(()),
+    )
+}
+
+/// Loads an SWF and runs it through the Ruffle core for a number of frames.
+/// Tests that the trace output matches the given expected output.
+fn test_swf_with_hooks(
     swf_path: &str,
     num_frames: u32,
     expected_output_path: &str,
@@ -750,10 +757,8 @@ fn test_swf_approx(
     num_frames: u32,
     expected_output_path: &str,
     approx_assert_fn: impl Fn(f64, f64),
-    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
-    before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
 ) -> Result<(), Error> {
-    let trace_log = run_swf(swf_path, num_frames, before_start, before_end)?;
+    let trace_log = run_swf(swf_path, num_frames, |_| Ok(()), |_| Ok(()))?;
     let mut expected_data = std::fs::read_to_string(expected_output_path)?;
 
     // Strip a trailing newline if it has one.
