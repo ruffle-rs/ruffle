@@ -1,12 +1,11 @@
-use ruffle_core::backend::render::swf;
 use ruffle_core::backend::render::{
-    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary,
-    RenderBackend, ShapeHandle, Transform,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary, RenderBackend,
+    ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
-use ruffle_core::swf::Matrix;
+use ruffle_core::swf;
 use ruffle_render_common_tess::{
-    Gradient as TessGradient, GradientSpread, GradientType, ShapeTessellator, Vertex,
+    Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
 };
 use ruffle_web_common::JsResult;
 use std::collections::HashMap;
@@ -36,13 +35,13 @@ enum MaskState {
 
 #[derive(Clone, Debug)]
 #[repr(C)]
-struct GlVertex {
+struct Vertex {
     position: [f32; 2],
     color: u32,
 }
 
-impl From<Vertex> for GlVertex {
-    fn from(vertex: Vertex) -> Self {
+impl From<TessVertex> for Vertex {
+    fn from(vertex: TessVertex) -> Self {
         Self {
             position: [vertex.x, vertex.y],
             color: ((vertex.color.a as u32) << 24)
@@ -259,19 +258,19 @@ impl WebGlRenderBackend {
         self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
 
         let verts = [
-            GlVertex {
+            Vertex {
                 position: [0.0, 0.0],
                 color: 0xffff_ffff,
             },
-            GlVertex {
+            Vertex {
                 position: [1.0, 0.0],
                 color: 0xffff_ffff,
             },
-            GlVertex {
+            Vertex {
                 position: [1.0, 1.0],
                 color: 0xffff_ffff,
             },
-            GlVertex {
+            Vertex {
                 position: [0.0, 1.0],
                 color: 0xffff_ffff,
             },
@@ -513,11 +512,10 @@ impl WebGlRenderBackend {
             self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
 
             let (vertex_buffer, index_buffer) = unsafe {
-                let vertices: Vec<GlVertex> =
-                    draw.vertices.into_iter().map(GlVertex::from).collect();
+                let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
                 let verts_bytes = std::slice::from_raw_parts(
                     vertices.as_ptr() as *const u8,
-                    vertices.len() * std::mem::size_of::<GlVertex>(),
+                    vertices.len() * std::mem::size_of::<Vertex>(),
                 );
                 self.gl
                     .buffer_data_with_u8_array(Gl::ARRAY_BUFFER, verts_bytes, Gl::STATIC_DRAW);
@@ -954,7 +952,7 @@ impl RenderBackend for WebGlRenderBackend {
 
             // Scale the quad to the bitmap's dimensions.
             let matrix = transform.matrix
-                * Matrix {
+                * swf::Matrix {
                     a: width,
                     d: height,
                     ..Default::default()
@@ -1212,7 +1210,7 @@ impl RenderBackend for WebGlRenderBackend {
         }
     }
 
-    fn draw_rect(&mut self, color: Color, matrix: &Matrix) {
+    fn draw_rect(&mut self, color: Color, matrix: &swf::Matrix) {
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],
             [matrix.c, matrix.d, 0.0, 0.0],
@@ -1406,9 +1404,9 @@ impl From<TessGradient> for Gradient {
             colors,
             num_colors: gradient.num_colors as u32,
             repeat_mode: match gradient.repeat_mode {
-                GradientSpread::Pad => 0,
-                GradientSpread::Repeat => 1,
-                GradientSpread::Reflect => 2,
+                swf::GradientSpread::Pad => 0,
+                swf::GradientSpread::Repeat => 1,
+                swf::GradientSpread::Reflect => 2,
             },
             focal_point: gradient.focal_point,
             interpolation: gradient.interpolation,

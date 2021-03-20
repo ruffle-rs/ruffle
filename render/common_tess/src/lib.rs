@@ -5,11 +5,7 @@ use lyon::tessellation::{
     FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
-use ruffle_core::backend::render::{
-    srgb_to_linear,
-    swf::{self, FillStyle, GradientInterpolation, Twips},
-    BitmapHandle,
-};
+use ruffle_core::backend::render::{srgb_to_linear, swf, BitmapHandle};
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 
 pub struct ShapeTessellator {
@@ -49,7 +45,7 @@ impl ShapeTessellator {
         for path in shape.paths {
             match path {
                 DrawPath::Fill { style, commands } => match style {
-                    FillStyle::Color(color) => {
+                    swf::FillStyle::Color(color) => {
                         let mut buffers_builder =
                             BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color: *color });
 
@@ -63,7 +59,7 @@ impl ShapeTessellator {
                             continue;
                         }
                     }
-                    FillStyle::LinearGradient(gradient) => {
+                    swf::FillStyle::LinearGradient(gradient) => {
                         flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh);
 
                         let mut buffers_builder = BuffersBuilder::new(
@@ -93,7 +89,7 @@ impl ShapeTessellator {
                             &mut lyon_mesh,
                         );
                     }
-                    FillStyle::RadialGradient(gradient) => {
+                    swf::FillStyle::RadialGradient(gradient) => {
                         flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh);
 
                         let mut buffers_builder = BuffersBuilder::new(
@@ -123,7 +119,7 @@ impl ShapeTessellator {
                             &mut lyon_mesh,
                         );
                     }
-                    FillStyle::FocalGradient {
+                    swf::FillStyle::FocalGradient {
                         gradient,
                         focal_point,
                     } => {
@@ -156,7 +152,7 @@ impl ShapeTessellator {
                             &mut lyon_mesh,
                         );
                     }
-                    FillStyle::Bitmap {
+                    swf::FillStyle::Bitmap {
                         id,
                         matrix,
                         is_smoothed,
@@ -296,9 +292,9 @@ pub struct Gradient {
     pub ratios: Vec<f32>,
     pub colors: Vec<[f32; 4]>,
     pub num_colors: usize,
-    pub repeat_mode: GradientSpread,
+    pub repeat_mode: swf::GradientSpread,
     pub focal_point: f32,
-    pub interpolation: GradientInterpolation,
+    pub interpolation: swf::GradientInterpolation,
 }
 
 #[derive(Clone, Debug)]
@@ -367,12 +363,12 @@ fn swf_bitmap_to_gl_matrix(m: swf::Matrix, bitmap_width: u32, bitmap_height: u32
 }
 
 fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> Path {
-    fn point(x: Twips, y: Twips) -> lyon::math::Point {
+    fn point(x: swf::Twips, y: swf::Twips) -> lyon::math::Point {
         lyon::math::Point::new(x.to_pixels() as f32, y.to_pixels() as f32)
     }
 
     let mut builder = Path::builder();
-    let mut move_to = Some((Twips::default(), Twips::default()));
+    let mut move_to = Some((swf::Twips::default(), swf::Twips::default()));
     for cmd in commands {
         match cmd {
             DrawCommand::MoveTo { x, y } => {
@@ -471,8 +467,6 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
         }
     }
 }
-
-pub use swf::GradientSpread;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum GradientType {
