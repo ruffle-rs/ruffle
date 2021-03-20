@@ -30,7 +30,7 @@ impl ShapeTessellator {
         let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
 
         fn flush_draw(draw: DrawType, mesh: &mut Mesh, lyon_mesh: &mut VertexBuffers<Vertex, u32>) {
-            if lyon_mesh.vertices.is_empty() {
+            if lyon_mesh.vertices.is_empty() || lyon_mesh.indices.len() < 3 {
                 return;
             }
 
