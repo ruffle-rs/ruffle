@@ -6,6 +6,7 @@ use lyon::tessellation::{
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
 use ruffle_core::backend::render::{
+    srgb_to_linear,
     swf::{self, FillStyle, GradientInterpolation, Twips},
     BitmapHandle,
 };
@@ -82,29 +83,12 @@ impl ShapeTessellator {
                             continue;
                         }
 
-                        let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
-                        let mut ratios: Vec<f32> = Vec::with_capacity(8);
-                        for record in &gradient.records {
-                            colors.push([
-                                f32::from(record.color.r) / 255.0,
-                                f32::from(record.color.g) / 255.0,
-                                f32::from(record.color.b) / 255.0,
-                                f32::from(record.color.a) / 255.0,
-                            ]);
-                            ratios.push(f32::from(record.ratio) / 255.0);
-                        }
-
                         flush_draw(
-                            DrawType::Gradient(Gradient {
-                                gradient_type: GradientType::Linear,
-                                ratios,
-                                colors,
-                                num_colors: gradient.records.len() as u32,
-                                matrix: swf_to_gl_matrix(gradient.matrix),
-                                repeat_mode: gradient.spread,
-                                focal_point: 0.0,
-                                interpolation: gradient.interpolation,
-                            }),
+                            DrawType::Gradient(swf_gradient_to_uniforms(
+                                GradientType::Linear,
+                                gradient,
+                                0.0,
+                            )),
                             &mut mesh,
                             &mut lyon_mesh,
                         );
@@ -129,29 +113,12 @@ impl ShapeTessellator {
                             continue;
                         }
 
-                        let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
-                        let mut ratios: Vec<f32> = Vec::with_capacity(8);
-                        for record in &gradient.records {
-                            colors.push([
-                                f32::from(record.color.r) / 255.0,
-                                f32::from(record.color.g) / 255.0,
-                                f32::from(record.color.b) / 255.0,
-                                f32::from(record.color.a) / 255.0,
-                            ]);
-                            ratios.push(f32::from(record.ratio) / 255.0);
-                        }
-
                         flush_draw(
-                            DrawType::Gradient(Gradient {
-                                gradient_type: GradientType::Radial,
-                                ratios,
-                                colors,
-                                num_colors: gradient.records.len() as u32,
-                                matrix: swf_to_gl_matrix(gradient.matrix),
-                                repeat_mode: gradient.spread,
-                                focal_point: 0.0,
-                                interpolation: gradient.interpolation,
-                            }),
+                            DrawType::Gradient(swf_gradient_to_uniforms(
+                                GradientType::Radial,
+                                gradient,
+                                0.0,
+                            )),
                             &mut mesh,
                             &mut lyon_mesh,
                         );
@@ -179,29 +146,12 @@ impl ShapeTessellator {
                             continue;
                         }
 
-                        let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
-                        let mut ratios: Vec<f32> = Vec::with_capacity(8);
-                        for record in &gradient.records {
-                            colors.push([
-                                f32::from(record.color.r) / 255.0,
-                                f32::from(record.color.g) / 255.0,
-                                f32::from(record.color.b) / 255.0,
-                                f32::from(record.color.a) / 255.0,
-                            ]);
-                            ratios.push(f32::from(record.ratio) / 255.0);
-                        }
-
                         flush_draw(
-                            DrawType::Gradient(Gradient {
-                                gradient_type: GradientType::Focal,
-                                ratios,
-                                colors,
-                                num_colors: gradient.records.len() as u32,
-                                matrix: swf_to_gl_matrix(gradient.matrix),
-                                repeat_mode: gradient.spread,
-                                focal_point: *focal_point,
-                                interpolation: gradient.interpolation,
-                            }),
+                            DrawType::Gradient(swf_gradient_to_uniforms(
+                                GradientType::Focal,
+                                gradient,
+                                *focal_point,
+                            )),
                             &mut mesh,
                             &mut lyon_mesh,
                         );
@@ -335,7 +285,7 @@ pub struct Gradient {
     pub gradient_type: GradientType,
     pub ratios: Vec<f32>,
     pub colors: Vec<[f32; 4]>,
-    pub num_colors: u32,
+    pub num_colors: usize,
     pub repeat_mode: GradientSpread,
     pub focal_point: f32,
     pub interpolation: GradientInterpolation,
@@ -445,6 +395,47 @@ fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> Path
     }
 
     builder.build()
+}
+
+const MAX_GRADIENT_COLORS: usize = 15;
+
+/// Converts a gradient to the uniforms used by the shader.
+fn swf_gradient_to_uniforms(
+    gradient_type: GradientType,
+    gradient: &swf::Gradient,
+    focal_point: f32,
+) -> Gradient {
+    let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
+    let mut ratios: Vec<f32> = Vec::with_capacity(8);
+    // TODO: Support more than MAX_GRADIENT_COLORS.
+    let num_colors = gradient.records.len().min(MAX_GRADIENT_COLORS);
+    for record in &gradient.records[..num_colors] {
+        colors.push([
+            f32::from(record.color.r) / 255.0,
+            f32::from(record.color.g) / 255.0,
+            f32::from(record.color.b) / 255.0,
+            f32::from(record.color.a) / 255.0,
+        ]);
+        ratios.push(f32::from(record.ratio) / 255.0);
+    }
+
+    // Convert to linear color space if this is a linear-interpolated gradient.
+    if gradient.interpolation == swf::GradientInterpolation::LinearRgb {
+        for color in &mut colors[..num_colors] {
+            *color = srgb_to_linear(*color);
+        }
+    }
+
+    Gradient {
+        matrix: swf_to_gl_matrix(gradient.matrix),
+        gradient_type,
+        ratios,
+        colors,
+        num_colors,
+        repeat_mode: gradient.spread,
+        focal_point,
+        interpolation: gradient.interpolation,
+    }
 }
 
 struct RuffleVertexCtor {
