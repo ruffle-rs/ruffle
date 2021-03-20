@@ -413,26 +413,21 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let mut draws = Vec::with_capacity(lyon_mesh.len());
 
         for draw in lyon_mesh {
-            // TODO: inline
-            let device = &self.descriptors.device;
-            let pipelines = &self.descriptors.pipelines;
-
             let vertices: Vec<GpuVertex> = draw.vertices.into_iter().map(GpuVertex::from).collect();
             let vertex_buffer = create_buffer_with_data(
-                device,
+                &self.descriptors.device,
                 bytemuck::cast_slice(&vertices),
                 wgpu::BufferUsage::VERTEX,
                 create_debug_label!("Shape {} ({}) vbo", shape_id, draw.draw_type.name()),
             );
 
             let index_buffer = create_buffer_with_data(
-                device,
+                &self.descriptors.device,
                 bytemuck::cast_slice(&draw.indices),
                 wgpu::BufferUsage::INDEX,
                 create_debug_label!("Shape {} ({}) ibo", shape_id, draw.draw_type.name()),
             );
 
-            // TODO: inline
             let index_count = draw.indices.len() as u32;
             let draw_id = draws.len();
 
@@ -453,7 +448,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                     texture_transform[2][..3].copy_from_slice(&gradient.matrix[2]);
 
                     let tex_transforms_ubo = create_buffer_with_data(
-                        device,
+                        &self.descriptors.device,
                         bytemuck::cast_slice(&[texture_transform]),
                         wgpu::BufferUsage::UNIFORM,
                         create_debug_label!(
@@ -464,7 +459,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                     );
 
                     let gradient_ubo = create_buffer_with_data(
-                        device,
+                        &self.descriptors.device,
                         bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
                         wgpu::BufferUsage::STORAGE,
                         create_debug_label!(
@@ -479,8 +474,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         shape_id,
                         draw_id
                     );
-                    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &pipelines.gradient_layout,
+                    let bind_group = self.descriptors.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        layout: &self.descriptors.pipelines.gradient_layout,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -528,7 +523,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                     texture_transform[2][..3].copy_from_slice(&bitmap.matrix[2]);
 
                     let tex_transforms_ubo = create_buffer_with_data(
-                        device,
+                        &self.descriptors.device,
                         bytemuck::cast_slice(&[texture_transform]),
                         wgpu::BufferUsage::UNIFORM,
                         create_debug_label!(
@@ -543,8 +538,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         shape_id,
                         draw_id
                     );
-                    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &pipelines.bitmap_layout,
+                    let bind_group = self.descriptors.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        layout: &self.descriptors.pipelines.bitmap_layout,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
