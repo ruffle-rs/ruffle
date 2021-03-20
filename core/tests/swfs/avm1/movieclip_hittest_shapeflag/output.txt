@@ -1,180 +1,240 @@
 // donut
-// clip.hitTest(400, 400, true)
+// _level0.clip.hitTest(400, 400, true)
 false
-// clip.hitTest(250, 250, true)
+// _level0.clip.hitTest(250, 250, true)
 false
-// clip.hitTest(550, 250, true)
+// _level0.clip.hitTest(550, 250, true)
 false
-// clip.hitTest(250, 550, true)
+// _level0.clip.hitTest(250, 550, true)
 false
-// clip.hitTest(550, 550, true)
+// _level0.clip.hitTest(550, 550, true)
 false
-// clip.hitTest(400, 500, true)
+// _level0.clip.hitTest(400, 500, true)
 true
-// clip.hitTest(500, 400, true)
+// _level0.clip.hitTest(500, 400, true)
 true
-// clip.hitTest(400, 300, true)
+// _level0.clip.hitTest(400, 300, true)
 true
-// clip.hitTest(300, 400, true)
+// _level0.clip.hitTest(300, 400, true)
 true
-// clip.hitTest(NaN, NaN, true)
+// _level0.clip.hitTest(NaN, NaN, true)
 false
 
 // donut, root transformed
-// clip.hitTest(400, 400, true)
+// _level0.clip.hitTest(400, 400, true)
 false
-// clip.hitTest(250, 250, true)
+// _level0.clip.hitTest(250, 250, true)
 false
-// clip.hitTest(550, 250, true)
+// _level0.clip.hitTest(550, 250, true)
 false
-// clip.hitTest(250, 550, true)
+// _level0.clip.hitTest(250, 550, true)
 false
-// clip.hitTest(550, 550, true)
+// _level0.clip.hitTest(550, 550, true)
 false
-// clip.hitTest(400, 500, true)
+// _level0.clip.hitTest(400, 500, true)
 true
-// clip.hitTest(500, 400, true)
+// _level0.clip.hitTest(500, 400, true)
 true
-// clip.hitTest(400, 300, true)
+// _level0.clip.hitTest(400, 300, true)
 true
-// clip.hitTest(300, 400, true)
+// _level0.clip.hitTest(300, 400, true)
 true
 
 // strokes
-// clip.hitTest(400, 50, true)
+// _level0.clip.hitTest(400, 50, true)
 true
-// clip.hitTest(50, 400, true)
+// _level0.clip.hitTest(50, 400, true)
 true
-// clip.hitTest(750, 400, true)
+// _level0.clip.hitTest(750, 400, true)
 true
-// clip.hitTest(400, 750, true)
+// _level0.clip.hitTest(400, 750, true)
 true
-// clip.hitTest(575, 575, true)
+// _level0.clip.hitTest(575, 575, true)
 true
-// clip.hitTest(400, 350, true)
+// _level0.clip.hitTest(400, 350, true)
 true
-// clip.hitTest(350, 400, true)
+// _level0.clip.hitTest(350, 400, true)
 true
-// clip.hitTest(390, 200, true)
+// _level0.clip.hitTest(390, 200, true)
 true
-// clip.hitTest(400, 270, true)
+// _level0.clip.hitTest(400, 270, true)
 true
-// clip.hitTest(400, 200, true)
+// _level0.clip.hitTest(400, 200, true)
 false
 
 // layers
-// clip.hitTest(400, 400, true)
+// _level0.clip.hitTest(400, 400, true)
 true
-// clip.hitTest(400, 300, true)
+// _level0.clip.hitTest(400, 300, true)
 true
-// clip.hitTest(300, 400, true)
+// _level0.clip.hitTest(300, 400, true)
 true
-// clip.hitTest(200, 300, true)
+// _level0.clip.hitTest(200, 300, true)
 true
-// clip.hitTest(400, 200, true)
+// _level0.clip.hitTest(400, 200, true)
 false
-// clip.hitTest(400, 150, true)
+// _level0.clip.hitTest(400, 150, true)
 false
-// clip.hitTest(400, 655, true)
+// _level0.clip.hitTest(400, 655, true)
 false
 
 // scribble
-// clip.hitTest(100, 100, true)
+// _level0.clip.hitTest(100, 100, true)
 false
-// clip.hitTest(200, 204, true)
+// _level0.clip.hitTest(200, 204, true)
 true
-// clip.hitTest(700, 750, true)
+// _level0.clip.hitTest(700, 750, true)
 false
-// clip.hitTest(590, 652, true)
+// _level0.clip.hitTest(590, 652, true)
 true
-// clip.hitTest(400, 400, true)
+// _level0.clip.hitTest(400, 400, true)
 false
 
 // children + visible
-// clip.hitTest(400, 400, true)
+// _level0.clip.hitTest(400, 400, true)
 true
-// clip.hitTest(700, 50, true)
+// _level0.clip.hitTest(700, 50, true)
 true
-// clip.hitTest(400, 600, true)
+// _level0.clip.hitTest(400, 600, true)
 true
-// clip.hitTest(600, 600, true)
+// _level0.clip.hitTest(600, 600, true)
 true
-// clip.hitTest(500, 300, true)
+// _level0.clip.hitTest(500, 300, true)
 false
-// clip.hitTest(700, 600, true)
+// _level0.clip.hitTest(700, 600, true)
 false
-// clip.hitTest(50, 500, true)
+// _level0.clip.hitTest(50, 500, true)
 false
-// clip.hitTest(100, 600, true)
+// _level0.clip.hitTest(100, 600, true)
 true
-// clip.hitTest(700, 750, true)
+// _level0.clip.hitTest(700, 750, true)
 true
 
 // drawing API
-// clip.hitTest(400, 400, true)
+// _level0.clip.hitTest(400, 400, true)
 true
-// clip.hitTest(470, 550, true)
+// _level0.clip.hitTest(470, 550, true)
 false
-// clip.hitTest(350, 50, true)
+// _level0.clip.hitTest(350, 50, true)
 true
-// clip.hitTest(100, 335, true)
+// _level0.clip.hitTest(100, 335, true)
 true
-// clip.hitTest(250, 385, true)
+// _level0.clip.hitTest(250, 385, true)
 true
-// clip.hitTest(350, 335, true)
+// _level0.clip.hitTest(350, 335, true)
 false
-// clip.hitTest(550, 535, true)
+// _level0.clip.hitTest(550, 535, true)
 false
-// clip.hitTest(50, 35, true)
+// _level0.clip.hitTest(50, 35, true)
 false
-// clip.hitTest(60, 635, true)
+// _level0.clip.hitTest(60, 635, true)
 false
 
 // bg art
-// clip.hitTest(500, 500, true)
+// _level0.clip.hitTest(500, 500, true)
 true
-// clip.hitTest(-100, 500, true)
+// _level0.clip.hitTest(-100, 500, true)
 true
-// clip.hitTest(100, 200, true)
+// _level0.clip.hitTest(100, 200, true)
 true
-// clip.hitTest(700, 200, true)
+// _level0.clip.hitTest(700, 200, true)
 true
-// clip.hitTest(400, 150, true)
+// _level0.clip.hitTest(400, 150, true)
 true
-// clip.hitTest(300, 300, true)
+// _level0.clip.hitTest(300, 300, true)
 false
-// clip.hitTest(400, 200, true)
+// _level0.clip.hitTest(400, 200, true)
 false
 
 // text + dynamic text
-// clip.hitTest(251, 120, true)
+// _level0.clip.hitTest(251, 120, true)
 true
-// clip.hitTest(303, 135, true)
+// _level0.clip.hitTest(303, 135, true)
 false
-// clip.hitTest(300, 220, true)
+// _level0.clip.hitTest(300, 220, true)
 false
-// clip.hitTest(262, 320, true)
+// _level0.clip.hitTest(262, 320, true)
 true
-// clip.hitTest(370, 320, true)
+// _level0.clip.hitTest(370, 320, true)
 true
-// clip.hitTest(300, 320, true)
+// _level0.clip.hitTest(300, 320, true)
 false
-// clip.hitTest(390, 330, true)
+// _level0.clip.hitTest(390, 330, true)
 false
-// clip.hitTest(390, 430, true)
+// _level0.clip.hitTest(390, 430, true)
 true
-// clip.hitTest(290, 450, true)
+// _level0.clip.hitTest(290, 450, true)
 true
-// clip.hitTest(190, 480, true)
+// _level0.clip.hitTest(190, 480, true)
 true
-// clip.hitTest(650, 430, true)
+// _level0.clip.hitTest(650, 430, true)
 true
-// clip.hitTest(650, 400, true)
+// _level0.clip.hitTest(650, 400, true)
 false
-// clip.hitTest(205, 630, true)
+// _level0.clip.hitTest(205, 630, true)
 true
-// clip.hitTest(420, 650, true)
+// _level0.clip.hitTest(420, 650, true)
 true
-// clip.hitTest(790, 630, true)
+// _level0.clip.hitTest(790, 630, true)
 false
 
+// morph shape
+// _level0.clip.hitTest(350, 400, true)
+true
+// _level0.clip.hitTest(200, 400, true)
+false
+// _level0.clip.hitTest(500, 450, true)
+false
+// _level0.clip.hitTest(350, 250, true)
+true
+// _level0.clip.hitTest(250, 220, true)
+false
+// _level0.clip.hitTest(450, 220, true)
+false
+// _level0.clip.hitTest(250, 520, true)
+false
+
+// Normal clip
+/// outside (false)
+// _level0.clip.mc_full.hitTest(0, 0, true)
+false
+/// inside (true)
+// _level0.clip.mc_full.hitTest(96, 96, true)
+true
+// Masked clip
+/// inside masked area (false)
+// _level0.clip.mc_masked.hitTest(296, 160, true)
+false
+/// inside unmasked area (true)
+// _level0.clip.mc_masked.hitTest(296, 48, true)
+true
+// Invisible clip (true)
+// _level0.clip.mc_hidden.hitTest(496, 48, true)
+true
+// Clip masked by a clipping layer
+/// inside masked area (true)
+// _level0.clip.mc_clipped.hitTest(696, 160, true)
+true
+/// inside unmasked area (true)
+// _level0.clip.mc_clipped.hitTest(696, 48, true)
+true
+// Clip with children masked by a mask
+/// inside masked area (true)
+// _level0.clip.mc_inner_masked.hitTest(96, 360, true)
+true
+/// inside unmasked area (true)
+// _level0.clip.mc_inner_masked.hitTest(96, 264, true)
+true
+/// inside the mask itself (true)
+// _level0.clip.mc_inner_masked.hitTest(24, 200, true)
+true
+// Clip with children masked by a clipping layer
+/// inside masked area (false)
+// _level0.clip.mc_inner_clipped.hitTest(296, 360, true)
+false
+/// inside unmasked area (true)
+// _level0.clip.mc_inner_clipped.hitTest(296, 248, true)
+true
+/// inside the clipping layer itself (false)
+// _level0.clip.mc_inner_clipped.hitTest(224, 200, true)
+false
