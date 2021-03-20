@@ -5,7 +5,9 @@ use ruffle_core::backend::render::{
 };
 use ruffle_core::shape_utils::DistilledShape;
 use ruffle_core::swf::Matrix;
-use ruffle_render_common_tess::{GradientSpread, GradientType, ShapeTessellator, Vertex};
+use ruffle_render_common_tess::{
+    Gradient as TessGradient, GradientSpread, GradientType, ShapeTessellator, Vertex,
+};
 use ruffle_web_common::JsResult;
 use std::collections::HashMap;
 use wasm_bindgen::{JsCast, JsValue};
@@ -579,48 +581,13 @@ impl WebGlRenderBackend {
                     index_buffer,
                     num_indices,
                 },
-                TessDrawType::Gradient(gradient) => {
-                    let mut ratios = [0.0; MAX_GRADIENT_COLORS];
-                    let mut colors = [[0.0; 4]; MAX_GRADIENT_COLORS];
-                    let num_colors = (gradient.num_colors as usize).min(MAX_GRADIENT_COLORS);
-                    ratios[..num_colors].copy_from_slice(&gradient.ratios[..num_colors]);
-                    colors[..num_colors].copy_from_slice(&gradient.colors[..num_colors]);
-                    // Convert to linear color space if this is a linear-interpolated gradient.
-                    if gradient.interpolation == swf::GradientInterpolation::LinearRgb {
-                        for color in &mut colors[..num_colors] {
-                            *color = srgb_to_linear(*color);
-                        }
-                    }
-                    for i in num_colors..MAX_GRADIENT_COLORS {
-                        ratios[i] = ratios[i - 1];
-                        colors[i] = colors[i - 1];
-                    }
-                    let out_gradient = Gradient {
-                        matrix: gradient.matrix,
-                        gradient_type: match gradient.gradient_type {
-                            GradientType::Linear => 0,
-                            GradientType::Radial => 1,
-                            GradientType::Focal => 2,
-                        },
-                        ratios,
-                        colors,
-                        num_colors: gradient.num_colors,
-                        repeat_mode: match gradient.repeat_mode {
-                            GradientSpread::Pad => 0,
-                            GradientSpread::Repeat => 1,
-                            GradientSpread::Reflect => 2,
-                        },
-                        focal_point: gradient.focal_point,
-                        interpolation: gradient.interpolation,
-                    };
-                    Draw {
-                        draw_type: DrawType::Gradient(Box::new(out_gradient)),
-                        vao,
-                        vertex_buffer,
-                        index_buffer,
-                        num_indices,
-                    }
-                }
+                TessDrawType::Gradient(gradient) => Draw {
+                    draw_type: DrawType::Gradient(Box::new(Gradient::from(gradient))),
+                    vao,
+                    vertex_buffer,
+                    index_buffer,
+                    num_indices,
+                },
                 TessDrawType::Bitmap(bitmap) => Draw {
                     draw_type: DrawType::Bitmap(BitmapDraw {
                         matrix: bitmap.matrix,
@@ -1414,6 +1381,39 @@ struct Gradient {
     repeat_mode: i32,
     focal_point: f32,
     interpolation: swf::GradientInterpolation,
+}
+
+impl From<TessGradient> for Gradient {
+    fn from(gradient: TessGradient) -> Self {
+        let mut ratios = [0.0; MAX_GRADIENT_COLORS];
+        let mut colors = [[0.0; 4]; MAX_GRADIENT_COLORS];
+        ratios[..gradient.num_colors].copy_from_slice(&gradient.ratios[..gradient.num_colors]);
+        colors[..gradient.num_colors].copy_from_slice(&gradient.colors[..gradient.num_colors]);
+
+        for i in gradient.num_colors..MAX_GRADIENT_COLORS {
+            ratios[i] = ratios[i - 1];
+            colors[i] = colors[i - 1];
+        }
+
+        Self {
+            matrix: gradient.matrix,
+            gradient_type: match gradient.gradient_type {
+                GradientType::Linear => 0,
+                GradientType::Radial => 1,
+                GradientType::Focal => 2,
+            },
+            ratios,
+            colors,
+            num_colors: gradient.num_colors as u32,
+            repeat_mode: match gradient.repeat_mode {
+                GradientSpread::Pad => 0,
+                GradientSpread::Repeat => 1,
+                GradientSpread::Reflect => 2,
+            },
+            focal_point: gradient.focal_point,
+            interpolation: gradient.interpolation,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
