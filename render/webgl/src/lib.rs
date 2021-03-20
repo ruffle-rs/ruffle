@@ -32,6 +32,25 @@ enum MaskState {
     ClearMaskStencil,
 }
 
+#[derive(Clone, Debug)]
+#[repr(C)]
+struct GlVertex {
+    position: [f32; 2],
+    color: u32,
+}
+
+impl From<Vertex> for GlVertex {
+    fn from(vertex: Vertex) -> Self {
+        Self {
+            position: [vertex.x, vertex.y],
+            color: ((vertex.color.a as u32) << 24)
+                | ((vertex.color.b as u32) << 16)
+                | ((vertex.color.g as u32) << 8)
+                | (vertex.color.r as u32),
+        }
+    }
+}
+
 pub struct WebGlRenderBackend {
     /// WebGL1 context
     gl: Gl,
@@ -238,19 +257,19 @@ impl WebGlRenderBackend {
         self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
 
         let verts = [
-            Vertex {
+            GlVertex {
                 position: [0.0, 0.0],
                 color: 0xffff_ffff,
             },
-            Vertex {
+            GlVertex {
                 position: [1.0, 0.0],
                 color: 0xffff_ffff,
             },
-            Vertex {
+            GlVertex {
                 position: [1.0, 1.0],
                 color: 0xffff_ffff,
             },
-            Vertex {
+            GlVertex {
                 position: [0.0, 1.0],
                 color: 0xffff_ffff,
             },
@@ -492,9 +511,11 @@ impl WebGlRenderBackend {
             self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
 
             let (vertex_buffer, index_buffer) = unsafe {
+                let vertices: Vec<GlVertex> =
+                    draw.vertices.into_iter().map(GlVertex::from).collect();
                 let verts_bytes = std::slice::from_raw_parts(
-                    draw.vertices.as_ptr() as *const u8,
-                    draw.vertices.len() * std::mem::size_of::<Vertex>(),
+                    vertices.as_ptr() as *const u8,
+                    vertices.len() * std::mem::size_of::<GlVertex>(),
                 );
                 self.gl
                     .buffer_data_with_u8_array(Gl::ARRAY_BUFFER, verts_bytes, Gl::STATIC_DRAW);

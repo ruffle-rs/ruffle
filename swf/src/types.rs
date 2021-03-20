@@ -254,7 +254,7 @@ pub struct Rectangle {
 /// An RGBA (red, green, blue, alpha) color.
 ///
 /// All components are stored as [`u8`] and have a color range of 0-255.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Color {
     /// The red component value.
     pub r: u8,
