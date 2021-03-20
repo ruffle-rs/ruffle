@@ -49,13 +49,8 @@ impl ShapeTessellator {
             match path {
                 DrawPath::Fill { style, commands } => match style {
                     FillStyle::Color(color) => {
-                        let color = ((color.a as u32) << 24)
-                            | ((color.b as u32) << 16)
-                            | ((color.g as u32) << 8)
-                            | (color.r as u32);
-
                         let mut buffers_builder =
-                            BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
+                            BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color: *color });
 
                         if let Err(e) = self.fill_tess.tessellate_path(
                             &ruffle_path_to_lyon_path(commands, true),
@@ -72,7 +67,9 @@ impl ShapeTessellator {
 
                         let mut buffers_builder = BuffersBuilder::new(
                             &mut lyon_mesh,
-                            RuffleVertexCtor { color: 0xffff_ffff },
+                            RuffleVertexCtor {
+                                color: swf::Color::from_rgb(0xffffff, 255),
+                            },
                         );
 
                         if let Err(e) = self.fill_tess.tessellate_path(
@@ -97,25 +94,29 @@ impl ShapeTessellator {
                             ratios.push(f32::from(record.ratio) / 255.0);
                         }
 
-                        let gradient = Gradient {
-                            gradient_type: GradientType::Linear,
-                            ratios,
-                            colors,
-                            num_colors: gradient.records.len() as u32,
-                            matrix: swf_to_gl_matrix(gradient.matrix),
-                            repeat_mode: gradient.spread,
-                            focal_point: 0.0,
-                            interpolation: gradient.interpolation,
-                        };
-
-                        flush_draw(DrawType::Gradient(gradient), &mut mesh, &mut lyon_mesh);
+                        flush_draw(
+                            DrawType::Gradient(Gradient {
+                                gradient_type: GradientType::Linear,
+                                ratios,
+                                colors,
+                                num_colors: gradient.records.len() as u32,
+                                matrix: swf_to_gl_matrix(gradient.matrix),
+                                repeat_mode: gradient.spread,
+                                focal_point: 0.0,
+                                interpolation: gradient.interpolation,
+                            }),
+                            &mut mesh,
+                            &mut lyon_mesh,
+                        );
                     }
                     FillStyle::RadialGradient(gradient) => {
                         flush_draw(DrawType::Color, &mut mesh, &mut lyon_mesh);
 
                         let mut buffers_builder = BuffersBuilder::new(
                             &mut lyon_mesh,
-                            RuffleVertexCtor { color: 0xffff_ffff },
+                            RuffleVertexCtor {
+                                color: swf::Color::from_rgb(0xffffff, 255),
+                            },
                         );
 
                         if let Err(e) = self.fill_tess.tessellate_path(
@@ -140,18 +141,20 @@ impl ShapeTessellator {
                             ratios.push(f32::from(record.ratio) / 255.0);
                         }
 
-                        let gradient = Gradient {
-                            gradient_type: GradientType::Radial,
-                            ratios,
-                            colors,
-                            num_colors: gradient.records.len() as u32,
-                            matrix: swf_to_gl_matrix(gradient.matrix),
-                            repeat_mode: gradient.spread,
-                            focal_point: 0.0,
-                            interpolation: gradient.interpolation,
-                        };
-
-                        flush_draw(DrawType::Gradient(gradient), &mut mesh, &mut lyon_mesh);
+                        flush_draw(
+                            DrawType::Gradient(Gradient {
+                                gradient_type: GradientType::Radial,
+                                ratios,
+                                colors,
+                                num_colors: gradient.records.len() as u32,
+                                matrix: swf_to_gl_matrix(gradient.matrix),
+                                repeat_mode: gradient.spread,
+                                focal_point: 0.0,
+                                interpolation: gradient.interpolation,
+                            }),
+                            &mut mesh,
+                            &mut lyon_mesh,
+                        );
                     }
                     FillStyle::FocalGradient {
                         gradient,
@@ -161,7 +164,9 @@ impl ShapeTessellator {
 
                         let mut buffers_builder = BuffersBuilder::new(
                             &mut lyon_mesh,
-                            RuffleVertexCtor { color: 0xffff_ffff },
+                            RuffleVertexCtor {
+                                color: swf::Color::from_rgb(0xffffff, 255),
+                            },
                         );
 
                         if let Err(e) = self.fill_tess.tessellate_path(
@@ -186,18 +191,20 @@ impl ShapeTessellator {
                             ratios.push(f32::from(record.ratio) / 255.0);
                         }
 
-                        let gradient = Gradient {
-                            gradient_type: GradientType::Focal,
-                            ratios,
-                            colors,
-                            num_colors: gradient.records.len() as u32,
-                            matrix: swf_to_gl_matrix(gradient.matrix),
-                            repeat_mode: gradient.spread,
-                            focal_point: *focal_point,
-                            interpolation: gradient.interpolation,
-                        };
-
-                        flush_draw(DrawType::Gradient(gradient), &mut mesh, &mut lyon_mesh);
+                        flush_draw(
+                            DrawType::Gradient(Gradient {
+                                gradient_type: GradientType::Focal,
+                                ratios,
+                                colors,
+                                num_colors: gradient.records.len() as u32,
+                                matrix: swf_to_gl_matrix(gradient.matrix),
+                                repeat_mode: gradient.spread,
+                                focal_point: *focal_point,
+                                interpolation: gradient.interpolation,
+                            }),
+                            &mut mesh,
+                            &mut lyon_mesh,
+                        );
                     }
                     FillStyle::Bitmap {
                         id,
@@ -209,7 +216,9 @@ impl ShapeTessellator {
 
                         let mut buffers_builder = BuffersBuilder::new(
                             &mut lyon_mesh,
-                            RuffleVertexCtor { color: 0xffff_ffff },
+                            RuffleVertexCtor {
+                                color: swf::Color::from_rgb(0xffffff, 255),
+                            },
                         );
 
                         if let Err(e) = self.fill_tess.tessellate_path(
@@ -223,18 +232,20 @@ impl ShapeTessellator {
                         }
 
                         if let Some((bitmap_width, bitmap_height, bitmap)) = get_bitmap(*id) {
-                            let bitmap = Bitmap {
-                                matrix: swf_bitmap_to_gl_matrix(
-                                    *matrix,
-                                    bitmap_width,
-                                    bitmap_height,
-                                ),
-                                bitmap,
-                                is_smoothed: *is_smoothed,
-                                is_repeating: *is_repeating,
-                            };
-
-                            flush_draw(DrawType::Bitmap(bitmap), &mut mesh, &mut lyon_mesh);
+                            flush_draw(
+                                DrawType::Bitmap(Bitmap {
+                                    matrix: swf_bitmap_to_gl_matrix(
+                                        *matrix,
+                                        bitmap_width,
+                                        bitmap_height,
+                                    ),
+                                    bitmap,
+                                    is_smoothed: *is_smoothed,
+                                    is_repeating: *is_repeating,
+                                }),
+                                &mut mesh,
+                                &mut lyon_mesh,
+                            );
                         }
                     }
                 },
@@ -243,20 +254,13 @@ impl ShapeTessellator {
                     commands,
                     is_closed,
                 } => {
-                    let color = ((style.color.a as u32) << 24)
-                        | ((style.color.b as u32) << 16)
-                        | ((style.color.g as u32) << 8)
-                        | (style.color.r as u32);
-
-                    let mut buffers_builder =
-                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
+                    let mut buffers_builder = BuffersBuilder::new(
+                        &mut lyon_mesh,
+                        RuffleVertexCtor { color: style.color },
+                    );
 
                     // TODO(Herschel): 0 width indicates "hairline".
-                    let width = if style.width.to_pixels() >= 1.0 {
-                        style.width.to_pixels() as f32
-                    } else {
-                        1.0
-                    };
+                    let width = (style.width.to_pixels() as f32).max(1.0);
 
                     let mut options = StrokeOptions::default()
                         .with_line_width(width)
@@ -337,11 +341,11 @@ pub struct Gradient {
     pub interpolation: GradientInterpolation,
 }
 
-#[derive(Copy, Clone, Debug)]
-#[repr(C)]
+#[derive(Clone, Debug)]
 pub struct Vertex {
-    pub position: [f32; 2],
-    pub color: u32,
+    pub x: f32,
+    pub y: f32,
+    pub color: swf::Color,
 }
 
 #[derive(Clone, Debug)]
@@ -444,13 +448,14 @@ fn ruffle_path_to_lyon_path(commands: Vec<DrawCommand>, is_closed: bool) -> Path
 }
 
 struct RuffleVertexCtor {
-    color: u32,
+    color: swf::Color,
 }
 
 impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
     fn new_vertex(&mut self, vertex: FillVertex) -> Vertex {
         Vertex {
-            position: [vertex.position().x, vertex.position().y],
+            x: vertex.position().x,
+            y: vertex.position().y,
             color: self.color,
         }
     }
@@ -459,7 +464,8 @@ impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
 impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
     fn new_vertex(&mut self, vertex: StrokeVertex) -> Vertex {
         Vertex {
-            position: [vertex.position().x, vertex.position().y],
+            x: vertex.position().x,
+            y: vertex.position().y,
             color: self.color,
         }
     }
