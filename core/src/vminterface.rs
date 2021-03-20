@@ -87,6 +87,15 @@ impl From<AvmObject<'_>> for AvmType {
     }
 }
 
+impl AvmType {
+    pub fn into_avm2_loader_version(self) -> u32 {
+        match self {
+            AvmType::Avm1 => 2,
+            AvmType::Avm2 => 3,
+        }
+    }
+}
+
 /// A reference to either an AVM1 or AVM2 object.
 ///
 /// Used by non-AVM code to retain VM objects that may have been customized or

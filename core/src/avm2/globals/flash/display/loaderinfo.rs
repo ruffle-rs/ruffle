@@ -4,8 +4,9 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{LoaderInfoObject, Object};
+use crate::avm2::object::{LoaderInfoObject, LoaderStream, Object, TObject};
 use crate::avm2::scope::Scope;
+use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -25,6 +26,29 @@ pub fn class_init<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
+}
+
+/// `actionScriptVersion` getter
+pub fn action_script_version<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            match &*loader_stream {
+                LoaderStream::SWF(movie) => {
+                    let library = activation
+                        .context
+                        .library
+                        .library_for_movie_mut(movie.clone());
+                    return Ok(library.avm_type().into_avm2_loader_version().into());
+                }
+            }
+        }
+    }
+
     Ok(Value::Undefined)
 }
 
@@ -51,6 +75,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.set_attributes(ClassAttributes::SEALED);
+
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "actionScriptVersion"),
+        Method::from_builtin(action_script_version),
+    ));
 
     class
 }

@@ -41,7 +41,7 @@ pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::DomainObject;
 pub use crate::avm2::object::event_object::EventObject;
 pub use crate::avm2::object::function_object::{implicit_deriver, FunctionObject};
-pub use crate::avm2::object::loaderinfo_object::LoaderInfoObject;
+pub use crate::avm2::object::loaderinfo_object::{LoaderInfoObject, LoaderStream};
 pub use crate::avm2::object::namespace_object::NamespaceObject;
 pub use crate::avm2::object::primitive_object::PrimitiveObject;
 pub use crate::avm2::object::regexp_object::RegExpObject;
@@ -910,6 +910,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object as a mutable regexp.
     fn as_regexp_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<RegExp<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object's loader stream
+    fn as_loader_stream(&self) -> Option<Ref<LoaderStream>> {
         None
     }
 }
