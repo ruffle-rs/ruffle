@@ -3004,9 +3004,9 @@ dependencies = [
  "image",
  "jpeg-decoder",
  "log",
- "lyon",
  "raw-window-handle",
  "ruffle_core",
+ "ruffle_render_common_tess",
  "wgpu",
 ]
 

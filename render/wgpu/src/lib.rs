@@ -1,14 +1,8 @@
-use lyon::tessellation::{
-    self,
-    geometry_builder::{BuffersBuilder, FillVertexConstructor, VertexBuffers},
-    FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
-};
-use ruffle_core::backend::render::swf::{self, FillStyle};
 use ruffle_core::backend::render::{
-    srgb_to_linear, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary,
-    RenderBackend, ShapeHandle, Transform,
+    swf, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary, RenderBackend,
+    ShapeHandle, Transform,
 };
-use ruffle_core::shape_utils::{DistilledShape, DrawPath};
+use ruffle_core::shape_utils::DistilledShape;
 use std::borrow::Cow;
 use swf::{DefineBitsLossless, Glyph, GradientInterpolation};
 use target::TextureTarget;
@@ -18,14 +12,11 @@ use futures::executor::block_on;
 use raw_window_handle::HasRawWindowHandle;
 
 use crate::pipelines::Pipelines;
-use crate::shapes::{Draw, DrawType, GradientUniforms, IncompleteDrawType, Mesh};
 use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
-use crate::utils::{
-    create_buffer_with_data, format_list, get_backend_names, gradient_spread_mode_index,
-    ruffle_path_to_lyon_path, swf_bitmap_to_gl_matrix, swf_to_gl_matrix,
-};
+use crate::utils::{create_buffer_with_data, format_list, get_backend_names};
 use enum_map::Enum;
 use ruffle_core::color_transform::ColorTransform;
+use ruffle_render_common_tess::{Gradient, GradientSpread, GradientType, ShapeTessellator, Vertex};
 
 type Error = Box<dyn std::error::Error>;
 
@@ -35,7 +26,6 @@ mod utils;
 mod bitmaps;
 mod globals;
 mod pipelines;
-mod shapes;
 pub mod target;
 
 #[cfg(feature = "clap")]
@@ -172,305 +162,87 @@ struct GpuVertex {
     color: [f32; 4],
 }
 
-struct IncompleteDraw {
-    draw: IncompleteDrawType,
-    vertices: Vec<GpuVertex>,
-    indices: Vec<u32>,
-}
-
-struct ShapeTessellator {
-    fill_tess: FillTessellator,
-    stroke_tess: StrokeTessellator,
-}
-
-impl ShapeTessellator {
-    fn new() -> Self {
+impl From<Vertex> for GpuVertex {
+    fn from(vertex: Vertex) -> Self {
         Self {
-            fill_tess: FillTessellator::new(),
-            stroke_tess: StrokeTessellator::new(),
+            position: [vertex.x, vertex.y],
+            color: [
+                f32::from(vertex.color.r) / 255.0,
+                f32::from(vertex.color.g) / 255.0,
+                f32::from(vertex.color.b) / 255.0,
+                f32::from(vertex.color.a) / 255.0,
+            ],
         }
     }
+}
 
-    fn tessellate_shape<F>(&mut self, shape: DistilledShape, get_bitmap: F) -> Vec<IncompleteDraw>
-    where
-        F: Fn(swf::CharacterId) -> Option<(u32, u32, BitmapHandle)>,
-    {
-        use lyon::tessellation::{FillOptions, StrokeOptions};
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+struct GradientUniforms {
+    colors: [[f32; 4]; 16],
+    ratios: [f32; 16],
+    gradient_type: i32,
+    num_colors: u32,
+    repeat_mode: i32,
+    interpolation: i32,
+    focal_point: f32,
+}
 
-        let mut draws = Vec::new();
+impl From<Gradient> for GradientUniforms {
+    fn from(gradient: Gradient) -> Self {
+        let mut ratios = [0.0; 16];
+        let mut colors = [[0.0; 4]; 16];
+        ratios[..gradient.num_colors].copy_from_slice(&gradient.ratios[..gradient.num_colors]);
+        colors[..gradient.num_colors].copy_from_slice(&gradient.colors[..gradient.num_colors]);
 
-        let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
-
-        fn flush_draw(
-            draw: IncompleteDrawType,
-            draws: &mut Vec<IncompleteDraw>,
-            lyon_mesh: &mut VertexBuffers<GpuVertex, u32>,
-        ) {
-            if lyon_mesh.vertices.is_empty() || lyon_mesh.indices.len() < 3 {
-                return;
-            }
-
-            let draw_mesh = std::mem::replace(lyon_mesh, VertexBuffers::new());
-            draws.push(IncompleteDraw {
-                draw,
-                vertices: draw_mesh.vertices,
-                indices: draw_mesh.indices,
-            });
+        Self {
+            colors,
+            ratios,
+            gradient_type: match gradient.gradient_type {
+                GradientType::Linear => 0,
+                GradientType::Radial => 1,
+                GradientType::Focal => 2,
+            },
+            num_colors: gradient.num_colors as u32,
+            repeat_mode: match gradient.repeat_mode {
+                GradientSpread::Pad => 0,
+                GradientSpread::Repeat => 1,
+                GradientSpread::Reflect => 2,
+            },
+            interpolation: (gradient.interpolation == GradientInterpolation::LinearRgb) as i32,
+            focal_point: gradient.focal_point,
         }
-
-        for path in shape.paths {
-            match path {
-                DrawPath::Fill { style, commands } => match style {
-                    FillStyle::Color(color) => {
-                        let color = [
-                            f32::from(color.r) / 255.0,
-                            f32::from(color.g) / 255.0,
-                            f32::from(color.b) / 255.0,
-                            f32::from(color.a) / 255.0,
-                        ];
-
-                        let mut buffers_builder =
-                            BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
-
-                        if let Err(e) = self.fill_tess.tessellate_path(
-                            &ruffle_path_to_lyon_path(commands, true),
-                            &FillOptions::even_odd(),
-                            &mut buffers_builder,
-                        ) {
-                            // This may just be a degenerate path; skip it.
-                            log::error!("Tessellation failure: {:?}", e);
-                            continue;
-                        }
-                    }
-                    FillStyle::LinearGradient(gradient) => {
-                        flush_draw(
-                            IncompleteDrawType::Color,
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-
-                        let mut buffers_builder = BuffersBuilder::new(
-                            &mut lyon_mesh,
-                            RuffleVertexCtor {
-                                color: [1.0, 1.0, 1.0, 1.0],
-                            },
-                        );
-
-                        if let Err(e) = self.fill_tess.tessellate_path(
-                            &ruffle_path_to_lyon_path(commands, true),
-                            &FillOptions::even_odd(),
-                            &mut buffers_builder,
-                        ) {
-                            // This may just be a degenerate path; skip it.
-                            log::error!("Tessellation failure: {:?}", e);
-                            continue;
-                        }
-
-                        let uniforms = swf_gradient_to_uniforms(0, gradient, 0.0);
-                        let matrix = swf_to_gl_matrix(gradient.matrix);
-
-                        flush_draw(
-                            IncompleteDrawType::Gradient {
-                                texture_transform: matrix,
-                                gradient: uniforms,
-                            },
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-                    }
-                    FillStyle::RadialGradient(gradient) => {
-                        flush_draw(
-                            IncompleteDrawType::Color,
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-
-                        let mut buffers_builder = BuffersBuilder::new(
-                            &mut lyon_mesh,
-                            RuffleVertexCtor {
-                                color: [1.0, 1.0, 1.0, 1.0],
-                            },
-                        );
-
-                        if let Err(e) = self.fill_tess.tessellate_path(
-                            &ruffle_path_to_lyon_path(commands, true),
-                            &FillOptions::even_odd(),
-                            &mut buffers_builder,
-                        ) {
-                            // This may just be a degenerate path; skip it.
-                            log::error!("Tessellation failure: {:?}", e);
-                            continue;
-                        }
-
-                        let uniforms = swf_gradient_to_uniforms(1, gradient, 0.0);
-                        let matrix = swf_to_gl_matrix(gradient.matrix);
-
-                        flush_draw(
-                            IncompleteDrawType::Gradient {
-                                texture_transform: matrix,
-                                gradient: uniforms,
-                            },
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-                    }
-                    FillStyle::FocalGradient {
-                        gradient,
-                        focal_point,
-                    } => {
-                        flush_draw(
-                            IncompleteDrawType::Color,
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-
-                        let mut buffers_builder = BuffersBuilder::new(
-                            &mut lyon_mesh,
-                            RuffleVertexCtor {
-                                color: [1.0, 1.0, 1.0, 1.0],
-                            },
-                        );
-
-                        if let Err(e) = self.fill_tess.tessellate_path(
-                            &ruffle_path_to_lyon_path(commands, true),
-                            &FillOptions::even_odd(),
-                            &mut buffers_builder,
-                        ) {
-                            // This may just be a degenerate path; skip it.
-                            log::error!("Tessellation failure: {:?}", e);
-                            continue;
-                        }
-
-                        let uniforms = swf_gradient_to_uniforms(2, gradient, *focal_point);
-                        let matrix = swf_to_gl_matrix(gradient.matrix);
-
-                        flush_draw(
-                            IncompleteDrawType::Gradient {
-                                texture_transform: matrix,
-                                gradient: uniforms,
-                            },
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-                    }
-                    FillStyle::Bitmap {
-                        id,
-                        matrix,
-                        is_smoothed,
-                        is_repeating,
-                    } => {
-                        flush_draw(
-                            IncompleteDrawType::Color,
-                            &mut draws,
-                            &mut lyon_mesh,
-                        );
-
-                        let mut buffers_builder = BuffersBuilder::new(
-                            &mut lyon_mesh,
-                            RuffleVertexCtor {
-                                color: [1.0, 1.0, 1.0, 1.0],
-                            },
-                        );
-
-                        if let Err(e) = self.fill_tess.tessellate_path(
-                            &ruffle_path_to_lyon_path(commands, true),
-                            &FillOptions::even_odd(),
-                            &mut buffers_builder,
-                        ) {
-                            // This may just be a degenerate path; skip it.
-                            log::error!("Tessellation failure: {:?}", e);
-                            continue;
-                        }
-
-                        if let Some((bitmap_width, bitmap_height, bitmap)) = get_bitmap(*id) {
-                            let bitmap = IncompleteDrawType::Bitmap {
-                                texture_transform: swf_bitmap_to_gl_matrix(
-                                    *matrix,
-                                    bitmap_width,
-                                    bitmap_height,
-                                ),
-                                bitmap,
-                                is_smoothed: *is_smoothed,
-                                is_repeating: *is_repeating,
-                            };
-
-                            flush_draw(bitmap, &mut draws, &mut lyon_mesh);
-                        } else {
-                            log::error!("Couldn't fill shape with unknown bitmap {}", id);
-                        }
-                    }
-                },
-                DrawPath::Stroke {
-                    style,
-                    commands,
-                    is_closed,
-                } => {
-                    let color = [
-                        f32::from(style.color.r) / 255.0,
-                        f32::from(style.color.g) / 255.0,
-                        f32::from(style.color.b) / 255.0,
-                        f32::from(style.color.a) / 255.0,
-                    ];
-
-                    let mut buffers_builder =
-                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
-
-                    // TODO(Herschel): 0 width indicates "hairline".
-                    let width = if style.width.to_pixels() >= 1.0 {
-                        style.width.to_pixels() as f32
-                    } else {
-                        1.0
-                    };
-
-                    let mut options = StrokeOptions::default()
-                        .with_line_width(width)
-                        .with_start_cap(match style.start_cap {
-                            swf::LineCapStyle::None => tessellation::LineCap::Butt,
-                            swf::LineCapStyle::Round => tessellation::LineCap::Round,
-                            swf::LineCapStyle::Square => tessellation::LineCap::Square,
-                        })
-                        .with_end_cap(match style.end_cap {
-                            swf::LineCapStyle::None => tessellation::LineCap::Butt,
-                            swf::LineCapStyle::Round => tessellation::LineCap::Round,
-                            swf::LineCapStyle::Square => tessellation::LineCap::Square,
-                        });
-
-                    let line_join = match style.join_style {
-                        swf::LineJoinStyle::Round => tessellation::LineJoin::Round,
-                        swf::LineJoinStyle::Bevel => tessellation::LineJoin::Bevel,
-                        swf::LineJoinStyle::Miter(limit) => {
-                            // Avoid lyon assert with small miter limits.
-                            if limit >= StrokeOptions::MINIMUM_MITER_LIMIT {
-                                options = options.with_miter_limit(limit);
-                                tessellation::LineJoin::MiterClip
-                            } else {
-                                tessellation::LineJoin::Bevel
-                            }
-                        }
-                    };
-                    options = options.with_line_join(line_join);
-
-                    if let Err(e) = self.stroke_tess.tessellate_path(
-                        &ruffle_path_to_lyon_path(commands, is_closed),
-                        &options,
-                        &mut buffers_builder,
-                    ) {
-                        // This may just be a degenerate path; skip it.
-                        log::error!("Tessellation failure: {:?}", e);
-                        continue;
-                    }
-                }
-            }
-        }
-
-        flush_draw(
-            IncompleteDrawType::Color,
-            &mut draws,
-            &mut lyon_mesh,
-        );
-
-        draws
     }
+}
+
+#[derive(Debug)]
+struct Mesh {
+    draws: Vec<Draw>,
+}
+
+#[derive(Debug)]
+struct Draw {
+    draw_type: DrawType,
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
+    index_count: u32,
+}
+
+#[derive(Debug)]
+enum DrawType {
+    Color,
+    Gradient {
+        texture_transforms: wgpu::Buffer,
+        gradient: wgpu::Buffer,
+        bind_group: wgpu::BindGroup,
+    },
+    Bitmap {
+        texture_transforms: wgpu::Buffer,
+        texture_view: wgpu::TextureView,
+        is_smoothed: bool,
+        is_repeating: bool,
+        bind_group: wgpu::BindGroup,
+    },
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -628,7 +400,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     ) -> Mesh {
         let shape_id = shape.id; // TODO: remove?
         let textures = &self.textures;
-        let lyon_meshes = self.shape_tessellator.tessellate_shape(shape, |id| {
+        let lyon_mesh = self.shape_tessellator.tessellate_shape(shape, |id| {
             library
                 .and_then(|lib| lib.get_bitmap(id))
                 .and_then(|bitmap| {
@@ -638,43 +410,48 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 .map(|(texture, handle)| (texture.width, texture.height, handle))
         });
 
-        let mut draws = Vec::with_capacity(lyon_meshes.len());
+        let mut draws = Vec::with_capacity(lyon_mesh.len());
 
-        for lyon_mesh in lyon_meshes {
+        for draw in lyon_mesh {
             // TODO: inline
-            let draw = &lyon_mesh.draw;
             let device = &self.descriptors.device;
             let pipelines = &self.descriptors.pipelines;
 
+            let vertices: Vec<GpuVertex> = draw.vertices.into_iter().map(GpuVertex::from).collect();
             let vertex_buffer = create_buffer_with_data(
                 device,
-                bytemuck::cast_slice(&lyon_mesh.vertices),
+                bytemuck::cast_slice(&vertices),
                 wgpu::BufferUsage::VERTEX,
-                create_debug_label!("Shape {} ({}) vbo", shape_id, draw.name()),
+                create_debug_label!("Shape {} ({}) vbo", shape_id, draw.draw_type.name()),
             );
 
             let index_buffer = create_buffer_with_data(
                 device,
-                bytemuck::cast_slice(&lyon_mesh.indices),
+                bytemuck::cast_slice(&draw.indices),
                 wgpu::BufferUsage::INDEX,
-                create_debug_label!("Shape {} ({}) ibo", shape_id, draw.name()),
+                create_debug_label!("Shape {} ({}) ibo", shape_id, draw.draw_type.name()),
             );
 
             // TODO: inline
-            let index_count = lyon_mesh.indices.len() as u32;
+            let index_count = draw.indices.len() as u32;
             let draw_id = draws.len();
 
-            draws.push(match *draw {
-                IncompleteDrawType::Color => Draw {
+            use ruffle_render_common_tess::DrawType as TessDrawType;
+
+            draws.push(match draw.draw_type {
+                TessDrawType::Color => Draw {
                     draw_type: DrawType::Color,
                     vertex_buffer,
                     index_buffer,
                     index_count,
                 },
-                IncompleteDrawType::Gradient {
-                    texture_transform,
-                    gradient,
-                } => {
+                TessDrawType::Gradient(gradient) => {
+                    // TODO: Extract to function?
+                    let mut texture_transform = [[0.0; 4]; 4];
+                    texture_transform[0][..3].copy_from_slice(&gradient.matrix[0]);
+                    texture_transform[1][..3].copy_from_slice(&gradient.matrix[1]);
+                    texture_transform[2][..3].copy_from_slice(&gradient.matrix[2]);
+
                     let tex_transforms_ubo = create_buffer_with_data(
                         device,
                         bytemuck::cast_slice(&[texture_transform]),
@@ -688,7 +465,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
                     let gradient_ubo = create_buffer_with_data(
                         device,
-                        bytemuck::cast_slice(&[gradient]),
+                        bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
                         wgpu::BufferUsage::STORAGE,
                         create_debug_label!(
                             "Shape {} draw {} gradient ubo transfer buffer",
@@ -697,8 +474,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         ),
                     );
 
-                    let bind_group_label =
-                        create_debug_label!("Shape {} (gradient) draw {} bindgroup", shape_id, draw_id);
+                    let bind_group_label = create_debug_label!(
+                        "Shape {} (gradient) draw {} bindgroup",
+                        shape_id,
+                        draw_id
+                    );
                     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                         layout: &pipelines.gradient_layout,
                         entries: &[
@@ -708,7 +488,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                                     buffer: &tex_transforms_ubo,
                                     offset: 0,
                                     size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<TextureTransforms>() as u64
+                                        std::mem::size_of::<TextureTransforms>() as u64,
                                     ),
                                 },
                             },
@@ -718,7 +498,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                                     buffer: &gradient_ubo,
                                     offset: 0,
                                     size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<GradientUniforms>() as u64
+                                        std::mem::size_of::<GradientUniforms>() as u64,
                                     ),
                                 },
                             },
@@ -737,14 +517,15 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         index_count,
                     }
                 }
-                IncompleteDrawType::Bitmap {
-                    texture_transform,
-                    bitmap,
-                    is_smoothed,
-                    is_repeating,
-                } => {
-                    let texture = self.textures.get(bitmap.0).unwrap();
+                TessDrawType::Bitmap(bitmap) => {
+                    let texture = self.textures.get(bitmap.bitmap.0).unwrap();
                     let texture_view = texture.texture.create_view(&Default::default());
+
+                    // TODO: Extract to function?
+                    let mut texture_transform = [[0.0; 4]; 4];
+                    texture_transform[0][..3].copy_from_slice(&bitmap.matrix[0]);
+                    texture_transform[1][..3].copy_from_slice(&bitmap.matrix[1]);
+                    texture_transform[2][..3].copy_from_slice(&bitmap.matrix[2]);
 
                     let tex_transforms_ubo = create_buffer_with_data(
                         device,
@@ -757,8 +538,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         ),
                     );
 
-                    let bind_group_label =
-                        create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
+                    let bind_group_label = create_debug_label!(
+                        "Shape {} (bitmap) draw {} bindgroup",
+                        shape_id,
+                        draw_id
+                    );
                     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                         layout: &pipelines.bitmap_layout,
                         entries: &[
@@ -768,7 +552,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                                     buffer: &tex_transforms_ubo,
                                     offset: 0,
                                     size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<TextureTransforms>() as u64
+                                        std::mem::size_of::<TextureTransforms>() as u64,
                                     ),
                                 },
                             },
@@ -784,8 +568,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         draw_type: DrawType::Bitmap {
                             texture_transforms: tex_transforms_ubo,
                             texture_view,
-                            is_smoothed,
-                            is_repeating,
+                            is_smoothed: bitmap.is_smoothed,
+                            is_repeating: bitmap.is_repeating,
                             bind_group,
                         },
                         vertex_buffer,
@@ -1500,72 +1284,10 @@ fn create_quad_buffers(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, wg
     (vbo, ibo, tex_transforms)
 }
 
-/// Converts a gradient to the uniforms used by the shader.
-fn swf_gradient_to_uniforms(
-    gradient_type: i32,
-    gradient: &swf::Gradient,
-    focal_point: f32,
-) -> GradientUniforms {
-    let mut colors: [[f32; 4]; 16] = Default::default();
-    let mut ratios: [f32; 16] = Default::default();
-    for (i, record) in gradient.records.iter().enumerate() {
-        if i >= 16 {
-            // TODO: we need to support these!
-            break;
-        }
-        colors[i] = [
-            f32::from(record.color.r) / 255.0,
-            f32::from(record.color.g) / 255.0,
-            f32::from(record.color.b) / 255.0,
-            f32::from(record.color.a) / 255.0,
-        ];
-        ratios[i] = f32::from(record.ratio) / 255.0;
-    }
-
-    // Convert colors from sRGB to linear space if necessary.
-    if gradient.interpolation == GradientInterpolation::LinearRgb {
-        for color in &mut colors[0..gradient.records.len()] {
-            *color = srgb_to_linear(*color);
-        }
-    }
-
-    GradientUniforms {
-        gradient_type,
-        ratios,
-        colors,
-        interpolation: (gradient.interpolation == GradientInterpolation::LinearRgb) as i32,
-        num_colors: gradient.records.len() as u32,
-        repeat_mode: gradient_spread_mode_index(gradient.spread),
-        focal_point,
-    }
-}
-
 #[derive(Debug)]
 struct Texture {
     width: u32,
     height: u32,
     texture: wgpu::Texture,
     bind_group: wgpu::BindGroup,
-}
-
-struct RuffleVertexCtor {
-    color: [f32; 4],
-}
-
-impl FillVertexConstructor<GpuVertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, vertex: FillVertex) -> GpuVertex {
-        GpuVertex {
-            position: [vertex.position().x, vertex.position().y],
-            color: self.color,
-        }
-    }
-}
-
-impl StrokeVertexConstructor<GpuVertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, vertex: StrokeVertex) -> GpuVertex {
-        GpuVertex {
-            position: [vertex.position().x, vertex.position().y],
-            color: self.color,
-        }
-    }
 }
