@@ -1,8 +1,18 @@
 //this.loaderInfo.bytesLoaded
-603
+754
 //this.loaderInfo.bytesTotal
-603
+754
 //this.loaderInfo.content === this
 true
 //this.loaderInfo.contentType
 null
+//this.loaderInfo.actionScriptVersion
+3
+//this.loaderInfo.frameRate
+24
+//this.loaderInfo.height
+400
+//this.loaderInfo.swfVersion
+43
+//this.loaderInfo.width
+550
