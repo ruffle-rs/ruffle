@@ -1,10 +1,10 @@
 use ruffle_core::backend::render::{
-    swf, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary, RenderBackend,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary, RenderBackend,
     ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
+use ruffle_core::swf;
 use std::borrow::Cow;
-use swf::{DefineBitsLossless, Glyph, GradientInterpolation};
 use target::TextureTarget;
 
 use bytemuck::{Pod, Zeroable};
@@ -16,7 +16,10 @@ use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
 use crate::utils::{create_buffer_with_data, format_list, get_backend_names};
 use enum_map::Enum;
 use ruffle_core::color_transform::ColorTransform;
-use ruffle_render_common_tess::{Gradient, GradientSpread, GradientType, ShapeTessellator, Vertex};
+use ruffle_render_common_tess::{
+    DrawType as TessDrawType, Gradient as TessGradient, GradientType, ShapeTessellator,
+    Vertex as TessVertex,
+};
 
 type Error = Box<dyn std::error::Error>;
 
@@ -33,7 +36,6 @@ pub mod clap;
 
 use crate::bitmaps::BitmapSamplers;
 use crate::globals::Globals;
-use ruffle_core::swf::Matrix;
 use std::collections::HashMap;
 use std::path::Path;
 pub use wgpu;
@@ -157,13 +159,13 @@ impl From<ColorTransform> for ColorAdjustments {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct GpuVertex {
+struct Vertex {
     position: [f32; 2],
     color: [f32; 4],
 }
 
-impl From<Vertex> for GpuVertex {
-    fn from(vertex: Vertex) -> Self {
+impl From<TessVertex> for Vertex {
+    fn from(vertex: TessVertex) -> Self {
         Self {
             position: [vertex.x, vertex.y],
             color: [
@@ -188,8 +190,8 @@ struct GradientUniforms {
     focal_point: f32,
 }
 
-impl From<Gradient> for GradientUniforms {
-    fn from(gradient: Gradient) -> Self {
+impl From<TessGradient> for GradientUniforms {
+    fn from(gradient: TessGradient) -> Self {
         let mut ratios = [0.0; 16];
         let mut colors = [[0.0; 4]; 16];
         ratios[..gradient.num_colors].copy_from_slice(&gradient.ratios[..gradient.num_colors]);
@@ -205,11 +207,11 @@ impl From<Gradient> for GradientUniforms {
             },
             num_colors: gradient.num_colors as u32,
             repeat_mode: match gradient.repeat_mode {
-                GradientSpread::Pad => 0,
-                GradientSpread::Repeat => 1,
-                GradientSpread::Reflect => 2,
+                swf::GradientSpread::Pad => 0,
+                swf::GradientSpread::Repeat => 1,
+                swf::GradientSpread::Reflect => 2,
             },
-            interpolation: (gradient.interpolation == GradientInterpolation::LinearRgb) as i32,
+            interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
             focal_point: gradient.focal_point,
         }
     }
@@ -413,7 +415,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let mut draws = Vec::with_capacity(lyon_mesh.len());
 
         for draw in lyon_mesh {
-            let vertices: Vec<GpuVertex> = draw.vertices.into_iter().map(GpuVertex::from).collect();
+            let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
             let vertex_buffer = create_buffer_with_data(
                 &self.descriptors.device,
                 bytemuck::cast_slice(&vertices),
@@ -430,8 +432,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
             let index_count = draw.indices.len() as u32;
             let draw_id = draws.len();
-
-            use ruffle_render_common_tess::DrawType as TessDrawType;
 
             draws.push(match draw.draw_type {
                 TessDrawType::Color => Draw {
@@ -474,32 +474,39 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         shape_id,
                         draw_id
                     );
-                    let bind_group = self.descriptors.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.descriptors.pipelines.gradient_layout,
-                        entries: &[
-                            wgpu::BindGroupEntry {
-                                binding: 0,
-                                resource: wgpu::BindingResource::Buffer {
-                                    buffer: &tex_transforms_ubo,
-                                    offset: 0,
-                                    size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<TextureTransforms>() as u64,
-                                    ),
-                                },
-                            },
-                            wgpu::BindGroupEntry {
-                                binding: 1,
-                                resource: wgpu::BindingResource::Buffer {
-                                    buffer: &gradient_ubo,
-                                    offset: 0,
-                                    size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<GradientUniforms>() as u64,
-                                    ),
-                                },
-                            },
-                        ],
-                        label: bind_group_label.as_deref(),
-                    });
+                    let bind_group =
+                        self.descriptors
+                            .device
+                            .create_bind_group(&wgpu::BindGroupDescriptor {
+                                layout: &self.descriptors.pipelines.gradient_layout,
+                                entries: &[
+                                    wgpu::BindGroupEntry {
+                                        binding: 0,
+                                        resource: wgpu::BindingResource::Buffer {
+                                            buffer: &tex_transforms_ubo,
+                                            offset: 0,
+                                            size: wgpu::BufferSize::new(std::mem::size_of::<
+                                                TextureTransforms,
+                                            >(
+                                            )
+                                                as u64),
+                                        },
+                                    },
+                                    wgpu::BindGroupEntry {
+                                        binding: 1,
+                                        resource: wgpu::BindingResource::Buffer {
+                                            buffer: &gradient_ubo,
+                                            offset: 0,
+                                            size: wgpu::BufferSize::new(std::mem::size_of::<
+                                                GradientUniforms,
+                                            >(
+                                            )
+                                                as u64),
+                                        },
+                                    },
+                                ],
+                                label: bind_group_label.as_deref(),
+                            });
 
                     Draw {
                         draw_type: DrawType::Gradient {
@@ -538,26 +545,31 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         shape_id,
                         draw_id
                     );
-                    let bind_group = self.descriptors.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.descriptors.pipelines.bitmap_layout,
-                        entries: &[
-                            wgpu::BindGroupEntry {
-                                binding: 0,
-                                resource: wgpu::BindingResource::Buffer {
-                                    buffer: &tex_transforms_ubo,
-                                    offset: 0,
-                                    size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<TextureTransforms>() as u64,
-                                    ),
-                                },
-                            },
-                            wgpu::BindGroupEntry {
-                                binding: 1,
-                                resource: wgpu::BindingResource::TextureView(&texture_view),
-                            },
-                        ],
-                        label: bind_group_label.as_deref(),
-                    });
+                    let bind_group =
+                        self.descriptors
+                            .device
+                            .create_bind_group(&wgpu::BindGroupDescriptor {
+                                layout: &self.descriptors.pipelines.bitmap_layout,
+                                entries: &[
+                                    wgpu::BindGroupEntry {
+                                        binding: 0,
+                                        resource: wgpu::BindingResource::Buffer {
+                                            buffer: &tex_transforms_ubo,
+                                            offset: 0,
+                                            size: wgpu::BufferSize::new(std::mem::size_of::<
+                                                TextureTransforms,
+                                            >(
+                                            )
+                                                as u64),
+                                        },
+                                    },
+                                    wgpu::BindGroupEntry {
+                                        binding: 1,
+                                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                                    },
+                                ],
+                                label: bind_group_label.as_deref(),
+                            });
 
                     Draw {
                         draw_type: DrawType::Bitmap {
@@ -753,7 +765,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.meshes[handle.0] = mesh;
     }
 
-    fn register_glyph_shape(&mut self, glyph: &Glyph) -> ShapeHandle {
+    fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
         let mesh = self.register_shape_internal((&shape).into(), None);
@@ -785,7 +797,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Ok(self.register_bitmap(bitmap, "JPEG3"))
     }
 
-    fn register_bitmap_png(&mut self, swf_tag: &DefineBitsLossless) -> Result<BitmapInfo, Error> {
+    fn register_bitmap_png(
+        &mut self,
+        swf_tag: &swf::DefineBitsLossless,
+    ) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
         Ok(self.register_bitmap(bitmap, "PNG"))
     }
@@ -876,7 +891,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
             let transform = Transform {
                 matrix: transform.matrix
-                    * Matrix {
+                    * swf::Matrix {
                         a: texture.width as f32,
                         d: texture.height as f32,
                         ..Default::default()
@@ -1051,7 +1066,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         }
     }
 
-    fn draw_rect(&mut self, color: Color, matrix: &Matrix) {
+    fn draw_rect(&mut self, color: Color, matrix: &swf::Matrix) {
         let frame = if let Some(frame) = &mut self.current_frame {
             frame.get()
         } else {
@@ -1229,19 +1244,19 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
 fn create_quad_buffers(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, wgpu::Buffer) {
     let vertices = [
-        GpuVertex {
+        Vertex {
             position: [0.0, 0.0],
             color: [1.0, 1.0, 1.0, 1.0],
         },
-        GpuVertex {
+        Vertex {
             position: [1.0, 0.0],
             color: [1.0, 1.0, 1.0, 1.0],
         },
-        GpuVertex {
+        Vertex {
             position: [1.0, 1.0],
             color: [1.0, 1.0, 1.0, 1.0],
         },
-        GpuVertex {
+        Vertex {
             position: [0.0, 1.0],
             color: [1.0, 1.0, 1.0, 1.0],
         },
