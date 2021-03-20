@@ -27,6 +27,7 @@ mod dispatch_object;
 mod domain_object;
 mod event_object;
 mod function_object;
+mod loaderinfo_object;
 mod namespace_object;
 mod primitive_object;
 mod regexp_object;
@@ -40,6 +41,7 @@ pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::DomainObject;
 pub use crate::avm2::object::event_object::EventObject;
 pub use crate::avm2::object::function_object::{implicit_deriver, FunctionObject};
+pub use crate::avm2::object::loaderinfo_object::LoaderInfoObject;
 pub use crate::avm2::object::namespace_object::NamespaceObject;
 pub use crate::avm2::object::primitive_object::PrimitiveObject;
 pub use crate::avm2::object::regexp_object::RegExpObject;
@@ -64,7 +66,8 @@ pub use crate::avm2::object::xml_object::XmlObject;
         DispatchObject(DispatchObject<'gc>),
         XmlObject(XmlObject<'gc>),
         RegExpObject(RegExpObject<'gc>),
-        ByteArrayObject(ByteArrayObject<'gc>)
+        ByteArrayObject(ByteArrayObject<'gc>),
+        LoaderInfoObject(LoaderInfoObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {

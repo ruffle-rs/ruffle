@@ -8,6 +8,7 @@ pub mod graphics;
 pub mod interactiveobject;
 pub mod jointstyle;
 pub mod linescalemode;
+pub mod loaderinfo;
 pub mod movieclip;
 pub mod scene;
 pub mod shape;

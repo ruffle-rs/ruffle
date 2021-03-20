@@ -710,6 +710,11 @@ pub fn load_player_globals<'gc>(
         activation,
         flash::display::capsstyle::create_class(mc),
         implicit_deriver,
+    )?;
+    class(
+        activation,
+        flash::display::loaderinfo::create_class(mc),
+        flash::display::loaderinfo::loaderinfo_deriver,
         domain,
         script,
     )?;
