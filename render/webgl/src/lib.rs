@@ -535,17 +535,50 @@ impl WebGlRenderBackend {
                 (vertex_buffer, index_buffer)
             };
 
-            let (program, out_draw) = match draw.draw_type {
-                TessDrawType::Color => (
-                    &self.color_program,
-                    Draw {
-                        draw_type: DrawType::Color,
-                        vao,
-                        vertex_buffer,
-                        index_buffer,
-                        num_indices,
-                    },
-                ),
+            let program = match draw.draw_type {
+                TessDrawType::Color => &self.color_program,
+                TessDrawType::Gradient(_) => &self.gradient_program,
+                TessDrawType::Bitmap(_) => &self.bitmap_program,
+            };
+
+            // Unfortunately it doesn't seem to be possible to ensure that vertex attributes will be in
+            // a guaranteed position between shaders in WebGL1 (no layout qualifiers in GLSL in OpenGL ES 1.0).
+            // Attributes can change between shaders, even if the vertex layout is otherwise "the same".
+            // This varies between platforms based on what the GLSL compiler decides to do.
+            if program.vertex_position_location != 0xffff_ffff {
+                self.gl.vertex_attrib_pointer_with_i32(
+                    program.vertex_position_location,
+                    2,
+                    Gl::FLOAT,
+                    false,
+                    12,
+                    0,
+                );
+                self.gl
+                    .enable_vertex_attrib_array(program.vertex_position_location as u32);
+            }
+
+            if program.vertex_color_location != 0xffff_ffff {
+                self.gl.vertex_attrib_pointer_with_i32(
+                    program.vertex_color_location,
+                    4,
+                    Gl::UNSIGNED_BYTE,
+                    true,
+                    12,
+                    8,
+                );
+                self.gl
+                    .enable_vertex_attrib_array(program.vertex_color_location as u32);
+            }
+
+            draws.push(match draw.draw_type {
+                TessDrawType::Color => Draw {
+                    draw_type: DrawType::Color,
+                    vao,
+                    vertex_buffer,
+                    index_buffer,
+                    num_indices,
+                },
                 TessDrawType::Gradient(gradient) => {
                     let mut ratios = [0.0; MAX_GRADIENT_COLORS];
                     let mut colors = [[0.0; 4]; MAX_GRADIENT_COLORS];
@@ -580,65 +613,28 @@ impl WebGlRenderBackend {
                         focal_point: gradient.focal_point,
                         interpolation: gradient.interpolation,
                     };
-                    (
-                        &self.gradient_program,
-                        Draw {
-                            draw_type: DrawType::Gradient(Box::new(out_gradient)),
-                            vao,
-                            vertex_buffer,
-                            index_buffer,
-                            num_indices,
-                        },
-                    )
-                }
-                TessDrawType::Bitmap(bitmap) => (
-                    &self.bitmap_program,
                     Draw {
-                        draw_type: DrawType::Bitmap(BitmapDraw {
-                            matrix: bitmap.matrix,
-                            handle: bitmap.bitmap,
-                            is_smoothed: bitmap.is_smoothed,
-                            is_repeating: bitmap.is_repeating,
-                        }),
+                        draw_type: DrawType::Gradient(Box::new(out_gradient)),
                         vao,
                         vertex_buffer,
                         index_buffer,
                         num_indices,
-                    },
-                ),
-            };
+                    }
+                }
+                TessDrawType::Bitmap(bitmap) => Draw {
+                    draw_type: DrawType::Bitmap(BitmapDraw {
+                        matrix: bitmap.matrix,
+                        handle: bitmap.bitmap,
+                        is_smoothed: bitmap.is_smoothed,
+                        is_repeating: bitmap.is_repeating,
+                    }),
+                    vao,
+                    vertex_buffer,
+                    index_buffer,
+                    num_indices,
+                },
+            });
 
-            // Unfortunately it doesn't seem to be possible to ensure that vertex attributes will be in
-            // a guaranteed position between shaders in WebGL1 (no layout qualifiers in GLSL in OpenGL ES 1.0).
-            // Attributes can change between shaders, even if the vertex layout is otherwise "the same".
-            // This varies between platforms based on what the GLSL compiler decides to do.
-            if program.vertex_position_location != 0xffff_ffff {
-                self.gl.vertex_attrib_pointer_with_i32(
-                    program.vertex_position_location,
-                    2,
-                    Gl::FLOAT,
-                    false,
-                    12,
-                    0,
-                );
-                self.gl
-                    .enable_vertex_attrib_array(program.vertex_position_location as u32);
-            }
-
-            if program.vertex_color_location != 0xffff_ffff {
-                self.gl.vertex_attrib_pointer_with_i32(
-                    program.vertex_color_location,
-                    4,
-                    Gl::UNSIGNED_BYTE,
-                    true,
-                    12,
-                    8,
-                );
-                self.gl
-                    .enable_vertex_attrib_array(program.vertex_color_location as u32);
-            }
-
-            draws.push(out_draw);
             self.bind_vertex_array(None);
 
             for i in program.num_vertex_attributes..NUM_VERTEX_ATTRIBUTES {
