@@ -190,6 +190,25 @@ pub fn is_url_inaccessible<'gc>(
     Ok(false.into())
 }
 
+/// `swfVersion` getter
+pub fn swf_version<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            match &*loader_stream {
+                LoaderStream::SWF(root, _) => {
+                    return Ok(root.header().version.into());
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Derive `LoaderInfoObject` impls.
 pub fn loaderinfo_deriver<'gc>(
     base_proto: Object<'gc>,
@@ -249,6 +268,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "isURLInaccessible"),
         Method::from_builtin(is_url_inaccessible),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "swfVersion"),
+        Method::from_builtin(swf_version),
     ));
 
     class
