@@ -508,6 +508,7 @@ pub fn loader_info<'gc>(
                 if let Some(movie) = movie {
                     return Ok(LoaderInfoObject::from_movie(
                         movie,
+                        root,
                         activation.context.avm2.prototypes().loaderinfo,
                         activation.context.gc_context,
                     )?

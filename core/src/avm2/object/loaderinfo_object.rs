@@ -10,6 +10,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::display_object::DisplayObject;
 use crate::tag_utils::SwfMovie;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -19,9 +20,11 @@ use std::sync::Arc;
 /// Represents a thing which can be loaded by a loader.
 #[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]
-pub enum LoaderStream {
+pub enum LoaderStream<'gc> {
     /// A loaded SWF movie.
-    SWF(Arc<SwfMovie>),
+    ///
+    /// The associated `DisplayObject` is the root movieclip.
+    SWF(Arc<SwfMovie>, DisplayObject<'gc>),
 }
 
 /// An Object which represents a loadable object, such as a SWF movie or image
@@ -37,18 +40,19 @@ pub struct LoaderInfoObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// The loaded stream that this gets it's info from.
-    loaded_stream: Option<LoaderStream>,
+    loaded_stream: Option<LoaderStream<'gc>>,
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
     /// Box a movie into a loader info object.
     pub fn from_movie(
         movie: Arc<SwfMovie>,
+        root: DisplayObject<'gc>,
         base_proto: Object<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
         let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
-        let loaded_stream = Some(LoaderStream::SWF(movie));
+        let loaded_stream = Some(LoaderStream::SWF(movie, root));
 
         Ok(LoaderInfoObject(GcCell::allocate(
             mc,
@@ -136,7 +140,7 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
     }
 
     /// Unwrap this object's loader stream
-    fn as_loader_stream(&self) -> Option<Ref<LoaderStream>> {
+    fn as_loader_stream(&self) -> Option<Ref<LoaderStream<'gc>>> {
         if self.0.read().loaded_stream.is_some() {
             Some(Ref::map(self.0.read(), |v| {
                 v.loaded_stream.as_ref().unwrap()

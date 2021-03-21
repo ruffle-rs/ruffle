@@ -9,6 +9,7 @@ use crate::avm2::scope::Scope;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.LoaderInfo`'s instance constructor.
@@ -38,7 +39,7 @@ pub fn action_script_version<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(movie) => {
+                LoaderStream::SWF(movie, _) => {
                     let library = activation
                         .context
                         .library
@@ -61,7 +62,7 @@ pub fn application_domain<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(movie) => {
+                LoaderStream::SWF(movie, _) => {
                     let library = activation
                         .context
                         .library
@@ -92,8 +93,27 @@ pub fn bytes_total<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(movie) => {
+                LoaderStream::SWF(movie, _) => {
                     return Ok(movie.data().len().into());
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// `content` getter
+pub fn content<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            match &*loader_stream {
+                LoaderStream::SWF(_, root) => {
+                    return Ok(root.object2());
                 }
             }
         }
@@ -141,6 +161,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "bytesTotal"),
         Method::from_builtin(bytes_total),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "content"),
+        Method::from_builtin(content),
     ));
 
     class
