@@ -1,11 +1,11 @@
 //this.loaderInfo.bytesLoaded
-754
+760
 //this.loaderInfo.bytesTotal
-754
+760
 //this.loaderInfo.content === this
 true
 //this.loaderInfo.contentType
-null
+application/x-shockwave-flash
 //this.loaderInfo.actionScriptVersion
 3
 //this.loaderInfo.frameRate
