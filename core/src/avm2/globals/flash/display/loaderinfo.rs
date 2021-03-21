@@ -39,7 +39,7 @@ pub fn action_script_version<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(movie, _) => {
+                LoaderStream::Swf(movie, _) => {
                     let library = activation
                         .context
                         .library
@@ -62,7 +62,7 @@ pub fn application_domain<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(movie, _) => {
+                LoaderStream::Swf(movie, _) => {
                     let library = activation
                         .context
                         .library
@@ -93,7 +93,7 @@ pub fn bytes_total<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(movie, _) => {
+                LoaderStream::Swf(movie, _) => {
                     return Ok(movie.compressed_length().into());
                 }
             }
@@ -112,7 +112,7 @@ pub fn content<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(_, root) => {
+                LoaderStream::Swf(_, root) => {
                     return Ok(root.object2());
                 }
             }
@@ -131,7 +131,7 @@ pub fn content_type<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(_, _) => {
+                LoaderStream::Swf(_, _) => {
                     return Ok("application/x-shockwave-flash".into());
                 }
             }
@@ -150,7 +150,7 @@ pub fn frame_rate<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(root, _) => {
+                LoaderStream::Swf(root, _) => {
                     return Ok(root.header().frame_rate.into());
                 }
             }
@@ -169,7 +169,7 @@ pub fn height<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(root, _) => {
+                LoaderStream::Swf(root, _) => {
                     let y_min = root.header().stage_size.y_min;
                     let y_max = root.header().stage_size.y_max;
                     return Ok((y_max - y_min).to_pixels().into());
@@ -199,7 +199,7 @@ pub fn swf_version<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(root, _) => {
+                LoaderStream::Swf(root, _) => {
                     return Ok(root.header().version.into());
                 }
             }
@@ -218,7 +218,7 @@ pub fn url<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(root, _) => {
+                LoaderStream::Swf(root, _) => {
                     let url = root.url().unwrap_or("").to_string();
                     return Ok(AvmString::new(activation.context.gc_context, url).into());
                 }
@@ -238,7 +238,7 @@ pub fn width<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
-                LoaderStream::SWF(root, _) => {
+                LoaderStream::Swf(root, _) => {
                     let x_min = root.header().stage_size.x_min;
                     let x_max = root.header().stage_size.x_max;
                     return Ok((x_max - x_min).to_pixels().into());
