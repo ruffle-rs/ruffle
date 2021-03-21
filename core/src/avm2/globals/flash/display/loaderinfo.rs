@@ -160,6 +160,27 @@ pub fn frame_rate<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `height` getter
+pub fn height<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            match &*loader_stream {
+                LoaderStream::SWF(root, _) => {
+                    let y_min = root.header().stage_size.y_min;
+                    let y_max = root.header().stage_size.y_max;
+                    return Ok((y_max - y_min).to_pixels().into());
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Derive `LoaderInfoObject` impls.
 pub fn loaderinfo_deriver<'gc>(
     base_proto: Object<'gc>,
@@ -211,6 +232,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "frameRate"),
         Method::from_builtin(frame_rate),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "height"),
+        Method::from_builtin(height),
     ));
 
     class
