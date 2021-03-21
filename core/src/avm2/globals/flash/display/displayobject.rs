@@ -637,7 +637,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         QName::new(Namespace::public(), "hitTestObject"),
         Method::from_builtin(hit_test_object),
     ));
-    write.define_instance_trait(Trait::from_method(
+    write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "loaderInfo"),
         Method::from_builtin(loader_info),
     ));
