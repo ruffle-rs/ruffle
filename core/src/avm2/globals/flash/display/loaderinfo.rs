@@ -8,7 +8,7 @@ use crate::avm2::object::{DomainObject, LoaderInfoObject, LoaderStream, Object, 
 use crate::avm2::scope::Scope;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{AvmString, Error};
 use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
 
@@ -209,6 +209,26 @@ pub fn swf_version<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `url` getter
+pub fn url<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            match &*loader_stream {
+                LoaderStream::SWF(root, _) => {
+                    let url = root.url().unwrap_or("").to_string();
+                    return Ok(AvmString::new(activation.context.gc_context, url).into());
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Derive `LoaderInfoObject` impls.
 pub fn loaderinfo_deriver<'gc>(
     base_proto: Object<'gc>,
@@ -272,6 +292,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "swfVersion"),
         Method::from_builtin(swf_version),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "url"),
+        Method::from_builtin(url),
     ));
 
     class
