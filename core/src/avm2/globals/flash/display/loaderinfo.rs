@@ -229,6 +229,27 @@ pub fn url<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `width` getter
+pub fn width<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            match &*loader_stream {
+                LoaderStream::SWF(root, _) => {
+                    let x_min = root.header().stage_size.x_min;
+                    let x_max = root.header().stage_size.x_max;
+                    return Ok((x_max - x_min).to_pixels().into());
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Derive `LoaderInfoObject` impls.
 pub fn loaderinfo_deriver<'gc>(
     base_proto: Object<'gc>,
@@ -296,6 +317,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "url"),
         Method::from_builtin(url),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "width"),
+        Method::from_builtin(width),
     ));
 
     class
