@@ -181,6 +181,15 @@ pub fn height<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `isURLInaccessible` getter stub
+pub fn is_url_inaccessible<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(false.into())
+}
+
 /// Derive `LoaderInfoObject` impls.
 pub fn loaderinfo_deriver<'gc>(
     base_proto: Object<'gc>,
@@ -236,6 +245,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "height"),
         Method::from_builtin(height),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "isURLInaccessible"),
+        Method::from_builtin(is_url_inaccessible),
     ));
 
     class
