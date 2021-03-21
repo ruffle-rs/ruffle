@@ -544,7 +544,7 @@ swf_tests! {
     (as3_op_escxattr, "avm2/op_escxattr", 1),
     (as3_op_escxelem, "avm2/op_escxelem", 1),
     (as3_op_lookupswitch, "avm2/op_lookupswitch", 1),
-    (as3_loaderinfo_properties, "avm2/loaderinfo_properties", 1),
+    (as3_loaderinfo_properties, "avm2/loaderinfo_properties", 2),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
