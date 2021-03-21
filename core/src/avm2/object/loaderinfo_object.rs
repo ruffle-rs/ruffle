@@ -24,7 +24,7 @@ pub enum LoaderStream<'gc> {
     /// A loaded SWF movie.
     ///
     /// The associated `DisplayObject` is the root movieclip.
-    SWF(Arc<SwfMovie>, DisplayObject<'gc>),
+    Swf(Arc<SwfMovie>, DisplayObject<'gc>),
 }
 
 /// An Object which represents a loadable object, such as a SWF movie or image
@@ -52,7 +52,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         mc: MutationContext<'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
         let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
-        let loaded_stream = Some(LoaderStream::SWF(movie, root));
+        let loaded_stream = Some(LoaderStream::Swf(movie, root));
 
         Ok(LoaderInfoObject(GcCell::allocate(
             mc,
