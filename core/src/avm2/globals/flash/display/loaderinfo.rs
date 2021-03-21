@@ -94,7 +94,7 @@ pub fn bytes_total<'gc>(
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
                 LoaderStream::SWF(movie, _) => {
-                    return Ok(movie.data().len().into());
+                    return Ok(movie.compressed_length().into());
                 }
             }
         }
