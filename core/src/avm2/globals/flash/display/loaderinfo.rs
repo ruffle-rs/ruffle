@@ -80,6 +80,28 @@ pub fn application_domain<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `bytesTotal` getter
+///
+/// TODO: This is also the getter for `bytesLoaded` as we don't yet support
+/// streaming loads yet. When we do, we'll need another property for this.
+pub fn bytes_total<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            match &*loader_stream {
+                LoaderStream::SWF(movie) => {
+                    return Ok(movie.data().len().into());
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Derive `LoaderInfoObject` impls.
 pub fn loaderinfo_deriver<'gc>(
     base_proto: Object<'gc>,
@@ -111,6 +133,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "applicationDomain"),
         Method::from_builtin(application_domain),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "bytesLoaded"),
+        Method::from_builtin(bytes_total),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "bytesTotal"),
+        Method::from_builtin(bytes_total),
     ));
 
     class
