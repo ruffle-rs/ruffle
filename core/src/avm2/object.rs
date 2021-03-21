@@ -914,7 +914,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object's loader stream
-    fn as_loader_stream(&self) -> Option<Ref<LoaderStream>> {
+    fn as_loader_stream(&self) -> Option<Ref<LoaderStream<'gc>>> {
         None
     }
 }
