@@ -208,7 +208,7 @@ impl Ruffle {
         let movie = Arc::new({
             let mut data = vec![0; swf_data.length() as usize];
             swf_data.copy_to(&mut data[..]);
-            let mut movie = SwfMovie::from_data(&data, None)
+            let mut movie = SwfMovie::from_data(&data, None, None)
                 .map_err(|e| format!("Error loading movie: {}", e))?;
             populate_movie_parameters(&parameters, movie.parameters_mut());
             movie

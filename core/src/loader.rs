@@ -147,6 +147,7 @@ impl<'gc> LoadManager<'gc> {
         target_clip: DisplayObject<'gc>,
         fetch: OwnedFuture<Vec<u8>, Error>,
         url: String,
+        loader_url: Option<String>,
         target_broadcaster: Option<Object<'gc>>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
@@ -160,7 +161,7 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.introduce_loader_handle(handle);
 
-        loader.movie_loader(player, fetch, url)
+        loader.movie_loader(player, fetch, url, loader_url)
     }
 
     /// Indicates that a movie clip has initialized (ran its first frame).
@@ -387,8 +388,12 @@ impl<'gc> Loader<'gc> {
                     Ok(())
                 })?;
 
-            let data = (fetch.await)
-                .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
+            let data = (fetch.await).and_then(|data| {
+                Ok((
+                    data.len(),
+                    SwfMovie::from_data(&data, Some(url.clone()), None)?,
+                ))
+            });
 
             if let Ok((_length, mut movie)) = data {
                 for (key, value) in parameters.iter() {
@@ -415,6 +420,7 @@ impl<'gc> Loader<'gc> {
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
         mut url: String,
+        loader_url: Option<String>,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
@@ -462,8 +468,12 @@ impl<'gc> Loader<'gc> {
                     Ok(())
                 })?;
 
-            let data = (fetch.await)
-                .and_then(|data| Ok((data.len(), SwfMovie::from_data(&data, Some(url.clone()))?)));
+            let data = (fetch.await).and_then(|data| {
+                Ok((
+                    data.len(),
+                    SwfMovie::from_data(&data, Some(url.clone()), loader_url.clone())?,
+                ))
+            });
             if let Ok((length, movie)) = data {
                 let movie = Arc::new(movie);
 

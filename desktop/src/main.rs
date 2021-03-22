@@ -142,7 +142,7 @@ fn load_movie_from_path(
 ) -> Result<SwfMovie, Box<dyn std::error::Error>> {
     if movie_url.scheme() == "file" {
         if let Ok(path) = movie_url.to_file_path() {
-            return SwfMovie::from_path(path);
+            return SwfMovie::from_path(path, None);
         }
     }
     let proxy = proxy.and_then(|url| url.as_str().parse().ok());
@@ -154,7 +154,7 @@ fn load_movie_from_path(
     let mut buffer: Vec<u8> = Vec::new();
     res.into_body().read_to_end(&mut buffer)?;
 
-    SwfMovie::from_data(&buffer, Some(movie_url.to_string()))
+    SwfMovie::from_data(&buffer, Some(movie_url.to_string()), None)
 }
 
 fn set_movie_parameters(movie: &mut SwfMovie, parameters: &[String]) {

@@ -94,7 +94,7 @@ fn take_screenshot(
     progress: &Option<ProgressBar>,
     size: SizeOpt,
 ) -> Result<(Descriptors, Vec<RgbaImage>), Box<dyn std::error::Error>> {
-    let movie = SwfMovie::from_path(&swf_path)?;
+    let movie = SwfMovie::from_path(&swf_path, None)?;
 
     let width = size.width.unwrap_or_else(|| movie.width());
     let width = (width as f32 * size.scale).round() as u32;
