@@ -330,3 +330,15 @@ impl ByteArrayStorage {
         self.endian = new_endian;
     }
 }
+
+impl Write for ByteArrayStorage {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.write_bytes(buf);
+
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
