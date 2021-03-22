@@ -1,16 +1,20 @@
 //! `flash.display.LoaderInfo` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::bytearray::Endian;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{DomainObject, LoaderInfoObject, LoaderStream, Object, TObject};
+use crate::avm2::object::{
+    ByteArrayObject, DomainObject, LoaderInfoObject, LoaderStream, Object, TObject,
+};
 use crate::avm2::scope::Scope;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
 use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
+use swf::{write_swf, Compression, Swf};
 
 /// Implements `flash.display.LoaderInfo`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -250,6 +254,63 @@ pub fn width<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `bytes` getter
+pub fn bytes<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            match &*loader_stream {
+                LoaderStream::Swf(root, _) => {
+                    let ba_proto = activation.context.avm2.prototypes().bytearray;
+                    let ba =
+                        ByteArrayObject::construct(activation.context.gc_context, Some(ba_proto));
+                    let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
+
+                    // First, write a fake header corresponding to an
+                    // uncompressed SWF
+                    let mut header = root.header().clone();
+                    header.compression = Compression::None;
+                    header.uncompressed_length = root.data().len() as u32;
+
+                    write_swf(
+                        &Swf {
+                            header,
+                            tags: vec![],
+                        },
+                        &mut *ba_write,
+                    )
+                    .unwrap();
+
+                    // `swf` always writes an implicit end tag, let's cut that
+                    // off. We scroll back 2 bytes before writing the actual
+                    // datastream as it is guaranteed to at least be as long as
+                    // the implicit end tag we want to get rid of.
+                    let correct_header_length = ba_write.bytes().len() - 2;
+                    ba_write.set_position(correct_header_length);
+                    ba_write.write_bytes(root.data());
+
+                    // `swf` wrote the wrong length (since we wrote the data
+                    // ourselves), so we need to overwrite it ourselves.
+                    ba_write.set_position(4);
+                    ba_write.set_endian(Endian::Little);
+                    ba_write.write_unsigned_int((root.data().len() + correct_header_length) as u32);
+
+                    // Finally, reset the array to the correct state.
+                    ba_write.set_position(0);
+                    ba_write.set_endian(Endian::Big);
+
+                    return Ok(ba.into());
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Derive `LoaderInfoObject` impls.
 pub fn loaderinfo_deriver<'gc>(
     base_proto: Object<'gc>,
@@ -321,6 +382,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "width"),
         Method::from_builtin(width),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "bytes"),
+        Method::from_builtin(bytes),
     ));
 
     class

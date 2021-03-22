@@ -108,6 +108,7 @@ pub struct SystemPrototypes<'gc> {
     pub textformat: Object<'gc>,
     pub graphics: Object<'gc>,
     pub loaderinfo: Object<'gc>,
+    pub bytearray: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -151,6 +152,7 @@ impl<'gc> SystemPrototypes<'gc> {
             textformat: empty,
             graphics: empty,
             loaderinfo: empty,
+            bytearray: empty,
         }
     }
 }
@@ -568,7 +570,13 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
     // package `flash.utils`
-    class(
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
+        .bytearray = class(
         activation,
         flash::utils::bytearray::create_class(mc),
         bytearray_deriver,
