@@ -54,6 +54,7 @@ pub fn load_clip<'gc>(
                 DisplayObject::MovieClip(movieclip),
                 fetch,
                 url.to_string(),
+                None,
                 Some(this),
             );
 

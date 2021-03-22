@@ -311,6 +311,30 @@ pub fn bytes<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `loaderUrl` getter
+pub fn loader_url<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            match &*loader_stream {
+                LoaderStream::Swf(root, _) => {
+                    let loader_url = root
+                        .loader_url()
+                        .or_else(|| root.url())
+                        .unwrap_or("")
+                        .to_string();
+                    return Ok(AvmString::new(activation.context.gc_context, loader_url).into());
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Derive `LoaderInfoObject` impls.
 pub fn loaderinfo_deriver<'gc>(
     base_proto: Object<'gc>,
@@ -386,6 +410,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "bytes"),
         Method::from_builtin(bytes),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "loaderUrl"),
+        Method::from_builtin(loader_url),
     ));
 
     class

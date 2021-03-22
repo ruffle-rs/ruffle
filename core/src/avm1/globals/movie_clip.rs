@@ -1279,6 +1279,7 @@ fn load_movie<'gc>(
         fetch,
         url.to_string(),
         None,
+        None,
     );
 
     activation.context.navigator.spawn_future(process);

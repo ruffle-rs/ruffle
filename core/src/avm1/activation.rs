@@ -1250,6 +1250,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                             fetch,
                             url,
                             None,
+                            None,
                         );
                         self.context.navigator.spawn_future(process);
                     }
@@ -1348,6 +1349,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         fetch,
                         url.to_string(),
                         None,
+                        None,
                     );
                     self.context.navigator.spawn_future(process);
                 }
@@ -1365,6 +1367,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         level,
                         fetch,
                         url.to_string(),
+                        None,
                         None,
                     );
                     self.context.navigator.spawn_future(process);
