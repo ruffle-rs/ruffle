@@ -6,7 +6,7 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
-    ByteArrayObject, DomainObject, LoaderInfoObject, LoaderStream, Object, TObject,
+    ByteArrayObject, DomainObject, LoaderInfoObject, LoaderStream, Object, ScriptObject, TObject,
 };
 use crate::avm2::scope::Scope;
 use crate::avm2::traits::Trait;
@@ -335,6 +335,41 @@ pub fn loader_url<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `parameters` getter
+pub fn parameters<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            match &*loader_stream {
+                LoaderStream::Swf(root, _) => {
+                    let object_proto = activation.context.avm2.prototypes().object;
+                    let mut params_obj =
+                        ScriptObject::object(activation.context.gc_context, object_proto);
+                    let parameters = root.parameters();
+
+                    for (k, v) in parameters.iter() {
+                        let avm_k = AvmString::new(activation.context.gc_context, k);
+                        let avm_v = AvmString::new(activation.context.gc_context, v);
+                        params_obj.set_property(
+                            params_obj,
+                            &QName::new(Namespace::public(), avm_k),
+                            avm_v.into(),
+                            activation,
+                        )?;
+                    }
+
+                    return Ok(params_obj.into());
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Derive `LoaderInfoObject` impls.
 pub fn loaderinfo_deriver<'gc>(
     base_proto: Object<'gc>,
@@ -414,6 +449,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "loaderUrl"),
         Method::from_builtin(loader_url),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "parameters"),
+        Method::from_builtin(parameters),
     ));
 
     class
