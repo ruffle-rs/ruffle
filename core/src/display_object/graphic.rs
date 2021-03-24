@@ -209,8 +209,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
         let mut write = self.0.write(gc_context);
         if write.drawing.is_none() {
-            let shape = write.static_data.shape.clone();
-            write.drawing = Some(Drawing::from_swf_shape(&shape));
+            write.drawing = Some(Drawing::new());
         }
 
         Some(RefMut::map(write, |m| m.drawing.as_mut().unwrap()))
