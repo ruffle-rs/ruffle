@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
+use crate::avm2::globals::NS_RUFFLE_INTERNAL;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, StageObject, TObject};
@@ -52,15 +53,33 @@ pub fn graphics<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(dobj) = this.and_then(|o| o.as_display_object()) {
-        let graphics_proto = activation.context.avm2.prototypes().graphics;
-
-        return Ok(StageObject::for_display_object(
-            activation.context.gc_context,
-            dobj,
-            graphics_proto,
-        )
-        .into());
+    if let Some(mut this) = this {
+        if let Some(dobj) = this.as_display_object() {
+            // Lazily initialize the `Graphics` object in a hidden property.
+            let graphics = match this.get_property(
+                this,
+                &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
+                activation,
+            )? {
+                Value::Undefined | Value::Null => {
+                    let graphics_proto = activation.context.avm2.prototypes().graphics;
+                    let graphics = Value::from(StageObject::for_display_object(
+                        activation.context.gc_context,
+                        dobj,
+                        graphics_proto,
+                    ));
+                    this.set_property(
+                        this,
+                        &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
+                        graphics.clone(),
+                        activation,
+                    )?;
+                    graphics
+                }
+                graphics => graphics,
+            };
+            return Ok(graphics);
+        }
     }
 
     Ok(Value::Undefined)
@@ -81,6 +100,13 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "graphics"),
         Method::from_builtin(graphics),
+    ));
+
+    // Slot for lazy-initialized Graphics object.
+    write.define_instance_trait(Trait::from_slot(
+        QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
+        QName::new(Namespace::package("flash.display"), "Graphics").into(),
+        None,
     ));
 
     class
