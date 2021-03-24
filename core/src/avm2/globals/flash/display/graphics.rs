@@ -1,7 +1,7 @@
 //! `flash.display.Graphics` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
@@ -367,6 +367,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     );
 
     let mut write = class.write(mc);
+
+    write.set_attributes(ClassAttributes::SEALED);
 
     write.define_instance_trait(Trait::from_method(
         QName::new(Namespace::public(), "beginFill"),
