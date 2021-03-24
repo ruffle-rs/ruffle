@@ -31,14 +31,10 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Convert a `color`/`alpha` argument pair into a `swf::Color`.
-fn color_from_args(color: u32, alpha: f64) -> Color {
-    let r = (color & 0xFF0000 >> 16) as u8;
-    let g = (color & 0x00FF00 >> 8) as u8;
-    let b = (color & 0x0000FF) as u8;
-    let a = (alpha * 255.0) as u8;
-
-    Color { r, g, b, a }
+/// Convert an RGB `color` and `alpha` argument pair into a `swf::Color`.
+/// `alpha` is normalized from 0.0 - 1.0.
+fn color_from_args(rgb: u32, alpha: f64) -> Color {
+    Color::from_rgb(rgb, (alpha * 255.0) as u8)
 }
 
 /// Implements `Graphics.beginFill`.
