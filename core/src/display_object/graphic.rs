@@ -4,6 +4,7 @@ use crate::avm2::{
     Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject,
     TObject as Avm2TObject,
 };
+use crate::backend::render::ShapeHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
@@ -25,7 +26,7 @@ pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, GraphicStatic>,
     avm2_object: Option<Avm2Object<'gc>>,
-    drawing: Drawing,
+    drawing: Option<Drawing>,
 }
 
 impl<'gc> Graphic<'gc> {
@@ -35,9 +36,15 @@ impl<'gc> Graphic<'gc> {
         swf_shape: swf::Shape,
         movie: Arc<SwfMovie>,
     ) -> Self {
-        let drawing = Drawing::from_swf_shape(&swf_shape);
+        let library = context.library.library_for_movie(movie.clone());
         let static_data = GraphicStatic {
             id: swf_shape.id,
+            bounds: swf_shape.shape_bounds.clone().into(),
+            render_handle: Some(
+                context
+                    .renderer
+                    .register_shape((&swf_shape).into(), library),
+            ),
             shape: swf_shape,
             movie: Some(movie),
         };
@@ -48,7 +55,7 @@ impl<'gc> Graphic<'gc> {
                 base: Default::default(),
                 static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
                 avm2_object: None,
-                drawing,
+                drawing: None,
             },
         ))
     }
@@ -60,6 +67,8 @@ impl<'gc> Graphic<'gc> {
     ) -> Self {
         let static_data = GraphicStatic {
             id: 0,
+            bounds: Default::default(),
+            render_handle: None,
             shape: swf::Shape {
                 version: 32,
                 id: 0,
@@ -84,7 +93,7 @@ impl<'gc> Graphic<'gc> {
                 base: Default::default(),
                 static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
                 avm2_object: Some(avm2_object),
-                drawing,
+                drawing: Some(drawing),
             },
         ))
     }
@@ -98,7 +107,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn self_bounds(&self) -> BoundingBox {
-        self.0.read().drawing.self_bounds()
+        if let Some(drawing) = &self.0.read().drawing {
+            drawing.self_bounds()
+        } else {
+            self.0.read().static_data.bounds.clone()
+        }
     }
 
     fn run_frame(&self, _context: &mut UpdateContext) {
@@ -111,10 +124,13 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             return;
         }
 
-        self.0
-            .read()
-            .drawing
-            .render(context, self.0.read().static_data.movie.clone());
+        if let Some(drawing) = &self.0.read().drawing {
+            drawing.render(context, self.0.read().static_data.movie.clone());
+        } else if let Some(render_handle) = self.0.read().static_data.render_handle {
+            context
+                .renderer
+                .render_shape(render_handle, context.transform_stack.transform())
+        }
     }
 
     fn hit_test_shape(
@@ -126,8 +142,13 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         if self.world_bounds().contains(point) {
             let local_matrix = self.global_to_local_matrix();
             let point = local_matrix * point;
-            if self.0.read().drawing.hit_test(point, &local_matrix) {
-                return true;
+            if let Some(drawing) = &self.0.read().drawing {
+                if drawing.hit_test(point, &local_matrix) {
+                    return true;
+                }
+            } else {
+                let shape = &self.0.read().static_data.shape;
+                return crate::shape_utils::shape_hit_test(shape, point, &local_matrix);
             }
         }
 
@@ -142,9 +163,6 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        let shape = self.0.read().static_data.shape.clone();
-        self.0.write(context.gc_context).drawing = Drawing::from_swf_shape(&shape);
-
         if self.vm_type(context) == AvmType::Avm2 {
             let mut allocator = || {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
@@ -189,7 +207,13 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
-        Some(RefMut::map(self.0.write(gc_context), |m| &mut m.drawing))
+        let mut write = self.0.write(gc_context);
+        if write.drawing.is_none() {
+            let shape = write.static_data.shape.clone();
+            write.drawing = Some(Drawing::from_swf_shape(&shape));
+        }
+
+        Some(RefMut::map(write, |m| m.drawing.as_mut().unwrap()))
     }
 }
 
@@ -200,5 +224,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 struct GraphicStatic {
     id: CharacterId,
     shape: swf::Shape,
+    render_handle: Option<ShapeHandle>,
+    bounds: BoundingBox,
     movie: Option<Arc<SwfMovie>>,
 }
