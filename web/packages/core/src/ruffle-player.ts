@@ -32,15 +32,32 @@ enum PanicError {
     WasmNotFound,
 }
 
+// I used the following source
+// https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API/Guide
 declare global {
     interface Document {
-        webkitFullscreenEnabled?: boolean;
-        webkitFullscreenElement?: HTMLElement;
-        webkitCancelFullScreen?: () => void;
-    }
+        webkitFullscreenEnabled?: boolean,
+        mozFullScreenEnabled?: boolean,
+        msFullscreenEnabled?: boolean,
 
+        webkitFullscreenElement?: boolean,
+        mozFullScreenElement?: boolean,
+        msFullscreenElement?: boolean,
+
+        webkitCancelFullScreen?: any,
+        webkitExitFullscreen?: any,
+
+        // The original code uses this, so I use it too,
+        // even though I don't think it's right
+        webkitExitFullScreen?: any,
+        
+        mozCancelFullScreen?: any,
+        msExitFullscreen?: any,
+    }
     interface HTMLElement {
-        webkitRequestFullScreen?: () => void;
+        webkitRequestFullScreen?: (arg0: unknown) => unknown,
+        mozRequestFullScreen?: (arg0: unknown) => unknown,
+        msRequestFullscreen?: (arg0: unknown) => unknown,
     }
 }
 
@@ -556,7 +573,10 @@ export class RufflePlayer extends HTMLElement {
      */
     get fullscreenEnabled(): boolean {
         return !!(
-            document.fullscreenEnabled || document.webkitFullscreenEnabled
+            document.fullscreenEnabled
+            || document.webkitFullscreenEnabled
+            || document.mozFullScreenEnabled
+            || document.msFullscreenEnabled
         );
     }
 
@@ -567,7 +587,10 @@ export class RufflePlayer extends HTMLElement {
      */
     get isFullscreen(): boolean {
         return (
-            (document.fullscreenElement || document.webkitFullscreenElement) ===
+            (document.fullscreenElement
+                || document.webkitFullscreenElement
+                || document.mozFullScreenElement
+                || document.msFullscreenElement) ===
             this
         );
     }
@@ -578,10 +601,17 @@ export class RufflePlayer extends HTMLElement {
      * This is not guaranteed to succeed, please check [[fullscreenEnabled]] first.
      */
     enterFullscreen(): void {
+        const options = {
+            navigationUI: 'hide'
+        } as const;
         if (this.requestFullscreen) {
-            this.requestFullscreen();
+            this.requestFullscreen(options);
         } else if (this.webkitRequestFullScreen) {
-            this.webkitRequestFullScreen();
+            this.webkitRequestFullScreen(options);
+        } else if (this.mozRequestFullScreen) {
+            this.mozRequestFullScreen(options);
+        } else if (this.msRequestFullscreen) {
+            this.msRequestFullscreen(options);
         }
     }
 
@@ -593,6 +623,14 @@ export class RufflePlayer extends HTMLElement {
             document.exitFullscreen();
         } else if (document.webkitCancelFullScreen) {
             document.webkitCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.webkitExitFullScreen) {
+            document.webkitExitFullScreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
         }
     }
 
