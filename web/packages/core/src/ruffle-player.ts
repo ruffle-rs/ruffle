@@ -32,15 +32,19 @@ enum PanicError {
     WasmNotFound,
 }
 
+// Safari still requires prefixed fullscreen APIs, see:
+// https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullScreen
+// Safari uses alternate capitalization of FullScreen in some older APIs.
 declare global {
     interface Document {
         webkitFullscreenEnabled?: boolean;
-        webkitFullscreenElement?: HTMLElement;
+        webkitFullscreenElement?: boolean;
+        webkitExitFullscreen?: () => void;
         webkitCancelFullScreen?: () => void;
     }
-
     interface HTMLElement {
-        webkitRequestFullScreen?: () => void;
+        webkitRequestFullscreen?: (arg0: unknown) => unknown;
+        webkitRequestFullScreen?: (arg0: unknown) => unknown;
     }
 }
 
@@ -578,10 +582,15 @@ export class RufflePlayer extends HTMLElement {
      * This is not guaranteed to succeed, please check [[fullscreenEnabled]] first.
      */
     enterFullscreen(): void {
+        const options = {
+            navigationUI: "hide",
+        } as const;
         if (this.requestFullscreen) {
-            this.requestFullscreen();
+            this.requestFullscreen(options);
+        } else if (this.webkitRequestFullscreen) {
+            this.webkitRequestFullscreen(options);
         } else if (this.webkitRequestFullScreen) {
-            this.webkitRequestFullScreen();
+            this.webkitRequestFullScreen(options);
         }
     }
 
@@ -591,6 +600,8 @@ export class RufflePlayer extends HTMLElement {
     exitFullscreen(): void {
         if (document.exitFullscreen) {
             document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
         } else if (document.webkitCancelFullScreen) {
             document.webkitCancelFullScreen();
         }
