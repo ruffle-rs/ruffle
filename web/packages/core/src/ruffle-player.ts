@@ -36,28 +36,18 @@ enum PanicError {
 // https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API/Guide
 declare global {
     interface Document {
-        webkitFullscreenEnabled?: boolean,
-        mozFullScreenEnabled?: boolean,
-        msFullscreenEnabled?: boolean,
+        webkitFullscreenEnabled?: boolean;
 
-        webkitFullscreenElement?: boolean,
-        mozFullScreenElement?: boolean,
-        msFullscreenElement?: boolean,
+        webkitFullscreenElement?: boolean;
 
-        webkitCancelFullScreen?: any,
-        webkitExitFullscreen?: any,
+        webkitCancelFullScreen?: () => void;
 
-        // The original code uses this, so I use it too,
-        // even though I don't think it's right
-        webkitExitFullScreen?: any,
-        
-        mozCancelFullScreen?: any,
-        msExitFullscreen?: any,
+        // Safari uses an alternate spelling
+        webkitExitFullscreen?: () => void;
+        webkitExitFullScreen?: () => void;
     }
     interface HTMLElement {
-        webkitRequestFullScreen?: (arg0: unknown) => unknown,
-        mozRequestFullScreen?: (arg0: unknown) => unknown,
-        msRequestFullscreen?: (arg0: unknown) => unknown,
+        webkitRequestFullScreen?: (arg0: unknown) => unknown;
     }
 }
 
@@ -573,10 +563,7 @@ export class RufflePlayer extends HTMLElement {
      */
     get fullscreenEnabled(): boolean {
         return !!(
-            document.fullscreenEnabled
-            || document.webkitFullscreenEnabled
-            || document.mozFullScreenEnabled
-            || document.msFullscreenEnabled
+            document.fullscreenEnabled || document.webkitFullscreenEnabled
         );
     }
 
@@ -587,10 +574,7 @@ export class RufflePlayer extends HTMLElement {
      */
     get isFullscreen(): boolean {
         return (
-            (document.fullscreenElement
-                || document.webkitFullscreenElement
-                || document.mozFullScreenElement
-                || document.msFullscreenElement) ===
+            (document.fullscreenElement || document.webkitFullscreenElement) ===
             this
         );
     }
@@ -602,16 +586,12 @@ export class RufflePlayer extends HTMLElement {
      */
     enterFullscreen(): void {
         const options = {
-            navigationUI: 'hide'
+            navigationUI: "hide",
         } as const;
         if (this.requestFullscreen) {
             this.requestFullscreen(options);
         } else if (this.webkitRequestFullScreen) {
             this.webkitRequestFullScreen(options);
-        } else if (this.mozRequestFullScreen) {
-            this.mozRequestFullScreen(options);
-        } else if (this.msRequestFullscreen) {
-            this.msRequestFullscreen(options);
         }
     }
 
@@ -627,10 +607,6 @@ export class RufflePlayer extends HTMLElement {
             document.webkitExitFullscreen();
         } else if (document.webkitExitFullScreen) {
             document.webkitExitFullScreen();
-        } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
         }
     }
 
