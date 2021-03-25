@@ -644,6 +644,12 @@ swf_tests! {
     (as3_vector_bool_holes, "avm2/vector_bool_holes", 1),
     (as3_vector_es3class_coercion, "avm2/vector_es3class_coercion", 1),
     (as3_vector_es4class_coercion, "avm2/vector_es4class_coercion", 1),
+    (as3_vector_int_concat, "avm2/vector_int_concat", 1),
+    (as3_vector_uint_concat, "avm2/vector_uint_concat", 1),
+    (as3_vector_number_concat, "avm2/vector_number_concat", 1),
+    (as3_vector_string_concat, "avm2/vector_string_concat", 1),
+    (as3_vector_bool_concat, "avm2/vector_bool_concat", 1),
+    (as3_vector_es4class_concat, "avm2/vector_es4class_concat", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
