@@ -1,4 +1,9 @@
 /**
+ * Number of times to try defining a custom element.
+ */
+const MAX_TRIES = 999;
+
+/**
  * A mapping between internal element IDs and DOM element IDs.
  */
 const privateRegistry: Record<string, Registration> = {};
@@ -70,7 +75,7 @@ export function registerElement(
 
     let tries = 0;
 
-    while (true) {
+    while (tries < MAX_TRIES) {
         let externalName = elementName;
         if (tries > 0) {
             externalName = externalName + "-" + tries;
@@ -96,4 +101,6 @@ export function registerElement(
 
         return externalName;
     }
+
+    throw new Error("Failed to assign custom element " + elementName);
 }
