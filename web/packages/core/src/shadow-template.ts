@@ -21,6 +21,14 @@ ruffleShadowTemplate.innerHTML = `
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
+        
+        /* Ruffle's width/height CSS interferes Safari fullscreen CSS. */
+        /* Ensure that Safari's fullscreen mode actually fills the screen. */
+        :host(:-webkit-full-screen) {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
 
         /* All of these use the dimensions specified by the embed. */
         #container,
