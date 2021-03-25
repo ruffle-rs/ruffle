@@ -71,24 +71,29 @@ export function registerElement(
     let tries = 0;
 
     while (true) {
+        let externalName = elementName;
+        if (tries > 0) {
+            externalName = externalName + "-" + tries;
+        }
+
         try {
-            let externalName = elementName;
-            if (tries > 0) {
-                externalName = externalName + "-" + tries;
-            }
-
             window.customElements.define(externalName, elementClass);
-            privateRegistry[elementName] = {
-                class: elementClass,
-                name: externalName,
-                internalName: elementName,
-            };
-
-            return externalName;
         } catch (e) {
             if (e.name === "NotSupportedError") {
                 tries += 1;
+                continue;
+            } else {
+                // window.customElements undefined, for example
+                throw e;
             }
         }
+
+        privateRegistry[elementName] = {
+            class: elementClass,
+            name: externalName,
+            internalName: elementName,
+        };
+
+        return externalName;
     }
 }
