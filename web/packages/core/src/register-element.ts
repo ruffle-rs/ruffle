@@ -75,31 +75,32 @@ export function registerElement(
 
     let tries = 0;
 
-    while (tries < MAX_TRIES) {
-        let externalName = elementName;
-        if (tries > 0) {
-            externalName = externalName + "-" + tries;
-        }
-
-        try {
-            window.customElements.define(externalName, elementClass);
-        } catch (e) {
-            if (e.name === "NotSupportedError") {
-                tries += 1;
-                continue;
-            } else {
-                // window.customElements undefined, for example
-                throw e;
+    if (window.customElements !== undefined) {
+        while (tries < MAX_TRIES) {
+            let externalName = elementName;
+            if (tries > 0) {
+                externalName = externalName + "-" + tries;
             }
+
+            try {
+                window.customElements.define(externalName, elementClass);
+            } catch (e) {
+                if (e.name === "NotSupportedError") {
+                    tries += 1;
+                    continue;
+                } else {
+                    throw e;
+                }
+            }
+
+            privateRegistry[elementName] = {
+                class: elementClass,
+                name: externalName,
+                internalName: elementName,
+            };
+
+            return externalName;
         }
-
-        privateRegistry[elementName] = {
-            class: elementClass,
-            name: externalName,
-            internalName: elementName,
-        };
-
-        return externalName;
     }
 
     throw new Error("Failed to assign custom element " + elementName);
