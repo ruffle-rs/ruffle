@@ -82,15 +82,11 @@ export function registerElement(
                 externalName = externalName + "-" + tries;
             }
 
-            try {
+            if (window.customElements.get(externalName) !== undefined) {
+                tries += 1;
+                continue;
+            } else {
                 window.customElements.define(externalName, elementClass);
-            } catch (e) {
-                if (e.name === "NotSupportedError") {
-                    tries += 1;
-                    continue;
-                } else {
-                    throw e;
-                }
             }
 
             privateRegistry[elementName] = {
