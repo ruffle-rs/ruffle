@@ -34,7 +34,6 @@ body {
     border-radius: 30px;
     opacity: 0;
     transition: opacity 0.3s ease-in;
-    display: none;
     margin: 10px 5px;
 }
 
@@ -97,23 +96,22 @@ body {
     margin-left: 5px;
 }
 
-#local-file-container {
+#local-file-container,
+#sample-swfs-container {
     display: inline-block;
     vertical-align: middle;
 }
 
-#sample-swfs-container {
-    display: none;
-    vertical-align: middle;
-}
-
 #author-container {
-    display: none;
     font-size: small;
 }
 
 #author {
     color: var(--ruffle-orange);
+}
+
+.hidden {
+    display: none !important;
 }
 
 @media only screen and (max-width: 800px) {

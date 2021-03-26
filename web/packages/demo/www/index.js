@@ -1,25 +1,26 @@
 import "./index.css";
 
-const { SourceAPI, PublicAPI } = require("ruffle-core");
+import { SourceAPI, PublicAPI } from "ruffle-core";
 
 window.RufflePlayer = PublicAPI.negotiate(
     window.RufflePlayer,
     "local",
     new SourceAPI("local")
 );
+const ruffle = window.RufflePlayer.newest();
 
-let ruffle;
 let player;
 
 const main = document.getElementById("main");
 const overlay = document.getElementById("overlay");
+const prompt = document.getElementById("prompt");
 const authorContainer = document.getElementById("author-container");
 const author = document.getElementById("author");
 const sampleFileInputContainer = document.getElementById(
     "sample-swfs-container"
 );
-const sampleFileInput = document.getElementById("sample-swfs");
 const localFileInput = document.getElementById("local-file");
+const sampleFileInput = document.getElementById("sample-swfs");
 const animOptGroup = document.getElementById("anim-optgroup");
 const gamesOptGroup = document.getElementById("games-optgroup");
 
@@ -29,16 +30,33 @@ const config = {
     logLevel: "warn",
 };
 
-function ensurePlayer() {
+function unload() {
     if (player) {
         player.remove();
     }
+    prompt.classList.remove("hidden");
+}
+
+function load(options) {
+    unload();
+    prompt.classList.add("hidden");
+
     player = ruffle.createPlayer();
     player.id = "player";
     main.append(player);
+    player.load(options);
+}
 
+function showSample(swfData) {
+    authorContainer.classList.remove("hidden");
+    author.textContent = swfData.author;
+    author.href = swfData.authorLink;
+    localFileInput.value = null;
+}
+
+function hideSample() {
     sampleFileInput.selectedIndex = 0;
-    authorContainer.style.display = "none";
+    authorContainer.classList.add("hidden");
     author.textContent = "";
     author.href = "";
 }
@@ -47,21 +65,18 @@ async function loadFile(file) {
     if (!file) {
         return;
     }
-    ensurePlayer();
-    const data = await new Response(file).arrayBuffer();
-    player.load({ data, ...config });
+    hideSample();
+    load({ data: await new Response(file).arrayBuffer(), ...config });
 }
 
 function loadSample() {
     const swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
     if (swfData) {
-        authorContainer.style.display = "block";
-        author.textContent = swfData.author;
-        author.href = swfData.authorLink;
-        localFileInput.value = null;
-        player.load({ url: swfData.location, ...config });
+        showSample(swfData);
+        load({ url: swfData.location, ...config });
     } else {
-        ensurePlayer();
+        hideSample();
+        unload();
     }
 }
 
@@ -71,15 +86,19 @@ localFileInput.addEventListener("change", (event) => {
 
 sampleFileInput.addEventListener("change", () => loadSample());
 
-main.addEventListener("dragenter", () => {
-    overlay.classList.add("drag");
+main.addEventListener("dragenter", (event) => {
+    event.stopPropagation();
+    event.preventDefault();
 });
-main.addEventListener("dragleave", () => {
+main.addEventListener("dragleave", (event) => {
+    event.stopPropagation();
+    event.preventDefault();
     overlay.classList.remove("drag");
 });
 main.addEventListener("dragover", (event) => {
     event.stopPropagation();
     event.preventDefault();
+    overlay.classList.add("drag");
 });
 main.addEventListener("drop", (event) => {
     event.stopPropagation();
@@ -89,16 +108,12 @@ main.addEventListener("drop", (event) => {
 });
 
 window.addEventListener("load", () => {
-    overlay.style.display = "initial";
+    overlay.classList.remove("hidden");
 });
 
-window.addEventListener("DOMContentLoaded", async () => {
-    ruffle = window.RufflePlayer.newest();
-    ensurePlayer();
-
+(async () => {
     const response = await fetch("swfs.json");
     if (!response.ok) {
-        sampleFileInputContainer.style.display = "none";
         return;
     }
 
@@ -117,7 +132,7 @@ window.addEventListener("DOMContentLoaded", async () => {
                 break;
         }
     }
-    sampleFileInputContainer.style.display = "inline-block";
+    sampleFileInputContainer.classList.remove("hidden");
 
     const initialFile = new URL(window.location).searchParams.get("file");
     if (initialFile) {
@@ -128,4 +143,4 @@ window.addEventListener("DOMContentLoaded", async () => {
         );
         loadSample();
     }
-});
+})();
