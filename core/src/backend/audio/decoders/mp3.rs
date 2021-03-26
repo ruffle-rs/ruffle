@@ -2,7 +2,6 @@ use super::{Decoder, SeekableDecoder};
 use std::io::{Cursor, Read};
 
 #[cfg(feature = "minimp3")]
-#[allow(dead_code)]
 pub struct Mp3Decoder<R: Read> {
     decoder: minimp3::Decoder<R>,
     sample_rate: u32,
