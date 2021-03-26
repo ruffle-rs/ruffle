@@ -2980,6 +2980,7 @@ dependencies = [
 name = "ruffle_render_webgl"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "fnv",
  "jpeg-decoder",
  "js-sys",

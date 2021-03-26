@@ -1,3 +1,4 @@
+use bytemuck::{Pod, Zeroable};
 use ruffle_core::backend::render::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary, RenderBackend,
     ShapeHandle, Transform,
@@ -33,8 +34,8 @@ enum MaskState {
     ClearMaskStencil,
 }
 
-#[derive(Clone, Debug)]
 #[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct Vertex {
     position: [f32; 2],
     color: u32,
@@ -256,49 +257,37 @@ impl WebGlRenderBackend {
 
         let vertex_buffer = self.gl.create_buffer().unwrap();
         self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
+        self.gl.buffer_data_with_u8_array(
+            Gl::ARRAY_BUFFER,
+            bytemuck::cast_slice(&[
+                Vertex {
+                    position: [0.0, 0.0],
+                    color: 0xffff_ffff,
+                },
+                Vertex {
+                    position: [1.0, 0.0],
+                    color: 0xffff_ffff,
+                },
+                Vertex {
+                    position: [1.0, 1.0],
+                    color: 0xffff_ffff,
+                },
+                Vertex {
+                    position: [0.0, 1.0],
+                    color: 0xffff_ffff,
+                },
+            ]),
+            Gl::STATIC_DRAW,
+        );
 
-        let verts = [
-            Vertex {
-                position: [0.0, 0.0],
-                color: 0xffff_ffff,
-            },
-            Vertex {
-                position: [1.0, 0.0],
-                color: 0xffff_ffff,
-            },
-            Vertex {
-                position: [1.0, 1.0],
-                color: 0xffff_ffff,
-            },
-            Vertex {
-                position: [0.0, 1.0],
-                color: 0xffff_ffff,
-            },
-        ];
-        let (vertex_buffer, index_buffer) = unsafe {
-            let verts_bytes = std::slice::from_raw_parts(
-                verts.as_ptr() as *const u8,
-                std::mem::size_of_val(&verts),
-            );
-            self.gl
-                .buffer_data_with_u8_array(Gl::ARRAY_BUFFER, verts_bytes, Gl::STATIC_DRAW);
-
-            let index_buffer = self.gl.create_buffer().unwrap();
-            self.gl
-                .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
-            let indices = [0u32, 1, 2, 0, 2, 3];
-            let indices_bytes = std::slice::from_raw_parts(
-                indices.as_ptr() as *const u8,
-                std::mem::size_of::<u32>() * indices.len(),
-            );
-            self.gl.buffer_data_with_u8_array(
-                Gl::ELEMENT_ARRAY_BUFFER,
-                indices_bytes,
-                Gl::STATIC_DRAW,
-            );
-
-            (vertex_buffer, index_buffer)
-        };
+        let index_buffer = self.gl.create_buffer().unwrap();
+        self.gl
+            .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
+        self.gl.buffer_data_with_u8_array(
+            Gl::ELEMENT_ARRAY_BUFFER,
+            bytemuck::cast_slice(&[0u32, 1, 2, 0, 2, 3]),
+            Gl::STATIC_DRAW,
+        );
 
         if program.vertex_position_location != 0xffff_ffff {
             self.gl.vertex_attrib_pointer_with_i32(
@@ -511,29 +500,21 @@ impl WebGlRenderBackend {
             let vertex_buffer = self.gl.create_buffer().unwrap();
             self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
 
-            let (vertex_buffer, index_buffer) = unsafe {
-                let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
-                let verts_bytes = std::slice::from_raw_parts(
-                    vertices.as_ptr() as *const u8,
-                    vertices.len() * std::mem::size_of::<Vertex>(),
-                );
-                self.gl
-                    .buffer_data_with_u8_array(Gl::ARRAY_BUFFER, verts_bytes, Gl::STATIC_DRAW);
+            let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
+            self.gl.buffer_data_with_u8_array(
+                Gl::ARRAY_BUFFER,
+                bytemuck::cast_slice(&vertices),
+                Gl::STATIC_DRAW,
+            );
 
-                let index_buffer = self.gl.create_buffer().unwrap();
-                self.gl
-                    .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
-                let indices_bytes = std::slice::from_raw_parts(
-                    draw.indices.as_ptr() as *const u8,
-                    draw.indices.len() * std::mem::size_of::<u32>(),
-                );
-                self.gl.buffer_data_with_u8_array(
-                    Gl::ELEMENT_ARRAY_BUFFER,
-                    indices_bytes,
-                    Gl::STATIC_DRAW,
-                );
-                (vertex_buffer, index_buffer)
-            };
+            let index_buffer = self.gl.create_buffer().unwrap();
+            self.gl
+                .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
+            self.gl.buffer_data_with_u8_array(
+                Gl::ELEMENT_ARRAY_BUFFER,
+                bytemuck::cast_slice(&draw.indices),
+                Gl::STATIC_DRAW,
+            );
 
             let program = match draw.draw_type {
                 TessDrawType::Color => &self.color_program,
@@ -1134,13 +1115,11 @@ impl RenderBackend for WebGlRenderBackend {
                         gradient.gradient_type,
                     );
                     program.uniform1fv(&self.gl, ShaderUniform::GradientRatios, &gradient.ratios);
-                    let colors = unsafe {
-                        std::slice::from_raw_parts(
-                            gradient.colors[0].as_ptr(),
-                            MAX_GRADIENT_COLORS * 4,
-                        )
-                    };
-                    program.uniform4fv(&self.gl, ShaderUniform::GradientColors, &colors);
+                    program.uniform4fv(
+                        &self.gl,
+                        ShaderUniform::GradientColors,
+                        &bytemuck::cast_slice(&gradient.colors),
+                    );
                     program.uniform1i(
                         &self.gl,
                         ShaderUniform::GradientNumColors,
@@ -1565,7 +1544,7 @@ impl ShaderProgram {
         gl.uniform_matrix3fv_with_f32_array(
             self.uniforms[uniform as usize].as_ref(),
             false,
-            unsafe { std::slice::from_raw_parts(values[0].as_ptr(), 9) },
+            bytemuck::cast_slice(values),
         );
     }
 
@@ -1573,7 +1552,7 @@ impl ShaderProgram {
         gl.uniform_matrix4fv_with_f32_array(
             self.uniforms[uniform as usize].as_ref(),
             false,
-            unsafe { std::slice::from_raw_parts(values[0].as_ptr(), 16) },
+            bytemuck::cast_slice(values),
         );
     }
 }
