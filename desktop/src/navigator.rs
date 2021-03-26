@@ -148,6 +148,10 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     .await
                     .map_err(|e| Error::FetchError(e.to_string()))?;
 
+                if !response.status().is_success() {
+                    return Err(Error::FetchError("HTTP status is not ok".to_string()));
+                }
+
                 let mut buffer = vec![];
                 response
                     .copy_to(&mut buffer)
