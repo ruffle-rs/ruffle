@@ -27,4 +27,4 @@ default-features = false
 version = "0.3.45"
 features = ["HtmlCanvasElement", "HtmlElement", "Node", "OesVertexArrayObject", "WebGlBuffer", "WebglDebugRendererInfo",
             "WebGlFramebuffer", "WebGlProgram", "WebGlRenderbuffer", "WebGlRenderingContext", "WebGl2RenderingContext",
-            "WebGlShader", "WebGlTexture", "WebGlUniformLocation", "WebGlVertexArrayObject"]
+            "WebGlShader", "WebGlTexture", "WebGlUniformLocation", "WebGlVertexArrayObject", "OffscreenCanvas", "ImageBitmapRenderingContext", "ImageBitmap"]

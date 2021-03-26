@@ -14,6 +14,7 @@ use web_sys::{
     HtmlCanvasElement, OesVertexArrayObject, WebGl2RenderingContext as Gl2, WebGlBuffer,
     WebGlFramebuffer, WebGlProgram, WebGlRenderbuffer, WebGlRenderingContext as Gl, WebGlShader,
     WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject, WebglDebugRendererInfo,
+    OffscreenCanvas, ImageBitmapRenderingContext,
 };
 
 type Error = Box<dyn std::error::Error>;
@@ -94,12 +95,18 @@ pub struct WebGlRenderBackend {
     view_matrix: [[f32; 4]; 4],
 
     bitmap_registry: HashMap<BitmapHandle, Bitmap>,
+
+    offscreen: OffscreenCanvas,
+    bitmaprenderer: ImageBitmapRenderingContext,
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;
 
 impl WebGlRenderBackend {
     pub fn new(canvas: &HtmlCanvasElement) -> Result<Self, Error> {
+        let offscreen = OffscreenCanvas::new(canvas.width(), canvas.height()).unwrap();
+        let bitmaprenderer = canvas.get_context("bitmaprenderer").unwrap().unwrap().dyn_into::<ImageBitmapRenderingContext>().unwrap();
+
         // Create WebGL context.
         let options = [
             ("stencil", JsValue::TRUE),
@@ -115,7 +122,7 @@ impl WebGlRenderBackend {
 
         // Attempt to create a WebGL2 context, but fall back to WebGL1 if unavailable.
         let (gl, gl2, vao_ext, msaa_sample_count) = if let Ok(Some(gl)) =
-            canvas.get_context_with_context_options("webgl2", &context_options)
+            offscreen.get_context_with_context_options("webgl2", &context_options)
         {
             log::info!("Creating WebGL2 context.");
             let gl2 = gl.dyn_into::<Gl2>().map_err(|_| "Expected GL context")?;
@@ -155,7 +162,7 @@ impl WebGlRenderBackend {
             )
             .warn_on_error();
 
-            if let Ok(Some(gl)) = canvas.get_context_with_context_options("webgl", &context_options)
+            if let Ok(Some(gl)) = offscreen.get_context_with_context_options("webgl", &context_options)
             {
                 log::info!("Falling back to WebGL1.");
 
@@ -240,6 +247,9 @@ impl WebGlRenderBackend {
             mult_color: None,
             add_color: None,
             bitmap_registry: HashMap::new(),
+
+            offscreen,
+            bitmaprenderer,
         };
 
         let color_quad_mesh = renderer.build_quad_mesh(&renderer.color_program)?;
@@ -741,6 +751,9 @@ impl WebGlRenderBackend {
 
 impl RenderBackend for WebGlRenderBackend {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
+        self.offscreen.set_width(width);
+        self.offscreen.set_height(height);
+
         self.view_width = width as i32;
         self.view_height = height as i32;
 
@@ -931,6 +944,9 @@ impl RenderBackend for WebGlRenderBackend {
                 Gl::UNSIGNED_INT,
                 0,
             );
+
+            let bitmap = self.offscreen.transfer_to_image_bitmap().unwrap();
+            self.bitmaprenderer.transfer_from_image_bitmap(&bitmap);
         }
     }
 
