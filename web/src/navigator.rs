@@ -176,9 +176,14 @@ impl NavigatorBackend for WebNavigatorBackend {
             }
 
             let resp: Response = fetchval.unwrap().dyn_into().unwrap();
+
             if !resp.ok() {
-                return Err(Error::FetchError("HTTP status is not ok".to_string()));
+                return Err(Error::FetchError(format!(
+                    "HTTP status is not ok, got {}",
+                    resp.status_text()
+                )));
             }
+
             let data: ArrayBuffer = JsFuture::from(resp.array_buffer().unwrap())
                 .await
                 .unwrap()
