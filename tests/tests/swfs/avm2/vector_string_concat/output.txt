@@ -1,12 +1,12 @@
-/// var a: Vector.<Superclass> = new <Superclass>[];
-/// a.length = 2;
-/// a[0] = new Superclass();
-/// a[1] = new Subclass();
-/// var b: Vector.<Subclass> = new <Subclass>[];
-/// b.length = 1;
-/// b[0] = new Subclass();
+/// var a: Vector.<String> = new <String>["a","c","d","f"];
+/// var b: Vector.<String> = new <String>["986","B4","Q","rrr"];
 /// var c = a.concat(b);
 /// (contents of c...)
-[object Superclass]
-[object Subclass]
-[object Subclass]
+a
+c
+d
+f
+986
+B4
+Q
+rrr
