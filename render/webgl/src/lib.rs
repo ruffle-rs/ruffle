@@ -103,8 +103,7 @@ pub struct WebGlRenderBackend {
 const MAX_GRADIENT_COLORS: usize = 15;
 
 impl WebGlRenderBackend {
-    pub fn new(canvas: &HtmlCanvasElement) -> Result<Self, Error> {
-        let offscreen = OffscreenCanvas::new(canvas.width(), canvas.height()).unwrap();
+    pub fn new(canvas: &HtmlCanvasElement, offscreen: &OffscreenCanvas) -> Result<Self, Error> {
         let bitmaprenderer = canvas.get_context("bitmaprenderer").unwrap().unwrap().dyn_into::<ImageBitmapRenderingContext>().unwrap();
 
         // Create WebGL context.
@@ -248,7 +247,7 @@ impl WebGlRenderBackend {
             add_color: None,
             bitmap_registry: HashMap::new(),
 
-            offscreen,
+            offscreen: offscreen.clone(),
             bitmaprenderer,
         };
 

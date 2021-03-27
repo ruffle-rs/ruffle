@@ -100,6 +100,8 @@ function sanitizeParameters(
     return output;
 }
 
+var offscreen = new OffscreenCanvas(100, 100);
+
 /**
  * The ruffle player element that should be inserted onto the page.
  *
@@ -371,7 +373,7 @@ export class RufflePlayer extends HTMLElement {
             throw e;
         });
 
-        this.instance = new ruffleConstructor(this.container, this, config);
+        this.instance = new ruffleConstructor(this.container, this, config, offscreen);
         console.log("New Ruffle instance created.");
 
         // In Firefox, AudioContext.state is always "suspended" when the object has just been created.

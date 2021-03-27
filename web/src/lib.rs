@@ -40,7 +40,7 @@ use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{
     AddEventListenerOptions, Element, Event, EventTarget, HtmlCanvasElement, HtmlElement,
-    KeyboardEvent, PointerEvent, WheelEvent,
+    KeyboardEvent, PointerEvent, WheelEvent, OffscreenCanvas
 };
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
@@ -170,6 +170,7 @@ impl Ruffle {
         parent: HtmlElement,
         js_player: JavascriptPlayer,
         config: &JsValue,
+        offscreen: &OffscreenCanvas,
     ) -> Result<Ruffle, JsValue> {
         if RUFFLE_GLOBAL_PANIC.is_completed() {
             // If an actual panic happened, then we can't trust the state it left us in.
@@ -180,7 +181,7 @@ impl Ruffle {
 
         let config: Config = config.into_serde().unwrap_or_default();
 
-        Ruffle::new_internal(parent, js_player, config).map_err(|_| "Error creating player".into())
+        Ruffle::new_internal(parent, js_player, config, offscreen).map_err(|_| "Error creating player".into())
     }
 
     /// Stream an arbitrary movie file from (presumably) the Internet.
@@ -431,6 +432,7 @@ impl Ruffle {
         parent: HtmlElement,
         js_player: JavascriptPlayer,
         config: Config,
+        offscreen: &OffscreenCanvas,
     ) -> Result<Ruffle, Box<dyn Error>> {
         let _ = console_log::init_with_level(config.log_level);
         let allow_script_access = config.allow_script_access;
@@ -438,7 +440,7 @@ impl Ruffle {
         let window = web_sys::window().ok_or("Expected window")?;
         let document = window.document().ok_or("Expected document")?;
 
-        let (canvas, renderer) = create_renderer(&document)?;
+        let (canvas, renderer) = create_renderer(&document, offscreen)?;
         parent
             .append_child(&canvas.clone().into())
             .into_js_result()?;
@@ -1064,6 +1066,7 @@ fn external_to_js_value(external: ExternalValue) -> JsValue {
 
 fn create_renderer(
     document: &web_sys::Document,
+    offscreen: &OffscreenCanvas,
 ) -> Result<(HtmlCanvasElement, Box<dyn RenderBackend>), Box<dyn Error>> {
     #[cfg(not(any(feature = "canvas", feature = "webgl")))]
     std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
@@ -1079,7 +1082,7 @@ fn create_renderer(
             .into_js_result()?
             .dyn_into()
             .map_err(|_| "Expected HtmlCanvasElement")?;
-        match ruffle_render_webgl::WebGlRenderBackend::new(&canvas) {
+        match ruffle_render_webgl::WebGlRenderBackend::new(&canvas, offscreen) {
             Ok(renderer) => return Ok((canvas, Box::new(renderer))),
             Err(error) => log::error!("Error creating WebGL renderer: {}", error),
         }
