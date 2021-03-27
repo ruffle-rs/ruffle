@@ -540,6 +540,7 @@ swf_tests! {
     (as3_edittext_newline_stripping, "avm2/edittext_newline_stripping", 1),
     (as3_shape_drawrect, "avm2/shape_drawrect", 1),
     (as3_movieclip_drawrect, "avm2/movieclip_drawrect", 1),
+    (as3_get_timer, "avm2/get_timer", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

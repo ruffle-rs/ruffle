@@ -582,6 +582,16 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
+    function(
+        mc,
+        "flash.utils",
+        "getTimer",
+        flash::utils::get_timer,
+        fn_proto,
+        domain,
+        script,
+    )?;
+
     // package `flash.display`
     activation
         .context
