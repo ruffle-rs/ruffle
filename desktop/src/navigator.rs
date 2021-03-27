@@ -151,9 +151,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 if !response.status().is_success() {
                     return Err(Error::FetchError(format!(
                         "HTTP status is not ok, got {}",
-                        response.status().canonical_reason().unwrap_or(
-                            format!("unknown status {}", response.status().as_u16()).as_str()
-                        )
+                        response.status()
                     )));
                 }
 
