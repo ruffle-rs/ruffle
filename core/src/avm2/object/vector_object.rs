@@ -50,6 +50,40 @@ pub struct VectorObjectData<'gc> {
     vector: VectorStorage<'gc>,
 }
 
+impl<'gc> VectorObject<'gc> {
+    /// Wrap an existing vector in an object.
+    pub fn from_vector(
+        vector: VectorStorage<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Object<'gc>, Error> {
+        let value_type = vector.value_type();
+        let vector_class = activation.avm2().classes().vector;
+
+        let mut applied_class = vector_class.apply(activation, &[value_type])?;
+        let applied_proto = applied_class
+            .get_property(
+                applied_class,
+                &QName::new(Namespace::public(), "prototype"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+
+        let mut object: Object<'gc> = VectorObject(GcCell::allocate(
+            activation.context.gc_context,
+            VectorObjectData {
+                base: ScriptObjectData::base_new(Some(applied_proto), Some(applied_class)),
+                vector,
+            },
+        ))
+        .into();
+
+        object.install_instance_traits(activation, applied_class)?;
+        object.call_native_init(Some(object), &[], activation, Some(applied_class))?;
+
+        Ok(object)
+    }
+}
+
 impl<'gc> TObject<'gc> for VectorObject<'gc> {
     impl_avm2_custom_object!(base);
     impl_avm2_custom_object_instance!(base);

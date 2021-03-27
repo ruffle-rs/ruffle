@@ -125,4 +125,23 @@ impl<'gc> VectorStorage<'gc> {
             .map(|v| *v = value)
             .ok_or_else(|| format!("RangeError: {} is outside the range of the vector", pos).into())
     }
+
+    /// Push a value to the end of the vector.
+    ///
+    /// This function does no coercion as calling it requires mutably borrowing
+    /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
+    /// things). You must use the associated `coerce` fn before storing things
+    /// in the vector.
+    pub fn push(&mut self, value: Option<Value<'gc>>) {
+        self.storage.push(value)
+    }
+
+    /// Iterate over vector values.
+    pub fn iter<'a>(
+        &'a self,
+    ) -> impl DoubleEndedIterator<Item = Option<Value<'gc>>>
+           + ExactSizeIterator<Item = Option<Value<'gc>>>
+           + 'a {
+        self.storage.iter().cloned()
+    }
 }

@@ -115,6 +115,7 @@ pub struct SystemPrototypes<'gc> {
     pub sprite: Object<'gc>,
     pub simplebutton: Object<'gc>,
     pub regexp: Object<'gc>,
+    pub vector: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -164,6 +165,7 @@ impl<'gc> SystemPrototypes<'gc> {
             sprite: empty,
             simplebutton: empty,
             regexp: empty,
+            vector: empty,
         }
     }
 }
@@ -204,6 +206,7 @@ pub struct SystemClasses<'gc> {
     pub sprite: Object<'gc>,
     pub simplebutton: Object<'gc>,
     pub regexp: Object<'gc>,
+    pub vector: Object<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -253,6 +256,7 @@ impl<'gc> SystemClasses<'gc> {
             sprite: empty,
             simplebutton: empty,
             regexp: empty,
+            vector: empty,
         }
     }
 }
@@ -499,8 +503,7 @@ pub fn load_player_globals<'gc>(
 
     class(activation, math::create_class(mc), domain, script)?;
     avm2_system_class!(regexp, activation, regexp::create_class(mc), domain, script);
-    class(activation, vector::create_class(mc), domain, script)?;
-
+    avm2_system_class!(vector, activation, vector::create_class(mc), domain, script);
     avm2_system_class!(xml, activation, xml::create_class(mc), domain, script);
     avm2_system_class!(
         xml_list,
