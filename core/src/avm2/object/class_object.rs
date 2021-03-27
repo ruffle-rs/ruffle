@@ -13,6 +13,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::collections::HashMap;
 
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Debug, Clone, Copy)]
@@ -45,6 +46,11 @@ pub struct ClassObjectData<'gc> {
 
     /// The native instance constructor function
     native_constructor: Executable<'gc>,
+
+    /// List of all applications of this class.
+    ///
+    /// Only applicable if this class is generic.
+    applications: HashMap<Object<'gc>, Object<'gc>>,
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -128,6 +134,7 @@ impl<'gc> ClassObject<'gc> {
                 instance_allocator: Allocator(instance_allocator),
                 constructor,
                 native_constructor,
+                applications: HashMap::new(),
             },
         ));
 
@@ -182,6 +189,7 @@ impl<'gc> ClassObject<'gc> {
                 instance_allocator: Allocator(instance_allocator),
                 constructor,
                 native_constructor,
+                applications: HashMap::new(),
             },
         ))
         .into();
@@ -497,6 +505,19 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             return Err(format!("Class {:?} was already applied", self_class.read().name()).into());
         }
 
+        if params.len() != 1 {
+            return Err(format!(
+                "Class {:?} only accepts one type parameter, {} given",
+                self_class.read().name(),
+                params.len()
+            )
+            .into());
+        }
+
+        if let Some(application) = self.0.read().applications.get(&params[0]) {
+            return Ok(*application);
+        }
+
         let mut class_params = Vec::new();
         for param in params {
             class_params.push(param.as_class().ok_or(format!(
@@ -544,6 +565,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 instance_allocator,
                 constructor,
                 native_constructor,
+                applications: HashMap::new(),
             },
         ));
 
@@ -551,6 +573,11 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         class_object.link_interfaces(activation)?;
         class_object.install_traits(activation, parameterized_class.read().class_traits())?;
         class_object.run_class_initializer(activation)?;
+
+        self.0
+            .write(activation.context.gc_context)
+            .applications
+            .insert(params[0], class_object.into());
 
         Ok(class_object.into())
     }
