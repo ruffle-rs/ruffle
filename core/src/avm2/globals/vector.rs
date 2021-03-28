@@ -174,7 +174,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.set_attributes(ClassAttributes::GENERIC);
+    write.set_attributes(ClassAttributes::GENERIC | ClassAttributes::FINAL);
     write.set_instance_allocator(vector_allocator);
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
