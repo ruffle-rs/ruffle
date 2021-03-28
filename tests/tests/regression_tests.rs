@@ -650,6 +650,7 @@ swf_tests! {
     (as3_vector_string_concat, "avm2/vector_string_concat", 1),
     (as3_vector_bool_concat, "avm2/vector_bool_concat", 1),
     (as3_vector_es4class_concat, "avm2/vector_es4class_concat", 1),
+    (as3_vector_es4interface_concat, "avm2/vector_es4interface_concat", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
