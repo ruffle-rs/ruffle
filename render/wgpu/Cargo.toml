@@ -16,7 +16,7 @@ futures = "0.3.13"
 bytemuck = { version = "1.5.1", features = ["derive"] }
 raw-window-handle = "0.3.3"
 clap = { version = "3.0.0-beta.2", optional = true }
-enum-map = "0.6.3"
+enum-map = "1.0.0"
 
 [features]
 render_debug_labels = []
