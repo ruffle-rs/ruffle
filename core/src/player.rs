@@ -868,7 +868,7 @@ impl Player {
             let mut new_hovered = None;
             for (_depth, level) in context.levels.clone().iter().rev() {
                 if new_hovered.is_none() {
-                    new_hovered = level.mouse_pick(context, *level, (mouse_pos.0, mouse_pos.1));
+                    new_hovered = level.mouse_pick(context, *level, mouse_pos);
                 } else {
                     break;
                 }
