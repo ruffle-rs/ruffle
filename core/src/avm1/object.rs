@@ -222,14 +222,38 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
-    fn proto(&self) -> Option<Object<'gc>>;
+    fn proto(&self) -> Option<Object<'gc>> {
+        match self.proto_value() {
+            Value::Object(o) => Some(o),
+            _ => None,
+        }
+    }
+
+    fn proto_value(&self) -> Value<'gc> {
+        self.proto().map_or(Value::Undefined, Value::Object)
+    }
 
     /// Sets the `__proto__` of a given object.
     ///
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` in
     /// `set`.
-    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>);
+    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
+        self.set_proto_value(
+            gc_context,
+            prototype.map_or(Value::Undefined, Value::Object),
+        );
+    }
+
+    fn set_proto_value(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
+        self.set_proto(
+            gc_context,
+            match prototype {
+                Value::Object(o) => Some(o),
+                _ => None,
+            },
+        );
+    }
 
     /// Define a value on an object.
     ///
