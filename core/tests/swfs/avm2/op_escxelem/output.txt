@@ -1,0 +1,4 @@
+// EscXElem( 'TestString<&>#\n\r\tTest!"£$%^&*()' )
+TestString&lt;&amp;&gt;#
+
+	Test!"£$%^&amp;*()

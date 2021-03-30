@@ -542,6 +542,7 @@ swf_tests! {
     (as3_movieclip_drawrect, "avm2/movieclip_drawrect", 1),
     (as3_get_timer, "avm2/get_timer", 1),
     (as3_op_escxattr, "avm2/op_escxattr", 1),
+    (as3_op_escxelem, "avm2/op_escxelem", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
