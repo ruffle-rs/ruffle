@@ -13,6 +13,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
+use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use swf::avm2::read::Reader;
@@ -533,6 +534,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             );
         }
 
+        let current_position = reader.pos(full_data);
         let op = reader.read_op();
         if let Ok(Some(op)) = op {
             avm_debug!(self.avm2(), "Opcode: {:?}", op);
@@ -680,6 +682,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::TypeOf => self.op_type_of(),
                 Op::EscXAttr => self.op_esc_xattr(),
                 Op::EscXElem => self.op_esc_elem(),
+                Op::LookupSwitch {
+                    default_offset,
+                    case_offsets,
+                } => self.op_lookup_switch(
+                    default_offset,
+                    &case_offsets,
+                    current_position,
+                    reader,
+                    full_data,
+                ),
                 _ => self.unknown_op(op),
             };
 
@@ -2365,6 +2377,30 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.context
             .avm2
             .push(AvmString::new(self.context.gc_context, r));
+
+        Ok(FrameControl::Continue)
+    }
+
+
+    /// Implements `Op::LookupSwitch`
+    fn op_lookup_switch<'b>(
+        &mut self,
+        default_offset: i32,
+        case_offsets: &[i32],
+        current_pos: usize,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
+    ) -> Result<FrameControl<'gc>, Error> {
+        let index = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        //TODO: can we just subtract the size of *this* op to save some of this maths
+        let offset = case_offsets
+            .get(index as usize)
+            .copied()
+            .unwrap_or(default_offset)
+            + current_pos as i32;
+        let current_pos = reader.pos(full_data) as i32;
+        reader.seek(full_data, offset - current_pos);
 
         Ok(FrameControl::Continue)
     }
