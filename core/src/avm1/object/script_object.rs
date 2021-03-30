@@ -75,7 +75,7 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
-    prototype: Option<Object<'gc>>,
+    prototype: Value<'gc>,
     values: PropertyMap<Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
     type_of: &'static str,
@@ -97,12 +97,12 @@ impl fmt::Debug for ScriptObjectData<'_> {
 impl<'gc> ScriptObject<'gc> {
     pub fn object(
         gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
+        proto: Option<Object<'gc>>, // TODO: Change to `Value`.
     ) -> ScriptObject<'gc> {
         ScriptObject(GcCell::allocate(
             gc_context,
             ScriptObjectData {
-                prototype: proto,
+                prototype: proto.map_or(Value::Undefined, Value::Object),
                 type_of: TYPE_OF_OBJECT,
                 values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
@@ -114,12 +114,12 @@ impl<'gc> ScriptObject<'gc> {
 
     pub fn array(
         gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
+        proto: Option<Object<'gc>>, // TODO: Change to `Value`.
     ) -> ScriptObject<'gc> {
         let object = ScriptObject(GcCell::allocate(
             gc_context,
             ScriptObjectData {
-                prototype: proto,
+                prototype: proto.map_or(Value::Undefined, Value::Object),
                 type_of: TYPE_OF_OBJECT,
                 values: PropertyMap::new(),
                 array: ArrayStorage::Vector(Vec::new()),
@@ -134,12 +134,12 @@ impl<'gc> ScriptObject<'gc> {
     /// Constructs and allocates an empty but normal object in one go.
     pub fn object_cell(
         gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
+        proto: Option<Object<'gc>>, // TODO: Change to `Value`.
     ) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             gc_context,
             ScriptObjectData {
-                prototype: proto,
+                prototype: proto.map_or(Value::Undefined, Value::Object),
                 type_of: TYPE_OF_OBJECT,
                 values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
@@ -159,7 +159,7 @@ impl<'gc> ScriptObject<'gc> {
         ScriptObject(GcCell::allocate(
             gc_context,
             ScriptObjectData {
-                prototype: None,
+                prototype: Value::Undefined,
                 type_of: TYPE_OF_OBJECT,
                 values: PropertyMap::new(),
                 array: ArrayStorage::Properties { length: 0 },
@@ -248,8 +248,7 @@ impl<'gc> ScriptObject<'gc> {
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if name == "__proto__" {
-            self.0.write(activation.context.gc_context).prototype =
-                Some(value.coerce_to_object(activation));
+            self.0.write(activation.context.gc_context).prototype = value;
         } else if let Ok(index) = name.parse::<usize>() {
             self.set_array_element(index, value.to_owned(), activation.context.gc_context);
         } else if !name.is_empty() {
@@ -382,7 +381,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name == "__proto__" {
-            return Ok(self.proto().map_or(Value::Undefined, Value::Object));
+            return Ok(self.proto_value());
         }
 
         let mut getter = None;
@@ -611,11 +610,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
     }
 
-    fn proto(&self) -> Option<Object<'gc>> {
+    fn proto_value(&self) -> Value<'gc> {
         self.0.read().prototype
     }
 
-    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
+    fn set_proto_value(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
         self.0.write(gc_context).prototype = prototype;
     }
 
