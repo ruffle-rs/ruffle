@@ -120,6 +120,10 @@ impl<'gc> VectorStorage<'gc> {
     /// This function yields an error if the position is outside the length of
     /// the vector.
     pub fn set(&mut self, pos: usize, value: Option<Value<'gc>>) -> Result<(), Error> {
+        if !self.is_fixed && pos >= self.length() {
+            self.storage.resize(pos + 1, None);
+        }
+
         self.storage
             .get_mut(pos)
             .map(|v| *v = value)
