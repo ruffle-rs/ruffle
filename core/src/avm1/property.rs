@@ -105,10 +105,7 @@ impl<'gc> Property<'gc> {
     }
 
     pub fn is_virtual(&self) -> bool {
-        match self {
-            Property::Virtual { .. } => true,
-            Property::Stored { .. } => false,
-        }
+        matches!(self, Property::Virtual { .. })
     }
 }
 

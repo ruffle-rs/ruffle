@@ -812,19 +812,11 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     pub fn is_text_box(&self) -> bool {
-        match &self.content {
-            LayoutContent::Text { .. } => true,
-            LayoutContent::Bullet { .. } => false,
-            LayoutContent::Drawing(..) => false,
-        }
+        matches!(&self.content, LayoutContent::Text { .. })
     }
 
     pub fn is_bullet(&self) -> bool {
-        match &self.content {
-            LayoutContent::Text { .. } => false,
-            LayoutContent::Bullet { .. } => true,
-            LayoutContent::Drawing(..) => false,
-        }
+        matches!(&self.content, LayoutContent::Bullet { .. })
     }
 
     /// Construct a duplicate layout box structure.

@@ -83,26 +83,17 @@ impl<'gc> Step<'gc> {
 
     /// Yields true if this step entered an element.
     pub fn stepped_in(self) -> bool {
-        match self {
-            Self::In(_) => true,
-            Self::Around(_) | Self::Out(_) => false,
-        }
+        matches!(self, Self::In(_))
     }
 
     /// Yields true if this step encountered a non-element node.
     pub fn stepped_around(self) -> bool {
-        match self {
-            Self::Around(_) => true,
-            Self::In(_) | Self::Out(_) => false,
-        }
+        matches!(self, Self::Around(_))
     }
 
     /// Yields true if this step exited an element.
     pub fn stepped_out(self) -> bool {
-        match self {
-            Self::Out(_) => true,
-            Self::Around(_) | Self::In(_) => false,
-        }
+        matches!(self, Self::Out(_))
     }
 }
 
