@@ -1,0 +1,6 @@
+/// var a:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2]];
+/// var b:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16]];
+/// var c = a.concat(b)
+/// (contents of c...)
+1,2
+5,16
