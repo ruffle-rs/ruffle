@@ -121,10 +121,7 @@ pub enum AvmObject<'gc> {
 impl<'gc> AvmObject<'gc> {
     /// Determine if this object is an AVM1 object.
     pub fn is_avm1_object(&self) -> bool {
-        match self {
-            Self::Avm1(_) => true,
-            Self::Avm2(_) => false,
-        }
+        matches!(self, Self::Avm1(_))
     }
 
     /// Attempt to access the AVM1 claim to this object, generating an error if
@@ -138,10 +135,7 @@ impl<'gc> AvmObject<'gc> {
 
     /// Determine if this object is an AVM2 object.
     pub fn is_avm2_object(&self) -> bool {
-        match self {
-            Self::Avm1(_) => false,
-            Self::Avm2(_) => true,
-        }
+        matches!(self, Self::Avm2(_))
     }
 
     /// Attempt to access the AVM2 claim to this object, generating an error if
