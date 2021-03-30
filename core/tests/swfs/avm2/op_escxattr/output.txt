@@ -1,2 +1,2 @@
 // EscXAttr( 'TestString<&>#\n\r\tTest!"£$%^&*()' )
-TestString&lt;&amp;>#\n\r\tTest!&quot;£$%^&amp;*()
+TestString&lt;&amp;>#&#xA;&#xD;&#x9;Test!&quot;£$%^&amp;*()
