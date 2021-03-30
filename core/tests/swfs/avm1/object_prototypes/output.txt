@@ -21,3 +21,39 @@ bar
 // c.name
 foo
 
+// obj.__proto__
+123
+
+// typeof obj.__proto__
+number
+
+// obj.__proto__
+true
+
+// typeof obj.__proto__
+boolean
+
+// obj.__proto__
+abc
+
+// typeof obj.__proto__
+string
+
+// obj.__proto__
+null
+
+// typeof obj.__proto__
+null
+
+// obj.__proto__
+undefined
+
+// typeof obj.__proto__
+undefined
+
+// obj.__proto__
+[object Object]
+
+// typeof obj.__proto__
+object
+
