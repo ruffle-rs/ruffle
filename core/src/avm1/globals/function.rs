@@ -37,8 +37,8 @@ pub fn call<'gc>(
     myargs: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = match myargs.get(0) {
-        Some(Value::Object(this)) => *this,
-        _ => activation.context.avm1.globals,
+        Some(Value::Undefined) | Some(Value::Null) | None => activation.context.avm1.globals,
+        Some(this_val) => this_val.coerce_to_object(activation),
     };
     let empty = [];
     let args = match myargs.len() {
@@ -68,16 +68,16 @@ pub fn apply<'gc>(
     myargs: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = match myargs.get(0) {
-        Some(Value::Object(this)) => *this,
-        _ => activation.context.avm1.globals,
+        Some(Value::Undefined) | Some(Value::Null) | None => activation.context.avm1.globals,
+        Some(this_val) => this_val.coerce_to_object(activation),
     };
-    let mut child_args = Vec::new();
     let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);
     let length = match args_object {
         Value::Object(a) => a.get("length", activation)?.coerce_to_f64(activation)? as usize,
         _ => 0,
     };
 
+    let mut child_args = Vec::with_capacity(length);
     while child_args.len() < length {
         let args = args_object.coerce_to_object(activation);
         let next_arg = args.get(&format!("{}", child_args.len()), activation)?;
