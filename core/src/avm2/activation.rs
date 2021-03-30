@@ -2325,7 +2325,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Implements `Op::EscXAttr`
     fn op_esc_xattr(&mut self) -> Result<FrameControl<'gc>, Error> {
-        //TODO: does this coerce or type error if not string
         let s = self.context.avm2.pop().coerce_to_string(self)?;
 
         // Implementation of `EscapeAttributeValue` from ECMA-357(10.2.1.2)
@@ -2338,20 +2337,19 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 '\u{000A}' => r += "&#xA;",
                 '\u{000D}' => r += "&#xD;",
                 '\u{0009}' => r += "&#x9;",
-                _ => r.push(c)
+                _ => r.push(c),
             }
         }
-        self.context.avm2.push(AvmString::new(self.context.gc_context, r));
+        self.context
+            .avm2
+            .push(AvmString::new(self.context.gc_context, r));
 
         Ok(FrameControl::Continue)
     }
 
     /// Implements `Op::EscXElem`
     fn op_esc_elem(&mut self) -> Result<FrameControl<'gc>, Error> {
-        //TODO: does this coerce or type error if not string
         let s = self.context.avm2.pop().coerce_to_string(self)?;
-
-        //TODO: does this use escapeelement or escape value as the spec says, guessing the spec is wrong, but needs testing to be sure
 
         // contrary to the avmplus documentation, this escapes the value on the top of the stack using EscapeElementValue from ECMA-357 *NOT* EscapeAttributeValue.
         // Implementation of `EscapeElementValue` from ECMA-357(10.2.1.1)
@@ -2361,15 +2359,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 '<' => r += "&lt;",
                 '>' => r += "&gt;",
                 '&' => r += "&amp;",
-                _ => r.push(c)
+                _ => r.push(c),
             }
         }
-        self.context.avm2.push(AvmString::new(self.context.gc_context, r));
+        self.context
+            .avm2
+            .push(AvmString::new(self.context.gc_context, r));
 
         Ok(FrameControl::Continue)
     }
 
-        #[allow(unused_variables)]
+    #[allow(unused_variables)]
     #[cfg(avm_debug)]
     fn op_debug(
         &mut self,
