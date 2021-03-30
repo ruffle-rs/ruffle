@@ -36,6 +36,8 @@ impl<'gc> ValueObject<'gc> {
     ///
     /// If a class exists for a given value type, this function automatically
     /// selects the correct prototype for it from the system prototypes list.
+    ///
+    /// Prefer using `coerce_to_object` instead of calling this function directly.
     pub fn boxed(activation: &mut Activation<'_, 'gc, '_>, value: Value<'gc>) -> Object<'gc> {
         if let Value::Object(ob) = value {
             ob

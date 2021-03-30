@@ -1,7 +1,7 @@
 use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
-use crate::avm1::object::{value_object, Object, TObject};
+use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::{
@@ -843,7 +843,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(FrameControl::Continue);
         }
 
-        let object = value_object::ValueObject::boxed(self, object_val);
+        let object = object_val.coerce_to_object(self);
 
         let method_name = if method != Value::Undefined {
             let name = method.coerce_to_string(self)?;
@@ -1165,7 +1165,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
         let object_val = self.context.avm1.pop();
-        let object = value_object::ValueObject::boxed(self, object_val);
+        let object = object_val.coerce_to_object(self);
 
         let result = object.get(&name, self)?;
         self.context.avm1.push(result);
@@ -1697,7 +1697,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(FrameControl::Continue);
         }
 
-        let object = value_object::ValueObject::boxed(self, object_val);
+        let object = object_val.coerce_to_object(self);
         let constructor = object.get(&method_name.coerce_to_string(self)?, self)?;
         if let Value::Object(constructor) = constructor {
             //TODO: What happens if you `ActionNewMethod` without a method name?
