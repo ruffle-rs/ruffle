@@ -1,0 +1,138 @@
+// new DisplacementMapFilter
+[object Object]
+// x.clone()
+[object Object]
+// x.clone() == x
+false
+// x.alpha
+0
+// x.color
+0
+// x.componentX
+0
+// x.componentY
+0
+// x.mapBitmap
+undefined
+// x.mapPoint
+(x=0, y=0)
+// x.mode
+wrap
+// x.scaleX
+0
+// x.scaleY
+0
+// x.alpha (after set to 100)
+1
+// x.color (after set to 0xFFFFFFFF)
+16777215
+// x.componentX (after set to 100)
+100
+// x.componentX (after set to 100.5)
+100
+// x.componentY (after set to 100)
+100
+// x.componentY (after set to 100.5)
+100
+// x.mapBitmap (after set to null)
+undefined
+// x.mapPoint (after set to null)
+(x=0, y=0)
+// x.mapPoint (after set to Point(1000, 1000))
+(x=1000, y=1000)
+// x.mapPoint (after set to Point(1.5, 1.5))
+(x=1, y=1)
+// x.mode (after set to 'test')
+wrap
+// x.scaleX (after set to 100)
+100
+// x.scaleY (after set to 100)
+100
+// x.componentX (after set to 2 | 8)
+10
+// x.alpha (after set to -100)
+0
+// x.color (after set to -0xFFFFFFFF)
+1
+// x.componentX (after set to -100)
+-100
+// x.componentY (after set to -100)
+-100
+// x.mapPoint (after set to Point(-1000, -1000))
+(x=-1000, y=-1000)
+// x.mode (after set to null)
+wrap
+// x.scaleX (after set to -100)
+-100
+// x.scaleY (after set to -100)
+-100
+// x.mode (after set to wrap)
+wrap
+// x.mode (after set to clamp)
+clamp
+// x.mode (after set to ignore)
+ignore
+// x.mode (after set to color)
+color
+// x.mode (after set to Wrap)
+wrap
+// x.mapPoint (after .x += 10)
+(x=-1000, y=-1000)
+// test.mapBitmap.getPixel32(0, 0) after setPixel32(0, 0, 0xff0000ff)
+-16776961
+// test.mapBitmap.width
+10
+// test.mapBitmap.width (after dispose)
+-1
+// test.mapPoint
+(x=0, y=5)
+// test.mapPoint (after normalize(1))
+(x=0, y=5)
+// test.mapPoint (after setting to normalized reference)
+(x=0, y=1)
+// test.alpha
+0.4
+// test.color
+16711935
+// test.mapBitmap.width
+10
+// test.mapBitmap.height
+10
+// test.mapBitmap.width (after disposing original reference)
+-1
+// oob_under.alpha
+0
+// oob_under.color
+1
+// oob_under.componentX
+-100
+// oob_under.componentY
+-100
+// oob_under.mapBitmap
+undefined
+// oob_under.mapPoint
+(x=0, y=0)
+// oob_under.mode
+wrap
+// oob_under.scaleX
+-100
+// oob_under.scaleY
+-100
+// oob_over.alpha
+1
+// oob_over.color
+16777215
+// oob_over.componentX
+100
+// oob_over.componentY
+100
+// oob_over.mapBitmap
+undefined
+// oob_over.mapPoint
+(x=0, y=0)
+// oob_over.mode
+wrap
+// oob_over.scaleX
+100
+// oob_over.scaleY
+100

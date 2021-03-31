@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Flash-Inhalte in Ruffle abspielen"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Flash-Inhalte abspielen, auch wenn die Seite Ruffle abgeschaltet hat"
+    },
+    "settings_ignore_optout": {
+        "message": "Ignoriere Kompatibilitätswarnungen von Websites"
+    },
+    "status_init": {
+        "message": "Prüfe den aktuellen Tab…"
+    },
+    "status_no_tabs": {
+        "message": "Es gibt keinen aktiven Tab."
+    },
+    "status_tabs_error": {
+        "message": "Beim Nachschlagen des aktuellen Tabs ist ein Fehler aufgetreten."
+    },
+    "status_message_init": {
+        "message": "Prüfe Status von Ruffle im aktuellen Tab…"
+    },
+    "status_result_running": {
+        "message": "Ruffle wurde geladen und spielt den Flashinhalt im aktuellen Tab ab."
+    },
+    "status_result_optout": {
+        "message": "Ruffle wurde nicht geladen, da die aktuelle Seite sich selbst als inkompatibel markiert hat."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle wurde nicht geladen, da es vom Anwender abgeschaltet wurde."
+    },
+    "status_result_error": {
+        "message": "Es ist ein Fehler beim Abfragen der aktuellen Tab-Instanz von Ruffle aufgetreten."
+    },
+    "status_result_protected": {
+        "message": "Ruffle kann nicht auf geschützten Browser-Seiten geladen werden."
+    },
+    "action_reload": {
+        "message": "Laden Sie den Tab neu um die Änderungen zu übernehmen."
+    },
+    "open_settings_page": {
+        "message": "Einstellungsseite öffnen"
+    },
+    "settings_page": {
+        "message": "Einstellungsseite"
+    },
+    "description": {
+        "message": "Bringt Flash zurück ins Web, wo es hingehört."
+    },
+    "save_settings": {
+        "message": "Einstellungen speichern"
+    },
+    "settings_saved": {
+        "message": "Einstellungen wurden gespeichert"
+    }
+}

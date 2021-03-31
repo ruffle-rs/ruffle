@@ -6,13 +6,13 @@ use swf::{CharacterId, FillStyle, LineStyle, Matrix, Shape, ShapeRecord, Twips};
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle {
     let mut bounds = swf::Rectangle {
-        x_min: Twips::new(std::i32::MAX),
-        y_min: Twips::new(std::i32::MAX),
-        x_max: Twips::new(std::i32::MIN),
-        y_max: Twips::new(std::i32::MIN),
+        x_min: Twips::new(i32::MAX),
+        y_min: Twips::new(i32::MAX),
+        x_max: Twips::new(i32::MIN),
+        y_max: Twips::new(i32::MIN),
     };
-    let mut x = Twips::new(0);
-    let mut y = Twips::new(0);
+    let mut x = Twips::zero();
+    let mut y = Twips::zero();
     for record in shape_records {
         match record {
             swf::ShapeRecord::StyleChange(style_change) => {
@@ -359,8 +359,8 @@ impl<'a> ShapeConverter<'a> {
         ShapeConverter {
             iter: shape.shape.iter(),
 
-            x: Twips::new(0),
-            y: Twips::new(0),
+            x: Twips::zero(),
+            y: Twips::zero(),
 
             fill_styles: &shape.styles.fill_styles,
             line_styles: &shape.styles.line_styles,
@@ -406,10 +406,8 @@ impl<'a> ShapeConverter<'a> {
                         }
 
                         // <= because fill ID 0 (no fill) is not included in fill style array
-                        self.fill_style1 = if fs > 0 && fs <= num_fill_styles {
-                            // unsafe is okay because the above condition guarantees non-zero
-                            let id = unsafe { NonZeroU32::new_unchecked(fs) };
-                            Some(ActivePath::new(id, (self.x, self.y)))
+                        self.fill_style1 = if fs <= num_fill_styles {
+                            NonZeroU32::new(fs).map(|id| ActivePath::new(id, (self.x, self.y)))
                         } else {
                             None
                         }
@@ -423,9 +421,8 @@ impl<'a> ShapeConverter<'a> {
                             }
                         }
 
-                        self.fill_style0 = if fs > 0 && fs <= num_fill_styles {
-                            let id = unsafe { NonZeroU32::new_unchecked(fs) };
-                            Some(ActivePath::new(id, (self.x, self.y)))
+                        self.fill_style0 = if fs <= num_fill_styles {
+                            NonZeroU32::new(fs).map(|id| ActivePath::new(id, (self.x, self.y)))
                         } else {
                             None
                         }
@@ -436,9 +433,8 @@ impl<'a> ShapeConverter<'a> {
                             self.strokes.merge_path(path, false);
                         }
 
-                        self.line_style = if ls > 0 && ls <= num_line_styles {
-                            let id = unsafe { NonZeroU32::new_unchecked(ls) };
-                            Some(ActivePath::new(id, (self.x, self.y)))
+                        self.line_style = if ls <= num_line_styles {
+                            NonZeroU32::new(ls).map(|id| ActivePath::new(id, (self.x, self.y)))
                         } else {
                             None
                         }
@@ -752,8 +748,8 @@ pub fn shape_hit_test(
     local_matrix: &Matrix,
 ) -> bool {
     // Transform point to local space.
-    let mut x = Twips::new(0);
-    let mut y = Twips::new(0);
+    let mut x = Twips::zero();
+    let mut y = Twips::zero();
     let mut winding = 0;
 
     let mut has_fill_style0: bool = false;
@@ -864,8 +860,8 @@ pub fn draw_command_fill_hit_test(
     commands: &[DrawCommand],
     (point_x, point_y): (Twips, Twips),
 ) -> bool {
-    let mut x = Twips::new(0);
-    let mut y = Twips::new(0);
+    let mut x = Twips::zero();
+    let mut y = Twips::zero();
     let mut winding = 0;
 
     // Draw command only contains a single fill, so don't have to worry about fill styles.

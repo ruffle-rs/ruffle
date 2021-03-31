@@ -1,14 +1,17 @@
 //! Tests running SWFs in a headless Ruffle instance.
 //!
-//! Trace output can be compared with correct output from the official Flash Payer.
+//! Trace output can be compared with correct output from the official Flash Player.
 
 use approx::assert_relative_eq;
-use ruffle_core::backend::locale::NullLocaleBackend;
-use ruffle_core::backend::log::LogBackend;
-use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
-use ruffle_core::backend::storage::MemoryStorageBackend;
 use ruffle_core::backend::{
-    audio::NullAudioBackend, input::NullInputBackend, render::NullRenderer,
+    audio::NullAudioBackend,
+    locale::NullLocaleBackend,
+    log::LogBackend,
+    navigator::{NullExecutor, NullNavigatorBackend},
+    render::NullRenderer,
+    storage::{MemoryStorageBackend, StorageBackend},
+    ui::NullUiBackend,
+    video::NullVideoBackend,
 };
 use ruffle_core::context::UpdateContext;
 use ruffle_core::external::Value as ExternalValue;
@@ -22,6 +25,13 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+fn set_logger() {
+    let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format_timestamp(None)
+        .is_test(true)
+        .try_init();
+}
+
 type Error = Box<dyn std::error::Error>;
 
 // This macro generates test cases for a given list of SWFs.
@@ -31,12 +41,11 @@ macro_rules! swf_tests {
         #[test]
         $(#[$attr])*
         fn $name() -> Result<(), Error> {
+            set_logger();
             test_swf(
                 concat!("tests/swfs/", $path, "/test.swf"),
                 $num_frames,
                 concat!("tests/swfs/", $path, "/output.txt"),
-                |_| Ok(()),
-                |_| Ok(()),
             )
         }
         )*
@@ -50,14 +59,12 @@ macro_rules! swf_tests_approx {
         #[test]
         $(#[$attr])*
         fn $name() -> Result<(), Error> {
+            set_logger();
             test_swf_approx(
                 concat!("tests/swfs/", $path, "/test.swf"),
                 $num_frames,
                 concat!("tests/swfs/", $path, "/output.txt"),
                 |actual, expected| assert_relative_eq!(actual, expected $(, $opt = $val)*),
-                //$relative_epsilon,
-                |_| Ok(()),
-                |_| Ok(()),
             )
         }
         )*
@@ -74,6 +81,9 @@ swf_tests! {
     (as_broadcaster, "avm1/as_broadcaster", 1),
     (as_broadcaster_initialize, "avm1/as_broadcaster_initialize", 1),
     (attach_movie, "avm1/attach_movie", 1),
+    (as2_bitor, "avm1/bitor", 1),
+    (as2_bitand, "avm1/bitand", 1),
+    (as2_bitxor, "avm1/bitxor", 1),
     (function_base_clip, "avm1/function_base_clip", 2),
     (call, "avm1/call", 2),
     (color, "avm1/color", 1),
@@ -87,12 +97,14 @@ swf_tests! {
     (execution_order1, "avm1/execution_order1", 3),
     (execution_order2, "avm1/execution_order2", 15),
     (execution_order3, "avm1/execution_order3", 5),
+    (export_assets, "avm1/export_assets", 1),
     (single_frame, "avm1/single_frame", 2),
     (looping, "avm1/looping", 6),
     (matrix, "avm1/matrix", 1),
     (point, "avm1/point", 1),
     (rectangle, "avm1/rectangle", 1),
     (date_is_special, "avm1/date_is_special", 1),
+    (get_bytes_total, "avm1/get_bytes_total", 1),
     (goto_advance1, "avm1/goto_advance1", 2),
     (goto_advance2, "avm1/goto_advance2", 2),
     (goto_both_ways1, "avm1/goto_both_ways1", 2),
@@ -135,6 +147,7 @@ swf_tests! {
     (movieclip_prototype_extension, "avm1/movieclip_prototype_extension", 1),
     (movieclip_hittest, "avm1/movieclip_hittest", 1),
     (movieclip_hittest_shapeflag, "avm1/movieclip_hittest_shapeflag", 10),
+    (movieclip_lockroot, "avm1/movieclip_lockroot", 10),
     #[ignore] (textfield_text, "avm1/textfield_text", 1),
     (recursive_prototypes, "avm1/recursive_prototypes", 2),
     (stage_object_children, "avm1/stage_object_children", 2),
@@ -148,6 +161,7 @@ swf_tests! {
     (lessthan2_swf7, "avm1/lessthan2_swf7", 1),
     (logical_ops_swf4, "avm1/logical_ops_swf4", 1),
     (logical_ops_swf8, "avm1/logical_ops_swf8", 1),
+    (movieclip_get_instance_at_depth, "avm1/movieclip_get_instance_at_depth", 1),
     (movieclip_depth_methods, "avm1/movieclip_depth_methods", 3),
     (get_variable_in_scope, "avm1/get_variable_in_scope", 1),
     (movieclip_init_object, "avm1/movieclip_init_object", 1),
@@ -157,7 +171,11 @@ swf_tests! {
     (equals2_swf5, "avm1/equals2_swf5", 1),
     (equals2_swf6, "avm1/equals2_swf6", 1),
     (equals2_swf7, "avm1/equals2_swf7", 1),
+    (escape, "avm1/escape", 1),
+    (unescape, "avm1/unescape", 1),
     (register_class, "avm1/register_class", 1),
+    (register_class_return_value, "avm1/register_class_return_value", 1),
+    (register_class_swf6, "avm1/register_class_swf6", 1),
     (register_and_init_order, "avm1/register_and_init_order", 1),
     (on_construct, "avm1/on_construct", 1),
     (set_variable_scope, "avm1/set_variable_scope", 1),
@@ -165,11 +183,13 @@ swf_tests! {
     (strictequals_swf6, "avm1/strictequals_swf6", 1),
     (string_methods, "avm1/string_methods", 1),
     (string_ops_swf6, "avm1/string_ops_swf6", 1),
+    (substr_negative, "avm1/substr_negative", 1),
     (path_string, "avm1/path_string", 1),
     (global_is_bare, "avm1/global_is_bare", 1),
     (primitive_type_globals, "avm1/primitive_type_globals", 1),
     (primitive_instanceof, "avm1/primitive_instanceof", 1),
     (as2_oop, "avm1/as2_oop", 1),
+    (extends_native_type, "avm1/extends_native_type", 1),
     (xml, "avm1/xml", 1),
     (xml_namespaces, "avm1/xml_namespaces", 1),
     (xml_node_namespaceuri, "avm1/xml_node_namespaceuri", 1),
@@ -187,6 +207,8 @@ swf_tests! {
     (xml_to_string, "avm1/xml_to_string", 1),
     (xml_to_string_comment, "avm1/xml_to_string_comment", 1),
     (xml_idmap, "avm1/xml_idmap", 1),
+    (xml_ignore_comments, "avm1/xml_ignore_comments", 1),
+    (xml_ignore_white, "avm1/xml_ignore_white", 1),
     (xml_inspect_doctype, "avm1/xml_inspect_doctype", 1),
     #[ignore] (xml_inspect_xmldecl, "avm1/xml_inspect_xmldecl", 1),
     (xml_inspect_createmethods, "avm1/xml_inspect_createmethods", 1),
@@ -204,6 +226,7 @@ swf_tests! {
     (loadmovienum, "avm1/loadmovienum", 2),
     (loadmovie_registerclass, "avm1/loadmovie_registerclass", 2),
     (loadmovie_method, "avm1/loadmovie_method", 2),
+    (loadmovie_fail, "avm1/loadmovie_fail", 1),
     (unloadmovie, "avm1/unloadmovie", 11),
     (unloadmovienum, "avm1/unloadmovienum", 11),
     (unloadmovie_method, "avm1/unloadmovie_method", 11),
@@ -220,6 +243,7 @@ swf_tests! {
     #[ignore] (watch_virtual_property, "avm1/watch_virtual_property", 1),
     (cross_movie_root, "avm1/cross_movie_root", 5),
     (roots_and_levels, "avm1/roots_and_levels", 1),
+    (swf5_encoding, "avm1/swf5_encoding", 1),
     (swf6_case_insensitive, "avm1/swf6_case_insensitive", 1),
     (swf7_case_sensitive, "avm1/swf7_case_sensitive", 1),
     (prototype_enumerate, "avm1/prototype_enumerate", 1),
@@ -233,6 +257,13 @@ swf_tests! {
     (issue_710, "avm1/issue_710", 1),
     (issue_1086, "avm1/issue_1086", 1),
     (issue_1104, "avm1/issue_1104", 3),
+    (issue_1671, "avm1/issue_1671", 1),
+    (issue_1906, "avm1/issue_1906", 2),
+    (issue_2030, "avm1/issue_2030", 1),
+    (issue_2166, "avm1/issue_2166", 1),
+    (issue_2870, "avm1/issue_2870", 10),
+    (issue_3169, "avm1/issue_3169", 1),
+    (issue_3446, "avm1/issue_3446", 1),
     (function_as_function, "avm1/function_as_function", 1),
     (infinite_recursion_function, "avm1/infinite_recursion_function", 1),
     (infinite_recursion_function_in_setter, "avm1/infinite_recursion_function_in_setter", 1),
@@ -242,9 +273,13 @@ swf_tests! {
     (edittext_leading, "avm1/edittext_leading", 1),
     #[ignore] (edittext_newlines, "avm1/edittext_newlines", 1),
     (edittext_html_entity, "avm1/edittext_html_entity", 1),
+    (edittext_password, "avm1/edittext_password", 1),
     #[ignore] (edittext_html_roundtrip, "avm1/edittext_html_roundtrip", 1),
     (edittext_newline_stripping, "avm1/edittext_newline_stripping", 1),
     (define_local, "avm1/define_local", 1),
+    (textfield_properties, "avm1/textfield_properties", 1),
+    (textfield_background_color, "avm1/textfield_background_color", 1),
+    (textfield_border_color, "avm1/textfield_border_color", 1),
     (textfield_variable, "avm1/textfield_variable", 8),
     (error, "avm1/error", 1),
     (color_transform, "avm1/color_transform", 1),
@@ -259,10 +294,12 @@ swf_tests! {
     (global_array, "avm1/global_array", 1),
     (array_constructor, "avm1/array_constructor", 1),
     (array_apply, "avm1/array_constructor", 1),
+    (object_constructor, "avm1/object_constructor", 1),
     (object_function, "avm1/object_function", 1),
     (parse_int, "avm1/parse_int", 1),
     (bitmap_filter, "avm1/bitmap_filter", 1),
     (blur_filter, "avm1/blur_filter", 1),
+    (glow_filter, "avm1/glow_filter", 1),
     (date_constructor, "avm1/date/constructor", 1),
     (removed_clip_halts_script, "avm1/removed_clip_halts_script", 13),
     (date_utc, "avm1/date/UTC", 1),
@@ -284,6 +321,19 @@ swf_tests! {
     (date_set_year, "avm1/date/setYear", 1),
     (this_scoping, "avm1/this_scoping", 1),
     (bevel_filter, "avm1/bevel_filter", 1),
+    (drop_shadow_filter, "avm1/drop_shadow_filter", 1),
+    (color_matrix_filter, "avm1/color_matrix_filter", 1),
+    (displacement_map_filter, "avm1/displacement_map_filter", 1),
+    (convolution_filter, "avm1/convolution_filter", 1),
+    (gradient_bevel_filter, "avm1/gradient_bevel_filter", 1),
+    (gradient_glow_filter, "avm1/gradient_glow_filter", 1),
+    (bitmap_data, "avm1/bitmap_data", 1),
+    (bitmap_data_noise, "avm1/bitmap_data_noise", 1),
+    (array_call_method, "avm1/array_call_method", 1),
+    (bad_placeobject_clipaction, "avm1/bad_placeobject_clipaction", 2),
+    (bad_swf_tag_past_eof, "avm1/bad_swf_tag_past_eof", 1),
+    (sound, "avm1/sound", 1),
+    (action_to_integer, "avm1/action_to_integer", 1),
     (as3_hello_world, "avm2/hello_world", 1),
     (as3_function_call, "avm2/function_call", 1),
     (as3_function_call_via_call, "avm2/function_call_via_call", 1),
@@ -316,6 +366,8 @@ swf_tests! {
     (as3_if_strictne, "avm2/if_strictne", 1),
     (as3_strict_equality, "avm2/strict_equality", 1),
     (as3_es4_interfaces, "avm2/es4_interfaces", 1),
+    (as3_is_finite, "avm2/is_finite", 1),
+    (as3_is_nan, "avm2/is_nan", 1),
     (as3_istype, "avm2/istype", 1),
     (as3_instanceof, "avm2/instanceof", 1),
     (as3_truthiness, "avm2/truthiness", 1),
@@ -341,11 +393,15 @@ swf_tests! {
     (conflicting_instance_names, "avm1/conflicting_instance_names", 6),
     (button_children, "avm1/button_children", 1),
     (transform, "avm1/transform", 1),
+    (target_clip_swf5, "avm1/target_clip_swf5", 2),
+    (target_clip_swf6, "avm1/target_clip_swf6", 2),
     (target_path, "avm1/target_path", 1),
-    (remove_movie_clip, "avm1/remove_movie_clip", 1),
+    (remove_movie_clip, "avm1/remove_movie_clip", 2),
     (as3_add, "avm2/add", 1),
+    (as3_bitor, "avm2/bitor", 1),
     (as3_bitand, "avm2/bitand", 1),
     (as3_bitnot, "avm2/bitnot", 1),
+    (as3_bitxor, "avm2/bitxor", 1),
     (as3_declocal, "avm2/declocal", 1),
     (as3_declocal_i, "avm2/declocal_i", 1),
     (as3_decrement, "avm2/decrement", 1),
@@ -362,6 +418,7 @@ swf_tests! {
     (as3_subtract, "avm2/subtract", 1),
     (as3_urshift, "avm2/urshift", 1),
     (as3_in, "avm2/in", 1),
+    (as3_bytearray, "avm2/bytearray", 1),
     (as3_array_constr, "avm2/array_constr", 1),
     (as3_array_access, "avm2/array_access", 1),
     (as3_array_storage, "avm2/array_storage", 1),
@@ -390,6 +447,7 @@ swf_tests! {
     (as3_array_sort, "avm2/array_sort", 1),
     (as3_array_sorton, "avm2/array_sorton", 1),
     (as3_array_hasownproperty, "avm2/array_hasownproperty", 1),
+    (as3_array_length, "avm2/array_length", 1),
     (stage_property_representation, "avm1/stage_property_representation", 1),
     (as3_timeline_scripts, "avm2/timeline_scripts", 3),
     (as3_movieclip_properties, "avm2/movieclip_properties", 4),
@@ -409,6 +467,80 @@ swf_tests! {
     (as3_movieclip_constr, "avm2/movieclip_constr", 1),
     (as3_lazyinit, "avm2/lazyinit", 1),
     (as3_trace, "avm2/trace", 1),
+    (as3_displayobjectcontainer_getchildat, "avm2/displayobjectcontainer_getchildat", 1),
+    (as3_displayobjectcontainer_getchildbyname, "avm2/displayobjectcontainer_getchildbyname", 1),
+    (as3_displayobjectcontainer_addchild, "avm2/displayobjectcontainer_addchild", 1),
+    (as3_displayobjectcontainer_addchildat, "avm2/displayobjectcontainer_addchildat", 1),
+    (as3_displayobjectcontainer_removechild, "avm2/displayobjectcontainer_removechild", 1),
+    (as3_displayobjectcontainer_removechild_timelinemanip_remove1, "avm2/displayobjectcontainer_removechild_timelinemanip_remove1", 7),
+    (as3_displayobjectcontainer_addchild_timelinepull0, "avm2/displayobjectcontainer_addchild_timelinepull0", 7),
+    (as3_displayobjectcontainer_addchild_timelinepull1, "avm2/displayobjectcontainer_addchild_timelinepull1", 7),
+    (as3_displayobjectcontainer_addchild_timelinepull2, "avm2/displayobjectcontainer_addchild_timelinepull2", 7),
+    (as3_displayobjectcontainer_addchildat_timelinelock0, "avm2/displayobjectcontainer_addchildat_timelinelock0", 7),
+    (as3_displayobjectcontainer_addchildat_timelinelock1, "avm2/displayobjectcontainer_addchildat_timelinelock1", 7),
+    (as3_displayobjectcontainer_addchildat_timelinelock2, "avm2/displayobjectcontainer_addchildat_timelinelock2", 7),
+    (as3_displayobjectcontainer_contains, "avm2/displayobjectcontainer_contains", 5),
+    (as3_displayobjectcontainer_getchildindex, "avm2/displayobjectcontainer_getchildindex", 5),
+    (as3_displayobjectcontainer_removechildat, "avm2/displayobjectcontainer_removechildat", 1),
+    (as3_displayobjectcontainer_removechildren, "avm2/displayobjectcontainer_removechildren", 5),
+    (as3_displayobjectcontainer_setchildindex, "avm2/displayobjectcontainer_setchildindex", 1),
+    (as3_displayobjectcontainer_swapchildren, "avm2/displayobjectcontainer_swapchildren", 1),
+    (as3_displayobjectcontainer_swapchildrenat, "avm2/displayobjectcontainer_swapchildrenat", 1),
+    (button_order, "avm1/button_order", 1),
+    (as3_displayobjectcontainer_stopallmovieclips, "avm2/displayobjectcontainer_stopallmovieclips", 2),
+    (as3_displayobjectcontainer_timelineinstance, "avm2/displayobjectcontainer_timelineinstance", 6),
+    (as3_displayobject_alpha, "avm2/displayobject_alpha", 1),
+    (as3_displayobject_x, "avm2/displayobject_x", 1),
+    (as3_displayobject_y, "avm2/displayobject_y", 1),
+    (as3_displayobject_name, "avm2/displayobject_name", 4),
+    (as3_displayobject_parent, "avm2/displayobject_parent", 4),
+    (as3_displayobject_root, "avm2/displayobject_root", 4),
+    (as3_displayobject_visible, "avm2/displayobject_visible", 4),
+    (as3_displayobject_hittestpoint, "avm2/displayobject_hittestpoint", 2),
+    (as3_displayobject_hittestobject, "avm2/displayobject_hittestobject", 1),
+    (as3_event_valueof_tostring, "avm2/event_valueof_tostring", 1),
+    (as3_event_bubbles, "avm2/event_bubbles", 1),
+    (as3_event_cancelable, "avm2/event_cancelable", 1),
+    (as3_event_type, "avm2/event_type", 1),
+    (as3_event_clone, "avm2/event_clone", 1),
+    (as3_event_formattostring, "avm2/event_formattostring", 1),
+    (as3_event_isdefaultprevented, "avm2/event_isdefaultprevented", 1),
+    (as3_function_call_via_apply, "avm2/function_call_via_apply", 1),
+    (as3_function_call_arguments, "avm2/function_call_arguments", 1),
+    (as3_function_call_rest, "avm2/function_call_rest", 1),
+    (as3_eventdispatcher_haseventlistener, "avm2/eventdispatcher_haseventlistener", 1),
+    (as3_eventdispatcher_willtrigger, "avm2/eventdispatcher_willtrigger", 1),
+    (as3_movieclip_willtrigger, "avm2/movieclip_willtrigger", 3),
+    (as3_eventdispatcher_dispatchevent, "avm2/eventdispatcher_dispatchevent", 1),
+    (as3_eventdispatcher_dispatchevent_handlerorder, "avm2/eventdispatcher_dispatchevent_handlerorder", 1),
+    (as3_eventdispatcher_dispatchevent_cancel, "avm2/eventdispatcher_dispatchevent_cancel", 1),
+    (as3_eventdispatcher_dispatchevent_this, "avm2/eventdispatcher_dispatchevent_this", 1),
+    (as3_movieclip_dispatchevent, "avm2/movieclip_dispatchevent", 1),
+    (as3_movieclip_dispatchevent_handlerorder, "avm2/movieclip_dispatchevent_handlerorder", 1),
+    (as3_movieclip_dispatchevent_cancel, "avm2/movieclip_dispatchevent_cancel", 1),
+    (as3_movieclip_dispatchevent_target, "avm2/movieclip_dispatchevent_target", 1),
+    (as3_movieclip_dispatchevent_selfadd, "avm2/movieclip_dispatchevent_selfadd", 1),
+    (as3_string_constr, "avm2/string_constr", 1),
+    (as3_string_length, "avm2/string_length", 1),
+    (as3_string_char_at, "avm2/string_char_at", 1),
+    (as3_string_char_code_at, "avm2/string_char_code_at", 1),
+    (as3_typeof, "avm2/typeof", 1),
+    (use_hand_cursor, "avm1/use_hand_cursor", 1),
+    (as3_movieclip_displayevents, "avm2/movieclip_displayevents", 9),
+    (as3_movieclip_displayevents_timeline, "avm2/movieclip_displayevents_timeline", 5),
+    (as3_movieclip_displayevents_looping, "avm2/movieclip_displayevents_looping", 5),
+    (as3_movieclip_displayevents_dblhandler, "avm2/movieclip_displayevents_dblhandler", 4),
+    (as3_regexp_constr, "avm2/regexp_constr", 1),
+    (as3_regexp_test, "avm2/regexp_test", 1),
+    (as3_regexp_exec, "avm2/regexp_exec", 1),
+    (as3_point, "avm2/point", 1),
+    (as3_edittext_default_format, "avm2/edittext_default_format", 1),
+    (as3_edittext_html_entity, "avm2/edittext_html_entity", 1),
+    #[ignore] (as3_edittext_html_roundtrip, "avm2/edittext_html_roundtrip", 1),
+    (as3_edittext_newline_stripping, "avm2/edittext_newline_stripping", 1),
+    (as3_shape_drawrect, "avm2/shape_drawrect", 1),
+    (as3_movieclip_drawrect, "avm2/movieclip_drawrect", 1),
+    (as3_get_timer, "avm2/get_timer", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -416,23 +548,38 @@ swf_tests! {
 // Some will probably always need to be approx. (if they rely on trig functions, etc.)
 swf_tests_approx! {
     (local_to_global, "avm1/local_to_global", 1, epsilon = 0.051),
-    (stage_object_properties, "avm1/stage_object_properties", 5, epsilon = 0.051),
+    (stage_object_properties, "avm1/stage_object_properties", 6, epsilon = 0.051),
     (stage_object_properties_swf6, "avm1/stage_object_properties_swf6", 4, epsilon = 0.051),
     (movieclip_getbounds, "avm1/movieclip_getbounds", 1, epsilon = 0.051),
+    (parse_float, "avm1/parse_float", 1, max_relative = 5.0 * f64::EPSILON),
     (edittext_letter_spacing, "avm1/edittext_letter_spacing", 1, epsilon = 15.0), // TODO: Discrepancy in wrapping in letterSpacing = 0.1 test.
     (edittext_align, "avm1/edittext_align", 1, epsilon = 3.0),
+    (edittext_autosize, "avm1/edittext_autosize", 1, epsilon = 4.0), // TODO Flash has _width higher by 4.0, probably padding logic mistake
     (edittext_margins, "avm1/edittext_margins", 1, epsilon = 5.0), // TODO: Discrepancy in wrapping.
     (edittext_tab_stops, "avm1/edittext_tab_stops", 1, epsilon = 5.0),
     (edittext_bullet, "avm1/edittext_bullet", 1, epsilon = 3.0),
     (edittext_underline, "avm1/edittext_underline", 1, epsilon = 4.0),
-    (as3_coerce_string_precision, "avm2/coerce_string_precision", 1, max_relative = 30.0 * std::f64::EPSILON),
+    (as3_coerce_string_precision, "avm2/coerce_string_precision", 1, max_relative = 30.0 * f64::EPSILON),
     (as3_divide, "avm2/divide", 1, epsilon = 0.0), // TODO: Discrepancy in float formatting.
-    (as3_math, "avm2/math", 1, max_relative = 30.0 * std::f64::EPSILON),
+    (as3_math, "avm2/math", 1, max_relative = 30.0 * f64::EPSILON),
+    (as3_displayobject_height, "avm2/displayobject_height", 7, epsilon = 0.06), // TODO: height/width appears to be off by 1 twip sometimes
+    (as3_displayobject_width, "avm2/displayobject_width", 7, epsilon = 0.06),
+    (as3_displayobject_rotation, "avm2/displayobject_rotation", 1, epsilon = 0.0000000001),
+    (as3_edittext_align, "avm2/edittext_align", 1, epsilon = 3.0),
+    (as3_edittext_autosize, "avm2/edittext_autosize", 1, epsilon = 5.0), // TODO AS3 has _width higher by 5.0, probably padding logic mistake
+    (as3_edittext_bullet, "avm2/edittext_bullet", 1, epsilon = 3.0),
+    (as3_edittext_letter_spacing, "avm2/edittext_letter_spacing", 1, epsilon = 15.0), // TODO: Discrepancy in wrapping in letterSpacing = 0.1 test.
+    (as3_edittext_margins, "avm2/edittext_margins", 1, epsilon = 5.0), // TODO: Discrepancy in wrapping.
+    (as3_edittext_tab_stops, "avm2/edittext_tab_stops", 1, epsilon = 5.0),
+    (as3_edittext_underline, "avm2/edittext_underline", 1, epsilon = 4.0),
+    (as3_edittext_leading, "avm2/edittext_leading", 1, epsilon = 0.3),
+    (as3_edittext_font_size, "avm2/edittext_font_size", 1, epsilon = 0.1),
 }
 
 #[test]
 fn external_interface_avm1() -> Result<(), Error> {
-    test_swf(
+    set_logger();
+    test_swf_with_hooks(
         "tests/swfs/avm1/external_interface/test.swf",
         1,
         "tests/swfs/avm1/external_interface/output.txt",
@@ -484,8 +631,48 @@ fn external_interface_avm1() -> Result<(), Error> {
 }
 
 #[test]
+fn shared_object_avm1() -> Result<(), Error> {
+    set_logger();
+    // Test SharedObject persistence. Run an SWF that saves data
+    // to a shared object twice and verify that the data is saved.
+    let mut memory_storage_backend: Box<dyn StorageBackend> =
+        Box::new(MemoryStorageBackend::default());
+
+    // Initial run; no shared object data.
+    test_swf_with_hooks(
+        "tests/swfs/avm1/shared_object/test.swf",
+        1,
+        "tests/swfs/avm1/shared_object/output1.txt",
+        |_player| Ok(()),
+        |player| {
+            // Save the storage backend for next run.
+            let mut player = player.lock().unwrap();
+            std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+            Ok(())
+        },
+    )?;
+
+    // Re-run the SWF, verifying that the shared object persists.
+    test_swf_with_hooks(
+        "tests/swfs/avm1/shared_object/test.swf",
+        1,
+        "tests/swfs/avm1/shared_object/output2.txt",
+        |player| {
+            // Swap in the previous storage backend.
+            let mut player = player.lock().unwrap();
+            std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+            Ok(())
+        },
+        |_player| Ok(()),
+    )?;
+
+    Ok(())
+}
+
+#[test]
 fn timeout_avm1() -> Result<(), Error> {
-    test_swf(
+    set_logger();
+    test_swf_with_hooks(
         "tests/swfs/avm1/timeout/test.swf",
         1,
         "tests/swfs/avm1/timeout/output.txt",
@@ -530,7 +717,19 @@ macro_rules! assert_eq {
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
-fn test_swf(
+fn test_swf(swf_path: &str, num_frames: u32, expected_output_path: &str) -> Result<(), Error> {
+    test_swf_with_hooks(
+        swf_path,
+        num_frames,
+        expected_output_path,
+        |_| Ok(()),
+        |_| Ok(()),
+    )
+}
+
+/// Loads an SWF and runs it through the Ruffle core for a number of frames.
+/// Tests that the trace output matches the given expected output.
+fn test_swf_with_hooks(
     swf_path: &str,
     num_frames: u32,
     expected_output_path: &str,
@@ -561,10 +760,8 @@ fn test_swf_approx(
     num_frames: u32,
     expected_output_path: &str,
     approx_assert_fn: impl Fn(f64, f64),
-    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
-    before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
 ) -> Result<(), Error> {
-    let trace_log = run_swf(swf_path, num_frames, before_start, before_end)?;
+    let trace_log = run_swf(swf_path, num_frames, |_| Ok(()), |_| Ok(()))?;
     let mut expected_data = std::fs::read_to_string(expected_output_path)?;
 
     // Strip a trailing newline if it has one.
@@ -623,10 +820,11 @@ fn run_swf(
         Box::new(NullRenderer),
         Box::new(NullAudioBackend::new()),
         Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
-        Box::new(NullInputBackend::new()),
         Box::new(MemoryStorageBackend::default()),
         Box::new(NullLocaleBackend::new()),
+        Box::new(NullVideoBackend::new()),
         Box::new(TestLogBackend::new(trace_output.clone())),
+        Box::new(NullUiBackend::new()),
     )?;
     player.lock().unwrap().set_root_movie(Arc::new(movie));
     player
@@ -713,4 +911,8 @@ impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
     }
 
     fn on_callback_available(&self, _name: &str) {}
+
+    fn on_fs_command(&self, _command: &str, _args: &str) -> bool {
+        false
+    }
 }

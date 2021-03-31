@@ -6,8 +6,7 @@ use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::avm_warn;
-use crate::xml::{XMLDocument, XMLNode};
-use enumset::EnumSet;
+use crate::xml::{XmlDocument, XmlNode};
 use gc_arena::{Collect, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
@@ -19,36 +18,36 @@ use std::fmt;
 /// document.
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct XMLIDMapObject<'gc>(ScriptObject<'gc>, XMLDocument<'gc>);
+pub struct XmlIdMapObject<'gc>(ScriptObject<'gc>, XmlDocument<'gc>);
 
-impl<'gc> XMLIDMapObject<'gc> {
-    /// Construct an XMLIDMapObject for an already existing node's
+impl<'gc> XmlIdMapObject<'gc> {
+    /// Construct an XmlIdMapObject for an already existing node's
     /// attributes.
     pub fn from_xml_document(
         gc_context: MutationContext<'gc, '_>,
-        xml_doc: XMLDocument<'gc>,
+        xml_doc: XmlDocument<'gc>,
     ) -> Object<'gc> {
-        XMLIDMapObject(ScriptObject::object(gc_context, None), xml_doc).into()
+        XmlIdMapObject(ScriptObject::object(gc_context, None), xml_doc).into()
     }
 
     fn base(&self) -> ScriptObject<'gc> {
         match self {
-            XMLIDMapObject(base, ..) => *base,
+            XmlIdMapObject(base, ..) => *base,
         }
     }
 
-    fn document(&self) -> XMLDocument<'gc> {
+    fn document(&self) -> XmlDocument<'gc> {
         match self {
-            XMLIDMapObject(_, document) => *document,
+            XmlIdMapObject(_, document) => *document,
         }
     }
 }
 
-impl fmt::Debug for XMLIDMapObject<'_> {
+impl fmt::Debug for XmlIdMapObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            XMLIDMapObject(base, document) => f
-                .debug_tuple("XMLIDMapObject")
+            XmlIdMapObject(base, document) => f
+                .debug_tuple("XmlIdMapObject")
                 .field(base)
                 .field(document)
                 .finish(),
@@ -56,7 +55,7 @@ impl fmt::Debug for XMLIDMapObject<'_> {
     }
 }
 
-impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
+impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
     fn get_local(
         &self,
         name: &str,
@@ -124,7 +123,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.base()
             .add_property(gc_context, name, get, set, attributes)
@@ -137,7 +136,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.base()
             .add_property_with_case(activation, gc_context, name, get, set, attributes)
@@ -169,7 +168,7 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.base()
             .define_value(gc_context, name, value, attributes)
@@ -179,8 +178,8 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: Option<&str>,
-        set_attributes: EnumSet<Attribute>,
-        clear_attributes: EnumSet<Attribute>,
+        set_attributes: Attribute,
+        clear_attributes: Attribute,
     ) {
         self.base()
             .set_attributes(gc_context, name, set_attributes, clear_attributes)
@@ -229,15 +228,15 @@ impl<'gc> TObject<'gc> for XMLIDMapObject<'gc> {
         self.base().interfaces()
     }
 
-    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
-        self.base().set_interfaces(context, iface_list)
+    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+        self.base().set_interfaces(gc_context, iface_list)
     }
 
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
         Some(self.base())
     }
 
-    fn as_xml_node(&self) -> Option<XMLNode<'gc>> {
+    fn as_xml_node(&self) -> Option<XmlNode<'gc>> {
         None
     }
 

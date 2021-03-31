@@ -62,20 +62,24 @@ impl<'gc> Namespace<'gc> {
         })
     }
 
-    pub fn public_namespace() -> Self {
-        Namespace::Package("".into())
+    pub fn public() -> Self {
+        Self::Package("".into())
     }
 
     pub fn as3_namespace() -> Self {
-        Namespace::Namespace("http://adobe.com/AS3/2006/builtin".into())
+        Self::Namespace("http://adobe.com/AS3/2006/builtin".into())
     }
 
     pub fn package(package_name: impl Into<AvmString<'gc>>) -> Self {
-        Namespace::Package(package_name.into())
+        Self::Package(package_name.into())
+    }
+
+    pub fn private(name: impl Into<AvmString<'gc>>) -> Self {
+        Self::Private(name.into())
     }
 
     pub fn is_public(&self) -> bool {
-        *self == Self::Package("".into())
+        *self == Self::public()
     }
 
     pub fn is_any(&self) -> bool {
@@ -87,7 +91,7 @@ impl<'gc> Namespace<'gc> {
     }
 
     pub fn is_dynamic(&self) -> bool {
-        self.eq(&Self::Package("".into())) || self.is_any()
+        self.is_public() || self.is_any()
     }
 
     /// Get the string value of this namespace, ignoring its type.
@@ -133,7 +137,7 @@ impl<'gc> QName<'gc> {
 
     pub fn dynamic_name(local_part: impl Into<AvmString<'gc>>) -> Self {
         Self {
-            ns: Namespace::public_namespace(),
+            ns: Namespace::public(),
             name: local_part.into(),
         }
     }
@@ -179,7 +183,7 @@ impl<'gc> QName<'gc> {
                 name: AvmString::new(mc, local_name.to_string()),
             }),
             [local_name] => Some(Self {
-                ns: Namespace::public_namespace(),
+                ns: Namespace::public(),
                 name: AvmString::new(mc, local_name.to_string()),
             }),
             _ => None,

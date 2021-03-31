@@ -58,7 +58,7 @@ macro_rules! impl_custom_object_without_set {
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: &str,
             value: crate::avm1::Value<'gc>,
-            attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
+            attributes: crate::avm1::property::Attribute,
         ) {
             self.0
                 .read()
@@ -70,8 +70,8 @@ macro_rules! impl_custom_object_without_set {
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             name: Option<&str>,
-            set_attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
-            clear_attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
+            set_attributes: crate::avm1::property::Attribute,
+            clear_attributes: crate::avm1::property::Attribute,
         ) {
             self.0.write(gc_context).$field.set_attributes(
                 gc_context,
@@ -87,7 +87,7 @@ macro_rules! impl_custom_object_without_set {
             name: &str,
             get: crate::avm1::object::Object<'gc>,
             set: Option<crate::avm1::object::Object<'gc>>,
-            attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
+            attributes: crate::avm1::property::Attribute,
         ) {
             self.0
                 .read()
@@ -102,7 +102,7 @@ macro_rules! impl_custom_object_without_set {
             name: &str,
             get: crate::avm1::object::Object<'gc>,
             set: Option<crate::avm1::object::Object<'gc>>,
-            attributes: enumset::EnumSet<crate::avm1::property::Attribute>,
+            attributes: crate::avm1::property::Attribute,
         ) {
             self.0
                 .read()
@@ -263,15 +263,31 @@ macro_rules! impl_custom_object {
 #[macro_export]
 macro_rules! add_field_accessors {
     ($([$set_ident: ident, $get_ident: ident, $var: ident, $type_: ty],)*) => {
+        add_field_accessors!(
+            $([$var, $type_, set => $set_ident, get => $get_ident],)*
+        );
+    };
+
+    ($([$var: ident, $type_: ty $(, set => $set_ident: ident)? $(, get => $get_ident: ident)?],)*) => {
+        $(
+            $( add_field_accessors!([setter_only $set_ident, $var, $type_],); )*
+            $( add_field_accessors!([getter_only $get_ident, $var, $type_],); )*
+        )*
+    };
+
+    ($([getter_only $get_ident: ident, $var: ident, $type_: ty],)*) => {
+        $(
+            pub fn $get_ident(&self) -> $type_ {
+                self.0.read().$var
+            }
+        )*
+    };
+
+    ($([setter_only $set_ident: ident, $var: ident, $type_: ty],)*) => {
         $(
             pub fn $set_ident(&self, gc_context: MutationContext<'gc, '_>, v: $type_) {
                 self.0.write(gc_context).$var = v;
             }
-
-            pub fn $get_ident(&self) -> $type_ {
-                self.0.read()
-                    .$var
-            }
         )*
-    }
+    };
 }

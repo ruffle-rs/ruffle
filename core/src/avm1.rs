@@ -2,7 +2,7 @@ use crate::avm1::globals::create_globals;
 use crate::avm1::object::{search_prototype, stage_object};
 use crate::context::UpdateContext;
 use crate::prelude::*;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 
 use swf::avm1::read::Reader;
 
@@ -18,10 +18,11 @@ mod callable_value;
 pub mod debug;
 pub mod error;
 mod fscommand;
+#[macro_use]
 pub mod function;
 pub mod globals;
 pub mod object;
-mod property;
+pub mod property;
 mod scope;
 mod string;
 mod timer;
@@ -31,7 +32,7 @@ mod value;
 mod tests;
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::error::Error;
+pub use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 pub use globals::SystemPrototypes;
@@ -75,13 +76,15 @@ macro_rules! avm_error {
     )
 }
 
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct Avm1<'gc> {
     /// The Flash Player version we're emulating.
     player_version: u8,
 
     /// The constant pool to use for new activations from code sources that
     /// don't close over the constant pool they were defined with.
-    constant_pool: GcCell<'gc, Vec<String>>,
+    constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
 
     /// The global object.
     globals: Object<'gc>,
@@ -116,22 +119,6 @@ pub struct Avm1<'gc> {
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
-}
-
-unsafe impl<'gc> gc_arena::Collect for Avm1<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.globals.trace(cc);
-        self.constant_pool.trace(cc);
-        //self.system_listeners.trace(cc);
-        self.prototypes.trace(cc);
-        self.display_properties.trace(cc);
-        self.stack.trace(cc);
-
-        for register in &self.registers {
-            register.trace(cc);
-        }
-    }
 }
 
 impl<'gc> Avm1<'gc> {
@@ -208,6 +195,7 @@ impl<'gc> Avm1<'gc> {
             active_clip,
             clip_obj,
             None,
+            None,
         );
         if let Err(e) = child_activation.run_actions(code) {
             root_error_handler(&mut child_activation, e);
@@ -247,6 +235,7 @@ impl<'gc> Avm1<'gc> {
             constant_pool,
             active_clip,
             clip_obj,
+            None,
             None,
         );
         function(&mut activation)
@@ -298,6 +287,7 @@ impl<'gc> Avm1<'gc> {
             constant_pool,
             active_clip,
             clip_obj,
+            None,
             None,
         );
         if let Err(e) = child_activation.run_actions(code) {
@@ -431,6 +421,10 @@ impl<'gc> Avm1<'gc> {
 
     pub fn set_max_recursion_depth(&mut self, max_recursion_depth: u16) {
         self.max_recursion_depth = max_recursion_depth
+    }
+
+    pub fn broadcaster_functions(&self) -> BroadcasterFunctions<'gc> {
+        self.broadcaster_functions
     }
 
     #[cfg(feature = "avm_debug")]

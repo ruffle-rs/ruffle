@@ -9,13 +9,12 @@ use crate::avm1::{
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
-use enumset::EnumSet;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Gc, GcCell, MutationContext};
 use indexmap::IndexMap;
 use rand::Rng;
 use smallvec::SmallVec;
@@ -25,6 +24,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, CatchVar, Function, TryBlock};
+use swf::SwfStr;
 use url::form_urlencoded;
 
 macro_rules! avm_debug {
@@ -179,8 +179,6 @@ unsafe impl<'gc> gc_arena::Collect for ActivationIdentifier<'gc> {
     fn trace(&self, _cc: gc_arena::CollectionContext) {}
 }
 
-#[derive(Collect)]
-#[collect(unsafe_drop)]
 pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// Represents the SWF version of a given function.
     ///
@@ -193,10 +191,13 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     scope: GcCell<'gc, Scope<'gc>>,
 
     /// The currently in use constant pool.
-    constant_pool: GcCell<'gc, Vec<String>>,
+    constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
 
     /// The immutable value of `this`.
     this: Object<'gc>,
+
+    /// The function object being called.
+    pub callee: Option<Object<'gc>>,
 
     /// The arguments this function was called by.
     pub arguments: Option<Object<'gc>>,
@@ -223,7 +224,7 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     target_clip: Option<DisplayObject<'gc>>,
 
     /// Amount of actions performed since the last timeout check
-    actions_since_timeout_check: u8,
+    actions_since_timeout_check: u16,
 
     /// Whether the base clip was removed when we started this frame.
     base_clip_unloaded: bool,
@@ -249,9 +250,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         id: ActivationIdentifier<'a>,
         swf_version: u8,
         scope: GcCell<'gc, Scope<'gc>>,
-        constant_pool: GcCell<'gc, Vec<String>>,
+        constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
         this: Object<'gc>,
+        callee: Option<Object<'gc>>,
         arguments: Option<Object<'gc>>,
     ) -> Self {
         avm_debug!(context.avm1, "START {}", id);
@@ -265,6 +267,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             target_clip: Some(base_clip),
             base_clip_unloaded: base_clip.removed(),
             this,
+            callee,
             arguments,
             local_registers: None,
             actions_since_timeout_check: 0,
@@ -289,6 +292,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             target_clip: self.target_clip,
             base_clip_unloaded: self.base_clip_unloaded,
             this: self.this,
+            callee: self.callee,
             arguments: self.arguments,
             local_registers: self.local_registers,
             actions_since_timeout_check: 0,
@@ -324,6 +328,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             target_clip: Some(base_clip),
             base_clip_unloaded: base_clip.removed(),
             this: globals,
+            callee: None,
             arguments: None,
             local_registers: None,
             actions_since_timeout_check: 0,
@@ -381,6 +386,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             active_clip,
             clip_obj,
             None,
+            None,
         );
         child_activation.run_actions(code)
     }
@@ -418,12 +424,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             active_clip,
             clip_obj,
             None,
+            None,
         );
         function(&mut activation)
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut read = Reader::new(code.as_ref(), self.swf_version());
+        let mut read = Reader::new(&code.movie.data()[code.start..], self.swf_version());
 
         loop {
             let result = self.do_action(&code, &mut read);
@@ -436,20 +443,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Run a single action from a given action reader.
-    fn do_action(
+    fn do_action<'b>(
         &mut self,
-        data: &SwfSlice,
-        reader: &mut Reader<'_>,
+        data: &'b SwfSlice,
+        reader: &mut Reader<'b>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.actions_since_timeout_check += 1;
-        if self.actions_since_timeout_check >= 200 {
+        if self.actions_since_timeout_check >= 2000 {
             self.actions_since_timeout_check = 0;
             if self.context.update_start.elapsed() >= self.context.max_execution_duration {
                 return Err(Error::ExecutionTimeout);
             }
         }
 
-        if reader.pos() >= (data.end - data.start) {
+        if reader.get_ref().as_ptr() as usize >= data.as_ref().as_ptr_range().end as usize {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
         } else if let Some(action) = reader.read_action()? {
@@ -486,9 +493,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     params,
                     actions,
                 } => self.action_define_function(
-                    &name,
+                    name,
                     &params[..],
-                    data.to_subslice(actions).unwrap(),
+                    data.to_unbounded_subslice(actions).unwrap(),
                 ),
                 Action::DefineFunction2(func) => self.action_define_function_2(&func, &data),
                 Action::DefineLocal => self.action_define_local(),
@@ -506,7 +513,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::GetProperty => self.action_get_property(),
                 Action::GetTime => self.action_get_time(),
                 Action::GetVariable => self.action_get_variable(),
-                Action::GetUrl { url, target } => self.action_get_url(&url, &target),
+                Action::GetUrl { url, target } => self.action_get_url(url, target),
                 Action::GetUrl2 {
                     send_vars_method,
                     is_target_sprite,
@@ -518,14 +525,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     scene_offset,
                 } => self.action_goto_frame_2(set_playing, scene_offset),
                 Action::Greater => self.action_greater(),
-                Action::GotoLabel(label) => self.action_goto_label(&label),
-                Action::If { offset } => self.action_if(offset, reader),
+                Action::GotoLabel(label) => self.action_goto_label(label),
+                Action::If { offset } => self.action_if(offset, reader, data),
                 Action::Increment => self.action_increment(),
                 Action::InitArray => self.action_init_array(),
                 Action::InitObject => self.action_init_object(),
                 Action::ImplementsOp => self.action_implements_op(),
                 Action::InstanceOf => self.action_instance_of(),
-                Action::Jump { offset } => self.action_jump(offset, reader),
+                Action::Jump { offset } => self.action_jump(offset, reader, data),
                 Action::Less => self.action_less(),
                 Action::Less2 => self.action_less_2(),
                 Action::MBAsciiToChar => self.action_mb_ascii_to_char(),
@@ -549,7 +556,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::Return => self.action_return(),
                 Action::SetMember => self.action_set_member(),
                 Action::SetProperty => self.action_set_property(),
-                Action::SetTarget(target) => self.action_set_target(&target),
+                Action::SetTarget(target) => {
+                    self.action_set_target(&target.to_str_lossy(self.encoding()))
+                }
                 Action::SetTarget2 => self.action_set_target2(),
                 Action::SetVariable => self.action_set_variable(),
                 Action::StackSwap => self.action_stack_swap(),
@@ -579,7 +588,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::WaitForFrame2 {
                     num_actions_to_skip,
                 } => self.action_wait_for_frame_2(num_actions_to_skip, reader),
-                Action::With { actions } => self.action_with(data.to_subslice(actions).unwrap()),
+                Action::With { actions } => {
+                    self.action_with(data.to_unbounded_subslice(actions).unwrap())
+                }
                 Action::Throw => self.action_throw(),
                 Action::Try(try_block) => self.action_try(&try_block, &data),
                 _ => self.unknown_op(action),
@@ -680,8 +691,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let depth = self.context.avm1.pop();
         let target = self.context.avm1.pop();
         let source = self.context.avm1.pop();
-        let start_clip = self.target_clip_or_root();
-        let source_clip = self.resolve_target_display_object(start_clip, source)?;
+        let start_clip = self.target_clip_or_root()?;
+        let source_clip = self.resolve_target_display_object(start_clip, source, true)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
             let _ = globals::movie_clip::duplicate_movie_clip_with_bias(
@@ -698,8 +709,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_bit_and(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.context.avm1.pop().coerce_to_u32(self)?;
-        let b = self.context.avm1.pop().coerce_to_u32(self)?;
+        let a = self.context.avm1.pop().coerce_to_i32(self)?;
+        let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = a & b;
         self.context.avm1.push(result);
         Ok(FrameControl::Continue)
@@ -714,8 +725,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_bit_or(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.context.avm1.pop().coerce_to_u32(self)?;
-        let b = self.context.avm1.pop().coerce_to_u32(self)?;
+        let a = self.context.avm1.pop().coerce_to_i32(self)?;
+        let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = a | b;
         self.context.avm1.push(result);
         Ok(FrameControl::Continue)
@@ -738,8 +749,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_bit_xor(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.context.avm1.pop().coerce_to_u32(self)?;
-        let b = self.context.avm1.pop().coerce_to_u32(self)?;
+        let a = self.context.avm1.pop().coerce_to_i32(self)?;
+        let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b ^ a;
         self.context.avm1.push(result);
         Ok(FrameControl::Continue)
@@ -748,7 +759,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_call(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Runs any actions on the given frame.
         let arg = self.context.avm1.pop();
-        let target = self.target_clip_or_root();
+        let target = self.target_clip_or_root()?;
 
         // The parameter can be a frame # or a path to a movie clip with a frame number.
         let mut call_frame = None;
@@ -774,7 +785,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
 
         if let Some((clip, frame)) = call_frame {
-            if frame <= u32::from(std::u16::MAX) {
+            if frame <= u32::from(u16::MAX) {
                 for action in clip.actions_on_frame(&mut self.context, frame as u16) {
                     let _ = self.run_child_frame_for_action(
                         "[Frame Call]",
@@ -803,7 +814,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let variable = self.get_variable(&fn_name)?;
 
         let result = variable.call_with_default_this(
-            self.target_clip_or_root().object().coerce_to_object(self),
+            self.target_clip_or_root()?.object().coerce_to_object(self),
             &fn_name,
             self,
             None,
@@ -818,7 +829,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_call_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let method_name = self.context.avm1.pop();
+        let method = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
         let num_args = self.context.avm1.pop().coerce_to_f64(self)? as i64; // TODO(Herschel): max arg count?
         let mut args = Vec::new();
@@ -834,33 +845,28 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let object = value_object::ValueObject::boxed(self, object_val);
 
-        match method_name {
-            Value::Undefined | Value::Null => {
-                let this = self.target_clip_or_root().object().coerce_to_object(self);
-                let result = object.call("[Anonymous]", self, this, None, &args)?;
-                self.context.avm1.push(result);
-                self.continue_if_base_clip_exists()
+        let method_name = if method != Value::Undefined {
+            let name = method.coerce_to_string(self)?;
+            if name.is_empty() {
+                None
+            } else {
+                Some(name)
             }
-            Value::String(name) => {
-                if name.is_empty() {
-                    let result = object.call("[Anonymous]", self, object, None, &args)?;
-                    self.context.avm1.push(result);
-                } else {
-                    let result = object.call_method(&name, &args, self)?;
-                    self.context.avm1.push(result);
-                }
-                self.continue_if_base_clip_exists()
-            }
-            _ => {
-                self.context.avm1.push(Value::Undefined);
-                avm_warn!(
-                    self,
-                    "Invalid method name, expected string but found {:?}",
-                    method_name
-                );
-                Ok(FrameControl::Continue)
-            }
-        }
+        } else {
+            None
+        };
+
+        let result = if let Some(method_name) = method_name {
+            // Call `this[method_name]`
+            object.call_method(&method_name.as_str(), &args, self)?
+        } else {
+            // Undefined/empty method name; call `this` as a function
+            let this = self.target_clip_or_root()?.object().coerce_to_object(self);
+            object.call("[Anonymous]", self, this, None, &args)?
+        };
+
+        self.context.avm1.push(result);
+        self.continue_if_base_clip_exists()
     }
 
     fn action_cast_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -882,11 +888,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_constant_pool(
         &mut self,
-        constant_pool: &[&str],
+        constant_pool: &[&'_ SwfStr],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.context.avm1.constant_pool = GcCell::allocate(
             self.context.gc_context,
-            constant_pool.iter().map(|s| (*s).to_string()).collect(),
+            constant_pool
+                .iter()
+                .map(|s| {
+                    AvmString::new(self.context.gc_context, s.to_string_lossy(self.encoding()))
+                        .into()
+                })
+                .collect(),
         );
         self.set_constant_pool(self.context.avm1.constant_pool);
 
@@ -901,10 +913,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_define_function(
         &mut self,
-        name: &str,
-        params: &[&str],
+        name: &'_ SwfStr,
+        params: &[&'_ SwfStr],
         actions: SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let name = name.to_str_lossy(self.encoding());
+        let name = name.as_ref();
         let swf_version = self.swf_version();
         let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
         let constant_pool = self.constant_pool();
@@ -915,7 +929,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             params,
             scope,
             constant_pool,
-            self.target_clip_or_root(),
+            self.target_clip_or_root()?,
         );
         let prototype = ScriptObject::object(
             self.context.gc_context,
@@ -943,7 +957,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let swf_version = self.swf_version();
-        let func_data = parent_data.to_subslice(action_func.actions).unwrap();
+        let func_data = parent_data
+            .to_unbounded_subslice(action_func.actions)
+            .unwrap();
         let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
         let constant_pool = self.constant_pool();
         let func = Avm1Function::from_df2(
@@ -968,7 +984,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if action_func.name.is_empty() {
             self.context.avm1.push(func_obj);
         } else {
-            self.define(action_func.name, func_obj);
+            self.define(&action_func.name.to_str_lossy(self.encoding()), func_obj);
         }
 
         Ok(FrameControl::Continue)
@@ -1117,25 +1133,29 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         //TODO: What happens if we try to extend an object which has no `prototype`?
         //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
-        let super_proto = superclass.get("prototype", self)?.coerce_to_object(self);
 
-        let sub_prototype: Object<'gc> =
-            ScriptObject::object(self.context.gc_context, Some(super_proto)).into();
+        // Use `create_bare_object` to ensure the proper underlying object type when
+        // extending native objects.
+        // TODO: This doesn't work if the user manually wires up `prototype`/`__proto__`.
+        // The native object needs to be created later by the superclass's constructor.
+        // (see #701)
+        let super_prototype = superclass.get("prototype", self)?.coerce_to_object(self);
+        let sub_prototype = super_prototype.create_bare_object(self, super_prototype)?;
 
         sub_prototype.set("constructor", superclass.into(), self)?;
         sub_prototype.set_attributes(
             self.context.gc_context,
             Some("constructor"),
-            Attribute::DontEnum.into(),
-            EnumSet::empty(),
+            Attribute::DONT_ENUM,
+            Attribute::empty(),
         );
 
         sub_prototype.set("__constructor__", superclass.into(), self)?;
         sub_prototype.set_attributes(
             self.context.gc_context,
             Some("__constructor__"),
-            Attribute::DontEnum.into(),
-            EnumSet::empty(),
+            Attribute::DONT_ENUM,
+            Attribute::empty(),
         );
 
         subclass.set("prototype", sub_prototype.into(), self)?;
@@ -1159,9 +1179,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let prop_index = self.context.avm1.pop().into_number_v1() as usize;
         let path = self.context.avm1.pop();
         let ret = if let Some(target) = self.target_clip() {
-            if let Some(clip) = self.resolve_target_display_object(target, path)? {
+            if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
                 let display_properties = self.context.avm1.display_properties;
-                let props = display_properties.write(self.context.gc_context);
+                let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
                     property.get(self, clip)?
                 } else {
@@ -1181,8 +1201,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_get_time(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.context.times_get_time_called += 1;
+        // heuristic to detect busy loops used for delays and slowly progress fake time
+        if self.context.times_get_time_called >= 20 && self.context.times_get_time_called % 5 == 0 {
+            *self.context.time_offset += 1;
+        }
+
         let time = self.context.navigator.time_since_launch().as_millis() as u32;
-        self.context.avm1.push(time);
+        self.context
+            .avm1
+            .push(time.wrapping_add(*self.context.time_offset));
         Ok(FrameControl::Continue)
     }
 
@@ -1196,9 +1224,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_get_url(&mut self, url: &str, target: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_get_url(
+        &mut self,
+        url: &'_ SwfStr,
+        target: &'_ SwfStr,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let target = target.to_str_lossy(self.encoding());
+        let target = target.as_ref();
+        let url = url.to_string_lossy(self.encoding());
         if target.starts_with("_level") && target.len() > 6 {
-            let url = url.to_string();
             match target[6..].parse::<u32>() {
                 Ok(level_id) => {
                     let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
@@ -1230,8 +1264,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(FrameControl::Continue);
         }
 
-        if let Some(fscommand) = fscommand::parse(url) {
-            fscommand::handle(fscommand, self)?;
+        if let Some(fscommand) = fscommand::parse(&url) {
+            let fsargs = target;
+            fscommand::handle(fscommand, fsargs, self)?;
         } else {
             self.context
                 .navigator
@@ -1254,7 +1289,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let url = url_val.coerce_to_string(self)?;
 
         if let Some(fscommand) = fscommand::parse(&url) {
-            fscommand::handle(fscommand, self)?;
+            let fsargs = target.coerce_to_string(self)?.to_string();
+            fscommand::handle(fscommand, &fsargs, self)?;
             return Ok(FrameControl::Continue);
         }
 
@@ -1263,11 +1299,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             if let Value::Object(target) = target {
                 target.as_display_object()
             } else {
-                let start = self.target_clip_or_root();
-                self.resolve_target_display_object(start, target.clone())?
+                let start = self.target_clip_or_root()?;
+                self.resolve_target_display_object(start, target, true)?
             }
         } else {
-            Some(self.target_clip_or_root())
+            Some(self.target_clip_or_root()?)
         };
 
         if is_load_vars {
@@ -1397,13 +1433,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_goto_label(&mut self, label: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_goto_label(&mut self, label: &'_ SwfStr) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                if let Some(frame) = clip.frame_label_to_number(label) {
+                if let Some(frame) =
+                    clip.frame_label_to_number(&label.to_str_lossy(self.encoding()))
+                {
                     clip.goto_frame(&mut self.context, frame, true);
                 } else {
-                    avm_warn!(self, "GoToLabel: Frame label '{}' not found", label);
+                    avm_warn!(self, "GoToLabel: Frame label '{:?}' not found", label);
                 }
             } else {
                 avm_warn!(self, "GoToLabel: Target is not a MovieClip");
@@ -1414,14 +1452,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_if(
+    fn action_if<'b>(
         &mut self,
         jump_offset: i16,
-        reader: &mut Reader<'_>,
+        reader: &mut Reader<'b>,
+        data: &'b SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         if val.as_bool(self.current_swf_version()) {
-            reader.seek(jump_offset.into());
+            reader.seek(data.movie.data(), jump_offset);
         }
         Ok(FrameControl::Continue)
     }
@@ -1498,13 +1537,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_jump(
+    fn action_jump<'b>(
         &mut self,
         jump_offset: i16,
-        reader: &mut Reader<'_>,
+        reader: &mut Reader<'b>,
+        data: &'b SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Handle out-of-bounds.
-        reader.seek(jump_offset.into());
+        reader.seek(data.movie.data(), jump_offset);
         Ok(FrameControl::Continue)
     }
 
@@ -1686,9 +1725,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let name_value: Value<'gc> = self.resolve(&fn_name)?.into();
         let constructor = name_value.coerce_to_object(self);
-
         let this = constructor.construct(self, &args)?;
-
         self.context.avm1.push(this);
 
         self.continue_if_base_clip_exists()
@@ -1749,12 +1786,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 SwfValue::Float(v) => f64::from(*v).into(),
                 SwfValue::Double(v) => (*v).into(),
                 SwfValue::Str(v) => {
-                    AvmString::new(self.context.gc_context, (*v).to_string()).into()
+                    AvmString::new(self.context.gc_context, v.to_string_lossy(self.encoding()))
+                        .into()
                 }
                 SwfValue::Register(v) => self.current_register(*v),
                 SwfValue::ConstantPool(i) => {
                     if let Some(value) = self.constant_pool().read().get(*i as usize) {
-                        AvmString::new(self.context.gc_context, value.to_string()).into()
+                        *value
                     } else {
                         avm_warn!(
                             self,
@@ -1773,7 +1811,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_push_duplicate(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
-        self.context.avm1.push(val.clone());
+        self.context.avm1.push(val);
         self.context.avm1.push(val);
         Ok(FrameControl::Continue)
     }
@@ -1783,7 +1821,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // and the max value gets converted into an i32, so any number > 2^31 - 1 will return 0.
         let max = self.context.avm1.pop().into_number_v1() as i32;
         let val = if max > 0 {
-            self.context.rng.gen_range(0, max)
+            self.context.rng.gen_range(0..max)
         } else {
             0
         };
@@ -1793,13 +1831,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_remove_sprite(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.context.avm1.pop();
-        let start_clip = self.target_clip_or_root();
-        let target_clip = self.resolve_target_display_object(start_clip, target)?;
+        let start_clip = self.target_clip_or_root()?;
+        let target_clip = self.resolve_target_display_object(start_clip, target, true)?;
 
-        if let Some(target_clip) = target_clip.and_then(|o| o.as_movie_clip()) {
-            let _ = globals::movie_clip::remove_movie_clip(target_clip, self, &[]);
+        if let Some(target_clip) = target_clip {
+            crate::avm1::globals::display_object::remove_display_object(target_clip, self);
         } else {
-            avm_warn!(self, "RemoveSprite: Source is not a movie clip");
+            avm_warn!(self, "RemoveSprite: Source is not a display object");
         }
         Ok(FrameControl::Continue)
     }
@@ -1826,7 +1864,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let prop_index = self.context.avm1.pop().coerce_to_u32(self)? as usize;
         let path = self.context.avm1.pop();
         if let Some(target) = self.target_clip() {
-            if let Some(clip) = self.resolve_target_display_object(target, path)? {
+            if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
                 let display_properties = self.context.avm1.display_properties;
                 let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
@@ -1863,7 +1901,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_set_target(&mut self, target: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
         let base_clip = self.base_clip();
         let new_target_clip;
-        let root = base_clip.root();
+        let root = base_clip.avm1_root(&self.context)?;
         let start = base_clip.object().coerce_to_object(self);
         if target.is_empty() {
             new_target_clip = Some(base_clip);
@@ -1891,11 +1929,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.set_target_clip(new_target_clip);
 
         let scope = self.scope_cell();
-        let clip_obj = self
-            .target_clip()
-            .unwrap_or_else(|| self.base_clip().root())
-            .object()
-            .coerce_to_object(self);
+        let clip_obj = self.target_clip_or_root()?.object().coerce_to_object(self);
 
         self.set_scope(Scope::new_target_scope(
             scope,
@@ -1933,11 +1967,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
 
         let scope = self.scope_cell();
-        let clip_obj = self
-            .target_clip()
-            .unwrap_or_else(|| self.base_clip().root())
-            .object()
-            .coerce_to_object(self);
+        let clip_obj = self.target_clip_or_root()?.object().coerce_to_object(self);
+
         self.set_scope(Scope::new_target_scope(
             scope,
             clip_obj,
@@ -1956,8 +1987,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_start_drag(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.context.avm1.pop();
-        let start_clip = self.target_clip_or_root();
-        let display_object = self.resolve_target_display_object(start_clip, target)?;
+        let start_clip = self.target_clip_or_root()?;
+        let display_object = self.resolve_target_display_object(start_clip, target, true)?;
         if let Some(display_object) = display_object {
             let lock_center = self.context.avm1.pop();
             let constrain = self.context.avm1.pop().as_bool(self.current_swf_version());
@@ -1990,14 +2021,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_stop_sounds(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.context.audio.stop_all_sounds();
+        self.context.stop_all_sounds();
         Ok(FrameControl::Continue)
     }
 
     fn action_store_register(&mut self, register: u8) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The value must remain on the stack.
         let val = self.context.avm1.pop();
-        self.context.avm1.push(val.clone());
+        self.context.avm1.push(val);
         self.set_current_register(register, val);
 
         Ok(FrameControl::Continue)
@@ -2120,8 +2151,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_to_integer(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.context.avm1.pop().coerce_to_f64(self)?;
-        self.context.avm1.push(val.trunc());
+        let val = self.context.avm1.pop();
+
+        let value = match val {
+            Value::Undefined | Value::Null | Value::Object(_) => 0.0,
+            _ => val.coerce_to_f64(self)?,
+        };
+
+        self.context.avm1.push(value.trunc());
         Ok(FrameControl::Continue)
     }
 
@@ -2238,7 +2275,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         try_block: &TryBlock,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let mut result = self.run_actions(parent_data.to_subslice(try_block.try_actions).unwrap());
+        let mut result = self.run_actions(
+            parent_data
+                .to_unbounded_subslice(try_block.try_actions)
+                .unwrap(),
+        );
 
         if let Some((catch_vars, actions)) = &try_block.catch {
             if let Err(Error::ThrownValue(value)) = &result {
@@ -2250,23 +2291,28 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     self.constant_pool,
                     self.base_clip,
                     self.this,
+                    self.callee,
                     self.arguments,
                 );
 
                 match catch_vars {
-                    CatchVar::Var(name) => activation.set_variable(name, value.to_owned())?,
+                    CatchVar::Var(name) => activation.set_variable(
+                        &name.to_str_lossy(activation.encoding()),
+                        value.to_owned(),
+                    )?,
                     CatchVar::Register(id) => {
                         activation.set_current_register(*id, value.to_owned())
                     }
                 }
 
-                result = activation.run_actions(parent_data.to_subslice(actions).unwrap());
+                result =
+                    activation.run_actions(parent_data.to_unbounded_subslice(actions).unwrap());
             }
         }
 
         if let Some(actions) = try_block.finally {
             if let ReturnType::Explicit(value) =
-                self.run_actions(parent_data.to_subslice(actions).unwrap())?
+                self.run_actions(parent_data.to_unbounded_subslice(actions).unwrap())?
             {
                 return Ok(FrameControl::Return(ReturnType::Explicit(value)));
             }
@@ -2349,15 +2395,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     .finish();
 
                 match method {
-                    NavigationMethod::GET if url.find('?').is_none() => (
+                    NavigationMethod::Get if url.find('?').is_none() => (
                         Cow::Owned(format!("{}?{}", url, qstring)),
                         RequestOptions::get(),
                     ),
-                    NavigationMethod::GET => (
+                    NavigationMethod::Get => (
                         Cow::Owned(format!("{}&{}", url, qstring)),
                         RequestOptions::get(),
                     ),
-                    NavigationMethod::POST => (
+                    NavigationMethod::Post => (
                         url,
                         RequestOptions::post(Some((
                             qstring.as_bytes().to_owned(),
@@ -2406,10 +2452,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// A target path always resolves via the display list. It can look
     /// at the prototype chain, but not the scope chain.
+    ///
+    /// `allow_empty` will allow the empty string to resolve to the start movie clip.
     pub fn resolve_target_display_object(
         &mut self,
         start: DisplayObject<'gc>,
         target: Value<'gc>,
+        allow_empty: bool,
     ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
         // If the value you got was a display object, we can just toss it straight back.
         if let Value::Object(o) = target {
@@ -2422,7 +2471,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // This means that values like `undefined` will resolve to clips with an instance name of
         // `"undefined"`, for example.
         let path = target.coerce_to_string(self)?;
-        let root = start.root();
+
+        if !allow_empty && path.is_empty() {
+            return Ok(None);
+        }
+
+        let root = start.avm1_root(&self.context)?;
         let start = start.object().coerce_to_object(self);
         Ok(self
             .resolve_target_path(root, start, &path, false)?
@@ -2513,14 +2567,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if first_element && name == "this" {
                     self.this_cell().into()
                 } else if first_element && name == "_root" {
-                    self.root_object()
+                    self.root_object()?
                 } else {
                     // Get the value from the object.
                     // Resolves display object instances first, then local variables.
                     // This is the opposite of general GetMember property access!
                     if let Some(child) = object
                         .as_display_object()
-                        .and_then(|o| o.get_child_by_name(name, case_sensitive))
+                        .and_then(|o| o.as_container())
+                        .and_then(|o| o.child_by_name(name, case_sensitive))
                     {
                         child.object()
                     } else {
@@ -2575,8 +2630,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
+                let avm1_root = start.avm1_root(&self.context)?;
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
                 {
                     return Ok(Some((object, var_name)));
                 }
@@ -2618,7 +2674,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// scope chain.
     pub fn get_variable<'s>(&mut self, path: &'s str) -> Result<CallableValue<'gc>, Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
-        let start = self.target_clip_or_root();
+        let start = self.target_clip_or_root()?;
 
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
@@ -2643,8 +2699,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
+                let avm1_root = start.avm1_root(&self.context)?;
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
                 {
                     if object.has_property(self, var_name) {
                         return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
@@ -2661,8 +2718,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if has_slash {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
+                let avm1_root = start.avm1_root(&self.context)?;
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path, false)?
+                    self.resolve_target_path(avm1_root, *scope.read().locals(), path, false)?
                 {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
@@ -2699,7 +2757,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// name and is set on the scope chain as usual.
     pub fn set_variable<'s>(&mut self, path: &'s str, value: Value<'gc>) -> Result<(), Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
-        let start = self.target_clip_or_root();
+        let start = self.target_clip_or_root()?;
 
         // If the target clip is invalid, we default to root for the variable path.
         if path.is_empty() {
@@ -2720,8 +2778,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
+                let avm1_root = start.avm1_root(&self.context)?;
                 if let Some(object) =
-                    self.resolve_target_path(start.root(), *scope.read().locals(), path, true)?
+                    self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
                 {
                     object.set(var_name, value, self)?;
                     return Ok(());
@@ -2757,6 +2816,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .into();
 
             level.set_depth(self.context.gc_context, level_id as i32);
+            level.set_default_root_name(&mut self.context);
             self.context.levels.insert(level_id, level);
             level.post_instantiation(&mut self.context, level, None, Instantiator::Movie, false);
 
@@ -2768,14 +2828,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Actions that affect `root` after an invalid `tellTarget` will use this.
     ///
     /// The `root` is determined relative to the base clip that defined the
-    pub fn target_clip_or_root(&self) -> DisplayObject<'gc> {
-        self.target_clip()
-            .unwrap_or_else(|| self.base_clip().root())
+    pub fn target_clip_or_root(&self) -> Result<DisplayObject<'gc>, Error<'gc>> {
+        if let Some(target) = self.target_clip() {
+            return Ok(target);
+        }
+
+        self.base_clip().avm1_root(&self.context)
     }
 
     /// Obtain the value of `_root`.
-    pub fn root_object(&self) -> Value<'gc> {
-        self.base_clip().root().object()
+    pub fn root_object(&self) -> Result<Value<'gc>, Error<'gc>> {
+        Ok(self.base_clip().avm1_root(&self.context)?.object())
     }
 
     /// Get the currently executing SWF version.
@@ -2819,6 +2882,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         self.scope_cell().read().is_defined(self, name)
+    }
+
+    /// Returns the suggested string encoding for actions.
+    /// For SWF version 6 and higher, this is always UTF-8.
+    /// For SWF version 5 and lower, this is locale-dependent,
+    /// and we default to WINDOWS-1252.
+    pub fn encoding(&self) -> &'static swf::Encoding {
+        swf::SwfStr::encoding_for_version(self.swf_version)
     }
 
     /// Returns the SWF version of the action or function being executed.
@@ -2907,11 +2978,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
     }
 
-    pub fn constant_pool(&self) -> GcCell<'gc, Vec<String>> {
+    pub fn constant_pool(&self) -> GcCell<'gc, Vec<Value<'gc>>> {
         self.constant_pool
     }
 
-    pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<String>>) {
+    pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<Value<'gc>>>) {
         self.constant_pool = constant_pool;
     }
 

@@ -2,7 +2,7 @@
 
 use crate::avm2::value::Value;
 use gc_arena::Collect;
-use std::iter::ExactSizeIterator;
+use std::iter::{ExactSizeIterator, FromIterator};
 use std::ops::RangeBounds;
 
 /// The array storage portion of an array object.
@@ -168,5 +168,19 @@ impl<'gc> ArrayStorage<'gc> {
     {
         self.storage
             .splice(range, replace_with.into_iter().map(Some))
+    }
+}
+
+impl<'gc, V> FromIterator<V> for ArrayStorage<'gc>
+where
+    V: Into<Value<'gc>>,
+{
+    fn from_iter<I>(values: I) -> Self
+    where
+        I: IntoIterator<Item = V>,
+    {
+        let storage = values.into_iter().map(|v| Some(v.into())).collect();
+
+        Self { storage }
     }
 }

@@ -36,7 +36,7 @@ pub fn create_stage_object<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::DontEnum | Attribute::DontDelete,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
     );
 
     stage.add_property(
@@ -49,7 +49,7 @@ pub fn create_stage_object<'gc>(
             fn_proto,
         ),
         None,
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     stage.add_property(
@@ -67,7 +67,7 @@ pub fn create_stage_object<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::DontEnum | Attribute::DontDelete,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
     );
 
     stage.add_property(
@@ -85,7 +85,7 @@ pub fn create_stage_object<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::DontEnum | Attribute::DontDelete,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
     );
 
     stage.add_property(
@@ -98,7 +98,7 @@ pub fn create_stage_object<'gc>(
             fn_proto,
         ),
         None,
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     stage.into()

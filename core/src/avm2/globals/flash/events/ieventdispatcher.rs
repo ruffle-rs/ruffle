@@ -40,7 +40,7 @@ pub fn create_interface<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<
 
     let mut write = class.write(mc);
 
-    write.set_attributes(ClassAttributes::Interface.into());
+    write.set_attributes(ClassAttributes::INTERFACE);
     write.define_instance_trait(Trait::from_method(
         QName::dynamic_name("addEventListener"),
         Method::from_builtin(bodiless_method),

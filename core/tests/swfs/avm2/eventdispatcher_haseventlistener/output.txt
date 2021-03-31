@@ -1,0 +1,25 @@
+//var evtd = new EventDispatcher();
+//var listener = function() { ... };
+//evtd.hasEventListener('test');
+false
+//evtd.addEventListener('test', listener, false, 0);
+//evtd.hasEventListener('test');
+true
+//evtd.removeEventListener('test', listener, false);
+//evtd.hasEventListener('test');
+false
+//evtd.removeEventListener('test', listener, false);
+//evtd.hasEventListener('test');
+false
+//evtd.addEventListener('test', listener, false, 0);
+//evtd.hasEventListener('test');
+true
+//evtd.addEventListener('test', listener, false, 0);
+//evtd.hasEventListener('test');
+true
+//evtd.removeEventListener('test', listener, false);
+//evtd.hasEventListener('test');
+false
+//evtd.removeEventListener('test', listener, false);
+//evtd.hasEventListener('test');
+false

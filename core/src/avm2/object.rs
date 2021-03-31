@@ -2,10 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
+use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::regexp::RegExp;
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
@@ -18,21 +21,31 @@ use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
 mod array_object;
+mod bytearray_object;
 mod custom_object;
+mod dispatch_object;
 mod domain_object;
+mod event_object;
 mod function_object;
 mod namespace_object;
 mod primitive_object;
+mod regexp_object;
 mod script_object;
 mod stage_object;
+mod xml_object;
 
 pub use crate::avm2::object::array_object::ArrayObject;
+pub use crate::avm2::object::bytearray_object::ByteArrayObject;
+pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::DomainObject;
+pub use crate::avm2::object::event_object::EventObject;
 pub use crate::avm2::object::function_object::{implicit_deriver, FunctionObject};
 pub use crate::avm2::object::namespace_object::NamespaceObject;
 pub use crate::avm2::object::primitive_object::PrimitiveObject;
+pub use crate::avm2::object::regexp_object::RegExpObject;
 pub use crate::avm2::object::script_object::ScriptObject;
 pub use crate::avm2::object::stage_object::StageObject;
+pub use crate::avm2::object::xml_object::XmlObject;
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -47,6 +60,11 @@ pub use crate::avm2::object::stage_object::StageObject;
         ArrayObject(ArrayObject<'gc>),
         StageObject(StageObject<'gc>),
         DomainObject(DomainObject<'gc>),
+        EventObject(EventObject<'gc>),
+        DispatchObject(DispatchObject<'gc>),
+        XmlObject(XmlObject<'gc>),
+        RegExpObject(RegExpObject<'gc>),
+        ByteArrayObject(ByteArrayObject<'gc>)
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -256,7 +274,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         if let Some(proto) = self.proto() {
-            return Ok(proto.resolve_multiname(multiname)?);
+            return proto.resolve_multiname(multiname);
         }
 
         Ok(None)
@@ -596,7 +614,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
                 fobject.install_slot(
                     activation.context.gc_context,
-                    QName::new(Namespace::public_namespace(), "prototype"),
+                    QName::new(Namespace::public(), "prototype"),
                     0,
                     es3_proto.into(),
                 );
@@ -732,7 +750,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn interfaces(&self) -> Vec<Object<'gc>>;
 
     /// Set the interface list for this object.
-    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>);
+    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>);
 
     /// Determine if this object is an instance of a given type.
     ///
@@ -825,6 +843,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    /// Unwrap this object as bytearray.
+    fn as_bytearray(&self) -> Option<Ref<ByteArrayStorage>> {
+        None
+    }
+
+    fn as_bytearray_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<ByteArrayStorage>> {
+        None
+    }
     /// Unwrap this object as mutable array storage.
     fn as_array_storage_mut(
         &self,
@@ -846,6 +872,41 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object as an ApplicationDomain.
     fn as_application_domain(&self) -> Option<Domain<'gc>> {
+        None
+    }
+
+    /// Unwrap this object as an event.
+    fn as_event(&self) -> Option<Ref<Event<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a mutable event.
+    fn as_event_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<Event<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a list of event handlers.
+    fn as_dispatch(&self) -> Option<Ref<DispatchList<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a mutable list of event handlers.
+    fn as_dispatch_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<DispatchList<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a mutable primitive value.
+    fn as_primitive_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<Value<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a regexp.
+    fn as_regexp(&self) -> Option<Ref<RegExp<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as a mutable regexp.
+    fn as_regexp_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<RegExp<'gc>>> {
         None
     }
 }

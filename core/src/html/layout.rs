@@ -7,6 +7,7 @@ use crate::font::{EvalParameters, Font};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::shape_utils::DrawCommand;
+use crate::string_utils;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cmp::{max, min};
@@ -113,7 +114,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         // and adds one. I'm not sure why.
         self.font
             .map(|f| f.get_leading_for_height(self.max_font_size))
-            .unwrap_or_else(|| Twips::new(0))
+            .unwrap_or_else(Twips::zero)
     }
 
     /// Calculate the line-to-line leading present on this line, including the
@@ -121,7 +122,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn line_leading_adjustment(&self) -> Twips {
         self.font
             .map(|f| f.get_leading_for_height(self.max_font_size))
-            .unwrap_or_else(|| Twips::new(0))
+            .unwrap_or_else(Twips::zero)
             + Twips::from_pixels(self.current_line_span.leading)
     }
 
@@ -404,7 +405,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         if let Some(font) = library
             .get_font_by_name(&span.font, span.bold, span.italic)
             .filter(|f| !is_device_font && f.has_glyphs())
-            .or_else(|| library.device_font())
+            .or_else(|| context.library.device_font())
         {
             self.font = Some(font);
             return self.font;
@@ -462,7 +463,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         if let Some(bullet_font) = library
             .get_font_by_name(&span.font, span.bold, span.italic)
             .filter(|f| f.has_glyphs())
-            .or_else(|| library.device_font())
+            .or_else(|| context.library.device_font())
             .or(self.font)
         {
             let mut bullet_cursor = self.cursor;
@@ -664,7 +665,7 @@ impl<'gc> LayoutBox<'gc> {
         is_word_wrap: bool,
         is_device_font: bool,
     ) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
-        let mut layout_context = LayoutContext::new(movie, bounds, fs.text());
+        let mut layout_context = LayoutContext::new(movie, bounds, fs.displayed_text());
 
         for (span_start, _end, span_text, span) in fs.iter_spans() {
             if let Some(font) = layout_context.resolve_font(context, &span, is_device_font) {
@@ -675,6 +676,7 @@ impl<'gc> LayoutBox<'gc> {
                 for text in span_text.split(&['\n', '\r', '\t'][..]) {
                     let slice_start = text.as_ptr() as usize - span_text.as_ptr() as usize;
                     let delimiter = if slice_start > 0 {
+                        // -1 is ok here since '\n','\r','\t' are all 1 byte
                         span_text
                             .get(slice_start - 1..)
                             .and_then(|s| s.chars().next())
@@ -719,7 +721,10 @@ impl<'gc> LayoutBox<'gc> {
 
                             // This ensures that the space causing the line break
                             // is included in the line it broke.
-                            let next_breakpoint = min(last_breakpoint + breakpoint + 1, text.len());
+                            let next_breakpoint = string_utils::next_char_boundary(
+                                text,
+                                last_breakpoint + breakpoint,
+                            );
 
                             layout_context.append_text(
                                 &text[last_breakpoint..next_breakpoint],
@@ -823,9 +828,9 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Construct a duplicate layout box structure.
-    pub fn duplicate(&self, context: MutationContext<'gc, '_>) -> GcCell<'gc, Self> {
+    pub fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Self> {
         GcCell::allocate(
-            context,
+            gc_context,
             Self {
                 bounds: self.bounds,
                 content: self.content.clone(),

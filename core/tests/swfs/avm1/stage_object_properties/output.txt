@@ -233,3 +233,10 @@ _yscale:
 _root._target:
 /
 
+90-degree rotations:
+
+// clip1: 0
+// clip2: 90
+// clip3: 180
+// clip4: -90
+

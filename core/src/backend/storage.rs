@@ -15,7 +15,7 @@ pub trait StorageBackend: Downcast {
 impl_downcast!(StorageBackend);
 
 pub struct MemoryStorageBackend {
-    pub map: HashMap<String, String>,
+    map: HashMap<String, String>,
 }
 
 impl Default for MemoryStorageBackend {

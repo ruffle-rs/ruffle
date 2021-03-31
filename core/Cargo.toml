@@ -6,26 +6,26 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-bitstream-io = "0.9.0"
-flate2 = "1.0.19"
+bitstream-io = "1.0.0"
+flate2 = "1.0.20"
 fnv = "1.0.7"
-gc-arena = "0.2.0"
-gc-arena-derive = "0.2.0"
+gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
+gc-arena-derive = { git = "https://github.com/ruffle-rs/gc-arena" }
 generational-arena = "0.2.8"
-gif = "0.11.1"
-indexmap = "1.6.0"
+gif = "0.11.2"
+indexmap = "1.6.2"
 log = "0.4"
-minimp3 = { version = "0.5.0", optional = true }
-png = { version = "0.16.7" }
+minimp3 = { version = "0.5.1", optional = true }
+png = { version = "0.16.8" }
 puremp3 = { version = "0.1", optional = true }
 ruffle_macros = { path = "macros" }
 swf = { path = "../swf" }
-enumset = "1.0.1"
-smallvec = "1.4.2"
+bitflags = "1.2.1"
+smallvec = "1.6.1"
 num_enum = "0.5.1"
-quick-xml = "0.18.1"
+quick-xml = "0.22.0"
 downcast-rs = "1.2.0"
-url = "2.2.0"
+url = "2.2.1"
 weak-table = "0.3.0"
 percent-encoding = "2.1.0"
 thiserror = "1.0"
@@ -33,21 +33,23 @@ json = "0.12.4"
 chrono = "0.4"
 num-traits = "0.2"
 instant = "0.1"
+encoding_rs = "0.8.28"
+rand = { version = "0.8.3", features = ["std", "small_rng"], default-features = false }
+serde = { version = "1.0.125", features = ["derive"], optional = true }
+nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", branch = "main" }
+regress = "0.2"
 
 [dependencies.jpeg-decoder]
-version = "0.1.20"
+version = "0.1.22"
 default-features = false # can't use rayon on web
-
-[dependencies.rand]
-version = "0.7.3"
-features = ["small_rng"]
 
 [dev-dependencies]
 approx = "0.4.0"
-pretty_assertions = "0.6.1"
+pretty_assertions = "0.7.1"
+env_logger = "0.8.3"
 
 [features]
-default = ["minimp3"]
+default = ["minimp3", "serde"]
 lzma = ["swf/lzma"]
 wasm-bindgen = [ "instant/wasm-bindgen" ]
 avm_debug = []

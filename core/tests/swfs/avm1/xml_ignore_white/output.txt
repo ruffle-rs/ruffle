@@ -1,0 +1,36 @@
+xml.ignoreWhite = true
+<root><foo> testing </foo></root>
+
+root:
+ nodeName: root
+ nodeType: 1
+ childNodes.length: 1
+foo:
+ nodeName: foo
+ nodeType: 1
+text:
+ nodeName: null
+ nodeType: 3
+ nodeValue:  testing 
+
+
+xml.ignoreWhite = false
+<root>   <foo> testing </foo>     </root>
+
+root:
+ nodeName: root
+ nodeType: 1
+ childNodes.length: 3
+white:
+ nodeName: null
+ nodeType: 3
+ nodeValue:    
+foo:
+ nodeName: foo
+ nodeType: 1
+text:
+ nodeName: null
+ nodeType: 3
+ nodeValue:  testing 
+
+

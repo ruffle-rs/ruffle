@@ -1,0 +1,31 @@
+///(DynEvent is a dynamic subclass of Event)
+///var e = new DynEvent("test_event", false, true);
+///e.formatToString("MyClass");
+[MyClass]
+///e.property = "value";
+///e.formatToString("MyClass", "property");
+[MyClass property="value"]
+///e[2] = "property";
+///e.three = true;
+///e.four = 0.5;
+///e.five = 10;
+///e.six = NaN;
+///e.formatToString("MyClass", 2);
+[MyClass 2="property"]
+///e.formatToString("MyClass", 2, "property");
+[MyClass 2="property" property="value"]
+///e.formatToString("MyClass", "property", 2, "property");
+[MyClass property="value" 2="property" property="value"]
+///e.formatToString("MyClass", "three", "four", "five");
+[MyClass three=true four=0.5 five=10]
+///e.formatToString("MyClass", "strProp", "numProp");
+[MyClass strProp="strProp" numProp=5]
+///e.formatToString("MyClass", "evilProp", 2, "evilProp");
+[MyClass evilProp=0 2="property" evilProp=1]
+///DynEvent.prototype.protoProp = "protoValue"
+///e.formatToString("MyClass", "protoProp");
+[MyClass protoProp="protoValue"]
+///e.formatToString("MyClass", undefined);
+[MyClass null=undefined]
+///e.formatToString("MyClass", null);
+[MyClass null=undefined]

@@ -2,16 +2,16 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn clone<'gc>(
@@ -27,7 +27,7 @@ pub fn clone<'gc>(
         let quality = this.get("quality", activation)?;
 
         let cloned = proto.construct(activation, &[blur_x, blur_y, quality])?;
-        return Ok(cloned.into());
+        return Ok(cloned);
     }
 
     if let Some(this) = this.as_bevel_filter_object() {
@@ -63,7 +63,206 @@ pub fn clone<'gc>(
                 knockout,
             ],
         )?;
-        return Ok(cloned.into());
+        return Ok(cloned);
+    }
+
+    if let Some(this) = this.as_glow_filter_object() {
+        let proto = activation.context.avm1.prototypes.glow_filter_constructor;
+
+        let color = this.get("color", activation)?;
+        let alpha = this.get("alpha", activation)?;
+        let blur_x = this.get("blurX", activation)?;
+        let blur_y = this.get("blurY", activation)?;
+        let strength = this.get("strength", activation)?;
+        let quality = this.get("quality", activation)?;
+
+        let cloned = proto.construct(
+            activation,
+            &[color, alpha, blur_x, blur_y, strength, quality],
+        )?;
+        return Ok(cloned);
+    }
+
+    if let Some(this) = this.as_drop_shadow_filter_object() {
+        let proto = activation
+            .context
+            .avm1
+            .prototypes
+            .drop_shadow_filter_constructor;
+
+        let distance = this.get("distance", activation)?;
+        let angle = this.get("angle", activation)?;
+        let color = this.get("color", activation)?;
+        let alpha = this.get("alpha", activation)?;
+        let blur_x = this.get("blurX", activation)?;
+        let blur_y = this.get("blurY", activation)?;
+        let strength = this.get("strength", activation)?;
+        let quality = this.get("quality", activation)?;
+        let inner = this.get("inner", activation)?;
+        let knockout = this.get("knockout", activation)?;
+        let hide_object = this.get("hide_object", activation)?;
+
+        let cloned = proto.construct(
+            activation,
+            &[
+                distance,
+                angle,
+                color,
+                alpha,
+                blur_x,
+                blur_y,
+                strength,
+                quality,
+                inner,
+                knockout,
+                hide_object,
+            ],
+        )?;
+        return Ok(cloned);
+    }
+
+    if let Some(this) = this.as_color_matrix_filter_object() {
+        let proto = activation
+            .context
+            .avm1
+            .prototypes
+            .color_matrix_filter_constructor;
+
+        let matrix = this.get("matrix", activation)?;
+
+        let cloned = proto.construct(activation, &[matrix])?;
+
+        return Ok(cloned);
+    }
+
+    if let Some(this) = this.as_displacement_map_filter_object() {
+        let proto = activation
+            .context
+            .avm1
+            .prototypes
+            .displacement_map_filter_constructor;
+
+        let map_bitmap = this.get("mapBitmap", activation)?;
+        let map_point = this.get("mapPoint", activation)?;
+        let component_x = this.get("componentX", activation)?;
+        let component_y = this.get("componentY", activation)?;
+        let scale_x = this.get("scaleX", activation)?;
+        let scale_y = this.get("scaleY", activation)?;
+        let mode = this.get("mode", activation)?;
+        let color = this.get("color", activation)?;
+        let alpha = this.get("alpha", activation)?;
+
+        let cloned = proto.construct(
+            activation,
+            &[
+                map_bitmap,
+                map_point,
+                component_x,
+                component_y,
+                scale_x,
+                scale_y,
+                mode,
+                color,
+                alpha,
+            ],
+        )?;
+
+        return Ok(cloned);
+    }
+
+    if let Some(this) = this.as_convolution_filter_object() {
+        let proto = activation
+            .context
+            .avm1
+            .prototypes
+            .convolution_filter_constructor;
+
+        let matrix_x = this.get("matrixX", activation)?;
+        let matrix_y = this.get("matrixY", activation)?;
+        let matrix = this.get("matrix", activation)?;
+        let divisor = this.get("divisor", activation)?;
+        let bias = this.get("bias", activation)?;
+        let preserve_alpha = this.get("preserveAlpha", activation)?;
+        let clamp = this.get("clamp", activation)?;
+        let color = this.get("color", activation)?;
+        let alpha = this.get("alpha", activation)?;
+
+        let cloned = proto.construct(
+            activation,
+            &[
+                matrix_x,
+                matrix_y,
+                matrix,
+                divisor,
+                bias,
+                preserve_alpha,
+                clamp,
+                color,
+                alpha,
+            ],
+        )?;
+
+        return Ok(cloned);
+    }
+
+    if let Some(this) = this.as_gradient_bevel_filter_object() {
+        let proto = activation
+            .context
+            .avm1
+            .prototypes
+            .gradient_bevel_filter_constructor;
+
+        let distance = this.get("distance", activation)?;
+        let angle = this.get("angle", activation)?;
+        let colors = this.get("colors", activation)?;
+        let alphas = this.get("alphas", activation)?;
+        let ratios = this.get("ratios", activation)?;
+        let blur_x = this.get("blurX", activation)?;
+        let blur_y = this.get("blurY", activation)?;
+        let strength = this.get("strength", activation)?;
+        let quality = this.get("quality", activation)?;
+        let type_ = this.get("type", activation)?;
+        let knockout = this.get("knockout", activation)?;
+
+        let cloned = proto.construct(
+            activation,
+            &[
+                distance, angle, colors, alphas, ratios, blur_x, blur_y, strength, quality, type_,
+                knockout,
+            ],
+        )?;
+
+        return Ok(cloned);
+    }
+
+    if let Some(this) = this.as_gradient_glow_filter_object() {
+        let proto = activation
+            .context
+            .avm1
+            .prototypes
+            .gradient_glow_filter_constructor;
+
+        let distance = this.get("distance", activation)?;
+        let angle = this.get("angle", activation)?;
+        let colors = this.get("colors", activation)?;
+        let alphas = this.get("alphas", activation)?;
+        let ratios = this.get("ratios", activation)?;
+        let blur_x = this.get("blurX", activation)?;
+        let blur_y = this.get("blurY", activation)?;
+        let strength = this.get("strength", activation)?;
+        let quality = this.get("quality", activation)?;
+        let type_ = this.get("type", activation)?;
+        let knockout = this.get("knockout", activation)?;
+
+        let cloned = proto.construct(
+            activation,
+            &[
+                distance, angle, colors, alphas, ratios, blur_x, blur_y, strength, quality, type_,
+                knockout,
+            ],
+        )?;
+
+        return Ok(cloned);
     }
 
     Ok(Value::Undefined)
@@ -76,7 +275,7 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let mut object = ScriptObject::object(gc_context, Some(proto));
 
-    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), fn_proto);
+    object.force_set_function("clone", clone, gc_context, Attribute::empty(), fn_proto);
 
     object.into()
 }

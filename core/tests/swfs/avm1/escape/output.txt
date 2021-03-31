@@ -1,0 +1,14 @@
+escape("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
+escape("@*_+-./")
+%40%2A%5F%2B%2D%2E%2F
+escape(" ")
+%20
+escape("Āあ")
+%C4%80%E3%81%82
+escape("\n")
+%0A
+escape("abc\0defg")
+abc
+escape()
+undefined

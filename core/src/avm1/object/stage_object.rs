@@ -8,9 +8,10 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
 use crate::avm_warn;
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, EditText, MovieClip};
+use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
 use crate::property_map::PropertyMap;
-use enumset::EnumSet;
+use crate::string_utils::swf_string_eq;
+use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
@@ -143,7 +144,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             // 2) Display object properties such as _x, _y
             let val = property.get(activation, obj.display_object)?;
             Ok(val)
-        } else if let Some(child) = obj.display_object.get_child_by_name(name, case_sensitive) {
+        } else if let Some(child) = obj
+            .display_object
+            .as_container()
+            .and_then(|o| o.child_by_name(name, case_sensitive))
+        {
             // 3) Child display objects with the given instance name
             Ok(child.object())
         } else if let Some(level) =
@@ -178,10 +183,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         let props = activation.context.avm1.display_properties;
 
         // Check if a text field is bound to this property and update the text if so.
+        let case_sensitive = activation.is_case_sensitive();
         for binding in obj
             .text_field_bindings
             .iter()
-            .filter(|binding| binding.variable_name == name)
+            .filter(|binding| swf_string_eq(&binding.variable_name, name, case_sensitive))
         {
             let _ = binding.text_field.set_html_text(
                 value.coerce_to_string(activation)?.to_string(),
@@ -189,9 +195,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             );
         }
 
-        if obj.base.has_own_property(activation, name) {
+        let base = obj.base;
+        let display_object = obj.display_object;
+        drop(obj);
+
+        if base.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
-            obj.base.internal_set(
+            base.internal_set(
                 name,
                 value,
                 activation,
@@ -200,11 +210,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             )
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 2) Display object properties such as _x, _y
-            property.set(activation, obj.display_object, value)?;
+            property.set(activation, display_object, value)?;
             Ok(())
         } else {
             // 3) TODO: Prototype
-            obj.base.internal_set(
+            base.internal_set(
                 name,
                 value,
                 activation,
@@ -263,7 +273,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.0
             .read()
@@ -275,8 +285,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: Option<&str>,
-        set_attributes: EnumSet<Attribute>,
-        clear_attributes: EnumSet<Attribute>,
+        set_attributes: Attribute,
+        clear_attributes: Attribute,
     ) {
         self.0.write(gc_context).base.set_attributes(
             gc_context,
@@ -292,7 +302,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.0
             .read()
@@ -307,7 +317,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     ) {
         self.0
             .read()
@@ -361,7 +371,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         let case_sensitive = activation.is_case_sensitive();
         if obj
             .display_object
-            .get_child_by_name(name, case_sensitive)
+            .as_container()
+            .and_then(|o| o.child_by_name(name, case_sensitive))
             .is_some()
         {
             return true;
@@ -396,11 +407,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         // child display objects in order from highest depth to lowest depth.
         let obj = self.0.read();
         let mut keys = obj.base.get_keys(activation);
-        keys.extend(
-            obj.display_object
-                .children()
-                .map(|child| child.name().to_string()),
-        );
+
+        if let Some(ctr) = obj.display_object.as_container() {
+            keys.extend(
+                ctr.iter_execution_list()
+                    .map(|child| child.name().to_string()),
+            );
+        }
+
         keys
     }
 
@@ -440,11 +454,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.interfaces()
     }
 
-    fn set_interfaces(&self, context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
+    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
         self.0
-            .write(context)
+            .write(gc_context)
             .base
-            .set_interfaces(context, iface_list)
+            .set_interfaces(gc_context, iface_list)
     }
 
     fn as_string(&self) -> Cow<str> {
@@ -625,7 +639,7 @@ fn x_scale<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let val: f64 = this.scale_x(activation.context.gc_context).into();
+    let val: f64 = this.scale_x(activation.context.gc_context).into_fraction();
     Ok(val.into())
 }
 
@@ -635,7 +649,7 @@ fn set_x_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_x(activation.context.gc_context, val.into());
+        this.set_scale_x(activation.context.gc_context, Percent::from_fraction(val));
     }
     Ok(())
 }
@@ -644,7 +658,7 @@ fn y_scale<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let scale_y: f64 = this.scale_y(activation.context.gc_context).into();
+    let scale_y: f64 = this.scale_y(activation.context.gc_context).into_fraction();
     Ok(scale_y.into())
 }
 
@@ -654,7 +668,7 @@ fn set_y_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_y(activation.context.gc_context, val.into());
+        this.set_scale_y(activation.context.gc_context, Percent::from_fraction(val));
     }
     Ok(())
 }

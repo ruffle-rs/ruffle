@@ -82,27 +82,17 @@ impl fmt::Debug for BevelFilterObject<'_> {
 
 impl<'gc> BevelFilterObject<'gc> {
     add_field_accessors!(
-        [set_angle, get_angle, angle, f64],
-        [set_blur_x, get_blur_x, blur_x, f64],
-        [set_blur_y, get_blur_y, blur_y, f64],
-        [set_distance, get_distance, distance, f64],
-        [
-            set_highlight_alpha,
-            get_highlight_alpha,
-            highlight_alpha,
-            f64
-        ],
-        [
-            set_highlight_color,
-            get_highlight_color,
-            highlight_color,
-            u32
-        ],
-        [set_knockout, get_knockout, knockout, bool],
-        [set_quality, get_quality, quality, i32],
-        [set_shadow_alpha, get_shadow_alpha, shadow_alpha, f64],
-        [set_shadow_color, get_shadow_color, shadow_color, u32],
-        [set_strength, get_strength, strength, f64],
+        [set_angle, angle, angle, f64],
+        [set_blur_x, blur_x, blur_x, f64],
+        [set_blur_y, blur_y, blur_y, f64],
+        [set_distance, distance, distance, f64],
+        [set_highlight_alpha, highlight_alpha, highlight_alpha, f64],
+        [set_highlight_color, highlight_color, highlight_color, u32],
+        [set_knockout, knockout, knockout, bool],
+        [set_quality, quality, quality, i32],
+        [set_shadow_alpha, shadow_alpha, shadow_alpha, f64],
+        [set_shadow_color, shadow_color, shadow_color, u32],
+        [set_strength, strength, strength, f64],
         [set_type, get_type, type_, BevelFilterType],
     );
 
@@ -154,12 +144,8 @@ impl<'gc> TObject<'gc> for BevelFilterObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(BevelFilterObject::empty_object(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.bevel_filter),
-        )
-        .into())
+        Ok(BevelFilterObject::empty_object(activation.context.gc_context, Some(this)).into())
     }
 }

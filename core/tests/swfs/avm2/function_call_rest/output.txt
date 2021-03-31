@@ -1,0 +1,22 @@
+///testrest("arg1");
+arg1
+undefined
+///(contents of rest...)
+0
+///testrest("arg1", "arg2", "arg3");
+arg1
+arg2
+///(contents of rest...)
+1
+arg3
+///testrest("arg1", "arg2", "arg3", "arg4", "arg5");
+arg1
+arg2
+///(contents of rest...)
+3
+arg3
+arg4
+arg5
+///Array.prototype.test = "test";
+///rest.test
+test

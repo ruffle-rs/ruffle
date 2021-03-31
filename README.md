@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Rust?label=rust%20build" alt="Rust Build Status" />
   <img src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Web?label=web%20build" alt="Web Build Status" />
  </a>
-  <a href="https://discord.gg/J8hgCQN">
+  <a href="https://discord.gg/ruffle">
       <img src="https://img.shields.io/discord/610531541889581066" alt="Ruffle Discord">
   </a>
   <br>
@@ -21,11 +21,13 @@ Ruffle is an Adobe Flash Player emulator written in the Rust programming languag
 
 Ruffle is in the proof-of-concept stage and can currently run early Flash animations and games. Basic ActionScript 1.0/2.0 support is in place and improving; ActionScript 3.0 support is forthcoming. For more info, read the [project roadmap](https://github.com/ruffle-rs/ruffle/wiki/Roadmap).
 
-## Nightly builds
+## Using Ruffle
 
-[Nightly builds](https://github.com/ruffle-rs/ruffle/releases) of Ruffle are available for desktop and web platforms including the browser extension.
+The easiest way to try out Ruffle is to visit the [web demo page](https://ruffle.rs/demo/), then click the "Browse..." button to load an SWF file of your choice.
 
-Windows desktop builds require the x64 [2015-2019 Visual C++ Redistributable](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads).
+[Nightly builds](https://ruffle.rs/#releases) of Ruffle are available for desktop and web platforms including the browser extension.
+
+For more detailed instructions, see our [wiki page](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle).
 
 ## Building from source
 
@@ -66,7 +68,7 @@ This currently requires hardware acceleration, but can be run headless (with no 
 
 ## Sponsors
 
-You can support the development of Ruffle via [GitHub Sponsors](https://github.com/sponsors/Herschel). Your sponsorship will help to ensure the accessibility of Flash content for the future. Thank you!
+You can support the development of Ruffle via [GitHub Sponsors](https://github.com/sponsors/ruffle-rs). Your sponsorship will help to ensure the accessibility of Flash content for the future. Thank you!
 
 Sincere thanks to the diamond level sponsors of Ruffle:
 
@@ -86,19 +88,40 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   <a href="https://www.coolmathgames.com">
     <img src="https://ruffle.rs/assets/sponsors/coolmathgames.png" alt="Cool Math Games">
   </a>
+  <a href="https://www.nytimes.com/">
+    <img src="https://ruffle.rs/assets/sponsors/nyt.png" alt="The New York Times">
+  </a>
+  <a href="https://www.armorgames.com/">
+    <img src="https://ruffle.rs/assets/sponsors/armorgames.png" alt="Armor Games">
+  </a>
+  <a href="https://www.ondaeduca.com/">
+    <img src="https://ruffle.rs/assets/sponsors/ondaeduca.png" alt="Onda Educa">
+  </a>
+  <a href="https://www.twoplayergames.org/">
+    <img src="https://ruffle.rs/assets/sponsors/twoplayergames.png" alt="TwoPlayerGames.org">
+  </a>
+  <a href="https://www.wowgame.jp/">
+    <img src="https://ruffle.rs/assets/sponsors/wowgame.png" alt="wowgame.jp">
+  </a>
+  <a href="http://kupogames.com/">
+    <img src="https://ruffle.rs/assets/sponsors/mattroszak.png" alt="Matt Roszak">
+  </a>
 </p>
 
 ## License
 
-Licensed under either of
+Ruffle is licensed under either of
 
-- Apache License, Version 2.0 ([LICENSE_APACHE](LICENSE_APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE_MIT](LICENSE_MIT) or http://opensource.org/licenses/MIT)
-  at your option.
+- Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+- MIT License (http://opensource.org/licenses/MIT)
+
+at your option.
+
+Ruffle depends on third-party libraries under compatible licenses. See [LICENSE.md](LICENSE.md) for full information.
 
 ### Contribution
 
-Ruffle welcomes contribution from everyone. See CONTRIBUTING.md for help getting started.
+Ruffle welcomes contribution from everyone. See [CONTRIBUTING.md](CONTRIBUTING.md) for help getting started.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you shall be dual licensed as above, without any

@@ -3,13 +3,14 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 
 /// Indicates what kind of scope a scope is.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Collect)]
+#[collect(require_static)]
 pub enum ScopeClass {
     /// Scope represents global scope.
     Global,
@@ -28,19 +29,12 @@ pub enum ScopeClass {
 }
 
 /// Represents a scope chain for an AVM1 activation.
-#[derive(Debug)]
+#[derive(Debug, Collect)]
+#[collect(no_drop)]
 pub struct Scope<'gc> {
     parent: Option<GcCell<'gc, Scope<'gc>>>,
     class: ScopeClass,
     values: Object<'gc>,
-}
-
-unsafe impl<'gc> gc_arena::Collect for Scope<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.parent.trace(cc);
-        self.values.trace(cc);
-    }
 }
 
 impl<'gc> Scope<'gc> {
@@ -307,7 +301,7 @@ impl<'gc> Scope<'gc> {
     /// local object and does not traverse the scope chain.
     pub fn define(&self, name: &str, value: impl Into<Value<'gc>>, mc: MutationContext<'gc, '_>) {
         self.locals()
-            .define_value(mc, name, value.into(), EnumSet::empty());
+            .define_value(mc, name, value.into(), Attribute::empty());
     }
 
     /// Delete a value from scope

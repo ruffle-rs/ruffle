@@ -28,6 +28,8 @@ pub fn instance_init<'gc>(
         .coerce_to_i32(activation)?;
 
     if let Some(mut this) = this {
+        activation.super_init(this, &[])?;
+
         this.set_property(
             this,
             &QName::new(Namespace::Private("ruffle".into()), "name"),
@@ -101,12 +103,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public_namespace(), "name"),
+        QName::new(Namespace::public(), "name"),
         Method::from_builtin(name),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public_namespace(), "frame"),
+        QName::new(Namespace::public(), "frame"),
         Method::from_builtin(frame),
     ));
 

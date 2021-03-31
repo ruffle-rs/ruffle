@@ -4,8 +4,8 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// `Boolean` constructor
@@ -25,7 +25,7 @@ pub fn constructor<'gc>(
         vbox.replace_value(activation.context.gc_context, cons_value);
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// `Boolean` function
@@ -50,10 +50,10 @@ pub fn create_boolean_object<'gc>(
     boolean_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    FunctionObject::function_and_constructor(
+    FunctionObject::constructor(
         gc_context,
-        Executable::Native(boolean_function),
         Executable::Native(constructor),
+        Executable::Native(boolean_function),
         fn_proto,
         boolean_proto,
     )
@@ -72,14 +72,14 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "valueOf",
         value_of,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 

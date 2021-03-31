@@ -1,5 +1,29 @@
 ///! Utilities for operating on strings in SWF files.
 
+/// Gets the position of the previous char
+/// `pos` must already lie on a char boundary
+pub fn prev_char_boundary(slice: &str, pos: usize) -> usize {
+    if pos == 0 {
+        return pos;
+    }
+
+    let mut idx = pos - 1;
+    while !slice.is_char_boundary(idx) {
+        idx -= 1;
+    }
+    idx
+}
+
+/// Gets the byte position of the next char
+/// `pos` must already lie on a char boundary
+pub fn next_char_boundary(slice: &str, pos: usize) -> usize {
+    if let Some(c) = slice[pos..].chars().next() {
+        pos + c.len_utf8()
+    } else {
+        slice.len()
+    }
+}
+
 /// Creates a `String` from an iterator of UTF-16 code units.
 /// TODO: Unpaired surrogates will get replaced with the Unicode replacement character.
 pub fn utf16_iter_to_string<I: Iterator<Item = u16>>(it: I) -> String {
@@ -52,6 +76,14 @@ pub fn swf_char_to_uppercase(c: char) -> char {
         }
     } else {
         c
+    }
+}
+
+pub fn swf_string_eq(a: &str, b: &str, case_sensitive: bool) -> bool {
+    if case_sensitive {
+        a == b
+    } else {
+        swf_string_eq_ignore_case(a, b)
     }
 }
 

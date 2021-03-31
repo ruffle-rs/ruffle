@@ -8,42 +8,60 @@ on:
 
 jobs:
   build:
-    name: Test node ${{ matrix.node_version }} / rust ${{ matrix.rust_version }} / ${{ matrix.os }}
+    name: Test Node.js ${{ matrix.node_version }} / Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' }}
     strategy:
       fail-fast: false
       matrix:
         # We most likely don't care about rust versions here, we'll catch those issues in "test rust"
-        node_version: ['10', '12']
+        node_version: ['12', '14']
         rust_version: ['stable']
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        # MIKE: Turning off macOS-latest for now (flaky tests on CI)
+        os: [ubuntu-latest, windows-latest]
 
     steps:
-    - uses: actions/checkout@v1
-    
-    - name: Use Node.js ${{ matrix.node_version }}
-      uses: actions/setup-node@v1
+    - uses: actions/checkout@v2
+
+    - name: Setup Node.js ${{ matrix.node_version }}
+      uses: actions/setup-node@v2
       with:
         node-version: ${{ matrix.node_version }}
 
-    - name: Use stable rust toolchain
+    - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: ${{ matrix.rust_version }}
+        target: wasm32-unknown-unknown
 
-    - name: Install linux dependencies
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get -y install libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
+    # wasm-bindgen-cli version must match wasm-bindgen crate version.
+    # Be sure to update in release_nightly.yml, web/Cargo.toml and web/README.md.
+    - name: Install wasm-bindgen
+      run: cargo install wasm-bindgen-cli --version 0.2.69
 
-    - name: Install wasm-pack
-      run: cargo install wasm-pack
+    - name: Setup conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: binaryen
 
-    - name: Build web
+    # conda is available only with "shell: bash -l {0}".
+    # See https://github.com/marketplace/actions/setup-miniconda.
+    - name: Install binaryen
+      shell: bash -l {0}
+      run: conda install -c conda-forge binaryen
+
+    - name: Build
       working-directory: web
+      shell: bash -l {0}
       run: |
         npm run bootstrap
-        npm run format:check
         npm run build
-        npm run test
+
+    - name: Run tests
+      working-directory: web
+      run: npm test
+
+    - name: Check formatting
+      working-directory: web
+      run: npm run lint

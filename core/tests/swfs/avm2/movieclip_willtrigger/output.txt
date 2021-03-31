@@ -1,0 +1,5 @@
+//(in child) this.willTrigger('test');
+false
+///(in parent) this.addEventListener('test', function () {});
+//(in child) this.willTrigger('test');
+true

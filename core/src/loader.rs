@@ -10,8 +10,9 @@ use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
-use crate::xml::XMLNode;
-use gc_arena::{Collect, CollectionContext, MutationContext};
+use crate::xml::XmlNode;
+use encoding_rs::UTF_8;
+use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use std::string::FromUtf8Error;
 use std::sync::{Arc, Mutex, Weak};
@@ -152,7 +153,7 @@ impl<'gc> LoadManager<'gc> {
             self_handle: None,
             target_clip,
             target_broadcaster,
-            load_complete: false,
+            loader_status: LoaderStatus::Pending,
         };
         let handle = self.add_loader(loader);
 
@@ -170,12 +171,11 @@ impl<'gc> LoadManager<'gc> {
         loaded_clip: DisplayObject<'gc>,
         clip_object: Option<Object<'gc>>,
         queue: &mut ActionQueue<'gc>,
-        gc_context: MutationContext<'gc, '_>,
     ) {
         let mut invalidated_loaders = vec![];
 
         for (index, loader) in self.0.iter_mut() {
-            if loader.movie_clip_loaded(loaded_clip, clip_object, queue, gc_context) {
+            if loader.movie_clip_loaded(loaded_clip, clip_object, queue) {
                 invalidated_loaders.push(index);
             }
         }
@@ -233,11 +233,11 @@ impl<'gc> LoadManager<'gc> {
     pub fn load_xml_into_node(
         &mut self,
         player: Weak<Mutex<Player>>,
-        target_node: XMLNode<'gc>,
+        target_node: XmlNode<'gc>,
         active_clip: DisplayObject<'gc>,
         fetch: OwnedFuture<Vec<u8>, Error>,
     ) -> OwnedFuture<(), Error> {
-        let loader = Loader::XML {
+        let loader = Loader::Xml {
             self_handle: None,
             active_clip,
             target_node,
@@ -257,17 +257,33 @@ impl<'gc> Default for LoadManager<'gc> {
     }
 }
 
+/// The completion status of a `Loader` loading a movie.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Collect)]
+#[collect(require_static)]
+pub enum LoaderStatus {
+    /// The movie hasn't been loaded yet.
+    Pending,
+    /// The movie loaded successfully.
+    Succeeded,
+    /// An error occurred while loading the movie.
+    Failed,
+}
+
 /// A struct that holds garbage-collected pointers for asynchronous code.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub enum Loader<'gc> {
     /// Loader that is loading the root movie of a player.
     RootMovie {
         /// The handle to refer to this loader instance.
+        #[collect(require_static)]
         self_handle: Option<Handle>,
     },
 
     /// Loader that is loading a new movie into a movieclip.
     Movie {
         /// The handle to refer to this loader instance.
+        #[collect(require_static)]
         self_handle: Option<Handle>,
 
         /// The target movie clip to load the movie into.
@@ -277,7 +293,7 @@ pub enum Loader<'gc> {
         /// into.
         target_broadcaster: Option<Object<'gc>>,
 
-        /// Indicates that the load has completed.
+        /// Indicates the completion status of this loader.
         ///
         /// This flag exists to prevent a situation in which loading a movie
         /// into a clip that has not yet fired its Load event causes the
@@ -285,12 +301,13 @@ pub enum Loader<'gc> {
         /// the movie has been replaced (and thus Load events can be trusted)
         /// or an error has occurred (in which case we don't care about the
         /// loader anymore).
-        load_complete: bool,
+        loader_status: LoaderStatus,
     },
 
     /// Loader that is loading form data into an AVM1 object scope.
     Form {
         /// The handle to refer to this loader instance.
+        #[collect(require_static)]
         self_handle: Option<Handle>,
 
         /// The target AVM1 object to load form data into.
@@ -300,6 +317,7 @@ pub enum Loader<'gc> {
     /// Loader that is loading form data into an AVM1 LoadVars object.
     LoadVars {
         /// The handle to refer to this loader instance.
+        #[collect(require_static)]
         self_handle: Option<Handle>,
 
         /// The target AVM1 object to load form data into.
@@ -307,8 +325,9 @@ pub enum Loader<'gc> {
     },
 
     /// Loader that is loading XML data into an XML tree.
-    XML {
+    Xml {
         /// The handle to refer to this loader instance.
+        #[collect(require_static)]
         self_handle: Option<Handle>,
 
         /// The active movie clip at the time of load invocation.
@@ -320,27 +339,8 @@ pub enum Loader<'gc> {
         active_clip: DisplayObject<'gc>,
 
         /// The target node whose contents will be replaced with the parsed XML.
-        target_node: XMLNode<'gc>,
+        target_node: XmlNode<'gc>,
     },
-}
-
-unsafe impl<'gc> Collect for Loader<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        match self {
-            Loader::RootMovie { .. } => {}
-            Loader::Movie {
-                target_clip,
-                target_broadcaster,
-                ..
-            } => {
-                target_clip.trace(cc);
-                target_broadcaster.trace(cc);
-            }
-            Loader::Form { target_object, .. } => target_object.trace(cc),
-            Loader::LoadVars { target_object, .. } => target_object.trace(cc),
-            Loader::XML { target_node, .. } => target_node.trace(cc),
-        }
-    }
 }
 
 impl<'gc> Loader<'gc> {
@@ -354,7 +354,7 @@ impl<'gc> Loader<'gc> {
             Loader::Movie { self_handle, .. } => *self_handle = Some(handle),
             Loader::Form { self_handle, .. } => *self_handle = Some(handle),
             Loader::LoadVars { self_handle, .. } => *self_handle = Some(handle),
-            Loader::XML { self_handle, .. } => *self_handle = Some(handle),
+            Loader::Xml { self_handle, .. } => *self_handle = Some(handle),
         }
     }
 
@@ -535,10 +535,10 @@ impl<'gc> Loader<'gc> {
                             );
                         }
 
-                        if let Some(Loader::Movie { load_complete, .. }) =
+                        if let Some(Loader::Movie { loader_status, .. }) =
                             uc.load_manager.get_loader_mut(handle)
                         {
-                            *load_complete = true;
+                            *loader_status = LoaderStatus::Succeeded;
                         };
 
                         Ok(())
@@ -578,10 +578,10 @@ impl<'gc> Loader<'gc> {
                             );
                         }
 
-                        if let Some(Loader::Movie { load_complete, .. }) =
+                        if let Some(Loader::Movie { loader_status, .. }) =
                             uc.load_manager.get_loader_mut(handle)
                         {
-                            *load_complete = true;
+                            *loader_status = LoaderStatus::Failed;
                         };
 
                         Ok(())
@@ -671,10 +671,8 @@ impl<'gc> Loader<'gc> {
                 match data {
                     Ok(data) => {
                         // Fire the onData method with the loaded string.
-                        let string_data = AvmString::new(
-                            activation.context.gc_context,
-                            String::from_utf8_lossy(&data),
-                        );
+                        let string_data =
+                            AvmString::new(activation.context.gc_context, UTF_8.decode(&data).0);
                         let _ = that.call_method("onData", &[string_data.into()], &mut activation);
                     }
                     Err(_) => {
@@ -703,37 +701,41 @@ impl<'gc> Loader<'gc> {
         loaded_clip: DisplayObject<'gc>,
         clip_object: Option<Object<'gc>>,
         queue: &mut ActionQueue<'gc>,
-        _gc_context: MutationContext<'gc, '_>,
     ) -> bool {
-        let (clip, broadcaster, load_complete) = match self {
+        let (clip, broadcaster, loader_status) = match self {
             Loader::Movie {
                 target_clip,
                 target_broadcaster,
-                load_complete,
+                loader_status,
                 ..
-            } => (*target_clip, *target_broadcaster, *load_complete),
+            } => (*target_clip, *target_broadcaster, *loader_status),
             _ => return false,
         };
 
-        if DisplayObject::ptr_eq(loaded_clip, clip) && load_complete {
-            if let Some(broadcaster) = broadcaster {
-                queue.queue_actions(
-                    clip,
-                    ActionType::Method {
-                        object: broadcaster,
-                        name: "broadcastMessage",
-                        args: vec![
-                            "onLoadInit".into(),
-                            clip_object.map(|co| co.into()).unwrap_or(Value::Undefined),
-                        ],
-                    },
-                    false,
-                );
-            }
+        if !DisplayObject::ptr_eq(loaded_clip, clip) {
+            return false;
+        }
 
-            true
-        } else {
-            false
+        match loader_status {
+            LoaderStatus::Pending => false,
+            LoaderStatus::Failed => true,
+            LoaderStatus::Succeeded => {
+                if let Some(broadcaster) = broadcaster {
+                    queue.queue_actions(
+                        clip,
+                        ActionType::Method {
+                            object: broadcaster,
+                            name: "broadcastMessage",
+                            args: vec![
+                                "onLoadInit".into(),
+                                clip_object.map(|co| co.into()).unwrap_or(Value::Undefined),
+                            ],
+                        },
+                        false,
+                    );
+                }
+                true
+            }
         }
     }
 
@@ -743,7 +745,7 @@ impl<'gc> Loader<'gc> {
         fetch: OwnedFuture<Vec<u8>, Error>,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
-            Loader::XML { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
+            Loader::Xml { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
             _ => return Box::pin(async { Err(Error::NotXmlLoader) }),
         };
 
@@ -759,7 +761,7 @@ impl<'gc> Loader<'gc> {
                 player.lock().expect("Could not lock player!!").update(
                     |uc| -> Result<(), Error> {
                         let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
-                            Some(Loader::XML {
+                            Some(Loader::Xml {
                                 target_node,
                                 active_clip,
                                 ..
@@ -795,7 +797,7 @@ impl<'gc> Loader<'gc> {
                 player.lock().expect("Could not lock player!!").update(
                     |uc| -> Result<(), Error> {
                         let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
-                            Some(Loader::XML {
+                            Some(Loader::Xml {
                                 target_node,
                                 active_clip,
                                 ..

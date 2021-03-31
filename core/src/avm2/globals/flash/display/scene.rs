@@ -17,6 +17,8 @@ pub fn instance_init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(mut this) = this {
+        activation.super_init(this, &[])?;
+
         let name = args
             .get(0)
             .cloned()
@@ -116,7 +118,7 @@ pub fn num_frames<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "Scene"),
-        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
@@ -125,17 +127,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public_namespace(), "labels"),
+        QName::new(Namespace::public(), "labels"),
         Method::from_builtin(labels),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public_namespace(), "name"),
+        QName::new(Namespace::public(), "name"),
         Method::from_builtin(name),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public_namespace(), "numFrames"),
+        QName::new(Namespace::public(), "numFrames"),
         Method::from_builtin(num_frames),
     ));
 

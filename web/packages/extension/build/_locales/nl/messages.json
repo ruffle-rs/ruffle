@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Flash-inhoud afspelen in Ruffle"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Flash-inhoud afspelen zelfs op sites die Ruffle uitschakelen"
+    },
+    "settings_ignore_optout": {
+        "message": "Waarschuwingen voor de compatibiliteit van websites negeren"
+    },
+    "status_init": {
+        "message": "Huidig tabblad lezen…"
+    },
+    "status_no_tabs": {
+        "message": "Er is geen actief tabblad."
+    },
+    "status_tabs_error": {
+        "message": "Er is een fout opgetreden bij het opzoeken van het huidige tabblad."
+    },
+    "status_message_init": {
+        "message": "Status van Ruffle op huidig tabblad controleren…"
+    },
+    "status_result_running": {
+        "message": "Ruffle is geladen en Flash-inhoud aan het uitvoeren op het huidige tabblad."
+    },
+    "status_result_optout": {
+        "message": "Ruffle is niet geladen omdat de huidige pagina zichzelf als niet compatibel heeft gemarkeerd."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle is niet geladen omdat het is uitgeschakeld door de gebruiker."
+    },
+    "status_result_error": {
+        "message": "Er is een fout opgetreden bij het opvragen van het Ruffle-exemplaar van het huidige tabblad."
+    },
+    "status_result_protected": {
+        "message": "Ruffle kan niet geladen worden op beschermde browserpagina's."
+    },
+    "action_reload": {
+        "message": "Tabblad vernieuwen om wijzigingen toe te passen"
+    },
+    "open_settings_page": {
+        "message": "Instellingenpagina Openen"
+    },
+    "settings_page": {
+        "message": "Instellingenpagina"
+    },
+    "description": {
+        "message": "Zet Flash terug op het web waar het thuishoort."
+    },
+    "save_settings": {
+        "message": "Instellingen Opslaan"
+    },
+    "settings_saved": {
+        "message": "Instellingen Opgeslagen"
+    }
+}

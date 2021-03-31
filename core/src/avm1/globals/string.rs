@@ -4,10 +4,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::string_utils;
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 /// `String` constructor
@@ -28,7 +27,7 @@ pub fn string<'gc>(
         vbox.replace_value(activation.context.gc_context, value.clone().into());
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// `String` function
@@ -51,10 +50,10 @@ pub fn create_string_object<'gc>(
     string_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let string = FunctionObject::function_and_constructor(
+    let string = FunctionObject::constructor(
         gc_context,
-        Executable::Native(string_function),
         Executable::Native(string),
+        Executable::Native(string_function),
         fn_proto,
         string_proto,
     );
@@ -64,7 +63,7 @@ pub fn create_string_object<'gc>(
         "fromCharCode",
         from_char_code,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -84,28 +83,28 @@ pub fn create_proto<'gc>(
         "toString",
         to_string_value_of,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "valueOf",
         to_string_value_of,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     object.force_set_function(
         "charAt",
         char_at,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "charCodeAt",
         char_code_at,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -113,7 +112,7 @@ pub fn create_proto<'gc>(
         "concat",
         concat,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -121,7 +120,7 @@ pub fn create_proto<'gc>(
         "indexOf",
         index_of,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -129,7 +128,7 @@ pub fn create_proto<'gc>(
         "lastIndexOf",
         last_index_of,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -137,7 +136,7 @@ pub fn create_proto<'gc>(
         "slice",
         slice,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -145,7 +144,7 @@ pub fn create_proto<'gc>(
         "split",
         split,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -153,7 +152,7 @@ pub fn create_proto<'gc>(
         "substr",
         substr,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -161,7 +160,7 @@ pub fn create_proto<'gc>(
         "substring",
         substring,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -169,7 +168,7 @@ pub fn create_proto<'gc>(
         "toLowerCase",
         to_lower_case,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -177,7 +176,7 @@ pub fn create_proto<'gc>(
         "toUpperCase",
         to_upper_case,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -224,9 +223,9 @@ fn char_code_at<'gc>(
         this.encode_utf16()
             .nth(i as usize)
             .map(f64::from)
-            .unwrap_or(std::f64::NAN)
+            .unwrap_or(f64::NAN)
     } else {
-        std::f64::NAN
+        f64::NAN
     };
     Ok(ret.into())
 }
@@ -328,32 +327,20 @@ fn last_index_of<'gc>(
     };
     let start_index = match args.get(1) {
         None | Some(Value::Undefined) => this.len(),
-        Some(n) => {
-            let n = n.coerce_to_i32(activation)?;
-            if n >= 0 {
-                let n = n as usize;
-                if n <= this.len() {
-                    n
-                } else {
-                    this.len()
-                }
-            } else {
-                0
-            }
-        }
+        Some(n) => n.coerce_to_i32(activation)?.max(0) as usize,
     };
 
     if pattern.is_empty() {
         // Empty pattern is found immediately.
-        Ok((start_index as f64).into())
+        Ok(start_index.into())
     } else if let Some((i, _)) = this[..]
         .windows(pattern.len())
         .enumerate()
-        .take(start_index)
+        .take(start_index + 1)
         .rev()
         .find(|(_, w)| *w == &pattern[..])
     {
-        Ok((i as f64).into())
+        Ok(i.into())
     } else {
         // Not found
         Ok((-1).into())
@@ -405,7 +392,7 @@ fn split<'gc>(
     let delimiter_val = args.get(0).unwrap_or(&Value::Undefined);
     let delimiter = delimiter_val.coerce_to_string(activation)?;
     let limit = match args.get(1) {
-        None | Some(Value::Undefined) => std::usize::MAX,
+        None | Some(Value::Undefined) => usize::MAX,
         Some(n) => std::cmp::max(0, n.coerce_to_i32(activation)?) as usize,
     };
     let array = ScriptObject::array(
@@ -447,12 +434,12 @@ fn substr<'gc>(
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
     let this_len = this.encode_utf16().count();
-    let start_index =
-        string_wrapping_index(args.get(0).unwrap().coerce_to_i32(activation)?, this_len);
+    let start_index_raw = args.get(0).unwrap().coerce_to_i32(activation)?;
+    let start_index = string_wrapping_index(start_index_raw, this_len);
 
     let len = match args.get(1) {
         None | Some(Value::Undefined) => this_len,
-        Some(n) => string_index(n.coerce_to_i32(activation)?, this_len),
+        Some(n) => string_index_substr(start_index_raw, n.coerce_to_i32(activation)?, this_len),
     };
 
     let ret = string_utils::utf16_iter_to_string(this.encode_utf16().skip(start_index).take(len));
@@ -572,6 +559,28 @@ fn string_wrapping_index(i: i32, len: usize) -> usize {
             len - i
         } else {
             len
+        }
+    }
+}
+
+/// Normalizes an index parameter used in substr.
+/// If start + length is not less than zero, the parameter is zero,
+/// otherwise negative values will count backwards from `len`.
+/// The returned index will be within the range of `[0, len]`.
+fn string_index_substr(s: i32, e: i32, len: usize) -> usize {
+    if e >= 0 {
+        string_index(e, len)
+    } else {
+        let t = s + e;
+        if t >= 0 {
+            0
+        } else {
+            let e = (-e) as usize;
+            if e <= len {
+                len - e
+            } else {
+                len
+            }
         }
     }
 }

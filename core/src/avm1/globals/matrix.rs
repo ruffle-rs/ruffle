@@ -3,8 +3,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::globals::point::{point_to_object, value_to_point};
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 use swf::{Matrix, Twips};
 
@@ -88,7 +89,7 @@ pub fn object_to_matrix<'gc>(
 pub fn matrix_to_object<'gc>(
     matrix: Matrix,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
         matrix.a.into(),
         matrix.b.into(),
@@ -125,26 +126,26 @@ fn constructor<'gc>(
         apply_matrix_to_object(Matrix::identity(), this, activation)?;
     } else {
         if let Some(a) = args.get(0) {
-            this.set("a", a.clone(), activation)?;
+            this.set("a", *a, activation)?;
         }
         if let Some(b) = args.get(1) {
-            this.set("b", b.clone(), activation)?;
+            this.set("b", *b, activation)?;
         }
         if let Some(c) = args.get(2) {
-            this.set("c", c.clone(), activation)?;
+            this.set("c", *c, activation)?;
         }
         if let Some(d) = args.get(3) {
-            this.set("d", d.clone(), activation)?;
+            this.set("d", *d, activation)?;
         }
         if let Some(tx) = args.get(4) {
-            this.set("tx", tx.clone(), activation)?;
+            this.set("tx", *tx, activation)?;
         }
         if let Some(ty) = args.get(5) {
-            this.set("ty", ty.clone(), activation)?;
+            this.set("ty", *ty, activation)?;
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 fn identity<'gc>(
@@ -171,7 +172,7 @@ fn clone<'gc>(
     ];
     let constructor = activation.context.avm1.prototypes.matrix_constructor;
     let cloned = constructor.construct(activation, &args)?;
-    Ok(cloned.into())
+    Ok(cloned)
 }
 
 fn scale<'gc>(
@@ -239,7 +240,7 @@ fn concat<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut matrix = object_to_matrix(this, activation)?;
-    let other = value_to_matrix(args.get(0).unwrap_or(&Value::Undefined).clone(), activation)?;
+    let other = value_to_matrix(*args.get(0).unwrap_or(&Value::Undefined), activation)?;
     matrix = other * matrix;
     apply_matrix_to_object(matrix, this, activation)?;
 
@@ -340,6 +341,40 @@ fn create_gradient_box<'gc>(
     Ok(Value::Undefined)
 }
 
+fn transform_point<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let matrix = object_to_matrix(this, activation)?;
+    let point = value_to_point(
+        args.get(0).unwrap_or(&Value::Undefined).to_owned(),
+        activation,
+    )?;
+
+    let x = point.0 * matrix.a as f64 + point.1 * matrix.c as f64 + matrix.tx.to_pixels();
+    let y = point.0 * matrix.b as f64 + point.1 * matrix.d as f64 + matrix.ty.to_pixels();
+    let object = point_to_object((x, y), activation)?;
+    Ok(object)
+}
+
+fn delta_transform_point<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let matrix = object_to_matrix(this, activation)?;
+    let point = value_to_point(
+        args.get(0).unwrap_or(&Value::Undefined).to_owned(),
+        activation,
+    )?;
+
+    let x = point.0 * matrix.a as f64 + point.1 * matrix.c as f64;
+    let y = point.0 * matrix.b as f64 + point.1 * matrix.d as f64;
+    let object = point_to_object((x, y), activation)?;
+    Ok(object)
+}
+
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -375,6 +410,7 @@ pub fn create_matrix_object<'gc>(
     FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
+        constructor_to_fn!(constructor),
         fn_proto,
         matrix_proto,
     )
@@ -391,7 +427,7 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -399,19 +435,31 @@ pub fn create_proto<'gc>(
         "identity",
         identity,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
-    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "clone",
+        clone,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
-    object.force_set_function("scale", scale, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "scale",
+        scale,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
     object.force_set_function(
         "rotate",
         rotate,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -419,7 +467,7 @@ pub fn create_proto<'gc>(
         "translate",
         translate,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -427,7 +475,7 @@ pub fn create_proto<'gc>(
         "concat",
         concat,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -435,7 +483,7 @@ pub fn create_proto<'gc>(
         "invert",
         invert,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -443,7 +491,7 @@ pub fn create_proto<'gc>(
         "createBox",
         create_box,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -451,7 +499,23 @@ pub fn create_proto<'gc>(
         "createGradientBox",
         create_gradient_box,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "transformPoint",
+        transform_point,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
+
+    object.force_set_function(
+        "deltaTransformPoint",
+        delta_transform_point,
+        gc_context,
+        Attribute::empty(),
         Some(fn_proto),
     );
 

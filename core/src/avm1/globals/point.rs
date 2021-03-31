@@ -5,14 +5,12 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
-use std::f64::NAN;
 
 pub fn point_to_object<'gc>(
     point: (f64, f64),
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let args = [point.0.into(), point.1.into()];
     construct_new_point(&args, activation)
 }
@@ -20,7 +18,7 @@ pub fn point_to_object<'gc>(
 pub fn construct_new_point<'gc>(
     args: &[Value<'gc>],
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let constructor = activation.context.avm1.prototypes.point_constructor;
     let object = constructor.construct(activation, &args)?;
     Ok(object)
@@ -71,7 +69,7 @@ fn constructor<'gc>(
         )?;
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 fn clone<'gc>(
@@ -83,7 +81,7 @@ fn clone<'gc>(
     let constructor = activation.context.avm1.prototypes.point_constructor;
     let cloned = constructor.construct(activation, &args)?;
 
-    Ok(cloned.into())
+    Ok(cloned)
 }
 
 fn equals<'gc>(
@@ -115,7 +113,7 @@ fn add<'gc>(
         activation,
     )?;
     let object = point_to_object((this_x + other.0, this_y + other.1), activation)?;
-    Ok(object.into())
+    Ok(object)
 }
 
 fn subtract<'gc>(
@@ -130,7 +128,7 @@ fn subtract<'gc>(
         activation,
     )?;
     let object = point_to_object((this_x - other.0, this_y - other.1), activation)?;
-    Ok(object.into())
+    Ok(object)
 }
 
 fn distance<'gc>(
@@ -139,7 +137,7 @@ fn distance<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 2 {
-        return Ok(NAN.into());
+        return Ok(f64::NAN.into());
     }
 
     let a = args
@@ -148,9 +146,7 @@ fn distance<'gc>(
         .coerce_to_object(activation);
     let b = args.get(1).unwrap_or(&Value::Undefined);
     let delta = a.call_method("subtract", &[b.to_owned()], activation)?;
-    Ok(delta
-        .coerce_to_object(activation)
-        .get("length", activation)?)
+    delta.coerce_to_object(activation).get("length", activation)
 }
 
 fn polar<'gc>(
@@ -167,7 +163,7 @@ fn polar<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_f64(activation)?;
     let point = point_to_object((length * angle.cos(), length * angle.sin()), activation)?;
-    Ok(point.into())
+    Ok(point)
 }
 
 fn interpolate<'gc>(
@@ -176,14 +172,14 @@ fn interpolate<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 3 {
-        return Ok(point_to_object((NAN, NAN), activation)?.into());
+        return point_to_object((f64::NAN, f64::NAN), activation);
     }
 
     let a = value_to_point(args.get(0).unwrap().to_owned(), activation)?;
     let b = value_to_point(args.get(1).unwrap().to_owned(), activation)?;
     let f = args.get(2).unwrap().coerce_to_f64(activation)?;
     let result = (b.0 - (b.0 - a.0) * f, b.1 - (b.1 - a.1) * f);
-    Ok(point_to_object(result, activation)?.into())
+    point_to_object(result, activation)
 }
 
 fn to_string<'gc>(
@@ -272,18 +268,25 @@ pub fn create_point_object<'gc>(
     let point = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
+        constructor_to_fn!(constructor),
         fn_proto,
         point_proto,
     );
     let mut object = point.as_script_object().unwrap();
 
-    object.force_set_function("distance", distance, gc_context, EnumSet::empty(), fn_proto);
-    object.force_set_function("polar", polar, gc_context, EnumSet::empty(), fn_proto);
+    object.force_set_function(
+        "distance",
+        distance,
+        gc_context,
+        Attribute::empty(),
+        fn_proto,
+    );
+    object.force_set_function("polar", polar, gc_context, Attribute::empty(), fn_proto);
     object.force_set_function(
         "interpolate",
         interpolate,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         fn_proto,
     );
 
@@ -301,27 +304,33 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
-    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "clone",
+        clone,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
     object.force_set_function(
         "equals",
         equals,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
-    object.force_set_function("add", add, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function("add", add, gc_context, Attribute::empty(), Some(fn_proto));
 
     object.force_set_function(
         "subtract",
         subtract,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -329,7 +338,7 @@ pub fn create_proto<'gc>(
         "normalize",
         normalize,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -337,7 +346,7 @@ pub fn create_proto<'gc>(
         "offset",
         offset,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -351,7 +360,7 @@ pub fn create_proto<'gc>(
             fn_proto,
         ),
         None,
-        Attribute::ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
 
     object.into()

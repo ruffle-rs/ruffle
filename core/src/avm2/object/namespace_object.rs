@@ -61,7 +61,7 @@ impl<'gc> NamespaceObject<'gc> {
             mc,
             NamespaceObjectData {
                 base,
-                namespace: Namespace::public_namespace(),
+                namespace: Namespace::public(),
             },
         ))
         .into())
@@ -96,7 +96,7 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
             activation.context.gc_context,
             NamespaceObjectData {
                 base,
-                namespace: Namespace::public_namespace(),
+                namespace: Namespace::public(),
             },
         ))
         .into())
@@ -118,7 +118,7 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
             activation.context.gc_context,
             NamespaceObjectData {
                 base,
-                namespace: Namespace::public_namespace(),
+                namespace: Namespace::public(),
             },
         ))
         .into())

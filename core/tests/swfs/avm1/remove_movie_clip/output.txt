@@ -15,3 +15,16 @@ _level0.clip4
 undefined
 _level0.clip5
 _level0.clip5
+
+// removeMovieClip(txt1)
+undefined
+
+// removeMovieClip(button1)
+undefined
+
+// removeMovieClip.apply(txt2);
+undefined
+
+// removeMovieClip.apply(button2);
+undefined
+

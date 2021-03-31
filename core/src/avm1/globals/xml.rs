@@ -4,14 +4,13 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::script_object::ScriptObject;
-use crate::avm1::object::xml_object::XMLObject;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::object::xml_object::XmlObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
 use crate::xml;
-use crate::xml::{XMLDocument, XMLNode};
-use enumset::EnumSet;
+use crate::xml::{XmlDocument, XmlNode};
 use gc_arena::MutationContext;
 use quick_xml::Error as ParseError;
 
@@ -36,7 +35,7 @@ pub const XML_MISMATCHED_END: f64 = -10.0;
 /// not. Those nodes are filtered from all attributes that return XML nodes to
 /// act as if those nodes did not exist. For example, `prevSibling` skips
 /// past incompatible nodes, etc.
-fn is_as2_compatible(node: XMLNode<'_>) -> bool {
+fn is_as2_compatible(node: XmlNode<'_>) -> bool {
     node.is_document_root() || node.is_element() || node.is_text()
 }
 
@@ -46,7 +45,7 @@ pub fn xmlnode_constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let blank_document = XMLDocument::new(activation.context.gc_context);
+    let blank_document = XmlDocument::new(activation.context.gc_context);
 
     match (
         args.get(0)
@@ -56,13 +55,13 @@ pub fn xmlnode_constructor<'gc>(
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
             let mut xmlelement =
-                XMLNode::new_element(activation.context.gc_context, strval, blank_document);
+                XmlNode::new_element(activation.context.gc_context, strval, blank_document);
             xmlelement.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlelement);
         }
         (Some(Ok(3)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
             let mut xmlelement =
-                XMLNode::new_text(activation.context.gc_context, strval, blank_document);
+                XmlNode::new_text(activation.context.gc_context, strval, blank_document);
             xmlelement.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlelement);
         }
@@ -70,7 +69,7 @@ pub fn xmlnode_constructor<'gc>(
         _ => {}
     };
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn xmlnode_append_child<'gc>(
@@ -359,8 +358,16 @@ pub fn xmlnode_first_child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(mut children) = node.children() {
-            return Ok(children
-                .next()
+            let mut next = children.next();
+            while let Some(my_next) = next {
+                if is_as2_compatible(my_next) {
+                    break;
+                }
+
+                next = my_next.next_sibling().unwrap_or(None);
+            }
+
+            return Ok(next
                 .map(|mut child| {
                     child
                         .script_object(
@@ -383,8 +390,15 @@ pub fn xmlnode_last_child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(mut children) = node.children() {
-            return Ok(children
-                .next_back()
+            let mut prev = children.next_back();
+            while let Some(my_prev) = prev {
+                if is_as2_compatible(my_prev) {
+                    break;
+                }
+
+                prev = my_prev.prev_sibling().unwrap_or(None);
+            }
+            return Ok(prev
                 .map(|mut child| {
                     child
                         .script_object(
@@ -523,7 +537,7 @@ pub fn create_xmlnode_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xmlnode_proto = XMLObject::empty_node(gc_context, Some(proto));
+    let xmlnode_proto = XmlObject::empty_node(gc_context, Some(proto));
 
     xmlnode_proto.add_property(
         gc_context,
@@ -535,7 +549,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -547,7 +561,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -559,7 +573,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -571,7 +585,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -583,7 +597,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -595,7 +609,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -607,7 +621,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -619,7 +633,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -631,7 +645,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -643,7 +657,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -655,7 +669,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -667,7 +681,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto.add_property(
         gc_context,
@@ -679,7 +693,7 @@ pub fn create_xmlnode_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xmlnode_proto
         .as_script_object()
@@ -688,7 +702,7 @@ pub fn create_xmlnode_proto<'gc>(
             "appendChild",
             xmlnode_append_child,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -698,7 +712,7 @@ pub fn create_xmlnode_proto<'gc>(
             "insertBefore",
             xmlnode_insert_before,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -708,7 +722,7 @@ pub fn create_xmlnode_proto<'gc>(
             "cloneNode",
             xmlnode_clone_node,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -718,7 +732,7 @@ pub fn create_xmlnode_proto<'gc>(
             "getNamespaceForPrefix",
             xmlnode_get_namespace_for_prefix,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -728,7 +742,7 @@ pub fn create_xmlnode_proto<'gc>(
             "getPrefixForNamespace",
             xmlnode_get_prefix_for_namespace,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -738,7 +752,7 @@ pub fn create_xmlnode_proto<'gc>(
             "hasChildNodes",
             xmlnode_has_child_nodes,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -748,7 +762,7 @@ pub fn create_xmlnode_proto<'gc>(
             "removeNode",
             xmlnode_remove_node,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
     xmlnode_proto
@@ -758,7 +772,7 @@ pub fn create_xmlnode_proto<'gc>(
             "toString",
             xmlnode_to_string,
             gc_context,
-            EnumSet::empty(),
+            Attribute::empty(),
             Some(fn_proto),
         );
 
@@ -776,13 +790,20 @@ pub fn xml_constructor<'gc>(
         this.as_xml_node(),
     ) {
         (Some(Ok(ref string)), Some(ref mut this_node)) => {
-            let xmldoc = XMLDocument::new(activation.context.gc_context);
+            let xmldoc = XmlDocument::new(activation.context.gc_context);
             let mut xmlnode = xmldoc.as_node();
             xmlnode.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlnode);
+            let ignore_whitespace = this
+                .get("ignoreWhite", activation)?
+                .as_bool(activation.current_swf_version());
 
-            if let Err(e) = this_node.replace_with_str(activation.context.gc_context, string, true)
-            {
+            if let Err(e) = this_node.replace_with_str(
+                activation.context.gc_context,
+                string,
+                true,
+                ignore_whitespace,
+            ) {
                 avm_warn!(
                     activation,
                     "Couldn't replace_with_str inside of XML constructor: {}",
@@ -791,7 +812,7 @@ pub fn xml_constructor<'gc>(
             }
         }
         (None, Some(ref mut this_node)) => {
-            let xmldoc = XMLDocument::new(activation.context.gc_context);
+            let xmldoc = XmlDocument::new(activation.context.gc_context);
             let mut xmlnode = xmldoc.as_node();
             xmlnode.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlnode);
@@ -800,7 +821,7 @@ pub fn xml_constructor<'gc>(
         _ => {}
     };
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn xml_create_element<'gc>(
@@ -811,15 +832,15 @@ pub fn xml_create_element<'gc>(
     let document = if let Some(node) = this.as_xml_node() {
         node.document()
     } else {
-        XMLDocument::new(activation.context.gc_context)
+        XmlDocument::new(activation.context.gc_context)
     };
 
     let nodename = args
         .get(0)
         .map(|v| v.coerce_to_string(activation).unwrap_or_default())
         .unwrap_or_default();
-    let mut xml_node = XMLNode::new_element(activation.context.gc_context, &nodename, document);
-    let object = XMLObject::from_xml_node(
+    let mut xml_node = XmlNode::new_element(activation.context.gc_context, &nodename, document);
+    let object = XmlObject::from_xml_node(
         activation.context.gc_context,
         xml_node,
         Some(activation.context.avm1.prototypes().xml_node),
@@ -838,15 +859,15 @@ pub fn xml_create_text_node<'gc>(
     let document = if let Some(node) = this.as_xml_node() {
         node.document()
     } else {
-        XMLDocument::new(activation.context.gc_context)
+        XmlDocument::new(activation.context.gc_context)
     };
 
     let text_node = args
         .get(0)
         .map(|v| v.coerce_to_string(activation).unwrap_or_default())
         .unwrap_or_default();
-    let mut xml_node = XMLNode::new_text(activation.context.gc_context, &text_node, document);
-    let object = XMLObject::from_xml_node(
+    let mut xml_node = XmlNode::new_text(activation.context.gc_context, &text_node, document);
+    let object = XmlObject::from_xml_node(
         activation.context.gc_context,
         xml_node,
         Some(activation.context.avm1.prototypes().xml_node),
@@ -884,7 +905,16 @@ pub fn xml_parse_xml<'gc>(
             }
         }
 
-        let result = node.replace_with_str(activation.context.gc_context, &xmlstring, true);
+        let ignore_whitespace = this
+            .get("ignoreWhite", activation)?
+            .as_bool(activation.current_swf_version());
+
+        let result = node.replace_with_str(
+            activation.context.gc_context,
+            &xmlstring,
+            true,
+            ignore_whitespace,
+        );
         if let Err(e) = result {
             avm_warn!(activation, "XML parsing error: {}", e);
         }
@@ -913,7 +943,7 @@ pub fn xml_load<'gc>(
             .context
             .navigator
             .fetch(&url, RequestOptions::get());
-        let target_clip = activation.target_clip_or_root();
+        let target_clip = activation.target_clip_or_root()?;
         let process = activation.context.load_manager.load_xml_into_node(
             activation.context.player.clone().unwrap(),
             node,
@@ -1048,7 +1078,7 @@ pub fn create_xml_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_proto = XMLObject::empty_node(gc_context, Some(proto));
+    let xml_proto = XmlObject::empty_node(gc_context, Some(proto));
 
     xml_proto.add_property(
         gc_context,
@@ -1060,8 +1090,9 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
+    xml_proto.define_value(gc_context, "ignoreWhite", false.into(), Attribute::empty());
     xml_proto.add_property(
         gc_context,
         "xmlDecl",
@@ -1072,7 +1103,7 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xml_proto.add_property(
         gc_context,
@@ -1084,7 +1115,7 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xml_proto.add_property(
         gc_context,
@@ -1096,41 +1127,41 @@ pub fn create_xml_proto<'gc>(
             fn_proto,
         ),
         None,
-        ReadOnly.into(),
+        Attribute::READ_ONLY,
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "createElement",
         xml_create_element,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "createTextNode",
         xml_create_text_node,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "parseXML",
         xml_parse_xml,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "load",
         xml_load,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
     xml_proto.as_script_object().unwrap().force_set_function(
         "onData",
         xml_on_data,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 

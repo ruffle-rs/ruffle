@@ -1,8 +1,12 @@
 #![allow(
+    renamed_and_removed_lints,
+    unknown_lints,
+    clippy::unknown_clippy_lints,
+    clippy::inconsistent_struct_constructor,
+    clippy::manual_map,
     clippy::manual_range_contains,
-    clippy::unneeded_field_pattern,
     clippy::same_item_push,
-    clippy::unknown_clippy_lints
+    clippy::unnecessary_wraps
 )]
 
 #[macro_use]
@@ -17,6 +21,7 @@ extern crate downcast_rs;
 #[macro_use]
 mod avm1;
 mod avm2;
+pub mod bitmap;
 mod bounding_box;
 mod character;
 mod collect;
@@ -42,6 +47,7 @@ mod vminterface;
 mod xml;
 
 pub mod backend;
+pub mod config;
 pub mod external;
 
 pub use chrono;

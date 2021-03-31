@@ -114,7 +114,7 @@ impl<'gc> Hash for AvmString<'gc> {
 
 macro_rules! impl_eq {
     ($lhs:ty, $rhs: ty) => {
-        #[allow(unused_lifetimes)]
+        #[allow(unused_lifetimes, clippy::redundant_slicing)]
         impl<'a, 'b> PartialEq<$rhs> for $lhs {
             #[inline]
             fn eq(&self, other: &$rhs) -> bool {
@@ -122,7 +122,7 @@ macro_rules! impl_eq {
             }
         }
 
-        #[allow(unused_lifetimes)]
+        #[allow(unused_lifetimes, clippy::redundant_slicing)]
         impl<'a, 'b> PartialEq<$lhs> for $rhs {
             #[inline]
             fn eq(&self, other: &$lhs) -> bool {

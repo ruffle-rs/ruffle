@@ -10,14 +10,13 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
 use rand::Rng;
-use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
 macro_rules! math_constants {
     ($class:ident, $($name:expr => $value:expr),*) => {{
         $(
             $class.define_class_trait(Trait::from_const(
-                QName::new(Namespace::public_namespace(), $name),
-                Multiname::from(QName::new(Namespace::public_namespace(), "Number")),
+                QName::new(Namespace::public(), $name),
+                Multiname::from(QName::new(Namespace::public(), "Number")),
                 Some($value.into()),
             ));
         )*
@@ -28,7 +27,7 @@ macro_rules! math_method {
     ($class:ident, $($name:expr => $f:expr),*) => {{
         $(
             $class.define_class_trait(Trait::from_method(
-                QName::new(Namespace::public_namespace(), $name),
+                QName::new(Namespace::public(), $name),
                 Method::from_builtin($f),
             ));
         )*
@@ -39,13 +38,13 @@ macro_rules! math_wrap_std {
     ($class:ident, $($name:expr => $std:expr),*) => {{
         $(
             $class.define_class_trait(Trait::from_method(
-                QName::new(Namespace::public_namespace(), $name),
+                QName::new(Namespace::public(), $name),
                 Method::from_builtin(
                     |activation, _this, args| -> Result<Value<'gc>, Error> {
                         if let Some(input) = args.get(0) {
                             Ok($std(input.coerce_to_number(activation)?).into())
                         } else {
-                            Ok(std::f64::NAN.into())
+                            Ok(f64::NAN.into())
                         }
                     }
                 ),
@@ -76,15 +75,15 @@ pub fn class_init<'gc>(
 /// Construct `Math`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
-        QName::new(Namespace::public_namespace(), "Math"),
-        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        QName::new(Namespace::public(), "Math"),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
     );
 
     let mut write = class.write(mc);
-    write.set_attributes(ClassAttributes::Final | ClassAttributes::Sealed);
+    write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
     use std::f64::consts::*;
     math_constants! {
@@ -140,7 +139,7 @@ fn round<'gc>(
         let ret = (x + 0.5).floor();
         return Ok(ret.into());
     }
-    Ok(NAN.into())
+    Ok(f64::NAN.into())
 }
 
 fn atan2<'gc>(
@@ -164,11 +163,11 @@ fn max<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let mut cur_max = NEG_INFINITY;
+    let mut cur_max = f64::NEG_INFINITY;
     for arg in args {
         let val = arg.coerce_to_number(activation)?;
         if val.is_nan() {
-            return Ok(NAN.into());
+            return Ok(f64::NAN.into());
         } else if val > cur_max {
             cur_max = val;
         };
@@ -181,11 +180,11 @@ fn min<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let mut cur_min = INFINITY;
+    let mut cur_min = f64::INFINITY;
     for arg in args {
         let val = arg.coerce_to_number(activation)?;
         if val.is_nan() {
-            return Ok(NAN.into());
+            return Ok(f64::NAN.into());
         } else if val < cur_min {
             cur_min = val;
         }
@@ -214,5 +213,5 @@ pub fn random<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Ok(activation.context.rng.gen_range(0.0f64, 1.0f64).into())
+    Ok(activation.context.rng.gen_range(0.0f64..1.0f64).into())
 }

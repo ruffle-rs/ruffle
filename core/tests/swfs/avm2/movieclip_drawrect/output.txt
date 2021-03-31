@@ -1,0 +1,54 @@
+//var s = new MovieClip();
+//s.hitTestPoint(25,25);
+false
+//s.hitTestPoint(75,25);
+false
+//s.hitTestPoint(75,75);
+false
+//s.graphics.beginFill(0, 1.0);
+//s.graphics.moveTo(50,50);
+//s.graphics.lineTo(100,50);
+//s.graphics.lineTo(100,100);
+//s.graphics.lineTo(50,100);
+//s.graphics.lineTo(50,50);
+//s.graphics.endFill();
+//s.hitTestPoint(25,25);
+false
+//s.hitTestPoint(75,25);
+false
+//s.hitTestPoint(75,75);
+true
+//s.x = -50;
+//s.y = -50;
+//s.hitTestPoint(25,25);
+true
+//s.hitTestPoint(75,25);
+false
+//s.hitTestPoint(75,75);
+false
+//s.graphics.clear();
+//s.hitTestPoint(25,25);
+false
+//s.hitTestPoint(75,25);
+false
+//s.hitTestPoint(75,75);
+false
+//s.x = 0;
+//s.y = 0;
+//s.graphics.beginFill(0, 1.0);
+//s.graphics.drawRect(50, 50, 50, 50);
+//s.graphics.endFill();
+//s.hitTestPoint(25,25);
+false
+//s.hitTestPoint(75,25);
+false
+//s.hitTestPoint(75,75);
+true
+//s.x = -50;
+//s.y = -50;
+//s.hitTestPoint(25,25);
+true
+//s.hitTestPoint(75,25);
+false
+//s.hitTestPoint(75,75);
+false

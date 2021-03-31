@@ -1,39 +1,44 @@
-#![allow(clippy::unneeded_field_pattern)]
+// By default, Windows creates an additional console window for our program.
+//
+//
+// This is silently ignored on non-windows systems.
+// See https://docs.microsoft.com/en-us/cpp/build/reference/subsystem?view=msvc-160 for details.
+#![windows_subsystem = "windows"]
 
 mod audio;
 mod custom_event;
 mod executor;
-mod input;
 mod locale;
 mod navigator;
 mod storage;
 mod task;
+mod ui;
 
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use clap::Clap;
-use isahc::config::RedirectPolicy;
-use isahc::prelude::*;
+use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use ruffle_core::{
-    backend::audio::{AudioBackend, NullAudioBackend},
-    Player,
+    backend::audio::AudioBackend, backend::video::NullVideoBackend, config::Letterbox, Player,
 };
 use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
+use tinyfiledialogs::open_file_dialog;
 use url::Url;
 
-use crate::storage::DiskStorageBackend;
-use ruffle_core::backend::log::NullLogBackend;
+use ruffle_core::backend::video;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::io::Read;
 use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition};
-use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
+use winit::event::{
+    ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent,
+};
 use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::{Icon, WindowBuilder};
+use winit::window::{Fullscreen, Icon, WindowBuilder};
 
 #[derive(Clap, Debug)]
 #[clap(
@@ -44,7 +49,7 @@ use winit::window::{Icon, WindowBuilder};
 struct Opt {
     /// Path to a flash movie (swf) to play
     #[clap(name = "FILE", parse(from_os_str))]
-    input_path: PathBuf,
+    input_path: Option<PathBuf>,
 
     /// A "flashvars" parameter to provide to the movie.
     /// This can be repeated multiple times, for example -Pkey=value -Pfoo=bar
@@ -75,6 +80,13 @@ struct Opt {
     /// (Optional) Proxy to use when loading movies via URL
     #[clap(long, case_insensitive = true)]
     proxy: Option<Url>,
+
+    /// (Optional) Replace all embedded http URLs with https
+    #[clap(long, case_insensitive = true, takes_value = false)]
+    upgrade_to_https: bool,
+
+    #[clap(long, case_insensitive = true, takes_value = false)]
+    timedemo: bool,
 }
 
 #[cfg(feature = "render_trace")]
@@ -93,23 +105,40 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
 }
 
 fn main() {
-    win32_hide_console();
+    // When linked with the windows subsystem windows won't automatically attach
+    // to the console of the parent process, so we do it explicitly. This fails
+    // silently if the parent has no console.
+    #[cfg(windows)]
+    unsafe {
+        use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
+        AttachConsole(ATTACH_PARENT_PROCESS);
+    }
 
     env_logger::init();
 
     let opt = Opt::parse();
 
-    let ret = run_player(opt);
+    let ret = if opt.timedemo {
+        run_timedemo(opt)
+    } else {
+        run_player(opt)
+    };
 
     if let Err(e) = ret {
         eprintln!("Fatal error:\n{}", e);
         std::process::exit(-1);
     }
+
+    // Without explicitly detaching the console cmd won't redraw it's prompt.
+    #[cfg(windows)]
+    unsafe {
+        winapi::um::wincon::FreeConsole();
+    }
 }
 
 fn load_movie_from_path(
     movie_url: Url,
-    proxy: Option<Url>,
+    proxy: Option<&Url>,
 ) -> Result<SwfMovie, Box<dyn std::error::Error>> {
     if movie_url.scheme() == "file" {
         if let Ok(path) = movie_url.to_file_path() {
@@ -124,21 +153,12 @@ fn load_movie_from_path(
     let res = client.get(movie_url.to_string())?;
     let mut buffer: Vec<u8> = Vec::new();
     res.into_body().read_to_end(&mut buffer)?;
+
     SwfMovie::from_data(&buffer, Some(movie_url.to_string()))
 }
 
-fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
-    let movie_url = if opt.input_path.exists() {
-        let absolute_path = opt.input_path.canonicalize()?;
-        Url::from_file_path(absolute_path).map_err(|_| "Path cannot be a URL")?
-    } else {
-        Url::parse(opt.input_path.to_str().unwrap_or_default())
-            .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
-    };
-    let mut movie = load_movie_from_path(movie_url.to_owned(), opt.proxy.to_owned())?;
-    let movie_size = LogicalSize::new(movie.width(), movie.height());
-
-    for parameter in &opt.parameters {
+fn set_movie_parameters(movie: &mut SwfMovie, parameters: &[String]) {
+    for parameter in parameters {
         let mut split = parameter.splitn(2, '=');
         if let (Some(key), Some(value)) = (split.next(), split.next()) {
             movie.parameters_mut().insert(key, value.to_string(), true);
@@ -148,6 +168,39 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                 .insert(&parameter, "".to_string(), true);
         }
     }
+}
+
+fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
+    let movie_url = match &opt.input_path {
+        Some(path) => {
+            if path.exists() {
+                let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
+                Url::from_file_path(absolute_path)
+                    .map_err(|_| "Path must be absolute and cannot be a URL")?
+            } else {
+                Url::parse(path.to_str().unwrap_or_default())
+                    .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
+            }
+        }
+        None => {
+            let result = open_file_dialog("Load a Flash File", "", Some((&["*.swf"], ".swf")));
+
+            let selected = match result {
+                Some(file_path) => PathBuf::from(file_path),
+                None => return Ok(()),
+            };
+
+            let absolute_path = selected
+                .canonicalize()
+                .unwrap_or_else(|_| selected.to_owned());
+            Url::from_file_path(absolute_path)
+                .map_err(|_| "Path must be absolute and cannot be a URL")?
+        }
+    };
+
+    let mut movie = load_movie_from_path(movie_url.to_owned(), opt.proxy.as_ref())?;
+    set_movie_parameters(&mut movie, &opt.parameters);
+    let movie_size = LogicalSize::new(movie.width(), movie.height());
 
     let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
     let icon = Icon::from_rgba(icon_bytes.to_vec(), 32, 32)?;
@@ -161,18 +214,12 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         WindowBuilder::new()
             .with_title(format!("Ruffle - {}", window_title))
             .with_window_icon(Some(icon))
-            .with_inner_size(movie_size)
+            .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
             .build(&event_loop)?,
     );
-    let viewport_size = movie_size.to_physical(window.scale_factor());
+    window.set_inner_size(movie_size);
+    let viewport_size = window.inner_size();
 
-    let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
-        Ok(audio) => Box::new(audio),
-        Err(e) => {
-            log::error!("Unable to create audio device: {}", e);
-            Box::new(NullAudioBackend::new())
-        }
-    };
     let renderer = Box::new(WgpuRenderBackend::for_window(
         window.as_ref(),
         (viewport_size.width, viewport_size.height),
@@ -180,41 +227,45 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         opt.power.into(),
         trace_path(&opt),
     )?);
+    let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
+        Ok(audio) => Box::new(audio),
+        Err(e) => {
+            log::error!("Unable to create audio device: {}", e);
+            Box::new(ruffle_core::backend::audio::NullAudioBackend::new())
+        }
+    };
     let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
     let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
-        movie_url,
+        movie_url.clone(),
         chan,
         event_loop.create_proxy(),
         opt.proxy,
+        opt.upgrade_to_https,
     )); //TODO: actually implement this backend type
-    let input = Box::new(input::WinitInputBackend::new(window.clone()));
-    let storage = Box::new(DiskStorageBackend::new(
-        opt.input_path.file_name().unwrap_or_default().as_ref(),
-    ));
+    let storage = Box::new(storage::DiskStorageBackend::new());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
-    let player = Player::new(
-        renderer,
-        audio,
-        navigator,
-        input,
-        storage,
-        locale,
-        Box::new(NullLogBackend::new()),
-    )?;
-    player.lock().unwrap().set_root_movie(Arc::new(movie));
-    player.lock().unwrap().set_is_playing(true); // Desktop player will auto-play.
-
-    player
-        .lock()
-        .unwrap()
-        .set_viewport_dimensions(viewport_size.width, viewport_size.height);
+    let video = Box::new(video::SoftwareVideoBackend::new());
+    let log = Box::new(ruffle_core::backend::log::NullLogBackend::new());
+    let ui = Box::new(ui::DesktopUiBackend::new(window.clone()));
+    let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
+    {
+        let mut player = player.lock().unwrap();
+        player.set_root_movie(Arc::new(movie));
+        player.set_is_playing(true); // Desktop player will auto-play.
+        player.set_letterbox(Letterbox::On);
+        player.set_viewport_dimensions(viewport_size.width, viewport_size.height);
+    }
 
     let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
     let mut time = Instant::now();
     let mut next_frame_time = Instant::now();
+    let mut minimized = false;
+    let mut fullscreen_down = false;
     loop {
         // Poll UI events
         event_loop.run(move |event, _window_target, control_flow| {
+            // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
+            #[allow(deprecated)]
             match event {
                 winit::event::Event::LoopDestroyed => {
                     player.lock().unwrap().flush_shared_objects();
@@ -237,10 +288,18 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 // Render
-                winit::event::Event::RedrawRequested(_) => player.lock().unwrap().render(),
+                winit::event::Event::RedrawRequested(_) => {
+                    // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
+                    if !minimized {
+                        player.lock().unwrap().render();
+                    }
+                }
 
                 winit::event::Event::WindowEvent { event, .. } => match event {
                     WindowEvent::Resized(size) => {
+                        // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
+                        minimized = size.width == 0 && size.height == 0;
+
                         let mut player_lock = player.lock().unwrap();
                         player_lock.set_viewport_dimensions(size.width, size.height);
                         player_lock
@@ -303,11 +362,51 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Return),
+                                modifiers, // TODO: Use WindowEvent::ModifiersChanged.
+                                ..
+                            },
+                        ..
+                    } if modifiers.alt() => {
+                        if !fullscreen_down {
+                            window.set_fullscreen(match window.fullscreen() {
+                                None => Some(Fullscreen::Borderless(None)),
+                                Some(_) => None,
+                            });
+                        }
+                        fullscreen_down = true;
+                    }
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: ElementState::Released,
+                                virtual_keycode: Some(VirtualKeyCode::Return),
+                                ..
+                            },
+                        ..
+                    } if fullscreen_down => {
+                        fullscreen_down = false;
+                    }
+                    WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                ..
+                            },
+                        ..
+                    } => {
+                        window.set_fullscreen(None);
+                    }
                     WindowEvent::KeyboardInput { .. } | WindowEvent::ReceivedCharacter(_) => {
                         let mut player_lock = player.lock().unwrap();
                         if let Some(event) = player_lock
-                            .input_mut()
-                            .downcast_mut::<input::WinitInputBackend>()
+                            .ui_mut()
+                            .downcast_mut::<ui::DesktopUiBackend>()
                             .unwrap()
                             .handle_event(event)
                         {
@@ -334,21 +433,66 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-/// Hides the Win32 console if we were not launched from the command line.
-fn win32_hide_console() {
-    #[cfg(windows)]
-    unsafe {
-        use winapi::um::{wincon::*, winuser::*};
-        // If we have a console, and we are the exclusive process using that console,
-        // then we were not launched from the command-line; hide the console to act like a GUI app.
-        let hwnd = GetConsoleWindow();
-        if !hwnd.is_null() {
-            let mut pids = [0; 2];
-            let num_pids = GetConsoleProcessList(pids.as_mut_ptr(), 2);
-            let is_exclusive = num_pids <= 1;
-            if is_exclusive {
-                ShowWindow(hwnd, SW_HIDE);
+fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
+    let movie_url = match &opt.input_path {
+        Some(path) => {
+            if path.exists() {
+                let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
+                Url::from_file_path(absolute_path)
+                    .map_err(|_| "Path must be absolute and cannot be a URL")?
+            } else {
+                Url::parse(path.to_str().unwrap_or_default())
+                    .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
             }
         }
+        None => return Err("Input file necessary for timedemo".into()),
+    };
+
+    let mut movie = load_movie_from_path(movie_url, opt.proxy.as_ref())?;
+    set_movie_parameters(&mut movie, &opt.parameters);
+    let movie_frames = Some(movie.header().num_frames);
+
+    let viewport_width = 1920;
+    let viewport_height = 1080;
+
+    let renderer = Box::new(WgpuRenderBackend::for_offscreen(
+        (viewport_width, viewport_height),
+        opt.graphics.into(),
+        opt.power.into(),
+        trace_path(&opt),
+    )?);
+    let audio: Box<dyn AudioBackend> =
+        Box::new(ruffle_core::backend::audio::NullAudioBackend::new());
+    let navigator = Box::new(ruffle_core::backend::navigator::NullNavigatorBackend::new());
+    let storage = Box::new(ruffle_core::backend::storage::MemoryStorageBackend::default());
+    let locale = Box::new(locale::DesktopLocaleBackend::new());
+    let video = Box::new(NullVideoBackend::new());
+    let log = Box::new(ruffle_core::backend::log::NullLogBackend::new());
+    let ui = Box::new(ruffle_core::backend::ui::NullUiBackend::new());
+    let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
+    player.lock().unwrap().set_root_movie(Arc::new(movie));
+    player.lock().unwrap().set_is_playing(true);
+
+    player
+        .lock()
+        .unwrap()
+        .set_viewport_dimensions(viewport_width, viewport_height);
+
+    println!("Running {}...", opt.input_path.unwrap().to_string_lossy(),);
+
+    let start = Instant::now();
+    let mut num_frames = 0;
+    const MAX_FRAMES: u32 = 5000;
+    let mut player = player.lock().unwrap();
+    while num_frames < MAX_FRAMES && player.current_frame() < movie_frames {
+        player.run_frame();
+        player.render();
+        num_frames += 1;
     }
+    let end = Instant::now();
+    let duration = end.duration_since(start);
+
+    println!("Ran {} frames in {}s.", num_frames, duration.as_secs_f32());
+
+    Ok(())
 }

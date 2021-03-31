@@ -24,7 +24,7 @@
         "message": "Ruffle está cargado y ejecutando Flash en la pestaña actual."
     },
     "status_result_optout": {
-        "message": "Ruffle sin porque la página lo ha desactivado."
+        "message": "Ruffle sin cargar porque la página lo ha desactivado."
     },
     "status_result_disabled": {
         "message": "Ruffle sin cargar porque el usuario lo ha desactivado."

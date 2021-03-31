@@ -83,10 +83,20 @@ impl<'gc> Executable<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
         base_proto: Option<Object<'gc>>,
+        callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
         match self {
             Executable::Native(nf, receiver) => {
-                nf(activation, receiver.or(unbound_reciever), arguments)
+                let receiver = receiver.or(unbound_reciever);
+                let scope = activation.scope();
+                let mut activation = Activation::from_builtin(
+                    activation.context.reborrow(),
+                    scope,
+                    receiver,
+                    base_proto,
+                )?;
+
+                nf(&mut activation, receiver, arguments)
             }
             Executable::Action(bm) => {
                 let receiver = bm.receiver.or(unbound_reciever);
@@ -97,6 +107,7 @@ impl<'gc> Executable<'gc> {
                     receiver,
                     arguments,
                     base_proto,
+                    callee,
                 )?;
 
                 activation.run_actions(bm.method)

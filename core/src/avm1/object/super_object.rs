@@ -9,7 +9,6 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::display_object::DisplayObject;
-use enumset::EnumSet;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
 
@@ -18,12 +17,12 @@ use std::borrow::Cow;
 /// A `SuperObject` references all data from another object, but with one layer
 /// of prototyping removed. It's as if the given object had been constructed
 /// with its parent class.
-#[collect(no_drop)]
 #[derive(Copy, Clone, Collect, Debug)]
+#[collect(no_drop)]
 pub struct SuperObject<'gc>(GcCell<'gc, SuperObjectData<'gc>>);
 
-#[collect(no_drop)]
 #[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
 pub struct SuperObjectData<'gc> {
     /// The object present as `this` throughout the superchain.
     child: Object<'gc>,
@@ -127,7 +126,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         let child = self.0.read().child;
         let super_proto = self.super_proto();
         let (method, base_proto) = search_prototype(super_proto, name, activation, child)?;
-        let method = method;
 
         if let Value::Object(_) = method {
         } else {
@@ -181,7 +179,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _gc_context: MutationContext<'gc, '_>,
         _name: &str,
         _value: Value<'gc>,
-        _attributes: EnumSet<Attribute>,
+        _attributes: Attribute,
     ) {
         //`super` cannot have values defined on it
     }
@@ -190,8 +188,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         _gc_context: MutationContext<'gc, '_>,
         _name: Option<&str>,
-        _set_attributes: EnumSet<Attribute>,
-        _clear_attributes: EnumSet<Attribute>,
+        _set_attributes: Attribute,
+        _clear_attributes: Attribute,
     ) {
         //TODO: Does ASSetPropFlags work on `super`? What would it even work on?
     }
@@ -202,7 +200,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _name: &str,
         _get: Object<'gc>,
         _set: Option<Object<'gc>>,
-        _attributes: EnumSet<Attribute>,
+        _attributes: Attribute,
     ) {
         //`super` cannot have properties defined on it
     }
@@ -214,7 +212,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _name: &str,
         _get: Object<'gc>,
         _set: Option<Object<'gc>>,
-        _attributes: EnumSet<Attribute>,
+        _attributes: Attribute,
     ) {
         //`super` cannot have properties defined on it
     }

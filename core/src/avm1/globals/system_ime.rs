@@ -3,7 +3,6 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
-use crate::avm1::property::Attribute::{DontDelete, DontEnum, ReadOnly};
 use crate::avm1::{ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
 use std::convert::Into;
@@ -79,56 +78,56 @@ pub fn create<'gc>(
         gc_context,
         "ALPHANUMERIC_FULL",
         "ALPHANUMERIC_FULL".into(),
-        Attribute::DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     ime.define_value(
         gc_context,
         "ALPHANUMERIC_HALF",
         "ALPHANUMERIC_HALF".into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     ime.define_value(
         gc_context,
         "CHINESE",
         "CHINESE".into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     ime.define_value(
         gc_context,
         "JAPANESE_HIRAGANA",
         "JAPANESE_HIRAGANA".into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     ime.define_value(
         gc_context,
         "JAPANESE_KATAKANA_FULL",
         "JAPANESE_KATAKANA_FULL".into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     ime.define_value(
         gc_context,
         "KOREAN",
         "KOREAN".into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     ime.define_value(
         gc_context,
         "UNKNOWN",
         "UNKNOWN".into(),
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
     ime.force_set_function(
         "onIMEComposition",
         on_ime_composition,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -136,7 +135,7 @@ pub fn create<'gc>(
         "doConversion",
         do_conversion,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -144,7 +143,7 @@ pub fn create<'gc>(
         "getConversionMode",
         get_conversion_mode,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -152,7 +151,7 @@ pub fn create<'gc>(
         "getEnabled",
         get_enabled,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -160,7 +159,7 @@ pub fn create<'gc>(
         "setCompositionString",
         set_composition_string,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -168,7 +167,7 @@ pub fn create<'gc>(
         "setConversionMode",
         set_conversion_mode,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 
@@ -176,7 +175,7 @@ pub fn create<'gc>(
         "setEnabled",
         set_enabled,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         fn_proto,
     );
 

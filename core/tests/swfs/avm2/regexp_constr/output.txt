@@ -1,0 +1,99 @@
+// new RegExp();
+//
+true
+dotall false
+extended false
+global false
+ignoreCase false
+multiline false
+
+// new RegExp("empty flags", "");
+/empty flags/
+true
+dotall false
+extended false
+global false
+ignoreCase false
+multiline false
+
+// new RegExp("dotall flag", "s");
+/dotall flag/s
+true
+dotall true
+extended false
+global false
+ignoreCase false
+multiline false
+
+// new RegExp("extended flag", "x");
+/extended flag/x
+true
+dotall false
+extended true
+global false
+ignoreCase false
+multiline false
+
+// new RegExp("global flag", "g");
+/global flag/g
+true
+dotall false
+extended false
+global true
+ignoreCase false
+multiline false
+
+// new RegExp("ignoreCase flag", "i");
+/ignoreCase flag/i
+true
+dotall false
+extended false
+global false
+ignoreCase true
+multiline false
+
+// new RegExp("multiline flag", "m");
+/multiline flag/m
+true
+dotall false
+extended false
+global false
+ignoreCase false
+multiline true
+
+// new RegExp("all flags", "sxgim");
+/all flags/gimsx
+true
+dotall true
+extended true
+global true
+ignoreCase true
+multiline true
+
+// new RegExp("invalid flags", "|%?-/.あa");
+/invalid flags/
+true
+dotall false
+extended false
+global false
+ignoreCase false
+multiline false
+
+// new RegExp("uppercase flags", "SXGIM");
+/uppercase flags/
+true
+dotall false
+extended false
+global false
+ignoreCase false
+multiline false
+
+// new RegExp("duplicate flags", "ssgg");
+/duplicate flags/gs
+true
+dotall true
+extended false
+global true
+ignoreCase false
+multiline false
+

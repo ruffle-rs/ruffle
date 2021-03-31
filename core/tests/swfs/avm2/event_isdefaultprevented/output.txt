@@ -1,0 +1,12 @@
+//var e = new Event("test_event", false, false);
+//e.isDefaultPrevented();
+false
+//e.preventDefault()
+//e.isDefaultPrevented();
+false
+//var e = new Event("test_event", true, true);
+//e.isDefaultPrevented();
+false
+//e.preventDefault()
+//e.isDefaultPrevented();
+true

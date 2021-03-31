@@ -39,8 +39,8 @@ pub fn create_class<'gc>(
     fn_proto: Object<'gc>,
 ) -> (Object<'gc>, Object<'gc>, GcCell<'gc, Class<'gc>>) {
     let class_class = Class::new(
-        QName::new(Namespace::public_namespace(), "Class"),
-        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        QName::new(Namespace::public(), "Class"),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         activation.context.gc_context,

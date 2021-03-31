@@ -5,10 +5,9 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
@@ -23,11 +22,11 @@ pub fn constructor<'gc>(
     this.set_attributes(
         activation.context.gc_context,
         Some("target"),
-        DontDelete | ReadOnly | DontEnum,
-        EnumSet::empty(),
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+        Attribute::empty(),
     );
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 pub fn create_proto<'gc>(
@@ -41,7 +40,7 @@ pub fn create_proto<'gc>(
         "getRGB",
         get_rgb,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -49,7 +48,7 @@ pub fn create_proto<'gc>(
         "getTransform",
         get_transform,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -57,7 +56,7 @@ pub fn create_proto<'gc>(
         "setRGB",
         set_rgb,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -65,7 +64,7 @@ pub fn create_proto<'gc>(
         "setTransform",
         set_transform,
         gc_context,
-        DontDelete | ReadOnly | DontEnum,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -82,9 +81,9 @@ fn target<'gc>(
     // depending on which timeline its called from!
     let target = this.get("target", activation)?;
     // Undefined or empty target is no-op.
-    if target != Value::Undefined && !matches!(&target, &Value::String(ref s) if s.is_empty()) {
-        let start_clip = activation.target_clip_or_root();
-        activation.resolve_target_display_object(start_clip, target)
+    if target != Value::Undefined {
+        let start_clip = activation.target_clip_or_root()?;
+        activation.resolve_target_display_object(start_clip, target, false)
     } else {
         Ok(None)
     }
@@ -137,6 +136,7 @@ fn set_rgb<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(target) = target(activation, this)? {
+        target.set_transformed_by_script(activation.context.gc_context, true);
         let mut color_transform = target.color_transform_mut(activation.context.gc_context);
         let rgb = args
             .get(0)
@@ -197,6 +197,7 @@ fn set_transform<'gc>(
     }
 
     if let Some(target) = target(activation, this)? {
+        target.set_transformed_by_script(activation.context.gc_context, true);
         let mut color_transform = target.color_transform_mut(activation.context.gc_context);
         let transform = args
             .get(0)

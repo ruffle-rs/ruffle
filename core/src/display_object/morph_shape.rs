@@ -1,16 +1,19 @@
-use crate::backend::render::{RenderBackend, ShapeHandle};
+use crate::backend::render::ShapeHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use std::sync::Arc;
 use swf::Twips;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
 pub struct MorphShape<'gc>(GcCell<'gc, MorphShapeData<'gc>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, MorphShapeStatic>,
@@ -56,9 +59,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         // Noop
     }
 
-    fn render(&self, context: &mut RenderContext) {
-        context.transform_stack.push(&*self.transform());
-
+    fn render_self(&self, context: &mut RenderContext) {
         if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
             context
                 .renderer
@@ -66,8 +67,6 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         } else {
             log::warn!("Missing ratio for morph shape");
         }
-
-        context.transform_stack.pop();
     }
 
     fn self_bounds(&self) -> BoundingBox {
@@ -98,14 +97,6 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for MorphShapeData<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.base.trace(cc);
-        self.static_data.trace(cc);
-    }
-}
-
 /// A precalculated intermediate frame for a morph shape.
 struct Frame {
     shape_handle: ShapeHandle,
@@ -115,32 +106,42 @@ struct Frame {
 
 /// Static data shared between all instances of a morph shape.
 #[allow(dead_code)]
+#[derive(Collect)]
+#[collect(require_static)]
 pub struct MorphShapeStatic {
     id: CharacterId,
     start: swf::MorphShape,
     end: swf::MorphShape,
     frames: fnv::FnvHashMap<u16, Frame>,
+    movie: Arc<SwfMovie>,
 }
 
 impl MorphShapeStatic {
-    pub fn from_swf_tag(renderer: &mut dyn RenderBackend, swf_tag: &swf::DefineMorphShape) -> Self {
+    pub fn from_swf_tag(
+        context: &mut UpdateContext<'_, '_, '_>,
+        swf_tag: &swf::DefineMorphShape,
+        movie: Arc<SwfMovie>,
+    ) -> Self {
         let mut morph_shape = Self {
             id: swf_tag.id,
             start: swf_tag.start.clone(),
             end: swf_tag.end.clone(),
             frames: fnv::FnvHashMap::default(),
+            movie,
         };
         // Pre-register the start and end states.
-        morph_shape.register_ratio(renderer, 0);
-        morph_shape.register_ratio(renderer, 65535);
+        morph_shape.register_ratio(context, 0);
+        morph_shape.register_ratio(context, 65535);
         morph_shape
     }
 
-    pub fn register_ratio(&mut self, renderer: &mut dyn RenderBackend, ratio: u16) {
+    pub fn register_ratio(&mut self, context: &mut UpdateContext<'_, '_, '_>, ratio: u16) {
         if self.frames.contains_key(&ratio) {
             // Already registered.
             return;
         }
+
+        let library = context.library.library_for_movie(Arc::clone(&self.movie));
 
         // Interpolate MorphShapes into a Shape.
         use swf::{FillStyle, LineStyle, ShapeRecord, ShapeStyles};
@@ -178,10 +179,10 @@ impl MorphShapeStatic {
         let mut end_iter = self.end.shape.iter();
         let mut start = start_iter.next();
         let mut end = end_iter.next();
-        let mut start_x = Twips::new(0);
-        let mut start_y = Twips::new(0);
-        let mut end_x = Twips::new(0);
-        let mut end_y = Twips::new(0);
+        let mut start_x = Twips::zero();
+        let mut start_y = Twips::zero();
+        let mut end_x = Twips::zero();
+        let mut end_y = Twips::zero();
         // TODO: Feels like this could be cleaned up a bit.
         // We step through both the start records and end records, interpolating edges pairwise.
         // Fill style/line style changes should only appear in the start records.
@@ -192,19 +193,19 @@ impl MorphShapeStatic {
             match (s, e) {
                 (ShapeRecord::StyleChange(start_change), ShapeRecord::StyleChange(end_change)) => {
                     let mut style_change = start_change.clone();
-                    if let Some((s_x, s_y)) = start_change.move_to {
-                        if let Some((e_x, e_y)) = end_change.move_to {
+                    if start_change.move_to != end_change.move_to {
+                        if let Some((s_x, s_y)) = start_change.move_to {
                             start_x = s_x;
                             start_y = s_y;
+                        }
+                        if let Some((e_x, e_y)) = end_change.move_to {
                             end_x = e_x;
                             end_y = e_y;
-                            style_change.move_to = Some((
-                                lerp_twips(start_x, end_x, a, b),
-                                lerp_twips(start_y, end_y, a, b),
-                            ));
-                        } else {
-                            panic!("Expected move_to for morph shape")
                         }
+                        style_change.move_to = Some((
+                            lerp_twips(start_x, end_x, a, b),
+                            lerp_twips(start_y, end_y, a, b),
+                        ));
                     }
                     shape.push(ShapeRecord::StyleChange(style_change));
                     start = start_iter.next();
@@ -268,7 +269,7 @@ impl MorphShapeStatic {
         };
 
         let frame = Frame {
-            shape_handle: renderer.register_shape((&shape).into()),
+            shape_handle: context.renderer.register_shape((&shape).into(), library),
             shape,
             bounds: bounds.into(),
         };
@@ -298,13 +299,6 @@ impl MorphShapeStatic {
                 }
             }
         }
-    }
-}
-
-unsafe impl<'gc> gc_arena::Collect for MorphShapeStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
     }
 }
 

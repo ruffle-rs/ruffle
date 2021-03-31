@@ -1,4 +1,6 @@
-const { SourceAPI, PublicAPI } = require("ruffle-selfhosted");
+import "./index.css";
+
+const { SourceAPI, PublicAPI } = require("ruffle-core");
 
 window.RufflePlayer = PublicAPI.negotiate(
     window.RufflePlayer,
@@ -8,100 +10,122 @@ window.RufflePlayer = PublicAPI.negotiate(
 
 let ruffle;
 let player;
-let jsonData;
 
-let container = document.getElementById("main");
-let author_container = document.getElementById("author-container");
-let author = document.getElementById("author");
-let sampleFileInputContainer = document.getElementById("sample-swfs-container");
-let sampleFileInput = document.getElementById("sample-swfs");
-let localFileInput = document.getElementById("local-file");
-let animOptGroup = document.getElementById("anim-optgroup");
-let gamesOptGroup = document.getElementById("games-optgroup");
+const main = document.getElementById("main");
+const overlay = document.getElementById("overlay");
+const authorContainer = document.getElementById("author-container");
+const author = document.getElementById("author");
+const sampleFileInputContainer = document.getElementById(
+    "sample-swfs-container"
+);
+const sampleFileInput = document.getElementById("sample-swfs");
+const localFileInput = document.getElementById("local-file");
+const animOptGroup = document.getElementById("anim-optgroup");
+const gamesOptGroup = document.getElementById("games-optgroup");
 
-window.addEventListener("DOMContentLoaded", () => {
-    ruffle = window.RufflePlayer.newest();
-    player = ruffle.create_player();
+// Default config used by the player.
+const config = {
+    letterbox: "on",
+    logLevel: "warn",
+};
+
+function ensurePlayer() {
+    if (player) {
+        player.remove();
+    }
+    player = ruffle.createPlayer();
     player.id = "player";
-    container.appendChild(player);
-    fetch("swfs.json").then((response) => {
-        if (response.ok) {
-            response.json().then((data) => {
-                jsonData = data;
-                jsonData.swfs.forEach((item) => {
-                    let temp = document.createElement("option");
-                    temp.innerHTML = item.title;
-                    temp.setAttribute("value", item.location);
-                    temp.swfData = item;
-                    if (item.type == "Animation") {
-                        animOptGroup.append(temp);
-                    } else if (item.type == "Game") {
-                        gamesOptGroup.appendChild(temp);
-                    }
-                });
-                sampleFileInputContainer.style.display = "inline-block";
-                // Load a random file.
-                let rn = Math.floor(
-                    Math.random() * Math.floor(jsonData.swfs.length)
-                );
-                sampleFileInput.selectedIndex = rn + 1;
-                sampleFileSelected();
-            });
-        } else {
-            sampleFileInputContainer.style.display = "none";
-        }
-    });
-});
+    main.append(player);
 
-if (sampleFileInput) {
-    sampleFileInput.addEventListener("change", sampleFileSelected, false);
+    sampleFileInput.selectedIndex = 0;
+    authorContainer.style.display = "none";
+    author.textContent = "";
+    author.href = "";
 }
 
-if (localFileInput) {
-    localFileInput.addEventListener("change", localFileSelected, false);
+async function loadFile(file) {
+    if (!file) {
+        return;
+    }
+    ensurePlayer();
+    const data = await new Response(file).arrayBuffer();
+    player.load({ data, ...config });
 }
 
-function sampleFileSelected() {
-    let swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
+function loadSample() {
+    const swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
     if (swfData) {
-        author_container.style.display = "block";
-        author.innerHTML = swfData.author;
+        authorContainer.style.display = "block";
+        author.textContent = swfData.author;
         author.href = swfData.authorLink;
         localFileInput.value = null;
-        loadRemoteFile(swfData.location);
+        player.load({ url: swfData.location, ...config });
     } else {
-        replacePlayer();
+        ensurePlayer();
     }
 }
 
-function localFileSelected() {
-    sampleFileInput.selectedIndex = 0;
-    author_container.style.display = "none";
-    author.innerHTML = "";
-    author.href = "";
+localFileInput.addEventListener("change", (event) => {
+    loadFile(event.target.files[0]);
+});
 
-    let file = localFileInput.files[0];
-    if (file) {
-        let fileReader = new FileReader();
-        fileReader.onload = () => {
-            player.play_swf_data(fileReader.result);
-        };
-        fileReader.readAsArrayBuffer(file);
+sampleFileInput.addEventListener("change", () => loadSample());
+
+main.addEventListener("dragenter", () => {
+    overlay.classList.add("drag");
+});
+main.addEventListener("dragleave", () => {
+    overlay.classList.remove("drag");
+});
+main.addEventListener("dragover", (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+});
+main.addEventListener("drop", (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    overlay.classList.remove("drag");
+    loadFile(event.dataTransfer.files[0]);
+});
+
+window.addEventListener("load", () => {
+    overlay.style.display = "initial";
+});
+
+window.addEventListener("DOMContentLoaded", async () => {
+    ruffle = window.RufflePlayer.newest();
+    ensurePlayer();
+
+    const response = await fetch("swfs.json");
+    if (!response.ok) {
+        sampleFileInputContainer.style.display = "none";
+        return;
     }
-}
 
-function loadRemoteFile(url) {
-    fetch(url).then((response) => {
-        response.arrayBuffer().then((data) => player.play_swf_data(data));
-    });
-}
+    const data = await response.json();
+    for (const swfData of data.swfs) {
+        const option = document.createElement("option");
+        option.textContent = swfData.title;
+        option.value = swfData.location;
+        option.swfData = swfData;
+        switch (swfData.type) {
+            case "Animation":
+                animOptGroup.append(option);
+                break;
+            case "Game":
+                gamesOptGroup.append(option);
+                break;
+        }
+    }
+    sampleFileInputContainer.style.display = "inline-block";
 
-function replacePlayer() {
-    document.getElementById("main").children[0].remove();
-    player = ruffle.create_player();
-    player.id = "player";
-    container.appendChild(player);
-    author_container.style.display = "none";
-    author.innerHTML = "";
-    author.href = "";
-}
+    const initialFile = new URL(window.location).searchParams.get("file");
+    if (initialFile) {
+        const options = Array.from(sampleFileInput.options);
+        sampleFileInput.selectedIndex = Math.max(
+            options.findIndex((swfData) => swfData.value.endsWith(initialFile)),
+            0
+        );
+        loadSample();
+    }
+});

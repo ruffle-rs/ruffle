@@ -1,13 +1,16 @@
-use crate::avm1::{Object as Avm1Object, TObject, Value as Avm1Value};
-use crate::avm2::Value as Avm2Value;
+use crate::avm1::{
+    Error as Avm1Error, Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value,
+};
+use crate::avm2::{Avm2, Event as Avm2Event, TObject as Avm2TObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
+use crate::drawing::Drawing;
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
-use crate::vminterface::Instantiator;
-use enumset::{EnumSet, EnumSetType};
+use crate::vminterface::{AvmType, Instantiator};
+use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
@@ -17,14 +20,19 @@ use std::sync::Arc;
 
 mod bitmap;
 mod button;
+mod container;
 mod edit_text;
 mod graphic;
 mod morph_shape;
 mod movie_clip;
 mod text;
+mod video;
 
 use crate::avm1::activation::Activation;
-use crate::backend::input::MouseCursor;
+use crate::backend::ui::MouseCursor;
+pub use crate::display_object::container::{
+    DisplayObjectContainer, Lists, TDisplayObjectContainer,
+};
 use crate::events::{ClipEvent, ClipEventResult};
 pub use bitmap::Bitmap;
 pub use button::Button;
@@ -33,8 +41,10 @@ pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
 pub use text::Text;
+pub use video::Video;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayObject<'gc>>,
     place_frame: u16,
@@ -55,18 +65,23 @@ pub struct DisplayObjectBase<'gc> {
     scale_y: Percent,
     skew: f64,
 
-    /// The first child of this display object in order of execution.
-    /// This is different than render order.
-    first_child: Option<DisplayObject<'gc>>,
-
     /// The previous sibling of this display object in order of execution.
     prev_sibling: Option<DisplayObject<'gc>>,
 
     /// The next sibling of this display object in order of execution.
     next_sibling: Option<DisplayObject<'gc>>,
 
+    /// The sound transform of sounds playing via this display object.
+    sound_transform: SoundTransform,
+
+    /// The display object that we are being masked by.
+    masker: Option<DisplayObject<'gc>>,
+
+    /// The display object we are currently masking.
+    maskee: Option<DisplayObject<'gc>>,
+
     /// Bit flags for various display object properites.
-    flags: EnumSet<DisplayObjectFlags>,
+    flags: DisplayObjectFlags,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -82,21 +97,13 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             scale_x: Percent::from_unit(1.0),
             scale_y: Percent::from_unit(1.0),
             skew: 0.0,
-            first_child: None,
             prev_sibling: None,
             next_sibling: None,
-            flags: DisplayObjectFlags::Visible.into(),
+            masker: None,
+            maskee: None,
+            sound_transform: Default::default(),
+            flags: DisplayObjectFlags::VISIBLE,
         }
-    }
-}
-
-unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.parent.trace(cc);
-        self.first_child.trace(cc);
-        self.prev_sibling.trace(cc);
-        self.next_sibling.trace(cc);
     }
 }
 
@@ -104,25 +111,30 @@ unsafe impl<'gc> Collect for DisplayObjectBase<'gc> {
 impl<'gc> DisplayObjectBase<'gc> {
     /// Reset all properties that would be adjusted by a movie load.
     fn reset_for_movie_load(&mut self) {
-        self.first_child = None;
-        self.flags = DisplayObjectFlags::Visible.into();
+        let flags_to_keep = self.flags & DisplayObjectFlags::LOCK_ROOT;
+        self.flags = flags_to_keep | DisplayObjectFlags::VISIBLE;
     }
 
     fn id(&self) -> CharacterId {
         0
     }
+
     fn depth(&self) -> Depth {
         self.depth
     }
+
     fn set_depth(&mut self, depth: Depth) {
         self.depth = depth;
     }
+
     fn place_frame(&self) -> u16 {
         self.place_frame
     }
-    fn set_place_frame(&mut self, _context: MutationContext<'gc, '_>, frame: u16) {
+
+    fn set_place_frame(&mut self, frame: u16) {
         self.place_frame = frame;
     }
+
     fn transform(&self) -> &Transform {
         &self.transform
     }
@@ -130,36 +142,41 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn matrix(&self) -> &Matrix {
         &self.transform.matrix
     }
-    fn matrix_mut(&mut self, _context: MutationContext<'gc, '_>) -> &mut Matrix {
+
+    fn matrix_mut(&mut self) -> &mut Matrix {
         &mut self.transform.matrix
     }
-    fn set_matrix(&mut self, _context: MutationContext<'gc, '_>, matrix: &Matrix) {
+
+    fn set_matrix(&mut self, matrix: &Matrix) {
         self.transform.matrix = *matrix;
-        self.flags.remove(DisplayObjectFlags::ScaleRotationCached);
+        self.flags -= DisplayObjectFlags::SCALE_ROTATION_CACHED;
     }
+
     fn color_transform(&self) -> &ColorTransform {
         &self.transform.color_transform
     }
+
     fn color_transform_mut(&mut self) -> &mut ColorTransform {
         &mut self.transform.color_transform
     }
-    fn set_color_transform(
-        &mut self,
-        _context: MutationContext<'gc, '_>,
-        color_transform: &ColorTransform,
-    ) {
+
+    fn set_color_transform(&mut self, color_transform: &ColorTransform) {
         self.transform.color_transform = *color_transform;
     }
+
     fn x(&self) -> f64 {
         self.transform.matrix.tx.to_pixels()
     }
+
     fn set_x(&mut self, value: f64) {
         self.set_transformed_by_script(true);
         self.transform.matrix.tx = Twips::from_pixels(value)
     }
+
     fn y(&self) -> f64 {
         self.transform.matrix.ty.to_pixels()
     }
+
     fn set_y(&mut self, value: f64) {
         self.set_transformed_by_script(true);
         self.transform.matrix.ty = Twips::from_pixels(value)
@@ -169,12 +186,15 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// Calculating these requires heavy trig ops, so we only do it when `_xscale`, `_yscale` or
     /// `_rotation` is accessed.
     fn cache_scale_rotation(&mut self) {
-        if !self.flags.contains(DisplayObjectFlags::ScaleRotationCached) {
+        if !self
+            .flags
+            .contains(DisplayObjectFlags::SCALE_ROTATION_CACHED)
+        {
             let (a, b, c, d) = (
-                self.transform.matrix.a,
-                self.transform.matrix.b,
-                self.transform.matrix.c,
-                self.transform.matrix.d,
+                f64::from(self.transform.matrix.a),
+                f64::from(self.transform.matrix.b),
+                f64::from(self.transform.matrix.c),
+                f64::from(self.transform.matrix.d),
             );
             // If this object's transform matrix is:
             // [[a c tx]
@@ -190,15 +210,15 @@ impl<'gc> DisplayObjectBase<'gc> {
             // This can produce some surprising results due to the overlap between flipping/rotation/skewing.
             // For example, in Flash, using Modify->Transform->Flip Horizontal and then tracing _xscale, _yscale, and _rotation
             // will output 100, 100, and 180. (a horizontal flip could also be a 180 degree skew followed by 180 degree rotation!)
-            let rotation_x = f32::atan2(b, a);
-            let rotation_y = f32::atan2(-c, d);
-            let scale_x = f32::sqrt(a * a + b * b);
-            let scale_y = f32::sqrt(c * c + d * d);
-            self.rotation = Degrees::from_radians(rotation_x.into());
-            self.scale_x = Percent::from_unit(scale_x.into());
-            self.scale_y = Percent::from_unit(scale_y.into());
-            self.skew = (rotation_y - rotation_x).into();
-            self.flags.insert(DisplayObjectFlags::ScaleRotationCached);
+            let rotation_x = f64::atan2(b, a);
+            let rotation_y = f64::atan2(-c, d);
+            let scale_x = f64::sqrt(a * a + b * b);
+            let scale_y = f64::sqrt(c * c + d * d);
+            self.rotation = Degrees::from_radians(rotation_x);
+            self.scale_x = Percent::from_unit(scale_x);
+            self.scale_y = Percent::from_unit(scale_y);
+            self.skew = rotation_y - rotation_x;
+            self.flags |= DisplayObjectFlags::SCALE_ROTATION_CACHED;
         }
     }
 
@@ -221,6 +241,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.cache_scale_rotation();
         self.rotation
     }
+
     fn set_rotation(&mut self, degrees: Degrees) {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
@@ -235,10 +256,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         matrix.c = (self.scale_y.into_unit() * -sin_y) as f32;
         matrix.d = (self.scale_y.into_unit() * cos_y) as f32;
     }
+
     fn scale_x(&mut self) -> Percent {
         self.cache_scale_rotation();
         self.scale_x
     }
+
     fn set_scale_x(&mut self, value: Percent) {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
@@ -249,10 +272,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         matrix.a = (cos * value.into_unit()) as f32;
         matrix.b = (sin * value.into_unit()) as f32;
     }
+
     fn scale_y(&mut self) -> Percent {
         self.cache_scale_rotation();
         self.scale_y
     }
+
     fn set_scale_y(&mut self, value: Percent) {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
@@ -267,95 +292,110 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn name(&self) -> &str {
         &self.name
     }
-    fn set_name(&mut self, _context: MutationContext<'gc, '_>, name: &str) {
+
+    fn set_name(&mut self, name: &str) {
         self.name = name.to_string();
     }
+
     fn alpha(&self) -> f64 {
         f64::from(self.color_transform().a_mult)
     }
+
     fn set_alpha(&mut self, value: f64) {
         self.set_transformed_by_script(true);
         self.color_transform_mut().a_mult = value as f32
     }
+
     fn clip_depth(&self) -> Depth {
         self.clip_depth
     }
-    fn set_clip_depth(&mut self, _context: MutationContext<'gc, '_>, depth: Depth) {
+
+    fn set_clip_depth(&mut self, depth: Depth) {
         self.clip_depth = depth;
     }
+
     fn parent(&self) -> Option<DisplayObject<'gc>> {
         self.parent
     }
-    fn set_parent(
-        &mut self,
-        _context: MutationContext<'gc, '_>,
-        parent: Option<DisplayObject<'gc>>,
-    ) {
+
+    fn set_parent(&mut self, parent: Option<DisplayObject<'gc>>) {
         self.parent = parent;
     }
-    fn first_child(&self) -> Option<DisplayObject<'gc>> {
-        self.first_child
-    }
-    fn set_first_child(
-        &mut self,
-        _context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    ) {
-        self.first_child = node;
-    }
+
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
         self.prev_sibling
     }
-    fn set_prev_sibling(
-        &mut self,
-        _context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    ) {
+
+    fn set_prev_sibling(&mut self, node: Option<DisplayObject<'gc>>) {
         self.prev_sibling = node;
     }
+
     fn next_sibling(&self) -> Option<DisplayObject<'gc>> {
         self.next_sibling
     }
-    fn set_next_sibling(
-        &mut self,
-        _context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    ) {
+
+    fn set_next_sibling(&mut self, node: Option<DisplayObject<'gc>>) {
         self.next_sibling = node;
     }
+
     fn removed(&self) -> bool {
-        self.flags.contains(DisplayObjectFlags::Removed)
+        self.flags.contains(DisplayObjectFlags::REMOVED)
     }
+
     fn set_removed(&mut self, value: bool) {
-        if value {
-            self.flags.insert(DisplayObjectFlags::Removed);
-        } else {
-            self.flags.remove(DisplayObjectFlags::Removed);
-        }
+        self.flags.set(DisplayObjectFlags::REMOVED, value);
+    }
+
+    fn sound_transform(&self) -> &SoundTransform {
+        &self.sound_transform
+    }
+
+    fn set_sound_transform(&mut self, sound_transform: SoundTransform) {
+        self.sound_transform = sound_transform;
     }
 
     fn visible(&self) -> bool {
-        self.flags.contains(DisplayObjectFlags::Visible)
+        self.flags.contains(DisplayObjectFlags::VISIBLE)
     }
 
     fn set_visible(&mut self, value: bool) {
-        if value {
-            self.flags.insert(DisplayObjectFlags::Visible);
-        } else {
-            self.flags.remove(DisplayObjectFlags::Visible);
-        }
+        self.flags.set(DisplayObjectFlags::VISIBLE, value);
+    }
+
+    fn lock_root(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::LOCK_ROOT)
+    }
+
+    fn set_lock_root(&mut self, value: bool) {
+        self.flags.set(DisplayObjectFlags::LOCK_ROOT, value);
     }
 
     fn transformed_by_script(&self) -> bool {
-        self.flags.contains(DisplayObjectFlags::TransformedByScript)
+        self.flags
+            .contains(DisplayObjectFlags::TRANSFORMED_BY_SCRIPT)
     }
 
     fn set_transformed_by_script(&mut self, value: bool) {
-        if value {
-            self.flags.insert(DisplayObjectFlags::TransformedByScript);
-        } else {
-            self.flags.remove(DisplayObjectFlags::TransformedByScript);
-        }
+        self.flags
+            .set(DisplayObjectFlags::TRANSFORMED_BY_SCRIPT, value);
+    }
+
+    fn placed_by_script(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::PLACED_BY_SCRIPT)
+    }
+
+    fn set_placed_by_script(&mut self, value: bool) {
+        self.flags.set(DisplayObjectFlags::PLACED_BY_SCRIPT, value);
+    }
+
+    fn instantiated_by_timeline(&self) -> bool {
+        self.flags
+            .contains(DisplayObjectFlags::INSTANTIATED_BY_TIMELINE)
+    }
+
+    fn set_instantiated_by_timeline(&mut self, value: bool) {
+        self.flags
+            .set(DisplayObjectFlags::INSTANTIATED_BY_TIMELINE, value);
     }
 
     fn swf_version(&self) -> u8 {
@@ -366,6 +406,20 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn movie(&self) -> Option<Arc<SwfMovie>> {
         self.parent.and_then(|p| p.movie())
+    }
+
+    fn masker(&self) -> Option<DisplayObject<'gc>> {
+        self.masker
+    }
+    fn set_masker(&mut self, node: Option<DisplayObject<'gc>>) {
+        self.masker = node;
+    }
+
+    fn maskee(&self) -> Option<DisplayObject<'gc>> {
+        self.maskee
+    }
+    fn set_maskee(&mut self, node: Option<DisplayObject<'gc>>) {
+        self.maskee = node;
     }
 }
 
@@ -380,6 +434,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         MorphShape(MorphShape<'gc>),
         MovieClip(MovieClip<'gc>),
         Text(Text<'gc>),
+        Video(Video<'gc>),
     }
 )]
 pub trait TDisplayObject<'gc>:
@@ -419,25 +474,29 @@ pub trait TDisplayObject<'gc>:
     /// the overall AABB.
     fn bounds_with_transform(&self, matrix: &Matrix) -> BoundingBox {
         let mut bounds = self.self_bounds().transform(matrix);
-        for child in self.children() {
-            let matrix = *matrix * *child.matrix();
-            bounds.union(&child.bounds_with_transform(&matrix));
+
+        if let Some(ctr) = self.as_container() {
+            for child in ctr.iter_execution_list() {
+                let matrix = *matrix * *child.matrix();
+                bounds.union(&child.bounds_with_transform(&matrix));
+            }
         }
+
         bounds
     }
 
     fn place_frame(&self) -> u16;
-    fn set_place_frame(&self, context: MutationContext<'gc, '_>, frame: u16);
+    fn set_place_frame(&self, gc_context: MutationContext<'gc, '_>, frame: u16);
 
     fn transform(&self) -> Ref<Transform>;
     fn matrix(&self) -> Ref<Matrix>;
-    fn matrix_mut(&self, context: MutationContext<'gc, '_>) -> RefMut<Matrix>;
-    fn set_matrix(&self, context: MutationContext<'gc, '_>, matrix: &Matrix);
+    fn matrix_mut(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<Matrix>;
+    fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: &Matrix);
     fn color_transform(&self) -> Ref<ColorTransform>;
-    fn color_transform_mut(&self, context: MutationContext<'gc, '_>) -> RefMut<ColorTransform>;
+    fn color_transform_mut(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<ColorTransform>;
     fn set_color_transform(
         &self,
-        context: MutationContext<'gc, '_>,
+        gc_context: MutationContext<'gc, '_>,
         color_transform: &ColorTransform,
     );
 
@@ -449,19 +508,12 @@ pub trait TDisplayObject<'gc>:
             matrix = *display_object.matrix() * matrix;
             node = display_object.parent();
         }
-
         matrix
     }
 
     /// Returns the matrix for transforming from global stage to this object's local space.
     fn global_to_local_matrix(&self) -> Matrix {
-        let mut node = self.parent();
-        let mut matrix = *self.matrix();
-        while let Some(display_object) = node {
-            matrix = *display_object.matrix() * matrix;
-            node = display_object.parent();
-        }
-
+        let mut matrix = self.local_to_global_matrix();
         matrix.invert();
         matrix
     }
@@ -525,7 +577,7 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the ActionScript `_width`/`width` properties.
     fn width(&self) -> f64 {
         let bounds = self.local_bounds();
-        (bounds.x_max - bounds.x_min).to_pixels()
+        (bounds.x_max.saturating_sub(bounds.x_min)).to_pixels()
     }
 
     /// Sets the pixel width of this display object in local space.
@@ -560,12 +612,14 @@ pub trait TDisplayObject<'gc>:
         self.set_scale_x(gc_context, Percent::from_unit(new_scale_x));
         self.set_scale_y(gc_context, Percent::from_unit(new_scale_y));
     }
+
     /// Gets the pixel height of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_height`/`height` properties.
     fn height(&self) -> f64 {
         let bounds = self.local_bounds();
-        (bounds.y_max - bounds.y_min).to_pixels()
+        (bounds.y_max.saturating_sub(bounds.y_min)).to_pixels()
     }
+
     /// Sets the pixel height of this display object in local space.
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
@@ -597,6 +651,7 @@ pub trait TDisplayObject<'gc>:
         self.set_scale_x(gc_context, Percent::from_unit(new_scale_x));
         self.set_scale_y(gc_context, Percent::from_unit(new_scale_y));
     }
+
     /// The opacity of this display object.
     /// 1 is fully opaque.
     /// Returned by the `_alpha`/`alpha` ActionScript properties.
@@ -606,8 +661,9 @@ pub trait TDisplayObject<'gc>:
     /// 1 is fully opaque.
     /// Set by the `_alpha`/`alpha` ActionScript properties.
     fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64);
+
     fn name(&self) -> Ref<str>;
-    fn set_name(&self, context: MutationContext<'gc, '_>, name: &str);
+    fn set_name(&self, gc_context: MutationContext<'gc, '_>, name: &str);
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
     fn path(&self) -> String {
@@ -651,29 +707,35 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn clip_depth(&self) -> Depth;
-    fn set_clip_depth(&self, context: MutationContext<'gc, '_>, depth: Depth);
+    fn set_clip_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
     fn parent(&self) -> Option<DisplayObject<'gc>>;
-    fn set_parent(&self, context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
-    fn first_child(&self) -> Option<DisplayObject<'gc>>;
-    fn set_first_child(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
+    fn set_parent(&self, gc_context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
-    fn set_prev_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
+    fn set_prev_sibling(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    );
     fn next_sibling(&self) -> Option<DisplayObject<'gc>>;
-    fn set_next_sibling(&self, context: MutationContext<'gc, '_>, node: Option<DisplayObject<'gc>>);
-
-    /// Iterates over the children of this display object in execution order.
-    /// This is different than render order.
-    fn children(&self) -> ChildIter<'gc> {
-        ChildIter {
-            cur_child: self.first_child(),
-        }
-    }
-
-    /// Get a child display object by instance name.
-    fn get_child_by_name(&self, _name: &str, _case_sensitive: bool) -> Option<DisplayObject<'gc>> {
-        // Overridden by subtraits.
-        None
-    }
+    fn set_next_sibling(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+    );
+    fn masker(&self) -> Option<DisplayObject<'gc>>;
+    fn set_masker(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+        remove_old_link: bool,
+    );
+    fn maskee(&self) -> Option<DisplayObject<'gc>>;
+    fn set_maskee(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        node: Option<DisplayObject<'gc>>,
+        remove_old_link: bool,
+    );
 
     /// Get another level by level name.
     ///
@@ -701,7 +763,7 @@ pub trait TDisplayObject<'gc>:
         None
     }
     fn removed(&self) -> bool;
-    fn set_removed(&self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_removed(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
     /// Whether this display object is visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
@@ -711,7 +773,25 @@ pub trait TDisplayObject<'gc>:
     /// Sets whether this display object will be visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
-    fn set_visible(&self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_visible(&self, gc_context: MutationContext<'gc, '_>, value: bool);
+
+    /// The sound transform for sounds played inside this display object.
+    fn sound_transform(&self) -> Ref<SoundTransform>;
+
+    /// The sound transform for sounds played inside this display object.
+    fn set_sound_transform(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        sound_transform: SoundTransform,
+    );
+
+    /// Whether this display object is used as the _root of itself and its children.
+    /// Returned by the `_lockroot` ActionScript property.
+    fn lock_root(&self) -> bool;
+
+    /// Sets whether this display object is used as the _root of itself and its children.
+    /// Returned by the `_lockroot` ActionScript property.
+    fn set_lock_root(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
     /// Whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
@@ -719,17 +799,37 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
-    fn set_transformed_by_script(&self, context: MutationContext<'gc, '_>, value: bool);
+    fn set_transformed_by_script(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
     /// of being the currently focused object.
     /// This should only be called by the focus manager. To change a focus, go through that.
-    fn on_focus_changed(&self, _context: MutationContext<'gc, '_>, _focused: bool) {}
+    fn on_focus_changed(&self, _gc_context: MutationContext<'gc, '_>, _focused: bool) {}
 
     /// Whether or not this clip may be focusable for keyboard input.
     fn is_focusable(&self) -> bool {
         false
     }
+
+    /// Whether this display object has been created by ActionScript 3.
+    /// When this flag is set, changes from SWF `RemoveObject` tags are
+    /// ignored.
+    fn placed_by_script(&self) -> bool;
+
+    /// Sets whether this display object has been created by ActionScript 3.
+    /// When this flag is set, changes from SWF `RemoveObject` tags are
+    /// ignored.
+    fn set_placed_by_script(&self, gc_context: MutationContext<'gc, '_>, value: bool);
+
+    /// Whether this display object has been instantiated by the timeline.
+    /// When this flag is set, attempts to change the object's name from AVM2
+    /// throw an exception.
+    fn instantiated_by_timeline(&self) -> bool;
+
+    /// Sets whether this display object has been instantiated by the timeline.
+    /// When this flag is set, attempts to change the object's name from AVM2
+    /// throw an exception.
+    fn set_instantiated_by_timeline(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed by its parent, and
@@ -742,13 +842,126 @@ pub trait TDisplayObject<'gc>:
         ClipEventResult::NotHandled
     }
 
+    /// Emit an `enterFrame` event on this DisplayObject and any children it
+    /// may have.
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut enter_frame_evt = Avm2Event::new("enterFrame");
+        enter_frame_evt.set_bubbles(false);
+        enter_frame_evt.set_cancelable(false);
+
+        let dobject_proto = context.avm2.prototypes().display_object;
+
+        if let Err(e) = Avm2::broadcast_event(context, enter_frame_evt, dobject_proto) {
+            log::error!(
+                "Encountered AVM2 error when broadcasting enterFrame event: {}",
+                e
+            );
+        }
+    }
+
+    /// Construct all display objects that the timeline indicates should exist
+    /// this frame, and their children.
+    ///
+    /// This function should ensure the following, from the point of view of
+    /// downstream VMs:
+    ///
+    /// 1. That the object itself has been allocated, if not constructed
+    /// 2. That newly created children have been instantiated and are present
+    ///    as properties on the class
+    fn construct_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
+
+    /// Execute all other timeline actions on this object and it's children.
     fn run_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
-    fn render(&self, _context: &mut RenderContext<'_, 'gc>) {}
+
+    /// Emit an `frameConstructed` event on this DisplayObject and any children it
+    /// may have.
+    fn frame_constructed(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut frame_constructed_evt = Avm2Event::new("frameConstructed");
+        frame_constructed_evt.set_bubbles(false);
+        frame_constructed_evt.set_cancelable(false);
+
+        let dobject_proto = context.avm2.prototypes().display_object;
+
+        if let Err(e) = Avm2::broadcast_event(context, frame_constructed_evt, dobject_proto) {
+            log::error!(
+                "Encountered AVM2 error when broadcasting frameConstructed event: {}",
+                e
+            );
+        }
+    }
+
+    /// Run any frame scripts (if they exist and this object needs to run them).
+    fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(container) = self.as_container() {
+            for child in container.iter_execution_list() {
+                child.run_frame_scripts(context);
+            }
+        }
+    }
+
+    /// Emit an `exitFrame` broadcast event.
+    fn exit_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut exit_frame_evt = Avm2Event::new("exitFrame");
+        exit_frame_evt.set_bubbles(false);
+        exit_frame_evt.set_cancelable(false);
+
+        let dobject_proto = context.avm2.prototypes().display_object;
+
+        if let Err(e) = Avm2::broadcast_event(context, exit_frame_evt, dobject_proto) {
+            log::error!(
+                "Encountered AVM2 error when broadcasting exitFrame event: {}",
+                e
+            );
+        }
+    }
+
+    fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}
+
+    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
+        if self.maskee().is_some() {
+            return;
+        }
+        context.transform_stack.push(&*self.transform());
+
+        let mask = self.masker();
+        let mut mask_transform = crate::transform::Transform::default();
+        if let Some(m) = mask {
+            mask_transform.matrix = self.global_to_local_matrix();
+            mask_transform.matrix *= m.local_to_global_matrix();
+            context.renderer.push_mask();
+            context.allow_mask = false;
+            context.transform_stack.push(&mask_transform);
+            m.render_self(context);
+            context.transform_stack.pop();
+            context.allow_mask = true;
+            context.renderer.activate_mask();
+        }
+        self.render_self(context);
+        if let Some(m) = mask {
+            context.renderer.deactivate_mask();
+            context.allow_mask = false;
+            context.transform_stack.push(&mask_transform);
+            m.render_self(context);
+            context.transform_stack.pop();
+            context.allow_mask = true;
+            context.renderer.pop_mask();
+        }
+
+        context.transform_stack.pop();
+    }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Unload children.
-        for child in self.children() {
-            child.unload(context);
+        if let Some(ctr) = self.as_container() {
+            for child in ctr.iter_execution_list() {
+                child.unload(context);
+            }
+        }
+
+        if let Some(node) = self.maskee() {
+            node.set_masker(context.gc_context, None, true);
+        } else if let Some(node) = self.masker() {
+            node.set_maskee(context.gc_context, None, true);
         }
 
         // Unregister any text field variable bindings, and replace them on the unbound list.
@@ -773,28 +986,43 @@ pub trait TDisplayObject<'gc>:
     fn as_morph_shape(&self) -> Option<MorphShape<'gc>> {
         None
     }
+    fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
+        None
+    }
+    fn as_video(self) -> Option<Video<'gc>> {
+        None
+    }
+    fn as_drawing(&self, _gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
+        None
+    }
+
     fn apply_place_object(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        placing_movie: Option<Arc<SwfMovie>>,
         place_object: &swf::PlaceObject,
     ) {
         // PlaceObject tags only apply if this onject has not been dynamically moved by AS code.
         if !self.transformed_by_script() {
             if let Some(matrix) = &place_object.matrix {
-                self.set_matrix(gc_context, &matrix);
+                self.set_matrix(context.gc_context, &matrix);
             }
             if let Some(color_transform) = &place_object.color_transform {
-                self.set_color_transform(gc_context, &color_transform.clone().into());
+                self.set_color_transform(context.gc_context, &color_transform.clone().into());
             }
             if let Some(name) = &place_object.name {
-                self.set_name(gc_context, name);
+                let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
+                let name = name.to_str_lossy(encoding);
+                self.set_name(context.gc_context, &name);
             }
             if let Some(clip_depth) = place_object.clip_depth {
-                self.set_clip_depth(gc_context, clip_depth.into());
+                self.set_clip_depth(context.gc_context, clip_depth.into());
             }
             if let Some(ratio) = place_object.ratio {
                 if let Some(mut morph_shape) = self.as_morph_shape() {
-                    morph_shape.set_ratio(gc_context, ratio);
+                    morph_shape.set_ratio(context.gc_context, ratio);
+                } else if let Some(video) = self.as_video() {
+                    video.seek(context, ratio.into());
                 }
             }
             // Clip events only apply to movie clips.
@@ -803,15 +1031,22 @@ pub trait TDisplayObject<'gc>:
             {
                 // Convert from `swf::ClipAction` to Ruffle's `ClipAction`.
                 use crate::display_object::movie_clip::ClipAction;
-                clip.set_clip_actions(
-                    gc_context,
-                    clip_actions
-                        .iter()
-                        .cloned()
-                        .map(|a| ClipAction::from_action_and_movie(a, clip.movie().unwrap()))
-                        .flatten()
-                        .collect(),
-                );
+                if let Some(placing_movie) = placing_movie {
+                    clip.set_clip_actions(
+                        context.gc_context,
+                        clip_actions
+                            .iter()
+                            .cloned()
+                            .map(|a| {
+                                ClipAction::from_action_and_movie(a, Arc::clone(&placing_movie))
+                            })
+                            .flatten()
+                            .collect(),
+                    );
+                } else {
+                    // This probably shouldn't happen; we should always have a movie.
+                    log::error!("No movie when trying to set clip event");
+                }
             }
             // TODO: Others will go here eventually.
         }
@@ -849,6 +1084,12 @@ pub trait TDisplayObject<'gc>:
         self.world_bounds().contains(pos)
     }
 
+    /// Tests if a given object's world bounds intersects with the world bounds
+    /// of this object.
+    fn hit_test_object(&self, other: DisplayObject<'gc>) -> bool {
+        self.world_bounds().intersects(&other.world_bounds())
+    }
+
     /// Tests if a given stage position point intersects within this object, considering the art.
     fn hit_test_shape(
         &self,
@@ -856,7 +1097,7 @@ pub trait TDisplayObject<'gc>:
         pos: (Twips, Twips),
     ) -> bool {
         // Default to using bounding box.
-        self.world_bounds().contains(pos)
+        self.hit_test_bounds(pos)
     }
 
     fn mouse_pick(
@@ -893,6 +1134,16 @@ pub trait TDisplayObject<'gc>:
         self.parent().and_then(|p| p.movie())
     }
 
+    /// Return the VM that this object belongs to.
+    ///
+    /// This function panics if the display object has no defining movie.
+    fn vm_type(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> AvmType {
+        let movie = self.movie().unwrap();
+        let library = context.library.library_for_movie_mut(movie);
+
+        library.avm_type()
+    }
+
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc>;
     fn as_ptr(&self) -> *const DisplayObjectPtr;
 
@@ -908,15 +1159,20 @@ pub trait TDisplayObject<'gc>:
         MouseCursor::Hand
     }
 
-    /// Obtain the top-most parent of the display tree hierarchy.
-    ///
-    /// This function can panic in the rare case that a top-level display
-    /// object has not been post-instantiated, or that a top-level display
-    /// object does not implement `object`.
-    fn root(&self) -> DisplayObject<'gc> {
-        let mut parent = self.parent();
+    /// Obtain the top-most parent of the display tree hierarchy, if a suitable
+    /// object exists.
+    fn root(&self, context: &UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
+        let mut parent = if self.lock_root() {
+            None
+        } else {
+            self.parent()
+        };
 
         while let Some(p) = parent {
+            if p.lock_root() {
+                break;
+            }
+
             let grandparent = p.parent();
 
             if grandparent.is_none() {
@@ -926,15 +1182,51 @@ pub trait TDisplayObject<'gc>:
             parent = grandparent;
         }
 
-        parent
-            .or_else(|| {
-                if let Avm1Value::Object(object) = self.object() {
+        parent.or_else(|| {
+            if let Avm1Value::Object(object) = self.object() {
+                object.as_display_object()
+            } else if let Avm2Value::Object(object) = self.object2() {
+                if self.is_on_stage(context) {
                     object.as_display_object()
                 } else {
                     None
                 }
-            })
-            .expect("All objects must have root")
+            } else {
+                None
+            }
+        })
+    }
+
+    /// Determine if this display object is currently on the stage.
+    fn is_on_stage(self, context: &UpdateContext<'_, 'gc, '_>) -> bool {
+        let mut ancestor = self.parent();
+        while let Some(parent) = ancestor {
+            if parent.parent().is_some() {
+                ancestor = parent.parent();
+            } else {
+                break;
+            }
+        }
+
+        let ancestor = ancestor.unwrap_or_else(|| self.into());
+        context
+            .levels
+            .values()
+            .any(|o| DisplayObject::ptr_eq(*o, ancestor))
+    }
+
+    /// Obtain the top-most parent of the display tree hierarchy, or some kind
+    /// of an error.
+    ///
+    /// AVM1 cannot normally access rootless display objects, so this will
+    /// generate an AVM1 runtime error (which might also be unexpected, but
+    /// less unexpected than a panic).
+    fn avm1_root(
+        &self,
+        context: &UpdateContext<'_, 'gc, '_>,
+    ) -> Result<DisplayObject<'gc>, Avm1Error<'gc>> {
+        self.root(context)
+            .ok_or(Avm1Error::InvalidDisplayObjectHierarchy)
     }
 
     /// Assigns a default instance name `instanceN` to this object.
@@ -943,6 +1235,18 @@ pub trait TDisplayObject<'gc>:
             let name = format!("instance{}", *context.instance_counter);
             self.set_name(context.gc_context, &name);
             *context.instance_counter = context.instance_counter.wrapping_add(1);
+        }
+    }
+
+    /// Assigns a default root name to this object.
+    ///
+    /// The default root names change based on the AVM configuration of the
+    /// clip; AVM2 clips get `rootN` while AVM1 clips get blank strings.
+    fn set_default_root_name(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if !matches!(self.object2(), Avm2Value::Undefined) {
+            self.set_name(context.gc_context, &format!("root{}", self.depth() + 1));
+        } else if !matches!(self.object(), Avm1Value::Undefined) {
+            self.set_name(context.gc_context, "");
         }
     }
 
@@ -980,7 +1284,7 @@ macro_rules! impl_display_object_sansbounds {
             self.0.read().$field.place_frame()
         }
         fn set_place_frame(&self, context: gc_arena::MutationContext<'gc, '_>, frame: u16) {
-            self.0.write(context).$field.set_place_frame(context, frame)
+            self.0.write(context).$field.set_place_frame(frame)
         }
         fn transform(&self) -> std::cell::Ref<crate::transform::Transform> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.transform())
@@ -992,7 +1296,7 @@ macro_rules! impl_display_object_sansbounds {
             &self,
             context: gc_arena::MutationContext<'gc, '_>,
         ) -> std::cell::RefMut<swf::Matrix> {
-            std::cell::RefMut::map(self.0.write(context), |o| o.$field.matrix_mut(context))
+            std::cell::RefMut::map(self.0.write(context), |o| o.$field.matrix_mut())
         }
         fn color_transform(&self) -> std::cell::Ref<crate::color_transform::ColorTransform> {
             std::cell::Ref::map(self.0.read(), |o| o.$field.color_transform())
@@ -1011,7 +1315,7 @@ macro_rules! impl_display_object_sansbounds {
             self.0
                 .write(context)
                 .$field
-                .set_color_transform(context, color_transform)
+                .set_color_transform(color_transform)
         }
         fn rotation(&self, gc_context: gc_arena::MutationContext<'gc, '_>) -> Degrees {
             self.0.write(gc_context).$field.rotation()
@@ -1041,7 +1345,7 @@ macro_rules! impl_display_object_sansbounds {
             std::cell::Ref::map(self.0.read(), |o| o.$field.name())
         }
         fn set_name(&self, context: gc_arena::MutationContext<'gc, '_>, name: &str) {
-            self.0.write(context).$field.set_name(context, name)
+            self.0.write(context).$field.set_name(name)
         }
         fn clip_depth(&self) -> crate::prelude::Depth {
             self.0.read().$field.clip_depth()
@@ -1051,7 +1355,7 @@ macro_rules! impl_display_object_sansbounds {
             context: gc_arena::MutationContext<'gc, '_>,
             depth: crate::prelude::Depth,
         ) {
-            self.0.write(context).$field.set_clip_depth(context, depth)
+            self.0.write(context).$field.set_clip_depth(depth)
         }
         fn parent(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
             self.0.read().$field.parent()
@@ -1061,17 +1365,7 @@ macro_rules! impl_display_object_sansbounds {
             context: gc_arena::MutationContext<'gc, '_>,
             parent: Option<crate::display_object::DisplayObject<'gc>>,
         ) {
-            self.0.write(context).$field.set_parent(context, parent)
-        }
-        fn first_child(&self) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.first_child()
-        }
-        fn set_first_child(
-            &self,
-            context: gc_arena::MutationContext<'gc, '_>,
-            node: Option<DisplayObject<'gc>>,
-        ) {
-            self.0.write(context).$field.set_first_child(context, node);
+            self.0.write(context).$field.set_parent(parent)
         }
         fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.prev_sibling()
@@ -1081,7 +1375,7 @@ macro_rules! impl_display_object_sansbounds {
             context: gc_arena::MutationContext<'gc, '_>,
             node: Option<DisplayObject<'gc>>,
         ) {
-            self.0.write(context).$field.set_prev_sibling(context, node);
+            self.0.write(context).$field.set_prev_sibling(node);
         }
         fn next_sibling(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.next_sibling()
@@ -1091,7 +1385,39 @@ macro_rules! impl_display_object_sansbounds {
             context: gc_arena::MutationContext<'gc, '_>,
             node: Option<DisplayObject<'gc>>,
         ) {
-            self.0.write(context).$field.set_next_sibling(context, node);
+            self.0.write(context).$field.set_next_sibling(node);
+        }
+        fn masker(&self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.masker()
+        }
+        fn set_masker(
+            &self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            node: Option<DisplayObject<'gc>>,
+            remove_old_link: bool,
+        ) {
+            if remove_old_link {
+                if let Some(old_masker) = self.0.read().$field.masker() {
+                    old_masker.set_maskee(context, None, false);
+                }
+            }
+            self.0.write(context).$field.set_masker(node);
+        }
+        fn maskee(&self) -> Option<DisplayObject<'gc>> {
+            self.0.read().$field.maskee()
+        }
+        fn set_maskee(
+            &self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            node: Option<DisplayObject<'gc>>,
+            remove_old_link: bool,
+        ) {
+            if remove_old_link {
+                if let Some(old_maskee) = self.0.read().$field.maskee() {
+                    old_maskee.set_masker(context, None, false);
+                }
+            }
+            self.0.write(context).$field.set_maskee(node);
         }
         fn removed(&self) -> bool {
             self.0.read().$field.removed()
@@ -1099,11 +1425,31 @@ macro_rules! impl_display_object_sansbounds {
         fn set_removed(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_removed(value)
         }
+        fn sound_transform(&self) -> std::cell::Ref<crate::display_object::SoundTransform> {
+            std::cell::Ref::map(self.0.read(), |r| r.$field.sound_transform())
+        }
+        fn set_sound_transform(
+            &self,
+            context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+            value: crate::display_object::SoundTransform,
+        ) {
+            self.0
+                .write(context.gc_context)
+                .$field
+                .set_sound_transform(value);
+            context.set_sound_transforms_dirty();
+        }
         fn visible(&self) -> bool {
             self.0.read().$field.visible()
         }
         fn set_visible(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_visible(value);
+        }
+        fn lock_root(&self) -> bool {
+            self.0.read().$field.lock_root()
+        }
+        fn set_lock_root(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+            self.0.write(context).$field.set_lock_root(value);
         }
         fn transformed_by_script(&self) -> bool {
             self.0.read().$field.transformed_by_script()
@@ -1117,6 +1463,25 @@ macro_rules! impl_display_object_sansbounds {
                 .write(context)
                 .$field
                 .set_transformed_by_script(value)
+        }
+        fn placed_by_script(&self) -> bool {
+            self.0.read().$field.placed_by_script()
+        }
+        fn set_placed_by_script(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+            self.0.write(context).$field.set_placed_by_script(value)
+        }
+        fn instantiated_by_timeline(&self) -> bool {
+            self.0.read().$field.instantiated_by_timeline()
+        }
+        fn set_instantiated_by_timeline(
+            &self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            value: bool,
+        ) {
+            self.0
+                .write(context)
+                .$field
+                .set_instantiated_by_timeline(value)
         }
         fn instantiate(
             &self,
@@ -1153,78 +1518,9 @@ macro_rules! impl_display_object {
             self.0.write(gc_context).$field.set_y(value)
         }
         fn set_matrix(&self, context: gc_arena::MutationContext<'gc, '_>, matrix: &swf::Matrix) {
-            self.0.write(context).$field.set_matrix(context, matrix)
+            self.0.write(context).$field.set_matrix(matrix)
         }
     };
-}
-
-/// Renders the children of a display object, taking masking into account.
-// TODO(Herschel): Move this into an IDisplayObject/IDisplayObjectContainer trait when
-// we figure out inheritance
-pub fn render_children<'gc>(
-    context: &mut RenderContext<'_, 'gc>,
-    children: &std::collections::BTreeMap<Depth, DisplayObject<'gc>>,
-) {
-    let mut clip_depth = 0;
-    let mut clip_depth_stack: Vec<(Depth, DisplayObject<'_>)> = vec![];
-    for (&depth, &child) in children {
-        // Check if we need to pop off a mask.
-        // This must be a while loop because multiple masks can be popped
-        // at the same dpeth.
-        while clip_depth > 0 && depth >= clip_depth {
-            // Clear the mask stencil and pop the mask.
-            let (prev_clip_depth, clip_child) = clip_depth_stack.pop().unwrap();
-            clip_depth = prev_clip_depth;
-            context.renderer.deactivate_mask();
-            context.allow_mask = false;
-            clip_child.render(context);
-            context.allow_mask = true;
-            context.renderer.pop_mask();
-        }
-        if context.allow_mask && child.clip_depth() > 0 && child.allow_as_mask() {
-            // Push and render the mask.
-            clip_depth_stack.push((clip_depth, child));
-            clip_depth = child.clip_depth();
-            context.renderer.push_mask();
-            context.allow_mask = false;
-            child.render(context);
-            context.allow_mask = true;
-            context.renderer.activate_mask();
-        } else if child.visible() {
-            // Normal child.
-            child.render(context);
-        }
-    }
-
-    // Pop any remaining masks.
-    for (_, clip_child) in clip_depth_stack.into_iter().rev() {
-        context.renderer.deactivate_mask();
-        context.allow_mask = false;
-        clip_child.render(context);
-        context.allow_mask = true;
-        context.renderer.pop_mask();
-    }
-}
-
-pub fn get_child_by_name<'gc>(
-    children: &std::collections::BTreeMap<Depth, DisplayObject<'gc>>,
-    name: &str,
-    case_sensitive: bool,
-) -> Option<DisplayObject<'gc>> {
-    // TODO: Make a HashMap from name -> child?
-    // But need to handle conflicting names (lowest in depth order takes priority).
-    use crate::string_utils::swf_string_eq_ignore_case;
-    if case_sensitive {
-        children
-            .values()
-            .copied()
-            .find(|child| &*child.name() == name)
-    } else {
-        children
-            .values()
-            .copied()
-            .find(|child| swf_string_eq_ignore_case(&*child.name(), name))
-    }
 }
 
 impl<'gc> DisplayObject<'gc> {
@@ -1233,36 +1529,114 @@ impl<'gc> DisplayObject<'gc> {
     }
 }
 
-/// Bit flags used by `DisplayObject`.
-#[derive(Collect, EnumSetType, Debug)]
-#[collect(no_drop)]
-enum DisplayObjectFlags {
-    /// Whether this object has been removed from the display list.
-    /// Necessary in AVM1 to throw away queued actions from removed movie clips.
-    Removed,
+bitflags! {
+    /// Bit flags used by `DisplayObject`.
+    #[derive(Collect)]
+    #[collect(no_drop)]
+    struct DisplayObjectFlags: u8 {
+        /// Whether this object has been removed from the display list.
+        /// Necessary in AVM1 to throw away queued actions from removed movie clips.
+        const REMOVED                  = 1 << 0;
 
-    /// If this object is visible (`_visible` property).
-    Visible,
+        /// If this object is visible (`_visible` property).
+        const VISIBLE                  = 1 << 1;
 
-    /// Whether the `_xscale`, `_yscale` and `_rotation` of the object have been calculated and cached.
-    ScaleRotationCached,
+        /// Whether the `_xscale`, `_yscale` and `_rotation` of the object have been calculated and cached.
+        const SCALE_ROTATION_CACHED    = 1 << 2;
 
-    /// Whether this object has been transformed by ActionScript.
-    /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
-    TransformedByScript,
+        /// Whether this object has been transformed by ActionScript.
+        /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
+        const TRANSFORMED_BY_SCRIPT    = 1 << 3;
+
+        /// Whether this object has been placed in a container by ActionScript 3.
+        /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
+        const PLACED_BY_SCRIPT         = 1 << 4;
+
+        /// Whether this object has been instantiated by a SWF tag.
+        /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
+        const INSTANTIATED_BY_TIMELINE = 1 << 5;
+
+        /// Whether this object has `_lockroot` set to true, in which case
+        /// it becomes the _root of itself and of any children
+        const LOCK_ROOT                = 1 << 6;
+    }
 }
 
-pub struct ChildIter<'gc> {
-    cur_child: Option<DisplayObject<'gc>>,
+/// Represents the sound transfomr of sounds played inside a Flash MovieClip.
+/// Every value is a percentage (0-100), but out of range values are allowed.
+/// In AVM1, this is returned by `Sound.getTransform`.
+/// In AVM2, this is returned by `Sprite.soundTransform`.
+#[derive(Debug, PartialEq, Eq, Clone, Collect)]
+#[collect(require_static)]
+pub struct SoundTransform {
+    pub volume: i32,
+    pub left_to_left: i32,
+    pub left_to_right: i32,
+    pub right_to_left: i32,
+    pub right_to_right: i32,
 }
 
-impl<'gc> Iterator for ChildIter<'gc> {
-    type Item = DisplayObject<'gc>;
-    fn next(&mut self) -> Option<Self::Item> {
-        let cur = self.cur_child;
-        self.cur_child = self
-            .cur_child
-            .and_then(|display_cell| display_cell.next_sibling());
-        cur
+impl SoundTransform {
+    pub const MAX_VOLUME: i32 = 100;
+
+    /// Applies another SoundTransform on top of this SoundTransform.
+    pub fn concat(&mut self, other: &SoundTransform) {
+        // This is a 2x2 matrix multiply between the transforms.
+        // Done with integer math to match Flash behavior.
+        const MAX_VOLUME: i64 = SoundTransform::MAX_VOLUME as i64;
+        self.volume = (i64::from(self.volume) * i64::from(other.volume) / MAX_VOLUME) as i32;
+
+        let ll0 = i64::from(self.left_to_left);
+        let lr0 = i64::from(self.left_to_right);
+        let rl0 = i64::from(self.right_to_left);
+        let rr0 = i64::from(self.right_to_right);
+        let ll1 = i64::from(other.left_to_left);
+        let lr1 = i64::from(other.left_to_right);
+        let rl1 = i64::from(other.right_to_left);
+        let rr1 = i64::from(other.right_to_right);
+        self.left_to_left = ((ll0 * ll1 + rl0 * lr1) / MAX_VOLUME) as i32;
+        self.left_to_right = ((lr0 * ll1 + rr0 * lr1) / MAX_VOLUME) as i32;
+        self.right_to_left = ((ll0 * rl1 + rl0 * rr1) / MAX_VOLUME) as i32;
+        self.right_to_right = ((lr0 * rl1 + rr0 * rr1) / MAX_VOLUME) as i32;
+    }
+
+    /// Returns the pan of this transform.
+    /// -100 is full left and 100 is full right.
+    /// This matches the behavior of AVM1 `Sound.getPan()`
+    pub fn pan(&self) -> i32 {
+        // It's not clear why Flash has the weird `abs` behavior, but this
+        // mathes the values that Flash returns (see `sound` regression test).
+        if self.left_to_left != Self::MAX_VOLUME {
+            Self::MAX_VOLUME - self.left_to_left.abs()
+        } else {
+            self.right_to_right.abs() - Self::MAX_VOLUME
+        }
+    }
+
+    /// Sets this transform of this pan.
+    /// -100 is full left and 100 is full right.
+    /// This matches the behavior of AVM1 `Sound.setPan()`.
+    pub fn set_pan(&mut self, pan: i32) {
+        if pan >= 0 {
+            self.left_to_left = Self::MAX_VOLUME - pan;
+            self.right_to_right = Self::MAX_VOLUME;
+        } else {
+            self.left_to_left = Self::MAX_VOLUME;
+            self.right_to_right = Self::MAX_VOLUME + pan;
+        }
+        self.left_to_right = 0;
+        self.right_to_left = 0;
+    }
+}
+
+impl Default for SoundTransform {
+    fn default() -> Self {
+        Self {
+            volume: 100,
+            left_to_left: 100,
+            left_to_right: 0,
+            right_to_left: 0,
+            right_to_right: 100,
+        }
     }
 }

@@ -1,0 +1,45 @@
+// txt.type:
+dynamic
+// txt.type = 'input':
+input
+// txt.type = 'DYNAMIC':
+dynamic
+// txt.type = 'invalid':
+dynamic
+
+// createTextField('txt2', 0, 0, 0, 100, 100)
+_level0.txt2
+// txt2.removeTextField()
+undefined
+
+// txt.textColor:
+0
+// getTextFormat().color:
+0
+// getTextFormat(0).color:
+0
+// getNewTextFormat().color:
+0
+// getTextFormat().color and getNewTextFormat().color after textColor = 0x404040 (4210752):
+4210752
+4210752
+// txt.textColor = 0xFFFFFF (16777215):
+16777215
+// Call setTextFormat() with color = 0x808080 (8421504):
+// txt.textColor:
+16777215
+// Call setTextFormat() at pos 0 with color = 0x808080 (8421504):
+// txt.textColor:
+16777215
+// Call setTextFormat() from pos 0 to 1 with color = 0x808080 (8421504):
+// txt.textColor:
+16777215
+// Call setNewTextFormat() with color = 0x808080 (8421504):
+// txt.textColor:
+4210752
+
+// txt.background:
+false
+// txt.background = true:
+true
+

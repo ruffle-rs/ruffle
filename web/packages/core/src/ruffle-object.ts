@@ -1,0 +1,278 @@
+import {
+    FLASH_MIMETYPE,
+    FUTURESPLASH_MIMETYPE,
+    FLASH7_AND_8_MIMETYPE,
+    FLASH_MOVIE_MIMETYPE,
+    FLASH_ACTIVEX_CLASSID,
+    isScriptAccessAllowed,
+    isSwfFilename,
+    RufflePlayer,
+} from "./ruffle-player";
+import { registerElement } from "./register-element";
+import { URLLoadOptions } from "./load-options";
+import { RuffleEmbed } from "./ruffle-embed";
+
+/**
+ * Find and return the first value in obj with the given key.
+ * Many Flash params were case insensitive, so we use this when checking for them.
+ *
+ * @param obj Object to check
+ * @param key Key to find
+ * @param defaultValue Value if not found
+ * @returns Value if found, else [[defaultValue]]
+ */
+function findCaseInsensitive(
+    obj: { [key: string]: string | null },
+    key: string,
+    defaultValue: string | null
+): string | null {
+    key = key.toLowerCase();
+    for (const k in obj) {
+        if (Object.hasOwnProperty.call(obj, k) && key === k.toLowerCase()) {
+            return obj[k];
+        }
+    }
+    return defaultValue;
+}
+
+/**
+ * Returns all flash params ([[HTMLParamElement]]) that are for the given object.
+ *
+ * @param elem Element to check.
+ * @returns A record of every parameter.
+ */
+function paramsOf(elem: HTMLElement): Record<string, string> {
+    const params: Record<string, string> = {};
+
+    for (const param of elem.children) {
+        if (param instanceof HTMLParamElement) {
+            const key = param.attributes.getNamedItem("name")?.value;
+            const value = param.attributes.getNamedItem("value")?.value;
+            if (key && value) {
+                params[key] = value;
+            }
+        }
+    }
+
+    return params;
+}
+
+/**
+ * A polyfill html element.
+ *
+ * This specific class tries to polyfill existing `<object>` tags,
+ * and should not be used. Prefer [[RufflePlayer]] instead.
+ *
+ * @internal
+ */
+export class RuffleObject extends RufflePlayer {
+    private params: Record<string, string> = {};
+
+    /**
+     * Constructs a new Ruffle flash player for insertion onto the page.
+     *
+     * This specific class tries to polyfill existing `<object>` tags,
+     * and should not be used. Prefer [[RufflePlayer]] instead.
+     */
+    constructor() {
+        super();
+    }
+
+    /**
+     * @ignore
+     * @internal
+     */
+    connectedCallback(): void {
+        super.connectedCallback();
+
+        this.params = paramsOf(this);
+
+        let url = null;
+        if (this.attributes.getNamedItem("data")) {
+            url = this.attributes.getNamedItem("data")?.value;
+        } else if (this.params.movie) {
+            url = this.params.movie;
+        }
+
+        const allowScriptAccess = findCaseInsensitive(
+            this.params,
+            "allowScriptAccess",
+            null
+        );
+
+        const parameters = findCaseInsensitive(
+            this.params,
+            "flashvars",
+            this.getAttribute("flashvars")
+        );
+
+        const backgroundColor = findCaseInsensitive(
+            this.params,
+            "bgcolor",
+            this.getAttribute("bgcolor")
+        );
+
+        if (url) {
+            const options: URLLoadOptions = { url };
+            options.allowScriptAccess = isScriptAccessAllowed(
+                allowScriptAccess,
+                url
+            );
+            if (parameters) {
+                options.parameters = parameters;
+            }
+            if (backgroundColor) {
+                options.backgroundColor = backgroundColor;
+            }
+
+            // Kick off the SWF download.
+            this.load(options);
+        }
+    }
+
+    protected debugPlayerInfo(): string {
+        let errorText = super.debugPlayerInfo();
+        errorText += "Player type: Object\n";
+
+        let url = null;
+
+        if (this.attributes.getNamedItem("data")) {
+            url = this.attributes.getNamedItem("data")?.value;
+        } else if (this.params.movie) {
+            url = this.params.movie;
+        }
+        errorText += `SWF URL: ${url}\n`;
+
+        Object.keys(this.params).forEach((key) => {
+            errorText += `Param ${key}: ${this.params[key]}\n`;
+        });
+
+        Object.keys(this.attributes).forEach((key) => {
+            errorText += `Attribute ${key}: ${
+                this.attributes.getNamedItem(key)?.value
+            }\n`;
+        });
+
+        return errorText;
+    }
+
+    /**
+     * Polyfill of HTMLObjectElement.
+     *
+     * @ignore
+     * @internal
+     */
+    get data(): string | null {
+        return this.getAttribute("data");
+    }
+
+    /**
+     * Polyfill of HTMLObjectElement.
+     *
+     * @ignore
+     * @internal
+     */
+    set data(href: string | null) {
+        if (href != undefined) {
+            const attr = document.createAttribute("data");
+            attr.value = href;
+            this.attributes.setNamedItem(attr);
+        } else {
+            this.attributes.removeNamedItem("data");
+        }
+    }
+
+    /**
+     * Checks if the given element may be polyfilled with this one.
+     *
+     * @param elem Element to check.
+     * @returns True if the element looks like a flash object.
+     */
+    static isInterdictable(elem: HTMLElement): boolean {
+        // Don't polyfill if there's already a <ruffle-embed> inside the <object>.
+        if (elem.getElementsByTagName("ruffle-embed").length > 0) {
+            return false;
+        }
+        // Don't polyfill if no movie specified.
+        const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
+        const params = paramsOf(elem);
+        let isSwf;
+        // Check for SWF file.
+        if (data) {
+            isSwf = isSwfFilename(data);
+        } else if (params && params.movie) {
+            isSwf = isSwfFilename(params.movie);
+        } else {
+            // Don't polyfill when no file is specified.
+            return false;
+        }
+
+        // Check ActiveX class ID.
+        const classid = elem.attributes
+            .getNamedItem("classid")
+            ?.value.toLowerCase();
+        if (classid === FLASH_ACTIVEX_CLASSID.toLowerCase()) {
+            // classid is an old-IE style embed that would not work on modern browsers.
+            // Often there will be an <embed> inside the <object> that would take precedence.
+            // Only polyfill this <object> if it doesn't contain a polyfillable <embed>.
+            return !Array.from(elem.getElementsByTagName("embed")).some(
+                RuffleEmbed.isInterdictable
+            );
+        } else if (classid != null && classid !== "") {
+            // Non-Flash classid.
+            return false;
+        }
+
+        // Check for MIME type.
+        const type = elem.attributes.getNamedItem("type")?.value.toLowerCase();
+        if (
+            type === FLASH_MIMETYPE.toLowerCase() ||
+            type === FUTURESPLASH_MIMETYPE.toLowerCase() ||
+            type === FLASH7_AND_8_MIMETYPE.toLowerCase() ||
+            type === FLASH_MOVIE_MIMETYPE.toLowerCase()
+        ) {
+            return true;
+        } else if (type != null && type !== "") {
+            return false;
+        }
+
+        // If no MIME/class type is specified, polyfill if movie is an SWF file.
+        return isSwf;
+    }
+
+    /**
+     * Creates a RuffleObject that will polyfill and replace the given element.
+     *
+     * @param elem Element to replace.
+     * @returns Created RuffleObject.
+     */
+    static fromNativeObjectElement(elem: HTMLElement): RuffleObject {
+        const externalName = registerElement("ruffle-object", RuffleObject);
+        const ruffleObj: RuffleObject = <RuffleObject>(
+            document.createElement(externalName)
+        );
+
+        // Avoid copying embeds-inside-objects to avoid double polyfilling.
+        for (const embedElem of Array.from(
+            elem.getElementsByTagName("embed")
+        )) {
+            if (RuffleEmbed.isInterdictable(embedElem)) {
+                embedElem.remove();
+            }
+        }
+
+        // Avoid copying objects-inside-objects to avoid double polyfilling.
+        // This may happen when Internet Explorer's conditional comments are used.
+        for (const objectElem of Array.from(
+            elem.getElementsByTagName("object")
+        )) {
+            if (RuffleObject.isInterdictable(objectElem)) {
+                objectElem.remove();
+            }
+        }
+
+        ruffleObj.copyElement(elem);
+
+        return ruffleObj;
+    }
+}

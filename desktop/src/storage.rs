@@ -9,11 +9,8 @@ pub struct DiskStorageBackend {
 }
 
 impl DiskStorageBackend {
-    pub fn new(scope: &Path) -> Self {
-        let base_path = dirs::data_local_dir()
-            .unwrap()
-            .join(Path::new("ruffle"))
-            .join(scope);
+    pub fn new() -> Self {
+        let base_path = dirs::data_local_dir().unwrap().join(Path::new("ruffle"));
 
         // Create a base dir if one doesn't exist yet
         if !base_path.exists() {
@@ -50,6 +47,14 @@ impl StorageBackend for DiskStorageBackend {
 
     fn put_string(&mut self, name: &str, value: String) -> bool {
         let full_path = self.base_path.join(Path::new(name));
+        if let Some(parent_dir) = full_path.parent() {
+            if !parent_dir.exists() {
+                if let Err(r) = fs::create_dir_all(&parent_dir) {
+                    log::warn!("Unable to create storage dir {}", r);
+                    return false;
+                }
+            }
+        }
 
         match File::create(full_path) {
             Ok(mut file) => {

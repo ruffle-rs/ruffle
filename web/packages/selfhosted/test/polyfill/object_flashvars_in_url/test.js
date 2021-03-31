@@ -24,7 +24,7 @@ describe("Object tag", () => {
     it("Plays a movie with flashvars", () => {
         play_and_monitor(
             browser,
-            browser.$("#test-container").$("<ruffle-object />"),
+            browser.$("#test-container").$("<ruffle-embed />"),
             `// _level0.a
 1
 

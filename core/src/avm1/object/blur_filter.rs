@@ -36,9 +36,9 @@ impl fmt::Debug for BlurFilterObject<'_> {
 
 impl<'gc> BlurFilterObject<'gc> {
     add_field_accessors!(
-        [set_blur_x, get_blur_x, blur_x, f64],
-        [set_blur_y, get_blur_y, blur_y, f64],
-        [set_quality, get_quality, quality, i32],
+        [set_blur_x, blur_x, blur_x, f64],
+        [set_blur_y, blur_y, blur_y, f64],
+        [set_quality, quality, quality, i32],
     );
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
@@ -80,12 +80,8 @@ impl<'gc> TObject<'gc> for BlurFilterObject<'gc> {
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(BlurFilterObject::empty_object(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.blur_filter),
-        )
-        .into())
+        Ok(BlurFilterObject::empty_object(activation.context.gc_context, Some(this)).into())
     }
 }

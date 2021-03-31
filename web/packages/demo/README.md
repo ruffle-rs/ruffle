@@ -25,7 +25,7 @@ The demo provides the ability to have a list of sample SWFs to choose from.
 This can be helpful if you have a list of useful SWFs to test through, and we use it ourselves
 to showcase Ruffle on various games or animations.
 
-To use this, add a new file `swfs.json` next to `index.html` in the demo. The contents should look like this:
+To use this, add a new file `swfs.json` in this directory. The contents should look like this:
 
 ```json
 {
@@ -34,31 +34,36 @@ To use this, add a new file `swfs.json` next to `index.html` in the demo. The co
             "location": "swfs/alien_hominid.swf",
             "title": "Alien Hominid",
             "author": "Tom Fulp and Dan Paladin",
-            "authorLink": "https://www.newgrounds.com"
+            "authorLink": "https://www.newgrounds.com",
+            "type": "Game"
         },
         {
             "location": "swfs/saturday_morning_watchmen.swf",
             "title": "Saturday Morning Watchmen",
             "author": "Harry Partridge",
-            "authorLink": "https://twitter.com/HappyHarryToons"
+            "authorLink": "https://twitter.com/HappyHarryToons",
+            "type": "Animation"
         },
         {
             "location": "swfs/synj1.swf",
             "title": "Synj vs. Horrid Part 1",
             "author": "Dan Paladin",
-            "authorLink": "https://www.thebehemoth.com"
+            "authorLink": "https://www.thebehemoth.com",
+            "type": "Animation"
         },
         {
             "location": "swfs/synj2.swf",
             "title": "Synj vs. Horrid Part 2",
             "author": "Dan Paladin",
-            "authorLink": "https://www.thebehemoth.com"
+            "authorLink": "https://www.thebehemoth.com",
+            "type": "Animation"
         },
         {
             "location": "swfs/wasted_sky.swf",
             "title": "Wasted Sky",
             "author": "Tom Fulp",
-            "authorLink": "https://www.newgrounds.com"
+            "authorLink": "https://www.newgrounds.com",
+            "type": "Game"
         }
     ]
 }

@@ -1,0 +1,66 @@
+//var chx = this.getChildAt(0)
+//var chy = this.getChildAt(1)
+//var chz = this.getChildAt(2)
+//this.contains(chx);
+true
+//this.contains(chy);
+true
+//this.contains(chz);
+true
+//Removed symbol "chz" in timeline
+//this.contains(chx);
+true
+//this.contains(chy);
+true
+//this.contains(chz);
+false
+//Removed symbol "chy" in timeline
+//this.contains(chx);
+true
+//this.contains(chy);
+false
+//this.contains(chz);
+false
+//Removed symbol "chx" in timeline
+//this.contains(chx);
+false
+//this.contains(chy);
+false
+//this.contains(chz);
+false
+//Added nested symbols to timeline...
+//var sx = this.getChildAt(0);
+//var sy = sx.getChildAt(1);
+//var sz = sy.getChildAt(1);
+//this.contains(this);
+true
+//this.contains(sx);
+true
+//this.contains(sy);
+true
+//this.contains(sz);
+true
+//sx.contains(this);
+false
+//sx.contains(sx);
+true
+//sx.contains(sy);
+true
+//sx.contains(sz);
+true
+//sy.contains(this);
+false
+//sy.contains(sx);
+false
+//sy.contains(sy);
+true
+//sy.contains(sz);
+true
+//sz.contains(this);
+false
+//sz.contains(sx);
+false
+//sz.contains(sy);
+false
+//sz.contains(sz);
+true

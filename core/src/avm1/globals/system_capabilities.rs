@@ -3,8 +3,8 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 
 macro_rules! capabilities_func {
@@ -39,39 +39,42 @@ macro_rules! capabilities_prop {
                 $name,
                 FunctionObject::function($gc_ctx, Executable::Native($func), Some($fn_proto), $fn_proto),
                 None,
-                EnumSet::empty()
+                Attribute::empty()
             );
         )*
     }};
 }
 
-capabilities_func!(get_has_64_bit_support, SystemCapabilities::Process64Bit);
-capabilities_func!(get_has_32_bit_support, SystemCapabilities::Process32Bit);
-capabilities_func!(get_is_acrobat_embedded, SystemCapabilities::AcrobatEmbedded);
+capabilities_func!(get_has_64_bit_support, SystemCapabilities::PROCESS_64_BIT);
+capabilities_func!(get_has_32_bit_support, SystemCapabilities::PROCESS_32_BIT);
+capabilities_func!(
+    get_is_acrobat_embedded,
+    SystemCapabilities::ACROBAT_EMBEDDED
+);
 capabilities_func!(get_has_tls, SystemCapabilities::TLS);
-capabilities_func!(get_has_accessibility, SystemCapabilities::Accessibility);
-capabilities_func!(get_has_audio, SystemCapabilities::Audio);
-capabilities_func!(get_has_audio_encoder, SystemCapabilities::AudioEncoder);
-capabilities_func!(get_has_embedded_video, SystemCapabilities::EmbeddedVideo);
+capabilities_func!(get_has_accessibility, SystemCapabilities::ACCESSIBILITY);
+capabilities_func!(get_has_audio, SystemCapabilities::AUDIO);
+capabilities_func!(get_has_audio_encoder, SystemCapabilities::AUDIO_ENCODER);
+capabilities_func!(get_has_embedded_video, SystemCapabilities::EMBEDDED_VIDEO);
 
 capabilities_func!(get_has_ime, SystemCapabilities::IME);
 capabilities_func!(get_has_mp3, SystemCapabilities::MP3);
-capabilities_func!(get_has_printing, SystemCapabilities::Printing);
+capabilities_func!(get_has_printing, SystemCapabilities::PRINTING);
 capabilities_func!(
     get_has_screen_broadcast,
-    SystemCapabilities::ScreenBroadcast
+    SystemCapabilities::SCREEN_BROADCAST
 );
-capabilities_func!(get_has_screen_playback, SystemCapabilities::ScreenPlayback);
-capabilities_func!(get_has_streaming_audio, SystemCapabilities::StreamingAudio);
-capabilities_func!(get_has_streaming_video, SystemCapabilities::StreamingVideo);
-capabilities_func!(get_has_video_encoder, SystemCapabilities::VideoEncoder);
-capabilities_func!(get_is_debugger, SystemCapabilities::Debugger);
+capabilities_func!(get_has_screen_playback, SystemCapabilities::SCREEN_PLAYBACK);
+capabilities_func!(get_has_streaming_audio, SystemCapabilities::STREAMING_AUDIO);
+capabilities_func!(get_has_streaming_video, SystemCapabilities::STREAMING_VIDEO);
+capabilities_func!(get_has_video_encoder, SystemCapabilities::VIDEO_ENCODER);
+capabilities_func!(get_is_debugger, SystemCapabilities::DEBUGGER);
 inverse_capabilities_func!(
     get_is_local_file_read_disabled,
-    SystemCapabilities::LocalFileRead
+    SystemCapabilities::LOCAL_FILE_READ
 );
-inverse_capabilities_func!(get_is_av_hardware_disabled, SystemCapabilities::AvHardware);
-inverse_capabilities_func!(get_is_windowless_disabled, SystemCapabilities::WindowLess);
+inverse_capabilities_func!(get_is_av_hardware_disabled, SystemCapabilities::AV_HARDWARE);
+inverse_capabilities_func!(get_is_windowless_disabled, SystemCapabilities::WINDOW_LESS);
 
 pub fn get_player_type<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,

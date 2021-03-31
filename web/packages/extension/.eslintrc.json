@@ -4,6 +4,7 @@
         "webextensions": true
     },
     "globals": {
-        "obfuscated_event_prefix": true
+        "__webpack_public_path__": true,
+        "obfuscatedEventPrefix": true
     }
 }

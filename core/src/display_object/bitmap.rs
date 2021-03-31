@@ -18,19 +18,24 @@ use gc_arena::{Collect, Gc, GcCell};
 #[collect(no_drop)]
 pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, BitmapStatic>,
+    bitmap_data: Option<GcCell<'gc, crate::avm1::object::bitmap_data::BitmapData>>,
+    smoothing: bool,
 }
 
 impl<'gc> Bitmap<'gc> {
-    pub fn new(
+    pub fn new_with_bitmap_data(
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
         bitmap_handle: BitmapHandle,
         width: u16,
         height: u16,
+        bitmap_data: Option<GcCell<'gc, crate::avm1::object::bitmap_data::BitmapData>>,
+        smoothing: bool,
     ) -> Self {
         Bitmap(GcCell::allocate(
             context.gc_context,
@@ -45,8 +50,20 @@ impl<'gc> Bitmap<'gc> {
                         height,
                     },
                 ),
+                bitmap_data,
+                smoothing,
             },
         ))
+    }
+
+    pub fn new(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        id: CharacterId,
+        bitmap_handle: BitmapHandle,
+        width: u16,
+        height: u16,
+    ) -> Self {
+        Self::new_with_bitmap_data(context, id, bitmap_handle, width, height, None, true)
     }
 
     #[allow(dead_code)]
@@ -72,54 +89,51 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
     fn self_bounds(&self) -> BoundingBox {
         BoundingBox {
-            x_min: Twips::new(0),
-            y_min: Twips::new(0),
-            x_max: Twips::new(Bitmap::width(*self)),
-            y_max: Twips::new(Bitmap::height(*self)),
+            x_min: Twips::zero(),
+            y_min: Twips::zero(),
+            x_max: Twips::from_pixels(Bitmap::width(*self).into()),
+            y_max: Twips::from_pixels(Bitmap::height(*self).into()),
             valid: true,
         }
     }
 
-    fn run_frame(&self, _context: &mut UpdateContext) {
-        // Noop
+    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(bitmap_data) = &self.0.read().bitmap_data {
+            let bd = bitmap_data.read();
+            if bd.dirty() {
+                let _ = context.renderer.update_texture(
+                    self.0.read().static_data.bitmap_handle,
+                    bd.width(),
+                    bd.height(),
+                    bd.pixels_rgba(),
+                );
+                drop(bd);
+                bitmap_data.write(context.gc_context).set_dirty(false);
+            }
+        }
     }
 
-    fn render(&self, context: &mut RenderContext) {
+    fn render_self(&self, context: &mut RenderContext) {
         if !self.world_bounds().intersects(&context.view_bounds) {
             // Off-screen; culled
             return;
         }
 
-        context.transform_stack.push(&*self.transform());
-
+        let bitmap_data = self.0.read();
         context.renderer.render_bitmap(
-            self.0.read().static_data.bitmap_handle,
+            bitmap_data.static_data.bitmap_handle,
             context.transform_stack.transform(),
+            bitmap_data.smoothing,
         );
-
-        context.transform_stack.pop();
-    }
-}
-
-unsafe impl<'gc> gc_arena::Collect for BitmapData<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.base.trace(cc);
-        self.static_data.trace(cc);
     }
 }
 
 /// Static data shared between all instances of a bitmap.
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 struct BitmapStatic {
     id: CharacterId,
     bitmap_handle: BitmapHandle,
     width: u16,
     height: u16,
-}
-
-unsafe impl<'gc> gc_arena::Collect for BitmapStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        true
-    }
 }

@@ -1,0 +1,430 @@
+//var s1 = this.symbol_1;
+//var s2 = this.symbol_1.symbol_2;
+//this.addEventListener('test', introspect_event, false, 0);
+//this.addEventListener('test', introspect_event, true, 0);
+//this.symbol_1.addEventListener('test', introspect_event, false, 0);
+//this.symbol_1.addEventListener('test', introspect_event, true, 0);
+//this.symbol_1.symbol_2.addEventListener('test', introspect_event, false, 0);
+//this.symbol_1.symbol_2.addEventListener('test', introspect_event, true, 0);
+//this.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+true
+//event.target === s1
+false
+//event.target === s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//this.symbol_1.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+true
+//this.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+true
+//event.target === s1
+false
+//event.target === s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//this.symbol_1.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+3
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//this.symbol_1.symbol_2.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+true
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+3
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+3
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+true
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+false
+this.removeChild(s1);
+//s1.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//s1.symbol_2.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+true
+//s1.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+true
+//event.target === s2
+false
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//s1.symbol_2.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+1
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+true
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+3
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+true
+//event.currentTarget === s2
+false
+s1.removeChild(s2);
+//s2.dispatchEvent(new Event('test'));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+true
+//s2.dispatchEvent(new Event('test', true));
+//(Handled an event...)
+//event.type
+test
+//event.eventPhase
+2
+//event.target === this
+false
+//event.target === s1
+false
+//event.target === s2
+true
+//event.currentTarget === this
+false
+//event.currentTarget === s1
+false
+//event.currentTarget === s2
+true

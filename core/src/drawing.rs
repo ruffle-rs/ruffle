@@ -2,8 +2,10 @@ use crate::backend::render::ShapeHandle;
 use crate::bounding_box::BoundingBox;
 use crate::context::RenderContext;
 use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
+use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use std::cell::Cell;
+use std::sync::Arc;
 use swf::{FillStyle, LineStyle, Twips};
 
 #[derive(Clone, Debug, Collect)]
@@ -20,6 +22,12 @@ pub struct Drawing {
     cursor: (Twips, Twips),
 }
 
+impl Default for Drawing {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drawing {
     pub fn new() -> Self {
         Self {
@@ -33,6 +41,50 @@ impl Drawing {
             current_line: None,
             cursor: (Twips::zero(), Twips::zero()),
         }
+    }
+
+    pub fn from_swf_shape(shape: &swf::Shape) -> Self {
+        let mut this = Self {
+            render_handle: Cell::new(None),
+            shape_bounds: shape.shape_bounds.clone().into(),
+            edge_bounds: shape.edge_bounds.clone().into(),
+            dirty: Cell::new(true),
+            fills: Vec::new(),
+            lines: Vec::new(),
+            current_fill: None,
+            current_line: None,
+            cursor: (Twips::zero(), Twips::zero()),
+        };
+
+        let shape = DistilledShape::from(shape);
+        for path in shape.paths {
+            match path {
+                DrawPath::Stroke {
+                    style,
+                    is_closed: _,
+                    commands,
+                } => {
+                    this.set_line_style(Some(style.clone()));
+
+                    for command in commands {
+                        this.draw_command(command);
+                    }
+
+                    this.set_line_style(None);
+                }
+                DrawPath::Fill { style, commands } => {
+                    this.set_fill_style(Some(style.clone()));
+
+                    for command in commands {
+                        this.draw_command(command);
+                    }
+
+                    this.set_fill_style(None);
+                }
+            }
+        }
+
+        this
     }
 
     pub fn set_fill_style(&mut self, style: Option<FillStyle>) {
@@ -136,7 +188,7 @@ impl Drawing {
         self.dirty.set(true);
     }
 
-    pub fn render(&self, context: &mut RenderContext) {
+    pub fn render(&self, context: &mut RenderContext, movie: Option<Arc<SwfMovie>>) {
         if self.dirty.get() {
             self.dirty.set(false);
             let mut paths = Vec::new();
@@ -179,12 +231,13 @@ impl Drawing {
                 edge_bounds: self.edge_bounds.clone(),
                 id: 0,
             };
+            let library = movie.and_then(|m| context.library.library_for_movie(m));
 
             if let Some(handle) = self.render_handle.get() {
-                context.renderer.replace_shape(shape, handle);
+                context.renderer.replace_shape(shape, library, handle);
             } else {
                 self.render_handle
-                    .set(Some(context.renderer.register_shape(shape)));
+                    .set(Some(context.renderer.register_shape(shape, library)));
             }
         }
 

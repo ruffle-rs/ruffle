@@ -9,28 +9,43 @@ use crate::avm1::property::Attribute;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::object::bevel_filter::BevelFilterObject;
+use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::blur_filter::BlurFilterObject;
+use crate::avm1::object::color_matrix_filter::ColorMatrixFilterObject;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
+use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
 use crate::avm1::object::date_object::DateObject;
+use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
+use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
+use crate::avm1::object::glow_filter::GlowFilterObject;
+use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
+use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
 use crate::avm1::object::transform_object::TransformObject;
-use crate::avm1::object::xml_attributes_object::XMLAttributesObject;
-use crate::avm1::object::xml_idmap_object::XMLIDMapObject;
-use crate::avm1::object::xml_object::XMLObject;
+use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
+use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
+use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{ScriptObject, SoundObject, StageObject, Value};
 use crate::avm_warn;
 use crate::display_object::DisplayObject;
-use crate::xml::XMLNode;
-use enumset::EnumSet;
+use crate::xml::XmlNode;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
 pub mod bevel_filter;
+pub mod bitmap_data;
 pub mod blur_filter;
+pub mod color_matrix_filter;
 pub mod color_transform_object;
+pub mod convolution_filter;
 mod custom_object;
 pub mod date_object;
+pub mod displacement_map_filter;
+pub mod drop_shadow_filter;
+pub mod glow_filter;
+pub mod gradient_bevel_filter;
+pub mod gradient_glow_filter;
 pub mod script_object;
 pub mod shared_object;
 pub mod sound_object;
@@ -52,9 +67,9 @@ pub mod xml_object;
         SoundObject(SoundObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
-        XMLObject(XMLObject<'gc>),
-        XMLAttributesObject(XMLAttributesObject<'gc>),
-        XMLIDMapObject(XMLIDMapObject<'gc>),
+        XmlObject(XmlObject<'gc>),
+        XmlAttributesObject(XmlAttributesObject<'gc>),
+        XmlIdMapObject(XmlIdMapObject<'gc>),
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
@@ -62,7 +77,15 @@ pub mod xml_object;
         TransformObject(TransformObject<'gc>),
         BlurFilterObject(BlurFilterObject<'gc>),
         BevelFilterObject(BevelFilterObject<'gc>),
+        GlowFilterObject(GlowFilterObject<'gc>),
+        DropShadowFilterObject(DropShadowFilterObject<'gc>),
+        ColorMatrixFilterObject(ColorMatrixFilterObject<'gc>),
+        DisplacementMapFilterObject(DisplacementMapFilterObject<'gc>),
+        ConvolutionFilterObject(ConvolutionFilterObject<'gc>),
+        GradientBevelFilterObject(GradientBevelFilterObject<'gc>),
+        GradientGlowFilterObject(GradientGlowFilterObject<'gc>),
         DateObject(DateObject<'gc>),
+        BitmapData(BitmapDataObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -120,10 +143,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Calling this on something other than a constructor will return a new Undefined object.
     fn construct(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
         _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(Value::Undefined.coerce_to_object(activation))
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        Ok(Value::Undefined)
     }
 
     /// Takes an already existing object and performs this constructor (if valid) on it.
@@ -151,7 +174,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error<'gc>> {
         let (method, base_proto) =
             search_prototype(Some((*self).into()), name, activation, (*self).into())?;
-        let method = method;
 
         if let Value::Object(_) = method {
         } else {
@@ -225,7 +247,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         gc_context: MutationContext<'gc, '_>,
         name: &str,
         value: Value<'gc>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     );
 
     /// Set the attributes of a given property.
@@ -239,8 +261,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: Option<&str>,
-        set_attributes: EnumSet<Attribute>,
-        clear_attributes: EnumSet<Attribute>,
+        set_attributes: Attribute,
+        clear_attributes: Attribute,
     );
 
     /// Define a virtual property onto a given object.
@@ -259,7 +281,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     );
 
     /// Define a virtual property onto a given object.
@@ -279,7 +301,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
-        attributes: EnumSet<Attribute>,
+        attributes: Attribute,
     );
 
     /// Set the 'watcher' of a given property.
@@ -410,7 +432,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get the underlying XML node for this object, if it exists.
-    fn as_xml_node(&self) -> Option<XMLNode<'gc>> {
+    fn as_xml_node(&self) -> Option<XmlNode<'gc>> {
         None
     }
 
@@ -446,6 +468,46 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `BevelFilterObject`, if it exists
     fn as_bevel_filter_object(&self) -> Option<BevelFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `GlowFilterObject`, if it exists
+    fn as_glow_filter_object(&self) -> Option<GlowFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `DropShadowFilterObject`, if it exists
+    fn as_drop_shadow_filter_object(&self) -> Option<DropShadowFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `ColorMatrixFilterObject`, if it exists
+    fn as_color_matrix_filter_object(&self) -> Option<ColorMatrixFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `DisplacementMapFilterObject`, if it exists
+    fn as_displacement_map_filter_object(&self) -> Option<DisplacementMapFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `ConvolutionFilterObject`, if it exists
+    fn as_convolution_filter_object(&self) -> Option<ConvolutionFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `GradientBevelFilterObject`, if it exists
+    fn as_gradient_bevel_filter_object(&self) -> Option<GradientBevelFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `GradientGlowFilterObject`, if it exists
+    fn as_gradient_glow_filter_object(&self) -> Option<GradientGlowFilterObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `BitmapDataObject`, if it exists
+    fn as_bitmap_data_object(&self) -> Option<BitmapDataObject<'gc>> {
         None
     }
 

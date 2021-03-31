@@ -13,9 +13,8 @@ use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
-use std::io::Cursor;
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
     Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
@@ -63,13 +62,13 @@ enum FrameControl<'gc> {
 }
 
 /// Represents a single activation of a given AVM2 function or keyframe.
-#[derive(Collect)]
-#[collect(no_drop)]
 pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// The immutable value of `this`.
+    #[allow(dead_code)]
     this: Option<Object<'gc>>,
 
     /// The arguments this function was called by.
+    #[allow(dead_code)]
     arguments: Option<Object<'gc>>,
 
     /// Flags that the current activation frame is being executed and has a
@@ -87,9 +86,11 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     ///
     /// A return value of `None` indicates that the called function is still
     /// executing. Functions that do not return instead return `Undefined`.
+    #[allow(dead_code)]
     return_value: Option<Value<'gc>>,
 
     /// The current local scope, implemented as a bare object.
+    #[allow(dead_code)]
     local_scope: Object<'gc>,
 
     /// The current scope stack.
@@ -178,15 +179,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         this: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         base_proto: Option<Object<'gc>>,
+        callee: Object<'gc>,
     ) -> Result<Self, Error> {
         let body: Result<_, Error> = method
             .body()
             .ok_or_else(|| "Cannot execute non-native method without body".into());
         let num_locals = body?.num_locals;
+        let has_rest_or_args = method.method().needs_arguments_object || method.method().needs_rest;
+        let arg_register = if has_rest_or_args { 1 } else { 0 };
         let num_declared_arguments = method.method().params.len() as u32;
         let local_registers = GcCell::allocate(
             context.gc_context,
-            RegisterSet::new(num_locals + num_declared_arguments + 1),
+            RegisterSet::new(num_locals + num_declared_arguments + arg_register + 1),
         );
 
         {
@@ -200,6 +204,79 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     .unwrap_or(Value::Undefined);
             }
         }
+
+        let mut activation = Self {
+            this,
+            arguments: None,
+            is_executing: false,
+            local_registers,
+            return_value: None,
+            local_scope: ScriptObject::bare_object(context.gc_context),
+            scope,
+            base_proto,
+            context,
+        };
+
+        if has_rest_or_args {
+            let args_array = if method.method().needs_arguments_object {
+                ArrayStorage::from_args(arguments)
+            } else if method.method().needs_rest {
+                if let Some(rest_args) = arguments.get(num_declared_arguments as usize..) {
+                    ArrayStorage::from_args(rest_args)
+                } else {
+                    ArrayStorage::new(0)
+                }
+            } else {
+                unreachable!();
+            };
+
+            let mut args_object = ArrayObject::from_array(
+                args_array,
+                activation
+                    .context
+                    .avm2
+                    .system_prototypes
+                    .as_ref()
+                    .unwrap()
+                    .array,
+                activation.context.gc_context,
+            );
+
+            if method.method().needs_arguments_object {
+                args_object.set_property(
+                    args_object,
+                    &QName::new(Namespace::public(), "callee"),
+                    callee.into(),
+                    &mut activation,
+                )?;
+            }
+
+            *local_registers
+                .write(activation.context.gc_context)
+                .get_mut(1 + num_declared_arguments)
+                .unwrap() = args_object.into();
+        }
+
+        Ok(activation)
+    }
+
+    /// Construct an activation for the execution of a builtin method.
+    ///
+    /// It is a logic error to attempt to execute builtins within the same
+    /// activation as the method or script that called them. You must use this
+    /// function to construct a new activation for the builtin so that it can
+    /// properly supercall.
+    ///
+    /// The `scope` provided here should be the scope of the builtin's caller
+    /// (for now), so that it may access global scope and propagate it to
+    /// called methods.
+    pub fn from_builtin(
+        context: UpdateContext<'a, 'gc, 'gc_context>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        this: Option<Object<'gc>>,
+        base_proto: Option<Object<'gc>>,
+    ) -> Result<Self, Error> {
+        let local_registers = GcCell::allocate(context.gc_context, RegisterSet::new(0));
 
         Ok(Self {
             this,
@@ -221,6 +298,45 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.run_actions(init)?;
 
         Ok(())
+    }
+
+    pub fn global_scope(&self) -> Value<'gc> {
+        let mut scope = self.scope();
+
+        while let Some(this_scope) = scope {
+            let parent = this_scope.read().parent_cell();
+            if parent.is_none() {
+                break;
+            }
+
+            scope = parent;
+        }
+
+        scope
+            .map(|s| s.read().locals().clone().into())
+            .unwrap_or(Value::Undefined)
+    }
+
+    /// Call the superclass's instance initializer.
+    pub fn super_init(
+        &mut self,
+        receiver: Object<'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error> {
+        let name = QName::new(Namespace::public(), "constructor");
+        let base_proto: Result<Object<'gc>, Error> =
+            self.base_proto().and_then(|p| p.proto()).ok_or_else(|| {
+                "Attempted to call super constructor without a superclass."
+                    .to_string()
+                    .into()
+            });
+        let mut base_proto = base_proto?;
+
+        let function = base_proto
+            .get_property(receiver, &name, self)?
+            .coerce_to_object(self)?;
+
+        function.call(Some(receiver), &args, self, Some(base_proto))
     }
 
     /// Attempts to lock the activation frame for execution.
@@ -390,10 +506,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let body: Result<_, Error> = method
             .body()
             .ok_or_else(|| "Cannot execute non-native method without body".into());
-        let mut read = Reader::new(Cursor::new(body?.code.as_ref()));
+        let body = body?;
+        let mut reader = Reader::new(&body.code);
 
         loop {
-            let result = self.do_next_opcode(method, &mut read);
+            let result = self.do_next_opcode(method, &mut reader, &body.code);
             match result {
                 Ok(FrameControl::Return(value)) => break Ok(value),
                 Ok(FrameControl::Continue) => {}
@@ -403,10 +520,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Run a single action from a given action reader.
-    fn do_next_opcode(
+    fn do_next_opcode<'b>(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         if self.context.update_start.elapsed() >= self.context.max_execution_duration {
             return Err(
@@ -516,28 +634,30 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::RShift => self.op_rshift(),
                 Op::Subtract => self.op_subtract(),
                 Op::SubtractI => self.op_subtract_i(),
+                Op::Swap => self.op_swap(),
                 Op::URShift => self.op_urshift(),
-                Op::Jump { offset } => self.op_jump(offset, reader),
-                Op::IfTrue { offset } => self.op_if_true(offset, reader),
-                Op::IfFalse { offset } => self.op_if_false(offset, reader),
-                Op::IfStrictEq { offset } => self.op_if_strict_eq(offset, reader),
-                Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader),
-                Op::IfEq { offset } => self.op_if_eq(offset, reader),
-                Op::IfNe { offset } => self.op_if_ne(offset, reader),
-                Op::IfGe { offset } => self.op_if_ge(offset, reader),
-                Op::IfGt { offset } => self.op_if_gt(offset, reader),
-                Op::IfLe { offset } => self.op_if_le(offset, reader),
-                Op::IfLt { offset } => self.op_if_lt(offset, reader),
-                Op::IfNge { offset } => self.op_if_nge(offset, reader),
-                Op::IfNgt { offset } => self.op_if_ngt(offset, reader),
-                Op::IfNle { offset } => self.op_if_nle(offset, reader),
-                Op::IfNlt { offset } => self.op_if_nlt(offset, reader),
+                Op::Jump { offset } => self.op_jump(offset, reader, full_data),
+                Op::IfTrue { offset } => self.op_if_true(offset, reader, full_data),
+                Op::IfFalse { offset } => self.op_if_false(offset, reader, full_data),
+                Op::IfStrictEq { offset } => self.op_if_strict_eq(offset, reader, full_data),
+                Op::IfStrictNe { offset } => self.op_if_strict_ne(offset, reader, full_data),
+                Op::IfEq { offset } => self.op_if_eq(offset, reader, full_data),
+                Op::IfNe { offset } => self.op_if_ne(offset, reader, full_data),
+                Op::IfGe { offset } => self.op_if_ge(offset, reader, full_data),
+                Op::IfGt { offset } => self.op_if_gt(offset, reader, full_data),
+                Op::IfLe { offset } => self.op_if_le(offset, reader, full_data),
+                Op::IfLt { offset } => self.op_if_lt(offset, reader, full_data),
+                Op::IfNge { offset } => self.op_if_nge(offset, reader, full_data),
+                Op::IfNgt { offset } => self.op_if_ngt(offset, reader, full_data),
+                Op::IfNle { offset } => self.op_if_nle(offset, reader, full_data),
+                Op::IfNlt { offset } => self.op_if_nlt(offset, reader, full_data),
                 Op::StrictEquals => self.op_strict_equals(),
                 Op::Equals => self.op_equals(),
                 Op::GreaterEquals => self.op_greater_equals(),
                 Op::GreaterThan => self.op_greater_than(),
                 Op::LessEquals => self.op_less_equals(),
                 Op::LessThan => self.op_less_than(),
+                Op::Nop => self.op_nop(),
                 Op::Not => self.op_not(),
                 Op::HasNext => self.op_has_next(),
                 Op::HasNext2 {
@@ -557,6 +677,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 } => self.op_debug(method, is_local_register, register_name, register),
                 Op::DebugFile { file_name } => self.op_debug_file(method, file_name),
                 Op::DebugLine { line_num } => self.op_debug_line(line_num),
+                Op::TypeOf => self.op_type_of(),
                 _ => self.unknown_op(op),
             };
 
@@ -627,7 +748,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_push_nan(&mut self) -> Result<FrameControl<'gc>, Error> {
-        self.context.avm2.push(std::f64::NAN);
+        self.context.avm2.push(f64::NAN);
         Ok(FrameControl::Continue)
     }
 
@@ -636,7 +757,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_push_short(&mut self, value: u32) -> Result<FrameControl<'gc>, Error> {
+    fn op_push_short(&mut self, value: i16) -> Result<FrameControl<'gc>, Error> {
         self.context.avm2.push(value);
         Ok(FrameControl::Continue)
     }
@@ -1068,7 +1189,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let obj = self.context.avm2.pop().coerce_to_object(self)?;
         let name = self.context.avm2.pop().coerce_to_string(self)?;
 
-        let qname = QName::new(Namespace::public_namespace(), name);
+        let qname = QName::new(Namespace::public(), name);
         let has_prop = obj.has_property(&qname)?;
 
         self.context.avm2.push(has_prop);
@@ -1126,22 +1247,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_get_global_scope(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let mut scope = self.scope();
-
-        while let Some(this_scope) = scope {
-            let parent = this_scope.read().parent_cell();
-            if parent.is_none() {
-                break;
-            }
-
-            scope = parent;
-        }
-
-        self.context.avm2.push(
-            scope
-                .map(|s| s.read().locals().clone().into())
-                .unwrap_or(Value::Undefined),
-        );
+        self.context.avm2.push(self.global_scope());
 
         Ok(FrameControl::Continue)
     }
@@ -1178,7 +1284,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             None
         }
-        .ok_or_else(|| format!("Property does not exist: {:?}", multiname.local_name()).into());
+        .ok_or_else(|| format!("Property does not exist: {:?}", multiname).into());
         let result: Value<'gc> = found?.into();
 
         self.context.avm2.push(result);
@@ -1200,7 +1306,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             None
         }
-        .ok_or_else(|| format!("Property does not exist: {:?}", multiname.local_name()).into());
+        .ok_or_else(|| format!("Property does not exist: {:?}", multiname).into());
         let result: Value<'gc> = found?;
 
         self.context.avm2.push(result);
@@ -1251,11 +1357,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let mut ctor = self.context.avm2.pop().coerce_to_object(self)?;
 
         let proto = ctor
-            .get_property(
-                ctor,
-                &QName::new(Namespace::public_namespace(), "prototype"),
-                self,
-            )?
+            .get_property(ctor, &QName::new(Namespace::public(), "prototype"), self)?
             .coerce_to_object(self)?;
 
         let object = proto.construct(self, &args)?;
@@ -1284,11 +1386,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .get_property(source, &ctor_name?, self)?
             .coerce_to_object(self)?;
         let proto = ctor
-            .get_property(
-                ctor,
-                &QName::new(Namespace::public_namespace(), "prototype"),
-                self,
-            )?
+            .get_property(ctor, &QName::new(Namespace::public(), "prototype"), self)?
             .coerce_to_object(self)?;
 
         let object = proto.construct(self, &args)?;
@@ -1302,20 +1400,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_construct_super(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
-        let name = QName::new(Namespace::public_namespace(), "constructor");
-        let base_proto: Result<Object<'gc>, Error> =
-            self.base_proto().and_then(|p| p.proto()).ok_or_else(|| {
-                "Attempted to call super constructor without a superclass."
-                    .to_string()
-                    .into()
-            });
-        let mut base_proto = base_proto?;
 
-        let function = base_proto
-            .get_property(receiver, &name, self)?
-            .coerce_to_object(self)?;
-
-        function.call(Some(receiver), &args, self, Some(base_proto))?;
+        self.super_init(receiver, &args)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1340,7 +1426,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             object.set_property(
                 object,
-                &QName::new(Namespace::public_namespace(), name.coerce_to_string(self)?),
+                &QName::new(Namespace::public(), name.coerce_to_string(self)?),
                 value,
                 self,
             )?;
@@ -1373,7 +1459,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         new_fn.install_slot(
             self.context.gc_context,
-            QName::new(Namespace::public_namespace(), "prototype"),
+            QName::new(Namespace::public(), "prototype"),
             0,
             es3_proto.into(),
         );
@@ -1731,6 +1817,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
+    fn op_swap(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
+
+        self.context.avm2.push(value2);
+        self.context.avm2.push(value1);
+
+        Ok(FrameControl::Continue)
+    }
+
     fn op_urshift(&mut self) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop().coerce_to_u32(self)?;
         let value1 = self.context.avm2.pop().coerce_to_u32(self)?;
@@ -1740,219 +1836,234 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_jump(
+    fn op_jump<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
-        reader.seek(offset as i64)?;
+        reader.seek(full_data, offset);
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_true(
+    fn op_if_true<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop().coerce_to_boolean();
 
         if value {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_false(
+    fn op_if_false<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop().coerce_to_boolean();
 
         if !value {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_strict_eq(
+    fn op_if_strict_eq<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1 == value2 {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_strict_ne(
+    fn op_if_strict_ne<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1 != value2 {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_eq(
+    fn op_if_eq<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1.abstract_eq(&value2, self)? {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_ne(
+    fn op_if_ne<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if !value1.abstract_eq(&value2, self)? {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_ge(
+    fn op_if_ge<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1.abstract_lt(&value2, self)? == Some(false) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_gt(
+    fn op_if_gt<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value2.abstract_lt(&value1, self)? == Some(true) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_le(
+    fn op_if_le<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value2.abstract_lt(&value1, self)? == Some(false) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_lt(
+    fn op_if_lt<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1.abstract_lt(&value2, self)? == Some(true) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_nge(
+    fn op_if_nge<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value1.abstract_lt(&value2, self)?.unwrap_or(true) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_ngt(
+    fn op_if_ngt<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if !value2.abstract_lt(&value1, self)?.unwrap_or(false) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_nle(
+    fn op_if_nle<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if value2.abstract_lt(&value1, self)?.unwrap_or(true) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
     }
 
-    fn op_if_nlt(
+    fn op_if_nlt<'b>(
         &mut self,
         offset: i32,
-        reader: &mut Reader<Cursor<&[u8]>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
         let value2 = self.context.avm2.pop();
         let value1 = self.context.avm2.pop();
 
         if !value1.abstract_lt(&value2, self)?.unwrap_or(false) {
-            reader.seek(offset as i64)?;
+            reader.seek(full_data, offset);
         }
 
         Ok(FrameControl::Continue)
@@ -2019,6 +2130,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         self.context.avm2.push(result);
 
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_nop(&mut self) -> Result<FrameControl<'gc>, Error> {
         Ok(FrameControl::Continue)
     }
 
@@ -2158,6 +2273,50 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let is_instance_of = value.is_instance_of(self, type_object, false)?;
 
         self.context.avm2.push(is_instance_of);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_type_of(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop();
+
+        let type_name = match value {
+            Value::Undefined => "undefined",
+            Value::Null => "object",
+            Value::Bool(_) => "boolean",
+            Value::Number(_) | Value::Integer(_) | Value::Unsigned(_) => "number",
+            Value::Object(o) => {
+                // Subclasses always have a typeof = "object", must be a subclass if the prototype chain is > 2, or not a subclass if <=2
+                let is_not_subclass = matches!(
+                    o.proto().and_then(|p| p.proto()).and_then(|p| p.proto()),
+                    None
+                );
+
+                match o {
+                    Object::FunctionObject(_) => {
+                        if is_not_subclass {
+                            "function"
+                        } else {
+                            "object"
+                        }
+                    }
+                    Object::XmlObject(_) => {
+                        if is_not_subclass {
+                            "xml"
+                        } else {
+                            "object"
+                        }
+                    }
+                    _ => "object",
+                }
+            }
+            Value::String(_) => "string",
+        };
+
+        self.context.avm2.push(Value::String(AvmString::new(
+            self.context.gc_context,
+            type_name,
+        )));
 
         Ok(FrameControl::Continue)
     }

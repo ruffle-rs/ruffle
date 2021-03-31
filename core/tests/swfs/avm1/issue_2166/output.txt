@@ -1,0 +1,9 @@
+f:
+ arg0: 0
+ arg1: undefined
+ arg2: undefined
+
+root:
+ arg0: undefined
+ arg1: undefined
+ arg2: undefined

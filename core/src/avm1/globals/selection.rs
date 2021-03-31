@@ -147,7 +147,7 @@ pub fn create_selection_object<'gc>(
         "getBeginIndex",
         get_begin_index,
         gc_context,
-        Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -155,7 +155,7 @@ pub fn create_selection_object<'gc>(
         "getEndIndex",
         get_end_index,
         gc_context,
-        Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -163,7 +163,7 @@ pub fn create_selection_object<'gc>(
         "getCaretIndex",
         get_caret_index,
         gc_context,
-        Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -171,7 +171,7 @@ pub fn create_selection_object<'gc>(
         "setSelection",
         set_selection,
         gc_context,
-        Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -179,7 +179,7 @@ pub fn create_selection_object<'gc>(
         "setFocus",
         set_focus,
         gc_context,
-        Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -187,7 +187,7 @@ pub fn create_selection_object<'gc>(
         "getFocus",
         get_focus,
         gc_context,
-        Attribute::DontDelete | Attribute::DontEnum | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

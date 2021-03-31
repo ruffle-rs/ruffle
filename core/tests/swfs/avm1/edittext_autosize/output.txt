@@ -1,0 +1,72 @@
+// no autosize
+//my_txt1._x
+50
+//my_txt1._width
+100
+//my_txt1._width + my_txt1._x
+150
+//my_txt1.textWidth
+195
+// xMin:
+50
+// xMax:
+150
+// yMin:
+40
+// yMax:
+70
+
+// autosize left
+//my_txt2._x
+50
+//my_txt2._width
+199.9
+//my_txt2._width + my_txt2._x
+249.9
+//my_txt2.textWidth
+195
+// xMin:
+50
+// xMax:
+249.9
+// yMin:
+80
+// yMax:
+102.3
+
+// autosize center
+//my_txt3._x
+0.05
+//my_txt3._width
+199.9
+//my_txt3._width + my_txt3._x
+199.95
+//my_txt3.textWidth
+195
+// xMin:
+0.05
+// xMax:
+199.95
+// yMin:
+120
+// yMax:
+142.3
+
+// autosize right
+//my_txt4._x
+-49.9
+//my_txt4._width
+199.9
+//my_txt4._width + my_txt4._x
+150
+//my_txt4.textWidth
+195
+// xMin:
+-49.9
+// xMax:
+150
+// yMin:
+160
+// yMax:
+182.3
+

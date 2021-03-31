@@ -1,3 +1,4 @@
+use crate::tag_code::TagCode;
 use std::{borrow, error, fmt, io};
 
 /// A `Result` from reading SWF data.
@@ -19,7 +20,7 @@ pub enum Error {
     /// This can contain sub-errors with further information (`Error::source`)
     SwfParseError {
         tag_code: u16,
-        source: Option<Box<dyn error::Error + 'static>>,
+        source: Box<dyn error::Error + 'static>,
     },
     /// An IO error occurred (probably unexpected EOF).
     IoError(io::Error),
@@ -51,18 +52,10 @@ impl Error {
     }
     /// Helper method to create `Error::SwfParseError`.
     #[inline]
-    pub fn swf_parse_error(tag_code: u16) -> Self {
+    pub fn swf_parse_error(tag_code: u16, source: impl error::Error + 'static) -> Self {
         Error::SwfParseError {
             tag_code,
-            source: None,
-        }
-    }
-    /// Helper method to create `Error::SwfParseError`.
-    #[inline]
-    pub fn swf_parse_error_with_source(tag_code: u16, source: impl error::Error + 'static) -> Self {
-        Error::SwfParseError {
-            tag_code,
-            source: Some(Box::new(source)),
+            source: Box::new(source),
         }
     }
     /// Helper method to create `Error::Unsupported`.
@@ -90,16 +83,13 @@ impl fmt::Display for Error {
                 Ok(())
             }
             Error::SwfParseError { tag_code, source } => {
-                let tag = crate::tag_code::TagCode::from_u16(*tag_code);
                 "Error parsing SWF tag ".fmt(f)?;
-                if let Some(tag) = tag {
-                    write!(f, "{:?}", tag)?;
+                if let Some(tag_code) = TagCode::from_u16(*tag_code) {
+                    write!(f, "{:?}", tag_code)?;
                 } else {
                     write!(f, "Unknown({})", tag_code)?;
                 };
-                if let Some(source) = source {
-                    write!(f, ": {}", source)?;
-                }
+                write!(f, ": {}", source)?;
                 Ok(())
             }
             Error::IoError(e) => e.fmt(f),
@@ -116,7 +106,7 @@ impl error::Error for Error {
             Error::Avm1ParseError { source, .. } => source.as_ref().map(|s| s.deref()),
             Error::IoError(e) => e.source(),
             Error::InvalidData(_) => None,
-            Error::SwfParseError { source, .. } => source.as_ref().map(|s| s.deref()),
+            Error::SwfParseError { source, .. } => Some(source.as_ref()),
             Error::Unsupported(_) => None,
         }
     }

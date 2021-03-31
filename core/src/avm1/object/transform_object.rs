@@ -60,7 +60,7 @@ impl<'gc> TObject<'gc> for TransformObject<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let prototype = self
             .get("prototype", activation)?
             .coerce_to_object(activation);
@@ -80,20 +80,16 @@ impl<'gc> TObject<'gc> for TransformObject<'gc> {
             // TODO: This should return an unboxed undefined.
             Value::Undefined.coerce_to_object(activation)
         };
-        Ok(this)
+        Ok(this.into())
     }
 
     #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(TransformObject::empty(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.transform),
-        )
-        .into())
+        Ok(TransformObject::empty(activation.context.gc_context, Some(this)).into())
     }
 
     fn set(

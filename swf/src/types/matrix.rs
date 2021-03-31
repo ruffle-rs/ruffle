@@ -1,3 +1,9 @@
+#![allow(
+    renamed_and_removed_lints,
+    clippy::unknown_clippy_lints,
+    clippy::suspicious_operation_groupings
+)]
+
 use crate::Twips;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -26,10 +32,10 @@ impl Matrix {
         Self {
             a: 1.0,
             c: 0.0,
-            tx: Twips::new(0),
+            tx: Twips::zero(),
             b: 0.0,
             d: 1.0,
-            ty: Twips::new(0),
+            ty: Twips::zero(),
         }
     }
 
@@ -37,10 +43,10 @@ impl Matrix {
         Self {
             a: scale_x,
             c: 0.0,
-            tx: Twips::new(0),
+            tx: Twips::zero(),
             b: 0.0,
             d: scale_y,
-            ty: Twips::new(0),
+            ty: Twips::zero(),
         }
     }
 
@@ -48,10 +54,10 @@ impl Matrix {
         Self {
             a: angle.cos(),
             c: -angle.sin(),
-            tx: Twips::new(0),
+            tx: Twips::zero(),
             b: angle.sin(),
             d: angle.cos(),
-            ty: Twips::new(0),
+            ty: Twips::zero(),
         }
     }
 
@@ -525,18 +531,18 @@ mod tests {
         multiply_twips_identity_matrix,
         (
             Matrix::default(),
-            (Twips::new(0), Twips::new(0)),
-            (Twips::new(0), Twips::new(0))
+            (Twips::zero(), Twips::zero()),
+            (Twips::zero(), Twips::zero())
         ),
         (
             Matrix::default(),
-            (Twips::new(0), Twips::new(10)),
-            (Twips::new(0), Twips::new(10))
+            (Twips::zero(), Twips::new(10)),
+            (Twips::zero(), Twips::new(10))
         ),
         (
             Matrix::default(),
-            (Twips::new(10), Twips::new(0)),
-            (Twips::new(10), Twips::new(0))
+            (Twips::new(10), Twips::zero()),
+            (Twips::new(10), Twips::zero())
         ),
         (
             Matrix::default(),
@@ -557,7 +563,7 @@ mod tests {
                 d: 1.0,
                 ty: Twips::new(5)
             },
-            (Twips::new(0), Twips::new(0)),
+            (Twips::zero(), Twips::zero()),
             (Twips::new(10), Twips::new(5))
         ),
         (
@@ -567,7 +573,7 @@ mod tests {
                 tx: Twips::new(-200),
                 b: 0.0,
                 d: 1.0,
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
             (Twips::new(50), Twips::new(20)),
             (Twips::new(-150), Twips::new(20))
@@ -581,22 +587,22 @@ mod tests {
             Matrix {
                 a: 3.0,
                 c: 0.0,
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: 0.0,
                 d: 3.0,
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
-            (Twips::new(0), Twips::new(0)),
-            (Twips::new(0), Twips::new(0))
+            (Twips::zero(), Twips::zero()),
+            (Twips::zero(), Twips::zero())
         ),
         (
             Matrix {
                 a: 3.0,
                 c: 0.0,
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: 0.0,
                 d: 3.0,
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
             (Twips::new(10), Twips::new(10)),
             (Twips::new(30), Twips::new(30))
@@ -605,10 +611,10 @@ mod tests {
             Matrix {
                 a: 0.6,
                 c: 0.0,
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: 0.0,
                 d: 0.2,
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
             (Twips::new(5), Twips::new(10)),
             (Twips::new(3), Twips::new(2))
@@ -617,10 +623,10 @@ mod tests {
             Matrix {
                 a: 0.5,
                 c: 0.0,
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: 0.0,
                 d: 0.5,
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
             (Twips::new(5), Twips::new(5)),
             (Twips::new(2), Twips::new(2))
@@ -634,34 +640,34 @@ mod tests {
             Matrix {
                 a: 0.0,
                 c: -1.0,
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: 1.0,
                 d: 0.0,
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
-            (Twips::new(10), Twips::new(0)),
-            (Twips::new(0), Twips::new(10))
+            (Twips::new(10), Twips::zero()),
+            (Twips::zero(), Twips::new(10))
         ),
         (
             Matrix {
                 a: 0.0,
                 c: -1.0,
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: 1.0,
                 d: 0.0,
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
-            (Twips::new(0), Twips::new(10)),
-            (Twips::new(-10), Twips::new(0))
+            (Twips::zero(), Twips::new(10)),
+            (Twips::new(-10), Twips::zero())
         ),
         (
             Matrix {
                 a: 0.0,
                 c: 1.0,
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: -1.0,
                 d: 0.0,
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
             (Twips::new(10), Twips::new(10)),
             (Twips::new(10), Twips::new(-10))
@@ -670,25 +676,25 @@ mod tests {
             Matrix {
                 a: f32::cos(std::f32::consts::FRAC_PI_4),
                 c: f32::sin(std::f32::consts::FRAC_PI_4),
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: -f32::sin(std::f32::consts::FRAC_PI_4),
                 d: f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
-            (Twips::new(100), Twips::new(0)),
+            (Twips::new(100), Twips::zero()),
             (Twips::new(71), Twips::new(-71))
         ),
         (
             Matrix {
                 a: f32::cos(std::f32::consts::FRAC_PI_4),
                 c: f32::sin(std::f32::consts::FRAC_PI_4),
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: -f32::sin(std::f32::consts::FRAC_PI_4),
                 d: f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
             (Twips::new(100), Twips::new(100)),
-            (Twips::new(141), Twips::new(0))
+            (Twips::new(141), Twips::zero())
         )
     );
 
@@ -700,13 +706,13 @@ mod tests {
             Matrix {
                 a: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
                 c: 3.0 * f32::sin(std::f32::consts::FRAC_PI_4),
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: 3.0 * -f32::sin(std::f32::consts::FRAC_PI_4),
                 d: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::new(0)
+                ty: Twips::zero()
             },
             (Twips::new(100), Twips::new(100)),
-            (Twips::new(424), Twips::new(0))
+            (Twips::new(424), Twips::zero())
         ),
         (
             // result of translating by (-5, 5) * rotation by 45 degrees
@@ -739,13 +745,13 @@ mod tests {
             Matrix {
                 a: f32::cos(std::f32::consts::FRAC_PI_4),
                 c: f32::sin(std::f32::consts::FRAC_PI_4),
-                tx: Twips::new(0),
+                tx: Twips::zero(),
                 b: -f32::sin(std::f32::consts::FRAC_PI_4),
                 d: f32::cos(std::f32::consts::FRAC_PI_4),
                 ty: Twips::new((10.0 * f32::sin(std::f32::consts::FRAC_PI_4)) as i32)
             },
             (Twips::new(105), Twips::new(95)),
-            (Twips::new(141), Twips::new(0))
+            (Twips::new(141), Twips::zero())
         )
     );
 }
@@ -762,15 +768,15 @@ fn round_to_i32(f: f32) -> i32 {
     if f.is_finite() {
         let a = f.abs();
         if f < 2_147_483_648.0_f32 {
-            let k = 1.0 / std::f32::EPSILON;
+            let k = 1.0 / f32::EPSILON;
             let out = if a < k { ((a + k) - k).copysign(f) } else { f };
             out as i32
         } else {
             // Out-of-range clamps to MIN.
-            std::i32::MIN
+            i32::MIN
         }
     } else {
-        // NAN/Infinity goes to 0.
+        // NaN/Infinity goes to 0.
         0
     }
 }

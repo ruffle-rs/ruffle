@@ -1,15 +1,19 @@
 //! Contexts and helper types passed between functions.
-use crate::avm1;
 
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object as Avm1Object, Timers, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, Value as Avm2Value};
-use crate::backend::input::InputBackend;
-use crate::backend::locale::LocaleBackend;
-use crate::backend::log::LogBackend;
-use crate::backend::storage::StorageBackend;
-use crate::backend::{audio::AudioBackend, navigator::NavigatorBackend, render::RenderBackend};
-use crate::display_object::EditText;
+use crate::backend::{
+    audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
+    locale::LocaleBackend,
+    log::LogBackend,
+    navigator::NavigatorBackend,
+    render::RenderBackend,
+    storage::StorageBackend,
+    ui::UiBackend,
+    video::VideoBackend,
+};
+use crate::display_object::{EditText, MovieClip, SoundTransform};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
@@ -19,7 +23,7 @@ use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::transform::TransformStack;
 use core::fmt;
-use gc_arena::{Collect, CollectionContext, MutationContext};
+use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
 use std::collections::{BTreeMap, HashMap, VecDeque};
@@ -36,7 +40,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The background color of the Stage. Changed by the `SetBackgroundColor` SWF tag.
     /// TODO: Move this into a `Stage` display object.
-    pub background_color: &'a mut Color,
+    pub background_color: &'a mut Option<Color>,
 
     /// The mutation context to allocate and mutate `GcCell` types.
     pub gc_context: MutationContext<'gc, 'gc_context>,
@@ -59,7 +63,10 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub swf: &'a Arc<SwfMovie>,
 
     /// The audio backend, used by display objects and AVM to play audio.
-    pub audio: &'a mut (dyn AudioBackend + 'a),
+    pub audio: &'a mut dyn AudioBackend,
+
+    /// The audio manager, manging all actively playing sounds.
+    pub audio_manager: &'a mut AudioManager<'gc>,
 
     /// The navigator backend, used by the AVM to make HTTP requests and visit webpages.
     pub navigator: &'a mut (dyn NavigatorBackend + 'a),
@@ -67,8 +74,8 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The renderer, used by the display objects to draw themselves.
     pub renderer: &'a mut dyn RenderBackend,
 
-    /// The input backend, used to detect user interactions.
-    pub input: &'a mut dyn InputBackend,
+    /// The UI backend, used to detect user interactions.
+    pub ui: &'a mut dyn UiBackend,
 
     /// The storage backend, used for storing persistent state
     pub storage: &'a mut dyn StorageBackend,
@@ -79,15 +86,14 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The logging backend, used for trace output capturing
     pub log: &'a mut dyn LogBackend,
 
+    /// The video backend, used for video decoding
+    pub video: &'a mut dyn VideoBackend,
+
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
 
     /// All loaded levels of the current player.
     pub levels: &'a mut BTreeMap<u32, DisplayObject<'gc>>,
-
-    /// The current set of system-specified prototypes to use when constructing
-    /// new built-in objects.
-    pub system_prototypes: avm1::SystemPrototypes<'gc>,
 
     /// The display object that the mouse is currently hovering over.
     pub mouse_hovered_object: Option<DisplayObject<'gc>>,
@@ -146,36 +152,87 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// A tracker for the current keyboard focused element
     pub focus_tracker: FocusTracker<'gc>,
+
+    /// How many times getTimer() was called so far. Used to detect busy-loops.
+    pub times_get_time_called: u32,
+
+    /// This frame's current fake time offset, used to pretend passage of time in time functions
+    pub time_offset: &'a mut u32,
 }
 
-unsafe impl<'a, 'gc, 'gc_context> Collect for UpdateContext<'a, 'gc, 'gc_context> {
-    fn trace(&self, cc: CollectionContext) {
-        self.action_queue.trace(cc);
-        self.background_color.trace(cc);
-        self.library.trace(cc);
-        self.player_version.trace(cc);
-        self.needs_render.trace(cc);
-        self.swf.trace(cc);
-        self.audio.trace(cc);
-        self.navigator.trace(cc);
-        self.renderer.trace(cc);
-        self.input.trace(cc);
-        self.storage.trace(cc);
-        self.rng.trace(cc);
-        self.levels.trace(cc);
-        self.system_prototypes.trace(cc);
-        self.mouse_hovered_object.trace(cc);
-        self.mouse_position.trace(cc);
-        self.drag_object.trace(cc);
-        self.load_manager.trace(cc);
-        self.system.trace(cc);
-        self.instance_counter.trace(cc);
-        self.shared_objects.trace(cc);
-        self.unbound_text_fields.trace(cc);
-        self.timers.trace(cc);
-        self.avm1.trace(cc);
-        self.avm2.trace(cc);
-        self.focus_tracker.trace(cc);
+/// Convenience methods for controlling audio.
+impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
+    pub fn update_sounds(&mut self) {
+        self.audio_manager.update_sounds(
+            self.audio,
+            self.gc_context,
+            self.action_queue,
+            *self.levels.get(&0).unwrap(),
+        );
+    }
+
+    pub fn global_sound_transform(&self) -> &SoundTransform {
+        self.audio_manager.global_sound_transform()
+    }
+
+    pub fn set_global_sound_transform(&mut self, sound_transform: SoundTransform) {
+        self.audio_manager
+            .set_global_sound_transform(sound_transform);
+    }
+
+    pub fn start_sound(
+        &mut self,
+        sound: SoundHandle,
+        settings: &swf::SoundInfo,
+        owner: Option<DisplayObject<'gc>>,
+        avm1_object: Option<crate::avm1::SoundObject<'gc>>,
+    ) -> Option<SoundInstanceHandle> {
+        self.audio_manager
+            .start_sound(self.audio, sound, settings, owner, avm1_object)
+    }
+
+    pub fn stop_sound(&mut self, instance: SoundInstanceHandle) {
+        self.audio_manager.stop_sound(self.audio, instance)
+    }
+
+    pub fn stop_sounds_with_handle(&mut self, sound: SoundHandle) {
+        self.audio_manager
+            .stop_sounds_with_handle(self.audio, sound)
+    }
+
+    pub fn stop_sounds_with_display_object(&mut self, display_object: DisplayObject<'gc>) {
+        self.audio_manager
+            .stop_sounds_with_display_object(self.audio, display_object)
+    }
+
+    pub fn stop_all_sounds(&mut self) {
+        self.audio_manager.stop_all_sounds(self.audio)
+    }
+
+    pub fn is_sound_playing_with_handle(&mut self, sound: SoundHandle) -> bool {
+        self.audio_manager.is_sound_playing_with_handle(sound)
+    }
+
+    pub fn start_stream(
+        &mut self,
+        stream_handle: Option<SoundHandle>,
+        movie_clip: MovieClip<'gc>,
+        frame: u16,
+        data: crate::tag_utils::SwfSlice,
+        stream_info: &swf::SoundStreamHead,
+    ) -> Option<SoundInstanceHandle> {
+        self.audio_manager.start_stream(
+            self.audio,
+            stream_handle,
+            movie_clip,
+            frame,
+            data,
+            stream_info,
+        )
+    }
+
+    pub fn set_sound_transforms_dirty(&mut self) {
+        self.audio_manager.set_sound_transforms_dirty()
     }
 }
 
@@ -200,15 +257,16 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             needs_render: self.needs_render,
             swf: self.swf,
             audio: self.audio,
+            audio_manager: self.audio_manager,
             navigator: self.navigator,
             renderer: self.renderer,
             locale: self.locale,
             log: self.log,
-            input: self.input,
+            ui: self.ui,
+            video: self.video,
             storage: self.storage,
             rng: self.rng,
             levels: self.levels,
-            system_prototypes: self.system_prototypes.clone(),
             mouse_hovered_object: self.mouse_hovered_object,
             mouse_position: self.mouse_position,
             drag_object: self.drag_object,
@@ -226,11 +284,15 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             update_start: self.update_start,
             max_execution_duration: self.max_execution_duration,
             focus_tracker: self.focus_tracker,
+            times_get_time_called: self.times_get_time_called,
+            time_offset: self.time_offset,
         }
     }
 }
 
 /// A queued ActionScript call.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct QueuedActions<'gc> {
     /// The movie clip this ActionScript is running on.
     pub clip: DisplayObject<'gc>,
@@ -242,15 +304,9 @@ pub struct QueuedActions<'gc> {
     pub is_unload: bool,
 }
 
-unsafe impl<'gc> Collect for QueuedActions<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.clip.trace(cc);
-        self.action_type.trace(cc);
-    }
-}
-
 /// Action and gotos need to be queued up to execute at the end of the frame.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct ActionQueue<'gc> {
     /// Each priority is kept in a separate bucket.
     action_queue: Vec<VecDeque<QueuedActions<'gc>>>,
@@ -308,15 +364,6 @@ impl<'gc> Default for ActionQueue<'gc> {
     }
 }
 
-unsafe impl<'gc> Collect for ActionQueue<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        for queue in &self.action_queue {
-            queue.iter().for_each(|o| o.trace(cc));
-        }
-    }
-}
-
 /// Shared data used during rendering.
 /// `Player` creates this when it renders a frame and passes it down to display objects.
 pub struct RenderContext<'a, 'gc> {
@@ -340,7 +387,8 @@ pub struct RenderContext<'a, 'gc> {
 }
 
 /// The type of action being run.
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub enum ActionType<'gc> {
     /// Normal frame or event actions.
     Normal { bytecode: SwfSlice },
@@ -431,25 +479,6 @@ impl fmt::Debug for ActionType<'_> {
                 .field("reciever", reciever)
                 .field("args", args)
                 .finish(),
-        }
-    }
-}
-
-unsafe impl<'gc> Collect for ActionType<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        match self {
-            ActionType::Construct { constructor, .. } => {
-                constructor.trace(cc);
-            }
-            ActionType::Method { object, args, .. } => {
-                object.trace(cc);
-                args.trace(cc);
-            }
-            ActionType::NotifyListeners { args, .. } => {
-                args.trace(cc);
-            }
-            _ => {}
         }
     }
 }

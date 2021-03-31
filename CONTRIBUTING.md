@@ -52,7 +52,7 @@ Ruffle is a young project, and there is still much Flash functionality that is u
 
 ## Debugging ActionScript Content
 
-If you build Ruffle with `--features avm_debug` and enable debug logging (`RUST_LOG=warn,ruffle_core=debug`) then you will
+If you build Ruffle with `--features avm_debug` and enable debug logging (`RUST_LOG="warn,ruffle_core=debug"`) then you will
 activate a few built-in debugging utilities inside Ruffle, listed below.
 
 ### Warnings and Errors
@@ -143,6 +143,7 @@ web: Fix incorrect rendering of gradients (close #23)
    * `avm1:`
    * `docs:`
    * `chore:`
+   * `tests:`
  * Capitalize the first letter following the tag
  * Limit line length to 72 characters
  * Use the present tense and imperative mood ("fix", not "fixed" nor "fixes")

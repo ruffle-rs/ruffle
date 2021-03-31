@@ -1,20 +1,23 @@
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::font::TextRenderSettings;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, GcCell, MutationContext};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Text<'gc>(GcCell<'gc, TextData<'gc>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, TextStatic>,
+    render_settings: TextRenderSettings,
 }
 
 impl<'gc> Text<'gc> {
@@ -37,8 +40,17 @@ impl<'gc> Text<'gc> {
                         text_blocks: tag.records.clone(),
                     },
                 ),
+                render_settings: Default::default(),
             },
         ))
+    }
+
+    pub fn set_render_settings(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        settings: TextRenderSettings,
+    ) {
+        self.0.write(gc_context).render_settings = settings
     }
 }
 
@@ -57,9 +69,8 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         // Noop
     }
 
-    fn render(&self, context: &mut RenderContext) {
+    fn render_self(&self, context: &mut RenderContext) {
         let tf = self.0.read();
-        context.transform_stack.push(&*self.transform());
         context.transform_stack.push(&Transform {
             matrix: tf.static_data.text_transform,
             ..Default::default()
@@ -72,7 +83,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             a: 0,
         };
         let mut font_id = 0;
-        let mut height = Twips::new(0);
+        let mut height = Twips::zero();
         let mut transform: Transform = Default::default();
         for block in &tf.static_data.text_blocks {
             if let Some(x) = block.x_offset {
@@ -110,7 +121,6 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             }
         }
         context.transform_stack.pop();
-        context.transform_stack.pop();
     }
 
     fn self_bounds(&self) -> BoundingBox {
@@ -123,6 +133,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         mut point: (Twips, Twips),
     ) -> bool {
         if self.world_bounds().contains(point) {
+            // Texts using the "Advanced text rendering" always hit test using their bounding box.
+            if self.0.read().render_settings.is_advanced() {
+                return true;
+            }
+
             // Transform the point into the text's local space.
             let local_matrix = self.global_to_local_matrix();
             let tf = self.0.read();
@@ -131,7 +146,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             point = text_matrix * local_matrix * point;
 
             let mut font_id = 0;
-            let mut height = Twips::new(0);
+            let mut height = Twips::zero();
             let mut glyph_matrix = Matrix::default();
             for block in &tf.static_data.text_blocks {
                 if let Some(x) = block.x_offset {
@@ -180,28 +195,14 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 }
 
-unsafe impl<'gc> gc_arena::Collect for TextData<'gc> {
-    #[inline]
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.base.trace(cc);
-        self.static_data.trace(cc);
-    }
-}
-
 /// Static data shared between all instances of a text object.
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Collect)]
+#[collect(require_static)]
 struct TextStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
     bounds: BoundingBox,
     text_transform: Matrix,
     text_blocks: Vec<swf::TextRecord>,
-}
-
-unsafe impl<'gc> gc_arena::Collect for TextStatic {
-    #[inline]
-    fn needs_trace() -> bool {
-        false
-    }
 }

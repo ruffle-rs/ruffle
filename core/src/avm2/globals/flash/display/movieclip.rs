@@ -23,9 +23,22 @@ pub fn instance_init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
+        activation.super_init(this, &[])?;
+
         if this.as_display_object().is_none() {
+            let mut proto = this
+                .proto()
+                .ok_or("Attempted to construct bare-object MovieClip")?;
+            let constr = proto
+                .get_property(proto, &QName::dynamic_name("constructor"), activation)?
+                .coerce_to_object(activation)?;
             let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-            let new_do = MovieClip::new(SwfSlice::empty(movie), activation.context.gc_context);
+            let new_do = MovieClip::new_with_avm2(
+                SwfSlice::empty(movie),
+                this,
+                constr,
+                activation.context.gc_context,
+            );
 
             this.init_display_object(activation.context.gc_context, new_do.into());
         }
@@ -535,92 +548,92 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "addFrameScript"),
+        QName::new(Namespace::public(), "addFrameScript"),
         Method::from_builtin(add_frame_script),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "currentFrame"),
+        QName::new(Namespace::public(), "currentFrame"),
         Method::from_builtin(current_frame),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "currentFrameLabel"),
+        QName::new(Namespace::public(), "currentFrameLabel"),
         Method::from_builtin(current_frame_label),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "currentLabel"),
+        QName::new(Namespace::public(), "currentLabel"),
         Method::from_builtin(current_label),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "currentLabels"),
+        QName::new(Namespace::public(), "currentLabels"),
         Method::from_builtin(current_labels),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "currentScene"),
+        QName::new(Namespace::public(), "currentScene"),
         Method::from_builtin(current_scene),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "scenes"),
+        QName::new(Namespace::public(), "scenes"),
         Method::from_builtin(scenes),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "framesLoaded"),
+        QName::new(Namespace::public(), "framesLoaded"),
         Method::from_builtin(frames_loaded),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "isPlaying"),
+        QName::new(Namespace::public(), "isPlaying"),
         Method::from_builtin(is_playing),
     ));
 
     write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::package(""), "totalFrames"),
+        QName::new(Namespace::public(), "totalFrames"),
         Method::from_builtin(total_frames),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "gotoAndPlay"),
+        QName::new(Namespace::public(), "gotoAndPlay"),
         Method::from_builtin(goto_and_play),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "gotoAndStop"),
+        QName::new(Namespace::public(), "gotoAndStop"),
         Method::from_builtin(goto_and_stop),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "stop"),
+        QName::new(Namespace::public(), "stop"),
         Method::from_builtin(stop),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "play"),
+        QName::new(Namespace::public(), "play"),
         Method::from_builtin(play),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "prevFrame"),
+        QName::new(Namespace::public(), "prevFrame"),
         Method::from_builtin(prev_frame),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "nextFrame"),
+        QName::new(Namespace::public(), "nextFrame"),
         Method::from_builtin(next_frame),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "prevScene"),
+        QName::new(Namespace::public(), "prevScene"),
         Method::from_builtin(prev_scene),
     ));
 
     write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::package(""), "nextScene"),
+        QName::new(Namespace::public(), "nextScene"),
         Method::from_builtin(next_scene),
     ));
 

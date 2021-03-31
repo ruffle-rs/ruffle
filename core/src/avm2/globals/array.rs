@@ -10,7 +10,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use enumset::{EnumSet, EnumSetType};
+use bitflags::bitflags;
 use gc_arena::{GcCell, MutationContext};
 use std::cmp::{min, Ordering};
 use std::mem::swap;
@@ -22,6 +22,8 @@ pub fn instance_init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
+        activation.super_init(this, &[])?;
+
         if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
             if args.len() == 1 {
                 if let Some(expected_len) = args
@@ -56,7 +58,7 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `Array.length`
+/// Implements `Array.length`'s getter
 pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -65,6 +67,25 @@ pub fn length<'gc>(
     if let Some(this) = this {
         if let Some(array) = this.as_array_storage() {
             return Ok(array.length().into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Array.length`'s setter
+pub fn set_length<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+            let size = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u32(activation)?;
+            array.set_length(size as usize);
         }
     }
 
@@ -113,7 +134,7 @@ pub fn concat<'gc>(
 }
 
 /// Resolves array holes.
-fn resolve_array_hole<'gc>(
+pub fn resolve_array_hole<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     i: usize,
@@ -125,7 +146,7 @@ fn resolve_array_hole<'gc>(
                 p.get_property(
                     p,
                     &QName::new(
-                        Namespace::public_namespace(),
+                        Namespace::public(),
                         AvmString::new(activation.context.gc_context, i.to_string()),
                     ),
                     activation,
@@ -208,7 +229,7 @@ pub fn to_locale_string<'gc>(
 
         let tls = o.get_property(
             o,
-            &QName::new(Namespace::public_namespace(), "toLocaleString"),
+            &QName::new(Namespace::public(), "toLocaleString"),
             activation,
         )?;
 
@@ -259,7 +280,7 @@ impl<'gc> ArrayIter<'gc> {
         let length = array_object
             .get_property(
                 array_object,
-                &QName::new(Namespace::public_namespace(), "length"),
+                &QName::new(Namespace::public(), "length"),
                 activation,
             )?
             .coerce_to_u32(activation)?;
@@ -289,7 +310,7 @@ impl<'gc> ArrayIter<'gc> {
                     .get_property(
                         self.array_object,
                         &QName::new(
-                            Namespace::public_namespace(),
+                            Namespace::public(),
                             AvmString::new(activation.context.gc_context, i.to_string()),
                         ),
                         activation,
@@ -773,25 +794,26 @@ pub fn splice<'gc>(
     Ok(Value::Undefined)
 }
 
-/// The array options that a given sort operation may use.
-///
-/// These are provided as a number by the VM and converted into an enumset.
-#[derive(EnumSetType)]
-enum SortOptions {
-    /// Request case-insensitive string value sort.
-    CaseInsensitive,
+bitflags! {
+    /// The array options that a given sort operation may use.
+    ///
+    /// These are provided as a number by the VM and converted into bitflags.
+    struct SortOptions: u8 {
+        /// Request case-insensitive string value sort.
+        const CASE_INSENSITIVE     = 1 << 0;
 
-    /// Reverse the order of sorting.
-    Descending,
+        /// Reverse the order of sorting.
+        const DESCENDING           = 1 << 1;
 
-    /// Reject sorting on arrays with multiple equivalent values.
-    UniqueSort,
+        /// Reject sorting on arrays with multiple equivalent values.
+        const UNIQUE_SORT          = 1 << 2;
 
-    /// Yield a list of indices rather than sorting the array in-place.
-    ReturnIndexedArray,
+        /// Yield a list of indices rather than sorting the array in-place.
+        const RETURN_INDEXED_ARRAY = 1 << 3;
 
-    /// Request numeric value sort.
-    Numeric,
+        /// Request numeric value sort.
+        const NUMERIC              = 1 << 4;
+    }
 }
 
 /// Identity closure shim which exists purely to decorate closure types with
@@ -819,7 +841,7 @@ where
 fn sort_inner<'a, 'gc, 'ctxt, C>(
     activation: &mut Activation<'a, 'gc, 'ctxt>,
     values: &mut [(usize, Value<'gc>)],
-    options: EnumSet<SortOptions>,
+    options: SortOptions,
     mut sort_func: C,
 ) -> Result<bool, Error>
 where
@@ -846,7 +868,7 @@ where
                 unique_sort_satisfied = false;
                 Ordering::Equal
             }
-            Ok(v) if options.contains(SortOptions::Descending) => v.reverse(),
+            Ok(v) if options.contains(SortOptions::DESCENDING) => v.reverse(),
             Ok(v) => v,
             Err(e) => {
                 error_signal = Err(e);
@@ -857,7 +879,7 @@ where
 
     error_signal?;
 
-    Ok(!options.contains(SortOptions::UniqueSort) || unique_sort_satisfied)
+    Ok(!options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied)
 }
 
 fn compare_string_case_sensitive<'gc>(
@@ -905,12 +927,12 @@ fn compare_numeric<'gc>(
 fn sort_postprocess<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-    options: EnumSet<SortOptions>,
+    options: SortOptions,
     unique_satisfied: bool,
     values: Vec<(usize, Value<'gc>)>,
 ) -> Result<Value<'gc>, Error> {
     if unique_satisfied {
-        if options.contains(SortOptions::ReturnIndexedArray) {
+        if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
             return build_array(
                 activation,
                 ArrayStorage::from_storage(
@@ -996,18 +1018,22 @@ pub fn sort<'gc>(
                         .unwrap_or(Value::Undefined)
                         .coerce_to_object(activation)?,
                 ),
-                args.get(1)
-                    .cloned()
-                    .unwrap_or_else(|| 0.into())
-                    .coerce_to_enumset(activation)?,
+                SortOptions::from_bits_truncate(
+                    args.get(1)
+                        .cloned()
+                        .unwrap_or_else(|| 0.into())
+                        .coerce_to_u32(activation)? as u8,
+                ),
             )
         } else {
             (
                 None,
-                args.get(0)
-                    .cloned()
-                    .unwrap_or_else(|| 0.into())
-                    .coerce_to_enumset(activation)?,
+                SortOptions::from_bits_truncate(
+                    args.get(0)
+                        .cloned()
+                        .unwrap_or_else(|| 0.into())
+                        .coerce_to_u32(activation)? as u8,
+                ),
             )
         };
 
@@ -1040,9 +1066,9 @@ pub fn sort<'gc>(
                     }
                 }),
             )?
-        } else if options.contains(SortOptions::Numeric) {
+        } else if options.contains(SortOptions::NUMERIC) {
             sort_inner(activation, &mut values, options, compare_numeric)?
-        } else if options.contains(SortOptions::CaseInsensitive) {
+        } else if options.contains(SortOptions::CASE_INSENSITIVE) {
             sort_inner(
                 activation,
                 &mut values,
@@ -1095,23 +1121,22 @@ fn extract_maybe_array_strings<'gc>(
     Ok(out)
 }
 
-/// Given a value, extract its array values and coerce them to enumsets.
+/// Given a value, extract its array values and coerce them to SortOptions.
 ///
 /// If the value is not an array, it will be returned as if it was present in a
 /// one-element array containing itself. This is intended for use with parsing
 /// parameters which are optionally arrays. The returned value will still be
 /// coerced into a string in this case.
-fn extract_maybe_array_enumsets<'gc, E>(
+fn extract_maybe_array_sort_options<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
-) -> Result<Vec<EnumSet<E>>, Error>
-where
-    E: EnumSetType,
-{
+) -> Result<Vec<SortOptions>, Error> {
     let mut out = Vec::new();
 
     for value in extract_maybe_array_values(activation, value)? {
-        out.push(value.coerce_to_enumset(activation)?);
+        out.push(SortOptions::from_bits_truncate(
+            value.coerce_to_u32(activation)? as u8,
+        ));
     }
 
     Ok(out)
@@ -1126,16 +1151,13 @@ pub fn sort_on<'gc>(
     if let Some(this) = this {
         if let Some(field_names_value) = args.get(0).cloned() {
             let field_names = extract_maybe_array_strings(activation, field_names_value)?;
-            let mut options = extract_maybe_array_enumsets(
+            let mut options = extract_maybe_array_sort_options(
                 activation,
                 args.get(1).cloned().unwrap_or_else(|| 0.into()),
             )?;
 
-            let first_option = options
-                .get(0)
-                .cloned()
-                .unwrap_or_else(EnumSet::empty)
-                .intersection(SortOptions::UniqueSort | SortOptions::ReturnIndexedArray);
+            let first_option = options.get(0).cloned().unwrap_or_else(SortOptions::empty)
+                & (SortOptions::UNIQUE_SORT | SortOptions::RETURN_INDEXED_ARRAY);
             let mut values = if let Some(values) = extract_array_values(activation, this.into())? {
                 values
                     .iter()
@@ -1149,7 +1171,7 @@ pub fn sort_on<'gc>(
             if options.len() < field_names.len() {
                 options.resize(
                     field_names.len(),
-                    options.last().cloned().unwrap_or_else(EnumSet::empty),
+                    options.last().cloned().unwrap_or_else(SortOptions::empty),
                 );
             }
 
@@ -1162,20 +1184,20 @@ pub fn sort_on<'gc>(
                         let mut a_object = a.coerce_to_object(activation)?;
                         let a_field = a_object.get_property(
                             a_object,
-                            &QName::new(Namespace::public_namespace(), *field_name),
+                            &QName::new(Namespace::public(), *field_name),
                             activation,
                         )?;
 
                         let mut b_object = b.coerce_to_object(activation)?;
                         let b_field = b_object.get_property(
                             b_object,
-                            &QName::new(Namespace::public_namespace(), *field_name),
+                            &QName::new(Namespace::public(), *field_name),
                             activation,
                         )?;
 
-                        let ord = if options.contains(SortOptions::Numeric) {
+                        let ord = if options.contains(SortOptions::NUMERIC) {
                             compare_numeric(activation, a_field, b_field)?
-                        } else if options.contains(SortOptions::CaseInsensitive) {
+                        } else if options.contains(SortOptions::CASE_INSENSITIVE) {
                             compare_string_case_insensitive(activation, a_field, b_field)?
                         } else {
                             compare_string_case_sensitive(activation, a_field, b_field)?
@@ -1185,7 +1207,7 @@ pub fn sort_on<'gc>(
                             continue;
                         }
 
-                        if options.contains(SortOptions::Descending) {
+                        if options.contains(SortOptions::DESCENDING) {
                             return Ok(ord.reverse());
                         } else {
                             return Ok(ord);
@@ -1206,16 +1228,20 @@ pub fn sort_on<'gc>(
 /// Construct `Array`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
-        QName::new(Namespace::package(""), "Array"),
-        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        QName::new(Namespace::public(), "Array"),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
     );
 
     class.write(mc).define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public_namespace(), "length"),
+        QName::new(Namespace::public(), "length"),
         Method::from_builtin(length),
+    ));
+    class.write(mc).define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "length"),
+        Method::from_builtin(set_length),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
@@ -1229,17 +1255,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "toString"),
+        QName::new(Namespace::public(), "toString"),
         Method::from_builtin(to_string),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "toLocaleString"),
+        QName::new(Namespace::public(), "toLocaleString"),
         Method::from_builtin(to_locale_string),
     ));
 
     class.write(mc).define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "valueOf"),
+        QName::new(Namespace::public(), "valueOf"),
         Method::from_builtin(value_of),
     ));
 
@@ -1324,37 +1350,33 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
-        QName::new(Namespace::public_namespace(), "CASEINSENSITIVE"),
-        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
-        Some(EnumSet::from(SortOptions::CaseInsensitive).as_u32().into()),
+        QName::new(Namespace::public(), "CASEINSENSITIVE"),
+        Multiname::from(QName::new(Namespace::public(), "uint")),
+        Some(SortOptions::CASE_INSENSITIVE.bits().into()),
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
-        QName::new(Namespace::public_namespace(), "DESCENDING"),
-        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
-        Some(EnumSet::from(SortOptions::Descending).as_u32().into()),
+        QName::new(Namespace::public(), "DESCENDING"),
+        Multiname::from(QName::new(Namespace::public(), "uint")),
+        Some(SortOptions::DESCENDING.bits().into()),
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
-        QName::new(Namespace::public_namespace(), "NUMERIC"),
-        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
-        Some(EnumSet::from(SortOptions::Numeric).as_u32().into()),
+        QName::new(Namespace::public(), "NUMERIC"),
+        Multiname::from(QName::new(Namespace::public(), "uint")),
+        Some(SortOptions::NUMERIC.bits().into()),
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
-        QName::new(Namespace::public_namespace(), "RETURNINDEXEDARRAY"),
-        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
-        Some(
-            EnumSet::from(SortOptions::ReturnIndexedArray)
-                .as_u32()
-                .into(),
-        ),
+        QName::new(Namespace::public(), "RETURNINDEXEDARRAY"),
+        Multiname::from(QName::new(Namespace::public(), "uint")),
+        Some(SortOptions::RETURN_INDEXED_ARRAY.bits().into()),
     ));
 
     class.write(mc).define_class_trait(Trait::from_const(
-        QName::new(Namespace::public_namespace(), "UNIQUESORT"),
-        Multiname::from(QName::new(Namespace::public_namespace(), "uint")),
-        Some(EnumSet::from(SortOptions::UniqueSort).as_u32().into()),
+        QName::new(Namespace::public(), "UNIQUESORT"),
+        Multiname::from(QName::new(Namespace::public(), "uint")),
+        Some(SortOptions::UNIQUE_SORT.bits().into()),
     ));
 
     class

@@ -12,10 +12,14 @@ use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.system.ApplicationDomain`'s instance constructor.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        activation.super_init(this, &[])?;
+    }
+
     Ok(Value::Undefined)
 }
 
@@ -80,7 +84,7 @@ pub fn get_definition<'gc>(
             .cloned()
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
-        let qname = QName::new(Namespace::public_namespace(), local_name);
+        let qname = QName::new(Namespace::public(), local_name);
 
         let (qname, mut defined_script) = appdomain
             .get_defining_script(&qname.into())?
@@ -106,7 +110,7 @@ pub fn has_definition<'gc>(
             .cloned()
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
-        let qname = QName::new(Namespace::public_namespace(), local_name);
+        let qname = QName::new(Namespace::public(), local_name);
 
         return Ok(appdomain.has_definition(qname).into());
     }
@@ -118,7 +122,7 @@ pub fn has_definition<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.system"), "ApplicationDomain"),
-        Some(QName::new(Namespace::public_namespace(), "Object").into()),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init),
         Method::from_builtin(class_init),
         mc,
@@ -127,19 +131,19 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.define_class_trait(Trait::from_getter(
-        QName::new(Namespace::public_namespace(), "currentDomain"),
+        QName::new(Namespace::public(), "currentDomain"),
         Method::from_builtin(current_domain),
     ));
     write.define_class_trait(Trait::from_getter(
-        QName::new(Namespace::public_namespace(), "parentDomain"),
+        QName::new(Namespace::public(), "parentDomain"),
         Method::from_builtin(parent_domain),
     ));
     write.define_class_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "getDefinition"),
+        QName::new(Namespace::public(), "getDefinition"),
         Method::from_builtin(get_definition),
     ));
     write.define_class_trait(Trait::from_method(
-        QName::new(Namespace::public_namespace(), "hasDefinition"),
+        QName::new(Namespace::public(), "hasDefinition"),
         Method::from_builtin(has_definition),
     ));
 

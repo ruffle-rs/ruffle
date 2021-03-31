@@ -1,31 +1,27 @@
 use crate::avm2::types::*;
 use crate::error::{Error, Result};
-use crate::read::SwfRead;
-use std::io::{Read, Seek, SeekFrom};
+use crate::extensions::ReadSwfExt;
+use std::io::Read;
 
-pub struct Reader<R: Read> {
-    inner: R,
+pub struct Reader<'a> {
+    input: &'a [u8],
 }
 
-impl<R: Read> SwfRead<R> for Reader<R> {
-    fn get_inner(&mut self) -> &mut R {
-        &mut self.inner
+impl<'a> ReadSwfExt<'a> for Reader<'a> {
+    #[inline(always)]
+    fn as_mut_slice(&mut self) -> &mut &'a [u8] {
+        &mut self.input
     }
 }
 
-impl<R> Reader<R>
-where
-    R: Read + Seek,
-{
+impl<'a> Reader<'a> {
+    pub fn new(input: &'a [u8]) -> Self {
+        Self { input }
+    }
+
     #[inline]
-    pub fn seek(&mut self, relative_offset: i64) -> std::io::Result<u64> {
-        self.inner.seek(SeekFrom::Current(relative_offset as i64))
-    }
-}
-
-impl<R: Read> Reader<R> {
-    pub fn new(inner: R) -> Reader<R> {
-        Reader { inner }
+    pub fn seek(&mut self, data: &'a [u8], relative_offset: i32) {
+        ReadSwfExt::seek(self, data, relative_offset as isize)
     }
 
     pub fn read(&mut self) -> Result<AbcFile> {
@@ -83,21 +79,7 @@ impl<R: Read> Reader<R> {
     }
 
     fn read_u30(&mut self) -> Result<u32> {
-        let mut n = 0;
-        let mut i = 0;
-        loop {
-            let byte: u32 = self.read_u8()?.into();
-            n |= (byte & 0b0111_1111) << i;
-            i += 7;
-            if byte & 0b1000_0000 == 0 {
-                break;
-            }
-        }
-        Ok(n)
-    }
-
-    fn read_u32(&mut self) -> Result<u32> {
-        self.read_u30()
+        self.read_encoded_u32()
     }
 
     fn read_i24(&mut self) -> Result<i32> {
@@ -106,29 +88,13 @@ impl<R: Read> Reader<R> {
             | (i32::from(self.read_u8()? as i8) << 16))
     }
     fn read_i32(&mut self) -> Result<i32> {
-        let mut n: i32 = 0;
-        let mut i = 0;
-        loop {
-            let byte: i32 = self.read_u8()?.into();
-            n |= (byte & 0b0111_1111) << i;
-            i += 7;
-
-            if byte & 0b1000_0000 == 0 {
-                if i < 32 {
-                    n <<= 32 - i;
-                    n >>= 32 - i;
-                }
-
-                break;
-            }
-        }
-        Ok(n)
+        self.read_encoded_i32()
     }
 
     fn read_string(&mut self) -> Result<String> {
         let len = self.read_u30()? as usize;
         let mut s = String::with_capacity(len);
-        self.inner
+        self.input
             .by_ref()
             .take(len as u64)
             .read_to_string(&mut s)?;
@@ -216,7 +182,7 @@ impl<R: Read> Reader<R> {
         let mut uints = Vec::with_capacity(len as usize);
         if len > 0 {
             for _ in 0..len - 1 {
-                uints.push(self.read_u32()?);
+                uints.push(self.read_u30()?);
             }
         }
 
@@ -501,7 +467,7 @@ impl<R: Read> Reader<R> {
         // Read the code data.
         let code_len = self.read_u30()?;
         let mut code = Vec::with_capacity(code_len as usize);
-        self.inner
+        self.input
             .by_ref()
             .take(code_len.into())
             .read_to_end(&mut code)?;
@@ -810,7 +776,7 @@ impl<R: Read> Reader<R> {
             OpCode::PushNull => Op::PushNull,
             OpCode::PushScope => Op::PushScope,
             OpCode::PushShort => Op::PushShort {
-                value: self.read_u30()?,
+                value: self.read_u30()? as i16,
             },
             OpCode::PushString => Op::PushString {
                 value: self.read_index()?,
@@ -873,15 +839,12 @@ pub mod tests {
 
     pub fn read_abc_from_file(path: &str) -> Vec<u8> {
         use crate::types::Tag;
-        use std::fs::File;
-
-        let mut file = File::open(path).unwrap();
-        let mut data = Vec::new();
-        file.read_to_end(&mut data).unwrap();
-        let swf = crate::read_swf(&data[..]).unwrap();
+        let data = std::fs::read(path).unwrap();
+        let swf_buf = crate::decompress_swf(&data[..]).unwrap();
+        let swf = crate::parse_swf(&swf_buf).unwrap();
         for tag in swf.tags {
             if let Tag::DoAbc(do_abc) = tag {
-                return do_abc.data;
+                return do_abc.data.to_vec();
             }
         }
         panic!("ABC tag not found in {}", path);
@@ -900,5 +863,84 @@ pub mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn read_u30() {
+        let read = |data: &[u8]| Reader::new(data).read_u30().unwrap();
+        assert_eq!(read(&[0]), 0);
+        assert_eq!(read(&[2]), 2);
+        assert_eq!(read(&[0b1_0000001, 0b0_0000001]), 129);
+        assert_eq!(
+            read(&[0b1_0000001, 0b1_0000001, 0b0_1100111]),
+            0b1100111_0000001_0000001
+        );
+        assert_eq!(
+            read(&[
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b0000_1111
+            ]),
+            0b1111_0000000_0000000_0000000_0000000
+        );
+        assert_eq!(
+            read(&[
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1111_1111
+            ]),
+            0b1111_0000000_0000000_0000000_0000000
+        );
+    }
+
+    #[test]
+    fn read_i32() {
+        let read = |data: &[u8]| Reader::new(data).read_i32().unwrap();
+        assert_eq!(read(&[0]), 0);
+        assert_eq!(read(&[2]), 2);
+        assert_eq!(read(&[0b1_0000001, 0b0_0000001]), 129);
+        assert_eq!(
+            read(&[0b1_0000001, 0b1_0000001, 0b0_1100111]),
+            0b1111_1111111_1100111_0000001_0000001_u32 as i32
+        );
+        assert_eq!(
+            read(&[0b1_0000001, 0b1_0000001, 0b1_0000001, 0b0_1100111]),
+            0b1111_1100111_0000001_0000001_0000001_u32 as i32
+        );
+        // TODO: verify this matches Flash
+        assert_eq!(
+            read(&[
+                0b1_0000001,
+                0b1_0000001,
+                0b1_0000001,
+                0b1_0000001,
+                0b1_1000001
+            ]),
+            0b0001_0000001_0000001_0000001_0000001_u32 as i32
+        );
+        assert_eq!(
+            read(&[
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b0000_1111
+            ]),
+            0b1111_0000000_0000000_0000000_0000000_u32 as i32
+        );
+        assert_eq!(
+            read(&[
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1_0000000,
+                0b1111_1111
+            ]),
+            0b1111_0000000_0000000_0000000_0000000_u32 as i32
+        );
     }
 }

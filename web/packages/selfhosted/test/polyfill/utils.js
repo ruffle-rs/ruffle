@@ -60,7 +60,7 @@ function play_and_monitor(browser, player, expected_output) {
                 has_error(browser) ||
                 browser.execute((player) => {
                     return (
-                        player.play_button_clicked !== undefined &&
+                        player.playButtonClicked !== undefined &&
                         player.instance
                     );
                 }, player)
@@ -73,12 +73,12 @@ function play_and_monitor(browser, player, expected_output) {
 
     browser.execute((player) => {
         player.__ruffle_log__ = "";
-        player.trace_observer = (msg) => {
+        player.traceObserver = (msg) => {
             player.__ruffle_log__ += msg + "\n";
         };
 
         // TODO: make this an actual intended api...
-        player.play_button_clicked();
+        player.playButtonClicked();
     }, player);
 
     if (expected_output === undefined) {
@@ -119,4 +119,5 @@ module.exports = {
     inject_ruffle,
     inject_ruffle_and_wait,
     open_test,
+    setup_error_handler,
 };

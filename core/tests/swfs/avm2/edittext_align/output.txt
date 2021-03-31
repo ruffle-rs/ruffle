@@ -1,0 +1,60 @@
+//Creating left aligned text w/ wordwrap, multiline
+//field.textWidth
+131.9
+//field.textHeight
+15.6
+//Creating center aligned text w/ wordwrap, multiline
+//field.textWidth
+131.9
+//field.textHeight
+15.6
+//Creating right aligned text w/ wordwrap, multiline
+//field.textWidth
+131.9
+//field.textHeight
+15.6
+//Creating justified text w/ wordwrap, multiline
+//field.textWidth
+131.9
+//field.textHeight
+15.6
+//Creating left aligned text w/ wordwrap, multiline & long text
+//field.textWidth
+388.1
+//field.textHeight
+60.4
+//Creating center aligned text w/ wordwrap, multiline & long text
+//field.textWidth
+385.55
+//field.textHeight
+60.4
+//Creating right aligned text w/ wordwrap, multiline & long text
+//field.textWidth
+385.55
+//field.textHeight
+60.4
+//Creating justified text w/ wordwrap, multiline & long text
+//field.textWidth
+385.55
+//field.textHeight
+60.4
+//Creating left aligned text w/ NO wordwrap, multiline & long text
+//field.textWidth
+1461.7
+//field.textHeight
+15.6
+//Creating center aligned text w/ NO wordwrap, multiline & long text
+//field.textWidth
+1461.7
+//field.textHeight
+15.6
+//Creating right aligned text w/ NO wordwrap, multiline & long text
+//field.textWidth
+1461.7
+//field.textHeight
+15.6
+//Creating justified text w/ NO wordwrap, multiline & long text
+//field.textWidth
+1461.7
+//field.textHeight
+15.6

@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::TObject;
-use crate::avm1::property::Attribute::*;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, Value};
 use gc_arena::{Collect, MutationContext};
 
@@ -165,27 +165,32 @@ pub fn initialize_internal<'gc>(
 ) {
     let listeners = ScriptObject::array(gc_context, Some(array_proto));
 
-    broadcaster.define_value(gc_context, "_listeners", listeners.into(), DontEnum.into());
+    broadcaster.define_value(
+        gc_context,
+        "_listeners",
+        listeners.into(),
+        Attribute::DONT_ENUM,
+    );
 
     broadcaster.define_value(
         gc_context,
         "addListener",
         functions.add_listener.into(),
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     broadcaster.define_value(
         gc_context,
         "removeListener",
         functions.remove_listener.into(),
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     broadcaster.define_value(
         gc_context,
         "broadcastMessage",
         functions.broadcast_message.into(),
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 }
 
@@ -200,7 +205,7 @@ pub fn create<'gc>(
         "initialize",
         initialize,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -214,7 +219,7 @@ pub fn create<'gc>(
         gc_context,
         "addListener",
         add_listener.into(),
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     let remove_listener = FunctionObject::function(
@@ -227,7 +232,7 @@ pub fn create<'gc>(
         gc_context,
         "removeListener",
         remove_listener.into(),
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     let broadcast_message = FunctionObject::function(
@@ -240,7 +245,7 @@ pub fn create<'gc>(
         gc_context,
         "broadcastMessage",
         broadcast_message.into(),
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     (

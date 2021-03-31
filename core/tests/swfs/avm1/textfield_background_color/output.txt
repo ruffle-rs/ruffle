@@ -1,0 +1,11 @@
+// tf.backgroundColor:
+16777215
+// tf.backgroundColor = 0x404040 (4210752):
+// tf.backgroundColor:
+4210752
+// tf.backgroundColor = -1:
+// tf.backgroundColor:
+16777215
+// tf.backgroundColor = 0x80FFFFFF:
+// tf.backgroundColor:
+16777215

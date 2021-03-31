@@ -18,6 +18,9 @@ pub enum Error<'gc> {
     #[error("Couldn't parse SWF. This may or may not be a bug in Ruffle, please help us by reporting it to https://github.com/ruffle-rs/ruffle/issues and include the swf that triggered it.")]
     InvalidSwf(#[from] swf::error::Error),
 
+    #[error("Attempted to interact with a rootless display object in AVM1. Such objects can only be created in AS3, this is a runtime bug in Ruffle. Please help us by reporting it to https://github.com/ruffle-rs/ruffle/issues and include the swf that triggered it.")]
+    InvalidDisplayObjectHierarchy,
+
     #[error("A script has thrown a custom error.")]
     ThrownValue(Value<'gc>),
 }
@@ -30,6 +33,7 @@ impl Error<'_> {
             Error::FunctionRecursionLimit(_) => true,
             Error::SpecialRecursionLimit => true,
             Error::InvalidSwf(_) => true,
+            Error::InvalidDisplayObjectHierarchy => true,
             Error::ThrownValue(_) => false,
         }
     }

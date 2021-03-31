@@ -1,0 +1,11 @@
+saved: true
+num: 10
+str: hello
+array: elem0,undefined,undefined,undefined,elem4
+array.length: 5
+array.hasOwnProperty('0'): true
+array.hasOwnProperty('1'): false
+array['prop']: property
+array[-1]: elem negative one
+o.a: a
+o.b: b

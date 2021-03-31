@@ -1,8 +1,7 @@
 //! Navigator backend for web
 
 use crate::custom_event::RuffleEvent;
-use isahc::config::RedirectPolicy;
-use isahc::prelude::*;
+use isahc::{config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request};
 use ruffle_core::backend::navigator::{
     NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
 };
@@ -10,7 +9,6 @@ use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
 use std::fs;
-use std::io::Read;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
@@ -34,6 +32,8 @@ pub struct ExternalNavigatorBackend {
 
     // Client to use for network requests
     client: Option<Rc<HttpClient>>,
+
+    upgrade_to_https: bool,
 }
 
 impl ExternalNavigatorBackend {
@@ -44,6 +44,7 @@ impl ExternalNavigatorBackend {
         channel: Sender<OwnedFuture<(), Error>>,
         event_loop: EventLoopProxy<RuffleEvent>,
         proxy: Option<Url>,
+        upgrade_to_https: bool,
     ) -> Self {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
@@ -58,6 +59,7 @@ impl ExternalNavigatorBackend {
             client,
             movie_url,
             start_time: Instant::now(),
+            upgrade_to_https,
         }
     }
 }
@@ -96,36 +98,44 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     }
                 }
 
-                parsed_url.into_string()
+                parsed_url
             }
-            None => url,
+            None => parsed_url,
         };
 
-        match webbrowser::open(&modified_url) {
+        let processed_url = self.pre_process_url(modified_url);
+
+        match webbrowser::open(&processed_url.to_string()) {
             Ok(_output) => {}
-            Err(e) => log::error!("Could not open URL {}: {}", modified_url, e),
+            Err(e) => log::error!("Could not open URL {}: {}", processed_url.as_str(), e),
         };
-    }
-
-    fn time_since_launch(&mut self) -> Duration {
-        Instant::now().duration_since(self.start_time)
     }
 
     fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
         // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
-        let full_url = self.movie_url.clone().join(url).unwrap();
+        let full_url = match self.movie_url.clone().join(url) {
+            Ok(url) => url,
+            Err(e) => {
+                let msg = format!("Invalid URL {}: {}", url, e);
+                return Box::pin(async move { Err(Error::FetchError(msg)) });
+            }
+        };
+
+        let processed_url = self.pre_process_url(full_url);
 
         let client = self.client.clone();
-        match full_url.scheme() {
+
+        match processed_url.scheme() {
             "file" => Box::pin(async move {
-                fs::read(full_url.to_file_path().unwrap()).map_err(Error::NetworkError)
+                fs::read(processed_url.to_file_path().unwrap_or_default())
+                    .map_err(Error::NetworkError)
             }),
             _ => Box::pin(async move {
                 let client = client.ok_or(Error::NetworkUnavailable)?;
 
                 let request = match options.method() {
-                    NavigationMethod::GET => Request::get(full_url.to_string()),
-                    NavigationMethod::POST => Request::post(full_url.to_string()),
+                    NavigationMethod::Get => Request::get(processed_url.to_string()),
+                    NavigationMethod::Post => Request::post(processed_url.to_string()),
                 };
 
                 let (body_data, _) = options.body().clone().unwrap_or_default();
@@ -133,14 +143,23 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     .body(body_data)
                     .map_err(|e| Error::FetchError(e.to_string()))?;
 
-                let response = client
+                let mut response = client
                     .send_async(body)
                     .await
                     .map_err(|e| Error::FetchError(e.to_string()))?;
 
-                response_to_bytes(response).map_err(|e| Error::FetchError(e.to_string()))
+                let mut buffer = vec![];
+                response
+                    .copy_to(&mut buffer)
+                    .await
+                    .map_err(|e| Error::FetchError(e.to_string()))?;
+                Ok(buffer)
             }),
         }
+    }
+
+    fn time_since_launch(&mut self) -> Duration {
+        Instant::now().duration_since(self.start_time)
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
@@ -161,10 +180,11 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             url.into()
         }
     }
-}
 
-fn response_to_bytes(res: Response<Body>) -> Result<Vec<u8>, std::io::Error> {
-    let mut buffer: Vec<u8> = Vec::new();
-    res.into_body().read_to_end(&mut buffer)?;
-    Ok(buffer)
+    fn pre_process_url(&self, mut url: Url) -> Url {
+        if self.upgrade_to_https && url.scheme() == "http" && url.set_scheme("https").is_err() {
+            log::error!("Url::set_scheme failed on: {}", url);
+        }
+        url
+    }
 }

@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Flash tartalom lejátszása Ruffle-el"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Flash tartalom lejátszása azokon az oldalakon is Ruffle-el, amik nem akarják"
+    },
+    "settings_ignore_optout": {
+        "message": "Ignoráld a weboldal kompatibilitásos hibajelzéseit"
+    },
+    "status_init": {
+        "message": "Jelenlegi oldal olvasása…"
+    },
+    "status_no_tabs": {
+        "message": "Nincs aktív oldal."
+    },
+    "status_tabs_error": {
+        "message": "Hiba történt az oldal keresése közben."
+    },
+    "status_message_init": {
+        "message": "Ruffle státuszának keresése…"
+    },
+    "status_result_running": {
+        "message": "Ruffle betöltve és futtatja a Flash tartalmat az oldalon."
+    },
+    "status_result_optout": {
+        "message": "Ruffle nincs betöltve, mivel az oldal nem jelezte magát kompatibilisnek."
+    },
+    "status_result_disabled": {
+        "message": "A felhasználó kikapcsolta Ruffle-t, ezért nem töltött be a program."
+    },
+    "status_result_error": {
+        "message": "Hiba történt Ruffle-el az oldalon."
+    },
+    "status_result_protected": {
+        "message": "Ruffle nem tud oldalakat betölteni védett böngészőkben."
+    },
+    "action_reload": {
+        "message": "Töltsd be újra az oldalt, hogy mentsd a beállításokat."
+    },
+    "open_settings_page": {
+        "message": "Beállítások megnyitása"
+    },
+    "settings_page": {
+        "message": "Beállítások"
+    },
+    "description": {
+        "message": "Visszateszi Flasht a webre, mert oda való."
+    },
+    "save_settings": {
+        "message": "Beállítások mentése"
+    },
+    "settings_saved": {
+        "message": "Beállítások mentve"
+    }
+}

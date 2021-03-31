@@ -6,9 +6,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::point::{construct_new_point, point_to_object, value_to_point};
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use enumset::EnumSet;
 use gc_arena::MutationContext;
-use std::f64::NAN;
 
 fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -43,7 +41,7 @@ fn constructor<'gc>(
         )?;
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 fn to_string<'gc>(
@@ -77,6 +75,7 @@ pub fn create_rectangle_object<'gc>(
     FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
+        constructor_to_fn!(constructor),
         fn_proto,
         rectangle_proto,
     )
@@ -117,7 +116,7 @@ fn clone<'gc>(
     ];
     let constructor = activation.context.avm1.prototypes.rectangle_constructor;
     let cloned = constructor.construct(activation, &args)?;
-    Ok(cloned.into())
+    Ok(cloned)
 }
 
 fn contains<'gc>(
@@ -249,7 +248,7 @@ fn union<'gc>(
                 other.get("height", activation)?.coerce_to_f64(activation)?,
             )
         } else {
-            (NAN, NAN, NAN, NAN)
+            (f64::NAN, f64::NAN, f64::NAN, f64::NAN)
         };
     let other_right = other_left + other_width;
     let other_bottom = other_top + other_height;
@@ -291,7 +290,7 @@ fn union<'gc>(
     ];
     let constructor = activation.context.avm1.prototypes.rectangle_constructor;
     let result = constructor.construct(activation, &args)?;
-    Ok(result.into())
+    Ok(result)
 }
 
 fn inflate<'gc>(
@@ -405,7 +404,7 @@ fn intersection<'gc>(
                 other.get("height", activation)?.coerce_to_f64(activation)?,
             )
         } else {
-            (NAN, NAN, NAN, NAN)
+            (f64::NAN, f64::NAN, f64::NAN, f64::NAN)
         };
     let other_right = other_left + other_width;
     let other_bottom = other_top + other_height;
@@ -444,7 +443,7 @@ fn intersection<'gc>(
     ];
     let constructor = activation.context.avm1.prototypes.rectangle_constructor;
     let result = constructor.construct(activation, &args)?;
-    Ok(result.into())
+    Ok(result)
 }
 
 fn equals<'gc>(
@@ -461,8 +460,8 @@ fn equals<'gc>(
         let other_y = other.get("y", activation)?;
         let other_width = other.get("width", activation)?;
         let other_height = other.get("height", activation)?;
-        let proto = activation.context.system_prototypes.rectangle;
-        let constructor = activation.context.system_prototypes.rectangle_constructor;
+        let proto = activation.context.avm1.prototypes.rectangle;
+        let constructor = activation.context.avm1.prototypes.rectangle_constructor;
         return Ok((this_x == other_x
             && this_y == other_y
             && this_width == other_width
@@ -490,7 +489,7 @@ fn set_left<'gc>(
     let new_left = args.get(0).unwrap_or(&Value::Undefined).to_owned();
     let old_left = this.get("x", activation)?.coerce_to_f64(activation)?;
     let width = this.get("width", activation)?.coerce_to_f64(activation)?;
-    this.set("x", new_left.clone(), activation)?;
+    this.set("x", new_left, activation)?;
     this.set(
         "width",
         Value::Number(width + (old_left - new_left.coerce_to_f64(activation)?)),
@@ -515,7 +514,7 @@ fn set_top<'gc>(
     let new_top = args.get(0).unwrap_or(&Value::Undefined).to_owned();
     let old_top = this.get("y", activation)?.coerce_to_f64(activation)?;
     let height = this.get("height", activation)?.coerce_to_f64(activation)?;
-    this.set("y", new_top.clone(), activation)?;
+    this.set("y", new_top, activation)?;
     this.set(
         "height",
         Value::Number(height + (old_top - new_top.coerce_to_f64(activation)?)),
@@ -542,7 +541,7 @@ fn set_right<'gc>(
     let right = if let Some(arg) = args.get(0) {
         arg.coerce_to_f64(activation)?
     } else {
-        NAN
+        f64::NAN
     };
     let x = this.get("x", activation)?.coerce_to_f64(activation)?;
 
@@ -569,7 +568,7 @@ fn set_bottom<'gc>(
     let bottom = if let Some(arg) = args.get(0) {
         arg.coerce_to_f64(activation)?
     } else {
-        NAN
+        f64::NAN
     };
     let y = this.get("y", activation)?.coerce_to_f64(activation)?;
 
@@ -586,7 +585,7 @@ fn get_size<'gc>(
     let width = this.get("width", activation)?;
     let height = this.get("height", activation)?;
     let point = construct_new_point(&[width, height], activation)?;
-    Ok(point.into())
+    Ok(point)
 }
 
 fn set_size<'gc>(
@@ -614,7 +613,7 @@ fn get_top_left<'gc>(
     let x = this.get("x", activation)?;
     let y = this.get("y", activation)?;
     let point = construct_new_point(&[x, y], activation)?;
-    Ok(point.into())
+    Ok(point)
 }
 
 fn set_top_left<'gc>(
@@ -632,8 +631,8 @@ fn set_top_left<'gc>(
     let old_top = this.get("y", activation)?.coerce_to_f64(activation)?;
     let height = this.get("height", activation)?.coerce_to_f64(activation)?;
 
-    this.set("x", new_left.clone(), activation)?;
-    this.set("y", new_top.clone(), activation)?;
+    this.set("x", new_left, activation)?;
+    this.set("y", new_top, activation)?;
     this.set(
         "width",
         Value::Number(width + (old_left - new_left.coerce_to_f64(activation)?)),
@@ -658,7 +657,7 @@ fn get_bottom_right<'gc>(
     let width = this.get("width", activation)?.coerce_to_f64(activation)?;
     let height = this.get("height", activation)?.coerce_to_f64(activation)?;
     let point = point_to_object((x + width, y + height), activation)?;
-    Ok(point.into())
+    Ok(point)
 }
 
 fn set_bottom_right<'gc>(
@@ -690,7 +689,7 @@ pub fn create_proto<'gc>(
         "toString",
         to_string,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -698,7 +697,7 @@ pub fn create_proto<'gc>(
         "isEmpty",
         is_empty,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -706,17 +705,23 @@ pub fn create_proto<'gc>(
         "setEmpty",
         set_empty,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
-    object.force_set_function("clone", clone, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "clone",
+        clone,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
     object.force_set_function(
         "contains",
         contains,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -724,7 +729,7 @@ pub fn create_proto<'gc>(
         "containsPoint",
         contains_point,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -732,7 +737,7 @@ pub fn create_proto<'gc>(
         "containsRectangle",
         contains_rectangle,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -740,17 +745,23 @@ pub fn create_proto<'gc>(
         "intersects",
         intersects,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
-    object.force_set_function("union", union, gc_context, EnumSet::empty(), Some(fn_proto));
+    object.force_set_function(
+        "union",
+        union,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
 
     object.force_set_function(
         "inflate",
         inflate,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -758,7 +769,7 @@ pub fn create_proto<'gc>(
         "inflatePoint",
         inflate_point,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -766,7 +777,7 @@ pub fn create_proto<'gc>(
         "offset",
         offset,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -774,7 +785,7 @@ pub fn create_proto<'gc>(
         "offsetPoint",
         offset_point,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -782,7 +793,7 @@ pub fn create_proto<'gc>(
         "intersection",
         intersection,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -790,7 +801,7 @@ pub fn create_proto<'gc>(
         "equals",
         equals,
         gc_context,
-        EnumSet::empty(),
+        Attribute::empty(),
         Some(fn_proto),
     );
 
@@ -809,7 +820,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::DontDelete | Attribute::DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -827,7 +838,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::DontDelete | Attribute::DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -845,7 +856,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::DontDelete | Attribute::DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -863,7 +874,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::DontDelete | Attribute::DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -881,7 +892,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::DontDelete | Attribute::DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -899,7 +910,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::DontDelete | Attribute::DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     object.add_property(
@@ -917,7 +928,7 @@ pub fn create_proto<'gc>(
             Some(fn_proto),
             fn_proto,
         )),
-        Attribute::DontDelete | Attribute::DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 
     object.into()

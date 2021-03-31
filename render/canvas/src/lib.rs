@@ -1,13 +1,12 @@
 use ruffle_core::backend::render::{
     swf::{self, CharacterId, GradientInterpolation, GradientSpread},
-    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, JpegTagFormat, Letterbox, RenderBackend,
-    ShapeHandle, Transform,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, JpegTagFormat, MovieLibrary,
+    RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand};
 use ruffle_core::swf::Matrix;
 use ruffle_web_common::JsResult;
-use std::collections::HashMap;
 use std::convert::TryInto;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
@@ -26,7 +25,6 @@ pub struct WebCanvasRenderBackend {
     color_matrix: Element,
     shapes: Vec<ShapeData>,
     bitmaps: Vec<BitmapData>,
-    id_to_bitmap: HashMap<CharacterId, BitmapHandle>,
     viewport_width: u32,
     viewport_height: u32,
     use_color_transform_hack: bool,
@@ -210,7 +208,6 @@ impl WebCanvasRenderBackend {
             context,
             shapes: vec![],
             bitmaps: vec![],
-            id_to_bitmap: HashMap::new(),
             viewport_width: 0,
             viewport_height: 0,
             use_color_transform_hack: is_firefox,
@@ -369,17 +366,13 @@ impl WebCanvasRenderBackend {
         self.context.set_global_alpha(1.0);
     }
 
-    fn register_bitmap_pure_jpeg(
-        &mut self,
-        id: CharacterId,
-        data: &[u8],
-    ) -> Result<BitmapInfo, Error> {
+    fn register_bitmap_pure_jpeg(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
         let data = ruffle_core::backend::render::remove_invalid_jpeg_data(data);
         let mut decoder = jpeg_decoder::Decoder::new(&data[..]);
-        decoder.read_info().unwrap();
-        let metadata = decoder.info().unwrap();
+        decoder.read_info()?;
+        let metadata = decoder.info().ok_or("Expected JPEG metadata")?;
 
-        let image = HtmlImageElement::new().unwrap();
+        let image = HtmlImageElement::new().into_js_result()?;
         let jpeg_encoded = format!("data:image/jpeg;base64,{}", &base64::encode(&data[..]));
         image.set_src(&jpeg_encoded);
 
@@ -390,7 +383,6 @@ impl WebCanvasRenderBackend {
             height: metadata.height.into(),
             data: jpeg_encoded,
         });
-        self.id_to_bitmap.insert(id, handle);
         Ok(BitmapInfo {
             handle,
             width: metadata.width,
@@ -398,11 +390,7 @@ impl WebCanvasRenderBackend {
         })
     }
 
-    fn register_bitmap_raw(
-        &mut self,
-        id: CharacterId,
-        bitmap: Bitmap,
-    ) -> Result<BitmapInfo, Error> {
+    fn register_bitmap_raw(&mut self, bitmap: Bitmap) -> Result<BitmapInfo, Error> {
         let (width, height) = (bitmap.width, bitmap.height);
         let png = Self::bitmap_to_png_data_uri(bitmap)?;
 
@@ -417,7 +405,6 @@ impl WebCanvasRenderBackend {
             data: png,
         });
 
-        self.id_to_bitmap.insert(id, handle);
         Ok(BitmapInfo {
             handle,
             width: width.try_into().expect("JPEG dimensions too large"),
@@ -432,88 +419,79 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.viewport_height = height;
     }
 
-    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
+    fn register_shape(
+        &mut self,
+        shape: DistilledShape,
+        library: Option<&MovieLibrary<'_>>,
+    ) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
-
-        let mut bitmaps = HashMap::new();
-        for (id, handle) in &self.id_to_bitmap {
-            let bitmap_data = &self.bitmaps[handle.0];
-            bitmaps.insert(
-                *id,
-                (&bitmap_data.data[..], bitmap_data.width, bitmap_data.height),
-            );
-        }
 
         let data = swf_shape_to_canvas_commands(
             &shape,
-            &bitmaps,
+            library,
+            &self.bitmaps,
             self.pixelated_property_value,
             &self.context,
         )
-        .unwrap_or_else(|| swf_shape_to_svg(shape, &bitmaps, self.pixelated_property_value));
+        .unwrap_or_else(|| {
+            swf_shape_to_svg(shape, library, &self.bitmaps, self.pixelated_property_value)
+        });
 
         self.shapes.push(data);
 
         handle
     }
 
-    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
-        let mut bitmaps = HashMap::new();
-        for (id, handle) in &self.id_to_bitmap {
-            let bitmap_data = &self.bitmaps[handle.0];
-            bitmaps.insert(
-                *id,
-                (&bitmap_data.data[..], bitmap_data.width, bitmap_data.height),
-            );
-        }
-
+    fn replace_shape(
+        &mut self,
+        shape: DistilledShape,
+        library: Option<&MovieLibrary<'_>>,
+        handle: ShapeHandle,
+    ) {
         let data = swf_shape_to_canvas_commands(
             &shape,
-            &bitmaps,
+            library,
+            &self.bitmaps,
             self.pixelated_property_value,
             &self.context,
         )
-        .unwrap_or_else(|| swf_shape_to_svg(shape, &bitmaps, self.pixelated_property_value));
+        .unwrap_or_else(|| {
+            swf_shape_to_svg(shape, library, &self.bitmaps, self.pixelated_property_value)
+        });
         self.shapes[handle.0] = data;
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
-        self.register_shape((&shape).into())
+        self.register_shape((&shape).into(), None)
     }
 
     fn register_bitmap_jpeg(
         &mut self,
-        id: CharacterId,
         data: &[u8],
         jpeg_tables: Option<&[u8]>,
     ) -> Result<BitmapInfo, Error> {
         let data = ruffle_core::backend::render::glue_tables_to_jpeg(data, jpeg_tables);
-        self.register_bitmap_pure_jpeg(id, &data)
+        self.register_bitmap_pure_jpeg(&data)
     }
 
-    fn register_bitmap_jpeg_2(
-        &mut self,
-        id: CharacterId,
-        data: &[u8],
-    ) -> Result<BitmapInfo, Error> {
+    fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
         if ruffle_core::backend::render::determine_jpeg_tag_format(data) == JpegTagFormat::Jpeg {
-            self.register_bitmap_pure_jpeg(id, data)
+            self.register_bitmap_pure_jpeg(data)
         } else {
             let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
-            self.register_bitmap_raw(id, bitmap)
+            self.register_bitmap_raw(bitmap)
         }
     }
 
     fn register_bitmap_jpeg_3(
         &mut self,
-        id: swf::CharacterId,
         jpeg_data: &[u8],
         alpha_data: &[u8],
     ) -> Result<BitmapInfo, Error> {
         let bitmap =
             ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        self.register_bitmap_raw(id, bitmap)
+        self.register_bitmap_raw(bitmap)
     }
 
     fn register_bitmap_png(
@@ -534,7 +512,6 @@ impl RenderBackend for WebCanvasRenderBackend {
             height: swf_tag.height.into(),
             data: png,
         });
-        self.id_to_bitmap.insert(swf_tag.id, handle);
         Ok(BitmapInfo {
             handle,
             width: swf_tag.width,
@@ -561,7 +538,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         // Noop
     }
 
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform) {
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, _smoothing: bool) {
         if self.deactivating_mask {
             return;
         }
@@ -663,35 +640,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.clear_color_filter();
     }
 
-    fn draw_letterbox(&mut self, letterbox: Letterbox) {
-        self.context.reset_transform().unwrap();
-        self.context.set_fill_style(&"black".into());
-
-        match letterbox {
-            Letterbox::None => (),
-            Letterbox::Letterbox(margin_height) => {
-                self.context
-                    .fill_rect(0.0, 0.0, self.viewport_width.into(), margin_height.into());
-                self.context.fill_rect(
-                    0.0,
-                    (self.viewport_height as f32 - margin_height).into(),
-                    self.viewport_width.into(),
-                    self.viewport_height.into(),
-                );
-            }
-            Letterbox::Pillarbox(margin_width) => {
-                self.context
-                    .fill_rect(0.0, 0.0, margin_width.into(), self.viewport_height.into());
-                self.context.fill_rect(
-                    (self.viewport_width as f32 - margin_width).into(),
-                    0.0,
-                    margin_width.into(),
-                    self.viewport_height.into(),
-                );
-            }
-        }
-    }
-
     fn push_mask(&mut self) {
         // In the canvas backend, masks are implemented using two render targets.
         // We render the masker clips to the first render target.
@@ -746,12 +694,96 @@ impl RenderBackend for WebCanvasRenderBackend {
             .draw_image_with_html_canvas_element(&maskee_canvas, 0.0, 0.0)
             .unwrap();
     }
+
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+
+        let canvas: HtmlCanvasElement = document
+            .create_element("canvas")
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+
+        let context: CanvasRenderingContext2d = canvas
+            .get_context("2d")
+            .unwrap()
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+
+        let bitmap = &self.bitmaps[bitmap.0];
+
+        canvas.set_width(bitmap.width);
+        canvas.set_height(bitmap.height);
+
+        context
+            .draw_image_with_html_image_element(&bitmap.image, 0.0, 0.0)
+            .unwrap();
+
+        if let Ok(bitmap_pixels) =
+            context.get_image_data(0.0, 0.0, bitmap.width as f64, bitmap.height as f64)
+        {
+            Some(Bitmap {
+                width: bitmap.width,
+                height: bitmap.height,
+                data: BitmapFormat::Rgba(bitmap_pixels.data().to_vec()),
+            })
+        } else {
+            None
+        }
+    }
+
+    fn register_bitmap_raw(
+        &mut self,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error> {
+        Ok(self
+            .register_bitmap_raw(Bitmap {
+                width,
+                height,
+                data: BitmapFormat::Rgba(rgba),
+            })?
+            .handle)
+    }
+
+    fn update_texture(
+        &mut self,
+        handle: BitmapHandle,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error> {
+        let png = Self::bitmap_to_png_data_uri(Bitmap {
+            width,
+            height,
+            data: BitmapFormat::Rgba(rgba),
+        })?;
+
+        let image = HtmlImageElement::new().unwrap();
+        image.set_src(&png);
+
+        self.bitmaps.insert(
+            handle.0,
+            BitmapData {
+                image,
+                width,
+                height,
+                data: png,
+            },
+        );
+
+        Ok(handle)
+    }
 }
 
 #[allow(clippy::cognitive_complexity)]
 fn swf_shape_to_svg(
     shape: DistilledShape,
-    bitmaps: &HashMap<CharacterId, (&str, u32, u32)>,
+    library: Option<&MovieLibrary<'_>>,
+    bitmaps: &[BitmapData],
     pixelated_property_value: &str,
 ) -> ShapeData {
     use fnv::FnvHashSet;
@@ -841,13 +873,13 @@ fn swf_shape_to_svg(
                             GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
                             GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
                         };
-                        if gradient.interpolation == GradientInterpolation::LinearRGB {
+                        if gradient.interpolation == GradientInterpolation::LinearRgb {
                             has_linear_rgb_gradient = true;
                             svg_path = svg_path.set("filter", "url('#_linearrgb')");
                         }
                         for record in &gradient.records {
                             let color =
-                                if gradient.interpolation == GradientInterpolation::LinearRGB {
+                                if gradient.interpolation == GradientInterpolation::LinearRgb {
                                     srgb_to_linear(record.color.clone())
                                 } else {
                                     record.color.clone()
@@ -903,13 +935,13 @@ fn swf_shape_to_svg(
                             GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
                             GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
                         };
-                        if gradient.interpolation == GradientInterpolation::LinearRGB {
+                        if gradient.interpolation == GradientInterpolation::LinearRgb {
                             has_linear_rgb_gradient = true;
                             svg_path = svg_path.set("filter", "url('#_linearrgb')");
                         }
                         for record in &gradient.records {
                             let color =
-                                if gradient.interpolation == GradientInterpolation::LinearRGB {
+                                if gradient.interpolation == GradientInterpolation::LinearRgb {
                                     srgb_to_linear(record.color.clone())
                                 } else {
                                     record.color.clone()
@@ -969,13 +1001,13 @@ fn swf_shape_to_svg(
                             GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
                             GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
                         };
-                        if gradient.interpolation == GradientInterpolation::LinearRGB {
+                        if gradient.interpolation == GradientInterpolation::LinearRgb {
                             has_linear_rgb_gradient = true;
                             svg_path = svg_path.set("filter", "url('#_linearrgb')");
                         }
                         for record in &gradient.records {
                             let color =
-                                if gradient.interpolation == GradientInterpolation::LinearRGB {
+                                if gradient.interpolation == GradientInterpolation::LinearRgb {
                                     srgb_to_linear(record.color.clone())
                                 } else {
                                     record.color.clone()
@@ -1006,41 +1038,45 @@ fn swf_shape_to_svg(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        let (bitmap_data, bitmap_width, bitmap_height) =
-                            bitmaps.get(&id).unwrap_or(&("", 0, 0));
+                        if let Some(bitmap) = library
+                            .and_then(|lib| lib.get_bitmap(*id))
+                            .and_then(|bitmap| bitmaps.get(bitmap.bitmap_handle().0))
+                        {
+                            if !bitmap_defs.contains(&id) {
+                                let mut image = Image::new()
+                                    .set("width", bitmap.width)
+                                    .set("height", bitmap.height)
+                                    .set("xlink:href", bitmap.data.as_str());
 
-                        if !bitmap_defs.contains(&id) {
-                            let mut image = Image::new()
-                                .set("width", *bitmap_width)
-                                .set("height", *bitmap_height)
-                                .set("xlink:href", *bitmap_data);
+                                if !*is_smoothed {
+                                    image = image.set("image-rendering", pixelated_property_value);
+                                }
 
-                            if !*is_smoothed {
-                                image = image.set("image-rendering", pixelated_property_value);
+                                let mut bitmap_pattern = Pattern::new()
+                                    .set("id", format!("b{}", id))
+                                    .set("patternUnits", "userSpaceOnUse");
+
+                                if !*is_repeating {
+                                    bitmap_pattern = bitmap_pattern
+                                        .set("width", bitmap.width)
+                                        .set("height", bitmap.height);
+                                } else {
+                                    bitmap_pattern = bitmap_pattern
+                                        .set("width", bitmap.width)
+                                        .set("height", bitmap.height)
+                                        .set(
+                                            "viewBox",
+                                            format!("0 0 {} {}", bitmap.width, bitmap.height),
+                                        );
+                                }
+
+                                bitmap_pattern = bitmap_pattern.add(image);
+
+                                defs = defs.add(bitmap_pattern);
+                                bitmap_defs.insert(*id);
                             }
-
-                            let mut bitmap_pattern = Pattern::new()
-                                .set("id", format!("b{}", id))
-                                .set("patternUnits", "userSpaceOnUse");
-
-                            if !*is_repeating {
-                                bitmap_pattern = bitmap_pattern
-                                    .set("width", *bitmap_width)
-                                    .set("height", *bitmap_height);
-                            } else {
-                                bitmap_pattern = bitmap_pattern
-                                    .set("width", *bitmap_width)
-                                    .set("height", *bitmap_height)
-                                    .set(
-                                        "viewBox",
-                                        format!("0 0 {} {}", bitmap_width, bitmap_height),
-                                    );
-                            }
-
-                            bitmap_pattern = bitmap_pattern.add(image);
-
-                            defs = defs.add(bitmap_pattern);
-                            bitmap_defs.insert(*id);
+                        } else {
+                            log::error!("Couldn't fill shape with unknown bitmap {}", id);
                         }
 
                         let svg_pattern = Pattern::new()
@@ -1227,7 +1263,8 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
 
 fn swf_shape_to_canvas_commands(
     shape: &DistilledShape,
-    bitmaps: &HashMap<CharacterId, (&str, u32, u32)>,
+    library: Option<&MovieLibrary<'_>>,
+    bitmaps: &[BitmapData],
     _pixelated_property_value: &str,
     context: &CanvasRenderingContext2d,
 ) -> Option<ShapeData> {
@@ -1283,47 +1320,58 @@ fn swf_shape_to_canvas_commands(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        let (bitmap_data, bitmap_width, bitmap_height) =
-                            bitmaps.get(&id).unwrap_or(&("", 0, 0));
+                        if let Some(bitmap) = library
+                            .and_then(|lib| lib.get_bitmap(*id))
+                            .and_then(|bitmap| bitmaps.get(bitmap.bitmap_handle().0))
+                        {
+                            let image = HtmlImageElement::new_with_width_and_height(
+                                bitmap.width,
+                                bitmap.height,
+                            )
+                            .expect("html image element");
 
-                        let image = HtmlImageElement::new_with_width_and_height(
-                            *bitmap_width,
-                            *bitmap_height,
-                        )
-                        .expect("html image element");
+                            if !*is_smoothed {
+                                //image = image.set("image-rendering", pixelated_property_value);
+                            }
 
-                        if !*is_smoothed {
-                            //image = image.set("image-rendering", pixelated_property_value);
-                        }
+                            let repeat = if !*is_repeating {
+                                "no-repeat"
+                            } else {
+                                "repeat"
+                            };
 
-                        let repeat = if !*is_repeating {
-                            "no-repeat"
+                            let bitmap_pattern = context
+                                .create_pattern_with_html_image_element(&image, repeat)
+                                .expect("pattern creation success")?;
+
+                            // Set source below the pattern creation because otherwise the bitmap gets screwed up
+                            // when cached? (Issue #412)
+                            image.set_src(&bitmap.data);
+
+                            let a = *matrix;
+
+                            let matrix = matrix_factory.create_svg_matrix();
+
+                            matrix.set_a(a.a);
+                            matrix.set_b(a.b);
+                            matrix.set_c(a.c);
+                            matrix.set_d(a.d);
+                            matrix.set_e(a.tx.get() as f32);
+                            matrix.set_f(a.ty.get() as f32);
+
+                            bitmap_pattern.set_transform(&matrix);
+
+                            CanvasFillStyle::Pattern(bitmap_pattern)
                         } else {
-                            "repeat"
-                        };
-
-                        let bitmap_pattern = context
-                            .create_pattern_with_html_image_element(&image, repeat)
-                            .expect("pattern creation success")?;
-
-                        // Set source below the pattern creation because otherwise the bitmap gets screwed up
-                        // when cached? (Issue #412)
-                        image.set_src(*bitmap_data);
-
-                        let a = *matrix;
-
-                        let matrix = matrix_factory.create_svg_matrix();
-
-                        matrix.set_a(a.a);
-                        matrix.set_b(a.b);
-                        matrix.set_c(a.c);
-                        matrix.set_d(a.d);
-                        matrix.set_e(a.tx.get() as f32);
-                        matrix.set_f(a.ty.get() as f32);
-
-                        bitmap_pattern.set_transform(&matrix);
-
-                        CanvasFillStyle::Pattern(bitmap_pattern)
+                            log::error!("Couldn't fill shape with unknown bitmap {}", id);
+                            CanvasFillStyle::Color(CanvasColor(
+                                "rgba(0,0,0,0)".to_string(),
+                                0,
+                                0,
+                                0,
+                                0,
+                            ))
+                        }
                     }
                 };
 

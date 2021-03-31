@@ -1,6 +1,5 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-#[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub enum PlayerEvent {
     KeyDown { key_code: KeyCode },
@@ -82,13 +81,33 @@ impl ClipEvent {
     pub fn propagates(self) -> bool {
         matches!(
             self,
-            Self::MouseUp | Self::MouseDown | Self::MouseMove | Self::KeyPress { .. } | Self::KeyDown | Self::KeyUp
+            Self::MouseUp
+                | Self::MouseDown
+                | Self::MouseMove
+                | Self::KeyPress { .. }
+                | Self::KeyDown
+                | Self::KeyUp
         )
     }
 
     /// Indicates whether this is an event type used by Buttons (i.e., on that can be used in an `on` handler in Flash).
     pub fn is_button_event(self) -> bool {
-        matches!(self, Self::DragOut | Self::DragOver | Self::KeyPress { .. } | Self::Press | Self::RollOut | Self::RollOver | Self::Release | Self::ReleaseOutside)
+        matches!(
+            self,
+            Self::DragOut
+                | Self::DragOver
+                | Self::KeyPress { .. }
+                | Self::Press
+                | Self::RollOut
+                | Self::RollOver
+                | Self::Release
+                | Self::ReleaseOutside
+        )
+    }
+
+    /// Indicates whether this is a keyboard event type (keyUp, keyDown, keyPress).
+    pub fn is_key_event(self) -> bool {
+        matches!(self, Self::KeyDown | Self::KeyUp | Self::KeyPress { .. })
     }
 
     /// Returns the method name of the event handler for this event.
@@ -123,13 +142,25 @@ impl ClipEvent {
 pub enum KeyCode {
     Unknown = 0,
     Backspace = 8,
+    Tab = 9,
     Return = 13,
     Shift = 16,
     Control = 17,
     Alt = 18,
+    Pause = 19,
     CapsLock = 20,
     Escape = 27,
     Space = 32,
+    PgUp = 33,
+    PgDown = 34,
+    End = 35,
+    Home = 36,
+    Left = 37,
+    Up = 38,
+    Right = 39,
+    Down = 40,
+    Insert = 45,
+    Delete = 46,
     Key0 = 48,
     Key1 = 49,
     Key2 = 50,
@@ -166,17 +197,6 @@ pub enum KeyCode {
     X = 88,
     Y = 89,
     Z = 90,
-    Semicolon = 186,
-    Equals = 187,
-    Comma = 188,
-    Minus = 189,
-    Period = 190,
-    Slash = 191,
-    Grave = 192,
-    LBracket = 219,
-    Backslash = 220,
-    RBracket = 221,
-    Apostrophe = 222,
     Numpad0 = 96,
     Numpad1 = 97,
     Numpad2 = 98,
@@ -192,18 +212,6 @@ pub enum KeyCode {
     NumpadMinus = 109,
     NumpadPeriod = 110,
     NumpadSlash = 111,
-    PgUp = 33,
-    PgDown = 34,
-    End = 35,
-    Home = 36,
-    Left = 37,
-    Up = 38,
-    Right = 39,
-    Down = 40,
-    Insert = 45,
-    Delete = 46,
-    Pause = 19,
-    ScrollLock = 145,
     F1 = 112,
     F2 = 113,
     F3 = 114,
@@ -216,6 +224,18 @@ pub enum KeyCode {
     F10 = 121,
     F11 = 122,
     F12 = 123,
+    ScrollLock = 145,
+    Semicolon = 186,
+    Equals = 187,
+    Comma = 188,
+    Minus = 189,
+    Period = 190,
+    Slash = 191,
+    Grave = 192,
+    LBracket = 219,
+    Backslash = 220,
+    RBracket = 221,
+    Apostrophe = 222,
 }
 
 /// Key codes for SWF4 keyPress button handlers. These are annoyingly different than
@@ -353,6 +373,7 @@ pub fn key_code_to_button_key_code(key_code: KeyCode) -> Option<ButtonKeyCode> {
         KeyCode::PgUp => ButtonKeyCode::PgUp,
         KeyCode::PgDown => ButtonKeyCode::PgDown,
         KeyCode::Escape => ButtonKeyCode::Escape,
+        KeyCode::Tab => ButtonKeyCode::Tab,
         _ => return None,
     };
     Some(out)

@@ -2,22 +2,24 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::property::Attribute::{self, *};
+use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
-use crate::character::Character;
 use crate::display_object::TDisplayObject;
-use enumset::EnumSet;
 use gc_arena::MutationContext;
 use std::borrow::Cow;
 
 /// Implements `Object` constructor
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
+    let this = match args.get(0) {
+        None | Some(Value::Null) | Some(Value::Undefined) => this,
+        Some(val) => val.coerce_to_object(activation),
+    };
+    Ok(this.into())
 }
 
 /// Implements `Object` function
@@ -26,11 +28,13 @@ pub fn object_function<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(val) = args.get(0) {
-        Ok(val.coerce_to_object(activation).into())
-    } else {
-        Ok(ScriptObject::object(activation.context.gc_context, None).into())
-    }
+    let obj = match args.get(0) {
+        None | Some(Value::Null) | Some(Value::Undefined) => {
+            Object::from(ScriptObject::object(activation.context.gc_context, None))
+        }
+        Some(val) => val.coerce_to_object(activation),
+    };
+    Ok(obj.into())
 }
 
 /// Implements `Object.prototype.addProperty`
@@ -55,7 +59,7 @@ pub fn add_property<'gc>(
                     &name,
                     get.to_owned(),
                     Some(set.to_owned()),
-                    EnumSet::empty(),
+                    Attribute::empty(),
                 );
             } else if let Value::Null = setter {
                 this.add_property_with_case(
@@ -64,7 +68,7 @@ pub fn add_property<'gc>(
                     &name,
                     get.to_owned(),
                     None,
-                    ReadOnly.into(),
+                    Attribute::READ_ONLY,
                 );
             } else {
                 return Ok(false.into());
@@ -141,36 +145,35 @@ pub fn register_class<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(class_name) = args.get(0).cloned() {
-        let class_name = class_name.coerce_to_string(activation)?;
-        if let Some(movie) = activation.base_clip().movie() {
-            if let Some(Character::MovieClip(movie_clip)) = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
-                .get_character_by_export_name(&class_name)
-            {
-                if let Some(constructor) = args.get(1) {
-                    movie_clip.set_avm1_constructor(
-                        activation.context.gc_context,
-                        Some(constructor.coerce_to_object(activation)),
-                    );
-                } else {
-                    movie_clip.set_avm1_constructor(activation.context.gc_context, None);
-                }
-            } else {
-                log::warn!(
-                    "Tried to register_class on an unknown export {}",
-                    class_name
-                );
-            }
-        } else {
-            log::warn!("Tried to register_class on an unknown movie");
+    let (class_name, constructor) = match args {
+        [class_name, constructor, ..] => (class_name, constructor),
+        _ => return Ok(Value::Bool(false)),
+    };
+
+    let constructor = match constructor {
+        Value::Null | Value::Undefined => None,
+        Value::Object(Object::FunctionObject(func)) => Some(*func),
+        _ => return Ok(Value::Bool(false)),
+    };
+
+    let class_name = class_name.coerce_to_string(activation)?;
+
+    let registry = activation
+        .base_clip()
+        .movie()
+        .map(|movie| activation.context.library.library_for_movie_mut(movie))
+        .and_then(|library| library.avm1_constructor_registry());
+
+    match registry {
+        Some(registry) => {
+            registry.set(&class_name, constructor, activation.context.gc_context);
+            Ok(Value::Bool(true))
         }
-    } else {
-        log::warn!("Tried to register_class with an unknown class");
+        None => {
+            log::warn!("Can't register_class without a constructor registry");
+            Ok(Value::Bool(false))
+        }
     }
-    Ok(Value::Undefined)
 }
 
 /// Implements `Object.prototype.watch`
@@ -244,56 +247,56 @@ pub fn fill_proto<'gc>(
         "addProperty",
         add_property,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "hasOwnProperty",
         has_own_property,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "isPropertyEnumerable",
         is_property_enumerable,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "isPrototypeOf",
         is_prototype_of,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "toString",
         to_string,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "valueOf",
         value_of,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "watch",
         watch,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object_proto.as_script_object().unwrap().force_set_function(
         "unwatch",
         unwatch,
         gc_context,
-        DontDelete | DontEnum,
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 }
@@ -342,17 +345,24 @@ pub fn as_set_prop_flags<'gc>(
         }
     };
 
-    let set_attributes = EnumSet::<Attribute>::from_u128(
-        args.get(2)
-            .unwrap_or(&Value::Number(0.0))
-            .coerce_to_f64(activation)? as u128,
-    );
+    let set_flags = args
+        .get(2)
+        .unwrap_or(&Value::Number(0.0))
+        .coerce_to_f64(activation)? as u8;
+    let set_attributes = Attribute::from_bits_truncate(set_flags);
 
-    let clear_attributes = EnumSet::<Attribute>::from_u128(
-        args.get(3)
-            .unwrap_or(&Value::Number(0.0))
-            .coerce_to_f64(activation)? as u128,
-    );
+    let clear_flags = args
+        .get(3)
+        .unwrap_or(&Value::Number(0.0))
+        .coerce_to_f64(activation)? as u8;
+    let clear_attributes = Attribute::from_bits_truncate(clear_flags);
+
+    if set_attributes.bits() != set_flags || clear_attributes.bits() != clear_flags {
+        avm_warn!(
+            activation,
+            "ASSetPropFlags: Unimplemented support for flags > 7"
+        );
+    }
 
     match properties {
         Some(properties) => {
@@ -381,10 +391,10 @@ pub fn create_object_object<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object_function = FunctionObject::function_and_constructor(
+    let object_function = FunctionObject::constructor(
         gc_context,
-        Executable::Native(object_function),
         Executable::Native(constructor),
+        Executable::Native(object_function),
         Some(fn_proto),
         proto,
     );
@@ -394,7 +404,7 @@ pub fn create_object_object<'gc>(
         "registerClass",
         register_class,
         gc_context,
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 

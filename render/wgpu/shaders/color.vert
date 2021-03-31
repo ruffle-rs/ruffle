@@ -5,8 +5,8 @@ layout(set = 0, binding = 0) uniform Globals {
     mat4 view_matrix;
 };
 
-// Set 1: shape
-layout(set = 1, binding = 0) uniform Transforms {
+// Push constants: matrix + color
+layout(push_constant) uniform VertexPushConstants {
     mat4 world_matrix;
 };
 

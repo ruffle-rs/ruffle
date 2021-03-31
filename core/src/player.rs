@@ -2,15 +2,20 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
 use crate::avm2::{Avm2, Domain as Avm2Domain};
-use crate::backend::input::{InputBackend, MouseCursor};
-use crate::backend::locale::LocaleBackend;
-use crate::backend::navigator::{NavigatorBackend, RequestOptions};
-use crate::backend::storage::StorageBackend;
 use crate::backend::{
-    audio::AudioBackend, log::LogBackend, render::Letterbox, render::RenderBackend,
+    audio::{AudioBackend, AudioManager},
+    locale::LocaleBackend,
+    log::LogBackend,
+    navigator::{NavigatorBackend, RequestOptions},
+    render::RenderBackend,
+    storage::StorageBackend,
+    ui::{MouseCursor, UiBackend},
+    video::VideoBackend,
 };
+use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::display_object::{EditText, MorphShape, MovieClip};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
@@ -23,13 +28,12 @@ use crate::prelude::*;
 use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
-use crate::vminterface::Instantiator;
-use enumset::EnumSet;
+use crate::vminterface::{AvmType, Instantiator};
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
@@ -87,6 +91,9 @@ struct GcRootData<'gc> {
 
     /// A tracker for the current keyboard focused element
     focus_tracker: FocusTracker<'gc>,
+
+    /// Manager of active sound instances.
+    audio_manager: AudioManager<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -107,6 +114,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Vec<EditText<'gc>>,
         &mut Timers<'gc>,
         &mut ExternalInterface<'gc>,
+        &mut AudioManager<'gc>,
     ) {
         (
             &mut self.levels,
@@ -120,6 +128,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.unbound_text_fields,
             &mut self.timers,
             &mut self.external_interface,
+            &mut self.audio_manager,
         )
     }
 }
@@ -130,10 +139,11 @@ make_arena!(GcArena, GcRoot);
 type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;
 type Renderer = Box<dyn RenderBackend>;
-type Input = Box<dyn InputBackend>;
 type Storage = Box<dyn StorageBackend>;
 type Locale = Box<dyn LocaleBackend>;
 type Log = Box<dyn LogBackend>;
+type Ui = Box<dyn UiBackend>;
+type Video = Box<dyn VideoBackend>;
 
 pub struct Player {
     /// The version of the player we're emulating.
@@ -150,28 +160,41 @@ pub struct Player {
 
     swf: Arc<SwfMovie>,
 
+    warn_on_unsupported_content: bool,
+
     is_playing: bool,
     needs_render: bool,
 
-    audio: Audio,
     renderer: Renderer,
-    pub navigator: Navigator,
-    input: Input,
+    audio: Audio,
+    navigator: Navigator,
+    storage: Storage,
     locale: Locale,
     log: Log,
+    ui: Ui,
+    video: Video,
+
     transform_stack: TransformStack,
     view_matrix: Matrix,
     inverse_view_matrix: Matrix,
-
-    storage: Storage,
+    view_bounds: BoundingBox,
 
     rng: SmallRng,
 
     gc_arena: GcArena,
-    background_color: Color,
+    background_color: Option<Color>,
 
     frame_rate: f64,
+
+    /// A time budget for executing frames.
+    /// Gained by passage of time between host frames, spent by executing SWF frames.
+    /// This is how we support custom SWF framerates
+    /// and compensate for small lags by "catching up" (up to MAX_FRAMES_PER_TICK).
     frame_accumulator: f64,
+    recent_run_frame_timings: VecDeque<f64>,
+
+    /// Faked time passage for fooling hand-written busy-loop FPS limiters.
+    time_offset: u32,
 
     viewport_width: u32,
     viewport_height: u32,
@@ -203,17 +226,24 @@ pub struct Player {
     /// contexts to other parts of the player. It can be used to ensure the
     /// player lives across `await` calls in async code.
     self_reference: Option<Weak<Mutex<Self>>>,
+
+    /// The current frame of the main timeline, if available.
+    /// The first frame is frame 1.
+    current_frame: Option<u16>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl Player {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         renderer: Renderer,
         audio: Audio,
         navigator: Navigator,
-        input: Input,
         storage: Storage,
         locale: Locale,
+        video: Video,
         log: Log,
+        ui: Ui,
     ) -> Result<Arc<Mutex<Self>>, Error> {
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
         let movie_width = 550;
@@ -225,26 +255,24 @@ impl Player {
 
             swf: fake_movie.clone(),
 
+            warn_on_unsupported_content: true,
+
             is_playing: false,
             needs_render: true,
 
-            background_color: Color {
-                r: 255,
-                g: 255,
-                b: 255,
-                a: 255,
-            },
+            background_color: None,
             transform_stack: TransformStack::new(),
             view_matrix: Default::default(),
             inverse_view_matrix: Default::default(),
+            view_bounds: Default::default(),
 
-            rng: SmallRng::from_seed([0u8; 16]), // TODO(Herschel): Get a proper seed on all platforms.
+            rng: SmallRng::seed_from_u64(chrono::Utc::now().timestamp_millis() as u64),
 
             gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
                 GcRoot(GcCell::allocate(
                     gc_context,
                     GcRootData {
-                        library: Library::default(),
+                        library: Library::empty(gc_context),
                         levels: BTreeMap::new(),
                         mouse_hovered_object: None,
                         drag_object: None,
@@ -257,35 +285,40 @@ impl Player {
                         timers: Timers::new(),
                         external_interface: ExternalInterface::new(),
                         focus_tracker: FocusTracker::new(gc_context),
+                        audio_manager: AudioManager::new(),
                     },
                 ))
             }),
 
             frame_rate,
             frame_accumulator: 0.0,
+            recent_run_frame_timings: VecDeque::with_capacity(10),
+            time_offset: 0,
 
             movie_width,
             movie_height,
             viewport_width: movie_width,
             viewport_height: movie_height,
-            letterbox: Letterbox::None,
+            letterbox: Letterbox::Fullscreen,
 
-            mouse_pos: (Twips::new(0), Twips::new(0)),
+            mouse_pos: (Twips::zero(), Twips::zero()),
             is_mouse_down: false,
             mouse_cursor: MouseCursor::Arrow,
 
             renderer,
             audio,
             navigator,
-            input,
             locale,
             log,
+            ui,
+            video,
             self_reference: None,
             system: SystemProperties::default(),
             instance_counter: 0,
             time_til_next_timer: None,
             storage,
             max_execution_duration: Duration::from_secs(15),
+            current_frame: None,
         };
 
         player.mutate_with_update_context(|context| {
@@ -305,10 +338,10 @@ impl Player {
 
         player.build_matrices();
         player.audio.set_frame_rate(frame_rate);
-
         let player_box = Arc::new(Mutex::new(player));
         let mut player_lock = player_box.lock().unwrap();
         player_lock.self_reference = Some(Arc::downgrade(&player_box));
+
         std::mem::drop(player_lock);
 
         Ok(player_box)
@@ -369,32 +402,25 @@ impl Player {
                         context.gc_context,
                         key,
                         AvmString::new(context.gc_context, value).into(),
-                        EnumSet::empty(),
+                        Attribute::empty(),
                     );
                 }
                 Some(object.into())
             } else {
                 None
             };
+            root.construct_frame(context);
             root.post_instantiation(context, root, flashvars, Instantiator::Movie, false);
-            root.set_name(context.gc_context, "");
+            root.set_default_root_name(context);
             context.levels.insert(0, root);
 
             // Load and parse the device font.
             let device_font =
-                match Self::load_device_font(context.gc_context, DEVICE_FONT_TAG, context.renderer)
-                {
-                    Ok(font) => Some(font),
-                    Err(e) => {
-                        log::error!("Unable to load device font: {}", e);
-                        None
-                    }
-                };
-
-            context
-                .library
-                .library_for_movie_mut(context.swf.clone())
-                .set_device_font(device_font);
+                Self::load_device_font(context.gc_context, DEVICE_FONT_TAG, context.renderer);
+            if let Err(e) = &device_font {
+                log::error!("Unable to load device font: {}", e);
+            }
+            context.library.set_device_font(device_font.ok());
 
             // Set the version parameter on the root.
             let mut activation = Activation::from_stub(
@@ -410,13 +436,48 @@ impl Player {
                 activation.context.gc_context,
                 "$version",
                 AvmString::new(activation.context.gc_context, version_string).into(),
-                EnumSet::empty(),
+                Attribute::empty(),
             );
         });
 
         self.build_matrices();
         self.preload();
         self.audio.set_frame_rate(self.frame_rate);
+    }
+
+    /// Get rough estimate of the max # of times we can update the frame.
+    ///
+    /// In some cases, we might want to update several times in a row.
+    /// For example, if the game runs at 60FPS, but the host runs at 30FPS
+    /// Or if for some reason the we miss a couple of frames.
+    /// However, if the code is simply slow, this is the opposite of what we want;
+    /// If run_frame() consistently takes say 100ms, we don't want `tick` to try to "catch up",
+    /// as this will only make it worse.
+    ///
+    /// This rough heuristic manages this job; for example if average run_frame()
+    /// takes more than 1/3 of frame_time, we shouldn't run it more than twice in a row.
+    /// This logic is far from perfect, as it doesn't take into account
+    /// that things like rendering also take time. But for now it's good enough.
+    fn max_frames_per_tick(&self) -> u32 {
+        const MAX_FRAMES_PER_TICK: u32 = 5;
+
+        if self.recent_run_frame_timings.is_empty() {
+            5
+        } else {
+            let frame_time = 1000.0 / self.frame_rate;
+            let average_run_frame_time = self.recent_run_frame_timings.iter().sum::<f64>()
+                / self.recent_run_frame_timings.len() as f64;
+            ((frame_time / average_run_frame_time) as u32)
+                .max(1)
+                .min(MAX_FRAMES_PER_TICK)
+        }
+    }
+
+    fn add_frame_timing(&mut self, elapsed: f64) {
+        self.recent_run_frame_timings.push_back(elapsed);
+        if self.recent_run_frame_timings.len() >= 10 {
+            self.recent_run_frame_timings.pop_front();
+        }
     }
 
     pub fn tick(&mut self, dt: f64) {
@@ -430,13 +491,35 @@ impl Player {
             self.frame_accumulator += dt;
             let frame_time = 1000.0 / self.frame_rate;
 
-            const MAX_FRAMES_PER_TICK: u32 = 5; // Sanity cap on frame tick.
+            let max_frames_per_tick = self.max_frames_per_tick();
             let mut frame = 0;
-            while frame < MAX_FRAMES_PER_TICK && self.frame_accumulator >= frame_time {
-                self.frame_accumulator -= frame_time;
+
+            while frame < max_frames_per_tick && self.frame_accumulator >= frame_time {
+                let timer = Instant::now();
                 self.run_frame();
+                let elapsed = timer.elapsed().as_millis() as f64;
+
+                self.add_frame_timing(elapsed);
+
+                self.frame_accumulator -= frame_time;
                 frame += 1;
+                // The script probably tried implementing an FPS limiter with a busy loop.
+                // We fooled the busy loop by pretending that more time has passed that actually did.
+                // Then we need to actually pass this time, by decreasing frame_accumulator
+                // to delay the future frame.
+                if self.time_offset > 0 {
+                    self.frame_accumulator -= self.time_offset as f64;
+                }
             }
+
+            // Now that we're done running code,
+            // we can stop pretending that more time passed than actually did.
+            // Note: update_timers(dt) doesn't need to see this either.
+            // Timers will run at correct times and see correct time.
+            // Also note that in Flash, a blocking busy loop would delay setTimeout
+            // and cancel some setInterval callbacks, but here busy loops don't block
+            // so timer callbacks won't get cancelled/delayed.
+            self.time_offset = 0;
 
             // Sanity: If we had too many frames to tick, just reset the accumulator
             // to prevent running at turbo speed.
@@ -488,6 +571,35 @@ impl Player {
         self.needs_render
     }
 
+    pub fn background_color(&self) -> Option<Color> {
+        self.background_color.clone()
+    }
+
+    pub fn set_background_color(&mut self, color: Option<Color>) {
+        self.background_color = color
+    }
+
+    pub fn letterbox(&self) -> Letterbox {
+        self.letterbox
+    }
+
+    pub fn set_letterbox(&mut self, letterbox: Letterbox) {
+        self.letterbox = letterbox
+    }
+
+    fn should_letterbox(&self) -> bool {
+        self.letterbox == Letterbox::On
+            || (self.letterbox == Letterbox::Fullscreen && self.ui.is_fullscreen())
+    }
+
+    pub fn warn_on_unsupported_content(&self) -> bool {
+        self.warn_on_unsupported_content
+    }
+
+    pub fn set_warn_on_unsupported_content(&mut self, warn_on_unsupported_content: bool) {
+        self.warn_on_unsupported_content = warn_on_unsupported_content
+    }
+
     pub fn movie_width(&self) -> u32 {
         self.movie_width
     }
@@ -514,8 +626,7 @@ impl Player {
                 key_code: KeyCode::V,
             } = event
             {
-                if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt)
-                {
+                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) {
                     self.mutate_with_update_context(|context| {
                         let mut dumper = VariableDumper::new("  ");
                         let levels = context.levels.clone();
@@ -550,8 +661,7 @@ impl Player {
                 key_code: KeyCode::D,
             } = event
             {
-                if self.input.is_key_down(KeyCode::Control) && self.input.is_key_down(KeyCode::Alt)
-                {
+                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) {
                     self.mutate_with_update_context(|context| {
                         if context.avm1.show_debug_output() {
                             log::info!(
@@ -627,7 +737,7 @@ impl Player {
             });
         }
 
-        // Propagte clip events.
+        // Propagate clip events.
         self.mutate_with_update_context(|context| {
             let (clip_event, listener) = match event {
                 PlayerEvent::KeyDown { .. } => {
@@ -791,7 +901,7 @@ impl Player {
         // Update mouse cursor if it has changed.
         if new_cursor != self.mouse_cursor {
             self.mouse_cursor = new_cursor;
-            self.input.set_mouse_cursor(new_cursor)
+            self.ui.set_mouse_cursor(new_cursor)
         }
 
         hover_changed
@@ -802,6 +912,7 @@ impl Player {
     /// This should only be called once. Further movie loads should preload the
     /// specific `MovieClip` referenced.
     fn preload(&mut self) {
+        let mut is_action_script_3 = false;
         self.mutate_with_update_context(|context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
             let root = *context.levels.get(&0).expect("root level");
@@ -809,15 +920,20 @@ impl Player {
                 .unwrap()
                 .preload(context, &mut morph_shapes);
 
+            let lib = context
+                .library
+                .library_for_movie_mut(root.as_movie_clip().unwrap().movie().unwrap());
+
+            is_action_script_3 = lib.avm_type() == AvmType::Avm2;
             // Finalize morph shapes.
             for (id, static_data) in morph_shapes {
                 let morph_shape = MorphShape::new(context.gc_context, static_data);
-                context
-                    .library
-                    .library_for_movie_mut(root.as_movie_clip().unwrap().movie().unwrap())
-                    .register_character(id, crate::character::Character::MorphShape(morph_shape));
+                lib.register_character(id, crate::character::Character::MorphShape(morph_shape));
             }
         });
+        if is_action_script_3 && self.warn_on_unsupported_content {
+            self.ui.display_unsupported_message();
+        }
     }
 
     pub fn run_frame(&mut self) {
@@ -828,23 +944,41 @@ impl Player {
             // want to run frames on
             let levels: Vec<_> = update_context.levels.values().copied().collect();
 
-            for level in levels {
+            if let Some(level) = levels.first() {
+                level.exit_frame(update_context);
+            }
+
+            if let Some(level) = levels.first() {
+                level.enter_frame(update_context);
+            }
+
+            for level in levels.iter() {
+                level.construct_frame(update_context);
+            }
+
+            if let Some(level) = levels.first() {
+                level.frame_constructed(update_context);
+            }
+
+            for level in levels.iter() {
                 level.run_frame(update_context);
             }
+
+            for level in levels.iter() {
+                level.run_frame_scripts(update_context);
+            }
+
+            update_context.update_sounds();
         });
         self.needs_render = true;
     }
 
     pub fn render(&mut self) {
-        let view_bounds = BoundingBox {
-            x_min: Twips::new(0),
-            y_min: Twips::new(0),
-            x_max: Twips::from_pixels(self.movie_width.into()),
-            y_max: Twips::from_pixels(self.movie_height.into()),
-            valid: true,
-        };
-
-        self.renderer.begin_frame(self.background_color.clone());
+        let background_color = self
+            .background_color
+            .clone()
+            .unwrap_or_else(|| Color::from_rgb(0xffffff, 255));
+        self.renderer.begin_frame(background_color);
 
         let (renderer, transform_stack) = (&mut self.renderer, &mut self.transform_stack);
 
@@ -852,6 +986,8 @@ impl Player {
             matrix: self.view_matrix,
             ..Default::default()
         });
+
+        let view_bounds = self.view_bounds.clone();
         self.gc_arena.mutate(|_gc_context, gc_root| {
             let root_data = gc_root.0.read();
             let mut render_context = RenderContext {
@@ -869,9 +1005,18 @@ impl Player {
         });
         transform_stack.pop();
 
-        self.renderer.draw_letterbox(self.letterbox);
+        if self.should_letterbox() {
+            self.draw_letterbox();
+        }
+
         self.renderer.end_frame();
         self.needs_render = false;
+    }
+
+    /// The current frame of the main timeline, if available.
+    /// The first frame is frame 1.
+    pub fn current_frame(&self) -> Option<u16> {
+        self.current_frame
     }
 
     pub fn audio(&self) -> &Audio {
@@ -895,16 +1040,24 @@ impl Player {
         &mut self.renderer
     }
 
+    pub fn storage(&self) -> &Storage {
+        &self.storage
+    }
+
+    pub fn storage_mut(&mut self) -> &mut Storage {
+        &mut self.storage
+    }
+
     pub fn destroy(self) -> Renderer {
         self.renderer
     }
 
-    pub fn input(&self) -> &Input {
-        &self.input
+    pub fn ui(&self) -> &Ui {
+        &self.ui
     }
 
-    pub fn input_mut(&mut self) -> &mut dyn InputBackend {
-        self.input.deref_mut()
+    pub fn ui_mut(&mut self) -> &mut Ui {
+        &mut self.ui
     }
 
     pub fn locale(&self) -> &Locale {
@@ -1025,7 +1178,7 @@ impl Player {
     }
 
     fn build_matrices(&mut self) {
-        // Create  view matrix to scale stage into viewport area.
+        // Create view matrix to scale stage into viewport area.
         let (movie_width, movie_height) = (self.movie_width as f32, self.movie_height as f32);
         let (viewport_width, viewport_height) =
             (self.viewport_width as f32, self.viewport_height as f32);
@@ -1049,15 +1202,26 @@ impl Player {
         self.inverse_view_matrix = self.view_matrix;
         self.inverse_view_matrix.invert();
 
-        // Calculate letterbox dimensions.
-        // TODO: Letterbox should be an option; the original Flash Player defaults to showing content
-        // in the extra margins.
-        self.letterbox = if margin_width > 0.0 {
-            Letterbox::Pillarbox(margin_width)
-        } else if margin_height > 0.0 {
-            Letterbox::Letterbox(margin_height)
+        self.view_bounds = if self.should_letterbox() {
+            // No letterbox: movie area
+            BoundingBox {
+                x_min: Twips::zero(),
+                y_min: Twips::zero(),
+                x_max: Twips::from_pixels(f64::from(self.movie_width)),
+                y_max: Twips::from_pixels(f64::from(self.movie_height)),
+                valid: true,
+            }
         } else {
-            Letterbox::None
+            // No letterbox: full visible stage area
+            let margin_width = f64::from(margin_width / scale);
+            let margin_height = f64::from(margin_height / scale);
+            BoundingBox {
+                x_min: Twips::from_pixels(-margin_width),
+                y_min: Twips::from_pixels(-margin_height),
+                x_max: Twips::from_pixels(f64::from(self.movie_width) + margin_width),
+                y_max: Twips::from_pixels(f64::from(self.movie_height) + margin_height),
+                valid: true,
+            }
         };
     }
 
@@ -1076,7 +1240,7 @@ impl Player {
             renderer,
             audio,
             navigator,
-            input,
+            ui,
             rng,
             mouse_position,
             stage_width,
@@ -1087,8 +1251,11 @@ impl Player {
             storage,
             locale,
             logging,
+            video,
             needs_render,
             max_execution_duration,
+            current_frame,
+            time_offset,
         ) = (
             self.player_version,
             &self.swf,
@@ -1096,7 +1263,7 @@ impl Player {
             self.renderer.deref_mut(),
             self.audio.deref_mut(),
             self.navigator.deref_mut(),
-            self.input.deref_mut(),
+            self.ui.deref_mut(),
             &mut self.rng,
             &self.mouse_pos,
             Twips::from_pixels(self.movie_width.into()),
@@ -1107,8 +1274,11 @@ impl Player {
             self.storage.deref_mut(),
             self.locale.deref_mut(),
             self.log.deref_mut(),
+            self.video.deref_mut(),
             &mut self.needs_render,
             self.max_execution_duration,
+            &mut self.current_frame,
+            &mut self.time_offset,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -1127,6 +1297,7 @@ impl Player {
                 unbound_text_fields,
                 timers,
                 external_interface,
+                audio_manager,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -1138,7 +1309,7 @@ impl Player {
                 renderer,
                 audio,
                 navigator,
-                input,
+                ui,
                 action_queue,
                 gc_context,
                 levels,
@@ -1146,7 +1317,6 @@ impl Player {
                 mouse_position,
                 drag_object,
                 stage_size: (stage_width, stage_height),
-                system_prototypes: avm1.prototypes().clone(),
                 player,
                 load_manager,
                 system: system_properties,
@@ -1154,6 +1324,7 @@ impl Player {
                 storage,
                 locale,
                 log: logging,
+                video,
                 shared_objects,
                 unbound_text_fields,
                 timers,
@@ -1164,12 +1335,22 @@ impl Player {
                 update_start: Instant::now(),
                 max_execution_duration,
                 focus_tracker,
+                times_get_time_called: 0,
+                time_offset,
+                audio_manager,
             };
 
             let ret = f(&mut update_context);
 
+            *current_frame = update_context
+                .levels
+                .get(&0)
+                .and_then(|root| root.as_movie_clip())
+                .map(|clip| clip.current_frame());
+
             // Hovered object may have been updated; copy it back to the GC root.
             root_data.mouse_hovered_object = update_context.mouse_hovered_object;
+
             ret
         })
     }
@@ -1183,8 +1364,12 @@ impl Player {
         renderer: &mut dyn RenderBackend,
     ) -> Result<crate::font::Font<'gc>, Error> {
         let mut reader = swf::read::Reader::new(data, 8);
-        let device_font =
-            crate::font::Font::from_swf_tag(gc_context, renderer, &reader.read_define_font_2(3)?)?;
+        let device_font = crate::font::Font::from_swf_tag(
+            gc_context,
+            renderer,
+            &reader.read_define_font_2(3)?,
+            reader.encoding(),
+        )?;
         Ok(device_font)
     }
 
@@ -1273,21 +1458,71 @@ impl Player {
     pub fn set_max_execution_duration(&mut self, max_execution_duration: Duration) {
         self.max_execution_duration = max_execution_duration
     }
+
+    fn draw_letterbox(&mut self) {
+        let black = Color::from_rgb(0, 255);
+        let viewport_width = self.viewport_width as f32;
+        let viewport_height = self.viewport_height as f32;
+
+        let margin_width = self.view_matrix.tx.to_pixels() as f32;
+        let margin_height = self.view_matrix.ty.to_pixels() as f32;
+        if margin_height > 0.0 {
+            self.renderer.draw_rect(
+                black.clone(),
+                &Matrix::create_box(
+                    viewport_width,
+                    margin_height,
+                    0.0,
+                    Twips::default(),
+                    Twips::default(),
+                ),
+            );
+            self.renderer.draw_rect(
+                black,
+                &Matrix::create_box(
+                    viewport_width,
+                    margin_height,
+                    0.0,
+                    Twips::default(),
+                    Twips::from_pixels((viewport_height - margin_height) as f64),
+                ),
+            );
+        } else if margin_width > 0.0 {
+            self.renderer.draw_rect(
+                black.clone(),
+                &Matrix::create_box(
+                    margin_width,
+                    viewport_height,
+                    0.0,
+                    Twips::default(),
+                    Twips::default(),
+                ),
+            );
+            self.renderer.draw_rect(
+                black,
+                &Matrix::create_box(
+                    margin_width,
+                    viewport_height,
+                    0.0,
+                    Twips::from_pixels((viewport_width - margin_width) as f64),
+                    Twips::default(),
+                ),
+            );
+        }
+    }
 }
 
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct DragObject<'gc> {
     /// The display object being dragged.
     pub display_object: DisplayObject<'gc>,
 
     /// The offset from the mouse position to the center of the clip.
+    #[collect(require_static)]
     pub offset: (Twips, Twips),
 
     /// The bounding rectangle where the clip will be maintained.
+    #[collect(require_static)]
     pub constraint: BoundingBox,
-}
-
-unsafe impl<'gc> gc_arena::Collect for DragObject<'gc> {
-    fn trace(&self, cc: gc_arena::CollectionContext) {
-        self.display_object.trace(cc);
-    }
 }

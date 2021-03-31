@@ -161,26 +161,20 @@ true
 false
 // clip.hitTest(390, 330, true)
 false
+// clip.hitTest(390, 430, true)
+true
+// clip.hitTest(290, 450, true)
+true
+// clip.hitTest(190, 480, true)
+true
+// clip.hitTest(650, 430, true)
+true
+// clip.hitTest(650, 400, true)
+false
 // clip.hitTest(205, 630, true)
 true
 // clip.hitTest(420, 650, true)
 true
 // clip.hitTest(790, 630, true)
-false
-
-// morph shape
-// clip.hitTest(350, 400, true)
-true
-// clip.hitTest(200, 400, true)
-false
-// clip.hitTest(500, 450, true)
-false
-// clip.hitTest(350, 250, true)
-true
-// clip.hitTest(250, 220, true)
-false
-// clip.hitTest(450, 220, true)
-false
-// clip.hitTest(250, 520, true)
 false
 

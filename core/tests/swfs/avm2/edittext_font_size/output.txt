@@ -1,0 +1,45 @@
+//Creating left aligned text @ 10px
+7.8
+15.6
+//Creating left aligned text @ 12px
+9.35
+18.3
+//Creating left aligned text @ 20px
+15.6
+29.2
+//Creating left aligned text @ 30px
+23.4
+42.8
+//Creating left aligned text @ 100px
+78.05
+138.2
+//Creating left aligned text 'Qe' @ 10px
+13.4
+15.6
+//Creating left aligned text 'Qe' @ 12px
+16.1
+18.3
+//Creating left aligned text 'Qe' @ 20px
+26.85
+29.2
+//Creating left aligned text 'Qe' @ 30px
+40.3
+42.8
+//Creating left aligned text 'Qe' @ 100px
+134.4
+138.2
+//Creating left aligned text 'Q e' @ 10px
+15.95
+15.6
+//Creating left aligned text 'Q e' @ 12px
+19.2
+18.3
+//Creating left aligned text 'Q e' @ 20px
+32
+29.2
+//Creating left aligned text 'Q e' @ 30px
+48.05
+42.8
+//Creating left aligned text 'Q e' @ 100px
+160.35
+138.2

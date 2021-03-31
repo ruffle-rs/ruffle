@@ -1,13 +1,13 @@
-use crate::avm2::Domain as Avm2Domain;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{Bitmap, TDisplayObject};
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
-use crate::property_map::{Entry, PropertyMap};
+use crate::property_map::PropertyMap;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::AvmType;
-use gc_arena::{Collect, MutationContext};
+use crate::{avm1::function::FunctionObject, avm2::Domain as Avm2Domain};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use swf::{CharacterId, TagCode};
@@ -16,6 +16,45 @@ use weak_table::PtrWeakKeyHashMap;
 /// Boxed error alias.
 type Error = Box<dyn std::error::Error>;
 
+/// The mappings between symbol names and constructors registered
+/// with `Object.registerClass`.
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct Avm1ConstructorRegistry<'gc> {
+    symbol_map: GcCell<'gc, PropertyMap<FunctionObject<'gc>>>,
+    is_case_sensitive: bool,
+}
+
+impl<'gc> Avm1ConstructorRegistry<'gc> {
+    pub fn new(is_case_sensitive: bool, gc_context: MutationContext<'gc, '_>) -> Self {
+        Self {
+            symbol_map: GcCell::allocate(gc_context, PropertyMap::new()),
+            is_case_sensitive,
+        }
+    }
+
+    pub fn get(&self, symbol: &str) -> Option<FunctionObject<'gc>> {
+        self.symbol_map
+            .read()
+            .get(symbol, self.is_case_sensitive)
+            .copied()
+    }
+
+    pub fn set(
+        &self,
+        symbol: &str,
+        constructor: Option<FunctionObject<'gc>>,
+        gc_context: MutationContext<'gc, '_>,
+    ) {
+        let mut map = self.symbol_map.write(gc_context);
+        if let Some(ctor) = constructor {
+            map.insert(symbol, ctor, self.is_case_sensitive);
+        } else {
+            map.remove(symbol, self.is_case_sensitive);
+        };
+    }
+}
+
 /// Symbol library for a single given SWF.
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -23,10 +62,12 @@ pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
     export_characters: PropertyMap<Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
-    device_font: Option<Font<'gc>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm_type: AvmType,
     avm2_domain: Option<Avm2Domain<'gc>>,
+    /// Shared reference to the constructor registry used for this movie.
+    /// Should be `None` if this is an AVM2 movie.
+    avm1_constructor_registry: Option<Gc<'gc, Avm1ConstructorRegistry<'gc>>>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
@@ -35,10 +76,10 @@ impl<'gc> MovieLibrary<'gc> {
             characters: HashMap::new(),
             export_characters: PropertyMap::new(),
             jpeg_tables: None,
-            device_font: None,
             fonts: HashMap::new(),
             avm_type,
             avm2_domain: None,
+            avm1_constructor_registry: None,
         }
     }
 
@@ -46,7 +87,7 @@ impl<'gc> MovieLibrary<'gc> {
         // TODO(Herschel): What is the behavior if id already exists?
         if !self.contains_character(id) {
             if let Character::Font(font) = character.clone() {
-                self.fonts.insert(font.descriptor(), font);
+                self.fonts.insert(font.descriptor().clone(), font);
             }
 
             self.characters.insert(id, character);
@@ -57,25 +98,22 @@ impl<'gc> MovieLibrary<'gc> {
 
     /// Registers an export name for a given character ID.
     /// This character will then be instantiable from AVM1.
-    pub fn register_export(&mut self, id: CharacterId, export_name: &str) {
+    pub fn register_export(
+        &mut self,
+        id: CharacterId,
+        export_name: &str,
+    ) -> Option<&Character<'gc>> {
         if let Some(character) = self.characters.get(&id) {
-            match self.export_characters.entry(export_name, false) {
-                Entry::Vacant(e) => {
-                    e.insert(character.clone());
-                }
-                Entry::Occupied(_) => {
-                    log::warn!(
-                        "Can't register export {}: Export already exists",
-                        export_name
-                    );
-                }
-            }
+            self.export_characters
+                .insert(export_name, character.clone(), false);
+            Some(character)
         } else {
             log::warn!(
                 "Can't register export {}: Character ID {} doesn't exist",
                 export_name,
-                id
-            )
+                id,
+            );
+            None
         }
     }
 
@@ -83,14 +121,16 @@ impl<'gc> MovieLibrary<'gc> {
         self.characters.contains_key(&id)
     }
 
-    #[allow(dead_code)]
-    pub fn get_character_by_id(&self, id: CharacterId) -> Option<&Character<'gc>> {
+    pub fn character_by_id(&self, id: CharacterId) -> Option<&Character<'gc>> {
         self.characters.get(&id)
     }
 
-    #[allow(dead_code)]
-    pub fn get_character_by_export_name(&self, name: &str) -> Option<&Character<'gc>> {
+    pub fn character_by_export_name(&self, name: &str) -> Option<&Character<'gc>> {
         self.export_characters.get(name, false)
+    }
+
+    pub fn avm1_constructor_registry(&self) -> Option<Gc<'gc, Avm1ConstructorRegistry<'gc>>> {
+        self.avm1_constructor_registry
     }
 
     /// Instantiates the library item with the given character ID into a display object.
@@ -141,7 +181,16 @@ impl<'gc> MovieLibrary<'gc> {
             Character::MovieClip(movie_clip) => Ok(movie_clip.instantiate(gc_context)),
             Character::Button(button) => Ok(button.instantiate(gc_context)),
             Character::Text(text) => Ok(text.instantiate(gc_context)),
+            Character::Video(video) => Ok(video.instantiate(gc_context)),
             _ => Err("Not a DisplayObject".into()),
+        }
+    }
+
+    pub fn get_bitmap(&self, id: CharacterId) -> Option<Bitmap<'gc>> {
+        if let Some(&Character::Bitmap(bitmap)) = self.characters.get(&id) {
+            Some(bitmap)
+        } else {
+            None
         }
     }
 
@@ -193,16 +242,6 @@ impl<'gc> MovieLibrary<'gc> {
         self.jpeg_tables.as_ref().map(|data| &data[..])
     }
 
-    /// Returns the device font for use when a font is unavailable.
-    pub fn device_font(&self) -> Option<Font<'gc>> {
-        self.device_font
-    }
-
-    /// Sets the device font.
-    pub fn set_device_font(&mut self, font: Option<Font<'gc>>) {
-        self.device_font = font;
-    }
-
     /// Check if the current movie's VM type is compatible with running code on
     /// a particular VM. If it is not, then this yields an error.
     pub fn check_avm_type(&mut self, new_type: AvmType) -> Result<(), Error> {
@@ -224,6 +263,15 @@ impl<'gc> MovieLibrary<'gc> {
         self.avm_type
     }
 
+    /// Forcibly set the AVM type of this movie.
+    ///
+    /// This is intended for display object types which can be created
+    /// dynamically but need a placeholder movie. You should *not* attempt to
+    /// change the AVM type of an actual SWF.
+    pub fn force_avm_type(&mut self, new_type: AvmType) {
+        self.avm_type = new_type;
+    }
+
     pub fn set_avm2_domain(&mut self, avm2_domain: Avm2Domain<'gc>) {
         self.avm2_domain = Some(avm2_domain);
     }
@@ -243,6 +291,12 @@ impl<'gc> MovieLibrary<'gc> {
 pub struct Library<'gc> {
     /// All the movie libraries.
     movie_libraries: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieLibrary<'gc>>,
+
+    /// The embedded device font.
+    device_font: Option<Font<'gc>>,
+
+    constructor_registry_case_insensitive: Gc<'gc, Avm1ConstructorRegistry<'gc>>,
+    constructor_registry_case_sensitive: Gc<'gc, Avm1ConstructorRegistry<'gc>>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
@@ -251,10 +305,28 @@ unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
         for (_, val) in self.movie_libraries.iter() {
             val.trace(cc);
         }
+        self.device_font.trace(cc);
+        self.constructor_registry_case_insensitive.trace(cc);
+        self.constructor_registry_case_sensitive.trace(cc);
     }
 }
 
 impl<'gc> Library<'gc> {
+    pub fn empty(gc_context: MutationContext<'gc, '_>) -> Self {
+        Self {
+            movie_libraries: PtrWeakKeyHashMap::new(),
+            device_font: None,
+            constructor_registry_case_insensitive: Gc::allocate(
+                gc_context,
+                Avm1ConstructorRegistry::new(false, gc_context),
+            ),
+            constructor_registry_case_sensitive: Gc::allocate(
+                gc_context,
+                Avm1ConstructorRegistry::new(true, gc_context),
+            ),
+        }
+    }
+
     pub fn library_for_movie(&self, movie: Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
         self.movie_libraries.get(&movie)
     }
@@ -263,7 +335,8 @@ impl<'gc> Library<'gc> {
         if !self.movie_libraries.contains_key(&movie) {
             let slice = SwfSlice::from(movie.clone());
             let mut reader = slice.read_from(0);
-            let vm_type = if movie.header().version > 8 {
+            let movie_version = movie.header().version;
+            let vm_type = if movie_version > 8 {
                 match reader.read_tag_code_and_length() {
                     Ok((tag_code, _tag_len))
                         if TagCode::from_u16(tag_code) == Some(TagCode::FileAttributes) =>
@@ -284,18 +357,39 @@ impl<'gc> Library<'gc> {
                 AvmType::Avm1
             };
 
-            self.movie_libraries
-                .insert(movie.clone(), MovieLibrary::new(vm_type));
+            let mut movie_library = MovieLibrary::new(vm_type);
+            if vm_type == AvmType::Avm1 {
+                movie_library.avm1_constructor_registry =
+                    Some(self.get_avm1_constructor_registry(movie_version));
+            }
+
+            self.movie_libraries.insert(movie.clone(), movie_library);
         };
 
         self.movie_libraries.get_mut(&movie).unwrap()
     }
-}
 
-impl<'gc> Default for Library<'gc> {
-    fn default() -> Self {
-        Self {
-            movie_libraries: PtrWeakKeyHashMap::new(),
+    /// Returns the device font for use when a font is unavailable.
+    pub fn device_font(&self) -> Option<Font<'gc>> {
+        self.device_font
+    }
+
+    /// Sets the device font.
+    pub fn set_device_font(&mut self, font: Option<Font<'gc>>) {
+        self.device_font = font;
+    }
+
+    /// Gets the constructor registry to use for the given SWF version.
+    /// Because SWFs v6 and v7+ use different case-sensitivity rules, Flash
+    /// keeps two separate registries, one case-sensitive, the other not.
+    fn get_avm1_constructor_registry(
+        &mut self,
+        swf_version: u8,
+    ) -> Gc<'gc, Avm1ConstructorRegistry<'gc>> {
+        if swf_version < 7 {
+            self.constructor_registry_case_insensitive
+        } else {
+            self.constructor_registry_case_sensitive
         }
     }
 }

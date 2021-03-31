@@ -8,10 +8,8 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Avm2, Error};
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
-use enumset::{EnumSet, EnumSetType};
 use gc_arena::{Collect, MutationContext};
 use std::cell::Ref;
-use std::f64::NAN;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
 /// Indicate what kind of primitive coercion would be preferred when coercing
@@ -170,7 +168,7 @@ pub fn abc_uint(translation_unit: TranslationUnit<'_>, index: Index<u32>) -> Res
 
 pub fn abc_double(translation_unit: TranslationUnit<'_>, index: Index<f64>) -> Result<f64, Error> {
     if index.0 == 0 {
-        return Ok(NAN);
+        return Ok(f64::NAN);
     }
 
     translation_unit
@@ -446,20 +444,6 @@ impl<'gc> Value<'gc> {
         Ok(f64_to_wrapping_i32(self.coerce_to_number(activation)?))
     }
 
-    /// Coerce the value to an EnumSet of a particular type.
-    ///
-    /// This function will ignore invalid bits of the value when interpreting
-    /// the enum.
-    pub fn coerce_to_enumset<E>(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<EnumSet<E>, Error>
-    where
-        E: EnumSetType,
-    {
-        Ok(EnumSet::from_u32_truncated(self.coerce_to_u32(activation)?))
-    }
-
     /// Minimum number of digits after which numbers are formatted as
     /// exponential strings.
     const MIN_DIGITS: f64 = -6.0;
@@ -536,6 +520,25 @@ impl<'gc> Value<'gc> {
         })
     }
 
+    /// Coerce the value to a literal value / debug string.
+    ///
+    /// This matches the string formatting that appears to be in use in "debug"
+    /// contexts, where strings themselves also get quoted. Such contexts would
+    /// include things like `valueOf`/`toString` on classes that expose their
+    /// properties as part of the string.
+    pub fn coerce_to_debug_string<'a>(
+        &'a self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<AvmString<'gc>, Error> {
+        Ok(match self {
+            Value::String(s) => AvmString::new(activation.context.gc_context, format!("\"{}\"", s)),
+            Value::Object(_) => self
+                .coerce_to_primitive(Some(Hint::String), activation)?
+                .coerce_to_debug_string(activation)?,
+            _ => self.coerce_to_string(activation)?,
+        })
+    }
+
     /// Coerce the value to an Object.
     ///
     /// TODO: In ECMA-262 3rd Edition, this would also box primitive values
@@ -564,11 +567,7 @@ impl<'gc> Value<'gc> {
             _ => unreachable!(),
         };
 
-        Ok(PrimitiveObject::from_primitive(
-            self.clone(),
-            proto,
-            activation.context.gc_context,
-        )?)
+        PrimitiveObject::from_primitive(self.clone(), proto, activation.context.gc_context)
     }
 
     /// Determine if two values are abstractly equal to each other.

@@ -30,10 +30,10 @@ pub fn create_array_object<'gc>(
     array_proto: Object<'gc>,
     fn_proto: Option<Object<'gc>>,
 ) -> Object<'gc> {
-    let array = FunctionObject::function_and_constructor(
+    let array = FunctionObject::constructor(
         gc_context,
-        Executable::Native(array_function),
         Executable::Native(constructor),
+        Executable::Native(array_function),
         fn_proto,
         array_proto,
     );
@@ -46,35 +46,35 @@ pub fn create_array_object<'gc>(
         gc_context,
         "CASEINSENSITIVE",
         1.into(),
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "DESCENDING",
         2.into(),
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "UNIQUESORT",
         4.into(),
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "RETURNINDEXEDARRAY",
         8.into(),
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "NUMERIC",
         16.into(),
-        Attribute::DontEnum | Attribute::DontDelete | Attribute::ReadOnly,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     array
@@ -107,7 +107,7 @@ pub fn constructor<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// Implements `Array` function
@@ -256,7 +256,8 @@ pub fn reverse<'gc>(
         this.set_array_element(i, values.pop().unwrap(), activation.context.gc_context);
     }
 
-    Ok(Value::Undefined)
+    // Some docs incorrectly say reverse returns Void.
+    Ok(this.into())
 }
 
 pub fn join<'gc>(
@@ -454,7 +455,7 @@ pub fn concat<'gc>(
         }
 
         if !added {
-            array.set_array_element(length, arg.clone(), activation.context.gc_context);
+            array.set_array_element(length, *arg, activation.context.gc_context);
             length += 1;
         }
     }
@@ -662,78 +663,78 @@ pub fn create_proto<'gc>(
         "push",
         push,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "unshift",
         unshift,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "shift",
         shift,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
-    object.force_set_function("pop", pop, gc_context, Attribute::DontEnum, Some(fn_proto));
+    object.force_set_function("pop", pop, gc_context, Attribute::DONT_ENUM, Some(fn_proto));
     object.force_set_function(
         "reverse",
         reverse,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "join",
         join,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "slice",
         slice,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "splice",
         splice,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "concat",
         concat,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "toString",
         to_string,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "sort",
         sort,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
     object.force_set_function(
         "sortOn",
         sort_on,
         gc_context,
-        Attribute::DontEnum,
+        Attribute::DONT_ENUM,
         Some(fn_proto),
     );
 
@@ -791,8 +792,8 @@ fn sort_compare_fields<'a, 'gc: 'a>(
     use crate::avm1::object::value_object::ValueObject;
     move |activation, a, b| {
         for (field_name, compare_fn) in field_names.iter().zip(compare_fns.iter_mut()) {
-            let a_object = ValueObject::boxed(activation, a.clone());
-            let b_object = ValueObject::boxed(activation, b.clone());
+            let a_object = ValueObject::boxed(activation, *a);
+            let b_object = ValueObject::boxed(activation, *b);
             let a_prop = a_object.get(field_name, activation).unwrap();
             let b_prop = b_object.get(field_name, activation).unwrap();
 
@@ -815,7 +816,7 @@ fn sort_compare_custom<'gc>(
     compare_fn: &Value<'gc>,
 ) -> Ordering {
     // TODO: Handle errors.
-    let args = [a.clone(), b.clone()];
+    let args = [*a, *b];
     let ret = compare_fn
         .call("[Compare]", activation, this, None, &args)
         .unwrap_or(Value::Undefined);

@@ -1,3 +1,51 @@
-#define IDI_ICON 0x101
+// winres.h cannot be included, so define manually
+#define VS_FF_DEBUG 0x1L
+#define VS_FFI_FILEFLAGSMASK 0x17L
+#define VOS__WINDOWS32 0x4L
+#define VFT_APP 0x1L
+#define VFT2_UNKNOWN 0x0L
 
+#define VER_FILEVERSION 0,1,0,0
+#define VER_FILEVERSION_STR "0.1.0.0\0"
+
+#define VER_PRODUCTVERSION 0,1,0,0
+#define VER_PRODUCTVERSION_STR "0.1.0\0"
+
+#ifdef DEBUG // TODO: Actually define DEBUG
+#define VER_DEBUG VS_FF_DEBUG
+#else
+#define VER_DEBUG 0
+#endif
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION VER_FILEVERSION
+PRODUCTVERSION VER_PRODUCTVERSION
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS VER_DEBUG
+FILEOS VOS__WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE VFT2_UNKNOWN
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904b0"
+        {
+            VALUE "CompanyName", "Ruffle"
+            VALUE "FileDescription", "Ruffle"
+            VALUE "FileVersion", VER_FILEVERSION_STR
+            VALUE "InternalName", "ruffle_desktop.exe"
+            VALUE "LegalCopyright", "Copyright (C) 2021"
+            VALUE "OriginalFilename", "ruffle_desktop.exe"
+            VALUE "ProductName", "Ruffle"
+            VALUE "ProductVersion", VER_PRODUCTVERSION_STR
+        }
+    }
+
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x409, 1200
+    }
+}
+
+#define IDI_ICON 0x101
 IDI_ICON ICON "assets/favicon.ico"

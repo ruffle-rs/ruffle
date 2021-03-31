@@ -1,90 +1,60 @@
 #![allow(clippy::unreadable_literal)]
 
-use crate::avm1::opcode::OpCode;
-use crate::avm1::types::*;
+use crate::avm1::{opcode::OpCode, types::*};
 use crate::error::{Error, Result};
-use crate::read::SwfRead;
-use smallvec::SmallVec;
-use std::io::Cursor;
+use crate::extensions::ReadSwfExt;
 
 #[allow(dead_code)]
 pub struct Reader<'a> {
-    inner: Cursor<&'a [u8]>,
+    input: &'a [u8],
     version: u8,
 }
 
-impl<'a> SwfRead<Cursor<&'a [u8]>> for Reader<'a> {
-    fn get_inner(&mut self) -> &mut Cursor<&'a [u8]> {
-        &mut self.inner
+impl<'a> ReadSwfExt<'a> for Reader<'a> {
+    #[inline(always)]
+    fn as_mut_slice(&mut self) -> &mut &'a [u8] {
+        &mut self.input
     }
 }
 
 impl<'a> Reader<'a> {
-    pub fn new(input: &'a [u8], version: u8) -> Self {
-        Self {
-            inner: Cursor::new(input),
-            version,
-        }
+    #[inline]
+    pub const fn new(input: &'a [u8], version: u8) -> Self {
+        Self { input, version }
     }
 
     #[inline]
-    pub fn pos(&self) -> usize {
-        self.inner.position() as usize
+    pub fn seek(&mut self, data: &'a [u8], jump_offset: i16) {
+        ReadSwfExt::seek(self, data, jump_offset as isize)
     }
 
     #[inline]
-    pub fn seek(&mut self, relative_offset: isize) {
-        let new_pos = self.inner.position() as i64 + relative_offset as i64;
-        self.inner.set_position(new_pos as u64);
+    pub const fn get_ref(&self) -> &'a [u8] {
+        self.input
     }
 
     #[inline]
-    fn read_slice(&mut self, len: usize) -> Result<&'a [u8]> {
-        let pos = self.pos();
-        self.inner.set_position(pos as u64 + len as u64);
-        let slice = self.inner.get_ref().get(pos..pos + len).ok_or_else(|| {
-            std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "Buffer underrun")
-        })?;
-        Ok(slice)
-    }
-
-    #[inline]
-    fn read_c_string(&mut self) -> Result<&'a str> {
-        // Find zero terminator.
-        let str_slice = {
-            let start_pos = self.pos();
-            loop {
-                let byte = self.read_u8()?;
-                if byte == 0 {
-                    break;
-                }
-            }
-            &self.inner.get_ref()[start_pos..self.pos() - 1]
-        };
-        // TODO: What does Flash do on invalid UTF8?
-        // Do we silently let it pass?
-        // TODO: Verify ANSI for SWF 5 and earlier.
-        std::str::from_utf8(str_slice).map_err(|_| Error::invalid_data("Invalid string data"))
+    pub fn get_mut(&mut self) -> &mut &'a [u8] {
+        &mut self.input
     }
 
     #[inline]
     pub fn read_action(&mut self) -> Result<Option<Action<'a>>> {
         let (opcode, mut length) = self.read_opcode_and_length()?;
+        let start = self.input;
 
-        let start_pos = self.pos();
         let action = self.read_op(opcode, &mut length);
+
+        let end_pos = (start.as_ptr() as usize + length) as *const u8;
         if let Err(e) = action {
             return Err(Error::avm1_parse_error_with_source(opcode, e));
         }
 
         // Verify that we parsed the correct amount of data.
-        let end_pos = start_pos + length;
-        let pos = self.pos();
-        if pos != end_pos {
+        if self.input.as_ptr() != end_pos {
+            self.input = &start[length.min(start.len())..];
             // We incorrectly parsed this action.
             // Re-sync to the expected end of the action and throw an error.
-            use std::convert::TryInto;
-            self.inner.set_position(end_pos.try_into().unwrap());
             return Err(Error::avm1_parse_error(opcode));
         }
         action
@@ -132,7 +102,7 @@ impl<'a> Reader<'a> {
                 OpCode::ConstantPool => {
                     let mut constants = vec![];
                     for _ in 0..self.read_u16()? {
-                        constants.push(self.read_c_string()?);
+                        constants.push(self.read_str()?);
                     }
                     Action::ConstantPool(constants)
                 }
@@ -154,8 +124,8 @@ impl<'a> Reader<'a> {
                 OpCode::GetProperty => Action::GetProperty,
                 OpCode::GetTime => Action::GetTime,
                 OpCode::GetUrl => Action::GetUrl {
-                    url: self.read_c_string()?,
-                    target: self.read_c_string()?,
+                    url: self.read_str()?,
+                    target: self.read_str()?,
                 },
                 OpCode::GetUrl2 => {
                     let flags = self.read_u8()?;
@@ -190,7 +160,7 @@ impl<'a> Reader<'a> {
                         },
                     }
                 }
-                OpCode::GotoLabel => Action::GotoLabel(self.read_c_string()?),
+                OpCode::GotoLabel => Action::GotoLabel(self.read_str()?),
                 OpCode::Greater => Action::Greater,
                 OpCode::If => Action::If {
                     offset: self.read_i16()?,
@@ -227,7 +197,7 @@ impl<'a> Reader<'a> {
                 OpCode::Return => Action::Return,
                 OpCode::SetMember => Action::SetMember,
                 OpCode::SetProperty => Action::SetProperty,
-                OpCode::SetTarget => Action::SetTarget(self.read_c_string()?),
+                OpCode::SetTarget => Action::SetTarget(self.read_str()?),
                 OpCode::SetTarget2 => Action::SetTarget2,
                 OpCode::SetVariable => Action::SetVariable,
                 OpCode::StackSwap => Action::StackSwap,
@@ -282,9 +252,9 @@ impl<'a> Reader<'a> {
     }
 
     fn read_push(&mut self, length: usize) -> Result<Action<'a>> {
-        let end_pos = self.pos() + length;
-        let mut values = SmallVec::new();
-        while self.pos() < end_pos {
+        let end_pos = (self.input.as_ptr() as usize + length) as *const u8;
+        let mut values = Vec::with_capacity(4);
+        while self.input.as_ptr() < end_pos {
             values.push(self.read_push_value()?);
         }
         Ok(Action::Push(values))
@@ -292,7 +262,7 @@ impl<'a> Reader<'a> {
 
     fn read_push_value(&mut self) -> Result<Value<'a>> {
         let value = match self.read_u8()? {
-            0 => Value::Str(self.read_c_string()?),
+            0 => Value::Str(self.read_str()?),
             1 => Value::Float(self.read_f32()?),
             2 => Value::Null,
             3 => Value::Undefined,
@@ -308,11 +278,11 @@ impl<'a> Reader<'a> {
     }
 
     fn read_define_function(&mut self, action_length: &mut usize) -> Result<Action<'a>> {
-        let name = self.read_c_string()?;
+        let name = self.read_str()?;
         let num_params = self.read_u16()?;
         let mut params = Vec::with_capacity(num_params as usize);
         for _ in 0..num_params {
-            params.push(self.read_c_string()?);
+            params.push(self.read_str()?);
         }
         // code_length isn't included in the DefineFunction's action length.
         let code_length = usize::from(self.read_u16()?);
@@ -325,7 +295,7 @@ impl<'a> Reader<'a> {
     }
 
     fn read_define_function_2(&mut self, action_length: &mut usize) -> Result<Action<'a>> {
-        let name = self.read_c_string()?;
+        let name = self.read_str()?;
         let num_params = self.read_u16()?;
         let register_count = self.read_u8()?; // Number of registers
         let flags = self.read_u16()?;
@@ -333,7 +303,7 @@ impl<'a> Reader<'a> {
         for _ in 0..num_params {
             let register = self.read_u8()?;
             params.push(FunctionParam {
-                name: self.read_c_string()?,
+                name: self.read_str()?,
                 register_index: if register == 0 { None } else { Some(register) },
             });
         }
@@ -364,7 +334,7 @@ impl<'a> Reader<'a> {
         let finally_length = usize::from(self.read_u16()?);
         *length += try_length + catch_length + finally_length;
         let catch_var = if flags & 0b100 == 0 {
-            CatchVar::Var(self.read_c_string()?)
+            CatchVar::Var(self.read_str()?)
         } else {
             CatchVar::Register(self.read_u8()?)
         };
@@ -390,22 +360,14 @@ impl<'a> Reader<'a> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::string::{SwfStr, WINDOWS_1252};
     use crate::test_data;
-    use smallvec::smallvec;
 
     #[test]
     fn read_action() {
         for (swf_version, expected_action, action_bytes) in test_data::avm1_tests() {
-            // TODO: Limitations in SmallVec prevent this from compiling when it should be safe.
-            // SmallVec is invariant over T, when it should be covariant.
-            // This code works with Vec, which is properly covariant.
-            // see https://github.com/servo/rust-smallvec/issues/146
-            // This should be fixed when const generics are stable.
-            // This code should be safe and it's just for testing.
-            let expected_action: Action<'_> = unsafe { std::mem::transmute(expected_action) };
-
             let mut reader = Reader::new(&action_bytes[..], swf_version);
-            let parsed_action: Action<'_> = reader.read_action().unwrap().unwrap();
+            let parsed_action = reader.read_action().unwrap().unwrap();
             if parsed_action != expected_action {
                 // Failed, result doesn't match.
                 panic!(
@@ -421,8 +383,7 @@ pub mod tests {
     fn read_parse_error() {
         let action_bytes = [0xff, 0xff, 0xff, 0x00, 0x00];
         let mut reader = Reader::new(&action_bytes[..], 5);
-        let action = reader.read_action();
-        match action {
+        match reader.read_action() {
             Err(crate::error::Error::Avm1ParseError { .. }) => (),
             result => {
                 panic!("Expected Avm1ParseError, got {:?}", result);
@@ -442,7 +403,7 @@ pub mod tests {
         assert_eq!(
             action,
             Action::DefineFunction {
-                name: "foo",
+                name: SwfStr::from_str_with_encoding("foo", WINDOWS_1252).unwrap(),
                 params: vec![],
                 actions: &[0x96, 0x06, 0x00, 0x00, 0x74, 0x65, 0x73, 0x74, 0x00, 0x26],
             }
@@ -451,7 +412,12 @@ pub mod tests {
         if let Action::DefineFunction { actions, .. } = action {
             let mut reader = Reader::new(actions, 5);
             let action = reader.read_action().unwrap().unwrap();
-            assert_eq!(action, Action::Push(smallvec![Value::Str("test")]));
+            assert_eq!(
+                action,
+                Action::Push(vec![Value::Str(
+                    SwfStr::from_str_with_encoding("test", WINDOWS_1252).unwrap()
+                )])
+            );
         }
     }
 
@@ -462,9 +428,6 @@ pub mod tests {
         let action_bytes = [0x96, 2, 0, 2, 3, 3]; // Extra 3 at the end shouldn't be read.
         let mut reader = Reader::new(&action_bytes[..], 5);
         let action = reader.read_action().unwrap().unwrap();
-        assert_eq!(
-            action,
-            Action::Push(smallvec![Value::Null, Value::Undefined])
-        );
+        assert_eq!(action, Action::Push(vec![Value::Null, Value::Undefined]));
     }
 }

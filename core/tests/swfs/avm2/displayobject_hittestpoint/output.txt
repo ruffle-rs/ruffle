@@ -1,0 +1,45 @@
+//this.hitTestPoint(0.0, 0.0, false);
+false
+//this.hitTestPoint(50.0, 50.0, false);
+false
+//this.hitTestPoint(0.0, 0.0, true);
+false
+//this.hitTestPoint(50.0, 50.0, true);
+false
+//(Added timeline children...)
+//this.hitTestPoint(0.0, 0.0, false);
+false
+//this.hitTestPoint(50.0, 50.0, false);
+true
+//this.hitTestPoint(0.0, 0.0, true);
+false
+//this.hitTestPoint(50.0, 50.0, true);
+true
+//this.symbol1.hitTestPoint(0.0, 0.0, false);
+false
+//this.symbol1.hitTestPoint(50.0, 50.0, false);
+true
+//this.symbol1.hitTestPoint(0.0, 0.0, true);
+false
+//this.symbol1.hitTestPoint(50.0, 50.0, true);
+true
+//this.symbol2.hitTestPoint(0.0, 0.0, false);
+false
+//this.symbol2.hitTestPoint(26.0, 155.0, false);
+true
+//this.symbol2.hitTestPoint(70.0, 200.0, false);
+true
+//this.symbol2.hitTestPoint(0.0, 0.0, true);
+false
+//this.symbol2.hitTestPoint(26.0, 155.0, true);
+false
+//this.symbol2.hitTestPoint(70.0, 200.0, true);
+true
+//this.symbol1_1.hitTestPoint(0.0, 0.0, false);
+false
+//this.symbol1_1.hitTestPoint(50.0, 50.0, false);
+false
+//this.symbol1_1.hitTestPoint(0.0, 0.0, true);
+false
+//this.symbol1_1.hitTestPoint(50.0, 50.0, true);
+false

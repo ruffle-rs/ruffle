@@ -7,23 +7,24 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::{Avm2, Error};
 use crate::collect::CollectWrapper;
-use enumset::{EnumSet, EnumSetType};
+use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::types::{Class as AbcClass, Instance as AbcInstance};
 
-/// All possible attributes for a given class.
-#[derive(EnumSetType, Debug)]
-pub enum ClassAttributes {
-    /// Class is sealed, attempts to set or init dynamic properties on an
-    /// object will generate a runtime error.
-    Sealed,
+bitflags! {
+    /// All possible attributes for a given class.
+    pub struct ClassAttributes: u8 {
+        /// Class is sealed, attempts to set or init dynamic properties on an
+        /// object will generate a runtime error.
+        const SEALED    = 1 << 0;
 
-    /// Class is final, attempts to construct child classes from it will
-    /// generate a verification error.
-    Final,
+        /// Class is final, attempts to construct child classes from it will
+        /// generate a verification error.
+        const FINAL     = 1 << 1;
 
-    /// Class is an interface.
-    Interface,
+        /// Class is an interface.
+        const INTERFACE = 1 << 2;
+    }
 }
 
 /// A loaded ABC Class which can be used to construct objects with.
@@ -37,7 +38,7 @@ pub struct Class<'gc> {
     super_class: Option<Multiname<'gc>>,
 
     /// Attributes of the given class.
-    attributes: CollectWrapper<EnumSet<ClassAttributes>>,
+    attributes: CollectWrapper<ClassAttributes>,
 
     /// The namespace that protected traits of this class are stored into.
     protected_namespace: Option<Namespace<'gc>>,
@@ -128,7 +129,7 @@ impl<'gc> Class<'gc> {
             Self {
                 name,
                 super_class,
-                attributes: CollectWrapper(EnumSet::empty()),
+                attributes: CollectWrapper(ClassAttributes::empty()),
                 protected_namespace: None,
                 interfaces: Vec::new(),
                 instance_init,
@@ -141,7 +142,7 @@ impl<'gc> Class<'gc> {
     }
 
     /// Set the attributes of the class (sealed/final/interface status).
-    pub fn set_attributes(&mut self, attributes: EnumSet<ClassAttributes>) {
+    pub fn set_attributes(&mut self, attributes: ClassAttributes) {
         self.attributes = CollectWrapper(attributes);
     }
 
@@ -202,18 +203,10 @@ impl<'gc> Class<'gc> {
         let instance_init = unit.load_method(abc_instance.init_method.0, mc)?;
         let class_init = unit.load_method(abc_class.init_method.0, mc)?;
 
-        let mut attributes = EnumSet::new();
-        if abc_instance.is_sealed {
-            attributes |= ClassAttributes::Sealed;
-        }
-
-        if abc_instance.is_final {
-            attributes |= ClassAttributes::Final;
-        }
-
-        if abc_instance.is_interface {
-            attributes |= ClassAttributes::Interface;
-        }
+        let mut attributes = ClassAttributes::empty();
+        attributes.set(ClassAttributes::SEALED, abc_instance.is_sealed);
+        attributes.set(ClassAttributes::FINAL, abc_instance.is_final);
+        attributes.set(ClassAttributes::INTERFACE, abc_instance.is_interface);
 
         Ok(GcCell::allocate(
             mc,
@@ -410,6 +403,6 @@ impl<'gc> Class<'gc> {
 
     /// Determine if this class is sealed (no dynamic properties)
     pub fn is_sealed(&self) -> bool {
-        self.attributes.0.contains(ClassAttributes::Sealed)
+        self.attributes.0.contains(ClassAttributes::SEALED)
     }
 }
