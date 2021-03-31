@@ -1,0 +1,6 @@
+/// var a:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2], new <int>[4,3]];
+/// var b:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16], new <int>[19,8]];
+/// a.join('...');
+1,2...4,3
+/// b.join('...');
+5,16...19,8

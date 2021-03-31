@@ -653,6 +653,14 @@ swf_tests! {
     (as3_vector_es4interface_concat, "avm2/vector_es4interface_concat", 1),
     (as3_vector_vector_coercion, "avm2/vector_vector_coercion", 1),
     (as3_vector_vector_concat, "avm2/vector_vector_concat", 1),
+    (as3_vector_int_join, "avm2/vector_int_join", 1),
+    (as3_vector_uint_join, "avm2/vector_uint_join", 1),
+    (as3_vector_number_join, "avm2/vector_number_join", 1),
+    (as3_vector_string_join, "avm2/vector_string_join", 1),
+    (as3_vector_bool_join, "avm2/vector_bool_join", 1),
+    (as3_vector_es4class_join, "avm2/vector_es4class_join", 1),
+    (as3_vector_es4interface_join, "avm2/vector_es4interface_join", 1),
+    (as3_vector_vector_join, "avm2/vector_vector_join", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

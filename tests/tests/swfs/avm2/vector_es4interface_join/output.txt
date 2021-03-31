@@ -1,0 +1,11 @@
+/// var a: Vector.<ISubclass> = new <ISubclass>[];
+/// a.length = 1;
+/// a[0] = new Subclass();
+/// var b: Vector.<Subclass> = new <Subclass>[];
+/// b.length = 2;
+/// b[0] = new Subclass();
+/// b[1] = new Subclass();
+/// a.join('...');
+[object Subclass]
+/// b.join('...');
+[object Subclass]...[object Subclass]
