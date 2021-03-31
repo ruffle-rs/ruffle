@@ -1,0 +1,6 @@
+/// var a: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b: Vector.<Boolean> = new <Boolean>[false, true, false];
+/// a.join('...');
+true...false
+/// b.join('...');
+false...true...false
