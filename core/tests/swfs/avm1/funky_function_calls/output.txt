@@ -19,6 +19,10 @@ Is it the global object: false
 Argument 0: Apply w/ Root
 Argument 1: undefined
 false
+Is it the global object: false
+Argument 0: Apply w/ Primitive
+Argument 1: undefined
+false
 Is it the global object: true
 Argument 0: Call w/ Undefined
 Argument 1: undefined
@@ -34,6 +38,10 @@ false
 Is it the global object: false
 Argument 0: Call w/ Root
 Argument 1: 2
+false
+Is it the global object: false
+Argument 0: Call w/ Primitive
+Argument 1: undefined
 false
 Is it the global object: true
 Argument 0: Fake arguments object
