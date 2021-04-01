@@ -1098,12 +1098,9 @@ impl Player {
                         globals,
                         actions.clip,
                     );
-                    if let Ok(prototype) = constructor
-                        .get("prototype", &mut activation)
-                        .map(|v| v.coerce_to_object(&mut activation))
-                    {
+                    if let Ok(prototype) = constructor.get("prototype", &mut activation) {
                         if let Value::Object(object) = actions.clip.object() {
-                            object.set_proto(activation.context.gc_context, Some(prototype));
+                            object.set_proto_value(activation.context.gc_context, prototype);
                             for event in events {
                                 let _ = activation.run_child_frame_for_action(
                                     "[Actions]",
