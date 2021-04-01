@@ -275,16 +275,16 @@ impl<'gc> ScriptObject<'gc> {
             let mut worked = false;
 
             if is_vacant {
-                let mut proto: Option<Object<'gc>> = Some((*self).into());
-                while let Some(this_proto) = proto {
+                let mut proto: Value<'gc> = (*self).into();
+                while let Value::Object(this_proto) = proto {
                     if this_proto.has_own_virtual(activation, name) {
                         break;
                     }
 
-                    proto = this_proto.proto();
+                    proto = this_proto.proto_value();
                 }
 
-                if let Some(this_proto) = proto {
+                if let Value::Object(this_proto) = proto {
                     worked = true;
                     if let Some(rval) = this_proto.call_setter(name, value, activation) {
                         if let Some(exec) = rval.as_executable() {
@@ -621,10 +621,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// Checks if the object has a given named property.
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.has_own_property(activation, name)
-            || self
-                .proto()
-                .as_ref()
-                .map_or(false, |p| p.has_property(activation, name))
+            || if let Value::Object(proto) = self.proto_value() {
+                proto.has_property(activation, name)
+            } else {
+                false
+            }
     }
 
     /// Checks if the object has a given named property on itself (and not,
@@ -668,9 +669,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     /// Enumerate the object.
     fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
-        let proto_keys = self
-            .proto()
-            .map_or_else(Vec::new, |p| p.get_keys(activation));
+        let proto_keys = if let Value::Object(proto) = self.proto_value() {
+            proto.get_keys(activation)
+        } else {
+            Vec::new()
+        };
         let mut out_keys = vec![];
         let object = self.0.read();
 
