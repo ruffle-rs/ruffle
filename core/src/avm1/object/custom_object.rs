@@ -41,16 +41,16 @@ macro_rules! impl_custom_object_without_set {
             self.0.read().$field.delete(activation, name)
         }
 
-        fn proto_value(&self) -> crate::avm1::Value<'gc> {
-            self.0.read().$field.proto_value()
+        fn proto(&self) -> crate::avm1::Value<'gc> {
+            self.0.read().$field.proto()
         }
 
-        fn set_proto_value(
+        fn set_proto(
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
             prototype: crate::avm1::Value<'gc>,
         ) {
-            self.0.read().$field.set_proto_value(gc_context, prototype);
+            self.0.read().$field.set_proto(gc_context, prototype);
         }
 
         fn define_value(
