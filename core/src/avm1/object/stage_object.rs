@@ -159,7 +159,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             Ok(level.object())
         } else {
             // 5) Prototype
-            Ok(search_prototype(self.proto(), name, activation, (*self).into())?.0)
+            let prototype = match self.proto_value() {
+                Value::Object(o) => Some(o),
+                _ => None,
+            };
+            Ok(search_prototype(prototype, name, activation, (*self).into())?.0)
         }
         // 6) TODO: __resolve?
     }
@@ -260,12 +264,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.delete(activation, name)
     }
 
-    fn proto(&self) -> Option<Object<'gc>> {
-        self.0.read().base.proto()
+    fn proto_value(&self) -> Value<'gc> {
+        self.0.read().base.proto_value()
     }
 
-    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Option<Object<'gc>>) {
-        self.0.read().base.set_proto(gc_context, prototype);
+    fn set_proto_value(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
+        self.0.read().base.set_proto_value(gc_context, prototype);
     }
 
     fn define_value(
