@@ -113,7 +113,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if self.has_own_property(activation, name) {
             self.get_local(name, activation, (*self).into())
         } else {
-            Ok(search_prototype(self.proto(), name, activation, (*self).into())?.0)
+            let prototype = match self.proto_value() {
+                Value::Object(o) => Some(o),
+                _ => None,
+            };
+            Ok(search_prototype(prototype, name, activation, (*self).into())?.0)
         }
     }
 
@@ -398,7 +402,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         prototype: Object<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let mut proto_stack = vec![];
-        if let Some(p) = self.proto() {
+        if let Value::Object(p) = self.proto_value() {
             proto_stack.push(p);
         }
 
@@ -407,7 +411,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 return Ok(true);
             }
 
-            if let Some(p) = this_proto.proto() {
+            if let Value::Object(p) = this_proto.proto_value() {
                 proto_stack.push(p);
             }
 
@@ -539,14 +543,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Check if this object is in the prototype chain of the specified test object.
     fn is_prototype_of(&self, other: Object<'gc>) -> bool {
-        let mut proto = other.proto();
+        let mut proto = other.proto_value();
 
-        while let Some(proto_ob) = proto {
+        while let Value::Object(proto_ob) = proto {
             if self.as_ptr() == proto_ob.as_ptr() {
                 return true;
             }
 
-            proto = proto_ob.proto();
+            proto = proto_ob.proto_value();
         }
 
         false
@@ -605,23 +609,24 @@ impl<'gc> Object<'gc> {
 /// The second return value can and should be used to populate the `base_proto`
 /// property necessary to make `super` work.
 pub fn search_prototype<'gc>(
-    mut proto: Option<Object<'gc>>,
+    proto: Option<Object<'gc>>,
     name: &str,
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
 ) -> Result<(Value<'gc>, Option<Object<'gc>>), Error<'gc>> {
+    let mut proto = proto.map_or(Value::Undefined, Value::Object);
     let mut depth = 0;
 
-    while proto.is_some() {
+    while let Value::Object(p) = proto {
         if depth == 255 {
             return Err(Error::PrototypeRecursionLimit);
         }
 
-        if proto.unwrap().has_own_property(activation, name) {
-            return Ok((proto.unwrap().get_local(name, activation, this)?, proto));
+        if p.has_own_property(activation, name) {
+            return Ok((p.get_local(name, activation, this)?, Some(p)));
         }
 
-        proto = proto.unwrap().proto();
+        proto = p.proto_value();
         depth += 1;
     }
 
