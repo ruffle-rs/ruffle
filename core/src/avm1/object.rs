@@ -113,7 +113,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if self.has_own_property(activation, name) {
             self.get_local(name, activation, (*self).into())
         } else {
-            let prototype = match self.proto_value() {
+            let prototype = match self.proto() {
                 Value::Object(o) => Some(o),
                 _ => None,
             };
@@ -226,14 +226,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
-    fn proto_value(&self) -> Value<'gc>;
+    fn proto(&self) -> Value<'gc>;
 
     /// Sets the `__proto__` of a given object.
     ///
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` in
     /// `set`.
-    fn set_proto_value(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>);
+    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>);
 
     /// Define a value on an object.
     ///
@@ -378,7 +378,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         prototype: Object<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let mut proto_stack = vec![];
-        if let Value::Object(p) = self.proto_value() {
+        if let Value::Object(p) = self.proto() {
             proto_stack.push(p);
         }
 
@@ -387,7 +387,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 return Ok(true);
             }
 
-            if let Value::Object(p) = this_proto.proto_value() {
+            if let Value::Object(p) = this_proto.proto() {
                 proto_stack.push(p);
             }
 
@@ -519,14 +519,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Check if this object is in the prototype chain of the specified test object.
     fn is_prototype_of(&self, other: Object<'gc>) -> bool {
-        let mut proto = other.proto_value();
+        let mut proto = other.proto();
 
         while let Value::Object(proto_ob) = proto {
             if self.as_ptr() == proto_ob.as_ptr() {
                 return true;
             }
 
-            proto = proto_ob.proto_value();
+            proto = proto_ob.proto();
         }
 
         false
@@ -602,7 +602,7 @@ pub fn search_prototype<'gc>(
             return Ok((p.get_local(name, activation, this)?, Some(p)));
         }
 
-        proto = p.proto_value();
+        proto = p.proto();
         depth += 1;
     }
 

@@ -57,7 +57,7 @@ impl<'gc> SuperObject<'gc> {
 
     /// Retrieve the prototype that `super` should be pulling from.
     fn super_proto(self) -> Value<'gc> {
-        self.0.read().base_proto.proto_value()
+        self.0.read().base_proto.proto()
     }
 
     /// Retrieve the constructor associated with the super proto.
@@ -151,7 +151,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        if let Value::Object(proto) = self.proto_value() {
+        if let Value::Object(proto) = self.proto() {
             proto.create_bare_object(activation, this)
         } else {
             // TODO: What happens when you `new super` but there's no
@@ -165,11 +165,11 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         false
     }
 
-    fn proto_value(&self) -> Value<'gc> {
+    fn proto(&self) -> Value<'gc> {
         self.super_proto()
     }
 
-    fn set_proto_value(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
+    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
         if let Value::Object(prototype) = prototype {
             self.0.write(gc_context).base_proto = prototype;
         }

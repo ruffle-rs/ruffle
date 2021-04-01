@@ -281,7 +281,7 @@ impl<'gc> ScriptObject<'gc> {
                         break;
                     }
 
-                    proto = this_proto.proto_value();
+                    proto = this_proto.proto();
                 }
 
                 if let Value::Object(this_proto) = proto {
@@ -381,7 +381,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name == "__proto__" {
-            return Ok(self.proto_value());
+            return Ok(self.proto());
         }
 
         let mut getter = None;
@@ -610,18 +610,18 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
     }
 
-    fn proto_value(&self) -> Value<'gc> {
+    fn proto(&self) -> Value<'gc> {
         self.0.read().prototype
     }
 
-    fn set_proto_value(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
+    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
         self.0.write(gc_context).prototype = prototype;
     }
 
     /// Checks if the object has a given named property.
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.has_own_property(activation, name)
-            || if let Value::Object(proto) = self.proto_value() {
+            || if let Value::Object(proto) = self.proto() {
                 proto.has_property(activation, name)
             } else {
                 false
@@ -669,7 +669,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     /// Enumerate the object.
     fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
-        let proto_keys = if let Value::Object(proto) = self.proto_value() {
+        let proto_keys = if let Value::Object(proto) = self.proto() {
             proto.get_keys(activation)
         } else {
             Vec::new()
