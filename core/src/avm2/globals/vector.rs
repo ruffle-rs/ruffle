@@ -85,6 +85,42 @@ pub fn set_length<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `Vector.fixed` getter
+pub fn fixed<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(vector) = this.as_vector_storage() {
+            return Ok(vector.is_fixed().into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// `Vector.fixed` setter
+pub fn set_fixed<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
+            let new_fixed = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Bool(false))
+                .coerce_to_boolean();
+
+            vector.set_is_fixed(new_fixed);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// `Vector.concat` impl
 pub fn concat<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -245,7 +281,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
-    )] = &[("length", Some(length), Some(set_length))];
+    )] = &[
+        ("length", Some(length), Some(set_length)),
+        ("fixed", Some(fixed), Some(set_fixed)),
+    ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =

@@ -54,6 +54,10 @@ impl<'gc> VectorStorage<'gc> {
         }
     }
 
+    pub fn is_fixed(&self) -> bool {
+        self.is_fixed
+    }
+
     pub fn set_is_fixed(&mut self, is_fixed: bool) {
         self.is_fixed = is_fixed;
     }
