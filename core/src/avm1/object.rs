@@ -113,11 +113,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if self.has_own_property(activation, name) {
             self.get_local(name, activation, (*self).into())
         } else {
-            let prototype = match self.proto() {
-                Value::Object(o) => Some(o),
-                _ => None,
-            };
-            Ok(search_prototype(prototype, name, activation, (*self).into())?.0)
+            Ok(search_prototype(self.proto(), name, activation, (*self).into())?.0)
         }
     }
 
@@ -176,8 +172,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         args: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let (method, base_proto) =
-            search_prototype(Some((*self).into()), name, activation, (*self).into())?;
+        let (method, base_proto) = search_prototype(
+            Value::Object((*self).into()),
+            name,
+            activation,
+            (*self).into(),
+        )?;
 
         if let Value::Object(_) = method {
         } else {
@@ -585,12 +585,11 @@ impl<'gc> Object<'gc> {
 /// The second return value can and should be used to populate the `base_proto`
 /// property necessary to make `super` work.
 pub fn search_prototype<'gc>(
-    proto: Option<Object<'gc>>,
+    mut proto: Value<'gc>,
     name: &str,
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
 ) -> Result<(Value<'gc>, Option<Object<'gc>>), Error<'gc>> {
-    let mut proto = proto.map_or(Value::Undefined, Value::Object);
     let mut depth = 0;
 
     while let Value::Object(p) = proto {
