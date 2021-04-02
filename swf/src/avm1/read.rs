@@ -15,6 +15,11 @@ impl<'a> ReadSwfExt<'a> for Reader<'a> {
     fn as_mut_slice(&mut self) -> &mut &'a [u8] {
         &mut self.input
     }
+
+    #[inline(always)]
+    fn as_slice(&self) -> &'a [u8] {
+        &self.input
+    }
 }
 
 impl<'a> Reader<'a> {
