@@ -2381,7 +2381,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-
     /// Implements `Op::LookupSwitch`
     fn op_lookup_switch<'b>(
         &mut self,
