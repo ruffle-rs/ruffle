@@ -860,8 +860,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // Call `this[method_name]`
             object.call_method(&method_name.as_str(), &args, self)?
         } else {
-            // Undefined/empty method name; call `this` as a function
-            let this = self.target_clip_or_root()?.object().coerce_to_object(self);
+            // Undefined/empty method name; call `this` as a function.
+            // TODO: Pass primitive value instead of boxing (#843).
+            let this = Value::Undefined.coerce_to_object(self);
             object.call("[Anonymous]", self, this, None, &args)?
         };
 

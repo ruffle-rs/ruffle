@@ -50,7 +50,7 @@ impl<'gc> Timers<'gc> {
         );
 
         // TODO: `this` is undefined for non-method timer callbacks, but our VM
-        // currently doesn't allow `this` to be a Value.
+        // currently doesn't allow `this` to be a Value (#843).
         let undefined = Value::Undefined.coerce_to_object(&mut activation);
 
         let mut tick_count = 0;
