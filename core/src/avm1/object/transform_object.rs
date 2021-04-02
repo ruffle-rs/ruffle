@@ -72,14 +72,12 @@ impl<'gc> TObject<'gc> for TransformObject<'gc> {
             .as_display_object()
             .and_then(|o| o.as_movie_clip());
 
-        let this = if clip.is_some() {
-            let this = prototype.create_bare_object(activation, prototype)?;
-            self.construct_on_existing(activation, this, args)?;
-            this
-        } else {
-            // TODO: This should return an unboxed undefined.
-            Value::Undefined.coerce_to_object(activation)
-        };
+        if clip.is_none() {
+            return Ok(Value::Undefined);
+        }
+
+        let this = prototype.create_bare_object(activation, prototype)?;
+        self.construct_on_existing(activation, this, args)?;
         Ok(this.into())
     }
 
