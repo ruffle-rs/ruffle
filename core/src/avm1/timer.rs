@@ -93,7 +93,7 @@ impl<'gc> Timers<'gc> {
                 TimerCallback::Method { this, method_name } => {
                     // Fetch the callback method from the object.
                     if let Ok((f, base_proto)) =
-                        search_prototype(Some(this), &method_name, &mut activation, this)
+                        search_prototype(Value::Object(this), &method_name, &mut activation, this)
                     {
                         let f = f.coerce_to_object(&mut activation);
                         Some((this, base_proto, f))

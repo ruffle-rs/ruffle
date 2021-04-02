@@ -97,7 +97,7 @@ impl fmt::Debug for ScriptObjectData<'_> {
 impl<'gc> ScriptObject<'gc> {
     pub fn object(
         gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>, // TODO: Change to `Value`.
+        proto: Option<Object<'gc>>,
     ) -> ScriptObject<'gc> {
         ScriptObject(GcCell::allocate(
             gc_context,
@@ -114,7 +114,7 @@ impl<'gc> ScriptObject<'gc> {
 
     pub fn array(
         gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>, // TODO: Change to `Value`.
+        proto: Option<Object<'gc>>,
     ) -> ScriptObject<'gc> {
         let object = ScriptObject(GcCell::allocate(
             gc_context,
@@ -134,7 +134,7 @@ impl<'gc> ScriptObject<'gc> {
     /// Constructs and allocates an empty but normal object in one go.
     pub fn object_cell(
         gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>, // TODO: Change to `Value`.
+        proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             gc_context,

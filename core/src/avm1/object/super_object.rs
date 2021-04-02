@@ -122,11 +122,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let child = self.0.read().child;
-        let super_proto = match self.super_proto() {
-            Value::Object(o) => Some(o),
-            _ => None,
-        };
-        let (method, base_proto) = search_prototype(super_proto, name, activation, child)?;
+        let (method, base_proto) = search_prototype(self.super_proto(), name, activation, child)?;
 
         if let Value::Object(_) = method {
         } else {

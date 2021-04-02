@@ -159,11 +159,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             Ok(level.object())
         } else {
             // 5) Prototype
-            let prototype = match self.proto() {
-                Value::Object(o) => Some(o),
-                _ => None,
-            };
-            Ok(search_prototype(prototype, name, activation, (*self).into())?.0)
+            Ok(search_prototype(self.proto(), name, activation, (*self).into())?.0)
         }
         // 6) TODO: __resolve?
     }

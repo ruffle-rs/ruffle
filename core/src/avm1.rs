@@ -322,10 +322,9 @@ impl<'gc> Avm1<'gc> {
             active_clip,
         );
 
-        let search_result =
-            search_prototype(Some(obj), name, &mut activation, obj).map(|r| (r.0, r.1));
-
-        if let Ok((callback, base_proto)) = search_result {
+        if let Ok((callback, base_proto)) =
+            search_prototype(Value::Object(obj), name, &mut activation, obj)
+        {
             let _ = callback.call(name, &mut activation, obj, base_proto, args);
         }
     }
