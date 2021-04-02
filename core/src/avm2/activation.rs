@@ -2393,14 +2393,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let index = self.context.avm2.pop().coerce_to_i32(self)?;
 
-        //TODO: can we just subtract the size of *this* op to save some of this maths
         let offset = case_offsets
             .get(index as usize)
             .copied()
             .unwrap_or(default_offset)
-            + current_pos as i32;
-        let current_pos = reader.pos(full_data) as i32;
-        reader.seek(full_data, offset - current_pos);
+            + current_pos as i32
+            - reader.pos(full_data) as i32;
+
+        reader.seek(full_data, offset);
 
         Ok(FrameControl::Continue)
     }

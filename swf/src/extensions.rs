@@ -6,9 +6,15 @@ use std::io::{self, Read};
 pub trait ReadSwfExt<'a> {
     fn as_mut_slice(&mut self) -> &mut &'a [u8];
 
+    fn as_slice(&self) -> &'a [u8];
+
+    fn pos(&self, data: &[u8]) -> usize {
+        self.as_slice().as_ptr() as usize - data.as_ptr() as usize
+    }
+
     // TODO: Make this fallible?
     fn seek(&mut self, data: &'a [u8], relative_offset: isize) {
-        let mut pos = self.as_mut_slice().as_ptr() as usize - data.as_ptr() as usize;
+        let mut pos = self.pos(data);
         pos = (pos as isize + relative_offset) as usize;
         pos = pos.min(data.len());
         *self.as_mut_slice() = &data[pos..];
