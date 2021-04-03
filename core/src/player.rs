@@ -1382,6 +1382,8 @@ impl Player {
     where
         F: for<'a, 'gc, 'gc_context> FnOnce(&mut UpdateContext<'a, 'gc, 'gc_context>) -> R,
     {
+        self.update_drag();
+
         let rval = self.mutate_with_update_context(|context| {
             let rval = func(context);
 
@@ -1391,7 +1393,6 @@ impl Player {
         });
 
         // Update mouse state (check for new hovered button, etc.)
-        self.update_drag();
         self.update_roll_over();
 
         // GC
