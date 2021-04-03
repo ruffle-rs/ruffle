@@ -835,6 +835,19 @@ impl<'a> Reader<'a> {
             OpCode::Throw => Op::Throw,
             OpCode::TypeOf => Op::TypeOf,
             OpCode::URShift => Op::URShift,
+            OpCode::Si8 => Op::Si8,
+            OpCode::Si16 => Op::Si16,
+            OpCode::Si32 => Op::Si32,
+            OpCode::Sf32 => Op::Sf32,
+            OpCode::Sf64 => Op::Sf64,
+            OpCode::Li8 =>  Op::Li8 ,
+            OpCode::Li16 => Op::Li16,
+            OpCode::Li32 => Op::Li32,
+            OpCode::Lf32 => Op::Lf32,
+            OpCode::Lf64 => Op::Lf64,
+            OpCode::Sxi1 => Op::Sxi1,
+            OpCode::Sxi8 => Op::Sxi8,
+            OpCode::Sxi16 => Op::Sxi16,
         };
 
         Ok(Some(op))
