@@ -400,15 +400,20 @@ pub fn decode_define_bits_lossless(
     // Swizzle/de-palettize the bitmap.
     let out_data = match (swf_tag.version, swf_tag.format) {
         (1, swf::BitmapFormat::Rgb15) => {
-            let mut out_data: Vec<u8> = Vec::with_capacity(decoded_data.len() * 2);
+            let padded_width = (swf_tag.width + 0b1) & !0b1;
+            let mut out_data: Vec<u8> =
+                Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             let mut i = 0;
-            while i < decoded_data.len() {
-                let compressed: u16 = ((decoded_data[i] as u16) << 8) | decoded_data[i + 1] as u16;
-                out_data.push(rgb5_component(compressed, 10));
-                out_data.push(rgb5_component(compressed, 5));
-                out_data.push(rgb5_component(compressed, 0));
-                out_data.push(0xff);
-                i += 2;
+            for _ in 0..swf_tag.height {
+                for _ in 0..swf_tag.width {
+                    let compressed = ((decoded_data[i] as u16) << 8) | decoded_data[i + 1] as u16;
+                    out_data.push(rgb5_component(compressed, 10));
+                    out_data.push(rgb5_component(compressed, 5));
+                    out_data.push(rgb5_component(compressed, 0));
+                    out_data.push(0xff);
+                    i += 2;
+                }
+                i += (padded_width - swf_tag.width) as usize * 2;
             }
             out_data
         }
