@@ -555,6 +555,7 @@ swf_tests! {
     (as3_nan_scale, "avm2/nan_scale", 1),
     (as3_documentclass, "avm2/documentclass", 1),
     (timer_run_actions, "avm1/timer_run_actions", 1),
+    (as3_domain_memory, "avm2/domain_memory", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
