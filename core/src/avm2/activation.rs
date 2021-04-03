@@ -534,7 +534,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             );
         }
 
-        let current_position = reader.pos(full_data);
+        let instruction_start = reader.pos(full_data);
         let op = reader.read_op();
         if let Ok(Some(op)) = op {
             avm_debug!(self.avm2(), "Opcode: {:?}", op);
@@ -688,7 +688,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 } => self.op_lookup_switch(
                     default_offset,
                     &case_offsets,
-                    current_position,
+                    instruction_start,
                     reader,
                     full_data,
                 ),
@@ -2386,7 +2386,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         default_offset: i32,
         case_offsets: &[i32],
-        current_pos: usize,
+        instruction_start: usize,
         reader: &mut Reader<'b>,
         full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
@@ -2396,7 +2396,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .get(index as usize)
             .copied()
             .unwrap_or(default_offset)
-            + current_pos as i32
+            + instruction_start as i32
             - reader.pos(full_data) as i32;
 
         reader.seek(full_data, offset);
