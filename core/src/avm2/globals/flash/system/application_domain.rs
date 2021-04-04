@@ -125,10 +125,9 @@ pub fn set_domain_memory<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(d) = args.get(0) {
-        let o = d.coerce_to_object(activation)?;
-        //TODO: same domain as the one in avm2?
         if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
-            appdomain.set_domain_memory(activation.context.gc_context, o);
+            // let o = d.coerce_to_object(activation)?.as;
+            // appdomain.set_domain_memory(activation.context.gc_context, o);
         }
     }
 
@@ -141,11 +140,11 @@ pub fn domain_memory<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
-        if let Some(o) = appdomain.domain_memory() {
-            return Ok(o.into());
-        }
-    }
+    // if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
+    //     if let Some(o) = appdomain.domain_memory() {
+    //         return Ok(o.into());
+    //     }
+    // }
 
     Ok(Value::Undefined)
 }

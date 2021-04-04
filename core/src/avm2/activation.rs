@@ -11,7 +11,7 @@ use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
-use crate::avm2::{value, Avm2, Error};
+use crate::avm2::{value, Avm2, Error, Domain};
 use crate::context::UpdateContext;
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell, MutationContext};
@@ -21,6 +21,7 @@ use swf::avm2::types::{
     Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
     Namespace as AbcNamespace, Op,
 };
+use crate::avm2::bytearray::ByteArrayStorage;
 
 /// Represents a particular register set.
 ///
@@ -2470,34 +2471,50 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Implements `Op::Coerce`
-    fn op_coerce(&mut self, _method: Gc<'gc, BytecodeMethod<'gc>>, _index: Index<AbcMultiname>) -> Result<FrameControl<'gc>, Error> {
+    fn op_coerce(
+        &mut self,
+        _method: Gc<'gc, BytecodeMethod<'gc>>,
+        _index: Index<AbcMultiname>,
+    ) -> Result<FrameControl<'gc>, Error> {
         //TODO: should check if x is a subclass of the given type when object and typeerror if not, see "instr.cpp::coerceImpl (287)"
         //TODO: update tests with typeof + description
 
         let val = self.context.avm2.pop();
 
         let x = match val {
-            Value::Null | Value::Undefined => {
-                Value::Null
-            },
-            Value::Number(_) | Value::String(_) | Value::Unsigned(_) | Value::Integer(_) | Value::Bool(_) => Value::Object(val.coerce_to_object(self)?),
-            Value::Object(_) => {
-                val
-            }
+            Value::Null | Value::Undefined => Value::Null,
+            Value::Number(_)
+            | Value::String(_)
+            | Value::Unsigned(_)
+            | Value::Integer(_)
+            | Value::Bool(_) => Value::Object(val.coerce_to_object(self)?),
+            Value::Object(_) => val,
         };
 
         self.context.avm2.push(x);
         Ok(FrameControl::Continue)
     }
 
+    fn domain_memory(&self) -> Result<GcCell<'gc, ByteArrayStorage>, Error> {
+        self.scope().map(|s| s.read().globals()).and_then(|g| g.as_application_domain()).map(|d| d.domain_memory())
+            .ok_or_else(|| "No domain memory assigned".into())
+    }
+
     /// Implements `Op::Si8`
     fn op_si8(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let address = self.context.avm2.pop();
-        let val = self.context.avm2.pop();
+        let address = self.context.avm2.pop().coerce_to_i32(self)?;
+        let val = self.context.avm2.pop().coerce_to_i32(self)?;
 
-        let dm = self.scope().unwrap().read().globals().as_application_domain().unwrap().domain_memory().expect("Not domain memory?");
-        let mut ba = dm.as_bytearray_mut(self.context.gc_context).unwrap();
-        ba.write_bytes_at(&[val.coerce_to_i32(self)? as u8], address.coerce_to_i32(self)? as usize);
+        let dm = self.domain_memory().expect("Not domain memory?");
+
+        if address < 0 || address as usize >= dm.read().len() {
+            return Err("RangeError: The specified range is invalid".into());
+        }
+
+        dm.write(self.context.gc_context).write_bytes_at(
+            &[(val & 0xFF) as u8],
+            address as usize,
+        );
 
         Ok(FrameControl::Continue)
     }
@@ -2506,11 +2523,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_li8(&mut self) -> Result<FrameControl<'gc>, Error> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
-        let dm = self.scope().unwrap().read().globals().as_application_domain().unwrap().domain_memory().expect("Not domain memory?");
-        let mut ba = dm.as_bytearray_mut(self.context.gc_context).unwrap();
-        let x = ba.bytes().iter().nth(address).copied().unwrap();
+        let dm = self.domain_memory().expect("Not domain memory?");
+        let val = dm.read().get(address);
+        drop(dm);
 
-        self.context.avm2.push(Value::Integer(x as i32));
+        if let Some(val) = val {
+            self.context.avm2.push(Value::Integer(val as i32));
+        } else {
+            return Err("RangeError: The specified range is invalid".into());
+        }
 
         Ok(FrameControl::Continue)
     }

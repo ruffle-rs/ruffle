@@ -1,2 +1,6 @@
-// li8()
-10
+// li8(0) after si8(65, 0)
+65
+// domain
+// li8(0) after si8(255, 0)
+255
+// domain

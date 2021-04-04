@@ -2,13 +2,14 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::names::{Multiname, QName};
-use crate::avm2::object::TObject;
 use crate::avm2::object::Object;
+use crate::avm2::object::TObject;
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
+use crate::avm2::bytearray::{ByteArrayStorage, Endian};
 
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
@@ -26,7 +27,7 @@ struct DomainData<'gc> {
     parent: Option<Domain<'gc>>,
 
     /// The bytearray used for storing domain memory
-    pub domain_memory: Option<Object<'gc>>
+    pub domain_memory: GcCell<'gc, ByteArrayStorage>,
 }
 
 impl<'gc> Domain<'gc> {
@@ -40,7 +41,7 @@ impl<'gc> Domain<'gc> {
             DomainData {
                 defs: HashMap::new(),
                 parent: None,
-                domain_memory: None,
+                domain_memory: GcCell::allocate(mc, ByteArrayStorage::with_initial(vec![0; 100], Endian::Little)),
             },
         ))
     }
@@ -52,7 +53,7 @@ impl<'gc> Domain<'gc> {
             DomainData {
                 defs: HashMap::new(),
                 parent: Some(parent),
-                domain_memory: None
+                domain_memory: GcCell::allocate(mc, ByteArrayStorage::with_initial(vec![0; 100], Endian::Little)),
             },
         ))
     }
@@ -153,11 +154,11 @@ impl<'gc> Domain<'gc> {
         Ok(())
     }
 
-    pub fn domain_memory(&self) -> Option<Object<'gc>> {
+    pub fn domain_memory(&self) -> GcCell<'gc, ByteArrayStorage> {
         self.0.read().domain_memory
     }
 
-    pub fn set_domain_memory(&self, mc: MutationContext<'gc, '_>, domain_memory: Object<'gc>) {
-        self.0.write(mc).domain_memory = Some(domain_memory)
+    pub fn set_domain_memory(&self, mc: MutationContext<'gc, '_>, domain_memory: GcCell<'gc, ByteArrayStorage>) {
+        self.0.write(mc).domain_memory = domain_memory
     }
 }
