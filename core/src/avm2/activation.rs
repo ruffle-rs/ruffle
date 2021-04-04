@@ -2472,6 +2472,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Implements `Op::Coerce`
     fn op_coerce(&mut self, _method: Gc<'gc, BytecodeMethod<'gc>>, _index: Index<AbcMultiname>) -> Result<FrameControl<'gc>, Error> {
         //TODO: should check if x is a subclass of the given type when object and typeerror if not, see "instr.cpp::coerceImpl (287)"
+        //TODO: update tests with typeof + description
 
         let val = self.context.avm2.pop();
 
@@ -2491,17 +2492,25 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Implements `Op::Si8`
     fn op_si8(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let _address = self.context.avm2.pop();
-        let _val = self.context.avm2.pop();
+        let address = self.context.avm2.pop();
+        let val = self.context.avm2.pop();
+
+        let dm = self.scope().unwrap().read().globals().as_application_domain().unwrap().domain_memory().expect("Not domain memory?");
+        let mut ba = dm.as_bytearray_mut(self.context.gc_context).unwrap();
+        ba.write_bytes_at(&[val.coerce_to_i32(self)? as u8], address.coerce_to_i32(self)? as usize);
 
         Ok(FrameControl::Continue)
     }
 
     /// Implements `Op::Li8`
     fn op_li8(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let _address = self.context.avm2.pop();
+        let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
-        self.context.avm2.push(Value::Number(321.0));
+        let dm = self.scope().unwrap().read().globals().as_application_domain().unwrap().domain_memory().expect("Not domain memory?");
+        let mut ba = dm.as_bytearray_mut(self.context.gc_context).unwrap();
+        let x = ba.bytes().iter().nth(address).copied().unwrap();
+
+        self.context.avm2.push(Value::Integer(x as i32));
 
         Ok(FrameControl::Continue)
     }
