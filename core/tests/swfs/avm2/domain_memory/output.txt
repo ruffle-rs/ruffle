@@ -4,3 +4,9 @@
 // li8(0) after si8(255, 0)
 255
 // domain
+// li8(0) after si16(256, 0)
+0
+// li8(1) after si16(256, 0)
+1
+// li16(0) after si16(256, 0)
+256
