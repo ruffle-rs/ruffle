@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::names::{Multiname, QName};
 use crate::avm2::object::TObject;
+use crate::avm2::object::Object;
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -23,6 +24,9 @@ struct DomainData<'gc> {
 
     /// The parent domain.
     parent: Option<Domain<'gc>>,
+
+    /// The bytearray used for storing domain memory
+    pub domain_memory: Option<Object<'gc>>
 }
 
 impl<'gc> Domain<'gc> {
@@ -36,6 +40,7 @@ impl<'gc> Domain<'gc> {
             DomainData {
                 defs: HashMap::new(),
                 parent: None,
+                domain_memory: None,
             },
         ))
     }
@@ -47,6 +52,7 @@ impl<'gc> Domain<'gc> {
             DomainData {
                 defs: HashMap::new(),
                 parent: Some(parent),
+                domain_memory: None
             },
         ))
     }
@@ -145,5 +151,13 @@ impl<'gc> Domain<'gc> {
         self.0.write(mc).defs.insert(name, script);
 
         Ok(())
+    }
+
+    pub fn domain_memory(&self) -> Option<Object<'gc>> {
+        self.0.read().domain_memory
+    }
+
+    pub fn set_domain_memory(&self, mc: MutationContext<'gc, '_>, domain_memory: Object<'gc>) {
+        self.0.write(mc).domain_memory = Some(domain_memory)
     }
 }
