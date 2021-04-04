@@ -697,6 +697,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 ),
                 Op::Coerce { index } => self.op_coerce(method, index),
                 Op::Si8 => self.op_si8(),
+                Op::Si16 => self.op_si16(),
                 Op::Li8 => self.op_li8(),
                 _ => self.unknown_op(op),
             };
@@ -2513,6 +2514,25 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         dm.write(self.context.gc_context).write_bytes_at(
             &[(val & 0xFF) as u8],
+            address as usize,
+        );
+
+        Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Si16`
+    fn op_si16(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let address = self.context.avm2.pop().coerce_to_i32(self)?;
+        let val = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        let dm = self.domain_memory().expect("Not domain memory?");
+
+        if address < 0 || address as usize >= dm.read().len() {
+            return Err("RangeError: The specified range is invalid".into());
+        }
+
+        dm.write(self.context.gc_context).write_bytes_at(
+            &[(val & 0xFF) as u8, ((val >> 8) & 0xFF) as u8],
             address as usize,
         );
 
