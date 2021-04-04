@@ -694,6 +694,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     reader,
                     full_data,
                 ),
+                Op::Coerce { index } => self.op_coerce(method, index),
+                Op::Si8 => self.op_si8(),
+                Op::Li8 => self.op_li8(),
                 _ => self.unknown_op(op),
             };
 
@@ -2463,6 +2466,42 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             - reader.pos(full_data) as i32;
 
         reader.seek(full_data, offset);
+        Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Coerce`
+    fn op_coerce(&mut self, _method: Gc<'gc, BytecodeMethod<'gc>>, _index: Index<AbcMultiname>) -> Result<FrameControl<'gc>, Error> {
+        //TODO: should check if x is a subclass of the given type when object and typeerror if not, see "instr.cpp::coerceImpl (287)"
+
+        let val = self.context.avm2.pop();
+
+        let x = match val {
+            Value::Null | Value::Undefined => {
+                Value::Null
+            },
+            Value::Number(_) | Value::String(_) | Value::Unsigned(_) | Value::Integer(_) | Value::Bool(_) => Value::Object(val.coerce_to_object(self)?),
+            Value::Object(_) => {
+                val
+            }
+        };
+
+        self.context.avm2.push(x);
+        Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Si8`
+    fn op_si8(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let _address = self.context.avm2.pop();
+        let _val = self.context.avm2.pop();
+
+        Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Li8`
+    fn op_li8(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let _address = self.context.avm2.pop();
+
+        self.context.avm2.push(Value::Number(321.0));
 
         Ok(FrameControl::Continue)
     }
