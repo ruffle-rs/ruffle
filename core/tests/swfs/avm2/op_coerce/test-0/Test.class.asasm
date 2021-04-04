@@ -1,0 +1,110 @@
+class
+ refid "Test"
+ instance QName(PackageNamespace(""), "Test")
+  extends QName(PackageNamespace("flash.display"), "Sprite")
+  flag SEALED
+  iinit
+   name "Test"
+   refid "Test/instance/init"
+   body
+    maxstack 1
+    localcount 1
+    initscopedepth 0
+    maxscopedepth 1
+    code
+     getlocal0
+     pushscope
+
+     getlocal0
+     constructsuper      0
+
+     findpropstrict      QName(PrivateNamespace("Test"), "init")
+     callpropvoid        QName(PrivateNamespace("Test"), "init"), 0
+
+     returnvoid
+    end ; code
+   end ; body
+  end ; method
+  trait method QName(PrivateNamespace("Test"), "init")
+   method
+    name "init"
+    refid "Test/instance/Test/instance/init"
+    returns QName(PackageNamespace(""), "void")
+    body
+     maxstack 3
+     localcount 9
+     initscopedepth 0
+     maxscopedepth 1
+     code
+      getlocal0
+      pushscope
+;      findpropstrict QName(PackageNamespace(""),"trace")
+;      pushstring "/// Constructors"
+;      callpropvoid QName(PackageNamespace(""),"trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushfalse
+      coerce              QName(PackageNamespace(""), "Boolean")
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushtrue
+      coerce              QName(PackageNamespace(""), "Boolean")
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushint 5
+      coerce              QName(PackageNamespace(""), "int")
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushuint 5
+      coerce              QName(PackageNamespace(""), "uint")
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "Test"
+      coerce              QName(PackageNamespace(""), "Object")
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      ; Undefined -> Object
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushundefined
+      coerce              QName(PackageNamespace(""), "Object")
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+      
+      ; null -> Object
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushnull
+      coerce              QName(PackageNamespace(""), "Object")
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+
+      ; TODO: floating point?
+
+      ; Subclass -> Base class
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      findpropstrict      QName(PackageNamespace("flash.utils"), "ByteArray")
+      constructprop       QName(PackageNamespace("flash.utils"), "ByteArray"), 0
+      coerce              QName(PackageNamespace(""), "Object")
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      returnvoid
+     end ; code
+    end ; body
+   end ; method
+  end ; trait
+ end ; instance
+ cinit
+  refid "Test/class/init"
+  body
+   maxstack 0
+   localcount 1
+   initscopedepth 0
+   maxscopedepth 0
+   code
+    returnvoid
+   end ; code
+  end ; body
+ end ; method
+end ; class

@@ -1007,19 +1007,6 @@ impl<W: Write> Writer<W> {
             Op::Throw => self.write_opcode(OpCode::Throw)?,
             Op::TypeOf => self.write_opcode(OpCode::TypeOf)?,
             Op::URShift => self.write_opcode(OpCode::URShift)?,
-            Op::Si8 => self.write_opcode(OpCode::Si8)?,
-            Op::Si16 => self.write_opcode(OpCode::Si16)?,
-            Op::Si32 => self.write_opcode(OpCode::Si32)?,
-            Op::Sf32 => self.write_opcode(OpCode::Sf32)?,
-            Op::Sf64 => self.write_opcode(OpCode::Sf64)?,
-            Op::Li8 => self.write_opcode(OpCode::Li8)?,
-            Op::Li16 => self.write_opcode(OpCode::Li16)?,
-            Op::Li32 => self.write_opcode(OpCode::Li32)?,
-            Op::Lf32 => self.write_opcode(OpCode::Lf32)?,
-            Op::Lf64 => self.write_opcode(OpCode::Lf64)?,
-            Op::Sxi1 => self.write_opcode(OpCode::Sxi1)?,
-            Op::Sxi8 => self.write_opcode(OpCode::Sxi8)?,
-            Op::Sxi16 => self.write_opcode(OpCode::Sxi16)?,
         };
 
         Ok(())

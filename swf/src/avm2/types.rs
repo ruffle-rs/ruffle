@@ -525,18 +525,4 @@ pub enum Op {
     Throw,
     TypeOf,
     URShift,
-
-    Si8,
-    Si16,
-    Si32,
-    Sf32,
-    Sf64,
-    Li8,
-    Li16,
-    Li32,
-    Lf32,
-    Lf64,
-    Sxi1,
-    Sxi8,
-    Sxi16,
 }
