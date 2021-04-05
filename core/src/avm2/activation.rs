@@ -2519,7 +2519,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         dm.write(self.context.gc_context)
-            .write_bytes_at(&[(val & 0xFF) as u8], address as usize);
+            .write_bytes_at(&val.to_le_bytes(), address as usize);
 
         Ok(FrameControl::Continue)
     }
@@ -2535,10 +2535,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Err("RangeError: The specified range is invalid".into());
         }
 
-        dm.write(self.context.gc_context).write_bytes_at(
-            &[(val & 0xFF) as u8, ((val >> 8) & 0xFF) as u8],
-            address as usize,
-        );
+        dm.write(self.context.gc_context)
+            .write_bytes_at(&val.to_le_bytes(), address as usize);
 
         Ok(FrameControl::Continue)
     }
@@ -2554,15 +2552,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Err("RangeError: The specified range is invalid".into());
         }
 
-        dm.write(self.context.gc_context).write_bytes_at(
-            &[
-                (val & 0xFF) as u8,
-                ((val >> 8) & 0xFF) as u8,
-                ((val >> 16) & 0xFF) as u8,
-                ((val >> 24) & 0xFF) as u8,
-            ],
-            address as usize,
-        );
+        dm.write(self.context.gc_context)
+            .write_bytes_at(&val.to_le_bytes(), address as usize);
 
         Ok(FrameControl::Continue)
     }
@@ -2594,9 +2585,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         drop(dm);
 
         if let Some(val) = val {
+            let buf: [u8; 4] = [val[0], val[1], 0, 0];
             self.context
                 .avm2
-                .push(Value::Integer((val[0] as i32) | ((val[1] as i32) << 8)));
+                .push(Value::Integer(i32::from_le_bytes(buf)));
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
@@ -2614,12 +2606,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         drop(dm);
 
         if let Some(val) = val {
-            self.context.avm2.push(Value::Integer(
-                (val[0] as i32)
-                    | ((val[1] as i32) << 8)
-                    | ((val[2] as i32) << 16)
-                    | ((val[3] as i32) << 24),
-            ));
+            let buf: [u8; 4] = [val[0], val[1], val[2], val[3]];
+
+            self.context
+                .avm2
+                .push(Value::Integer(i32::from_le_bytes(buf)));
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
