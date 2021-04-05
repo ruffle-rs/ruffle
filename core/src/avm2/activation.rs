@@ -1,6 +1,7 @@
 //! Activation frames
 
 use crate::avm2::array::ArrayStorage;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::method::BytecodeMethod;
 use crate::avm2::method::Method;
@@ -11,7 +12,7 @@ use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
-use crate::avm2::{value, Avm2, Error, Domain};
+use crate::avm2::{value, Avm2, Domain, Error};
 use crate::context::UpdateContext;
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell, MutationContext};
@@ -21,7 +22,6 @@ use swf::avm2::types::{
     Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
     Namespace as AbcNamespace, Op,
 };
-use crate::avm2::bytearray::ByteArrayStorage;
 
 /// Represents a particular register set.
 ///
@@ -2500,7 +2500,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn domain_memory(&self) -> Result<GcCell<'gc, ByteArrayStorage>, Error> {
-        self.scope().map(|s| s.read().globals()).and_then(|g| g.as_application_domain()).map(|d| d.domain_memory())
+        self.scope()
+            .map(|s| s.read().globals())
+            .and_then(|g| g.as_application_domain())
+            .map(|d| d.domain_memory())
             .ok_or_else(|| "No domain memory assigned".into())
     }
 
@@ -2515,10 +2518,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Err("RangeError: The specified range is invalid".into());
         }
 
-        dm.write(self.context.gc_context).write_bytes_at(
-            &[(val & 0xFF) as u8],
-            address as usize,
-        );
+        dm.write(self.context.gc_context)
+            .write_bytes_at(&[(val & 0xFF) as u8], address as usize);
 
         Ok(FrameControl::Continue)
     }
@@ -2554,7 +2555,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         dm.write(self.context.gc_context).write_bytes_at(
-            &[(val & 0xFF) as u8, ((val >> 8) & 0xFF) as u8, ((val >> 16) & 0xFF) as u8, ((val >> 24) & 0xFF) as u8],
+            &[
+                (val & 0xFF) as u8,
+                ((val >> 8) & 0xFF) as u8,
+                ((val >> 16) & 0xFF) as u8,
+                ((val >> 24) & 0xFF) as u8,
+            ],
             address as usize,
         );
 
@@ -2584,13 +2590,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let dm = self.domain_memory().expect("Not domain memory?");
         let r = dm.read();
-        let val = r.get_range(address..address+2);
+        let val = r.get_range(address..address + 2);
         drop(dm);
 
         if let Some(val) = val {
-            self.context.avm2.push(Value::Integer(
-                (val[0] as i32) | ((val[1] as i32) << 8)
-            ));
+            self.context
+                .avm2
+                .push(Value::Integer((val[0] as i32) | ((val[1] as i32) << 8)));
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
@@ -2604,12 +2610,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let dm = self.domain_memory().expect("Not domain memory?");
         let r = dm.read();
-        let val = r.get_range(address..address+4);
+        let val = r.get_range(address..address + 4);
         drop(dm);
 
         if let Some(val) = val {
             self.context.avm2.push(Value::Integer(
-                (val[0] as i32) | ((val[1] as i32) << 8) | ((val[2] as i32) << 16) | ((val[3] as i32) << 24)
+                (val[0] as i32)
+                    | ((val[1] as i32) << 8)
+                    | ((val[2] as i32) << 16)
+                    | ((val[3] as i32) << 24),
             ));
         } else {
             return Err("RangeError: The specified range is invalid".into());
