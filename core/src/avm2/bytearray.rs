@@ -43,7 +43,7 @@ impl ByteArrayStorage {
         Self {
             bytes,
             position: 0,
-            endian
+            endian,
         }
     }
 
