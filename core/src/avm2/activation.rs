@@ -699,6 +699,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::Si8 => self.op_si8(),
                 Op::Si16 => self.op_si16(),
                 Op::Li8 => self.op_li8(),
+                Op::Li16 => self.op_li16(),
                 _ => self.unknown_op(op),
             };
 
@@ -2527,7 +2528,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let dm = self.domain_memory().expect("Not domain memory?");
 
-        if address < 0 || address as usize >= dm.read().len() {
+        if address < 0 || (address as usize + 1) >= dm.read().len() {
             return Err("RangeError: The specified range is invalid".into());
         }
 
@@ -2549,6 +2550,26 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         if let Some(val) = val {
             self.context.avm2.push(Value::Integer(val as i32));
+        } else {
+            return Err("RangeError: The specified range is invalid".into());
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Li16`
+    fn op_li16(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
+
+        let dm = self.domain_memory().expect("Not domain memory?");
+        let r = dm.read();
+        let val = r.get_range(address..address+2);
+        drop(dm);
+
+        if let Some(val) = val {
+            self.context.avm2.push(Value::Integer(
+                (val[0] as i32) | ((val[1] as i32) << 8)
+            ));
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }

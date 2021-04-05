@@ -6,6 +6,7 @@ use std::cmp;
 use std::convert::{TryFrom, TryInto};
 use std::io;
 use std::io::prelude::*;
+use std::ops::Range;
 
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
@@ -299,6 +300,10 @@ impl ByteArrayStorage {
 
     pub fn get(&self, item: usize) -> Option<u8> {
         self.bytes.get(item).copied()
+    }
+
+    pub fn get_range(&self, item: Range<usize>) -> Option<&[u8]> {
+        self.bytes.get(item)
     }
 
     pub fn set(&mut self, item: usize, value: u8) {

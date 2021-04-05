@@ -10,3 +10,19 @@
 1
 // li16(0) after si16(256, 0)
 256
+// li8(0) after si16(0xFFFF, 0)
+255
+// li8(1) after si16(0xFFFF, 0)
+255
+// li16(0) after si16(0xFFFF, 0)
+65535
+// li8(0) after si32(0xFFFFFFFF, 0)
+255
+// li8(1) after si32(0xFFFFFFFF, 0)
+255
+// li8(2) after si32(0xFFFFFFFF, 0)
+255
+// li8(3) after si32(0xFFFFFFFF, 0)
+255
+// li32(0) after si32(0xFFFFFFFF, 0)
+-1
