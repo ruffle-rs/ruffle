@@ -699,10 +699,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::Si8 => self.op_si8(),
                 Op::Si16 => self.op_si16(),
                 Op::Si32 => self.op_si32(),
+                Op::Sf32 => self.op_sf32(),
                 Op::Li8 => self.op_li8(),
                 Op::Li16 => self.op_li16(),
                 Op::Li32 => self.op_li32(),
-                Op::Sf32 => self.op_sf32(),
+                Op::Lf32 => self.op_lf32(),
                 _ => self.unknown_op(op),
             };
 
@@ -2629,6 +2630,28 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             self.context
                 .avm2
                 .push(Value::Integer(i32::from_le_bytes(buf)));
+        } else {
+            return Err("RangeError: The specified range is invalid".into());
+        }
+
+        Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Lf32`
+    fn op_lf32(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
+
+        let dm = self.domain_memory().expect("Not domain memory?");
+        let r = dm.read();
+        let val = r.get_range(address..address + 4);
+        drop(dm);
+
+        if let Some(val) = val {
+            let buf: [u8; 4] = [val[0], val[1], val[2], val[3]];
+
+            self.context
+                .avm2
+                .push(Value::Number(f32::from_le_bytes(buf) as f64));
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
