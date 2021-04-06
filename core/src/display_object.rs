@@ -605,10 +605,19 @@ pub trait TDisplayObject<'gc>:
         let rotation = self.rotation(gc_context);
         let cos = f64::abs(f64::cos(rotation.into_radians()));
         let sin = f64::abs(f64::sin(rotation.into_radians()));
-        let new_scale_x = aspect_ratio * (cos * target_scale_x + sin * target_scale_y)
+        let mut new_scale_x = aspect_ratio * (cos * target_scale_x + sin * target_scale_y)
             / ((cos + aspect_ratio * sin) * (aspect_ratio * cos + sin));
-        let new_scale_y =
+        let mut new_scale_y =
             (sin * prev_scale_x + aspect_ratio * cos * prev_scale_y) / (aspect_ratio * cos + sin);
+
+        if !new_scale_x.is_finite() {
+            new_scale_x = 0.0;
+        }
+
+        if !new_scale_y.is_finite() {
+            new_scale_y = 0.0;
+        }
+
         self.set_scale_x(gc_context, Percent::from_unit(new_scale_x));
         self.set_scale_y(gc_context, Percent::from_unit(new_scale_y));
     }
@@ -644,10 +653,19 @@ pub trait TDisplayObject<'gc>:
         let rotation = self.rotation(gc_context);
         let cos = f64::abs(f64::cos(rotation.into_radians()));
         let sin = f64::abs(f64::sin(rotation.into_radians()));
-        let new_scale_x =
+        let mut new_scale_x =
             (aspect_ratio * cos * prev_scale_x + sin * prev_scale_y) / (aspect_ratio * cos + sin);
-        let new_scale_y = aspect_ratio * (sin * target_scale_x + cos * target_scale_y)
+        let mut new_scale_y = aspect_ratio * (sin * target_scale_x + cos * target_scale_y)
             / ((cos + aspect_ratio * sin) * (aspect_ratio * cos + sin));
+
+        if !new_scale_x.is_finite() {
+            new_scale_x = 0.0;
+        }
+
+        if !new_scale_y.is_finite() {
+            new_scale_y = 0.0;
+        }
+
         self.set_scale_x(gc_context, Percent::from_unit(new_scale_x));
         self.set_scale_y(gc_context, Percent::from_unit(new_scale_y));
     }
