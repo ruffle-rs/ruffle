@@ -1,0 +1,10 @@
+/// var a: Vector.<int> = new <int>[1,2];
+/// var b: Vector.<int> = new <int>[5,16];
+/// a.every(function (v) { return v > 0; }));
+true
+/// a.every(function (v) { return v > 2; }));
+false
+/// b.every(function (v) { return v > 4; }));
+true
+/// b.every(function (v) { return v > 10; }));
+false

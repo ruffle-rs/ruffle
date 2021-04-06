@@ -1,0 +1,15 @@
+/// var a: Vector.<Superclass> = new <Superclass>[];
+/// a.length = 2;
+/// a[0] = new Superclass();
+/// a[1] = new Subclass();
+/// var b: Vector.<Subclass> = new <Subclass>[];
+/// b.length = 1;
+/// b[0] = new Subclass();
+/// a.every(function (v) { return v is Subclass; }));
+false
+/// a.every(function (v) { return v is Superclass; }));
+true
+/// b.every(function (v) { return v is Subclass; }));
+true
+/// b.every(function (v) { return v is Superclass; }));
+true
