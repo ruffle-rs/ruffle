@@ -1357,8 +1357,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_set_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
-        let object = self.context.avm2.pop().coerce_to_object(self)?;
         let value = self.context.avm2.pop();
+        let object = self.context.avm2.pop().coerce_to_object(self)?;
 
         object.set_slot(index, value, self.context.gc_context)?;
 
