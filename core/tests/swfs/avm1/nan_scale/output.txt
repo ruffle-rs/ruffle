@@ -1,0 +1,9 @@
+// Set the width/height to 100 on an empty clip (0 0)
+0 0
+// Draw a 100x100 shape on the previous clip and set the w/h to 100 again (100 100)
+100 100
+
+// Draw a shape of Number.MIN_VALUE size on an empty clip then set the w/h to 100 (0 0)
+0 0
+// Draw a shape of 100x100 on the previous clip and set the w/h to 100 again (100 100)
+100 100
