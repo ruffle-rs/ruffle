@@ -26,3 +26,27 @@
 255
 // li32(0) after si32(0xFFFFFFFF, 0)
 -1
+// li8(0) after sf32(0xFFFFFFFF, 0)
+0
+// li8(1) after sf32(0xFFFFFFFF, 0)
+0
+// li8(2) after sf32(0xFFFFFFFF, 0)
+128
+// li8(3) after sf32(0xFFFFFFFF, 0)
+79
+// li32(0) after sf32(0xFFFFFFFF, 0)
+1333788672
+// lf32(0) after sf32(0xFFFFFFFF, 0)
+4294967296
+// li8(0) after sf32(1234.7654321, 0)
+126
+// li8(1) after sf32(1234.7654321, 0)
+88
+// li8(2) after sf32(1234.7654321, 0)
+154
+// li8(3) after sf32(1234.7654321, 0)
+68
+// li32(0) after sf32(1234.7654321, 0)
+1150965886
+// lf32(0) after sf32(1234.7654321, 0)
+1234.765380859375

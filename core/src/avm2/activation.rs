@@ -702,6 +702,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::Li8 => self.op_li8(),
                 Op::Li16 => self.op_li16(),
                 Op::Li32 => self.op_li32(),
+                Op::Sf32 => self.op_sf32(),
                 _ => self.unknown_op(op),
             };
 
@@ -2545,6 +2546,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_si32(&mut self) -> Result<FrameControl<'gc>, Error> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        let dm = self.domain_memory().expect("Not domain memory?");
+
+        if address < 0 || (address as usize + 3) >= dm.read().len() {
+            return Err("RangeError: The specified range is invalid".into());
+        }
+
+        dm.write(self.context.gc_context)
+            .write_bytes_at(&val.to_le_bytes(), address as usize);
+
+        Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Sf32`
+    fn op_sf32(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let address = self.context.avm2.pop().coerce_to_i32(self)?;
+        let val = self.context.avm2.pop().coerce_to_number(self)? as f32;
 
         let dm = self.domain_memory().expect("Not domain memory?");
 
