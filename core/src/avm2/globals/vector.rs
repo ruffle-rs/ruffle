@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
@@ -262,6 +263,46 @@ pub fn to_string<'gc>(
     join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
 }
 
+/// Implements `Vector.every`
+pub fn every<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let callback = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let receiver = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok();
+        let mut is_every = true;
+        let mut iter = ArrayIter::new(activation, this)?;
+
+        while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
+
+            is_every &= callback
+                .call(
+                    receiver,
+                    &[item, i.into(), this.into()],
+                    activation,
+                    receiver.and_then(|r| r.proto()),
+                )?
+                .coerce_to_boolean();
+        }
+
+        return Ok(is_every.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Sprite`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -287,8 +328,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
-        &[("concat", concat), ("join", join), ("toString", to_string)];
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("concat", concat),
+        ("join", join),
+        ("toString", to_string),
+        ("every", every),
+    ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class

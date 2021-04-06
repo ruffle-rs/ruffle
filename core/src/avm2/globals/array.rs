@@ -253,7 +253,7 @@ pub fn value_of<'gc>(
 /// mutate the array under iteration. Normally, holding an `Iterator` on the
 /// array while this happens would cause a panic; this code exists to prevent
 /// that.
-struct ArrayIter<'gc> {
+pub struct ArrayIter<'gc> {
     array_object: Object<'gc>,
     index: u32,
     length: u32,
@@ -284,7 +284,7 @@ impl<'gc> ArrayIter<'gc> {
     ///
     /// Since this isn't a real iterator, this comes pre-enumerated; it yields
     /// a pair of the index and then the value.
-    fn next(
+    pub fn next(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Result<(u32, Value<'gc>), Error>> {
