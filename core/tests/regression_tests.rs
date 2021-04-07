@@ -564,6 +564,7 @@ swf_tests! {
     (as3_stage_displayobject_properties, "avm2/stage_displayobject_properties", 1),
     (as3_stage_loaderinfo_properties, "avm2/stage_loaderinfo_properties", 2),
     (as3_stage_properties, "avm2/stage_properties", 1),
+    (as3_closures, "avm2/closures", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
