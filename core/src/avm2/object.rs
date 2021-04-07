@@ -231,12 +231,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Retrieves a trait entry by name.
     ///
-    /// This function returns `None` if no such trait exists, or the object
-    /// does not have traits. It returns `Err` if *any* trait in the object is
-    /// malformed in some way.
+    /// This function returns an empty `Vec` if no such trait exists, or the
+    /// object does not have traits. It returns `Err` if *any* trait in the
+    /// object's prototype chain bearing this name is malformed in some way.
     fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error>;
 
-    /// Populate a list of traits that this object provides.
+    /// Retrieves a trait entry by slot ID.
+    ///
+    /// This function returns `None` if no such trait exists, or the object
+    /// does not have traits. It returns `Err` if *any* trait in the object's
+    /// prototype chain bearing this name is malformed in some way.
+    fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error>;
+
+    /// Populate a list of traits that this object provides for a given name.
     ///
     /// This function yields traits for class constructors and prototypes, but
     /// not instances. For resolving traits for normal `TObject` methods, use
@@ -245,6 +252,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_provided_trait(
         &self,
         name: &QName<'gc>,
+        known_traits: &mut Vec<Trait<'gc>>,
+    ) -> Result<(), Error>;
+
+    /// Populate a list of traits that this object provides for a given slot.
+    ///
+    /// This function yields traits for class constructors and prototypes, but
+    /// not instances. For resolving traits for normal `TObject` methods, use
+    /// `get_trait` and `has_trait` as it will tell you if the current object
+    /// has a given trait.
+    fn get_provided_trait_slot(
+        &self,
+        id: u32,
         known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error>;
 

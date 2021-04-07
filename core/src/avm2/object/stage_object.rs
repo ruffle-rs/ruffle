@@ -165,12 +165,24 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.get_trait(name)
     }
 
+    fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
+        self.0.read().base.get_trait_slot(id)
+    }
+
     fn get_provided_trait(
         &self,
         name: &QName<'gc>,
         known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         self.0.read().base.get_provided_trait(name, known_traits)
+    }
+
+    fn get_provided_trait_slot(
+        &self,
+        id: u32,
+        known_traits: &mut Vec<Trait<'gc>>,
+    ) -> Result<(), Error> {
+        self.0.read().base.get_provided_trait_slot(id, known_traits)
     }
 
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
