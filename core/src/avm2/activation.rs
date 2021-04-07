@@ -706,6 +706,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::Li32 => self.op_li32(),
                 Op::Lf32 => self.op_lf32(),
                 Op::Lf64 => self.op_lf64(),
+                Op::Sxi1 => self.op_sxi1(),
                 _ => self.unknown_op(op),
             };
 
@@ -2696,6 +2697,19 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
+
+        Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Sxi1`
+    fn op_sxi1(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let val = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        let val = val.wrapping_shl(31).wrapping_shr(31);
+
+        self.context
+            .avm2
+            .push(Value::Integer(val));
 
         Ok(FrameControl::Continue)
     }
