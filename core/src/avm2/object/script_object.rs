@@ -365,8 +365,10 @@ impl<'gc> ScriptObject<'gc> {
 
     /// Construct a bare class prototype with no base class.
     ///
-    /// This appears to be used specifically for interfaces, which have no base
-    /// class.
+    /// This is used in cases where a prototype needs to exist, but it does not
+    /// need to extend `Object`. This is the case for interfaces and activation
+    /// objects, both of which need to participate in the class mechanism but
+    /// are not `Object`s.
     pub fn bare_prototype(
         mc: MutationContext<'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,

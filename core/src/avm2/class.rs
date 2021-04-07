@@ -9,7 +9,9 @@ use crate::avm2::{Avm2, Error};
 use crate::collect::CollectWrapper;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
-use swf::avm2::types::{Class as AbcClass, Instance as AbcInstance};
+use swf::avm2::types::{
+    Class as AbcClass, Instance as AbcInstance, Method as AbcMethod, MethodBody as AbcMethodBody,
+};
 
 bitflags! {
     /// All possible attributes for a given class.
@@ -268,6 +270,46 @@ impl<'gc> Class<'gc> {
         }
 
         Ok(())
+    }
+
+    pub fn from_method_body(
+        avm2: &mut Avm2<'gc>,
+        mc: MutationContext<'gc, '_>,
+        translation_unit: TranslationUnit<'gc>,
+        method: &AbcMethod,
+        body: &AbcMethodBody,
+    ) -> Result<GcCell<'gc, Self>, Error> {
+        let name = translation_unit.pool_string(method.name.as_u30(), mc)?;
+        let mut traits = Vec::new();
+
+        for trait_entry in body.traits.iter() {
+            traits.push(Trait::from_abc_trait(
+                translation_unit,
+                &trait_entry,
+                avm2,
+                mc,
+            )?);
+        }
+
+        Ok(GcCell::allocate(
+            mc,
+            Self {
+                name: QName::dynamic_name(name),
+                super_class: None,
+                attributes: CollectWrapper(ClassAttributes::empty()),
+                protected_namespace: None,
+                interfaces: Vec::new(),
+                instance_init: Method::from_builtin(|_, _, _| {
+                    Err("Do not call activation initializers!".into())
+                }),
+                instance_traits: traits,
+                class_init: Method::from_builtin(|_, _, _| {
+                    Err("Do not call activation class initializers!".into())
+                }),
+                class_traits: Vec::new(),
+                traits_loaded: true,
+            },
+        ))
     }
 
     pub fn name(&self) -> &QName<'gc> {

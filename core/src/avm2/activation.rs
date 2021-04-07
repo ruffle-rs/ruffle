@@ -107,6 +107,16 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// This will not be available if this is not a method call.
     base_proto: Option<Object<'gc>>,
 
+    /// The proto of all objects returned from `newactivation`.
+    ///
+    /// In method calls that call for an activation object, this will be
+    /// configured as the anonymous class whose traits match the method's
+    /// declared traits.
+    ///
+    /// If this is `None`, then the method did not ask for an activation object
+    /// and we will not construct a prototype for one.
+    activation_proto: Option<Object<'gc>>,
+
     pub context: UpdateContext<'a, 'gc, 'gc_context>,
 }
 
@@ -131,6 +141,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope: None,
             base_proto: None,
+            activation_proto: None,
             context,
         }
     }
@@ -170,6 +181,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
             base_proto: None,
+            activation_proto: None,
             context,
         })
     }
@@ -188,7 +200,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let body: Result<_, Error> = method
             .body()
             .ok_or_else(|| "Cannot execute non-native method without body".into());
-        let num_locals = body?.num_locals;
+        let body = body?;
+        let num_locals = body.num_locals;
         let has_rest_or_args = method.method().needs_arguments_object || method.method().needs_rest;
         let arg_register = if has_rest_or_args { 1 } else { 0 };
         let num_declared_arguments = method.method().params.len() as u32;
@@ -209,6 +222,26 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
         }
 
+        let activation_proto = if method.method().needs_activation {
+            let translation_unit = method.translation_unit();
+            let abc_method = method.method();
+            let activation_class = Class::from_method_body(
+                context.avm2,
+                context.gc_context,
+                translation_unit,
+                abc_method,
+                body,
+            )?;
+
+            Some(ScriptObject::bare_prototype(
+                context.gc_context,
+                activation_class,
+                scope,
+            ))
+        } else {
+            None
+        };
+
         let mut activation = Self {
             this,
             arguments: None,
@@ -218,6 +251,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
             base_proto,
+            activation_proto,
             context,
         };
 
@@ -291,6 +325,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
             base_proto,
+            activation_proto: None,
             context,
         })
     }
@@ -1440,9 +1475,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_new_activation(&mut self) -> Result<FrameControl<'gc>, Error> {
-        self.context
-            .avm2
-            .push(ScriptObject::bare_object(self.context.gc_context));
+        if let Some(activation_proto) = self.activation_proto {
+            self.context.avm2.push(ScriptObject::object(
+                self.context.gc_context,
+                activation_proto,
+            ));
+        } else {
+            self.context
+                .avm2
+                .push(ScriptObject::bare_object(self.context.gc_context));
+        }
 
         Ok(FrameControl::Continue)
     }
