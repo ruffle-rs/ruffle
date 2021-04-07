@@ -547,6 +547,7 @@ swf_tests! {
     (as3_loaderinfo_properties, "avm2/loaderinfo_properties", 2),
     (as3_loaderinfo_quine, "avm2/loaderinfo_quine", 2),
     (nan_scale, "avm1/nan_scale", 1),
+    (as3_nan_scale, "avm2/nan_scale", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
