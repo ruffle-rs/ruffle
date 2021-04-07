@@ -1384,7 +1384,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_get_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
         let object = self.context.avm2.pop().coerce_to_object(self)?;
-        let value = object.get_slot(index)?;
+        let value = object.get_slot(self, index)?;
 
         self.context.avm2.push(value);
 
@@ -1395,13 +1395,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm2.pop();
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        object.set_slot(index, value, self.context.gc_context)?;
+        object.set_slot(self, index, value)?;
 
         Ok(FrameControl::Continue)
     }
 
     fn op_get_global_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
-        let value = self.scope.unwrap().read().globals().get_slot(index)?;
+        let value = self.scope.unwrap().read().globals().get_slot(self, index)?;
 
         self.context.avm2.push(value);
 
@@ -1415,7 +1415,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .unwrap()
             .read()
             .globals()
-            .set_slot(index, value, self.context.gc_context)?;
+            .set_slot(self, index, value)?;
 
         Ok(FrameControl::Continue)
     }

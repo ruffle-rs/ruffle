@@ -94,26 +94,30 @@ macro_rules! impl_avm2_custom_object_properties {
 #[macro_export]
 macro_rules! impl_avm2_custom_object {
     ($field:ident) => {
-        fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
-            self.0.read().$field.get_slot(id)
+        fn has_slot_local(self, id: u32) -> bool {
+            self.0.read().$field.has_slot_local(id)
         }
 
-        fn set_slot(
+        fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error> {
+            self.0.read().$field.get_slot_local(id)
+        }
+
+        fn set_slot_local(
             self,
             id: u32,
             value: Value<'gc>,
             mc: MutationContext<'gc, '_>,
         ) -> Result<(), Error> {
-            self.0.write(mc).$field.set_slot(id, value, mc)
+            self.0.write(mc).$field.set_slot_local(id, value, mc)
         }
 
-        fn init_slot(
+        fn init_slot_local(
             self,
             id: u32,
             value: Value<'gc>,
             mc: MutationContext<'gc, '_>,
         ) -> Result<(), Error> {
-            self.0.write(mc).$field.init_slot(id, value, mc)
+            self.0.write(mc).$field.init_slot_local(id, value, mc)
         }
 
         fn get_method(self, id: u32) -> Option<Object<'gc>> {
