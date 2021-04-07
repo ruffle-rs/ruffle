@@ -142,7 +142,10 @@ impl<'gc> Property<'gc> {
             )),
             Property::Virtual { get: None, .. } => Ok(Value::Undefined.into()),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
-            Property::Slot { slot_id, .. } => this.get_slot(*slot_id).map(|v| v.into()),
+
+            // This doesn't need the non-local version of this property because
+            // by the time this has called the slot was already installed
+            Property::Slot { slot_id, .. } => this.get_slot_local(*slot_id).map(|v| v.into()),
         }
     }
 

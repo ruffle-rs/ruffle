@@ -134,26 +134,30 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.write(gc_context).delete_property(name)
     }
 
-    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
-        self.0.read().get_slot(id)
+    fn has_slot_local(self, id: u32) -> bool {
+        self.0.read().has_slot_local(id)
     }
 
-    fn set_slot(
+    fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error> {
+        self.0.read().get_slot_local(id)
+    }
+
+    fn set_slot_local(
         self,
         id: u32,
         value: Value<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        self.0.write(mc).set_slot(id, value, mc)
+        self.0.write(mc).set_slot_local(id, value, mc)
     }
 
-    fn init_slot(
+    fn init_slot_local(
         self,
         id: u32,
         value: Value<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        self.0.write(mc).init_slot(id, value, mc)
+        self.0.write(mc).init_slot_local(id, value, mc)
     }
 
     fn get_method(self, id: u32) -> Option<Object<'gc>> {
@@ -467,7 +471,9 @@ impl<'gc> ScriptObjectData<'gc> {
         };
 
         if let Some(slot_id) = slot_id {
-            self.set_slot(slot_id, value, activation.context.gc_context)?;
+            // This doesn't need the non-local version of this property because
+            // by the time this has called the slot was already installed
+            self.set_slot_local(slot_id, value, activation.context.gc_context)?;
             Ok(Value::Undefined.into())
         } else if self.values.contains_key(name) {
             let prop = self.values.get_mut(name).unwrap();
@@ -492,7 +498,10 @@ impl<'gc> ScriptObjectData<'gc> {
     ) -> Result<ReturnValue<'gc>, Error> {
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
-                self.init_slot(slot_id, value, activation.context.gc_context)?;
+                // This doesn't need the non-local version of this property
+                // because by the time this has called the slot was already
+                // installed
+                self.init_slot_local(slot_id, value, activation.context.gc_context)?;
                 Ok(Value::Undefined.into())
             } else {
                 let proto = self.proto;
@@ -528,8 +537,14 @@ impl<'gc> ScriptObjectData<'gc> {
         can_delete
     }
 
-    pub fn get_slot(&self, id: u32) -> Result<Value<'gc>, Error> {
-        //TODO: slot inheritance, I think?
+    pub fn has_slot_local(&self, id: u32) -> bool {
+        self.slots
+            .get(id as usize)
+            .map(|s| s.is_occupied())
+            .unwrap_or(false)
+    }
+
+    pub fn get_slot_local(&self, id: u32) -> Result<Value<'gc>, Error> {
         self.slots
             .get(id as usize)
             .cloned()
@@ -538,7 +553,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     /// Set a slot by its index.
-    pub fn set_slot(
+    pub fn set_slot_local(
         &mut self,
         id: u32,
         value: Value<'gc>,
@@ -551,8 +566,8 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    /// Set a slot by its index.
-    pub fn init_slot(
+    /// Initialize a slot by its index.
+    pub fn init_slot_local(
         &mut self,
         id: u32,
         value: Value<'gc>,

@@ -135,26 +135,30 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.write(gc_context).base.delete_property(multiname)
     }
 
-    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
-        self.0.read().base.get_slot(id)
+    fn has_slot_local(self, id: u32) -> bool {
+        self.0.read().base.has_slot_local(id)
     }
 
-    fn set_slot(
+    fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error> {
+        self.0.read().base.get_slot_local(id)
+    }
+
+    fn set_slot_local(
         self,
         id: u32,
         value: Value<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        self.0.write(mc).base.set_slot(id, value, mc)
+        self.0.write(mc).base.set_slot_local(id, value, mc)
     }
 
-    fn init_slot(
+    fn init_slot_local(
         self,
         id: u32,
         value: Value<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        self.0.write(mc).base.init_slot(id, value, mc)
+        self.0.write(mc).base.init_slot_local(id, value, mc)
     }
 
     fn get_method(self, id: u32) -> Option<Object<'gc>> {

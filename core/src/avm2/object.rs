@@ -207,11 +207,49 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         receiver.init_property_local(receiver, name, value, activation)
     }
 
+    /// Determines if a local slot already exists and is occupied.
+    fn has_slot_local(self, id: u32) -> bool;
+
     /// Retrieve a slot by its index.
-    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error>;
+    #[allow(unused_mut)]
+    fn get_slot(
+        mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        id: u32,
+    ) -> Result<Value<'gc>, Error> {
+        if !self.has_slot_local(id) {
+            let slot_trait = self
+                .get_trait_slot(id)?
+                .ok_or_else(|| format!("Slot index {} out of bounds!", id))?;
+            self.install_trait(activation, slot_trait, self.into())?;
+        }
+
+        self.get_slot_local(id)
+    }
+
+    /// Retrieve a slot by its index, ignoring uninstalled traits.
+    fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error>;
 
     /// Set a slot by its index.
+    #[allow(unused_mut)]
     fn set_slot(
+        mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        id: u32,
+        value: Value<'gc>,
+    ) -> Result<(), Error> {
+        if !self.has_slot_local(id) {
+            let slot_trait = self
+                .get_trait_slot(id)?
+                .ok_or_else(|| format!("Slot index {} out of bounds!", id))?;
+            self.install_trait(activation, slot_trait, self.into())?;
+        }
+
+        self.set_slot_local(id, value, activation.context.gc_context)
+    }
+
+    /// Set a slot by its index, ignoring uninstalled traits.
+    fn set_slot_local(
         self,
         id: u32,
         value: Value<'gc>,
@@ -219,7 +257,25 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error>;
 
     /// Initialize a slot by its index.
+    #[allow(unused_mut)]
     fn init_slot(
+        mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        id: u32,
+        value: Value<'gc>,
+    ) -> Result<(), Error> {
+        if !self.has_slot_local(id) {
+            let slot_trait = self
+                .get_trait_slot(id)?
+                .ok_or_else(|| format!("Slot index {} out of bounds!", id))?;
+            self.install_trait(activation, slot_trait, self.into())?;
+        }
+
+        self.init_slot_local(id, value, activation.context.gc_context)
+    }
+
+    /// Initialize a slot by its index, ignoring uninstalled traits.
+    fn init_slot_local(
         self,
         id: u32,
         value: Value<'gc>,
