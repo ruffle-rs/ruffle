@@ -2689,7 +2689,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         drop(dm);
 
         if let Some(val) = val {
-            let buf: [u8; 8] = [val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]];
+            let buf: [u8; 8] = [
+                val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7],
+            ];
 
             self.context
                 .avm2
@@ -2707,9 +2709,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let val = val.wrapping_shl(31).wrapping_shr(31);
 
-        self.context
-            .avm2
-            .push(Value::Integer(val));
+        self.context.avm2.push(Value::Integer(val));
 
         Ok(FrameControl::Continue)
     }
