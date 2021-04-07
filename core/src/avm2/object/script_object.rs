@@ -164,12 +164,24 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_trait(name)
     }
 
+    fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
+        self.0.read().get_trait_slot(id)
+    }
+
     fn get_provided_trait(
         &self,
         name: &QName<'gc>,
         known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         self.0.read().get_provided_trait(name, known_traits)
+    }
+
+    fn get_provided_trait_slot(
+        &self,
+        id: u32,
+        known_traits: &mut Vec<Trait<'gc>>,
+    ) -> Result<(), Error> {
+        self.0.read().get_provided_trait_slot(id, known_traits)
     }
 
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
@@ -593,6 +605,41 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
+    pub fn get_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
+        match &self.class {
+            //Class constructors have local slot traits only.
+            ScriptObjectClass::ClassConstructor(..) => {
+                let mut known_traits = Vec::new();
+                self.get_provided_trait_slot(id, &mut known_traits)?;
+
+                Ok(known_traits.first().cloned())
+            }
+
+            //Prototypes do not have traits available locally, but they provide
+            //traits instead.
+            ScriptObjectClass::InstancePrototype(..) => Ok(None),
+
+            //Instances walk the prototype chain to build a list of known
+            //traits provided by the classes attached to those prototypes.
+            ScriptObjectClass::NoClass => {
+                let mut known_traits = Vec::new();
+                let mut chain = Vec::new();
+                let mut proto = self.proto();
+
+                while let Some(p) = proto {
+                    chain.push(p);
+                    proto = p.proto();
+                }
+
+                for proto in chain.iter().rev() {
+                    proto.get_provided_trait_slot(id, &mut known_traits)?;
+                }
+
+                Ok(known_traits.first().cloned())
+            }
+        }
+    }
+
     pub fn get_provided_trait(
         &self,
         name: &QName<'gc>,
@@ -605,6 +652,22 @@ impl<'gc> ScriptObjectData<'gc> {
             ScriptObjectClass::InstancePrototype(class, ..) => {
                 class.read().lookup_instance_traits(name, known_traits)
             }
+            ScriptObjectClass::NoClass => Ok(()),
+        }
+    }
+
+    pub fn get_provided_trait_slot(
+        &self,
+        id: u32,
+        known_traits: &mut Vec<Trait<'gc>>,
+    ) -> Result<(), Error> {
+        match &self.class {
+            ScriptObjectClass::ClassConstructor(class, ..) => {
+                class.read().lookup_class_traits_by_slot(id, known_traits)
+            }
+            ScriptObjectClass::InstancePrototype(class, ..) => class
+                .read()
+                .lookup_instance_traits_by_slot(id, known_traits),
             ScriptObjectClass::NoClass => Ok(()),
         }
     }

@@ -110,6 +110,44 @@ fn do_trait_lookup<'gc>(
     Ok(())
 }
 
+/// Find traits in a list of traits matching a slot ID.
+///
+/// This function also enforces final/override bits on the traits, and will
+/// raise `VerifyError`s as needed.
+///
+/// TODO: This is an O(n^2) algorithm, it sucks.
+fn do_trait_lookup_by_slot<'gc>(
+    id: u32,
+    known_traits: &mut Vec<Trait<'gc>>,
+    all_traits: &[Trait<'gc>],
+) -> Result<(), Error> {
+    for trait_entry in all_traits {
+        let trait_id = match trait_entry.kind() {
+            TraitKind::Slot { slot_id, .. } => slot_id,
+            TraitKind::Const { slot_id, .. } => slot_id,
+            TraitKind::Class { slot_id, .. } => slot_id,
+            TraitKind::Function { slot_id, .. } => slot_id,
+            _ => continue,
+        };
+
+        if id == *trait_id {
+            for known_trait in known_traits.iter() {
+                if known_trait.is_final() {
+                    return Err("Attempting to override a final definition".into());
+                }
+
+                if !trait_entry.is_override() {
+                    return Err("Definition override is not marked as override".into());
+                }
+            }
+
+            known_traits.push(trait_entry.clone());
+        }
+    }
+
+    Ok(())
+}
+
 impl<'gc> Class<'gc> {
     /// Create a new class.
     ///
@@ -346,6 +384,24 @@ impl<'gc> Class<'gc> {
         do_trait_lookup(name, known_traits, &self.class_traits)
     }
 
+    /// Given a slot ID, append class traits matching the slot to a list of
+    /// known traits.
+    ///
+    /// This function adds its result onto the list of known traits, with the
+    /// caveat that duplicate entries will be replaced (if allowed). As such, this
+    /// function should be run on the class hierarchy from top to bottom.
+    ///
+    /// If a given trait has an invalid name, attempts to override a final trait,
+    /// or overlaps an existing trait without being an override, then this function
+    /// returns an error.
+    pub fn lookup_class_traits_by_slot(
+        &self,
+        id: u32,
+        known_traits: &mut Vec<Trait<'gc>>,
+    ) -> Result<(), Error> {
+        do_trait_lookup_by_slot(id, known_traits, &self.class_traits)
+    }
+
     /// Determines if this class provides a given trait on itself.
     pub fn has_class_trait(&self, name: &QName<'gc>) -> bool {
         for trait_entry in self.class_traits.iter() {
@@ -397,6 +453,24 @@ impl<'gc> Class<'gc> {
         known_traits: &mut Vec<Trait<'gc>>,
     ) -> Result<(), Error> {
         do_trait_lookup(name, known_traits, &self.instance_traits)
+    }
+
+    /// Given a slot ID, append instance traits matching the slot to a list of
+    /// known traits.
+    ///
+    /// This function adds its result onto the list of known traits, with the
+    /// caveat that duplicate entries will be replaced (if allowed). As such, this
+    /// function should be run on the class hierarchy from top to bottom.
+    ///
+    /// If a given trait has an invalid name, attempts to override a final trait,
+    /// or overlaps an existing trait without being an override, then this function
+    /// returns an error.
+    pub fn lookup_instance_traits_by_slot(
+        &self,
+        id: u32,
+        known_traits: &mut Vec<Trait<'gc>>,
+    ) -> Result<(), Error> {
+        do_trait_lookup_by_slot(id, known_traits, &self.instance_traits)
     }
 
     /// Determines if this class provides a given trait on its instances.
