@@ -581,22 +581,40 @@ impl<'gc> MovieClip<'gc> {
                     .library
                     .library_for_movie_mut(movie.clone());
                 let domain = library.avm2_domain();
-                let proto = domain
+                let constr = domain
                     .get_defined_value(&mut activation, name.clone())
                     .and_then(|v| v.coerce_to_object(&mut activation));
 
-                match proto {
-                    Ok(proto) => {
+                match constr {
+                    Ok(mut constr) => {
+                        let proto = constr
+                            .get_property(
+                                constr,
+                                &Avm2QName::new(Avm2Namespace::public(), "prototype"),
+                                &mut activation,
+                            )
+                            .and_then(|v| v.coerce_to_object(&mut activation));
                         let library = activation
                             .context
                             .library
                             .library_for_movie_mut(movie.clone());
+                        match proto {
+                            Ok(proto) => library
+                                .avm2_constructor_registry_mut()
+                                .expect("AVM2 movies should have AVM2 constructor registries")
+                                .set_proto_symbol(proto, id),
+                            Err(e) => log::warn!(
+                                "Got AVM2 error {} when getting prototype of symbol class {}",
+                                e,
+                                class_name
+                            ),
+                        };
 
                         if id == 0 {
                             //TODO: This assumes only the root movie has `SymbolClass` tags.
-                            self.set_avm2_constructor(activation.context.gc_context, Some(proto));
+                            self.set_avm2_constructor(activation.context.gc_context, Some(constr));
                         } else if let Some(Character::MovieClip(mc)) = library.character_by_id(id) {
-                            mc.set_avm2_constructor(activation.context.gc_context, Some(proto))
+                            mc.set_avm2_constructor(activation.context.gc_context, Some(constr));
                         } else {
                             log::warn!(
                                 "Symbol class {} cannot be assigned to invalid character id {}",
