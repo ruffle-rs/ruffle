@@ -6,7 +6,9 @@ use crate::prelude::*;
 use crate::property_map::PropertyMap;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::AvmType;
-use crate::{avm1::function::FunctionObject, avm2::Domain as Avm2Domain};
+use crate::{
+    avm1::function::FunctionObject, avm2::Domain as Avm2Domain, avm2::Object as Avm2Object,
+};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
@@ -55,6 +57,43 @@ impl<'gc> Avm1ConstructorRegistry<'gc> {
     }
 }
 
+/// The mappings between prototypes and library characters defined by
+/// `SymbolClass`.
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct Avm2ConstructorRegistry<'gc> {
+    /// A list of AVM2 class prototypes and the character IDs they are expected
+    /// to instantiate.
+    proto_map: HashMap<Avm2Object<'gc>, CharacterId>,
+}
+
+impl Default for Avm2ConstructorRegistry<'_> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<'gc> Avm2ConstructorRegistry<'gc> {
+    pub fn new() -> Self {
+        Self {
+            proto_map: HashMap::new(),
+        }
+    }
+
+    /// Retrieve the library symbol for a given AVM2 prototype.
+    ///
+    /// A value of `None` indicates that this AVM2 class is not associated with
+    /// a library symbol.
+    pub fn proto_symbol(&self, proto: Avm2Object<'gc>) -> Option<CharacterId> {
+        self.proto_map.get(&proto).copied()
+    }
+
+    /// Associate an AVM2 prototype with a given library symbol.
+    pub fn set_proto_symbol(&mut self, proto: Avm2Object<'gc>, symbol: CharacterId) {
+        self.proto_map.insert(proto, symbol);
+    }
+}
+
 /// Symbol library for a single given SWF.
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -65,6 +104,11 @@ pub struct MovieLibrary<'gc> {
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm_type: AvmType,
     avm2_domain: Option<Avm2Domain<'gc>>,
+
+    /// A list of the symbols associated with specific AVM2 constructor
+    /// prototypes.
+    avm2_constructor_registry: Option<Avm2ConstructorRegistry<'gc>>,
+
     /// Shared reference to the constructor registry used for this movie.
     /// Should be `None` if this is an AVM2 movie.
     avm1_constructor_registry: Option<Gc<'gc, Avm1ConstructorRegistry<'gc>>>,
@@ -79,6 +123,7 @@ impl<'gc> MovieLibrary<'gc> {
             fonts: HashMap::new(),
             avm_type,
             avm2_domain: None,
+            avm2_constructor_registry: None,
             avm1_constructor_registry: None,
         }
     }
@@ -285,6 +330,16 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn avm2_domain(&self) -> Avm2Domain<'gc> {
         self.avm2_domain.unwrap()
     }
+
+    /// Get the AVM2 constructor registry.
+    pub fn avm2_constructor_registry(&self) -> Option<&Avm2ConstructorRegistry<'gc>> {
+        self.avm2_constructor_registry.as_ref()
+    }
+
+    /// Mutate the AVM2 constructor registry.
+    pub fn avm2_constructor_registry_mut(&mut self) -> Option<&mut Avm2ConstructorRegistry<'gc>> {
+        self.avm2_constructor_registry.as_mut()
+    }
 }
 
 /// Symbol library for multiple movies.
@@ -361,6 +416,8 @@ impl<'gc> Library<'gc> {
             if vm_type == AvmType::Avm1 {
                 movie_library.avm1_constructor_registry =
                     Some(self.get_avm1_constructor_registry(movie_version));
+            } else if vm_type == AvmType::Avm2 {
+                movie_library.avm2_constructor_registry = Some(Avm2ConstructorRegistry::new());
             }
 
             self.movie_libraries.insert(movie.clone(), movie_library);
