@@ -19,6 +19,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
+use std::hash::{Hash, Hasher};
 
 mod array_object;
 mod bytearray_object;
@@ -929,5 +930,19 @@ pub enum ObjectPtr {}
 impl<'gc> Object<'gc> {
     pub fn ptr_eq(a: Object<'gc>, b: Object<'gc>) -> bool {
         a.as_ptr() == b.as_ptr()
+    }
+}
+
+impl<'gc> PartialEq for Object<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        Object::ptr_eq(*self, *other)
+    }
+}
+
+impl<'gc> Eq for Object<'gc> {}
+
+impl<'gc> Hash for Object<'gc> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.as_ptr().hash(state);
     }
 }
