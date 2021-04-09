@@ -25,7 +25,7 @@ impl<'gc> MorphShape<'gc> {
         gc_context: gc_arena::MutationContext<'gc, '_>,
         static_data: MorphShapeStatic,
     ) -> Self {
-        MorphShape(GcCell::allocate(
+        Self(GcCell::allocate(
             gc_context,
             MorphShapeData {
                 base: Default::default(),
@@ -69,9 +69,12 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         }
     }
 
-    fn self_bounds(&self) -> BoundingBox {
-        // TODO: Use the bounds of the current ratio.
-        if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
+    fn self_bounds(&self, mode: &BoundsMode) -> BoundingBox {
+        let ratio = match mode {
+            BoundsMode::Engine => self.ratio(),
+            BoundsMode::Script => 0,
+        };
+        if let Some(frame) = self.0.read().static_data.frames.get(&ratio) {
             frame.bounds.clone()
         } else {
             BoundingBox::default()
@@ -83,7 +86,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         _context: &mut UpdateContext<'_, 'gc, '_>,
         point: (Twips, Twips),
     ) -> bool {
-        if self.world_bounds().contains(point) {
+        if self.world_bounds(&BoundsMode::Engine).contains(point) {
             if let Some(frame) = self.0.read().static_data.frames.get(&self.ratio()) {
                 let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;
@@ -186,7 +189,7 @@ impl MorphShapeStatic {
         // TODO: Feels like this could be cleaned up a bit.
         // We step through both the start records and end records, interpolating edges pairwise.
         // Fill style/line style changes should only appear in the start records.
-        // However, StyleChangeRecord move_to can appear it both start and end records,
+        // However, StyleChangeRecord move_to can appear in both start and end records,
         // and not necessarily in matching pairs; therefore, we have to keep track of the pen position
         // in case one side is missing a move_to; it will implicitly use the last pen position.
         while let (Some(s), Some(e)) = (start, end) {
@@ -238,7 +241,6 @@ impl MorphShapeStatic {
                     shape.push(ShapeRecord::StyleChange(style_change));
                     Self::update_pos(&mut end_x, &mut end_y, s);
                     end = end_iter.next();
-                    continue;
                 }
                 _ => {
                     shape.push(lerp_edges(s, e, a, b));
