@@ -1,0 +1,9 @@
+/// Grandchild constructor
+/// Child constructor
+/// this.b
+[object Grandchild]
+/// Main constructor
+/// this.a
+[object Child]
+/// this.a.b
+[object Grandchild]

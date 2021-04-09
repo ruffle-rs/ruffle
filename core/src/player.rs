@@ -409,7 +409,7 @@ impl Player {
             } else {
                 None
             };
-            root.construct_frame(context);
+
             root.post_instantiation(context, root, flashvars, Instantiator::Movie, false);
             root.set_default_root_name(context);
             context.levels.insert(0, root);
