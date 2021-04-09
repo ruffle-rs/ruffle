@@ -1262,9 +1262,14 @@ pub trait TDisplayObject<'gc>:
     /// The default root names change based on the AVM configuration of the
     /// clip; AVM2 clips get `rootN` while AVM1 clips get blank strings.
     fn set_default_root_name(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if !matches!(self.object2(), Avm2Value::Undefined) {
+        let movie = self
+            .movie()
+            .expect("All roots should have an associated movie");
+        let vm_type = context.library.library_for_movie_mut(movie).avm_type();
+
+        if matches!(vm_type, AvmType::Avm2) {
             self.set_name(context.gc_context, &format!("root{}", self.depth() + 1));
-        } else if !matches!(self.object(), Avm1Value::Undefined) {
+        } else if matches!(vm_type, AvmType::Avm1) {
             self.set_name(context.gc_context, "");
         }
     }
