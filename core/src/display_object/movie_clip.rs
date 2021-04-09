@@ -78,6 +78,7 @@ pub struct MovieClipData<'gc> {
     has_button_clip_event: bool,
     flags: MovieClipFlags,
     avm2_constructor: Option<Avm2Object<'gc>>,
+    avm2_constructor_ran: bool,
     drawing: Drawing,
     is_focusable: bool,
     has_focus: bool,
@@ -105,6 +106,7 @@ impl<'gc> MovieClip<'gc> {
                 has_button_clip_event: false,
                 flags: MovieClipFlags::empty(),
                 avm2_constructor: None,
+                avm2_constructor_ran: false,
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
@@ -137,6 +139,7 @@ impl<'gc> MovieClip<'gc> {
                 has_button_clip_event: false,
                 flags: MovieClipFlags::empty(),
                 avm2_constructor: Some(constr),
+                avm2_constructor_ran: false,
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
@@ -172,6 +175,7 @@ impl<'gc> MovieClip<'gc> {
                 has_button_clip_event: false,
                 flags: MovieClipFlags::PLAYING,
                 avm2_constructor: None,
+                avm2_constructor_ran: false,
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
@@ -595,8 +599,6 @@ impl<'gc> MovieClip<'gc> {
                         if id == 0 {
                             //TODO: This assumes only the root movie has `SymbolClass` tags.
                             self.set_avm2_constructor(activation.context.gc_context, Some(proto));
-                            self.allocate_as_avm2_object(&mut activation.context, self.into());
-                            self.construct_as_avm2_object(&mut activation.context);
                         } else if let Some(Character::MovieClip(mc)) = library.character_by_id(id) {
                             mc.set_avm2_constructor(activation.context.gc_context, Some(proto))
                         } else {
@@ -1576,6 +1578,8 @@ impl<'gc> MovieClip<'gc> {
                 log::error!("Got {} when constructing AVM2 side of display object", e);
             }
         }
+
+        self.0.write(context.gc_context).avm2_constructor_ran = true;
     }
 
     pub fn register_frame_script(
@@ -1710,6 +1714,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     _ => Ok(()),
                 };
                 let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+            }
+
+            if !self.0.read().avm2_constructor_ran {
+                self.construct_as_avm2_object(context);
             }
         }
     }
@@ -2010,9 +2018,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.set_default_instance_name(context);
 
         let vm_type = self.vm_type(context);
-        if vm_type == AvmType::Avm2 {
-            self.construct_as_avm2_object(context);
-        } else if vm_type == AvmType::Avm1 {
+        if vm_type == AvmType::Avm1 {
             self.construct_as_avm1_object(
                 context,
                 display_object,
