@@ -354,15 +354,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         if write.object.is_none() {
             let library = context.library.library_for_movie_mut(movie);
             let vm_type = library.avm_type();
-            if vm_type == AvmType::Avm2 {
-                let object: Avm2Object<'_> = Avm2StageObject::for_display_object(
-                    context.gc_context,
-                    display_object,
-                    context.avm2.prototypes().video,
-                )
-                .into();
-                write.object = Some(object.into());
-            } else if vm_type == AvmType::Avm1 {
+            if vm_type == AvmType::Avm1 {
                 let object: Avm1Object<'_> = Avm1StageObject::for_display_object(
                     context.gc_context,
                     display_object,
@@ -379,6 +371,19 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
         if run_frame {
             self.run_frame(context);
+        }
+    }
+
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let vm_type = self.vm_type(context);
+        if vm_type == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
+            let object: Avm2Object<'_> = Avm2StageObject::for_display_object(
+                context.gc_context,
+                (*self).into(),
+                context.avm2.prototypes().video,
+            )
+            .into();
+            self.0.write(context.gc_context).object = Some(object.into());
         }
     }
 
