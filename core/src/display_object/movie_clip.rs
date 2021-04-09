@@ -594,14 +594,11 @@ impl<'gc> MovieClip<'gc> {
                                 &mut activation,
                             )
                             .and_then(|v| v.coerce_to_object(&mut activation));
-                        let library = activation
-                            .context
-                            .library
-                            .library_for_movie_mut(movie.clone());
                         match proto {
-                            Ok(proto) => library
+                            Ok(proto) => activation
+                                .context
+                                .library
                                 .avm2_constructor_registry_mut()
-                                .expect("AVM2 movies should have AVM2 constructor registries")
                                 .set_proto_symbol(proto, id),
                             Err(e) => log::warn!(
                                 "Got AVM2 error {} when getting prototype of symbol class {}",
@@ -609,6 +606,11 @@ impl<'gc> MovieClip<'gc> {
                                 class_name
                             ),
                         };
+
+                        let library = activation
+                            .context
+                            .library
+                            .library_for_movie_mut(movie.clone());
 
                         if id == 0 {
                             //TODO: This assumes only the root movie has `SymbolClass` tags.
