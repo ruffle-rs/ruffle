@@ -105,10 +105,6 @@ pub struct MovieLibrary<'gc> {
     avm_type: AvmType,
     avm2_domain: Option<Avm2Domain<'gc>>,
 
-    /// A list of the symbols associated with specific AVM2 constructor
-    /// prototypes.
-    avm2_constructor_registry: Option<Avm2ConstructorRegistry<'gc>>,
-
     /// Shared reference to the constructor registry used for this movie.
     /// Should be `None` if this is an AVM2 movie.
     avm1_constructor_registry: Option<Gc<'gc, Avm1ConstructorRegistry<'gc>>>,
@@ -123,7 +119,6 @@ impl<'gc> MovieLibrary<'gc> {
             fonts: HashMap::new(),
             avm_type,
             avm2_domain: None,
-            avm2_constructor_registry: None,
             avm1_constructor_registry: None,
         }
     }
@@ -330,16 +325,6 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn avm2_domain(&self) -> Avm2Domain<'gc> {
         self.avm2_domain.unwrap()
     }
-
-    /// Get the AVM2 constructor registry.
-    pub fn avm2_constructor_registry(&self) -> Option<&Avm2ConstructorRegistry<'gc>> {
-        self.avm2_constructor_registry.as_ref()
-    }
-
-    /// Mutate the AVM2 constructor registry.
-    pub fn avm2_constructor_registry_mut(&mut self) -> Option<&mut Avm2ConstructorRegistry<'gc>> {
-        self.avm2_constructor_registry.as_mut()
-    }
 }
 
 /// Symbol library for multiple movies.
@@ -352,6 +337,10 @@ pub struct Library<'gc> {
 
     constructor_registry_case_insensitive: Gc<'gc, Avm1ConstructorRegistry<'gc>>,
     constructor_registry_case_sensitive: Gc<'gc, Avm1ConstructorRegistry<'gc>>,
+
+    /// A list of the symbols associated with specific AVM2 constructor
+    /// prototypes.
+    avm2_constructor_registry: Avm2ConstructorRegistry<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
@@ -363,6 +352,7 @@ unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
         self.device_font.trace(cc);
         self.constructor_registry_case_insensitive.trace(cc);
         self.constructor_registry_case_sensitive.trace(cc);
+        self.avm2_constructor_registry.trace(cc);
     }
 }
 
@@ -379,6 +369,7 @@ impl<'gc> Library<'gc> {
                 gc_context,
                 Avm1ConstructorRegistry::new(true, gc_context),
             ),
+            avm2_constructor_registry: Default::default(),
         }
     }
 
@@ -416,8 +407,6 @@ impl<'gc> Library<'gc> {
             if vm_type == AvmType::Avm1 {
                 movie_library.avm1_constructor_registry =
                     Some(self.get_avm1_constructor_registry(movie_version));
-            } else if vm_type == AvmType::Avm2 {
-                movie_library.avm2_constructor_registry = Some(Avm2ConstructorRegistry::new());
             }
 
             self.movie_libraries.insert(movie.clone(), movie_library);
@@ -448,5 +437,15 @@ impl<'gc> Library<'gc> {
         } else {
             self.constructor_registry_case_sensitive
         }
+    }
+
+    /// Get the AVM2 constructor registry.
+    pub fn avm2_constructor_registry(&self) -> &Avm2ConstructorRegistry<'gc> {
+        &self.avm2_constructor_registry
+    }
+
+    /// Mutate the AVM2 constructor registry.
+    pub fn avm2_constructor_registry_mut(&mut self) -> &mut Avm2ConstructorRegistry<'gc> {
+        &mut self.avm2_constructor_registry
     }
 }
