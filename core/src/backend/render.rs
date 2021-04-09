@@ -305,10 +305,10 @@ pub fn glue_tables_to_jpeg<'a>(
 pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> std::borrow::Cow<[u8]> {
     // TODO: Might be better to return an Box<Iterator<Item=u8>> instead of a Cow here,
     // where the spliced iter is a data[..n].chain(data[n+4..])?
-    if data[..4] == [0xFF, 0xD9, 0xFF, 0xD8] {
+    if data.get(0..4) == Some(&[0xFF, 0xD9, 0xFF, 0xD8]) {
         data = &data[4..];
     }
-    if let Some(pos) = (0..data.len() - 4).find(|&n| data[n..n + 4] == [0xFF, 0xD9, 0xFF, 0xD8]) {
+    if let Some(pos) = data.windows(4).position(|w| w == [0xFF, 0xD9, 0xFF, 0xD8]) {
         let mut out_data = Vec::with_capacity(data.len() - 4);
         out_data.extend_from_slice(&data[..pos]);
         out_data.extend_from_slice(&data[pos + 4..]);
