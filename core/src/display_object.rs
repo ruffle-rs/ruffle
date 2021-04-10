@@ -1,7 +1,9 @@
 use crate::avm1::{
     Error as Avm1Error, Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value,
 };
-use crate::avm2::{Avm2, Event as Avm2Event, TObject as Avm2TObject, Value as Avm2Value};
+use crate::avm2::{
+    Avm2, Event as Avm2Event, Object as Avm2Object, TObject as Avm2TObject, Value as Avm2Value,
+};
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
 use crate::player::NEWEST_PLAYER_VERSION;
@@ -1071,6 +1073,8 @@ pub trait TDisplayObject<'gc>:
     fn object2(&self) -> Avm2Value<'gc> {
         Avm2Value::Undefined // todo: see above
     }
+
+    fn set_object2(&mut self, _mc: MutationContext<'gc, '_>, _to: Avm2Object<'gc>) {}
 
     /// Tests if a given stage position point intersects with the world bounds of this object.
     fn hit_test_bounds(&self, pos: (Twips, Twips)) -> bool {

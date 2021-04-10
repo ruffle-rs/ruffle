@@ -424,4 +424,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
         context.transform_stack.pop();
     }
+
+    fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
+        self.0.write(mc).object = Some(to.into());
+    }
 }

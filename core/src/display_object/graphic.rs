@@ -209,6 +209,10 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             .unwrap_or(Avm2Value::Undefined)
     }
 
+    fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
+        self.0.write(mc).avm2_object = Some(to);
+    }
+
     fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
         let mut write = self.0.write(gc_context);
         if write.drawing.is_none() {
