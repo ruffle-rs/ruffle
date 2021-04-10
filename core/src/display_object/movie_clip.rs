@@ -2064,6 +2064,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .unwrap_or(Avm2Value::Undefined)
     }
 
+    fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
+        self.0.write(mc).object = Some(to.into());
+    }
+
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         for child in self.iter_execution_list() {
             child.unload(context);
