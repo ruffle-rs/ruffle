@@ -11,6 +11,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
 use crate::types::{Degrees, Percent};
+use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
 use swf::Twips;
 
@@ -22,6 +23,36 @@ pub fn instance_init<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
+
+        if this.as_display_object().is_none() {
+            let proto = this.proto();
+
+            if let Some((movie, symbol)) = proto.and_then(|proto| {
+                activation
+                    .context
+                    .library
+                    .avm2_constructor_registry()
+                    .proto_symbol(proto)
+            }) {
+                let mut child = activation
+                    .context
+                    .library
+                    .library_for_movie_mut(movie)
+                    .instantiate_by_id(symbol, activation.context.gc_context)?;
+
+                this.init_display_object(activation.context.gc_context, child);
+                child.set_object2(activation.context.gc_context, this);
+
+                child.construct_frame(&mut activation.context);
+                child.post_instantiation(
+                    &mut activation.context,
+                    child,
+                    None,
+                    Instantiator::Avm2,
+                    false,
+                );
+            }
+        }
     }
 
     Ok(Value::Undefined)
