@@ -599,7 +599,7 @@ impl<'gc> MovieClip<'gc> {
                                 .context
                                 .library
                                 .avm2_constructor_registry_mut()
-                                .set_proto_symbol(proto, id),
+                                .set_proto_symbol(proto, movie.clone(), id),
                             Err(e) => log::warn!(
                                 "Got AVM2 error {} when getting prototype of symbol class {}",
                                 e,
