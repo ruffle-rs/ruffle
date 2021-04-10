@@ -431,6 +431,8 @@ impl<'gc> Loader<'gc> {
             .upgrade()
             .expect("Could not upgrade weak reference to player");
 
+        let mut replacing_root_movie = false;
+
         Box::pin(async move {
             player
                 .lock()
@@ -447,6 +449,10 @@ impl<'gc> Loader<'gc> {
                         None => return Err(Error::Cancelled),
                         _ => unreachable!(),
                     };
+
+                    if let Some(root) = uc.levels.get(&0).copied() {
+                        replacing_root_movie = DisplayObject::ptr_eq(clip, root);
+                    }
 
                     clip.as_movie_clip().unwrap().unload(uc);
 
@@ -476,6 +482,10 @@ impl<'gc> Loader<'gc> {
             });
             if let Ok((length, movie)) = data {
                 let movie = Arc::new(movie);
+                if replacing_root_movie {
+                    player.lock().unwrap().set_root_movie(movie);
+                    return Ok(());
+                }
 
                 player
                     .lock()
