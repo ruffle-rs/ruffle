@@ -765,15 +765,12 @@ impl RenderBackend for WebCanvasRenderBackend {
         let image = HtmlImageElement::new().unwrap();
         image.set_src(&png);
 
-        self.bitmaps.insert(
-            handle.0,
-            BitmapData {
-                image,
-                width,
-                height,
-                data: png,
-            },
-        );
+        self.bitmaps[handle.0] = BitmapData {
+            image,
+            width,
+            height,
+            data: png,
+        };
 
         Ok(handle)
     }
