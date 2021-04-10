@@ -1,0 +1,8 @@
+///var clip = new CustomClip();
+//(in CustomClip constr...)
+//this.name
+instance1
+//this.parent
+null
+///clip.grandchild
+[object MovieClip]
