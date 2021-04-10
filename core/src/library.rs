@@ -13,7 +13,7 @@ use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use swf::{CharacterId, TagCode};
-use weak_table::PtrWeakKeyHashMap;
+use weak_table::{traits::WeakElement, PtrWeakKeyHashMap, WeakValueHashMap};
 
 /// Boxed error alias.
 type Error = Box<dyn std::error::Error>;
@@ -57,14 +57,42 @@ impl<'gc> Avm1ConstructorRegistry<'gc> {
     }
 }
 
+#[derive(Clone)]
+struct MovieSymbol(Arc<SwfMovie>, CharacterId);
+
+#[derive(Clone)]
+struct WeakMovieSymbol(Weak<SwfMovie>, CharacterId);
+
+impl WeakElement for WeakMovieSymbol {
+    type Strong = MovieSymbol;
+
+    fn new(view: &Self::Strong) -> Self {
+        Self(Arc::downgrade(&view.0), view.1)
+    }
+
+    fn view(&self) -> Option<Self::Strong> {
+        if let Some(strong) = self.0.upgrade() {
+            Some(MovieSymbol(strong, self.1))
+        } else {
+            None
+        }
+    }
+}
+
 /// The mappings between prototypes and library characters defined by
 /// `SymbolClass`.
-#[derive(Collect)]
-#[collect(no_drop)]
 pub struct Avm2ConstructorRegistry<'gc> {
     /// A list of AVM2 class prototypes and the character IDs they are expected
     /// to instantiate.
-    proto_map: HashMap<Avm2Object<'gc>, CharacterId>,
+    proto_map: WeakValueHashMap<Avm2Object<'gc>, WeakMovieSymbol>,
+}
+
+unsafe impl Collect for Avm2ConstructorRegistry<'_> {
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        for (k, _) in self.proto_map.iter() {
+            k.trace(cc);
+        }
+    }
 }
 
 impl Default for Avm2ConstructorRegistry<'_> {
@@ -76,7 +104,7 @@ impl Default for Avm2ConstructorRegistry<'_> {
 impl<'gc> Avm2ConstructorRegistry<'gc> {
     pub fn new() -> Self {
         Self {
-            proto_map: HashMap::new(),
+            proto_map: WeakValueHashMap::new(),
         }
     }
 
@@ -84,13 +112,21 @@ impl<'gc> Avm2ConstructorRegistry<'gc> {
     ///
     /// A value of `None` indicates that this AVM2 class is not associated with
     /// a library symbol.
-    pub fn proto_symbol(&self, proto: Avm2Object<'gc>) -> Option<CharacterId> {
-        self.proto_map.get(&proto).copied()
+    pub fn proto_symbol(&self, proto: Avm2Object<'gc>) -> Option<(Arc<SwfMovie>, CharacterId)> {
+        match self.proto_map.get(&proto) {
+            Some(MovieSymbol(movie, symbol)) => Some((movie, symbol)),
+            None => None,
+        }
     }
 
     /// Associate an AVM2 prototype with a given library symbol.
-    pub fn set_proto_symbol(&mut self, proto: Avm2Object<'gc>, symbol: CharacterId) {
-        self.proto_map.insert(proto, symbol);
+    pub fn set_proto_symbol(
+        &mut self,
+        proto: Avm2Object<'gc>,
+        movie: Arc<SwfMovie>,
+        symbol: CharacterId,
+    ) {
+        self.proto_map.insert(proto, MovieSymbol(movie, symbol));
     }
 }
 
