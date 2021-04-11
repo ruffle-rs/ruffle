@@ -665,6 +665,12 @@ impl<'gc> XmlNode<'gc> {
             return Err(Error::CannotInsertIntoSelf);
         }
 
+        if let Some(mut it) = self.ancestors() {
+            if it.find(|ancestor| GcCell::ptr_eq(ancestor.0, child.0)).is_some() {
+                return Err(Error::CannotInsertIntoSelf);
+            }
+        }
+
         match &mut *self.0.write(mc) {
             XmlNodeData::Element {
                 ref mut children, ..
@@ -777,6 +783,15 @@ impl<'gc> XmlNode<'gc> {
         }
 
         None
+    }
+
+    /// Checks if `child` is a direct descendant of `self`.
+    pub fn has_child(self, child: XmlNode<'gc>) -> bool {
+        child
+            .parent()
+            .unwrap_or(None)
+            .filter(|p| GcCell::ptr_eq(self.0, p.0))
+            .is_some()
     }
 
     /// Retrieve a given child by index (e.g. position in the document).
