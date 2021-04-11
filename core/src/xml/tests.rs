@@ -12,16 +12,13 @@ fn parse_single_element() {
         xml.as_node()
             .replace_with_str(mc, "<test></test>", true, false)
             .expect("Parsed document");
-        let mut roots = xml
-            .as_node()
-            .children()
-            .expect("Parsed document should be capable of having child nodes");
+        let mut roots = xml.as_node().children();
 
         let root = roots.next().expect("Parsed document should have a root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
         assert_eq!(root.tag_name(), Some(XmlName::from_str("test")));
 
-        let mut root_children = root.children().unwrap();
+        let mut root_children = root.children();
         assert!(root_children.next().is_none());
 
         assert!(roots.next().is_none());
@@ -42,10 +39,7 @@ fn double_ended_children() {
             )
             .expect("Parsed document");
 
-        let mut roots = xml
-            .as_node()
-            .children()
-            .expect("Parsed document should be capable of having child nodes");
+        let mut roots = xml.as_node().children();
 
         let root = roots.next().expect("Should have first root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
@@ -87,10 +81,7 @@ fn walk() {
             )
             .expect("Parsed document");
 
-        let mut roots = xml
-            .as_node()
-            .walk()
-            .expect("Parsed document should be capable of having child nodes");
+        let mut roots = xml.as_node().walk();
 
         let root = roots.next().expect("Should have first root");
         assert!(root.stepped_in());
@@ -211,36 +202,21 @@ fn ignore_white() {
             )
             .expect("Parsed document");
 
-        let mut root = xml
-            .as_node()
-            .children()
-            .expect("Parsed document should be capable of having child nodes");
+        let mut root = xml.as_node().children();
 
         let mut node = root.next().expect("Should have root");
         assert_eq!(node.node_type(), xml::ELEMENT_NODE);
         assert_eq!(node.tag_name(), Some(XmlName::from_str("test")));
 
-        node = node
-            .children()
-            .expect("Should have children")
-            .next()
-            .expect("Should have children");
+        node = node.children().next().expect("Should have children");
         assert_eq!(node.node_type(), xml::ELEMENT_NODE);
         assert_eq!(node.tag_name(), Some(XmlName::from_str("test2")));
 
-        node = node
-            .children()
-            .expect("Should have children")
-            .next()
-            .expect("Should have children");
+        node = node.children().next().expect("Should have children");
         assert_eq!(node.node_type(), xml::ELEMENT_NODE);
         assert_eq!(node.tag_name(), Some(XmlName::from_str("test3")));
 
-        node = node
-            .children()
-            .expect("Should have children")
-            .next()
-            .expect("Should have text");
+        node = node.children().next().expect("Should have text");
         assert_eq!(node.node_type(), xml::TEXT_NODE);
         assert_eq!(node.node_value(), Some(" foo ".to_string()));
 

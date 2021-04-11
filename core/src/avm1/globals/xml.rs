@@ -207,7 +207,7 @@ pub fn xmlnode_remove_node<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        if let Ok(Some(mut parent)) = node.parent() {
+        if let Some(mut parent) = node.parent() {
             if let Err(e) = parent.remove_child(activation.context.gc_context, node) {
                 avm_warn!(activation, "Error in XML.removeNode: {}", e);
             }
@@ -323,26 +323,25 @@ pub fn xmlnode_child_nodes<'gc>(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes.array),
         );
-        if let Some(children) = node.children() {
-            let mut compatible_nodes = 0;
-            for mut child in children {
-                if !is_as2_compatible(child) {
-                    continue;
-                }
 
-                array.set_array_element(
-                    compatible_nodes as usize,
-                    child
-                        .script_object(
-                            activation.context.gc_context,
-                            Some(activation.context.avm1.prototypes.xml_node),
-                        )
-                        .into(),
-                    activation.context.gc_context,
-                );
-
-                compatible_nodes += 1;
+        let mut compatible_nodes = 0;
+        for mut child in node.children() {
+            if !is_as2_compatible(child) {
+                continue;
             }
+
+            array.set_array_element(
+                compatible_nodes as usize,
+                child
+                    .script_object(
+                        activation.context.gc_context,
+                        Some(activation.context.avm1.prototypes.xml_node),
+                    )
+                    .into(),
+                activation.context.gc_context,
+            );
+
+            compatible_nodes += 1;
         }
 
         return Ok(array.into());
@@ -357,27 +356,26 @@ pub fn xmlnode_first_child<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        if let Some(mut children) = node.children() {
-            let mut next = children.next();
-            while let Some(my_next) = next {
-                if is_as2_compatible(my_next) {
-                    break;
-                }
-
-                next = my_next.next_sibling().unwrap_or(None);
+        let mut children = node.children();
+        let mut next = children.next();
+        while let Some(my_next) = next {
+            if is_as2_compatible(my_next) {
+                break;
             }
 
-            return Ok(next
-                .map(|mut child| {
-                    child
-                        .script_object(
-                            activation.context.gc_context,
-                            Some(activation.context.avm1.prototypes.xml_node),
-                        )
-                        .into()
-                })
-                .unwrap_or_else(|| Value::Null));
+            next = my_next.next_sibling();
         }
+
+        return Ok(next
+            .map(|mut child| {
+                child
+                    .script_object(
+                        activation.context.gc_context,
+                        Some(activation.context.avm1.prototypes.xml_node),
+                    )
+                    .into()
+            })
+            .unwrap_or_else(|| Value::Null));
     }
 
     Ok(Value::Undefined)
@@ -389,26 +387,25 @@ pub fn xmlnode_last_child<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        if let Some(mut children) = node.children() {
-            let mut prev = children.next_back();
-            while let Some(my_prev) = prev {
-                if is_as2_compatible(my_prev) {
-                    break;
-                }
-
-                prev = my_prev.prev_sibling().unwrap_or(None);
+        let mut children = node.children();
+        let mut prev = children.next_back();
+        while let Some(my_prev) = prev {
+            if is_as2_compatible(my_prev) {
+                break;
             }
-            return Ok(prev
-                .map(|mut child| {
-                    child
-                        .script_object(
-                            activation.context.gc_context,
-                            Some(activation.context.avm1.prototypes.xml_node),
-                        )
-                        .into()
-                })
-                .unwrap_or_else(|| Value::Null));
+
+            prev = my_prev.prev_sibling();
         }
+        return Ok(prev
+            .map(|mut child| {
+                child
+                    .script_object(
+                        activation.context.gc_context,
+                        Some(activation.context.avm1.prototypes.xml_node),
+                    )
+                    .into()
+            })
+            .unwrap_or_else(|| Value::Null));
     }
 
     Ok(Value::Undefined)
@@ -422,7 +419,6 @@ pub fn xmlnode_parent_node<'gc>(
     if let Some(node) = this.as_xml_node() {
         return Ok(node
             .parent()
-            .unwrap_or(None)
             .map(|mut parent| {
                 parent
                     .script_object(
@@ -443,13 +439,13 @@ pub fn xmlnode_previous_sibling<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let mut prev = node.prev_sibling().unwrap_or(None);
+        let mut prev = node.prev_sibling();
         while let Some(my_prev) = prev {
             if is_as2_compatible(my_prev) {
                 break;
             }
 
-            prev = my_prev.prev_sibling().unwrap_or(None);
+            prev = my_prev.prev_sibling();
         }
 
         return Ok(prev
@@ -472,13 +468,13 @@ pub fn xmlnode_next_sibling<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let mut next = node.next_sibling().unwrap_or(None);
+        let mut next = node.next_sibling();
         while let Some(my_next) = next {
             if is_as2_compatible(my_next) {
                 break;
             }
 
-            next = my_next.next_sibling().unwrap_or(None);
+            next = my_next.next_sibling();
         }
 
         return Ok(next
@@ -891,17 +887,15 @@ pub fn xml_parse_xml<'gc>(
                 "".into()
             };
 
-        if let Some(children) = node.children() {
-            for child in children.rev() {
-                let result = node.remove_child(activation.context.gc_context, child);
-                if let Err(e) = result {
-                    avm_warn!(
-                        activation,
-                        "XML.parseXML: Error removing node contents: {}",
-                        e
-                    );
-                    return Ok(Value::Undefined);
-                }
+        for child in node.children().rev() {
+            let result = node.remove_child(activation.context.gc_context, child);
+            if let Err(e) = result {
+                avm_warn!(
+                    activation,
+                    "XML.parseXML: Error removing node contents: {}",
+                    e
+                );
+                return Ok(Value::Undefined);
             }
         }
 
