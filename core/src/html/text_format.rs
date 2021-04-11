@@ -1600,7 +1600,7 @@ impl FormatSpans {
         self.text = "".to_string();
         self.spans = vec![];
 
-        for step in tree.as_node().walk().unwrap() {
+        for step in tree.as_node().walk() {
             match step {
                 Step::In(node)
                     if node

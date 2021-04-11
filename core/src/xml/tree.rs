@@ -488,28 +488,24 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Get the parent, if this node has one.
-    ///
-    /// If the node cannot have a parent, then this function yields Err.
-    pub fn parent(self) -> Result<Option<XmlNode<'gc>>, Error> {
+    pub fn parent(self) -> Option<XmlNode<'gc>> {
         match *self.0.read() {
-            XmlNodeData::DocumentRoot { .. } => Err(Error::RootCantHaveParent),
-            XmlNodeData::Element { parent, .. } => Ok(parent),
-            XmlNodeData::Text { parent, .. } => Ok(parent),
-            XmlNodeData::Comment { parent, .. } => Ok(parent),
-            XmlNodeData::DocType { parent, .. } => Ok(parent),
+            XmlNodeData::DocumentRoot { .. } => None,
+            XmlNodeData::Element { parent, .. } => parent,
+            XmlNodeData::Text { parent, .. } => parent,
+            XmlNodeData::Comment { parent, .. } => parent,
+            XmlNodeData::DocType { parent, .. } => parent,
         }
     }
 
     /// Get the previous sibling, if this node has one.
-    ///
-    /// If the node cannot have siblings, then this function yields Err.
-    pub fn prev_sibling(self) -> Result<Option<XmlNode<'gc>>, Error> {
+    pub fn prev_sibling(self) -> Option<XmlNode<'gc>> {
         match *self.0.read() {
-            XmlNodeData::DocumentRoot { .. } => Err(Error::RootCantHaveSiblings),
-            XmlNodeData::Element { prev_sibling, .. } => Ok(prev_sibling),
-            XmlNodeData::Text { prev_sibling, .. } => Ok(prev_sibling),
-            XmlNodeData::Comment { prev_sibling, .. } => Ok(prev_sibling),
-            XmlNodeData::DocType { prev_sibling, .. } => Ok(prev_sibling),
+            XmlNodeData::DocumentRoot { .. } => None,
+            XmlNodeData::Element { prev_sibling, .. } => prev_sibling,
+            XmlNodeData::Text { prev_sibling, .. } => prev_sibling,
+            XmlNodeData::Comment { prev_sibling, .. } => prev_sibling,
+            XmlNodeData::DocType { prev_sibling, .. } => prev_sibling,
         }
     }
 
@@ -531,15 +527,13 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Get the next sibling, if this node has one.
-    ///
-    /// If the node cannot have siblings, then this function yields Err.
-    pub fn next_sibling(self) -> Result<Option<XmlNode<'gc>>, Error> {
+    pub fn next_sibling(self) -> Option<XmlNode<'gc>> {
         match *self.0.read() {
-            XmlNodeData::DocumentRoot { .. } => Err(Error::RootCantHaveSiblings),
-            XmlNodeData::Element { next_sibling, .. } => Ok(next_sibling),
-            XmlNodeData::Text { next_sibling, .. } => Ok(next_sibling),
-            XmlNodeData::Comment { next_sibling, .. } => Ok(next_sibling),
-            XmlNodeData::DocType { next_sibling, .. } => Ok(next_sibling),
+            XmlNodeData::DocumentRoot { .. } => None,
+            XmlNodeData::Element { next_sibling, .. } => next_sibling,
+            XmlNodeData::Text { next_sibling, .. } => next_sibling,
+            XmlNodeData::Comment { next_sibling, .. } => next_sibling,
+            XmlNodeData::DocType { next_sibling, .. } => next_sibling,
         }
     }
 
@@ -568,8 +562,8 @@ impl<'gc> XmlNode<'gc> {
     /// This is the opposite of `adopt_siblings` - the former adds a node to a
     /// new sibling list, and this removes it from the current one.
     fn disown_siblings(&mut self, mc: MutationContext<'gc, '_>) -> Result<(), Error> {
-        let old_prev = self.prev_sibling()?;
-        let old_next = self.next_sibling()?;
+        let old_prev = self.prev_sibling();
+        let old_next = self.next_sibling();
 
         if let Some(mut prev) = old_prev {
             prev.set_next_sibling(mc, old_next)?;
@@ -661,14 +655,11 @@ impl<'gc> XmlNode<'gc> {
         position: usize,
         child: XmlNode<'gc>,
     ) -> Result<(), Error> {
-        if GcCell::ptr_eq(self.0, child.0) {
+        let is_cyclic = self
+            .ancestors()
+            .any(|ancestor| GcCell::ptr_eq(ancestor.0, child.0));
+        if is_cyclic {
             return Err(Error::CannotInsertIntoSelf);
-        }
-
-        if let Some(mut it) = self.ancestors() {
-            if it.find(|ancestor| GcCell::ptr_eq(ancestor.0, child.0)).is_some() {
-                return Err(Error::CannotInsertIntoSelf);
-            }
         }
 
         match &mut *self.0.write(mc) {
@@ -774,22 +765,14 @@ impl<'gc> XmlNode<'gc> {
     /// This function yields None if the node cannot accept children or if the
     /// child node is not a child of this node.
     pub fn child_position(self, child: XmlNode<'gc>) -> Option<usize> {
-        if let Some(children) = self.children() {
-            for (i, other_child) in children.enumerate() {
-                if GcCell::ptr_eq(child.0, other_child.0) {
-                    return Some(i);
-                }
-            }
-        }
-
-        None
+        self.children()
+            .position(|other| GcCell::ptr_eq(child.0, other.0))
     }
 
     /// Checks if `child` is a direct descendant of `self`.
     pub fn has_child(self, child: XmlNode<'gc>) -> bool {
         child
             .parent()
-            .unwrap_or(None)
             .filter(|p| GcCell::ptr_eq(self.0, p.0))
             .is_some()
     }
@@ -818,15 +801,8 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Returns an iterator that yields child nodes.
-    ///
-    /// Yields None if this node cannot accept children.
-    pub fn children(self) -> Option<impl DoubleEndedIterator<Item = XmlNode<'gc>>> {
-        match &*self.0.read() {
-            XmlNodeData::Element { .. } | XmlNodeData::DocumentRoot { .. } => {
-                Some(xml::iterators::ChildIter::for_node(self))
-            }
-            _ => None,
-        }
+    pub fn children(self) -> impl DoubleEndedIterator<Item = XmlNode<'gc>> {
+        xml::iterators::ChildIter::for_node(self)
     }
 
     /// Returns an iterator that walks the XML tree.
@@ -834,30 +810,13 @@ impl<'gc> XmlNode<'gc> {
     /// Walking is similar to using `descendents`, but the ends of parent nodes
     /// are explicitly marked with `Step::Out`, while nodes that may have
     /// children are marked with `Step::In`.
-    ///
-    /// Yields None if this node cannot accept children.
-    pub fn walk(self) -> Option<impl Iterator<Item = Step<'gc>>> {
-        match &*self.0.read() {
-            XmlNodeData::Element { .. } | XmlNodeData::DocumentRoot { .. } => {
-                Some(xml::iterators::WalkIter::for_node(self))
-            }
-            _ => None,
-        }
+    pub fn walk(self) -> impl Iterator<Item = Step<'gc>> {
+        xml::iterators::WalkIter::for_node(self)
     }
 
-    /// Returns an iterator that yields ancestor nodes.
-    ///
-    /// Yields None if this node does not have a parent.
-    pub fn ancestors(self) -> Option<impl Iterator<Item = XmlNode<'gc>>> {
-        let parent = match *self.0.read() {
-            XmlNodeData::DocumentRoot { .. } => return None,
-            XmlNodeData::Element { parent, .. } => parent,
-            XmlNodeData::Text { parent, .. } => parent,
-            XmlNodeData::Comment { parent, .. } => parent,
-            XmlNodeData::DocType { parent, .. } => parent,
-        };
-
-        Some(xml::iterators::AnscIter::for_node(parent))
+    /// Returns an iterator that yields ancestor nodes (including itself).
+    pub fn ancestors(self) -> impl Iterator<Item = XmlNode<'gc>> {
+        xml::iterators::AnscIter::for_node(self)
     }
 
     /// Get the already-instantiated script object from the current node.
@@ -1046,12 +1005,10 @@ impl<'gc> XmlNode<'gc> {
         document.link_root_node(gc_context, clone);
 
         if deep {
-            if let Some(children) = self.children() {
-                for (position, child) in children.enumerate() {
-                    clone
-                        .insert_child(gc_context, position, child.duplicate(gc_context, deep))
-                        .expect("If I can see my children then my clone should accept children");
-                }
+            for (position, child) in self.children().enumerate() {
+                clone
+                    .insert_child(gc_context, position, child.duplicate(gc_context, deep))
+                    .expect("If I can see my children then my clone should accept children");
             }
         }
 
@@ -1134,7 +1091,7 @@ impl<'gc> XmlNode<'gc> {
             return Some(url);
         }
 
-        if let Ok(Some(parent)) = self.parent() {
+        if let Some(parent) = self.parent() {
             parent.lookup_uri_for_namespace(namespace)
         } else {
             None
@@ -1179,7 +1136,7 @@ impl<'gc> XmlNode<'gc> {
     pub fn lookup_namespace_for_uri(self, uri: &str) -> Option<String> {
         if let Some(xname) = self.value_attribute(uri, Some("xmlns")) {
             Some(xname.local_name().to_string())
-        } else if let Ok(Some(parent)) = self.parent() {
+        } else if let Some(parent) = self.parent() {
             parent.lookup_namespace_for_uri(uri)
         } else {
             None
@@ -1218,15 +1175,7 @@ impl<'gc> XmlNode<'gc> {
         W: Write,
         F: FnMut(XmlNode<'gc>) -> bool,
     {
-        let mut children = Vec::new();
-        if let Some(my_children) = self.children() {
-            for child in my_children {
-                if filter(child) {
-                    children.push(child)
-                }
-            }
-        }
-
+        let children: Vec<_> = self.children().filter(|child| filter(*child)).collect();
         let children_len = children.len();
 
         match &*self.0.read() {
