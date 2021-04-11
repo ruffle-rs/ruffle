@@ -1,0 +1,14 @@
+// reparenting in self
+<a><b /></a><c />
+// after
+<a /><c /><b />
+// reparenting in other
+<a><b /></a>
+<c />
+// after
+<a />
+<b /><c />
+// can't reparent in descendent
+<a><b /></a>
+// after
+<a><b /></a>
