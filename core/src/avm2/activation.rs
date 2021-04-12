@@ -2249,24 +2249,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let type_name =
+        let multiname =
             self.pool_multiname_static(method, type_name_index, self.context.gc_context)?;
-        let type_object = if let Some(scope) = self.scope() {
-            scope.read().find(&type_name, self)?
+        let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
+            scope
+                .write(self.context.gc_context)
+                .resolve(&multiname, self)?
         } else {
             None
-        };
-
-        if let Some(type_object) = type_object {
-            let is_instance_of = value.is_instance_of(self, type_object, true)?;
-            self.context.avm2.push(is_instance_of);
-        } else {
-            return Err(format!(
-                "Attempted to check against nonexistent type {:?}",
-                type_name
-            )
-            .into());
         }
+        .ok_or_else(|| format!("Attempted to check against nonexistent type {:?}", multiname).into());
+        let type_object = found?.coerce_to_object(self)?;
+
+        let is_instance_of = value.is_instance_of(self, type_object, true)?;
+        self.context.avm2.push(is_instance_of);
 
         Ok(FrameControl::Continue)
     }
