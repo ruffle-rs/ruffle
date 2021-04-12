@@ -2300,7 +2300,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             None
         }
-        .ok_or_else(|| format!("Property does not exist: {:?}", multiname).into());
+        .ok_or_else(|| {
+            format!(
+                "Attempted to check against nonexistent type {:?}",
+                multiname
+            )
+            .into()
+        });
         let class = found?.coerce_to_object(self)?;
 
         if class.as_class().is_none() {

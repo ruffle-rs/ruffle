@@ -1,24 +1,24 @@
-//x as Object
+//x is Object
 true
-//x as Test2
+//x is Test2
 true
-//x as ITest2
+//x is ITest2
 true
-//x as Test3
+//x is Test3
 true
-//x as ITest3
+//x is ITest3
 true
-//x as Test4
+//x is Test4
 false
-//y as Object
+//y is Object
 true
-//y as Test2
+//y is Test2
 true
-//y as ITest2
+//y is ITest2
 true
-//y as Test3
+//y is Test3
 true
-//y as ITest3
+//y is ITest3
 true
-//y as Test4
+//y is Test4
 true
