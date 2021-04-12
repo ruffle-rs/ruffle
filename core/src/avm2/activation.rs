@@ -2258,7 +2258,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             None
         }
-        .ok_or_else(|| format!("Attempted to check against nonexistent type {:?}", multiname).into());
+        .ok_or_else(|| {
+            format!(
+                "Attempted to check against nonexistent type {:?}",
+                multiname
+            )
+            .into()
+        });
         let type_object = found?.coerce_to_object(self)?;
 
         let is_instance_of = value.is_instance_of(self, type_object, true)?;
