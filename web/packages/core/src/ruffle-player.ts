@@ -117,6 +117,10 @@ export class RufflePlayer extends HTMLElement {
     private contextMenuElement: HTMLElement;
     private hasContextMenu = false;
 
+    // Whether this device is a touch device.
+    // Set to true when a touch event is encountered.
+    private isTouch = false;
+
     private swfUrl?: string;
     private instance: Ruffle | null;
     private options: BaseLoadOptions | null;
@@ -172,6 +176,7 @@ export class RufflePlayer extends HTMLElement {
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
+        this.addEventListener("pointerdown", this.pointerDown.bind(this));
         window.addEventListener("click", this.hideContextMenu.bind(this));
 
         this.instance = null;
@@ -607,6 +612,14 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    private pointerDown(event: PointerEvent): void {
+        // Disable context menu when touch support is being used
+        // to avoid a long press triggering the context menu. (#1972)
+        if (event.pointerType === "touch" || event.pointerType === "pen") {
+            this.isTouch = true;
+        }
+    }
+
     private contextMenuItems(): ContextMenuItem[] {
         const items = [];
         if (this.fullscreenEnabled) {
@@ -635,7 +648,7 @@ export class RufflePlayer extends HTMLElement {
     private showContextMenu(e: MouseEvent): void {
         e.preventDefault();
 
-        if (!this.hasContextMenu) {
+        if (!this.hasContextMenu || this.isTouch) {
             return;
         }
 
