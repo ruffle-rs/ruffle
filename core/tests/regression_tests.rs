@@ -372,6 +372,7 @@ swf_tests! {
     (as3_is_nan, "avm2/is_nan", 1),
     (as3_istype, "avm2/istype", 1),
     (as3_instanceof, "avm2/instanceof", 1),
+    (as3_astypelate, "avm2/astypelate", 1),
     (as3_truthiness, "avm2/truthiness", 1),
     (as3_falsiness, "avm2/falsiness", 1),
     (as3_boolean_negation, "avm2/boolean_negation", 1),
