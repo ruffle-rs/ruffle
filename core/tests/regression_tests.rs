@@ -371,7 +371,7 @@ swf_tests! {
     (as3_is_finite, "avm2/is_finite", 1),
     (as3_is_nan, "avm2/is_nan", 1),
     (as3_istype, "avm2/istype", 1),
-    (as3_istypelate, "avm2/istype", 1),
+    (as3_istypelate, "avm2/istypelate", 1),
     (as3_instanceof, "avm2/instanceof", 1),
     (as3_astype, "avm2/astype", 1),
     (as3_astypelate, "avm2/astypelate", 1),
