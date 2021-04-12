@@ -670,6 +670,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::NextValue => self.op_next_value(),
                 Op::IsType { index } => self.op_is_type(method, index),
                 Op::IsTypeLate => self.op_is_type_late(),
+                Op::AsType { type_name } => self.op_as_type(method, type_name),
                 Op::AsTypeLate => self.op_as_type_late(),
                 Op::InstanceOf => self.op_instance_of(),
                 Op::Label => Ok(FrameControl::Continue),
@@ -2277,6 +2278,40 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let is_instance_of = value.is_instance_of(self, type_object, true)?;
 
         self.context.avm2.push(is_instance_of);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_as_type(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        type_name_index: Index<AbcMultiname>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_object(self)?;
+
+        let multiname =
+            self.pool_multiname_static(method, type_name_index, self.context.gc_context)?;
+        let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
+            scope
+                .write(self.context.gc_context)
+                .resolve(&multiname, self)?
+        } else {
+            None
+        }
+        .ok_or_else(|| format!("Property does not exist: {:?}", multiname).into());
+        let class = found?.coerce_to_object(self)?;
+
+        if class.as_class().is_none() {
+            return Err("TypeError: The right-hand side of operator must be a class.".into());
+        }
+
+        let is_instance_of = value.is_instance_of(self, class, true)?;
+
+        if is_instance_of {
+            self.context.avm2.push(value);
+        } else {
+            self.context.avm2.push(Value::Null);
+        }
 
         Ok(FrameControl::Continue)
     }
