@@ -1,0 +1,24 @@
+//x as Object
+true
+//x as Test2
+true
+//x as ITest2
+true
+//x as Test3
+true
+//x as ITest3
+true
+//x as Test4
+false
+//y as Object
+true
+//y as Test2
+true
+//y as ITest2
+true
+//y as Test3
+true
+//y as ITest3
+true
+//y as Test4
+true
