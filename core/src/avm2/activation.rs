@@ -670,6 +670,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::NextValue => self.op_next_value(),
                 Op::IsType { index } => self.op_is_type(method, index),
                 Op::IsTypeLate => self.op_is_type_late(),
+                Op::AsTypeLate => self.op_as_type_late(),
                 Op::InstanceOf => self.op_instance_of(),
                 Op::Label => Ok(FrameControl::Continue),
                 Op::Debug {
@@ -2276,6 +2277,25 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let is_instance_of = value.is_instance_of(self, type_object, true)?;
 
         self.context.avm2.push(is_instance_of);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_as_type_late(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let class = self.context.avm2.pop().coerce_to_object(self)?;
+        let value = self.context.avm2.pop().coerce_to_object(self)?;
+        
+        if class.as_class().is_none() {
+            return Err("TypeError: The right-hand side of operator must be a class.".into());
+        }
+
+        let is_instance_of = value.is_instance_of(self, class, true)?;
+
+        if is_instance_of {
+            self.context.avm2.push(value);
+        } else {
+            self.context.avm2.push(Value::Null);
+        }
 
         Ok(FrameControl::Continue)
     }
