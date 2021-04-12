@@ -2284,7 +2284,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_as_type_late(&mut self) -> Result<FrameControl<'gc>, Error> {
         let class = self.context.avm2.pop().coerce_to_object(self)?;
         let value = self.context.avm2.pop().coerce_to_object(self)?;
-        
+
         if class.as_class().is_none() {
             return Err("TypeError: The right-hand side of operator must be a class.".into());
         }
