@@ -180,10 +180,21 @@ impl<'gc> Value<'gc> {
                     f64::from(n as i32)
                 }
                 "" => f64::NAN,
-                _ => v
-                    .trim_start_matches(|c| c == '\t' || c == '\n' || c == '\r' || c == ' ')
-                    .parse()
-                    .unwrap_or(f64::NAN),
+                _ => {
+                    // Rust parses "inf" and "+inf" into Infinity, but Flash doesn't.
+                    // (as of nightly 4/13, Rust also accepts "infinity")
+                    // Check if the strign starts with 'i' (ignoring any leading +/-).
+                    if v.strip_prefix(['+', '-'].as_ref())
+                        .unwrap_or(&v)
+                        .starts_with(['i', 'I'].as_ref())
+                    {
+                        f64::NAN
+                    } else {
+                        v.trim_start_matches(|c| c == '\t' || c == '\n' || c == '\r' || c == ' ')
+                            .parse()
+                            .unwrap_or(f64::NAN)
+                    }
+                }
             },
             Value::Object(_) => f64::NAN,
         }

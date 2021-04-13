@@ -22,6 +22,9 @@ pub fn f64_to_string(n: f64) -> Cow<'static, str> {
             }
         }
         Cow::Owned(s)
+    } else if n == 0.0 {
+        // As of Rust nightly 4/13, Rust can returns an unwated "-0" for f64, which Flash doesn't want.
+        Cow::Borrowed("0")
     } else {
         // Normal number.
         Cow::Owned(n.to_string())
