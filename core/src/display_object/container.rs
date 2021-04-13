@@ -4,6 +4,7 @@ use crate::avm2::{Avm2, Event as Avm2Event, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::button::Button;
 use crate::display_object::movie_clip::MovieClip;
+use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject};
 use crate::string_utils::swf_string_eq_ignore_case;
 use bitflags::bitflags;
@@ -150,6 +151,7 @@ bitflags! {
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
     pub enum DisplayObjectContainer<'gc> {
+        Stage(Stage<'gc>),
         Button(Button<'gc>),
         MovieClip(MovieClip<'gc>),
     }

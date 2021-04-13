@@ -27,6 +27,7 @@ mod edit_text;
 mod graphic;
 mod morph_shape;
 mod movie_clip;
+mod stage;
 mod text;
 mod video;
 
@@ -42,6 +43,7 @@ pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
+pub use stage::Stage;
 pub use text::Text;
 pub use video::Video;
 
@@ -429,6 +431,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
     pub enum DisplayObject<'gc> {
+        Stage(Stage<'gc>),
         Bitmap(Bitmap<'gc>),
         Button(Button<'gc>),
         EditText(EditText<'gc>),
