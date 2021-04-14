@@ -1066,7 +1066,7 @@ impl Player {
         &self.locale
     }
 
-    fn run_actions<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn run_actions<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(actions) = context.action_queue.pop_action() {
             // We don't run frame actions if the clip was removed after it queued the action.

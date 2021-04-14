@@ -111,6 +111,8 @@ impl<'gc> Timers<'gc> {
                     base_proto,
                     &params,
                 );
+
+                crate::player::Player::run_actions(&mut activation.context);
             }
 
             let mut timer = activation.context.timers.peek_mut().unwrap();
