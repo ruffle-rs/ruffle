@@ -10,8 +10,6 @@ It automatically negotiates with websites that do have Ruffle installed, to ensu
 
 The browser extension works in Chrome, Firefox, and Safari 14+.
 
-We do not yet have a signed release of the extension, so you must load it as a temporary extension.
-
 Before you can install the extension, you must either download the [latest release](https://github.com/ruffle-rs/ruffle/releases) or [build it yourself](../../README.md).
 
 ### Chrome
@@ -31,6 +29,8 @@ Alternatively, loading unpacked can save time during development:
 - Each time after making changes, click the reload icon.
 
 ### Firefox
+
+We do not yet have a signed release of the extension, so you must load it as a temporary extension.
 
 - Navigate to `about:debugging`.
 - Click on "This Firefox".
