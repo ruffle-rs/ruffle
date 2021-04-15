@@ -197,11 +197,9 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
 fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn Error>> {
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
+        result.set_file_name(opt.swf.file_stem().unwrap());
         if opt.frames == 1 {
-            result.set_file_name(opt.swf.file_stem().unwrap());
             result.set_extension("png");
-        } else {
-            result.set_file_name(opt.swf.file_stem().unwrap());
         }
         result
     });
@@ -271,6 +269,7 @@ fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn
     Ok(())
 }
 
+#[allow(unknown_lints, clippy::branches_sharing_code)]
 fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn Error>> {
     let output = opt.output_path.clone().unwrap();
     let files = find_files(&opt.swf, !opt.silent);

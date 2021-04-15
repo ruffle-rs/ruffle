@@ -1305,9 +1305,9 @@ impl<'a> Reader<'a> {
     }
 
     fn read_morph_line_style(&mut self, shape_version: u8) -> Result<(LineStyle, LineStyle)> {
+        let start_width = Twips::new(self.read_u16()?);
+        let end_width = Twips::new(self.read_u16()?);
         if shape_version < 2 {
-            let start_width = Twips::new(self.read_u16()?);
-            let end_width = Twips::new(self.read_u16()?);
             let start_color = self.read_rgba()?;
             let end_color = self.read_rgba()?;
 
@@ -1317,8 +1317,6 @@ impl<'a> Reader<'a> {
             ))
         } else {
             // MorphLineStyle2 in DefineMorphShape2.
-            let start_width = Twips::new(self.read_u16()?);
-            let end_width = Twips::new(self.read_u16()?);
             let flags0 = self.read_u8()?;
             let flags1 = self.read_u8()?;
             let start_cap = match flags0 >> 6 {
@@ -1756,9 +1754,9 @@ impl<'a> Reader<'a> {
         let is_edge_record = bits.read_bit()?;
         let shape_record = if is_edge_record {
             let is_straight_edge = bits.read_bit()?;
+            let num_bits = bits.read_ubits(4)? + 2;
             if is_straight_edge {
                 // StraightEdge
-                let num_bits = bits.read_ubits(4)? + 2;
                 let is_axis_aligned = !bits.read_bit()?;
                 let is_vertical = is_axis_aligned && bits.read_bit()?;
                 let delta_x = if !is_axis_aligned || !is_vertical {
@@ -1774,7 +1772,6 @@ impl<'a> Reader<'a> {
                 Some(ShapeRecord::StraightEdge { delta_x, delta_y })
             } else {
                 // CurvedEdge
-                let num_bits = bits.read_ubits(4)? + 2;
                 Some(ShapeRecord::CurvedEdge {
                     control_delta_x: bits.read_sbits_twips(num_bits)?,
                     control_delta_y: bits.read_sbits_twips(num_bits)?,

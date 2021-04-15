@@ -168,7 +168,7 @@ impl<'gc> EditText<'gc> {
         let is_editable = !swf_tag.is_read_only;
         let is_html = swf_tag.is_html;
         let document = XmlDocument::new(context.gc_context);
-        let text = swf_tag.initial_text.clone().unwrap_or_default();
+        let text = swf_tag.initial_text.unwrap_or_default();
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
         let encoding = swf_movie.encoding();
 

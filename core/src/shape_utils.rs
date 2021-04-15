@@ -1307,11 +1307,9 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
 
         let t0 = gamma1 + gamma2 - offset;
         let t1 = -0.5 * (gamma1 + gamma2) - offset;
+        roots.push(t0);
         if disc == 0.0 {
-            roots.push(t0);
             roots.push(t1);
-        } else {
-            roots.push(t0);
         }
     }
 

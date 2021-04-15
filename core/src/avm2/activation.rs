@@ -314,7 +314,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         scope
-            .map(|s| s.read().locals().clone().into())
+            .map(|s| (*s.read().locals()).into())
             .unwrap_or(Value::Undefined)
     }
 
@@ -1253,7 +1253,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         self.context.avm2.push(
             scope
-                .map(|s| s.read().locals().clone().into())
+                .map(|s| (*s.read().locals()).into())
                 .unwrap_or(Value::Undefined),
         );
 
