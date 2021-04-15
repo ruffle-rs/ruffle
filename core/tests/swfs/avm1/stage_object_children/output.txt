@@ -1,12 +1,48 @@
-MovieClip clip added
-clip: _level0.clip
-Set clip to 10
-clip: 10
-Set clip to undefined
-clip: undefined
-Delete clip
-clip: _level0.clip
-Set MovieClip.prototype.clip to 2
-clip: _level0.clip
-MovieClip clip removed
-clip: 2
+// clip
+_level0.clip
+// clip = 10
+// clip
+10
+// clip = undefined
+// clip
+undefined
+// delete clip
+true
+// clip
+_level0.clip
+// delete clip
+false
+// clip
+_level0.clip
+// MovieClip.prototype.clip = 2
+// clip
+_level0.clip
+
+// _root['_x']
+_level0._x
+// _root['_x'] = 42
+// _root['_x']
+_level0._x
+// _root._x
+42
+
+// _root['_level0']
+_level0
+// _root['_level0'] = 50
+// _root['_level0']
+50
+// _level0
+50
+
+// MovieClip.prototype._level1 = 99
+// _root['_level1']
+undefined
+// _level1
+undefined
+
+// clips removed
+// clip
+2
+// _root['_x']
+42
+
