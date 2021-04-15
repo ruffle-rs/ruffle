@@ -1084,8 +1084,12 @@ fn spawn_xml_fetch<'gc>(
     let request_options = if let Some(node) = send_object {
         // Send `node` as string
         RequestOptions::post(Some((
-            node.into_string(&mut is_as2_compatible).unwrap_or_default().into_bytes(),
-            this.get("contentType", activation)?.coerce_to_string(activation)?.to_string(),
+            node.into_string(&mut is_as2_compatible)
+                .unwrap_or_default()
+                .into_bytes(),
+            this.get("contentType", activation)?
+                .coerce_to_string(activation)?
+                .to_string(),
         )))
     } else {
         // Not sending any parameters.
@@ -1094,10 +1098,7 @@ fn spawn_xml_fetch<'gc>(
 
     this.set("loaded", false.into(), activation)?;
 
-    let fetch = activation
-        .context
-        .navigator
-        .fetch(&url, request_options);
+    let fetch = activation.context.navigator.fetch(&url, request_options);
     let target_clip = activation.target_clip_or_root()?;
     // given any defined loader object, sends the request. Will load into LoadVars if given.
     let process = if let Some(node) = loader_object.as_xml_node() {
