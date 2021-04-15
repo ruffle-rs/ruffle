@@ -140,10 +140,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         if self.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
             self.get_local(name, activation, (*self).into())
-        } else if let Some(property) = props.read().get_by_name(&name) {
-            // 2) Display object properties such as _x, _y
-            let val = property.get(activation, obj.display_object)?;
-            Ok(val)
+        } else if let Some(level) =
+            obj.display_object
+                .get_level_by_path(name, &mut activation.context, case_sensitive)
+        {
+            // 2) _levelN
+            Ok(level.object())
         } else if let Some(child) = obj
             .display_object
             .as_container()
@@ -151,12 +153,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         {
             // 3) Child display objects with the given instance name
             Ok(child.object())
-        } else if let Some(level) =
-            obj.display_object
-                .get_level_by_path(name, &mut activation.context, case_sensitive)
-        {
-            // 4) _levelN
-            Ok(level.object())
+        } else if let Some(property) = props.read().get_by_name(&name) {
+            // 4) Display object properties such as _x, _y
+            let val = property.get(activation, obj.display_object)?;
+            Ok(val)
         } else {
             // 5) Prototype
             Ok(search_prototype(self.proto(), name, activation, (*self).into())?.0)
