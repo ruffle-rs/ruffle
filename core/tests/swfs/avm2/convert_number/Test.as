@@ -72,6 +72,15 @@ assert_number("-0.0");
 trace("//\"Infinity\"");
 assert_number("Infinity");
 
+trace("//\"-Infinity\"");
+assert_number("-Infinity");
+
+trace("//\"infinity\"");
+assert_number("infinity");
+
+trace("//\"inf\"");
+assert_number("inf");
+
 trace("//\"1.0\"");
 assert_number("1.0");
 

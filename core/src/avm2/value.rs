@@ -408,6 +408,9 @@ impl<'gc> Value<'gc> {
 
                     if digits == "Infinity" {
                         return Ok(sign * f64::INFINITY);
+                    } else if digits.starts_with(['i', 'I'].as_ref()) {
+                        // Avoid Rust f64::parse accepting "inf" and "infinity"
+                        return Ok(f64::NAN);
                     }
 
                     //TODO: This is slightly more permissive than ES3 spec, as

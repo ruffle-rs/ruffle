@@ -40,6 +40,12 @@ NaN
 0
 //"Infinity"
 Infinity
+//"-Infinity"
+-Infinity
+//"infinity"
+NaN
+//"inf"
+NaN
 //"1.0"
 1
 //"-1.0"
