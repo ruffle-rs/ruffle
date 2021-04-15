@@ -86,7 +86,7 @@ pub fn create_proto<'gc>(
     object.define_value(
         gc_context,
         "contentType",
-        "application/x-www-form-url-encoded".into(),
+        "application/x-www-form-urlencoded".into(),
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 

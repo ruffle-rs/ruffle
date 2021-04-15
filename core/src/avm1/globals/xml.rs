@@ -1087,6 +1087,12 @@ pub fn create_xml_proto<'gc>(
         Attribute::READ_ONLY,
     );
     xml_proto.define_value(gc_context, "ignoreWhite", false.into(), Attribute::empty());
+    xml_proto.define_value(
+        gc_context,
+        "contentType",
+        "application/x-www-form-urlencoded".into(),
+        Attribute::empty(),
+    );
     xml_proto.add_property(
         gc_context,
         "xmlDecl",
