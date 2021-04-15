@@ -1041,10 +1041,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         //a boolean based on if the delete actually deleted something.
-        let did_exist = self.is_defined(&name);
-
-        self.scope_cell().read().delete(self, &name);
-        self.context.avm1.push(did_exist);
+        let success = self.scope_cell().read().delete(self, &name);
+        self.context.avm1.push(success);
 
         Ok(FrameControl::Continue)
     }
