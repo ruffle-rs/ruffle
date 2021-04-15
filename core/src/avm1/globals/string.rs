@@ -24,7 +24,7 @@ pub fn string<'gc>(
     if let Some(mut vbox) = this.as_value_object() {
         let len = value.encode_utf16().count();
         vbox.set_length(activation.context.gc_context, len);
-        vbox.replace_value(activation.context.gc_context, value.clone().into());
+        vbox.replace_value(activation.context.gc_context, value.into());
     }
 
     Ok(this.into())

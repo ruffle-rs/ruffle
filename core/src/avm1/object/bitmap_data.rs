@@ -56,7 +56,7 @@ impl Color {
         ((self.0 >> 24) & 0xFF) as u8
     }
 
-    pub fn to_premultiplied_alpha(&self, transparency: bool) -> Color {
+    pub fn to_premultiplied_alpha(self, transparency: bool) -> Color {
         // This has some accuracy issues with some alpha values
 
         let old_alpha = if transparency { self.alpha() } else { 255 };
@@ -70,7 +70,7 @@ impl Color {
         Color::argb(old_alpha, r, g, b)
     }
 
-    pub fn to_un_multiplied_alpha(&self) -> Color {
+    pub fn to_un_multiplied_alpha(self) -> Color {
         let a = self.alpha() as f64 / 255.0;
 
         let r = (self.red() as f64 / a).round() as u8;

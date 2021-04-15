@@ -936,10 +936,7 @@ fn sort_postprocess<'gc>(
             return build_array(
                 activation,
                 ArrayStorage::from_storage(
-                    values
-                        .iter()
-                        .map(|(i, _v)| Some(i.clone().into()))
-                        .collect(),
+                    values.iter().map(|(i, _v)| Some((*i).into())).collect(),
                 ),
             );
         } else {

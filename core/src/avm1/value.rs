@@ -225,7 +225,7 @@ impl<'gc> Value<'gc> {
     ///   callable in `AVM1`. Values that are not callable objects instead
     ///   return `undefined` rather than yielding a runtime error.
     pub fn to_primitive_num(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {

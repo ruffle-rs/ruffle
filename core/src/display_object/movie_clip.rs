@@ -1620,11 +1620,10 @@ impl<'gc> MovieClip<'gc> {
             // the old children to decide if they persist (place_frame <= goto_frame).
             let read = self.0.read();
             if let Some(child) = read.container.get_depth(depth) {
+                drop(read);
                 if !child.placed_by_script() {
-                    drop(read);
                     self.remove_child(context, child, Lists::all());
                 } else {
-                    drop(read);
                     self.remove_child(context, child, Lists::DEPTH);
                 }
             }

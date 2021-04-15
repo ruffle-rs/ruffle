@@ -46,6 +46,7 @@ impl<R: Read> Iterator for Mp3Decoder<R> {
     type Item = [i16; 2];
 
     #[inline]
+    #[allow(unknown_lints, clippy::branches_sharing_code)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.cur_sample >= self.num_samples {
             self.next_frame();
