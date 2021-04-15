@@ -14,10 +14,10 @@ module.exports = (env, argv) => {
     return {
         mode,
         entry: {
-            popup: path.resolve(__dirname, "js/popup.js"),
-            options: path.resolve(__dirname, "js/options.js"),
-            lv0: path.resolve(__dirname, "js/lv0.js"),
-            ruffle: path.resolve(__dirname, "js/index.js"),
+            popup: path.resolve(__dirname, "src/popup.js"),
+            options: path.resolve(__dirname, "src/options.js"),
+            lv0: path.resolve(__dirname, "src/lv0.js"),
+            ruffle: path.resolve(__dirname, "src/index.js"),
         },
         output: {
             path: path.resolve(__dirname, "build/dist/"),
