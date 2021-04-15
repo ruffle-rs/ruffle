@@ -1,0 +1,18 @@
+// Tracing _x
+// First tick, attachMovie (0)
+0
+// onLoad, set _x to 100
+// Tick #1 (100)
+100
+// Tick #2 (100)
+100
+// Tick #3 (100)
+100
+// Tick #4 (100)
+100
+// Tick #5 (100)
+100
+// Tick #6 (100)
+100
+// Tick #7 (100)
+100
