@@ -917,35 +917,43 @@ pub fn xml_parse_xml<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn xml_send_and_load<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+    if let Value::Null = url_val {
+        return Ok(Value::Undefined);
+    }
+
+    let target = match args.get(1) {
+        Some(&Value::Object(o)) => o,
+        _ => return Ok(Value::Undefined),
+    };
+
+    if let Some(node) = this.as_xml_node() {
+        let url = url_val.coerce_to_string(activation)?;
+        spawn_xml_fetch(activation, this, target, &url, Some(node));
+    }
+    Ok(Value::Undefined)
+}
+
 pub fn xml_load<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let url = args.get(0).cloned().unwrap_or(Value::Undefined);
+    let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
 
-    if let Value::Null = url {
+    if let Value::Null = url_val {
         return Ok(false.into());
     }
 
     if let Some(node) = this.as_xml_node() {
-        let url = url.coerce_to_string(activation)?;
-
-        this.set("loaded", false.into(), activation)?;
-
-        let fetch = activation
-            .context
-            .navigator
-            .fetch(&url, RequestOptions::get());
-        let target_clip = activation.target_clip_or_root()?;
-        let process = activation.context.load_manager.load_xml_into_node(
-            activation.context.player.clone().unwrap(),
-            node,
-            target_clip,
-            fetch,
-        );
-
-        activation.context.navigator.spawn_future(process);
+        let url = url_val.coerce_to_string(activation)?;
+        spawn_xml_fetch(activation, this, this, &url, None);
 
         Ok(true.into())
     } else {
@@ -1066,6 +1074,55 @@ pub fn xml_status<'gc>(
     Ok(Value::Undefined)
 }
 
+fn spawn_xml_fetch<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    loader_object: Object<'gc>,
+    url: &AvmString,
+    send_object: Option<XmlNode<'gc>>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let request_options = if let Some(node) = send_object {
+        // Send `node` as string
+        let content_type = this
+            .get("contentType", activation)?
+            .coerce_to_string(activation)?;
+        RequestOptions::post(Some((
+            node.into_string(&mut is_as2_compatible).unwrap_or_default().into_bytes(),
+            this.get("contentType", activation)?.coerce_to_string(activation)?.to_string(),
+        )))
+    } else {
+        // Not sending any parameters.
+        RequestOptions::get()
+    };
+
+    this.set("loaded", false.into(), activation)?;
+
+    let fetch = activation
+        .context
+        .navigator
+        .fetch(&url, request_options);
+    let target_clip = activation.target_clip_or_root()?;
+    // given any defined loader object, sends the request. Will load into LoadVars if given.
+    let process = if let Some(node) = loader_object.as_xml_node() {
+        activation.context.load_manager.load_xml_into_node(
+            activation.context.player.clone().unwrap(),
+            node,
+            target_clip,
+            fetch,
+        )
+    } else {
+        activation.context.load_manager.load_form_into_load_vars(
+            activation.context.player.clone().unwrap(),
+            loader_object,
+            fetch,
+        )
+    };
+
+    activation.context.navigator.spawn_future(process);
+
+    Ok(true.into())
+}
+
 /// Construct the prototype for `XML`.
 pub fn create_xml_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
@@ -1153,6 +1210,13 @@ pub fn create_xml_proto<'gc>(
     xml_proto.as_script_object().unwrap().force_set_function(
         "load",
         xml_load,
+        gc_context,
+        Attribute::empty(),
+        Some(fn_proto),
+    );
+    xml_proto.as_script_object().unwrap().force_set_function(
+        "sendAndLoad",
+        xml_send_and_load,
         gc_context,
         Attribute::empty(),
         Some(fn_proto),
