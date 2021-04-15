@@ -23,6 +23,13 @@ window.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    try {
+        const pathname = new URL(swfUrl).pathname;
+        document.title = pathname.substring(pathname.lastIndexOf("/") + 1);
+    } catch (_) {
+        // Ignore URL parsing errors.
+    }
+
     player = ruffle.createPlayer();
     player.id = "player";
     document.getElementById("main").append(player);
