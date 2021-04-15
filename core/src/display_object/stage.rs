@@ -7,7 +7,7 @@ use crate::display_object::container::{
 use crate::display_object::{DisplayObject, DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::types::{Degrees, Percent};
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, GcCell, MutationContext};
 
 /// The Stage is the root of the display object hierarchy. It contains all AVM1
 /// levels as well as AVM2 movies.
@@ -31,6 +31,18 @@ pub struct StageData<'gc> {
     child: ChildContainer<'gc>,
 }
 
+impl<'gc> Stage<'gc> {
+    pub fn empty(gc_context: MutationContext<'gc, '_>) -> Stage<'gc> {
+        Self(GcCell::allocate(
+            gc_context,
+            StageData {
+                base: Default::default(),
+                child: Default::default(),
+            },
+        ))
+    }
+}
+
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     impl_display_object!(base);
 
@@ -44,6 +56,10 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
     fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
         Some(self.into())
+    }
+
+    fn as_stage(&self) -> Option<Stage<'gc>> {
+        Some(*self)
     }
 }
 

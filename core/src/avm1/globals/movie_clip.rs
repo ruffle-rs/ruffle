@@ -884,7 +884,7 @@ fn get_next_highest_depth<'gc>(
     if activation.current_swf_version() >= 7 {
         let depth = std::cmp::max(
             movie_clip
-                .highest_depth()
+                .highest_depth(Depth::MAX)
                 .unwrap_or(0)
                 .wrapping_sub(AVM_DEPTH_BIAS - 1),
             0,

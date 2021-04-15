@@ -13,7 +13,7 @@ use crate::backend::{
     ui::UiBackend,
     video::VideoBackend,
 };
-use crate::display_object::{EditText, MovieClip, SoundTransform};
+use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
@@ -26,7 +26,7 @@ use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
@@ -92,8 +92,8 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
 
-    /// All loaded levels of the current player.
-    pub levels: &'a mut BTreeMap<u32, DisplayObject<'gc>>,
+    /// The current player's stage (including all loaded levels)
+    pub stage: Stage<'gc>,
 
     /// The display object that the mouse is currently hovering over.
     pub mouse_hovered_object: Option<DisplayObject<'gc>>,
@@ -167,7 +167,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             self.audio,
             self.gc_context,
             self.action_queue,
-            *self.levels.get(&0).unwrap(),
+            self.stage.child_by_depth(0).expect("root movie"),
         );
     }
 
@@ -266,7 +266,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             video: self.video,
             storage: self.storage,
             rng: self.rng,
-            levels: self.levels,
+            stage: self.stage,
             mouse_hovered_object: self.mouse_hovered_object,
             mouse_position: self.mouse_position,
             drag_object: self.drag_object,

@@ -128,10 +128,10 @@ impl<'gc> StageObject<'gc> {
                 slice.eq_ignore_ascii_case("_level")
             };
             if is_level {
-                if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
+                if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<i32>().ok()) {
                     let level = context
-                        .levels
-                        .get(&level_id)
+                        .stage
+                        .child_by_depth(level_id)
                         .map(|o| o.object())
                         .unwrap_or(Value::Undefined);
                     return Some(level);

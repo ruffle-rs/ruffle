@@ -5,7 +5,7 @@ use crate::avm1::{Avm1, AvmString, Object, TObject, Value};
 use crate::avm2::Domain as Avm2Domain;
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
-use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
+use crate::display_object::{DisplayObject, MorphShape, TDisplayObject, TDisplayObjectContainer};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
@@ -454,7 +454,7 @@ impl<'gc> Loader<'gc> {
                         _ => unreachable!(),
                     };
 
-                    if let Some(root) = uc.levels.get(&0).copied() {
+                    if let Some(root) = uc.stage.child_by_depth(0) {
                         replacing_root_movie = DisplayObject::ptr_eq(clip, root);
                     }
 
