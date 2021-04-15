@@ -935,7 +935,7 @@ pub fn xml_send_and_load<'gc>(
 
     if let Some(node) = this.as_xml_node() {
         let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, target, &url, Some(node));
+        spawn_xml_fetch(activation, this, target, &url, Some(node))?;
     }
     Ok(Value::Undefined)
 }
@@ -951,9 +951,9 @@ pub fn xml_load<'gc>(
         return Ok(false.into());
     }
 
-    if let Some(node) = this.as_xml_node() {
+    if let Some(_node) = this.as_xml_node() {
         let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, this, &url, None);
+        spawn_xml_fetch(activation, this, this, &url, None)?;
 
         Ok(true.into())
     } else {
@@ -1083,9 +1083,6 @@ fn spawn_xml_fetch<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request_options = if let Some(node) = send_object {
         // Send `node` as string
-        let content_type = this
-            .get("contentType", activation)?
-            .coerce_to_string(activation)?;
         RequestOptions::post(Some((
             node.into_string(&mut is_as2_compatible).unwrap_or_default().into_bytes(),
             this.get("contentType", activation)?.coerce_to_string(activation)?.to_string(),
