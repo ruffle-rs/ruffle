@@ -40,7 +40,7 @@ async function sign(
         process.env.FIREFOX_EXTENSION_ID
     ) {
         // TODO: Read from unsigned xpi.
-        const { version } = require("../build/manifest.json");
+        const { version } = require("../assets/manifest.json");
         await sign(
             process.env.MOZILLA_API_KEY,
             process.env.MOZILLA_API_SECRET,

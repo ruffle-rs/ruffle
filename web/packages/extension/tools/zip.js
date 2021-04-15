@@ -33,5 +33,5 @@ async function zip(source, destination) {
 }
 
 (async () => {
-    await zip(path.resolve(__dirname, "../build/"), process.argv[2]);
+    await zip(path.resolve(__dirname, "../assets/"), process.argv[2]);
 })();

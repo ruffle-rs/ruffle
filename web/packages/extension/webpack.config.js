@@ -20,7 +20,7 @@ module.exports = (env, argv) => {
             ruffle: path.resolve(__dirname, "src/index.js"),
         },
         output: {
-            path: path.resolve(__dirname, "build/dist/"),
+            path: path.resolve(__dirname, "assets/dist/"),
             publicPath: "",
             clean: true,
         },
