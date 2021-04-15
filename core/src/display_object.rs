@@ -318,7 +318,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.clip_depth = depth;
     }
 
-    fn parent(&self) -> Option<DisplayObject<'gc>> {
+    fn avm2_parent(&self) -> Option<DisplayObject<'gc>> {
         self.parent
     }
 
@@ -731,8 +731,25 @@ pub trait TDisplayObject<'gc>:
 
     fn clip_depth(&self) -> Depth;
     fn set_clip_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
-    fn parent(&self) -> Option<DisplayObject<'gc>>;
+
+    /// Retrieve the parent of this display object.
+    ///
+    /// This version of the function allows access to the `Stage`; which is
+    /// only suitable for code aware of AVM2's altered display list hierarchy.
+    /// For AVM1 code, please call `parent`.
+    fn avm2_parent(&self) -> Option<DisplayObject<'gc>>;
+
+    /// Set the parent of this display object.
     fn set_parent(&self, gc_context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
+
+    /// Retrieve the parent of this display object.
+    ///
+    /// This version of the function disallows access to the `Stage`; if you
+    /// want to be able to access the stage, please call `avm2_parent`.
+    fn parent(&self) -> Option<DisplayObject<'gc>> {
+        self.avm2_parent().filter(|p| p.as_stage().is_none())
+    }
+
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
     fn set_prev_sibling(
         &self,
@@ -972,6 +989,9 @@ pub trait TDisplayObject<'gc>:
         self.set_removed(context.gc_context, true);
     }
 
+    fn as_stage(&self) -> Option<Stage<'gc>> {
+        None
+    }
     fn as_button(&self) -> Option<Button<'gc>> {
         None
     }
@@ -1160,8 +1180,8 @@ pub trait TDisplayObject<'gc>:
         MouseCursor::Hand
     }
 
-    /// Obtain the top-most parent of the display tree hierarchy, if a suitable
-    /// object exists.
+    /// Obtain the top-most non-Stage parent of the display tree hierarchy, if
+    /// a suitable object exists.
     fn root(&self, context: &UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
         let mut parent = if self.lock_root() {
             None
@@ -1200,20 +1220,17 @@ pub trait TDisplayObject<'gc>:
 
     /// Determine if this display object is currently on the stage.
     fn is_on_stage(self, context: &UpdateContext<'_, 'gc, '_>) -> bool {
-        let mut ancestor = self.parent();
+        let mut ancestor = self.avm2_parent();
         while let Some(parent) = ancestor {
-            if parent.parent().is_some() {
-                ancestor = parent.parent();
+            if parent.avm2_parent().is_some() {
+                ancestor = parent.avm2_parent();
             } else {
                 break;
             }
         }
 
         let ancestor = ancestor.unwrap_or_else(|| self.into());
-        context
-            .levels
-            .values()
-            .any(|o| DisplayObject::ptr_eq(*o, ancestor))
+        DisplayObject::ptr_eq(ancestor, context.stage.into())
     }
 
     /// Obtain the top-most parent of the display tree hierarchy, or some kind
@@ -1363,8 +1380,8 @@ macro_rules! impl_display_object_sansbounds {
         ) {
             self.0.write(context).$field.set_clip_depth(depth)
         }
-        fn parent(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
-            self.0.read().$field.parent()
+        fn avm2_parent(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
+            self.0.read().$field.avm2_parent()
         }
         fn set_parent(
             &self,

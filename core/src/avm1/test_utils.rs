@@ -12,7 +12,7 @@ use crate::backend::storage::MemoryStorageBackend;
 use crate::backend::ui::NullUiBackend;
 use crate::backend::video::NullVideoBackend;
 use crate::context::ActionQueue;
-use crate::display_object::{MovieClip, TDisplayObject};
+use crate::display_object::{MovieClip, Stage, TDisplayObject};
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
 use crate::loader::LoadManager;
@@ -22,7 +22,7 @@ use crate::vminterface::Instantiator;
 use gc_arena::{rootless_arena, MutationContext};
 use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -40,16 +40,14 @@ where
         let root: DisplayObject<'gc> =
             MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
         root.set_depth(gc_context, 0);
-        let mut levels = BTreeMap::new();
-        levels.insert(0, root);
-
+        let stage = Stage::empty(gc_context);
         let globals = avm1.global_object_cell();
 
         let mut context = UpdateContext {
             gc_context,
             player_version: 32,
             swf: &swf,
-            levels: &mut levels,
+            stage,
             rng: &mut SmallRng::from_seed([0u8; 32]),
             audio: &mut NullAudioBackend::new(),
             ui: &mut NullUiBackend::new(),
@@ -84,6 +82,8 @@ where
             time_offset: &mut 0,
             audio_manager: &mut AudioManager::new(),
         };
+        context.stage.replace_at_depth(&mut context, root, 0);
+
         root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
         root.set_name(context.gc_context, "");
 
@@ -101,14 +101,13 @@ where
             }
         }
 
-        let base_clip = *context.levels.get(&0).unwrap();
         let swf_version = context.swf.version();
         let mut activation = Activation::from_nothing(
             context,
             ActivationIdentifier::root("[Test]"),
             swf_version,
             globals,
-            base_clip,
+            root,
         );
 
         run_test(&mut activation, root, test)

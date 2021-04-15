@@ -8,7 +8,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, SoundObject, TObject, Value};
 use crate::avm_warn;
 use crate::character::Character;
-use crate::display_object::{SoundTransform, TDisplayObject};
+use crate::display_object::{SoundTransform, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::MutationContext;
 
 /// Implements `Sound`
@@ -204,7 +204,7 @@ fn attach_sound<'gc>(
         let name = name.coerce_to_string(activation)?;
         let movie = sound_object
             .owner()
-            .or_else(|| activation.context.levels.get(&0).copied())
+            .or_else(|| activation.context.stage.child_by_depth(0))
             .and_then(|o| o.movie());
         if let Some(movie) = movie {
             if let Some(Character::Sound(sound)) = activation
@@ -539,7 +539,7 @@ fn stop<'gc>(
             let name = name.coerce_to_string(activation)?;
             let movie = sound
                 .owner()
-                .or_else(|| activation.context.levels.get(&0).copied())
+                .or_else(|| activation.context.stage.child_by_depth(0))
                 .and_then(|o| o.movie());
             if let Some(movie) = movie {
                 if let Some(Character::Sound(sound)) = activation

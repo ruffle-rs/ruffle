@@ -343,7 +343,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Self {
         let version = context.swf.version();
         let globals = context.avm1.global_object_cell();
-        let level0 = *context.levels.get(&0).unwrap();
+        let level0 = context.stage.child_by_depth(0).unwrap();
 
         Self::from_nothing(context, id, version, globals, level0)
     }
@@ -1232,7 +1232,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let target = target.as_ref();
         let url = url.to_string_lossy(self.encoding());
         if target.starts_with("_level") && target.len() > 6 {
-            match target[6..].parse::<u32>() {
+            match target[6..].parse::<i32>() {
                 Ok(level_id) => {
                     let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
                     let level = self.resolve_level(level_id);
@@ -1356,7 +1356,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(FrameControl::Continue);
         } else if window_target.starts_with("_level") && url.len() > 6 {
             // target of `_level#` indicates a `loadMovieNum` call.
-            match window_target[6..].parse::<u32>() {
+            match window_target[6..].parse::<i32>() {
                 Ok(level_id) => {
                     let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
                     let level = self.resolve_level(level_id);
@@ -2807,9 +2807,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// If the level does not exist, then it will be created and instantiated
     /// with a script object.
-    pub fn resolve_level(&mut self, level_id: u32) -> DisplayObject<'gc> {
-        if let Some(level) = self.context.levels.get(&level_id) {
-            *level
+    pub fn resolve_level(&mut self, level_id: i32) -> DisplayObject<'gc> {
+        if let Some(level) = self.context.stage.child_by_depth(level_id) {
+            level
         } else {
             let level: DisplayObject<'_> = MovieClip::new(
                 SwfSlice::empty(self.base_clip().movie().unwrap()),
@@ -2819,7 +2819,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             level.set_depth(self.context.gc_context, level_id as i32);
             level.set_default_root_name(&mut self.context);
-            self.context.levels.insert(level_id, level);
+            self.context
+                .stage
+                .replace_at_depth(&mut self.context, level, level_id);
             level.post_instantiation(&mut self.context, level, None, Instantiator::Movie, false);
 
             level

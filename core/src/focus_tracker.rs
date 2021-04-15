@@ -1,6 +1,6 @@
 use crate::avm1::{Avm1, Value};
 use crate::context::UpdateContext;
-pub use crate::display_object::{DisplayObject, TDisplayObject};
+pub use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::{Collect, GcCell, MutationContext};
 
 #[derive(Clone, Copy, Collect, Debug)]
@@ -43,7 +43,7 @@ impl<'gc> FocusTracker<'gc> {
 
         log::info!("Focus is now on {:?}", focused_element);
 
-        let level0 = context.levels.get(&0).copied().unwrap();
+        let level0 = context.stage.child_by_depth(0).unwrap();
         Avm1::notify_system_listeners(
             level0,
             context.swf.version(),
