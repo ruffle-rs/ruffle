@@ -14,7 +14,6 @@ use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
-use std::cmp::min;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -755,31 +754,6 @@ pub trait TDisplayObject<'gc>:
         remove_old_link: bool,
     );
 
-    /// Get another level by level name.
-    ///
-    /// Since levels don't have instance names, this function instead parses
-    /// their ID and uses that to retrieve the level.
-    fn get_level_by_path(
-        &self,
-        name: &str,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        case_sensitive: bool,
-    ) -> Option<DisplayObject<'gc>> {
-        if let Some(slice) = name.get(0..min(name.len(), 6)) {
-            let is_level = if case_sensitive {
-                slice == "_level"
-            } else {
-                slice.eq_ignore_ascii_case("_level")
-            };
-            if is_level {
-                if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
-                    return context.levels.get(&level_id).copied();
-                }
-            }
-        }
-
-        None
-    }
     fn removed(&self) -> bool;
     fn set_removed(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 

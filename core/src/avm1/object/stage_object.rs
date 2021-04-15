@@ -107,6 +107,40 @@ impl<'gc> StageObject<'gc> {
             context.unbound_text_fields.push(binding.text_field);
         }
     }
+
+    /// Get another level by level name.
+    ///
+    /// Since levels don't have instance names, this function instead parses
+    /// their ID and uses that to retrieve the level.
+    ///
+    /// If the name is a valid level path, it will return the level object
+    /// or `Some(Value::Undefined)` if the level is not occupied.
+    /// Returns `None` if `name` is not a valid level path.
+    fn get_level_by_path(
+        name: &str,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        case_sensitive: bool,
+    ) -> Option<Value<'gc>> {
+        if let Some(slice) = name.get(0..name.len().min(6)) {
+            let is_level = if case_sensitive {
+                slice == "_level"
+            } else {
+                slice.eq_ignore_ascii_case("_level")
+            };
+            if is_level {
+                if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<u32>().ok()) {
+                    let level = context
+                        .levels
+                        .get(&level_id)
+                        .map(|o| o.object())
+                        .unwrap_or(Value::Undefined);
+                    return Some(level);
+                }
+            }
+        }
+
+        None
+    }
 }
 
 /// A binding from a property of this StageObject to an EditText text field.
@@ -141,11 +175,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             // 1) Actual properties on the underlying object
             self.get_local(name, activation, (*self).into())
         } else if let Some(level) =
-            obj.display_object
-                .get_level_by_path(name, &mut activation.context, case_sensitive)
+            Self::get_level_by_path(name, &mut activation.context, case_sensitive)
         {
             // 2) _levelN
-            Ok(level.object())
+            Ok(level)
         } else if let Some(child) = obj
             .display_object
             .as_container()
@@ -378,11 +411,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return true;
         }
 
-        if obj
-            .display_object
-            .get_level_by_path(name, &mut activation.context, case_sensitive)
-            .is_some()
-        {
+        if Self::get_level_by_path(name, &mut activation.context, case_sensitive).is_some() {
             return true;
         }
 
