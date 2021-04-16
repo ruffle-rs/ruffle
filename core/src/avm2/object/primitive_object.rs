@@ -37,7 +37,7 @@ impl<'gc> PrimitiveObject<'gc> {
         base_proto: Object<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
-        if let Value::Object(_) = primitive {
+        if !primitive.is_primitive() {
             return Err("Attempted to box an object as a primitive".into());
         }
 

@@ -179,8 +179,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             (*self).into(),
         )?;
 
-        if let Value::Object(_) = method {
-        } else {
+        if method.is_primitive() {
             avm_warn!(activation, "Object method {} is not callable", name);
         }
 

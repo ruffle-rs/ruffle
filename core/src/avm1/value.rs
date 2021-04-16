@@ -111,6 +111,15 @@ impl PartialEq for Value<'_> {
 }
 
 impl<'gc> Value<'gc> {
+    /// Yields `true` if the given value is a primitive value.
+    ///
+    /// Note: Boxed primitive values are not considered primitive - it is
+    /// expected that their `toString`/`valueOf` handlers have already had a
+    /// chance to unbox the primitive contained within.
+    pub fn is_primitive(&self) -> bool {
+        !matches!(self, Value::Object(_))
+    }
+
     pub fn into_number_v1(self) -> f64 {
         match self {
             Value::Bool(true) => 1.0,
@@ -328,7 +337,7 @@ impl<'gc> Value<'gc> {
             )?),
             (Value::String(_), Value::Object(_)) => {
                 let non_obj_other = other.to_primitive_num(activation)?;
-                if let Value::Object(_) = non_obj_other {
+                if !non_obj_other.is_primitive() {
                     return Ok(false.into());
                 }
 
@@ -336,7 +345,7 @@ impl<'gc> Value<'gc> {
             }
             (Value::Number(_), Value::Object(_)) => {
                 let non_obj_other = other.to_primitive_num(activation)?;
-                if let Value::Object(_) = non_obj_other {
+                if !non_obj_other.is_primitive() {
                     return Ok(false.into());
                 }
 
@@ -344,7 +353,7 @@ impl<'gc> Value<'gc> {
             }
             (Value::Object(_), Value::String(_)) => {
                 let non_obj_self = self.to_primitive_num(activation)?;
-                if let Value::Object(_) = non_obj_self {
+                if !non_obj_self.is_primitive() {
                     return Ok(false.into());
                 }
 
@@ -352,7 +361,7 @@ impl<'gc> Value<'gc> {
             }
             (Value::Object(_), Value::Number(_)) => {
                 let non_obj_self = self.to_primitive_num(activation)?;
-                if let Value::Object(_) = non_obj_self {
+                if !non_obj_self.is_primitive() {
                     return Ok(false.into());
                 }
 
