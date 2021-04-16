@@ -61,6 +61,22 @@ pub fn create_proto<'gc>(
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
 
+    object.as_script_object().unwrap().force_set_function(
+        "getDuration",
+        duration,
+        gc_context,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+        Some(fn_proto),
+    );
+
+    object.as_script_object().unwrap().force_set_function(
+        "setDuration",
+        |_, _, _| Ok(Value::Undefined),
+        gc_context,
+        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+        Some(fn_proto),
+    );
+
     object.add_property(
         gc_context,
         "id3",
