@@ -74,7 +74,6 @@ impl fmt::Debug for XmlObject<'_> {
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
     impl_custom_object!(base);
 
-    #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
