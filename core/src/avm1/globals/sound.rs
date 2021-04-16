@@ -200,11 +200,7 @@ fn attach_sound<'gc>(
                 sound_object.set_sound(activation.context.gc_context, Some(*sound));
                 sound_object.set_duration(
                     activation.context.gc_context,
-                    activation
-                        .context
-                        .audio
-                        .get_sound_duration(*sound)
-                        .unwrap_or(0),
+                    activation.context.audio.get_sound_duration(*sound),
                 );
                 sound_object.set_position(activation.context.gc_context, 0);
             } else {
@@ -230,7 +226,9 @@ fn duration<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.current_swf_version() >= 6 {
         if let Some(sound_object) = this.as_sound_object() {
-            return Ok(sound_object.duration().into());
+            return Ok(sound_object
+                .duration()
+                .map_or(Value::Undefined, |d| d.into()));
         } else {
             avm_warn!(activation, "Sound.duration: this is not a Sound");
         }
