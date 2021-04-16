@@ -174,14 +174,10 @@ pub struct Player {
     video: Video,
 
     transform_stack: TransformStack,
-    view_matrix: Matrix,
-    inverse_view_matrix: Matrix,
-    view_bounds: BoundingBox,
 
     rng: SmallRng,
 
     gc_arena: GcArena,
-    background_color: Option<Color>,
 
     frame_rate: f64,
 
@@ -199,7 +195,6 @@ pub struct Player {
     viewport_height: u32,
     movie_width: u32,
     movie_height: u32,
-    letterbox: Letterbox,
 
     mouse_pos: (Twips, Twips),
     is_mouse_down: bool,
@@ -261,11 +256,7 @@ impl Player {
             is_playing: false,
             needs_render: true,
 
-            background_color: None,
             transform_stack: TransformStack::new(),
-            view_matrix: Default::default(),
-            inverse_view_matrix: Default::default(),
-            view_bounds: Default::default(),
 
             rng: SmallRng::seed_from_u64(chrono::Utc::now().timestamp_millis() as u64),
 
@@ -300,7 +291,6 @@ impl Player {
             movie_height,
             viewport_width: movie_width,
             viewport_height: movie_height,
-            letterbox: Letterbox::Fullscreen,
 
             mouse_pos: (Twips::zero(), Twips::zero()),
             is_mouse_down: false,
@@ -334,10 +324,14 @@ impl Player {
             );
             context.stage.replace_at_depth(context, fake_root.into(), 0);
 
-            Avm2::load_player_globals(context)
+            let result = Avm2::load_player_globals(context);
+
+            let mut stage = context.stage;
+            stage.build_matrices(context);
+
+            result
         })?;
 
-        player.build_matrices();
         player.audio.set_frame_rate(frame_rate);
         let player_box = Arc::new(Mutex::new(player));
         let mut player_lock = player_box.lock().unwrap();
@@ -447,9 +441,11 @@ impl Player {
                 AvmString::new(activation.context.gc_context, version_string).into(),
                 Attribute::empty(),
             );
+
+            let mut stage = activation.context.stage;
+            stage.build_matrices(&mut activation.context);
         });
 
-        self.build_matrices();
         self.preload();
         self.audio.set_frame_rate(self.frame_rate);
     }
@@ -580,25 +576,26 @@ impl Player {
         self.needs_render
     }
 
-    pub fn background_color(&self) -> Option<Color> {
-        self.background_color.clone()
+    pub fn background_color(&mut self) -> Option<Color> {
+        self.mutate_with_update_context(|context| context.stage.background_color())
     }
 
     pub fn set_background_color(&mut self, color: Option<Color>) {
-        self.background_color = color
+        self.mutate_with_update_context(|context| {
+            context
+                .stage
+                .set_background_color(context.gc_context, color)
+        })
     }
 
-    pub fn letterbox(&self) -> Letterbox {
-        self.letterbox
+    pub fn letterbox(&mut self) -> Letterbox {
+        self.mutate_with_update_context(|context| context.stage.letterbox())
     }
 
     pub fn set_letterbox(&mut self, letterbox: Letterbox) {
-        self.letterbox = letterbox
-    }
-
-    fn should_letterbox(&self) -> bool {
-        self.letterbox == Letterbox::On
-            || (self.letterbox == Letterbox::Fullscreen && self.ui.is_fullscreen())
+        self.mutate_with_update_context(|context| {
+            context.stage.set_letterbox(context.gc_context, letterbox)
+        })
     }
 
     pub fn warn_on_unsupported_content(&self) -> bool {
@@ -624,11 +621,17 @@ impl Player {
     pub fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
         self.viewport_width = width;
         self.viewport_height = height;
-        self.build_matrices();
+
+        self.mutate_with_update_context(|context| {
+            let mut stage = context.stage;
+            stage.build_matrices(context);
+        })
     }
 
     pub fn handle_event(&mut self, event: PlayerEvent) {
         let mut needs_render = self.needs_render;
+        let inverse_view_matrix =
+            self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
 
         if cfg!(feature = "avm_debug") {
             if let PlayerEvent::KeyDown {
@@ -695,8 +698,7 @@ impl Player {
         | PlayerEvent::MouseDown { x, y }
         | PlayerEvent::MouseUp { x, y } = event
         {
-            self.mouse_pos =
-                self.inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
+            self.mouse_pos = inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
             if self.update_roll_over() {
                 needs_render = true;
             }
@@ -984,40 +986,30 @@ impl Player {
     }
 
     pub fn render(&mut self) {
-        let background_color = self
-            .background_color
-            .clone()
-            .unwrap_or_else(|| Color::from_rgb(0xffffff, 255));
-        self.renderer.begin_frame(background_color);
+        let (renderer, ui, transform_stack) =
+            (&mut self.renderer, &mut self.ui, &mut self.transform_stack);
 
-        let (renderer, transform_stack) = (&mut self.renderer, &mut self.transform_stack);
+        let viewport_bounds = (
+            Twips::from_pixels(self.viewport_height as f64),
+            Twips::from_pixels(self.viewport_width as f64),
+        );
 
-        transform_stack.push(&crate::transform::Transform {
-            matrix: self.view_matrix,
-            ..Default::default()
-        });
-
-        let view_bounds = self.view_bounds.clone();
         self.gc_arena.mutate(|_gc_context, gc_root| {
             let root_data = gc_root.0.read();
             let mut render_context = RenderContext {
                 renderer: renderer.deref_mut(),
+                ui: ui.deref_mut(),
                 library: &root_data.library,
                 transform_stack,
-                view_bounds,
+                viewport_bounds,
+                view_bounds: Default::default(), // filled in by stage
                 clip_depth_stack: vec![],
                 allow_mask: true,
             };
 
             root_data.stage.render(&mut render_context);
         });
-        transform_stack.pop();
 
-        if self.should_letterbox() {
-            self.draw_letterbox();
-        }
-
-        self.renderer.end_frame();
         self.needs_render = false;
     }
 
@@ -1182,54 +1174,6 @@ impl Player {
         }
     }
 
-    fn build_matrices(&mut self) {
-        // Create view matrix to scale stage into viewport area.
-        let (movie_width, movie_height) = (self.movie_width as f32, self.movie_height as f32);
-        let (viewport_width, viewport_height) =
-            (self.viewport_width as f32, self.viewport_height as f32);
-        let movie_aspect = movie_width / movie_height;
-        let viewport_aspect = viewport_width / viewport_height;
-        let (scale, margin_width, margin_height) = if viewport_aspect > movie_aspect {
-            let scale = viewport_height / movie_height;
-            (scale, (viewport_width - movie_width * scale) / 2.0, 0.0)
-        } else {
-            let scale = viewport_width / movie_width;
-            (scale, 0.0, (viewport_height - movie_height * scale) / 2.0)
-        };
-        self.view_matrix = Matrix {
-            a: scale,
-            b: 0.0,
-            c: 0.0,
-            d: scale,
-            tx: Twips::from_pixels(margin_width.into()),
-            ty: Twips::from_pixels(margin_height.into()),
-        };
-        self.inverse_view_matrix = self.view_matrix;
-        self.inverse_view_matrix.invert();
-
-        self.view_bounds = if self.should_letterbox() {
-            // No letterbox: movie area
-            BoundingBox {
-                x_min: Twips::zero(),
-                y_min: Twips::zero(),
-                x_max: Twips::from_pixels(f64::from(self.movie_width)),
-                y_max: Twips::from_pixels(f64::from(self.movie_height)),
-                valid: true,
-            }
-        } else {
-            // No letterbox: full visible stage area
-            let margin_width = f64::from(margin_width / scale);
-            let margin_height = f64::from(margin_height / scale);
-            BoundingBox {
-                x_min: Twips::from_pixels(-margin_width),
-                y_min: Twips::from_pixels(-margin_height),
-                x_max: Twips::from_pixels(f64::from(self.movie_width) + margin_width),
-                y_max: Twips::from_pixels(f64::from(self.movie_height) + margin_height),
-                valid: true,
-            }
-        };
-    }
-
     /// Runs the closure `f` with an `UpdateContext`.
     /// This takes cares of populating the `UpdateContext` struct, avoiding borrow issues.
     fn mutate_with_update_context<F, R>(&mut self, f: F) -> R
@@ -1241,7 +1185,6 @@ impl Player {
         let (
             player_version,
             swf,
-            background_color,
             renderer,
             audio,
             navigator,
@@ -1250,6 +1193,8 @@ impl Player {
             mouse_position,
             stage_width,
             stage_height,
+            viewport_width,
+            viewport_height,
             player,
             system_properties,
             instance_counter,
@@ -1264,7 +1209,6 @@ impl Player {
         ) = (
             self.player_version,
             &self.swf,
-            &mut self.background_color,
             self.renderer.deref_mut(),
             self.audio.deref_mut(),
             self.navigator.deref_mut(),
@@ -1273,6 +1217,8 @@ impl Player {
             &self.mouse_pos,
             Twips::from_pixels(self.movie_width.into()),
             Twips::from_pixels(self.movie_height.into()),
+            Twips::from_pixels(self.viewport_width.into()),
+            Twips::from_pixels(self.viewport_height.into()),
             self.self_reference.clone(),
             &mut self.system,
             &mut self.instance_counter,
@@ -1309,7 +1255,6 @@ impl Player {
                 player_version,
                 swf,
                 library,
-                background_color,
                 rng,
                 renderer,
                 audio,
@@ -1322,6 +1267,7 @@ impl Player {
                 mouse_position,
                 drag_object,
                 stage_size: (stage_width, stage_height),
+                viewport_size: (viewport_width, viewport_height),
                 player,
                 load_manager,
                 system: system_properties,
@@ -1463,58 +1409,6 @@ impl Player {
 
     pub fn set_max_execution_duration(&mut self, max_execution_duration: Duration) {
         self.max_execution_duration = max_execution_duration
-    }
-
-    fn draw_letterbox(&mut self) {
-        let black = Color::from_rgb(0, 255);
-        let viewport_width = self.viewport_width as f32;
-        let viewport_height = self.viewport_height as f32;
-
-        let margin_width = self.view_matrix.tx.to_pixels() as f32;
-        let margin_height = self.view_matrix.ty.to_pixels() as f32;
-        if margin_height > 0.0 {
-            self.renderer.draw_rect(
-                black.clone(),
-                &Matrix::create_box(
-                    viewport_width,
-                    margin_height,
-                    0.0,
-                    Twips::default(),
-                    Twips::default(),
-                ),
-            );
-            self.renderer.draw_rect(
-                black,
-                &Matrix::create_box(
-                    viewport_width,
-                    margin_height,
-                    0.0,
-                    Twips::default(),
-                    Twips::from_pixels((viewport_height - margin_height) as f64),
-                ),
-            );
-        } else if margin_width > 0.0 {
-            self.renderer.draw_rect(
-                black.clone(),
-                &Matrix::create_box(
-                    margin_width,
-                    viewport_height,
-                    0.0,
-                    Twips::default(),
-                    Twips::default(),
-                ),
-            );
-            self.renderer.draw_rect(
-                black,
-                &Matrix::create_box(
-                    margin_width,
-                    viewport_height,
-                    0.0,
-                    Twips::from_pixels((viewport_width - margin_width) as f64),
-                    Twips::default(),
-                ),
-            );
-        }
     }
 }
 

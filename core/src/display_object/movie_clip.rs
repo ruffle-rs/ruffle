@@ -3197,8 +3197,10 @@ impl<'gc, 'a> MovieClip<'gc> {
         // Also note that a loaded child SWF could change background color only
         // if parent SWF is missing SetBackgroundColor tag.
         let background_color = reader.read_rgb()?;
-        if context.background_color.is_none() {
-            *context.background_color = Some(background_color);
+        if context.stage.background_color().is_none() {
+            context
+                .stage
+                .set_background_color(context.gc_context, Some(background_color));
         }
         Ok(())
     }

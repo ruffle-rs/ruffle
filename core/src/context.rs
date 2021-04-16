@@ -38,10 +38,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// Display objects and actions can push actions onto the queue.
     pub action_queue: &'a mut ActionQueue<'gc>,
 
-    /// The background color of the Stage. Changed by the `SetBackgroundColor` SWF tag.
-    /// TODO: Move this into a `Stage` display object.
-    pub background_color: &'a mut Option<Color>,
-
     /// The mutation context to allocate and mutate `GcCell` types.
     pub gc_context: MutationContext<'gc, 'gc_context>,
 
@@ -106,6 +102,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The dimensions of the stage.
     pub stage_size: (Twips, Twips),
+
+    /// The dimensions of the stage's containing viewport.
+    pub viewport_size: (Twips, Twips),
 
     /// Weak reference to the player.
     ///
@@ -250,7 +249,6 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     {
         UpdateContext {
             action_queue: self.action_queue,
-            background_color: self.background_color,
             gc_context: self.gc_context,
             library: self.library,
             player_version: self.player_version,
@@ -271,6 +269,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             mouse_position: self.mouse_position,
             drag_object: self.drag_object,
             stage_size: self.stage_size,
+            viewport_size: self.viewport_size,
             player: self.player.clone(),
             load_manager: self.load_manager,
             system: self.system,
@@ -370,11 +369,18 @@ pub struct RenderContext<'a, 'gc> {
     /// The renderer, used by the display objects to draw themselves.
     pub renderer: &'a mut dyn RenderBackend,
 
+    /// The UI backend, used to detect user interactions.
+    pub ui: &'a mut dyn UiBackend,
+
     /// The library, which provides access to fonts and other definitions when rendering.
     pub library: &'a Library<'gc>,
 
     /// The transform stack controls the matrix and color transform as we traverse the display hierarchy.
     pub transform_stack: &'a mut TransformStack,
+
+    /// The dimensions of the stage's containing viewport.
+    pub viewport_bounds: (Twips, Twips),
+
     /// The bounds of the current viewport in twips. Used for culling.
     pub view_bounds: BoundingBox,
 

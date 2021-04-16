@@ -427,6 +427,39 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 }
 
+pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
+    if this.maskee().is_some() {
+        return;
+    }
+    context.transform_stack.push(&*this.transform());
+
+    let mask = this.masker();
+    let mut mask_transform = crate::transform::Transform::default();
+    if let Some(m) = mask {
+        mask_transform.matrix = this.global_to_local_matrix();
+        mask_transform.matrix *= m.local_to_global_matrix();
+        context.renderer.push_mask();
+        context.allow_mask = false;
+        context.transform_stack.push(&mask_transform);
+        m.render_self(context);
+        context.transform_stack.pop();
+        context.allow_mask = true;
+        context.renderer.activate_mask();
+    }
+    this.render_self(context);
+    if let Some(m) = mask {
+        context.renderer.deactivate_mask();
+        context.allow_mask = false;
+        context.transform_stack.push(&mask_transform);
+        m.render_self(context);
+        context.transform_stack.pop();
+        context.allow_mask = true;
+        context.renderer.pop_mask();
+    }
+
+    context.transform_stack.pop();
+}
+
 #[enum_trait_object(
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
@@ -933,36 +966,7 @@ pub trait TDisplayObject<'gc>:
     fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
-        if self.maskee().is_some() {
-            return;
-        }
-        context.transform_stack.push(&*self.transform());
-
-        let mask = self.masker();
-        let mut mask_transform = crate::transform::Transform::default();
-        if let Some(m) = mask {
-            mask_transform.matrix = self.global_to_local_matrix();
-            mask_transform.matrix *= m.local_to_global_matrix();
-            context.renderer.push_mask();
-            context.allow_mask = false;
-            context.transform_stack.push(&mask_transform);
-            m.render_self(context);
-            context.transform_stack.pop();
-            context.allow_mask = true;
-            context.renderer.activate_mask();
-        }
-        self.render_self(context);
-        if let Some(m) = mask {
-            context.renderer.deactivate_mask();
-            context.allow_mask = false;
-            context.transform_stack.push(&mask_transform);
-            m.render_self(context);
-            context.transform_stack.pop();
-            context.allow_mask = true;
-            context.renderer.pop_mask();
-        }
-
-        context.transform_stack.pop();
+        render_base((*self).into(), context)
     }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
