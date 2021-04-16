@@ -30,11 +30,8 @@ Alternatively, loading unpacked can save time during development:
 
 ### Firefox
 
-We do not yet have a signed release of the extension, so you must load it as a temporary extension.
-
-- Navigate to `about:debugging`.
-- Click on "This Firefox".
-- Click "Load Temporary Add-on...".
+- Navigate to `about:addons`.
+- Click the gear and select "Install Add-on From File...".
 - Select the `.xpi` file.
 
 ### Safari
