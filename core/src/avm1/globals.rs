@@ -283,7 +283,6 @@ pub fn parse_float<'gc>(
 
 pub fn set_interval<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -292,7 +291,6 @@ pub fn set_interval<'gc>(
 
 pub fn set_timeout<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -301,7 +299,6 @@ pub fn set_timeout<'gc>(
 
 pub fn create_timer<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-
     _this: Object<'gc>,
     args: &[Value<'gc>],
     is_timeout: bool,

@@ -210,7 +210,6 @@ fn watch<'gc>(
 /// Implements `Object.prototype.unmwatch`
 fn unwatch<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
