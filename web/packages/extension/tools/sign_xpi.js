@@ -42,7 +42,6 @@ async function sign(
         process.env.MOZILLA_API_SECRET &&
         process.env.FIREFOX_EXTENSION_ID
     ) {
-        // TODO: Read from unsigned xpi.
         const { version } = require("../assets/manifest.json");
         await sign(
             process.env.MOZILLA_API_KEY,
@@ -57,4 +56,8 @@ async function sign(
             "Skipping signing of Firefox extension. To enable this, please provide MOZILLA_API_KEY, MOZILLA_API_SECRET and FIREFOX_EXTENSION_ID environment variables"
         );
     }
-})();
+})().catch((error) => {
+    console.error("Error while signing Firefox extension:");
+    console.error(error);
+    process.exit(-1);
+});
