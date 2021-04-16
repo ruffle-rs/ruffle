@@ -1002,7 +1002,7 @@ impl Player {
                 library: &root_data.library,
                 transform_stack,
                 viewport_bounds,
-                view_bounds: Default::default(), // filled in by stage
+                stage: root_data.stage,
                 clip_depth_stack: vec![],
                 allow_mask: true,
             };

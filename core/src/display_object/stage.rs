@@ -82,6 +82,10 @@ impl<'gc> Stage<'gc> {
         self.0.write(gc_context).letterbox = letterbox
     }
 
+    pub fn view_bounds(self) -> BoundingBox {
+        self.0.read().view_bounds.clone()
+    }
+
     /// Determine if we should letterbox the stage content.
     fn should_letterbox(self, ui: &mut dyn UiBackend) -> bool {
         let letterbox = self.letterbox();
@@ -220,8 +224,6 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         let background_color = self
             .background_color()
             .unwrap_or_else(|| Color::from_rgb(0xffffff, 255));
-        let view_bounds = self.0.read().view_bounds.clone();
-        context.view_bounds = view_bounds;
 
         context.renderer.begin_frame(background_color);
 
