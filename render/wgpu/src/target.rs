@@ -126,7 +126,7 @@ impl TextureTarget {
         let size = wgpu::Extent3d {
             width: size.0,
             height: size.1,
-            depth: 1,
+            depth_or_array_layers: 1,
         };
         let texture_label = create_debug_label!("Render target texture");
         let format = wgpu::TextureFormat::Bgra8Unorm;
@@ -142,7 +142,8 @@ impl TextureTarget {
         let buffer_label = create_debug_label!("Render target buffer");
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: buffer_label.as_deref(),
-            size: (buffer_dimensions.padded_bytes_per_row * buffer_dimensions.height) as u64,
+            size: (buffer_dimensions.padded_bytes_per_row.get() as u64
+                * buffer_dimensions.height as u64),
             usage: wgpu::BufferUsage::COPY_DST | wgpu::BufferUsage::MAP_READ,
             mapped_at_creation: false,
         });
@@ -165,7 +166,8 @@ impl TextureTarget {
                     self.buffer_dimensions.height * self.buffer_dimensions.unpadded_bytes_per_row,
                 );
 
-                for chunk in map.chunks(self.buffer_dimensions.padded_bytes_per_row) {
+                for chunk in map.chunks(self.buffer_dimensions.padded_bytes_per_row.get() as usize)
+                {
                     buffer
                         .extend_from_slice(&chunk[..self.buffer_dimensions.unpadded_bytes_per_row]);
                 }
@@ -240,17 +242,17 @@ impl RenderTarget for TextureTarget {
             label: label.as_deref(),
         });
         encoder.copy_texture_to_buffer(
-            wgpu::TextureCopyView {
+            wgpu::ImageCopyTexture {
                 texture: &self.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
-            wgpu::BufferCopyView {
+            wgpu::ImageCopyBuffer {
                 buffer: &self.buffer,
-                layout: wgpu::TextureDataLayout {
+                layout: wgpu::ImageDataLayout {
                     offset: 0,
-                    bytes_per_row: self.buffer_dimensions.padded_bytes_per_row as u32,
-                    rows_per_image: 0,
+                    bytes_per_row: Some(self.buffer_dimensions.padded_bytes_per_row),
+                    rows_per_image: None,
                 },
             },
             self.size,
