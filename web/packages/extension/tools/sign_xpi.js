@@ -24,7 +24,10 @@ async function sign(
     }
 
     if (result.downloadedFiles.length === 1) {
-        fs.renameSync(result.downloadedFiles[0], destination);
+        // Copy the downloaded file to the destination.
+        // (Avoid `rename` because it fails if the destination is on a different drive.)
+        fs.copyFileSync(result.downloadedFiles[0], destination);
+        fs.unlinkSync(result.downloadedFiles[0]);
     } else {
         console.warn(
             "Unexpected downloads for signed Firefox extension, expected 1."
