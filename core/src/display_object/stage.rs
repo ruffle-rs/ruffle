@@ -220,6 +220,10 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         Some(*self)
     }
 
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+        self.render_children(context);
+    }
+
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         let background_color = self
             .background_color()
