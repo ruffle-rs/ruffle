@@ -38,7 +38,7 @@ pub struct SoundObjectData<'gc> {
     position: u32,
 
     /// Duration of the currently attached sound in milliseconds.
-    duration: u32,
+    duration: Option<u32>,
 }
 
 impl fmt::Debug for SoundObject<'_> {
@@ -65,16 +65,16 @@ impl<'gc> SoundObject<'gc> {
                 sound_instance: None,
                 owner: None,
                 position: 0,
-                duration: 0,
+                duration: None,
             },
         ))
     }
 
-    pub fn duration(self) -> u32 {
+    pub fn duration(self) -> Option<u32> {
         self.0.read().duration
     }
 
-    pub fn set_duration(self, gc_context: MutationContext<'gc, '_>, duration: u32) {
+    pub fn set_duration(self, gc_context: MutationContext<'gc, '_>, duration: Option<u32>) {
         self.0.write(gc_context).duration = duration;
     }
 
