@@ -990,8 +990,8 @@ impl Player {
             (&mut self.renderer, &mut self.ui, &mut self.transform_stack);
 
         let viewport_bounds = (
-            Twips::from_pixels(self.viewport_height as f64),
             Twips::from_pixels(self.viewport_width as f64),
+            Twips::from_pixels(self.viewport_height as f64),
         );
 
         self.gc_arena.mutate(|_gc_context, gc_root| {
