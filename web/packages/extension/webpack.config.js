@@ -42,12 +42,31 @@ module.exports = (env, argv) => {
                         to: "..",
                         transform(content) {
                             const manifest = JSON.parse(content.toString());
-                            const { version } = require("./package.json");
-                            Object.assign(manifest, { version });
+
+                            const packageVersion =
+                                process.env.npm_package_version;
+                            const versionChannel =
+                                process.env.CFG_RELEASE_CHANNEL || "nightly";
+                            const buildDate = new Date()
+                                .toISOString()
+                                .substring(0, 10);
+                            // The extension marketplaces require the version to monotonically increase,
+                            // so append the build date onto the end of the manifest version.
+                            const version = `${packageVersion}.${buildDate.replace(
+                                /-/g,
+                                ""
+                            )}`;
+                            const version_name =
+                                versionChannel === "nightly"
+                                    ? `${packageVersion} nightly ${buildDate}`
+                                    : packageVersion;
+
+                            Object.assign(manifest, { version, version_name });
                             if (env.firefox) {
                                 const id =
                                     process.env.FIREFOX_EXTENSION_ID ||
-                                    "ruffle-player-extension@ruffle.rs";
+                                    "ruffle@ruffle.rs";
+
                                 Object.assign(manifest, {
                                     browser_specific_settings: {
                                         gecko: { id },
