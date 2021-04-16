@@ -381,8 +381,8 @@ pub struct RenderContext<'a, 'gc> {
     /// The dimensions of the stage's containing viewport.
     pub viewport_bounds: (Twips, Twips),
 
-    /// The bounds of the current viewport in twips. Used for culling.
-    pub view_bounds: BoundingBox,
+    /// The current player's stage (including all loaded levels)
+    pub stage: Stage<'gc>,
 
     /// The stack of clip depths, used in masking.
     pub clip_depth_stack: Vec<Depth>,
