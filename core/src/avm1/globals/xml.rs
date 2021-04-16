@@ -1087,9 +1087,7 @@ fn spawn_xml_fetch<'gc>(
             node.into_string(&mut is_as2_compatible)
                 .unwrap_or_default()
                 .into_bytes(),
-            this.get("contentType", activation)?
-                .coerce_to_string(activation)?
-                .to_string(),
+            "application/x-www-form-urlencoded".to_string(),
         )))
     } else {
         // Not sending any parameters.
