@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::mem::size_of;
+use std::num::NonZeroU32;
 use wgpu::util::DeviceExt;
 
 macro_rules! create_debug_label {
@@ -70,7 +71,7 @@ pub struct BufferDimensions {
     pub width: usize,
     pub height: usize,
     pub unpadded_bytes_per_row: usize,
-    pub padded_bytes_per_row: usize,
+    pub padded_bytes_per_row: NonZeroU32,
 }
 
 impl BufferDimensions {
@@ -79,7 +80,10 @@ impl BufferDimensions {
         let unpadded_bytes_per_row = width * bytes_per_pixel;
         let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
         let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
-        let padded_bytes_per_row = unpadded_bytes_per_row + padded_bytes_per_row_padding;
+        let padded_bytes_per_row =
+            NonZeroU32::new((unpadded_bytes_per_row + padded_bytes_per_row_padding) as u32)
+                .unwrap();
+
         Self {
             width,
             height,
