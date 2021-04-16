@@ -6,6 +6,9 @@ left-to-right:  0
 right-to-left:  0
 right-to-right: 100
 
+sound.duration: undefined
+sound.getDuration(): undefined
+
 Sound.setVolume(50.5)
 volume:         50
 pan:            0
