@@ -62,7 +62,6 @@ impl<'gc> SharedObject<'gc> {
 impl<'gc> TObject<'gc> for SharedObject<'gc> {
     impl_custom_object!(base);
 
-    #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,

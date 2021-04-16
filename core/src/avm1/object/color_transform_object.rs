@@ -115,7 +115,6 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
         Some(*self)
     }
 
-    #[allow(clippy::new_ret_no_self)]
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
