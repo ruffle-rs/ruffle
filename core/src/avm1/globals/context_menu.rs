@@ -115,7 +115,6 @@ pub fn copy<'gc>(
 
 pub fn hide_builtin_items<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

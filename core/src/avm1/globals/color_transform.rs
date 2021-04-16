@@ -27,7 +27,6 @@ macro_rules! with_color_transform {
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -163,7 +162,6 @@ pub fn get_rgb<'gc>(
 
 pub fn set_rgb<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -194,7 +192,6 @@ macro_rules! color_transform_value_accessor {
         $(
             pub fn $set_ident<'gc>(
                 activation: &mut Activation<'_, 'gc, '_>,
-
                 this: Object<'gc>,
                 args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
@@ -277,7 +274,6 @@ pub fn create_proto<'gc>(
 
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -300,7 +296,6 @@ fn to_string<'gc>(
 
 fn concat<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

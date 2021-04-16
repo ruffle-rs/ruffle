@@ -1200,7 +1200,6 @@ fn get_rect<'gc>(
 pub fn get_url<'gc>(
     _movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     use crate::avm1::fscommand;

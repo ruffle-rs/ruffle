@@ -36,7 +36,6 @@ impl<'gc> Watcher<'gc> {
     pub fn call(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-
         name: &str,
         old_value: Value<'gc>,
         new_value: Value<'gc>,
