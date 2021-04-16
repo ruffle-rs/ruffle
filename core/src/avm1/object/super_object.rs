@@ -124,8 +124,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         let child = self.0.read().child;
         let (method, base_proto) = search_prototype(self.super_proto(), name, activation, child)?;
 
-        if let Value::Object(_) = method {
-        } else {
+        if method.is_primitive() {
             avm_warn!(activation, "Super method {} is not callable", name);
         }
 
