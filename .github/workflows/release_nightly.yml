@@ -110,6 +110,10 @@ jobs:
 
       - name: Build web
         if: matrix.os == 'ubuntu-latest'
+        env:
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
+          MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
         working-directory: web
         shell: bash -l {0}
         run: |
