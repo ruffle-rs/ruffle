@@ -560,6 +560,8 @@ swf_tests! {
     (as3_op_coerce, "avm2/op_coerce", 1),
     (as3_domain_memory, "avm2/domain_memory", 1),
     (as3_movieclip_symbol_constr, "avm2/movieclip_symbol_constr", 1),
+    (as3_stage_access, "avm2/stage_access", 1),
+    (as3_stage_properties, "avm2/stage_properties", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
