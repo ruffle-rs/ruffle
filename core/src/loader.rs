@@ -1,6 +1,7 @@
 //! Management of async loaders
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
+use crate::avm1::globals::display_object::AVM_DEPTH_BIAS;
 use crate::avm1::{Avm1, AvmString, Object, TObject, Value};
 use crate::avm2::Domain as Avm2Domain;
 use crate::backend::navigator::OwnedFuture;
@@ -506,6 +507,11 @@ impl<'gc> Loader<'gc> {
                             None => return Err(Error::Cancelled),
                             _ => unreachable!(),
                         };
+
+                        // Change the frame rate if the movie doesn't run in a new clip
+                        if clip.depth() < AVM_DEPTH_BIAS / 2 {
+                            *uc.frame_rate = Some(movie.header().frame_rate.into());
+                        }
 
                         if let Some(broadcaster) = broadcaster {
                             Avm1::run_stack_frame_for_method(

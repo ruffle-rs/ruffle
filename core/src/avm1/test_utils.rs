@@ -83,6 +83,7 @@ where
             times_get_time_called: 0,
             time_offset: &mut 0,
             audio_manager: &mut AudioManager::new(),
+            frame_rate: &mut None,
         };
         root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
         root.set_name(context.gc_context, "");

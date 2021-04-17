@@ -94,6 +94,9 @@ struct GcRootData<'gc> {
 
     /// Manager of active sound instances.
     audio_manager: AudioManager<'gc>,
+
+    /// Optional frame rate.
+    frame_rate: Option<f64>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -115,6 +118,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Timers<'gc>,
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
+        &mut Option<f64>,
     ) {
         (
             &mut self.levels,
@@ -129,6 +133,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.timers,
             &mut self.external_interface,
             &mut self.audio_manager,
+            &mut self.frame_rate,
         )
     }
 }
@@ -286,6 +291,7 @@ impl Player {
                         external_interface: ExternalInterface::new(),
                         focus_tracker: FocusTracker::new(gc_context),
                         audio_manager: AudioManager::new(),
+                        frame_rate: None,
                     },
                 ))
             }),
@@ -345,6 +351,14 @@ impl Player {
         std::mem::drop(player_lock);
 
         Ok(player_box)
+    }
+
+    /// Set the current frame rate
+    pub fn set_frame_rate(&mut self, nframe_rate: f64) -> &mut Player {
+        info!("Setting frame rate to {}", nframe_rate);
+        self.frame_rate = nframe_rate;
+        self.audio.set_frame_rate(nframe_rate);
+        self
     }
 
     /// Fetch the root movie.
@@ -1297,6 +1311,7 @@ impl Player {
                 timers,
                 external_interface,
                 audio_manager,
+                frame_rate,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -1337,6 +1352,7 @@ impl Player {
                 times_get_time_called: 0,
                 time_offset,
                 audio_manager,
+                frame_rate,
             };
 
             let ret = f(&mut update_context);
@@ -1393,6 +1409,12 @@ impl Player {
 
             rval
         });
+
+        // Update frame rate if specified
+        let v = self.gc_arena.root.0.read().frame_rate;
+        if let Some(x) = v {
+            self.set_frame_rate(x);
+        };
 
         // Update mouse state (check for new hovered button, etc.)
         self.update_roll_over();
