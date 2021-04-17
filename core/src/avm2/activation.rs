@@ -2605,7 +2605,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let dm = self.domain_memory().expect("Not domain memory?");
         let val = dm.read().get(address);
-        drop(dm);
 
         if let Some(val) = val {
             self.context.avm2.push(Value::Integer(val as i32));
@@ -2623,7 +2622,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let dm = self.domain_memory().expect("Not domain memory?");
         let r = dm.read();
         let val = r.get_range(address..address + 2);
-        drop(dm);
 
         if let Some(val) = val {
             let buf: [u8; 4] = [val[0], val[1], 0, 0];
@@ -2644,7 +2642,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let dm = self.domain_memory().expect("Not domain memory?");
         let r = dm.read();
         let val = r.get_range(address..address + 4);
-        drop(dm);
 
         if let Some(val) = val {
             let buf: [u8; 4] = [val[0], val[1], val[2], val[3]];
@@ -2666,7 +2663,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let dm = self.domain_memory().expect("Not domain memory?");
         let r = dm.read();
         let val = r.get_range(address..address + 4);
-        drop(dm);
 
         if let Some(val) = val {
             let buf: [u8; 4] = [val[0], val[1], val[2], val[3]];
@@ -2688,7 +2684,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let dm = self.domain_memory().expect("Not domain memory?");
         let r = dm.read();
         let val = r.get_range(address..address + 8);
-        drop(dm);
 
         if let Some(val) = val {
             let buf: [u8; 8] = [

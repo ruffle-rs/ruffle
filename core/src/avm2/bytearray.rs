@@ -360,3 +360,9 @@ impl Write for ByteArrayStorage {
         Ok(())
     }
 }
+
+impl Default for ByteArrayStorage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
