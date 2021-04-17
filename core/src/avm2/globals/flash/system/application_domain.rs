@@ -120,9 +120,9 @@ pub fn has_definition<'gc>(
 
 /// `domainMemory` property setter
 pub fn set_domain_memory<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
-    args: &[Value<'gc>],
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     log::warn!("ApplicationDomain.domainMemory set() - not implemented");
     Ok(Value::Undefined)
