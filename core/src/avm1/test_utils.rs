@@ -40,7 +40,7 @@ where
         let root: DisplayObject<'gc> =
             MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
         root.set_depth(gc_context, 0);
-        let stage = Stage::empty(gc_context);
+        let stage = Stage::empty(gc_context, 550, 400);
         let globals = avm1.global_object_cell();
 
         let mut context = UpdateContext {
@@ -61,8 +61,6 @@ where
             mouse_hovered_object: None,
             mouse_position: &(Twips::zero(), Twips::zero()),
             drag_object: &mut None,
-            stage_size: (Twips::from_pixels(550.0), Twips::from_pixels(400.0)),
-            viewport_size: (Twips::from_pixels(550.0), Twips::from_pixels(400.0)),
             player: None,
             load_manager: &mut LoadManager::new(),
             system: &mut SystemProperties::default(),

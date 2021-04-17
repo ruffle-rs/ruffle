@@ -100,12 +100,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The object being dragged via a `startDrag` action.
     pub drag_object: &'a mut Option<crate::player::DragObject<'gc>>,
 
-    /// The dimensions of the stage.
-    pub stage_size: (Twips, Twips),
-
-    /// The dimensions of the stage's containing viewport.
-    pub viewport_size: (Twips, Twips),
-
     /// Weak reference to the player.
     ///
     /// Recipients of an update context may upgrade the reference to ensure
@@ -268,8 +262,6 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             mouse_hovered_object: self.mouse_hovered_object,
             mouse_position: self.mouse_position,
             drag_object: self.drag_object,
-            stage_size: self.stage_size,
-            viewport_size: self.viewport_size,
             player: self.player.clone(),
             load_manager: self.load_manager,
             system: self.system,
@@ -377,9 +369,6 @@ pub struct RenderContext<'a, 'gc> {
 
     /// The transform stack controls the matrix and color transform as we traverse the display hierarchy.
     pub transform_stack: &'a mut TransformStack,
-
-    /// The dimensions of the stage's containing viewport.
-    pub viewport_bounds: (Twips, Twips),
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
