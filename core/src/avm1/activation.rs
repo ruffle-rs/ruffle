@@ -343,7 +343,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Self {
         let version = context.swf.version();
         let globals = context.avm1.global_object_cell();
-        let level0 = context.stage.child_by_depth(0).unwrap();
+        let level0 = context.stage.root_clip();
 
         Self::from_nothing(context, id, version, globals, level0)
     }

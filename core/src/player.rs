@@ -777,7 +777,7 @@ impl Player {
             // Fire event listener on appropriate object
             if let Some((listener_type, event_name, args)) = listener {
                 context.action_queue.queue_actions(
-                    context.stage.child_by_depth(0).expect("root level"),
+                    context.stage.root_clip(),
                     ActionType::NotifyListeners {
                         listener: listener_type,
                         method: event_name,
@@ -917,7 +917,7 @@ impl Player {
         let mut is_action_script_3 = false;
         self.mutate_with_update_context(|context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
-            let root = context.stage.child_by_depth(0).expect("root level");
+            let root = context.stage.root_clip();
             root.as_movie_clip()
                 .unwrap()
                 .preload(context, &mut morph_shapes);
@@ -1249,8 +1249,8 @@ impl Player {
 
             *current_frame = update_context
                 .stage
-                .child_by_depth(0)
-                .and_then(|root| root.as_movie_clip())
+                .root_clip()
+                .as_movie_clip()
                 .map(|clip| clip.current_frame());
 
             // Hovered object may have been updated; copy it back to the GC root.

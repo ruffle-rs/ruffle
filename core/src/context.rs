@@ -160,7 +160,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             self.audio,
             self.gc_context,
             self.action_queue,
-            self.stage.child_by_depth(0).expect("root movie"),
+            self.stage.root_clip(),
         );
     }
 

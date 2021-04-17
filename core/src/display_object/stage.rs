@@ -236,6 +236,14 @@ impl<'gc> Stage<'gc> {
             );
         }
     }
+
+    /// Obtain the root movie on the stage.
+    ///
+    /// `Stage` guarantees that there is always a movie clip at depth 0.
+    pub fn root_clip(self) -> DisplayObject<'gc> {
+        self.child_by_depth(0)
+            .expect("Stage must always have a root movie")
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {

@@ -7,7 +7,6 @@ use crate::avm1::{
     AvmString as Avm1String, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
 };
 use crate::context::UpdateContext;
-use crate::display_object::TDisplayObjectContainer;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
 
@@ -204,7 +203,7 @@ impl<'gc> Callback<'gc> {
     ) -> Value {
         match self {
             Callback::Avm1 { this, method } => {
-                let base_clip = context.stage.child_by_depth(0).unwrap();
+                let base_clip = context.stage.root_clip();
                 let swf_version = context.swf.version();
                 let globals = context.avm1.global_object_cell();
                 let mut activation = Avm1Activation::from_nothing(
