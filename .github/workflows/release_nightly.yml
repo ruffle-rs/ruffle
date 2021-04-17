@@ -118,6 +118,7 @@ jobs:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
           MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
           MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
+          BUILD_ID: ${{ github.run_number }}
         working-directory: web
         shell: bash -l {0}
         run: |

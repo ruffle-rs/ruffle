@@ -52,10 +52,9 @@ module.exports = (env, argv) => {
                                 .substring(0, 10);
                             // The extension marketplaces require the version to monotonically increase,
                             // so append the build date onto the end of the manifest version.
-                            const version = `${packageVersion}.${buildDate.replace(
-                                /-/g,
-                                ""
-                            )}`;
+                            const version = process.env.BUILD_ID
+                                ? `${packageVersion}.${process.env.BUILD_ID}`
+                                : packageVersion;
                             const version_name =
                                 versionChannel === "nightly"
                                     ? `${packageVersion} nightly ${buildDate}`
