@@ -1,8 +1,12 @@
 name: Release Nightly
 
 on:
+  # Run nightly
   schedule:
     - cron: "0 0 * * *"
+
+  # Allow for manual dispatch on GitHub
+  workflow_dispatch:
 
 jobs:
   create-nightly-release:
@@ -26,7 +30,7 @@ jobs:
           rm -f $HOME/commit.json
           echo "Repository activity: $timestamp $author $url"
           alive=0
-          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+          if [ "${{ github.event_name }}" == "repository_dispatch" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "[WARNING] Ignoring activity check: workflow triggered manually."
             alive=1
           elif [[ $days < 1 ]]; then
