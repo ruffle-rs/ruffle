@@ -14,4 +14,5 @@ pub mod movieclip;
 pub mod scene;
 pub mod shape;
 pub mod sprite;
+pub mod stage;
 pub mod swfversion;
