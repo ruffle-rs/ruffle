@@ -1,5 +1,10 @@
 //! Root stage impl
 
+use crate::avm1::Object as Avm1Object;
+use crate::avm2::{
+    Object as Avm2Object, ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject,
+    Value as Avm2Value,
+};
 use crate::backend::ui::UiBackend;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
@@ -9,6 +14,7 @@ use crate::display_object::container::{
 use crate::display_object::{render_base, DisplayObject, DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::types::{Degrees, Percent};
+use crate::vminterface::Instantiator;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// The Stage is the root of the display object hierarchy. It contains all AVM1
@@ -51,6 +57,9 @@ pub struct StageData<'gc> {
 
     /// The bounds of the current viewport in twips, used for culling.
     view_bounds: BoundingBox,
+
+    /// The AVM2 view of this stage object.
+    avm2_object: Avm2Object<'gc>,
 }
 
 impl<'gc> Stage<'gc> {
@@ -65,6 +74,7 @@ impl<'gc> Stage<'gc> {
                 stage_size: (width, height),
                 viewport_size: (width, height),
                 view_bounds: Default::default(),
+                avm2_object: Avm2ScriptObject::bare_object(gc_context),
             },
         ))
     }
@@ -249,6 +259,21 @@ impl<'gc> Stage<'gc> {
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     impl_display_object!(base);
 
+    fn post_instantiation(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        _display_object: DisplayObject<'gc>,
+        _init_object: Option<Avm1Object<'gc>>,
+        _instantiated_by: Instantiator,
+        _run_frame: bool,
+    ) {
+        let stage_proto = context.avm2.prototypes().stage;
+        let actual_avm2_object =
+            Avm2StageObject::for_display_object(context.gc_context, (*self).into(), stage_proto);
+
+        self.0.write(context.gc_context).avm2_object = actual_avm2_object.into();
+    }
+
     fn id(&self) -> CharacterId {
         u16::MAX
     }
@@ -295,6 +320,10 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         for child in self.iter_execution_list() {
             child.run_frame(context);
         }
+    }
+
+    fn object2(&self) -> Avm2Value<'gc> {
+        self.0.read().avm2_object.into()
     }
 }
 

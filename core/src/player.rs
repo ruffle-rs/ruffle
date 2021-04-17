@@ -317,6 +317,7 @@ impl Player {
             let result = Avm2::load_player_globals(context);
 
             let stage = context.stage;
+            stage.post_instantiation(context, stage.into(), None, Instantiator::Movie, false);
             stage.build_matrices(context);
 
             result
