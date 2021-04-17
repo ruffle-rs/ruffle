@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::{ByteArrayStorage, Endian};
 use crate::avm2::names::{Multiname, QName};
-use crate::avm2::object::Object;
 use crate::avm2::object::TObject;
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;

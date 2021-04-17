@@ -12,6 +12,8 @@ package
 	import avm2.intrinsics.memory.lf32;
 	import avm2.intrinsics.memory.lf64;
 	import avm2.intrinsics.memory.sxi1;
+	import avm2.intrinsics.memory.sxi8;
+	import avm2.intrinsics.memory.sxi16;
 	import flash.system.ApplicationDomain;
 	import flash.utils.ByteArray;
 	import flash.display.Sprite;
@@ -136,6 +138,30 @@ package
 
 			trace("// sxi1(255)");
             trace(sxi1(255));
+
+			trace("// sxi8(0)");
+            trace(sxi8(0));
+
+			trace("// sxi8(1)");
+            trace(sxi8(1));
+
+			trace("// sxi8(10)");
+            trace(sxi8(10));
+
+			trace("// sxi8(255)");
+            trace(sxi8(255));
+
+			trace("// sxi16(0)");
+            trace(sxi16(0));
+
+			trace("// sxi16(1)");
+            trace(sxi16(1));
+
+			trace("// sxi16(10)");
+            trace(sxi16(10));
+
+			trace("// sxi16(255)");
+            trace(sxi16(255));
 		}
 	}
 }

@@ -12,7 +12,7 @@ use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
-use crate::avm2::{value, Avm2, Domain, Error};
+use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell, MutationContext};
@@ -2720,7 +2720,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_sxi8(&mut self) -> Result<FrameControl<'gc>, Error> {
         let val = self.context.avm2.pop().coerce_to_i32(self)?;
 
-        let val = val.wrapping_shl(23).wrapping_shr(23);
+        let val = (val.wrapping_shl(23).wrapping_shr(23) & 0xFF) as i8 as i32;
 
         self.context.avm2.push(Value::Integer(val));
 
@@ -2731,7 +2731,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_sxi16(&mut self) -> Result<FrameControl<'gc>, Error> {
         let val = self.context.avm2.pop().coerce_to_i32(self)?;
 
-        let val = val.wrapping_shl(15).wrapping_shr(15);
+        let val = (val.wrapping_shl(15).wrapping_shr(15) & 0xFFFF) as i16 as i32;
 
         self.context.avm2.push(Value::Integer(val));
 

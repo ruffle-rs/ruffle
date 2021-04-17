@@ -124,28 +124,17 @@ pub fn set_domain_memory<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(d) = args.get(0) {
-        if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
-            // let o = d.coerce_to_object(activation)?.as;
-            // appdomain.set_domain_memory(activation.context.gc_context, o);
-        }
-    }
-
+    log::warn!("ApplicationDomain.domainMemory set() - not implemented");
     Ok(Value::Undefined)
 }
 
 /// `domainMemory` property getter
 pub fn domain_memory<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
+    _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    // if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
-    //     if let Some(o) = appdomain.domain_memory() {
-    //         return Ok(o.into());
-    //     }
-    // }
-
+    log::warn!("ApplicationDomain.domainMemory get() - not implemented");
     Ok(Value::Undefined)
 }
 
