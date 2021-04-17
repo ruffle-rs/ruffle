@@ -9,7 +9,6 @@
 use crate::avm1::object::search_prototype;
 use crate::avm1::{Activation, ActivationIdentifier, Object, TObject, Value};
 use crate::context::UpdateContext;
-use crate::display_object::TDisplayObjectContainer;
 use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
 
@@ -40,7 +39,7 @@ impl<'gc> Timers<'gc> {
 
         let version = context.swf.header().version;
         let globals = context.avm1.global_object_cell();
-        let level0 = context.stage.child_by_depth(0).expect("root movie");
+        let level0 = context.stage.root_clip();
 
         let mut activation = Activation::from_nothing(
             context.reborrow(),

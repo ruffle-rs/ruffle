@@ -43,7 +43,7 @@ impl<'gc> FocusTracker<'gc> {
 
         log::info!("Focus is now on {:?}", focused_element);
 
-        let level0 = context.stage.child_by_depth(0).unwrap();
+        let level0 = context.stage.root_clip();
         Avm1::notify_system_listeners(
             level0,
             context.swf.version(),
