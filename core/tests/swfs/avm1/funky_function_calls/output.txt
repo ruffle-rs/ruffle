@@ -46,6 +46,10 @@ false
 Is it the global object: true
 Argument 0: Fake arguments object
 Argument 1: 5
+false
+Is it the global object: false
+Argument 0: undefined
+Argument 1: undefined
 Let's try some things that don't work
 undefined
 undefined
