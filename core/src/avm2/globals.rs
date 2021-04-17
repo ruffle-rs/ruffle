@@ -109,6 +109,7 @@ pub struct SystemPrototypes<'gc> {
     pub graphics: Object<'gc>,
     pub loaderinfo: Object<'gc>,
     pub bytearray: Object<'gc>,
+    pub stage: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -153,6 +154,7 @@ impl<'gc> SystemPrototypes<'gc> {
             graphics: empty,
             loaderinfo: empty,
             bytearray: empty,
+            stage: empty,
         }
     }
 }
@@ -746,6 +748,19 @@ pub fn load_player_globals<'gc>(
     class(
         activation,
         flash::display::swfversion::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
+    activation
+        .context
+        .avm2
+        .system_prototypes
+        .as_mut()
+        .unwrap()
+        .stage = class(
+        activation,
+        flash::display::stage::create_class(mc),
         implicit_deriver,
         domain,
         script,
