@@ -38,9 +38,6 @@ class
      code
       getlocal0
       pushscope
-;      findpropstrict QName(PackageNamespace(""),"trace")
-;      pushstring "/// Constructors"
-;      callpropvoid QName(PackageNamespace(""),"trace"), 1
 
       findpropstrict      QName(PackageNamespace(""), "trace")
       pushfalse
@@ -78,9 +75,6 @@ class
       pushnull
       coerce              QName(PackageNamespace(""), "Object")
       callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-
-      ; TODO: floating point?
 
       ; Subclass -> Base class
       findpropstrict      QName(PackageNamespace(""), "trace")
