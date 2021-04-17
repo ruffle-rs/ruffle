@@ -388,7 +388,7 @@ pub fn parent<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
         return Ok(dobj
-            .parent()
+            .avm2_parent()
             .map(|parent| parent.object2())
             .unwrap_or(Value::Null));
     }
@@ -410,6 +410,15 @@ pub fn root<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Implements `stage`.
+pub fn stage<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(activation.context.stage.object2())
 }
 
 /// Implements `visible`'s getter.
@@ -660,6 +669,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "root"),
         Method::from_builtin(root),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "stage"),
+        Method::from_builtin(stage),
     ));
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "visible"),
