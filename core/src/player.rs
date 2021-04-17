@@ -1401,7 +1401,6 @@ impl Player {
         F: for<'a, 'gc, 'gc_context> FnOnce(&mut UpdateContext<'a, 'gc, 'gc_context>) -> R,
     {
         self.update_drag();
-
         let rval = self.mutate_with_update_context(|context| {
             let rval = func(context);
 
@@ -1413,7 +1412,9 @@ impl Player {
         // Update frame rate if specified
         let v = self.gc_arena.root.0.read().frame_rate;
         if let Some(x) = v {
-            self.set_frame_rate(x);
+            if (x - self.frame_rate()).abs() > f64::EPSILON {
+                self.set_frame_rate(x);
+            }
         };
 
         // Update mouse state (check for new hovered button, etc.)
