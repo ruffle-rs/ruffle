@@ -2487,9 +2487,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         _method: Gc<'gc, BytecodeMethod<'gc>>,
         _index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        //TODO: should check if x is a subclass of the given type when object and typeerror if not, see "instr.cpp::coerceImpl (287)"
-        //TODO: update tests with typeof + description
-
         let val = self.context.avm2.pop();
 
         let x = match val {
@@ -2519,7 +2516,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_i32(self)?;
 
-        let dm = self.domain_memory().expect("Not domain memory?");
+        let dm = self.domain_memory()?;
 
         if address < 0 || address as usize >= dm.read().len() {
             return Err("RangeError: The specified range is invalid".into());
@@ -2536,7 +2533,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_i32(self)?;
 
-        let dm = self.domain_memory().expect("Not domain memory?");
+        let dm = self.domain_memory()?;
 
         if address < 0 || (address as usize + 1) >= dm.read().len() {
             return Err("RangeError: The specified range is invalid".into());
@@ -2553,7 +2550,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_i32(self)?;
 
-        let dm = self.domain_memory().expect("Not domain memory?");
+        let dm = self.domain_memory()?;
 
         if address < 0 || (address as usize + 3) >= dm.read().len() {
             return Err("RangeError: The specified range is invalid".into());
@@ -2570,7 +2567,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_number(self)? as f32;
 
-        let dm = self.domain_memory().expect("Not domain memory?");
+        let dm = self.domain_memory()?;
 
         if address < 0 || (address as usize + 3) >= dm.read().len() {
             return Err("RangeError: The specified range is invalid".into());
@@ -2587,7 +2584,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_number(self)?;
 
-        let dm = self.domain_memory().expect("Not domain memory?");
+        let dm = self.domain_memory()?;
 
         if address < 0 || (address as usize + 7) >= dm.read().len() {
             return Err("RangeError: The specified range is invalid".into());
@@ -2603,7 +2600,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_li8(&mut self) -> Result<FrameControl<'gc>, Error> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
-        let dm = self.domain_memory().expect("Not domain memory?");
+        let dm = self.domain_memory()?;
         let val = dm.read().get(address);
 
         if let Some(val) = val {
@@ -2619,7 +2616,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_li16(&mut self) -> Result<FrameControl<'gc>, Error> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
-        let dm = self.domain_memory().expect("Not domain memory?");
+        let dm = self.domain_memory()?;
         let r = dm.read();
         let val = r.get_range(address..address + 2);
 
@@ -2639,7 +2636,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_li32(&mut self) -> Result<FrameControl<'gc>, Error> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
-        let dm = self.domain_memory().expect("Not domain memory?");
+        let dm = self.domain_memory()?;
         let r = dm.read();
         let val = r.get_range(address..address + 4);
 
@@ -2660,7 +2657,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_lf32(&mut self) -> Result<FrameControl<'gc>, Error> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
-        let dm = self.domain_memory().expect("Not domain memory?");
+        let dm = self.domain_memory()?;
         let r = dm.read();
         let val = r.get_range(address..address + 4);
 
@@ -2681,7 +2678,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_lf64(&mut self) -> Result<FrameControl<'gc>, Error> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
-        let dm = self.domain_memory().expect("Not domain memory?");
+        let dm = self.domain_memory()?;
         let r = dm.read();
         let val = r.get_range(address..address + 8);
 
