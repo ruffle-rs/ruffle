@@ -5,6 +5,7 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
+use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -31,6 +32,24 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Overrides `name`'s getter.
+pub fn name<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Null)
+}
+
+/// Overrides `name`'s setter.
+pub fn set_name<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("Error: You cannot set the name of the stage.".into())
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -50,6 +69,21 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.set_attributes(ClassAttributes::SEALED);
+
+    write.define_instance_trait(
+        Trait::from_getter(
+            QName::new(Namespace::public(), "name"),
+            Method::from_builtin(name),
+        )
+        .with_override(),
+    );
+    write.define_instance_trait(
+        Trait::from_setter(
+            QName::new(Namespace::public(), "name"),
+            Method::from_builtin(set_name),
+        )
+        .with_override(),
+    );
 
     class
 }
