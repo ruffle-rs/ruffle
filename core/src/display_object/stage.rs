@@ -1,7 +1,6 @@
 //! Root stage impl
 
 use crate::backend::ui::UiBackend;
-use crate::collect::CollectWrapper;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::{
@@ -36,16 +35,19 @@ pub struct StageData<'gc> {
     /// The stage background.
     ///
     /// If the background color is not specified, it should be white.
-    background_color: CollectWrapper<Option<Color>>,
+    #[collect(require_static)]
+    background_color: Option<Color>,
 
     /// Determines how player content is resized to fit the stage.
     letterbox: Letterbox,
 
     /// The dimensions of the stage.
-    stage_size: CollectWrapper<(u32, u32)>,
+    #[collect(require_static)]
+    stage_size: (u32, u32),
 
     /// The dimensions of the stage's containing viewport.
-    viewport_size: CollectWrapper<(u32, u32)>,
+    #[collect(require_static)]
+    viewport_size: (u32, u32),
 
     /// The bounds of the current viewport in twips, used for culling.
     view_bounds: BoundingBox,
@@ -58,21 +60,21 @@ impl<'gc> Stage<'gc> {
             StageData {
                 base: Default::default(),
                 child: Default::default(),
-                background_color: CollectWrapper(None),
+                background_color: None,
                 letterbox: Letterbox::Fullscreen,
-                stage_size: CollectWrapper((width, height)),
-                viewport_size: CollectWrapper((width, height)),
+                stage_size: (width, height),
+                viewport_size: (width, height),
                 view_bounds: Default::default(),
             },
         ))
     }
 
     pub fn background_color(self) -> Option<Color> {
-        self.0.read().background_color.0.clone()
+        self.0.read().background_color.clone()
     }
 
     pub fn set_background_color(self, gc_context: MutationContext<'gc, '_>, color: Option<Color>) {
-        self.0.write(gc_context).background_color.0 = color;
+        self.0.write(gc_context).background_color = color;
     }
 
     pub fn inverse_view_matrix(self) -> Matrix {
@@ -92,17 +94,17 @@ impl<'gc> Stage<'gc> {
 
     /// Get the current stage size.
     pub fn stage_size(self) -> (u32, u32) {
-        self.0.read().stage_size.0
+        self.0.read().stage_size
     }
 
     /// Set the current stage size.
     pub fn set_stage_size(self, gc_context: MutationContext<'gc, '_>, width: u32, height: u32) {
-        self.0.write(gc_context).stage_size.0 = (width, height);
+        self.0.write(gc_context).stage_size = (width, height);
     }
 
     /// Get the current viewport size.
     pub fn viewport_size(self) -> (u32, u32) {
-        self.0.read().viewport_size.0
+        self.0.read().viewport_size
     }
 
     /// Set the current viewport size.
@@ -112,7 +114,7 @@ impl<'gc> Stage<'gc> {
         width: u32,
         height: u32,
     ) {
-        self.0.write(context.gc_context).viewport_size.0 = (width, height);
+        self.0.write(context.gc_context).viewport_size = (width, height);
         self.build_matrices(context);
     }
 
@@ -130,11 +132,11 @@ impl<'gc> Stage<'gc> {
     /// Update the stage's transform matrix in response to a root movie change.
     pub fn build_matrices(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Create view matrix to scale stage into viewport area.
-        let (movie_width, movie_height) = self.0.read().stage_size.0;
+        let (movie_width, movie_height) = self.0.read().stage_size;
         let movie_width = movie_width as f64;
         let movie_height = movie_height as f64;
 
-        let (viewport_width, viewport_height) = self.0.read().viewport_size.0;
+        let (viewport_width, viewport_height) = self.0.read().viewport_size;
         let viewport_width = viewport_width as f64;
         let viewport_height = viewport_height as f64;
 
@@ -182,7 +184,7 @@ impl<'gc> Stage<'gc> {
     /// Draw the stage's letterbox.
     fn draw_letterbox(&self, context: &mut RenderContext<'_, 'gc>) {
         let black = Color::from_rgb(0, 255);
-        let (viewport_width, viewport_height) = self.0.read().viewport_size.0;
+        let (viewport_width, viewport_height) = self.0.read().viewport_size;
         let viewport_width = viewport_width as f32;
         let viewport_height = viewport_height as f32;
 
