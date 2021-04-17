@@ -707,6 +707,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::Lf32 => self.op_lf32(),
                 Op::Lf64 => self.op_lf64(),
                 Op::Sxi1 => self.op_sxi1(),
+                Op::Sxi8 => self.op_sxi8(),
+                Op::Sxi16 => self.op_sxi16(),
                 _ => self.unknown_op(op),
             };
 
@@ -2708,6 +2710,28 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = self.context.avm2.pop().coerce_to_i32(self)?;
 
         let val = val.wrapping_shl(31).wrapping_shr(31);
+
+        self.context.avm2.push(Value::Integer(val));
+
+        Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Sxi8`
+    fn op_sxi8(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let val = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        let val = val.wrapping_shl(23).wrapping_shr(23);
+
+        self.context.avm2.push(Value::Integer(val));
+
+        Ok(FrameControl::Continue)
+    }
+
+    /// Implements `Op::Sxi16`
+    fn op_sxi16(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let val = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        let val = val.wrapping_shl(15).wrapping_shr(15);
 
         self.context.avm2.push(Value::Integer(val));
 

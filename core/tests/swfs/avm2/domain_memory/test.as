@@ -125,13 +125,17 @@ package
 			trace("// lf64(0) after sf64(999999.9999999999, 0)");
             trace(lf64(0));
 
-			si8(1, 0);
-            trace("// sxi1(0) after si8(1, 0)");
+            trace("// sxi1(0)");
             trace(sxi1(0));
 
-			si8(0, 0);
-            trace("// sxi1(0) after si8(0, 0)");
-            trace(sxi1(0));
+			trace("// sxi1(1)");
+            trace(sxi1(1));
+
+			trace("// sxi1(10)");
+            trace(sxi1(10));
+
+			trace("// sxi1(255)");
+            trace(sxi1(255));
 		}
 	}
 }
