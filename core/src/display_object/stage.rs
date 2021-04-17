@@ -239,6 +239,18 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
         context.renderer.end_frame();
     }
+
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.iter_execution_list() {
+            child.construct_frame(context);
+        }
+    }
+
+    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.iter_execution_list() {
+            child.run_frame(context);
+        }
+    }
 }
 
 impl<'gc> TDisplayObjectContainer<'gc> for Stage<'gc> {
