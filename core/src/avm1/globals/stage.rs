@@ -127,7 +127,7 @@ fn height<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.stage_size.1.to_pixels().into())
+    Ok(activation.context.stage.stage_size().1.into())
 }
 
 fn scale_mode<'gc>(
@@ -171,5 +171,5 @@ fn width<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.stage_size.0.to_pixels().into())
+    Ok(activation.context.stage.stage_size().0.into())
 }

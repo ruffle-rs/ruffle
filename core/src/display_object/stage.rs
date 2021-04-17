@@ -41,12 +41,18 @@ pub struct StageData<'gc> {
     /// Determines how player content is resized to fit the stage.
     letterbox: Letterbox,
 
+    /// The dimensions of the stage.
+    stage_size: CollectWrapper<(u32, u32)>,
+
+    /// The dimensions of the stage's containing viewport.
+    viewport_size: CollectWrapper<(u32, u32)>,
+
     /// The bounds of the current viewport in twips, used for culling.
     view_bounds: BoundingBox,
 }
 
 impl<'gc> Stage<'gc> {
-    pub fn empty(gc_context: MutationContext<'gc, '_>) -> Stage<'gc> {
+    pub fn empty(gc_context: MutationContext<'gc, '_>, width: u32, height: u32) -> Stage<'gc> {
         Self(GcCell::allocate(
             gc_context,
             StageData {
@@ -54,6 +60,8 @@ impl<'gc> Stage<'gc> {
                 child: Default::default(),
                 background_color: CollectWrapper(None),
                 letterbox: Letterbox::Fullscreen,
+                stage_size: CollectWrapper((width, height)),
+                viewport_size: CollectWrapper((width, height)),
                 view_bounds: Default::default(),
             },
         ))
@@ -82,6 +90,32 @@ impl<'gc> Stage<'gc> {
         self.0.write(gc_context).letterbox = letterbox
     }
 
+    /// Get the current stage size.
+    pub fn stage_size(self) -> (u32, u32) {
+        self.0.read().stage_size.0
+    }
+
+    /// Set the current stage size.
+    pub fn set_stage_size(self, gc_context: MutationContext<'gc, '_>, width: u32, height: u32) {
+        self.0.write(gc_context).stage_size.0 = (width, height);
+    }
+
+    /// Get the current viewport size.
+    pub fn viewport_size(self) -> (u32, u32) {
+        self.0.read().viewport_size.0
+    }
+
+    /// Set the current viewport size.
+    pub fn set_viewport_size(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        width: u32,
+        height: u32,
+    ) {
+        self.0.write(context.gc_context).viewport_size.0 = (width, height);
+        self.build_matrices(context);
+    }
+
     pub fn view_bounds(self) -> BoundingBox {
         self.0.read().view_bounds.clone()
     }
@@ -94,16 +128,16 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Update the stage's transform matrix in response to a root movie change.
-    pub fn build_matrices(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn build_matrices(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Create view matrix to scale stage into viewport area.
-        let (movie_width, movie_height) = (
-            context.stage_size.0.to_pixels(),
-            context.stage_size.1.to_pixels(),
-        );
-        let (viewport_width, viewport_height) = (
-            context.viewport_size.0.to_pixels(),
-            context.viewport_size.1.to_pixels(),
-        );
+        let (movie_width, movie_height) = self.0.read().stage_size.0;
+        let movie_width = movie_width as f64;
+        let movie_height = movie_height as f64;
+
+        let (viewport_width, viewport_height) = self.0.read().viewport_size.0;
+        let viewport_width = viewport_width as f64;
+        let viewport_height = viewport_height as f64;
+
         let movie_aspect = movie_width / movie_height;
         let viewport_aspect = viewport_width / viewport_height;
         let (scale, margin_width, margin_height) = if viewport_aspect > movie_aspect {
@@ -148,8 +182,9 @@ impl<'gc> Stage<'gc> {
     /// Draw the stage's letterbox.
     fn draw_letterbox(&self, context: &mut RenderContext<'_, 'gc>) {
         let black = Color::from_rgb(0, 255);
-        let viewport_width = context.viewport_bounds.0.to_pixels() as f32;
-        let viewport_height = context.viewport_bounds.1.to_pixels() as f32;
+        let (viewport_width, viewport_height) = self.0.read().viewport_size.0;
+        let viewport_width = viewport_width as f32;
+        let viewport_height = viewport_height as f32;
 
         let view_matrix = self.matrix();
 

@@ -191,11 +191,6 @@ pub struct Player {
     /// Faked time passage for fooling hand-written busy-loop FPS limiters.
     time_offset: u32,
 
-    viewport_width: u32,
-    viewport_height: u32,
-    movie_width: u32,
-    movie_height: u32,
-
     mouse_pos: (Twips, Twips),
     is_mouse_down: bool,
 
@@ -265,7 +260,7 @@ impl Player {
                     gc_context,
                     GcRootData {
                         library: Library::empty(gc_context),
-                        stage: Stage::empty(gc_context),
+                        stage: Stage::empty(gc_context, movie_width, movie_height),
                         mouse_hovered_object: None,
                         drag_object: None,
                         avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
@@ -286,11 +281,6 @@ impl Player {
             frame_accumulator: 0.0,
             recent_run_frame_timings: VecDeque::with_capacity(10),
             time_offset: 0,
-
-            movie_width,
-            movie_height,
-            viewport_width: movie_width,
-            viewport_height: movie_height,
 
             mouse_pos: (Twips::zero(), Twips::zero()),
             is_mouse_down: false,
@@ -326,7 +316,7 @@ impl Player {
 
             let result = Avm2::load_player_globals(context);
 
-            let mut stage = context.stage;
+            let stage = context.stage;
             stage.build_matrices(context);
 
             result
@@ -379,13 +369,16 @@ impl Player {
             movie.header().stage_size.y_max
         );
 
-        self.movie_width = movie.width();
-        self.movie_height = movie.height();
         self.frame_rate = movie.header().frame_rate.into();
         self.swf = movie;
         self.instance_counter = 0;
 
         self.mutate_with_update_context(|context| {
+            context.stage.set_stage_size(
+                context.gc_context,
+                context.swf.width(),
+                context.swf.height(),
+            );
             let domain = Avm2Domain::movie_domain(context.gc_context, context.avm2.global_domain());
             context
                 .library
@@ -442,7 +435,7 @@ impl Player {
                 Attribute::empty(),
             );
 
-            let mut stage = activation.context.stage;
+            let stage = activation.context.stage;
             stage.build_matrices(&mut activation.context);
         });
 
@@ -606,25 +599,22 @@ impl Player {
         self.warn_on_unsupported_content = warn_on_unsupported_content
     }
 
-    pub fn movie_width(&self) -> u32 {
-        self.movie_width
+    pub fn movie_width(&mut self) -> u32 {
+        self.mutate_with_update_context(|context| context.stage.stage_size().0)
     }
 
-    pub fn movie_height(&self) -> u32 {
-        self.movie_height
+    pub fn movie_height(&mut self) -> u32 {
+        self.mutate_with_update_context(|context| context.stage.stage_size().1)
     }
 
-    pub fn viewport_dimensions(&self) -> (u32, u32) {
-        (self.viewport_width, self.viewport_height)
+    pub fn viewport_dimensions(&mut self) -> (u32, u32) {
+        self.mutate_with_update_context(|context| context.stage.viewport_size())
     }
 
     pub fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
-        self.viewport_width = width;
-        self.viewport_height = height;
-
         self.mutate_with_update_context(|context| {
-            let mut stage = context.stage;
-            stage.build_matrices(context);
+            let stage = context.stage;
+            stage.set_viewport_size(context, width, height);
         })
     }
 
@@ -969,11 +959,6 @@ impl Player {
         let (renderer, ui, transform_stack) =
             (&mut self.renderer, &mut self.ui, &mut self.transform_stack);
 
-        let viewport_bounds = (
-            Twips::from_pixels(self.viewport_width as f64),
-            Twips::from_pixels(self.viewport_height as f64),
-        );
-
         self.gc_arena.mutate(|_gc_context, gc_root| {
             let root_data = gc_root.0.read();
             let mut render_context = RenderContext {
@@ -981,7 +966,6 @@ impl Player {
                 ui: ui.deref_mut(),
                 library: &root_data.library,
                 transform_stack,
-                viewport_bounds,
                 stage: root_data.stage,
                 clip_depth_stack: vec![],
                 allow_mask: true,
@@ -1171,10 +1155,6 @@ impl Player {
             ui,
             rng,
             mouse_position,
-            stage_width,
-            stage_height,
-            viewport_width,
-            viewport_height,
             player,
             system_properties,
             instance_counter,
@@ -1195,10 +1175,6 @@ impl Player {
             self.ui.deref_mut(),
             &mut self.rng,
             &self.mouse_pos,
-            Twips::from_pixels(self.movie_width.into()),
-            Twips::from_pixels(self.movie_height.into()),
-            Twips::from_pixels(self.viewport_width.into()),
-            Twips::from_pixels(self.viewport_height.into()),
             self.self_reference.clone(),
             &mut self.system,
             &mut self.instance_counter,
@@ -1246,8 +1222,6 @@ impl Player {
                 mouse_hovered_object,
                 mouse_position,
                 drag_object,
-                stage_size: (stage_width, stage_height),
-                viewport_size: (viewport_width, viewport_height),
                 player,
                 load_manager,
                 system: system_properties,
