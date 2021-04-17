@@ -951,34 +951,14 @@ impl Player {
     pub fn run_frame(&mut self) {
         self.update(|update_context| {
             // TODO: In what order are levels run?
-            // NOTE: We have to copy all the layer pointers into a separate list
-            // because level updates can create more levels, which we don't
-            // want to run frames on
-            let levels: Vec<_> = update_context.stage.iter_depth_list().collect();
+            let stage = update_context.stage;
 
-            if let Some((_depth, level)) = levels.first() {
-                level.exit_frame(update_context);
-            }
-
-            if let Some((_depth, level)) = levels.first() {
-                level.enter_frame(update_context);
-            }
-
-            for (_depth, level) in levels.iter() {
-                level.construct_frame(update_context);
-            }
-
-            if let Some((_depth, level)) = levels.first() {
-                level.frame_constructed(update_context);
-            }
-
-            for (_depth, level) in levels.iter() {
-                level.run_frame(update_context);
-            }
-
-            for (_depth, level) in levels.iter() {
-                level.run_frame_scripts(update_context);
-            }
+            stage.exit_frame(update_context);
+            stage.enter_frame(update_context);
+            stage.construct_frame(update_context);
+            stage.frame_constructed(update_context);
+            stage.run_frame(update_context);
+            stage.run_frame_scripts(update_context);
 
             update_context.update_sounds();
         });
