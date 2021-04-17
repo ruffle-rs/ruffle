@@ -27,13 +27,6 @@ package
  
 		private function init(): void
 		{
-			const SIZE:uint = 90;
-
-			//var domainMemory:ByteArray = new ByteArray();
-			///domainMemory.length = SIZE*4 + SIZE*8;
-			//domainMemory.endian = Endian.LITTLE_ENDIAN;
-			//ApplicationDomain.currentDomain.domainMemory = domainMemory;
- 
             si8(65, 0);
             trace("// li8(0) after si8(65, 0)");
             trace(li8(0));
