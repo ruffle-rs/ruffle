@@ -951,19 +951,8 @@ impl RenderBackend for WebGlRenderBackend {
                 ],
             ];
 
-            let mult_color = [
-                transform.color_transform.r_mult,
-                transform.color_transform.g_mult,
-                transform.color_transform.b_mult,
-                transform.color_transform.a_mult,
-            ];
-
-            let add_color = [
-                transform.color_transform.r_add,
-                transform.color_transform.g_add,
-                transform.color_transform.b_add,
-                transform.color_transform.a_add,
-            ];
+            let mult_color = transform.color_transform.mult_rgba_normalized();
+            let add_color = transform.color_transform.add_rgba_normalized();
 
             self.bind_vertex_array(Some(&draw.vao));
 
@@ -1041,19 +1030,8 @@ impl RenderBackend for WebGlRenderBackend {
             ],
         ];
 
-        let mult_color = [
-            transform.color_transform.r_mult,
-            transform.color_transform.g_mult,
-            transform.color_transform.b_mult,
-            transform.color_transform.a_mult,
-        ];
-
-        let add_color = [
-            transform.color_transform.r_add,
-            transform.color_transform.g_add,
-            transform.color_transform.b_add,
-            transform.color_transform.a_add,
-        ];
+        let mult_color = transform.color_transform.mult_rgba_normalized();
+        let add_color = transform.color_transform.add_rgba_normalized();
 
         self.set_stencil_state();
 

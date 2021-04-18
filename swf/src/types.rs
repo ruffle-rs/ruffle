@@ -327,10 +327,10 @@ impl Color {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ColorTransform {
-    pub r_multiply: f32,
-    pub g_multiply: f32,
-    pub b_multiply: f32,
-    pub a_multiply: f32,
+    pub r_multiply: Fixed8,
+    pub g_multiply: Fixed8,
+    pub b_multiply: Fixed8,
+    pub a_multiply: Fixed8,
     pub r_add: i16,
     pub g_add: i16,
     pub b_add: i16,
@@ -340,10 +340,10 @@ pub struct ColorTransform {
 impl ColorTransform {
     pub const fn new() -> ColorTransform {
         ColorTransform {
-            r_multiply: 1f32,
-            g_multiply: 1f32,
-            b_multiply: 1f32,
-            a_multiply: 1f32,
+            r_multiply: Fixed8::ONE,
+            g_multiply: Fixed8::ONE,
+            b_multiply: Fixed8::ONE,
+            a_multiply: Fixed8::ONE,
             r_add: 0,
             g_add: 0,
             b_add: 0,
