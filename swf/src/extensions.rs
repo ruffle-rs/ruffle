@@ -89,25 +89,6 @@ pub trait ReadSwfExt<'a> {
     }
 
     #[inline]
-    fn read_encoded_i32(&mut self) -> Result<i32> {
-        let mut val: i32 = 0;
-        for i in (0..35).step_by(7) {
-            let byte = self.read_u8()? as i32;
-            val |= (byte & 0b0111_1111) << i;
-            if byte & 0b1000_0000 == 0 {
-                let i = i + 7;
-                if i < 32 {
-                    // Perform sign-extension to allow negative values.
-                    val <<= 32 - i;
-                    val >>= 32 - i;
-                }
-                break;
-            }
-        }
-        Ok(val)
-    }
-
-    #[inline]
     fn read_f64_me(&mut self) -> Result<f64> {
         // Flash weirdly stores (some?) f64 as two LE 32-bit chunks.
         // First word is the hi-word, second word is the lo-word.

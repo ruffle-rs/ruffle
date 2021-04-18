@@ -133,19 +133,8 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_i32(&mut self, mut n: i32) -> Result<()> {
-        loop {
-            let byte = (n as u8) & 0x7f;
-            n >>= 7;
-            if n != 0 && n != -1 {
-                self.write_u8(0b1_0000000 | byte)?;
-            } else {
-                self.write_u8(byte)?;
-                break;
-            }
-        }
-
-        Ok(())
+    fn write_i32(&mut self, n: i32) -> Result<()> {
+        self.write_u32(n as u32)
     }
 
     fn write_index<T>(&mut self, i: &Index<T>) -> Result<()> {
