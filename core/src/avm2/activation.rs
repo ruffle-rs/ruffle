@@ -17,6 +17,7 @@ use crate::context::UpdateContext;
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
+use std::convert::TryInto;
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
     Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
@@ -2621,10 +2622,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = r.get_range(address..address + 2);
 
         if let Some(val) = val {
-            let buf: [u8; 4] = [val[0], val[1], 0, 0];
-            self.context
-                .avm2
-                .push(Value::Integer(i32::from_le_bytes(buf)));
+            self.context.avm2.push(Value::Integer(
+                u16::from_le_bytes(val.try_into().unwrap()) as i32
+            ));
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
@@ -2641,11 +2641,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = r.get_range(address..address + 4);
 
         if let Some(val) = val {
-            let buf: [u8; 4] = [val[0], val[1], val[2], val[3]];
-
             self.context
                 .avm2
-                .push(Value::Integer(i32::from_le_bytes(buf)));
+                .push(Value::Integer(i32::from_le_bytes(val.try_into().unwrap())));
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
@@ -2662,11 +2660,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = r.get_range(address..address + 4);
 
         if let Some(val) = val {
-            let buf: [u8; 4] = [val[0], val[1], val[2], val[3]];
-
-            self.context
-                .avm2
-                .push(Value::Number(f32::from_le_bytes(buf) as f64));
+            self.context.avm2.push(Value::Number(
+                f32::from_le_bytes(val.try_into().unwrap()) as f64
+            ));
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
@@ -2683,13 +2679,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = r.get_range(address..address + 8);
 
         if let Some(val) = val {
-            let buf: [u8; 8] = [
-                val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7],
-            ];
-
             self.context
                 .avm2
-                .push(Value::Number(f64::from_le_bytes(buf)));
+                .push(Value::Number(f64::from_le_bytes(val.try_into().unwrap())));
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
