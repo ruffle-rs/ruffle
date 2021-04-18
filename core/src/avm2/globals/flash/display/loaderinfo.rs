@@ -43,6 +43,9 @@ pub fn action_script_version<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Err("Error: The stage's loader info does not have an AS version".into())
+                }
                 LoaderStream::Swf(movie, _) => {
                     let library = activation
                         .context
@@ -66,6 +69,14 @@ pub fn application_domain<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Ok(DomainObject::from_domain(
+                        activation.context.gc_context,
+                        Some(activation.context.avm2.prototypes().application_domain),
+                        activation.context.avm2.global_domain(),
+                    )
+                    .into());
+                }
                 LoaderStream::Swf(movie, _) => {
                     let library = activation
                         .context
@@ -90,13 +101,16 @@ pub fn application_domain<'gc>(
 /// TODO: This is also the getter for `bytesLoaded` as we don't yet support
 /// streaming loads yet. When we do, we'll need another property for this.
 pub fn bytes_total<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Ok(activation.context.swf.compressed_length().into())
+                }
                 LoaderStream::Swf(movie, _) => {
                     return Ok(movie.compressed_length().into());
                 }
@@ -109,13 +123,14 @@ pub fn bytes_total<'gc>(
 
 /// `content` getter
 pub fn content<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => return Ok(activation.context.stage.root_clip().object2()),
                 LoaderStream::Swf(_, root) => {
                     return Ok(root.object2());
                 }
@@ -135,6 +150,7 @@ pub fn content_type<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => return Ok(Value::Null),
                 LoaderStream::Swf(_, _) => {
                     return Ok("application/x-shockwave-flash".into());
                 }
@@ -154,6 +170,9 @@ pub fn frame_rate<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Err("Error: The stage's loader info does not have a frame rate".into())
+                }
                 LoaderStream::Swf(root, _) => {
                     return Ok(root.header().frame_rate.into());
                 }
@@ -173,6 +192,9 @@ pub fn height<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Err("Error: The stage's loader info does not have a height".into())
+                }
                 LoaderStream::Swf(root, _) => {
                     let y_min = root.header().stage_size.y_min;
                     let y_max = root.header().stage_size.y_max;
@@ -203,6 +225,9 @@ pub fn swf_version<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Err("Error: The stage's loader info does not have a SWF version".into())
+                }
                 LoaderStream::Swf(root, _) => {
                     return Ok(root.header().version.into());
                 }
@@ -222,6 +247,9 @@ pub fn url<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Err("Error: The stage's loader info does not have a URL".into())
+                }
                 LoaderStream::Swf(root, _) => {
                     let url = root.url().unwrap_or("").to_string();
                     return Ok(AvmString::new(activation.context.gc_context, url).into());
@@ -242,6 +270,9 @@ pub fn width<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Err("Error: The stage's loader info does not have a width".into())
+                }
                 LoaderStream::Swf(root, _) => {
                     let x_min = root.header().stage_size.x_min;
                     let x_max = root.header().stage_size.x_max;
@@ -263,6 +294,9 @@ pub fn bytes<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Err("Error: The stage's loader info does not have a bytestream".into())
+                }
                 LoaderStream::Swf(root, _) => {
                     let ba_proto = activation.context.avm2.prototypes().bytearray;
                     let ba =
@@ -320,6 +354,9 @@ pub fn loader_url<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Err("Error: The stage's loader info does not have a loader URL".into())
+                }
                 LoaderStream::Swf(root, _) => {
                     let loader_url = root
                         .loader_url()
@@ -344,6 +381,9 @@ pub fn parameters<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             match &*loader_stream {
+                LoaderStream::Stage => {
+                    return Err("Error: The stage's loader info does not have parameters".into())
+                }
                 LoaderStream::Swf(root, _) => {
                     let object_proto = activation.context.avm2.prototypes().object;
                     let mut params_obj =

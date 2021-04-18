@@ -21,6 +21,13 @@ use std::sync::Arc;
 #[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]
 pub enum LoaderStream<'gc> {
+    /// The current stage.
+    ///
+    /// While it makes no sense to actually retrieve loader info properties off
+    /// the stage, it's possible to do so. Some properties yield the
+    /// not-yet-loaded error while others are pulled from the root SWF.
+    Stage,
+
     /// A loaded SWF movie.
     ///
     /// The associated `DisplayObject` is the root movieclip.
@@ -62,6 +69,20 @@ impl<'gc> LoaderInfoObject<'gc> {
             },
         ))
         .into())
+    }
+
+    /// Create a loader info object for the stage.
+    pub fn from_stage(base_proto: Object<'gc>, mc: MutationContext<'gc, '_>) -> Object<'gc> {
+        let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
+
+        LoaderInfoObject(GcCell::allocate(
+            mc,
+            LoaderInfoObjectData {
+                base,
+                loaded_stream: Some(LoaderStream::Stage),
+            },
+        ))
+        .into()
     }
 
     /// Construct a loader-info subclass.

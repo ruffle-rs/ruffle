@@ -562,6 +562,7 @@ swf_tests! {
     (as3_movieclip_symbol_constr, "avm2/movieclip_symbol_constr", 1),
     (as3_stage_access, "avm2/stage_access", 1),
     (as3_stage_properties, "avm2/stage_properties", 1),
+    (as3_stage_loaderinfo_properties, "avm2/stage_loaderinfo_properties", 2),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

@@ -573,6 +573,14 @@ pub fn loader_info<'gc>(
                 }
             }
         }
+
+        if DisplayObject::ptr_eq(dobj, activation.context.stage.into()) {
+            return Ok(LoaderInfoObject::from_stage(
+                activation.context.avm2.prototypes().loaderinfo,
+                activation.context.gc_context,
+            )
+            .into());
+        }
     }
 
     Ok(Value::Undefined)
