@@ -6,8 +6,10 @@
 use crate::string::SwfStr;
 use bitflags::bitflags;
 
+mod fixed;
 mod matrix;
 
+pub use fixed::*;
 pub use matrix::Matrix;
 
 /// A complete header and tags in the SWF file.
