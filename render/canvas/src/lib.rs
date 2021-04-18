@@ -52,10 +52,10 @@ impl CanvasColor {
     /// Apply a color transformation to this color.
     fn color_transform(&self, cxform: &ColorTransform) -> CanvasColor {
         let CanvasColor(_, r, g, b, a) = self;
-        let r = clamped_u8_color(*r as f32 * cxform.r_mult + (cxform.r_add * 255.0));
-        let g = clamped_u8_color(*g as f32 * cxform.g_mult + (cxform.g_add * 255.0));
-        let b = clamped_u8_color(*b as f32 * cxform.b_mult + (cxform.b_add * 255.0));
-        let a = clamped_u8_color(*a as f32 * cxform.a_mult + (cxform.a_add * 255.0));
+        let r = clamped_u8_color(*r as f32 * cxform.r_mult.to_f32() + (cxform.r_add as f32));
+        let g = clamped_u8_color(*g as f32 * cxform.g_mult.to_f32() + (cxform.g_add as f32));
+        let b = clamped_u8_color(*b as f32 * cxform.b_mult.to_f32() + (cxform.b_add as f32));
+        let a = clamped_u8_color(*a as f32 * cxform.a_mult.to_f32() + (cxform.a_add as f32));
         let colstring = format!("rgba({},{},{},{})", r, g, b, f32::from(a) / 255.0);
         CanvasColor(colstring, r, g, b, a)
     }
@@ -322,34 +322,31 @@ impl WebCanvasRenderBackend {
     #[inline]
     fn set_color_filter(&self, transform: &Transform) {
         let color_transform = &transform.color_transform;
-        if color_transform.r_mult == 1.0
-            && color_transform.g_mult == 1.0
-            && color_transform.b_mult == 1.0
-            && color_transform.r_add == 0.0
-            && color_transform.g_add == 0.0
-            && color_transform.b_add == 0.0
-            && color_transform.a_add == 0.0
+        if color_transform.r_mult.is_one()
+            && color_transform.g_mult.is_one()
+            && color_transform.b_mult.is_one()
+            && color_transform.r_add == 0
+            && color_transform.g_add == 0
+            && color_transform.b_add == 0
+            && color_transform.a_add == 0
         {
-            self.context.set_global_alpha(color_transform.a_mult.into());
+            self.context
+                .set_global_alpha(f64::from(color_transform.a_mult) / 255.0);
         } else {
+            let mult = color_transform.mult_rgba_normalized();
+            let add = color_transform.add_rgba_normalized();
+
             // TODO HACK: Firefox is having issues with additive alpha in color transforms (see #38).
             // Hack this away and just use multiplicative (not accurate in many cases, but won't look awful).
-            let (a_mult, a_add) = if self.use_color_transform_hack && color_transform.a_add != 0.0 {
-                (color_transform.a_mult + color_transform.a_add, 0.0)
+            let (a_mult, a_add) = if self.use_color_transform_hack && color_transform.a_add != 0 {
+                (mult[3] + add[3], 0.0)
             } else {
-                (color_transform.a_mult, color_transform.a_add)
+                (mult[3], add[3])
             };
 
             let matrix_str = format!(
                 "{} 0 0 0 {} 0 {} 0 0 {} 0 0 {} 0 {} 0 0 0 {} {}",
-                color_transform.r_mult,
-                color_transform.r_add,
-                color_transform.g_mult,
-                color_transform.g_add,
-                color_transform.b_mult,
-                color_transform.b_add,
-                a_mult,
-                a_add
+                mult[0], add[0], mult[1], add[1], mult[2], add[2], a_mult, a_add
             );
 
             self.color_matrix

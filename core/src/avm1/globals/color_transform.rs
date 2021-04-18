@@ -10,6 +10,7 @@ use gc_arena::MutationContext;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::color_transform::ColorTransform;
 use std::convert::Into;
+use swf::Fixed8;
 
 macro_rules! with_color_transform {
     ($obj: ident, $gc: ident, $fn_proto: ident, $($name: expr => [$get: ident, $set: ident],)*) => {
@@ -83,38 +84,33 @@ pub fn object_to_color_transform<'gc>(
 ) -> Result<ColorTransform, Error<'gc>> {
     let red_multiplier = object
         .get("redMultiplier", activation)?
-        .coerce_to_f64(activation)? as f32;
+        .coerce_to_f64(activation)?;
     let green_multiplier = object
         .get("greenMultiplier", activation)?
-        .coerce_to_f64(activation)? as f32;
+        .coerce_to_f64(activation)?;
     let blue_multiplier = object
         .get("blueMultiplier", activation)?
-        .coerce_to_f64(activation)? as f32;
+        .coerce_to_f64(activation)?;
     let alpha_multiplier = object
         .get("alphaMultiplier", activation)?
-        .coerce_to_f64(activation)? as f32;
+        .coerce_to_f64(activation)?;
     let red_offset = object
         .get("redOffset", activation)?
-        .coerce_to_f64(activation)? as f32
-        / 255.0;
+        .coerce_to_i16(activation)?;
     let green_offset = object
         .get("greenOffset", activation)?
-        .coerce_to_f64(activation)? as f32
-        / 255.0;
+        .coerce_to_i16(activation)?;
     let blue_offset = object
         .get("blueOffset", activation)?
-        .coerce_to_f64(activation)? as f32
-        / 255.0;
+        .coerce_to_i16(activation)?;
     let alpha_offset = object
         .get("alphaOffset", activation)?
-        .coerce_to_f64(activation)? as f32
-        / 255.0;
-
+        .coerce_to_i16(activation)?;
     Ok(ColorTransform {
-        r_mult: red_multiplier,
-        g_mult: green_multiplier,
-        b_mult: blue_multiplier,
-        a_mult: alpha_multiplier,
+        r_mult: Fixed8::from_f64(red_multiplier),
+        g_mult: Fixed8::from_f64(green_multiplier),
+        b_mult: Fixed8::from_f64(blue_multiplier),
+        a_mult: Fixed8::from_f64(alpha_multiplier),
         r_add: red_offset,
         g_add: green_offset,
         b_add: blue_offset,
@@ -127,14 +123,14 @@ pub fn color_transform_to_object<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
-        color_transform.r_mult.into(),
-        color_transform.g_mult.into(),
-        color_transform.b_mult.into(),
-        color_transform.a_mult.into(),
-        (color_transform.r_add * 255.0).into(),
-        (color_transform.g_add * 255.0).into(),
-        (color_transform.b_add * 255.0).into(),
-        (color_transform.a_add * 255.0).into(),
+        color_transform.r_mult.to_f64().into(),
+        color_transform.g_mult.to_f64().into(),
+        color_transform.b_mult.to_f64().into(),
+        color_transform.a_mult.to_f64().into(),
+        color_transform.r_add.into(),
+        color_transform.g_add.into(),
+        color_transform.b_add.into(),
+        color_transform.a_add.into(),
     ];
     let constructor = activation
         .context

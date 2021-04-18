@@ -16,6 +16,7 @@ use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::sync::Arc;
+use swf::Fixed8;
 
 mod bitmap;
 mod button;
@@ -302,7 +303,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_alpha(&mut self, value: f64) {
         self.set_transformed_by_script(true);
-        self.color_transform_mut().a_mult = value as f32
+        self.color_transform_mut().a_mult = Fixed8::from_f64(value)
     }
 
     fn clip_depth(&self) -> Depth {

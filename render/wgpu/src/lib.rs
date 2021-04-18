@@ -141,18 +141,8 @@ struct ColorAdjustments {
 impl From<ColorTransform> for ColorAdjustments {
     fn from(transform: ColorTransform) -> Self {
         Self {
-            mult_color: [
-                transform.r_mult,
-                transform.g_mult,
-                transform.b_mult,
-                transform.a_mult,
-            ],
-            add_color: [
-                transform.r_add,
-                transform.g_add,
-                transform.b_add,
-                transform.a_add,
-            ],
+            mult_color: transform.mult_rgba_normalized(),
+            add_color: transform.add_rgba_normalized(),
         }
     }
 }

@@ -175,6 +175,11 @@ impl<W: Write> BitWriter<W> {
     }
 
     #[inline]
+    fn write_sbits_fixed8(&mut self, num_bits: u32, n: Fixed8) -> io::Result<()> {
+        self.write_sbits(num_bits, n.get().into())
+    }
+
+    #[inline]
     fn write_sbits_twips(&mut self, num_bits: u32, twips: Twips) -> io::Result<()> {
         self.write_sbits(num_bits, twips.get())
     }
@@ -344,9 +349,9 @@ impl<W: Write> Writer<W> {
 
     fn write_color_transform_no_alpha(&mut self, color_transform: &ColorTransform) -> Result<()> {
         // TODO: Assert that alpha is 1.0?
-        let has_mult = color_transform.r_multiply != 1f32
-            || color_transform.g_multiply != 1f32
-            || color_transform.b_multiply != 1f32;
+        let has_mult = !color_transform.r_multiply.is_one()
+            || !color_transform.g_multiply.is_one()
+            || !color_transform.b_multiply.is_one();
         let has_add =
             color_transform.r_add != 0 || color_transform.g_add != 0 || color_transform.b_add != 0;
         let multiply = [
@@ -366,7 +371,7 @@ impl<W: Write> Writer<W> {
         let mut num_bits = if has_mult {
             multiply
                 .iter()
-                .map(|n| count_sbits((*n * 256f32) as i32))
+                .map(|n| count_sbits(n.get() as i32))
                 .max()
                 .unwrap()
         } else {
@@ -383,9 +388,9 @@ impl<W: Write> Writer<W> {
         }
         bits.write_ubits(4, num_bits)?;
         if has_mult {
-            bits.write_sbits(num_bits, (color_transform.r_multiply * 256f32) as i32)?;
-            bits.write_sbits(num_bits, (color_transform.g_multiply * 256f32) as i32)?;
-            bits.write_sbits(num_bits, (color_transform.b_multiply * 256f32) as i32)?;
+            bits.write_sbits_fixed8(num_bits, color_transform.r_multiply)?;
+            bits.write_sbits_fixed8(num_bits, color_transform.g_multiply)?;
+            bits.write_sbits_fixed8(num_bits, color_transform.b_multiply)?;
         }
         if has_add {
             bits.write_sbits(num_bits, color_transform.r_add.into())?;
@@ -396,10 +401,10 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_color_transform(&mut self, color_transform: &ColorTransform) -> Result<()> {
-        let has_mult = color_transform.r_multiply != 1f32
-            || color_transform.g_multiply != 1f32
-            || color_transform.b_multiply != 1f32
-            || color_transform.a_multiply != 1f32;
+        let has_mult = !color_transform.r_multiply.is_one()
+            || !color_transform.g_multiply.is_one()
+            || !color_transform.b_multiply.is_one()
+            || !color_transform.a_multiply.is_one();
         let has_add = color_transform.r_add != 0
             || color_transform.g_add != 0
             || color_transform.b_add != 0
@@ -422,7 +427,7 @@ impl<W: Write> Writer<W> {
         let mut num_bits = if has_mult {
             multiply
                 .iter()
-                .map(|n| count_sbits((*n * 256f32) as i32))
+                .map(|n| count_sbits(n.get().into()))
                 .max()
                 .unwrap()
         } else {
@@ -439,10 +444,10 @@ impl<W: Write> Writer<W> {
         }
         bits.write_ubits(4, num_bits)?;
         if has_mult {
-            bits.write_sbits(num_bits, (color_transform.r_multiply * 256f32) as i32)?;
-            bits.write_sbits(num_bits, (color_transform.g_multiply * 256f32) as i32)?;
-            bits.write_sbits(num_bits, (color_transform.b_multiply * 256f32) as i32)?;
-            bits.write_sbits(num_bits, (color_transform.a_multiply * 256f32) as i32)?;
+            bits.write_sbits_fixed8(num_bits, color_transform.r_multiply)?;
+            bits.write_sbits_fixed8(num_bits, color_transform.g_multiply)?;
+            bits.write_sbits_fixed8(num_bits, color_transform.b_multiply)?;
+            bits.write_sbits_fixed8(num_bits, color_transform.a_multiply)?;
         }
         if has_add {
             bits.write_sbits(num_bits, color_transform.r_add.into())?;

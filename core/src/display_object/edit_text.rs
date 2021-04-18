@@ -603,10 +603,7 @@ impl<'gc> EditText<'gc> {
     /// `DisplayObject`.
     pub fn text_transform(self, color: swf::Color, baseline_adjustment: Twips) -> Transform {
         let mut transform: Transform = Default::default();
-        transform.color_transform.r_mult = f32::from(color.r) / 255.0;
-        transform.color_transform.g_mult = f32::from(color.g) / 255.0;
-        transform.color_transform.b_mult = f32::from(color.b) / 255.0;
-        transform.color_transform.a_mult = f32::from(color.a) / 255.0;
+        transform.color_transform.set_mult_color(&color);
 
         // TODO MIKE: This feels incorrect here but is necessary for correct vertical position;
         // the glyphs are rendered relative to the baseline. This should be taken into account either
@@ -891,16 +888,7 @@ impl<'gc> EditText<'gc> {
                             // Set text color to white
                             context.transform_stack.push(&Transform {
                                 matrix: transform.matrix,
-                                color_transform: ColorTransform {
-                                    r_mult: 1.0,
-                                    g_mult: 1.0,
-                                    b_mult: 1.0,
-                                    a_mult: 1.0,
-                                    r_add: 0.0,
-                                    g_add: 0.0,
-                                    b_add: 0.0,
-                                    a_add: 0.0,
-                                },
+                                color_transform: ColorTransform::default(),
                             });
                         }
                         _ => {

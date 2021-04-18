@@ -217,6 +217,12 @@ impl<'a, 'b> BitReader<'a, 'b> {
     }
 
     #[inline]
+    fn read_sbits_fixed8(&mut self, num_bits: u32) -> io::Result<Fixed8> {
+        self.read_sbits(num_bits)
+            .map(|n| Fixed8::from_bits(n as i16))
+    }
+
+    #[inline]
     fn read_sbits_twips(&mut self, num_bits: u32) -> io::Result<Twips> {
         self.read_sbits(num_bits).map(Twips::new)
     }
@@ -595,19 +601,19 @@ impl<'a> Reader<'a> {
         let has_mult = bits.read_bit()?;
         let num_bits = bits.read_ubits(4)?;
         let mut color_transform = ColorTransform {
-            r_multiply: 1f32,
-            g_multiply: 1f32,
-            b_multiply: 1f32,
-            a_multiply: 1f32,
-            r_add: 0i16,
-            g_add: 0i16,
-            b_add: 0i16,
-            a_add: 0i16,
+            r_multiply: Fixed8::ONE,
+            g_multiply: Fixed8::ONE,
+            b_multiply: Fixed8::ONE,
+            a_multiply: Fixed8::ONE,
+            r_add: 0,
+            g_add: 0,
+            b_add: 0,
+            a_add: 0,
         };
         if has_mult {
-            color_transform.r_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.g_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.b_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.r_multiply = bits.read_sbits_fixed8(num_bits)?;
+            color_transform.g_multiply = bits.read_sbits_fixed8(num_bits)?;
+            color_transform.b_multiply = bits.read_sbits_fixed8(num_bits)?;
         }
         if has_add {
             color_transform.r_add = bits.read_sbits(num_bits)? as i16;
@@ -623,20 +629,20 @@ impl<'a> Reader<'a> {
         let has_mult = bits.read_bit()?;
         let num_bits = bits.read_ubits(4)?;
         let mut color_transform = ColorTransform {
-            r_multiply: 1f32,
-            g_multiply: 1f32,
-            b_multiply: 1f32,
-            a_multiply: 1f32,
-            r_add: 0i16,
-            g_add: 0i16,
-            b_add: 0i16,
-            a_add: 0i16,
+            r_multiply: Fixed8::ONE,
+            g_multiply: Fixed8::ONE,
+            b_multiply: Fixed8::ONE,
+            a_multiply: Fixed8::ONE,
+            r_add: 0,
+            g_add: 0,
+            b_add: 0,
+            a_add: 0,
         };
         if has_mult {
-            color_transform.r_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.g_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.b_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
-            color_transform.a_multiply = bits.read_sbits(num_bits)? as f32 / 256f32;
+            color_transform.r_multiply = bits.read_sbits_fixed8(num_bits)?;
+            color_transform.g_multiply = bits.read_sbits_fixed8(num_bits)?;
+            color_transform.b_multiply = bits.read_sbits_fixed8(num_bits)?;
+            color_transform.a_multiply = bits.read_sbits_fixed8(num_bits)?;
         }
         if has_add {
             color_transform.r_add = bits.read_sbits(num_bits)? as i16;
