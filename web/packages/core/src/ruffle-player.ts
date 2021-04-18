@@ -24,6 +24,7 @@ const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
 enum PanicError {
     Unknown,
+    CSPConflict,
     FileProtocol,
     JavascriptConfiguration,
     JavascriptConflict,
@@ -365,6 +366,8 @@ export class RufflePlayer extends HTMLElement {
                     message.includes("failed to fetch")
                 ) {
                     e.ruffleIndexError = PanicError.WasmCors;
+                } else if (message.includes("disallowed by embedder")) {
+                    e.ruffleIndexError = PanicError.CSPConflict;
                 } else if (
                     !message.includes("magic") &&
                     (e.name === "CompileError" || e.name === "TypeError")
@@ -993,6 +996,18 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 errorFooter = `
                     <li><a target="_top" href="${issueLink}">Report Bug</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+            case PanicError.CSPConflict:
+                // General error: Cannot load `.wasm` file - a native object / function is overriden
+                errorBody = `
+                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
+                    <p>This web server's Content Security Policy does not allow the required ".wasm" component to run.</p>
+                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp">View Ruffle Wiki</a></li>
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
