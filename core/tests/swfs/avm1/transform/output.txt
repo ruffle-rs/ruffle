@@ -31,7 +31,12 @@
 // t.concatenatedMatrix:
 (a=1, b=0, c=0, d=1, tx=110, ty=10)
 // t.concatenatedColorTransform:
-(redMultiplier=0.5, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=64, blueOffset=-223, alphaOffset=0)
+(redMultiplier=0.5, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=64, blueOffset=-523, alphaOffset=0)
+
+// transform.colorTransform = new ColorTransform(1.0, 1.0, 127.5, 1.0, 0, 0, 0, 0)
+// t.concatenatedColorTransform:
+(redMultiplier=0.5, greenMultiplier=1, blueMultiplier=127.5, alphaMultiplier=1, redOffset=0, greenOffset=64, blueOffset=-1147, alphaOffset=0)
+// transform.colorTransform = new ColorTransform()
 
 // clip.clip.transform = clip2.transform
 // t.matrix:
