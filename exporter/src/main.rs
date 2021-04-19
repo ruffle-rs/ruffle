@@ -117,7 +117,7 @@ fn take_screenshot(
     player
         .lock()
         .unwrap()
-        .set_viewport_dimensions(width, height);
+        .set_viewport_dimensions(width, height, size.scale as f64);
     player.lock().unwrap().set_root_movie(Arc::new(movie));
 
     let mut result = Vec::new();

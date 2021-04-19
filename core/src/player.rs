@@ -612,10 +612,10 @@ impl Player {
         self.mutate_with_update_context(|context| context.stage.viewport_size())
     }
 
-    pub fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
+    pub fn set_viewport_dimensions(&mut self, width: u32, height: u32, scale_factor: f64) {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
-            stage.set_viewport_size(context, width, height);
+            stage.set_viewport_size(context, width, height, scale_factor);
         })
     }
 

@@ -55,6 +55,10 @@ pub struct StageData<'gc> {
     #[collect(require_static)]
     viewport_size: (u32, u32),
 
+    /// The scale factor of the containing viewport from standard-size pixels
+    /// to device-scale pixels.
+    viewport_scale_factor: f64,
+
     /// The bounds of the current viewport in twips, used for culling.
     view_bounds: BoundingBox,
 
@@ -73,6 +77,7 @@ impl<'gc> Stage<'gc> {
                 letterbox: Letterbox::Fullscreen,
                 stage_size: (width, height),
                 viewport_size: (width, height),
+                viewport_scale_factor: 1.0,
                 view_bounds: Default::default(),
                 avm2_object: Avm2ScriptObject::bare_object(gc_context),
             },
@@ -118,13 +123,21 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Set the current viewport size.
+    ///
+    /// The width and height are in device pixels; while the `scale_factor`
+    /// is the number of device pixels needed to make one standard scale pixel.
     pub fn set_viewport_size(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         width: u32,
         height: u32,
+        scale_factor: f64,
     ) {
-        self.0.write(context.gc_context).viewport_size = (width, height);
+        let mut write = self.0.write(context.gc_context);
+        write.viewport_size = (width, height);
+        write.viewport_scale_factor = scale_factor;
+        drop(write);
+
         self.build_matrices(context);
     }
 
