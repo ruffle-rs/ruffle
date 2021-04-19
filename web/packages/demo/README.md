@@ -13,7 +13,7 @@ It's exactly the same code as this directory, updated nightly.
 
 ### Run your own demo
 
-After [building ruffle-web](../../README.md#building-from-source),
+After [building ruffle-web](https://github.com/ruffle-rs/ruffle/blob/master/web/README.md#building-from-source),
 you can run `npm run demo` in the `web` folder to launch the demo.
 
 It will start a local web server and print the address in the console.
@@ -71,4 +71,4 @@ To use this, add a new file `swfs.json` in this directory. The contents should l
 
 ## Building, testing or contributing
 
-Please see [the ruffle-web README](../../README.md).
+Please see [the ruffle-web README](https://github.com/ruffle-rs/ruffle/blob/master/web/README.md).
