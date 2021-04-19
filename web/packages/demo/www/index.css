@@ -122,12 +122,12 @@ body {
 }
 
 @media only screen and (max-width: 600px) {
-    #local-file-container {
-        display: none;
+    #local-file-container span {
+        display: table;
     }
 
     #sample-swfs-label {
-        display: none;
+        display: table;
     }
 
     #author-container {
