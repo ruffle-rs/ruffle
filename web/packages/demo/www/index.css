@@ -123,11 +123,11 @@ body {
 
 @media only screen and (max-width: 600px) {
     #local-file-container span {
-        display: table;
+        display: block;
     }
 
     #sample-swfs-label {
-        display: table;
+        display: block;
     }
 
     #author-container {
