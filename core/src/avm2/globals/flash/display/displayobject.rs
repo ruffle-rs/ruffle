@@ -515,13 +515,16 @@ pub fn loader_info<'gc>(
                 let movie = dobj.movie();
 
                 if let Some(movie) = movie {
-                    return Ok(LoaderInfoObject::from_movie(
+                    let obj = LoaderInfoObject::from_movie(
                         movie,
                         root,
                         activation.context.avm2.prototypes().loaderinfo,
                         activation.context.gc_context,
-                    )?
-                    .into());
+                    )?;
+
+                    activation.super_init(obj, &[])?;
+
+                    return Ok(obj.into());
                 }
             }
         }
