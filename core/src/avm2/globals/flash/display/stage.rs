@@ -286,6 +286,29 @@ pub fn color<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `color`'s setter
+pub fn set_color<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+    {
+        let color = Color::from_rgb(
+            args.get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_u32(activation)?,
+            255,
+        );
+        dobj.set_background_color(activation.context.gc_context, Some(color));
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implement `contentsScaleFactor`'s getter
 pub fn contents_scale_factor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -512,6 +535,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "color"),
         Method::from_builtin(color),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "set_color"),
+        Method::from_builtin(set_color),
     ));
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "contentsScaleFactor"),
