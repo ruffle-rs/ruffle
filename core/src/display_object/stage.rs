@@ -117,9 +117,15 @@ impl<'gc> Stage<'gc> {
         self.0.write(gc_context).stage_size = (width, height);
     }
 
-    /// Get the current viewport size.
+    /// Get the current viewport size, in device pixels.
     pub fn viewport_size(self) -> (u32, u32) {
         self.0.read().viewport_size
+    }
+
+    /// Get the scale factor - the number of device pixels that make up a
+    /// standard-size pixel.
+    pub fn viewport_scale_factor(self) -> f64 {
+        self.0.read().viewport_scale_factor
     }
 
     /// Set the current viewport size.
