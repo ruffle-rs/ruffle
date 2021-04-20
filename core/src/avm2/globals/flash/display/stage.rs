@@ -302,6 +302,19 @@ pub fn contents_scale_factor<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `displayState`'s getter
+pub fn display_state<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if activation.context.ui.is_fullscreen() {
+        Ok("fullScreenInteractive".into())
+    } else {
+        Ok("normal".into())
+    }
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -503,6 +516,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "contentsScaleFactor"),
         Method::from_builtin(contents_scale_factor),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "displayState"),
+        Method::from_builtin(display_state),
     ));
 
     class
