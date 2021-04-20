@@ -338,6 +338,42 @@ pub fn display_state<'gc>(
     }
 }
 
+/// Implement `focus`'s getter
+pub fn focus<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(activation
+        .context
+        .focus_tracker
+        .get()
+        .and_then(|focus_dobj| focus_dobj.object2().coerce_to_object(activation).ok())
+        .map(|o| o.into())
+        .unwrap_or(Value::Null))
+}
+
+/// Implement `focus`'s setter
+pub fn set_focus<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let focus = activation.context.focus_tracker;
+    match args.get(0).cloned().unwrap_or(Value::Undefined) {
+        Value::Null => focus.set(None, &mut activation.context),
+        val => {
+            if let Some(dobj) = val.coerce_to_object(activation)?.as_display_object() {
+                focus.set(Some(dobj), &mut activation.context);
+            } else {
+                return Err("Cannot set focus to non-DisplayObject".into());
+            }
+        }
+    };
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -536,7 +572,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         QName::new(Namespace::public(), "color"),
         Method::from_builtin(color),
     ));
-    write.define_instance_trait(Trait::from_getter(
+    write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "set_color"),
         Method::from_builtin(set_color),
     ));
@@ -547,6 +583,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "displayState"),
         Method::from_builtin(display_state),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "focus"),
+        Method::from_builtin(focus),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "set_focus"),
+        Method::from_builtin(set_focus),
     ));
 
     class
