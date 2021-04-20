@@ -772,6 +772,13 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
+    class(
+        activation,
+        flash::display::stagedisplaystate::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
 
     // package `flash.geom`
     activation
