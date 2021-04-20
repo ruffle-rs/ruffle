@@ -16,4 +16,5 @@ pub mod shape;
 pub mod sprite;
 pub mod stage;
 pub mod stagealign;
+pub mod stagedisplaystate;
 pub mod swfversion;
