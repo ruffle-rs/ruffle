@@ -10,6 +10,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
+use swf::Color;
 
 /// Implements `flash.display.Stage`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -265,6 +266,26 @@ pub fn browser_zoom_factor<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `color`'s getter
+pub fn color<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+    {
+        return Ok(dobj
+            .background_color()
+            .unwrap_or_else(|| Color::from_rgb(0xffffff, 255))
+            .to_rgb()
+            .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -458,6 +479,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "browserZoomFactor"),
         Method::from_builtin(browser_zoom_factor),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "color"),
+        Method::from_builtin(color),
     ));
 
     class
