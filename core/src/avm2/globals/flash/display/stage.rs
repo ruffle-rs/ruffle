@@ -286,6 +286,22 @@ pub fn color<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `contentsScaleFactor`'s getter
+pub fn contents_scale_factor<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+    {
+        return Ok(dobj.viewport_scale_factor().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -483,6 +499,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "color"),
         Method::from_builtin(color),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "contentsScaleFactor"),
+        Method::from_builtin(contents_scale_factor),
     ));
 
     class
