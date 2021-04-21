@@ -13,7 +13,7 @@ module.exports = (env, argv) => {
 
     return {
         mode,
-        entry: path.resolve(__dirname, "www/index.js"),
+        entry: "./www/index.js",
         output: {
             path: path.resolve(__dirname, "dist"),
             filename: "index.js",
