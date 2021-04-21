@@ -38,15 +38,6 @@ impl ByteArrayStorage {
         }
     }
 
-    /// Create a new ByteArrayStorage with given initial data and endianness
-    pub fn with_initial(bytes: Vec<u8>, endian: Endian) -> Self {
-        Self {
-            bytes,
-            position: 0,
-            endian,
-        }
-    }
-
     /// Write a byte at next position in the bytearray
     pub fn write_byte(&mut self, byte: u8) {
         let bytes_len = self.bytes.len();
