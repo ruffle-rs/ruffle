@@ -1,12 +1,11 @@
 //! Application Domains
 
 use crate::avm2::activation::Activation;
-use crate::avm2::bytearray::{ByteArrayStorage, Endian};
 use crate::avm2::names::{Multiname, QName};
-use crate::avm2::object::{TObject, ByteArrayObject};
+use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
-use crate::avm2::{Error, Object};
+use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 
