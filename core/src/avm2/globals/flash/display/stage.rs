@@ -451,6 +451,28 @@ pub fn set_stage_height<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `allowsFullScreen`'s getter
+///
+/// TODO: This is a stub.
+pub fn allows_full_screen<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(true.into())
+}
+
+/// Implement `allowsFullScreenInteractive`'s getter
+///
+/// TODO: This is a stub.
+pub fn allows_full_screen_interactive<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(false.into())
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -692,6 +714,15 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "stageHeight"),
         Method::from_builtin(set_stage_height),
+    ));
+
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "allowsFullScreen"),
+        Method::from_builtin(allows_full_screen),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "allowsFullScreenInteractive"),
+        Method::from_builtin(allows_full_screen_interactive),
     ));
 
     class
