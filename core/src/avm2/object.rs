@@ -854,6 +854,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_bytearray_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<ByteArrayStorage>> {
         None
     }
+
+    fn as_bytearray_object(&self) -> Option<ByteArrayObject<'gc>> {
+        None
+    }
+
     /// Unwrap this object as mutable array storage.
     fn as_array_storage_mut(
         &self,

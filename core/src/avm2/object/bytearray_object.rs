@@ -242,4 +242,8 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn as_bytearray_mut(&self, mc: MutationContext<'gc, '_>) -> Option<RefMut<ByteArrayStorage>> {
         Some(RefMut::map(self.0.write(mc), |d| &mut d.storage))
     }
+
+    fn as_bytearray_object(&self) -> Option<ByteArrayObject<'gc>> {
+        Some(*self)
+    }
 }

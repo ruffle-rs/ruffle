@@ -120,21 +120,32 @@ pub fn has_definition<'gc>(
 
 /// `domainMemory` property setter
 pub fn set_domain_memory<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    log::warn!("ApplicationDomain.domainMemory set() - not implemented");
+    if let Some(Value::Object(arg)) = args.get(0) {
+        if let Some(bytearray_obj) = arg.as_bytearray_object() {
+            if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
+                appdomain.set_domain_memory(activation.context.gc_context, bytearray_obj);
+            }
+        }
+    }
+
     Ok(Value::Undefined)
 }
 
 /// `domainMemory` property getter
 pub fn domain_memory<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    log::warn!("ApplicationDomain.domainMemory get() - not implemented");
+    if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
+        let bytearray_object: Object<'gc> = appdomain.domain_memory().into();
+        return Ok(bytearray_object.into());
+    }
+
     Ok(Value::Undefined)
 }
 
