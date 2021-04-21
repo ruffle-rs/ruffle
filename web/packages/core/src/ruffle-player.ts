@@ -11,6 +11,7 @@ import {
     AutoPlay,
     UnmuteOverlay,
 } from "./load-options";
+import { MovieMetadata } from "./movie-metadata";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -128,9 +129,19 @@ export class RufflePlayer extends HTMLElement {
     private _trace_observer: ((message: string) => void) | null;
     private lastActivePlayingState: boolean;
 
+    private _metadata: MovieMetadata | null;
+    private _readyState: ReadyState;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private ruffleConstructor: Promise<{ new (...args: any[]): Ruffle }>;
     private panicked = false;
+
+    /**
+     * Triggered when a movie metadata has been loaded (such as movie width and height).
+     *
+     * @event RufflePlayer#loadedmetadata
+     */
+    static LOADED_METADATA = "loadedmetadata";
 
     /**
      * A movie can communicate with the hosting page using fscommand
@@ -147,6 +158,26 @@ export class RufflePlayer extends HTMLElement {
      * This will be defaulted with any global configuration.
      */
     config: Config = {};
+
+    /**
+     * Indicates the readiness of the playing movie.
+     *
+     * @returns The `ReadyState` of the player.
+     */
+    get readyState(): ReadyState {
+        return this._readyState;
+    }
+
+    /**
+     * The metadata of the playing movie (such as movie width and height).
+     * These are inherent properties stored in the SWF file and are not affected by runtime changes.
+     * For example, `metadata.width` is the width of the SWF file, and not the width of the Ruffle player.
+     *
+     * @returns The metadata of the movie, or `null` if the movie metadata has not yet loaded.
+     */
+    get metadata(): MovieMetadata | null {
+        return this._metadata;
+    }
 
     /**
      * Constructs a new Ruffle flash player for insertion onto the page.
@@ -184,6 +215,9 @@ export class RufflePlayer extends HTMLElement {
         this.options = null;
         this.onFSCommand = null;
         this._trace_observer = null;
+
+        this._readyState = ReadyState.HaveNothing;
+        this._metadata = null;
 
         this.ruffleConstructor = loadRuffle();
 
@@ -258,11 +292,7 @@ export class RufflePlayer extends HTMLElement {
      * @internal
      */
     disconnectedCallback(): void {
-        if (this.instance) {
-            this.instance.destroy();
-            this.instance = null;
-            console.log("Ruffle instance destroyed.");
-        }
+        this.destroy();
     }
 
     /**
@@ -344,11 +374,7 @@ export class RufflePlayer extends HTMLElement {
      * @private
      */
     private async ensureFreshInstance(config: BaseLoadOptions): Promise<void> {
-        if (this.instance) {
-            this.instance.destroy();
-            this.instance = null;
-            console.log("Ruffle instance destroyed.");
-        }
+        this.destroy();
 
         const ruffleConstructor = await this.ruffleConstructor.catch((e) => {
             console.error(`Serious error loading Ruffle: ${e}`);
@@ -439,6 +465,19 @@ export class RufflePlayer extends HTMLElement {
             }
         } else {
             this.playButton.style.display = "block";
+        }
+    }
+
+    /**
+     * Destroys the currently running instance of Ruffle.
+     */
+    private destroy(): void {
+        if (this.instance) {
+            this.instance.destroy();
+            this.instance = null;
+            this._metadata = null;
+            this._readyState = ReadyState.HaveNothing;
+            console.log("Ruffle instance destroyed.");
         }
     }
 
@@ -1047,10 +1086,7 @@ export class RufflePlayer extends HTMLElement {
         }
 
         // Do this last, just in case it causes any cascading issues.
-        if (this.instance) {
-            this.instance.destroy();
-            this.instance = null;
-        }
+        this.destroy();
     }
 
     displayUnsupportedMessage(): void {
@@ -1096,6 +1132,33 @@ export class RufflePlayer extends HTMLElement {
             this.options?.allowScriptAccess ?? false
         }\n`;
     }
+
+    private setMetadata(metadata: MovieMetadata) {
+        this._metadata = metadata;
+        // TODO: Switch this to ReadyState.Loading when we have streaming support.
+        this._readyState = ReadyState.Loaded;
+        this.dispatchEvent(new Event(RufflePlayer.LOADED_METADATA));
+    }
+}
+
+/**
+ * Describes the loading state of an SWF movie.
+ */
+export enum ReadyState {
+    /**
+     * No movie is loaded, or no information is yet available about the movie.
+     */
+    HaveNothing = 0,
+
+    /**
+     * The movie is still loading, but it has started playback, and metadata is available.
+     */
+    Loading = 1,
+
+    /**
+     * The movie has completely loaded.
+     */
+    Loaded = 2,
 }
 
 /**

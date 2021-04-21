@@ -353,7 +353,12 @@ impl Player {
     ///
     /// This should not be called if a root movie fetch has already been kicked
     /// off.
-    pub fn fetch_root_movie(&mut self, movie_url: &str, parameters: PropertyMap<String>) {
+    pub fn fetch_root_movie(
+        &mut self,
+        movie_url: &str,
+        parameters: PropertyMap<String>,
+        on_metadata: Box<dyn FnOnce(&swf::Header)>,
+    ) {
         self.mutate_with_update_context(|context| {
             let fetch = context.navigator.fetch(movie_url, RequestOptions::get());
             let process = context.load_manager.load_root_movie(
@@ -361,6 +366,7 @@ impl Player {
                 fetch,
                 movie_url.to_string(),
                 parameters,
+                on_metadata,
             );
 
             context.navigator.spawn_future(process);
