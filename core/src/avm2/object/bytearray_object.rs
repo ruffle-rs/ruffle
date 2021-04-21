@@ -27,7 +27,10 @@ pub struct ByteArrayObjectData<'gc> {
 }
 
 impl<'gc> ByteArrayObject<'gc> {
-    pub fn new(mc: MutationContext<'gc, '_>, base_proto: Option<Object<'gc>>) -> ByteArrayObject<'gc> {
+    pub fn new(
+        mc: MutationContext<'gc, '_>,
+        base_proto: Option<Object<'gc>>,
+    ) -> ByteArrayObject<'gc> {
         let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::NoClass);
 
         ByteArrayObject(GcCell::allocate(

@@ -1,12 +1,13 @@
 //! Activation frames
 
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::method::BytecodeMethod;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, Namespace, QName};
-use crate::avm2::object::{ArrayObject, FunctionObject, NamespaceObject, ScriptObject, ByteArrayObject};
+use crate::avm2::object::{
+    ArrayObject, ByteArrayObject, FunctionObject, NamespaceObject, ScriptObject,
+};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
@@ -23,8 +24,6 @@ use swf::avm2::types::{
     Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
     Namespace as AbcNamespace, Op,
 };
-use std::cell::RefMut;
-use std::io::Write;
 
 /// Represents a particular register set.
 ///
@@ -2519,13 +2518,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_i32(self)?;
 
-        let mut dm = self.domain_memory()?;
-        let mut dm = dm.as_bytearray_mut(self.context.gc_context).ok_or("Unable to get bytearray storage".to_string())?;
-            if address < 0 || address as usize >= dm.len() {
-                return Err("RangeError: The specified range is invalid".into());
-            }
+        let dm = self.domain_memory()?;
+        let mut dm = dm
+            .as_bytearray_mut(self.context.gc_context)
+            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+        if address < 0 || address as usize >= dm.len() {
+            return Err("RangeError: The specified range is invalid".into());
+        }
 
-            dm.write_bytes_at(&val.to_le_bytes(), address as usize);
+        dm.write_bytes_at(&val.to_le_bytes(), address as usize);
 
         Ok(FrameControl::Continue)
     }
@@ -2535,8 +2536,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_i32(self)?;
 
-        let mut dm = self.domain_memory()?;
-        let mut dm = dm.as_bytearray_mut(self.context.gc_context).ok_or("Unable to get bytearray storage".to_string())?;
+        let dm = self.domain_memory()?;
+        let mut dm = dm
+            .as_bytearray_mut(self.context.gc_context)
+            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         if address < 0 || (address as usize + 1) >= dm.len() {
             return Err("RangeError: The specified range is invalid".into());
@@ -2552,8 +2555,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_i32(self)?;
 
-        let mut dm = self.domain_memory()?;
-        let mut dm = dm.as_bytearray_mut(self.context.gc_context).ok_or("Unable to get bytearray storage".to_string())?;
+        let dm = self.domain_memory()?;
+        let mut dm = dm
+            .as_bytearray_mut(self.context.gc_context)
+            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         if address < 0 || (address as usize + 3) >= dm.len() {
             return Err("RangeError: The specified range is invalid".into());
@@ -2569,8 +2574,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_number(self)? as f32;
 
-        let mut dm = self.domain_memory()?;
-        let mut dm = dm.as_bytearray_mut(self.context.gc_context).ok_or("Unable to get bytearray storage".to_string())?;
+        let dm = self.domain_memory()?;
+        let mut dm = dm
+            .as_bytearray_mut(self.context.gc_context)
+            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         if address < 0 || (address as usize + 3) >= dm.len() {
             return Err("RangeError: The specified range is invalid".into());
@@ -2586,8 +2593,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_i32(self)?;
         let val = self.context.avm2.pop().coerce_to_number(self)?;
 
-        let mut dm = self.domain_memory()?;
-        let mut dm = dm.as_bytearray_mut(self.context.gc_context).ok_or("Unable to get bytearray storage".to_string())?;
+        let dm = self.domain_memory()?;
+        let mut dm = dm
+            .as_bytearray_mut(self.context.gc_context)
+            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
         if address < 0 || (address as usize + 7) >= dm.len() {
             return Err("RangeError: The specified range is invalid".into());
@@ -2603,7 +2612,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
         let dm = self.domain_memory()?;
-        let mut dm = dm.as_bytearray_mut(self.context.gc_context).ok_or("Unable to get bytearray storage".to_string())?;
+        let dm = dm
+            .as_bytearray_mut(self.context.gc_context)
+            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.get(address);
 
         if let Some(val) = val {
@@ -2620,7 +2631,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
         let dm = self.domain_memory()?;
-        let mut dm = dm.as_bytearray_mut(self.context.gc_context).ok_or("Unable to get bytearray storage".to_string())?;
+        let dm = dm
+            .as_bytearray_mut(self.context.gc_context)
+            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.get_range(address..address + 2);
 
         if let Some(val) = val {
@@ -2639,7 +2652,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
         let dm = self.domain_memory()?;
-        let mut dm = dm.as_bytearray_mut(self.context.gc_context).ok_or("Unable to get bytearray storage".to_string())?;
+        let dm = dm
+            .as_bytearray_mut(self.context.gc_context)
+            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.get_range(address..address + 4);
 
         if let Some(val) = val {
@@ -2658,7 +2673,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
         let dm = self.domain_memory()?;
-        let mut dm = dm.as_bytearray_mut(self.context.gc_context).ok_or("Unable to get bytearray storage".to_string())?;
+        let dm = dm
+            .as_bytearray_mut(self.context.gc_context)
+            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.get_range(address..address + 4);
 
         if let Some(val) = val {
@@ -2677,7 +2694,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let address = self.context.avm2.pop().coerce_to_u32(self)? as usize;
 
         let dm = self.domain_memory()?;
-        let mut dm = dm.as_bytearray_mut(self.context.gc_context).ok_or("Unable to get bytearray storage".to_string())?;
+        let dm = dm
+            .as_bytearray_mut(self.context.gc_context)
+            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.get_range(address..address + 8);
 
         if let Some(val) = val {
