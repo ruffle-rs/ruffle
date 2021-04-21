@@ -112,6 +112,32 @@ function open_test(browser, absolute_dir, file_name) {
     browser.url(`http://localhost:4567/test/polyfill/${dir_name}/${file_name}`);
 }
 
+/** Test set-up for  basic JS API testing. */
+function js_api_before(swf) {
+    let player = null;
+    before("Loads the test", () => {
+        browser.url("http://localhost:4567/test_assets/js_api.html");
+
+        inject_ruffle_and_wait(browser);
+
+        player = browser.execute(() => {
+            const ruffle = window.RufflePlayer.newest();
+            const player = ruffle.createPlayer();
+            const container = document.getElementById("test-container");
+            container.appendChild(player);
+            return player;
+        });
+
+        if (swf) {
+            browser.execute((player) => {
+                player.load("/test_assets/example.swf");
+            }, player);
+            play_and_monitor(browser, player);
+        }
+    });
+    return player;
+}
+
 module.exports = {
     is_ruffle_loaded,
     wait_for_ruffle,
@@ -120,4 +146,5 @@ module.exports = {
     inject_ruffle_and_wait,
     open_test,
     setup_error_handler,
+    js_api_before,
 };
