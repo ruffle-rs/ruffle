@@ -17,4 +17,5 @@ pub mod sprite;
 pub mod stage;
 pub mod stagealign;
 pub mod stagedisplaystate;
+pub mod stagequality;
 pub mod swfversion;
