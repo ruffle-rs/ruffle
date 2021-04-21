@@ -473,6 +473,17 @@ pub fn allows_full_screen_interactive<'gc>(
     Ok(false.into())
 }
 
+/// Implement `quality`'s getter
+///
+/// TODO: This is a stub.
+pub fn quality<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok("HIGH".into())
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -723,6 +734,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "allowsFullScreenInteractive"),
         Method::from_builtin(allows_full_screen_interactive),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "quality"),
+        Method::from_builtin(quality),
     ));
 
     class
