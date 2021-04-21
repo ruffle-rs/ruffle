@@ -399,6 +399,58 @@ pub fn set_frame_rate<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `stageWidth`'s getter
+pub fn stage_width<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+    {
+        return Ok(dobj.stage_size().0.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `stageWidth`'s setter
+pub fn set_stage_width<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    // For some reason this value is settable but it does nothing.
+    Ok(Value::Undefined)
+}
+
+/// Implement `stageHeight`'s getter
+pub fn stage_height<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+    {
+        return Ok(dobj.stage_size().1.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `stageHeight`'s setter
+pub fn set_stage_height<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    // For some reason this value is settable but it does nothing.
+    Ok(Value::Undefined)
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -624,6 +676,22 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "frameRate"),
         Method::from_builtin(set_frame_rate),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "stageWidth"),
+        Method::from_builtin(stage_width),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "stageWidth"),
+        Method::from_builtin(set_stage_width),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "stageHeight"),
+        Method::from_builtin(stage_height),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "stageHeight"),
+        Method::from_builtin(set_stage_height),
     ));
 
     class
