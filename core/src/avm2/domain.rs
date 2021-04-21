@@ -3,10 +3,10 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::{ByteArrayStorage, Endian};
 use crate::avm2::names::{Multiname, QName};
-use crate::avm2::object::TObject;
+use crate::avm2::object::{TObject, ByteArrayObject};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{Error, Object};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 
@@ -26,7 +26,7 @@ struct DomainData<'gc> {
     parent: Option<Domain<'gc>>,
 
     /// The bytearray used for storing domain memory
-    pub domain_memory: GcCell<'gc, ByteArrayStorage>,
+    pub domain_memory: ByteArrayObject<'gc>,
 }
 
 impl<'gc> Domain<'gc> {
@@ -35,30 +35,30 @@ impl<'gc> Domain<'gc> {
     /// This is intended exclusively for creating the player globals domain,
     /// hence the name.
     pub fn global_domain(mc: MutationContext<'gc, '_>) -> Domain<'gc> {
+        let domain_memory = ByteArrayObject::new(mc, None);
+        domain_memory.as_bytearray_mut(mc).unwrap().set_length(100);
+
         Self(GcCell::allocate(
             mc,
             DomainData {
                 defs: HashMap::new(),
                 parent: None,
-                domain_memory: GcCell::allocate(
-                    mc,
-                    ByteArrayStorage::with_initial(vec![0; 100], Endian::Little),
-                ),
+                domain_memory,
             },
         ))
     }
 
     /// Create a new domain with a given parent.
     pub fn movie_domain(mc: MutationContext<'gc, '_>, parent: Domain<'gc>) -> Domain<'gc> {
+        let domain_memory = ByteArrayObject::new(mc, None);
+        domain_memory.as_bytearray_mut(mc).unwrap().set_length(100);
+
         Self(GcCell::allocate(
             mc,
             DomainData {
                 defs: HashMap::new(),
                 parent: Some(parent),
-                domain_memory: GcCell::allocate(
-                    mc,
-                    ByteArrayStorage::with_initial(vec![0; 100], Endian::Little),
-                ),
+                domain_memory,
             },
         ))
     }
@@ -159,14 +159,14 @@ impl<'gc> Domain<'gc> {
         Ok(())
     }
 
-    pub fn domain_memory(&self) -> GcCell<'gc, ByteArrayStorage> {
+    pub fn domain_memory(&self) -> ByteArrayObject<'gc> {
         self.0.read().domain_memory
     }
 
     pub fn set_domain_memory(
         &self,
         mc: MutationContext<'gc, '_>,
-        domain_memory: GcCell<'gc, ByteArrayStorage>,
+        domain_memory: ByteArrayObject<'gc>,
     ) {
         self.0.write(mc).domain_memory = domain_memory
     }
