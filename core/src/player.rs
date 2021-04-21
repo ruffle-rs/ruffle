@@ -1167,6 +1167,7 @@ impl Player {
             max_execution_duration,
             current_frame,
             time_offset,
+            frame_rate,
         ) = (
             self.player_version,
             &self.swf,
@@ -1187,6 +1188,7 @@ impl Player {
             self.max_execution_duration,
             &mut self.current_frame,
             &mut self.time_offset,
+            &mut self.frame_rate,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -1244,9 +1246,20 @@ impl Player {
                 times_get_time_called: 0,
                 time_offset,
                 audio_manager,
+                frame_rate,
             };
 
+            let old_frame_rate = *update_context.frame_rate;
+
             let ret = f(&mut update_context);
+
+            let new_frame_rate = *update_context.frame_rate;
+
+            // If we changed the framerate, let the audio handler now.
+            #[allow(clippy::float_cmp)]
+            if old_frame_rate != new_frame_rate {
+                update_context.audio.set_frame_rate(new_frame_rate);
+            }
 
             *current_frame = update_context
                 .stage

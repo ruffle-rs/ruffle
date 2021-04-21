@@ -374,6 +374,31 @@ pub fn set_focus<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `frameRate`'s getter
+pub fn frame_rate<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok((*activation.context.frame_rate).into())
+}
+
+/// Implement `frameRate`'s setter
+pub fn set_frame_rate<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let new_frame_rate = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_number(activation)?;
+    *activation.context.frame_rate = new_frame_rate;
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -573,7 +598,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         Method::from_builtin(color),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "set_color"),
+        QName::new(Namespace::public(), "color"),
         Method::from_builtin(set_color),
     ));
     write.define_instance_trait(Trait::from_getter(
@@ -589,8 +614,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         Method::from_builtin(focus),
     ));
     write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "set_focus"),
+        QName::new(Namespace::public(), "focus"),
         Method::from_builtin(set_focus),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "frameRate"),
+        Method::from_builtin(frame_rate),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "frameRate"),
+        Method::from_builtin(set_frame_rate),
     ));
 
     class
