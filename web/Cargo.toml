@@ -15,8 +15,13 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["canvas", "console_error_panic_hook", "console_log", "webgl"]
-lzma = ["ruffle_core/lzma"]
+
+# core features
 avm_debug = ["ruffle_core/avm_debug"]
+h263 = ["ruffle_core/h263"]
+lzma = ["ruffle_core/lzma"]
+
+# web features
 canvas = ["ruffle_render_canvas"]
 webgl = ["ruffle_render_webgl"]
 
@@ -43,7 +48,7 @@ base64 = "0.13.0"
 [dependencies.ruffle_core]
 path = "../core"
 default-features = false
-features = ["serde", "wasm-bindgen"]
+features = ["h263", "serde", "wasm-bindgen"]
 
 [dependencies.web-sys]
 version = "0.3.50"
