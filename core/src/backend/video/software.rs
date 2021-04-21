@@ -28,6 +28,7 @@ impl SoftwareVideoBackend {
 }
 
 impl VideoBackend for SoftwareVideoBackend {
+    #[allow(unreachable_code, unused_variables)]
     fn register_video_stream(
         &mut self,
         _num_frames: u32,
@@ -36,6 +37,7 @@ impl VideoBackend for SoftwareVideoBackend {
         _filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
         let decoder: Box<dyn VideoDecoder> = match codec {
+            #[cfg(feature = "h263")]
             VideoCodec::H263 => Box::new(h263::H263Decoder::new()),
             _ => return Err(format!("Unsupported video codec type {:?}", codec).into()),
         };
@@ -129,6 +131,7 @@ trait VideoDecoder {
     fn decode_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<DecodedFrame, Error>;
 }
 
+#[cfg(feature = "h263")]
 mod h263 {
     use crate::backend::video::software::VideoDecoder;
     use crate::backend::video::{DecodedFrame, EncodedFrame, Error, FrameDependency};
