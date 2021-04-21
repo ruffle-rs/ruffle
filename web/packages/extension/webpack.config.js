@@ -14,12 +14,12 @@ module.exports = (env, argv) => {
     return {
         mode,
         entry: {
-            popup: path.resolve(__dirname, "src/popup.js"),
-            options: path.resolve(__dirname, "src/options.js"),
-            content: path.resolve(__dirname, "src/content.js"),
-            ruffle: path.resolve(__dirname, "src/ruffle.js"),
-            background: path.resolve(__dirname, "src/background.js"),
-            player: path.resolve(__dirname, "src/player.js"),
+            popup: "./src/popup.js",
+            options: "./src/options.js",
+            content: "./src/content.js",
+            ruffle: "./src/ruffle.js",
+            background: "./src/background.js",
+            player: "./src/player.js",
         },
         output: {
             path: path.resolve(__dirname, "assets/dist/"),

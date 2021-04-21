@@ -13,7 +13,7 @@ module.exports = (env, argv) => {
 
     return {
         mode,
-        entry: path.resolve(__dirname, "js/ruffle.js"),
+        entry: "./js/ruffle.js",
         output: {
             path: path.resolve(__dirname, "dist"),
             filename: "ruffle.js",
