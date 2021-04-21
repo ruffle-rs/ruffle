@@ -1,4 +1,4 @@
-const { open_test, inject_ruffle_and_wait } = require("../utils");
+const { open_test, inject_ruffle_and_wait } = require("../../utils");
 const { expect, use } = require("chai");
 const chaiHtml = require("chai-html");
 const fs = require("fs");
