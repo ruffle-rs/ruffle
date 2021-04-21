@@ -35,7 +35,7 @@ impl<'gc> Domain<'gc> {
     /// hence the name.
     pub fn global_domain(mc: MutationContext<'gc, '_>) -> Domain<'gc> {
         let domain_memory = ByteArrayObject::new(mc, None);
-        domain_memory.as_bytearray_mut(mc).unwrap().set_length(100);
+        domain_memory.as_bytearray_mut(mc).unwrap().set_length(1024);
 
         Self(GcCell::allocate(
             mc,
@@ -50,7 +50,7 @@ impl<'gc> Domain<'gc> {
     /// Create a new domain with a given parent.
     pub fn movie_domain(mc: MutationContext<'gc, '_>, parent: Domain<'gc>) -> Domain<'gc> {
         let domain_memory = ByteArrayObject::new(mc, None);
-        domain_memory.as_bytearray_mut(mc).unwrap().set_length(100);
+        domain_memory.as_bytearray_mut(mc).unwrap().set_length(1024);
 
         Self(GcCell::allocate(
             mc,
