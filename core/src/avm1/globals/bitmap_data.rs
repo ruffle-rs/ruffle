@@ -521,14 +521,14 @@ pub fn color_transform<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
 
-            let x = rectangle.get("x", activation)?.coerce_to_i32(activation)?;
-            let y = rectangle.get("y", activation)?.coerce_to_i32(activation)?;
+            let x = rectangle.get("x", activation)?.coerce_to_f64(activation)? as i32;
+            let y = rectangle.get("y", activation)?.coerce_to_f64(activation)? as i32;
             let width = rectangle
                 .get("width", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
             let height = rectangle
                 .get("height", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
 
             let min_x = x.max(0) as u32;
             let end_x = (x + width) as u32;
@@ -689,24 +689,24 @@ pub fn copy_pixels<'gc>(
 
             let src_min_x = source_rect
                 .get("x", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
             let src_min_y = source_rect
                 .get("y", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
             let src_width = source_rect
                 .get("width", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
             let src_height = source_rect
                 .get("height", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
 
             let dest_point = args
                 .get(2)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
 
-            let dest_x = dest_point.get("x", activation)?.coerce_to_i32(activation)?;
-            let dest_y = dest_point.get("y", activation)?.coerce_to_i32(activation)?;
+            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
+            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
 
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
@@ -731,11 +731,13 @@ pub fn copy_pixels<'gc>(
 
                         let alpha_x = alpha_point
                             .get("x", activation)?
-                            .coerce_to_i32(activation)?;
+                            .coerce_to_f64(activation)?
+                            as i32;
 
                         let alpha_y = alpha_point
                             .get("y", activation)?
-                            .coerce_to_i32(activation)?;
+                            .coerce_to_f64(activation)?
+                            as i32;
 
                         let alpha_bitmap = args
                             .get(3)
@@ -818,24 +820,24 @@ pub fn merge<'gc>(
 
             let src_min_x = source_rect
                 .get("x", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
             let src_min_y = source_rect
                 .get("y", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
             let src_width = source_rect
                 .get("width", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
             let src_height = source_rect
                 .get("height", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
 
             let dest_point = args
                 .get(2)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
 
-            let dest_x = dest_point.get("x", activation)?.coerce_to_i32(activation)?;
-            let dest_y = dest_point.get("y", activation)?.coerce_to_i32(activation)?;
+            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
+            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
 
             let red_mult = args
                 .get(3)
@@ -910,24 +912,24 @@ pub fn palette_map<'gc>(
 
             let src_min_x = source_rect
                 .get("x", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
             let src_min_y = source_rect
                 .get("y", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
             let src_width = source_rect
                 .get("width", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
             let src_height = source_rect
                 .get("height", activation)?
-                .coerce_to_i32(activation)?;
+                .coerce_to_f64(activation)? as i32;
 
             let dest_point = args
                 .get(2)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
 
-            let dest_x = dest_point.get("x", activation)?.coerce_to_i32(activation)?;
-            let dest_y = dest_point.get("y", activation)?.coerce_to_i32(activation)?;
+            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
+            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
 
             let mut get_channel = |index: usize, shift: usize| -> Result<[u32; 256], Error<'gc>> {
                 let arg = args.get(index).unwrap_or(&Value::Null);
