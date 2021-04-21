@@ -603,7 +603,7 @@ impl BitmapData {
         source_bitmap: &Self,
         src_rect: (i32, i32, i32, i32),
         dest_point: (i32, i32),
-        rgba_mult: (u16, u16, u16, u16),
+        rgba_mult: (i32, i32, i32, i32),
     ) {
         let (src_min_x, src_min_y, src_width, src_height) = src_rect;
         let (dest_min_x, dest_min_y) = dest_point;
@@ -629,7 +629,10 @@ impl BitmapData {
                     .unwrap()
                     .to_un_multiplied_alpha();
 
-                let (red_mult, green_mult, blue_mult, alpha_mult) = rgba_mult;
+                let red_mult = rgba_mult.0.clamp(0, 256) as u16;
+                let green_mult = rgba_mult.1.clamp(0, 256) as u16;
+                let blue_mult = rgba_mult.2.clamp(0, 256) as u16;
+                let alpha_mult = rgba_mult.3.clamp(0, 256) as u16;
 
                 let red = (source_color.red() as u16 * red_mult
                     + dest_color.red() as u16 * (256 - red_mult))

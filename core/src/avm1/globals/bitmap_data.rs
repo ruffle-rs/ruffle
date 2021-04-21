@@ -840,22 +840,22 @@ pub fn merge<'gc>(
             let red_mult = args
                 .get(3)
                 .unwrap_or(&Value::Undefined)
-                .coerce_to_u16(activation)?;
+                .coerce_to_i32(activation)?;
 
             let green_mult = args
                 .get(4)
                 .unwrap_or(&Value::Undefined)
-                .coerce_to_u16(activation)?;
+                .coerce_to_i32(activation)?;
 
             let blue_mult = args
                 .get(5)
                 .unwrap_or(&Value::Undefined)
-                .coerce_to_u16(activation)?;
+                .coerce_to_i32(activation)?;
 
             let alpha_mult = args
                 .get(6)
                 .unwrap_or(&Value::Undefined)
-                .coerce_to_u16(activation)?;
+                .coerce_to_i32(activation)?;
 
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
