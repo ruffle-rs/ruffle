@@ -14,7 +14,6 @@
     },
     "devDependencies": {
         "archiver": "^5.2.0",
-        "file-loader": "^6.2.0",
         "sign-addon": "^3.3.0",
         "temp-dir": "^2.0.0",
         "webpack-cli": "^4.0.0"

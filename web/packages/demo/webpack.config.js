@@ -28,7 +28,7 @@ module.exports = (env, argv) => {
                 },
                 {
                     test: /\.wasm$/i,
-                    use: ["file-loader"],
+                    type: "asset/resource",
                 },
             ],
         },
