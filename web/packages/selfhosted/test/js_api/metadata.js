@@ -1,4 +1,4 @@
-const { js_api_before } = require("../polyfill/utils");
+const { js_api_before } = require("../utils");
 const { expect, use } = require("chai");
 const chaiHtml = require("chai-html");
 

@@ -2,7 +2,7 @@ const {
     open_test,
     inject_ruffle_and_wait,
     play_and_monitor,
-} = require("../utils");
+} = require("../../utils");
 const { expect, use } = require("chai");
 const chaiHtml = require("chai-html");
 const fs = require("fs");

@@ -112,7 +112,7 @@ function open_test(browser, absolute_dir, file_name) {
     browser.url(`http://localhost:4567/test/polyfill/${dir_name}/${file_name}`);
 }
 
-/** Test set-up for  basic JS API testing. */
+/** Test set-up for JS API testing. */
 function js_api_before(swf) {
     let player = null;
     before("Loads the test", () => {
