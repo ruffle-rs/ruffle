@@ -276,11 +276,13 @@ pub fn color<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_stage())
     {
-        return Ok(dobj
+        let color = dobj
             .background_color()
-            .unwrap_or_else(|| Color::from_rgb(0xffffff, 255))
-            .to_rgb()
-            .into());
+            .unwrap_or_else(|| Color::from_rgb(0xffffff, 255));
+        let rgb = color.to_rgb();
+        let a = (color.a as u32) << 24;
+
+        return Ok((rgb | a).into());
     }
 
     Ok(Value::Undefined)
