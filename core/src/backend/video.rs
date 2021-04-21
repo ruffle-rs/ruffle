@@ -32,6 +32,13 @@ impl<'a> EncodedFrame<'a> {
     }
 }
 
+/// A decoded frame of video in RGBA format.
+struct DecodedFrame {
+    width: u16,
+    height: u16,
+    rgba: Vec<u8>,
+}
+
 /// What dependencies a given video frame has on any previous frames.
 #[derive(Copy, Clone, Debug)]
 pub enum FrameDependency {
