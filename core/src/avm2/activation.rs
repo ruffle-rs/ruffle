@@ -2613,7 +2613,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let dm = self.domain_memory()?;
         let dm = dm
-            .as_bytearray_mut(self.context.gc_context)
+            .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.get(address);
 
@@ -2632,7 +2632,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let dm = self.domain_memory()?;
         let dm = dm
-            .as_bytearray_mut(self.context.gc_context)
+            .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.get_range(address..address + 2);
 
@@ -2653,7 +2653,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let dm = self.domain_memory()?;
         let dm = dm
-            .as_bytearray_mut(self.context.gc_context)
+            .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.get_range(address..address + 4);
 
@@ -2674,7 +2674,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let dm = self.domain_memory()?;
         let dm = dm
-            .as_bytearray_mut(self.context.gc_context)
+            .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.get_range(address..address + 4);
 
@@ -2695,7 +2695,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let dm = self.domain_memory()?;
         let dm = dm
-            .as_bytearray_mut(self.context.gc_context)
+            .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.get_range(address..address + 8);
 
