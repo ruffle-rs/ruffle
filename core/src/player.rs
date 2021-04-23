@@ -249,6 +249,8 @@ impl Player {
         let movie_width = 550;
         let movie_height = 400;
         let frame_rate = 12.0;
+        // Disable script timeout in debug builds by default.
+        let max_execution_duration = if cfg!(debug_assertions) { u64::MAX } else { 15 };
 
         let mut player = Player {
             player_version: NEWEST_PLAYER_VERSION,
@@ -317,7 +319,7 @@ impl Player {
             instance_counter: 0,
             time_til_next_timer: None,
             storage,
-            max_execution_duration: Duration::from_secs(15),
+            max_execution_duration: Duration::from_secs(max_execution_duration),
             current_frame: None,
         };
 
