@@ -22,7 +22,9 @@ const STATUS_COLORS = {
     "status_result_disabled": "gray",
 };
 
-async function queryTabStatus(listener: (status: keyof typeof STATUS_COLORS) => void) {
+async function queryTabStatus(
+    listener: (status: keyof typeof STATUS_COLORS) => void
+) {
     listener("status_init");
 
     let tabs: chrome.tabs.Tab[] | browser.tabs.Tab[];
@@ -77,7 +79,8 @@ async function queryTabStatus(listener: (status: keyof typeof STATUS_COLORS) => 
     optionsChanged();
 }
 
-function objectsEqual<T extends Record<string, any>>(x: T, y: T) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function objectsEqual(x: any, y: any) {
     for (const [key, value] of Object.entries(x)) {
         if (y[key] !== value) {
             return false;
@@ -115,14 +118,20 @@ window.addEventListener("DOMContentLoaded", () => {
         optionsChanged();
     });
 
-    statusIndicator = document.getElementById("status-indicator") as HTMLDivElement;
+    statusIndicator = document.getElementById(
+        "status-indicator"
+    ) as HTMLDivElement;
     statusText = document.getElementById("status-text") as HTMLSpanElement;
 
-    const optionsButton = document.getElementById("options-button") as HTMLButtonElement;
+    const optionsButton = document.getElementById(
+        "options-button"
+    ) as HTMLButtonElement;
     optionsButton.textContent = utils.i18n.getMessage("open_settings_page");
     optionsButton.addEventListener("click", () => utils.openOptionsPage());
 
-    reloadButton = document.getElementById("reload-button") as HTMLButtonElement;
+    reloadButton = document.getElementById(
+        "reload-button"
+    ) as HTMLButtonElement;
     reloadButton.textContent = utils.i18n.getMessage("action_reload");
     reloadButton.addEventListener("click", async () => {
         await utils.tabs.reload(activeTab.id!);
