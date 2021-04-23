@@ -13,6 +13,7 @@ members = [
     "render/common_tess",
     "render/webgl",
 ]
+resolver = "2"
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
