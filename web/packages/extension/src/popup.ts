@@ -1,18 +1,18 @@
 import * as utils from "./utils";
-import { bindBooleanOptions } from "./common";
+import { Options, bindBooleanOptions } from "./common";
 
-let activeTab;
-let savedOptions;
-let tabOptions;
+let activeTab: chrome.tabs.Tab | browser.tabs.Tab;
+let savedOptions: Options;
+let tabOptions: Options;
 
-let statusIndicator;
-let statusText;
-let reloadButton;
+let statusIndicator: HTMLDivElement;
+let statusText: HTMLSpanElement;
+let reloadButton: HTMLButtonElement;
 
 // prettier-ignore
 const STATUS_COLORS = {
     "status_init": "gray",
-    "status_no_tab": "red",
+    "status_no_tabs": "red",
     "status_tabs_error": "red",
     "status_message_init": "gray",
     "status_result_protected": "gray",
@@ -22,10 +22,10 @@ const STATUS_COLORS = {
     "status_result_disabled": "gray",
 };
 
-async function queryTabStatus(listener) {
+async function queryTabStatus(listener: (status: keyof typeof STATUS_COLORS) => void) {
     listener("status_init");
 
-    let tabs;
+    let tabs: chrome.tabs.Tab[] | browser.tabs.Tab[];
     try {
         tabs = await utils.tabs.query({
             currentWindow: true,
@@ -52,7 +52,7 @@ async function queryTabStatus(listener) {
 
     let response;
     try {
-        response = await utils.tabs.sendMessage(activeTab.id, {});
+        response = await utils.tabs.sendMessage(activeTab.id!, {});
     } catch (e) {
         listener("status_result_protected");
         reloadButton.disabled = true;
@@ -77,7 +77,7 @@ async function queryTabStatus(listener) {
     optionsChanged();
 }
 
-function objectsEqual(x, y) {
+function objectsEqual<T extends Record<string, any>>(x: T, y: T) {
     for (const [key, value] of Object.entries(x)) {
         if (y[key] !== value) {
             return false;
@@ -115,18 +115,18 @@ window.addEventListener("DOMContentLoaded", () => {
         optionsChanged();
     });
 
-    statusIndicator = document.getElementById("status-indicator");
-    statusText = document.getElementById("status-text");
+    statusIndicator = document.getElementById("status-indicator") as HTMLDivElement;
+    statusText = document.getElementById("status-text") as HTMLSpanElement;
 
-    const optionsButton = document.getElementById("options-button");
+    const optionsButton = document.getElementById("options-button") as HTMLButtonElement;
     optionsButton.textContent = utils.i18n.getMessage("open_settings_page");
     optionsButton.addEventListener("click", () => utils.openOptionsPage());
 
-    reloadButton = document.getElementById("reload-button");
+    reloadButton = document.getElementById("reload-button") as HTMLButtonElement;
     reloadButton.textContent = utils.i18n.getMessage("action_reload");
     reloadButton.addEventListener("click", async () => {
-        await utils.tabs.reload(activeTab.id);
-        // TODO: wait for tab to load?
+        await utils.tabs.reload(activeTab.id!);
+        // TODO: Wait for tab to load?
         setTimeout(() => {
             displayTabStatus();
         }, 1000);

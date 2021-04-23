@@ -20,7 +20,7 @@
 
 import * as utils from "./utils";
 
-const pendingMessages = [];
+const pendingMessages: ({ resolve(value: any): void, reject(reason?: any): void } | null)[] = [];
 const uniqueMessageSuffix = Math.floor(Math.random() * 100000000000);
 
 /**
@@ -28,7 +28,7 @@ const uniqueMessageSuffix = Math.floor(Math.random() * 100000000000);
  * @param {*} data - JSON-serializable data to send to main world.
  * @returns {Promise<*>} JSON-serializable response from main world.
  */
-function sendMessageToPage(data) {
+function sendMessageToPage(data: any): Promise<any> {
     const message = {
         type: `FROM_RUFFLE${uniqueMessageSuffix}`,
         index: pendingMessages.length,
@@ -44,7 +44,7 @@ function sendMessageToPage(data) {
  * Inject a raw script to the main world.
  * @param {string} src - Script to inject.
  */
-function injectScriptRaw(src) {
+function injectScriptRaw(src: string) {
     const script = document.createElement("script");
     script.textContent = src;
     (document.head || document.documentElement).append(script);
@@ -54,7 +54,7 @@ function injectScriptRaw(src) {
  * Inject a script by URL to the main world.
  * @param {string} url - Script URL to inject.
  */
-function injectScriptURL(url) {
+function injectScriptURL(url: string) {
     const script = document.createElement("script");
     script.src = url;
     (document.head || document.documentElement).append(script);
@@ -65,7 +65,7 @@ function injectScriptURL(url) {
  * to opt-out from Ruffle.
  * @returns {boolean} Whether the current page opts-out or not.
  */
-function checkPageOptout() {
+function checkPageOptout(): boolean {
     if (document.documentElement.hasAttribute("data-ruffle-optout")) {
         return true;
     }
@@ -96,7 +96,7 @@ function checkPageOptout() {
         !window.RufflePlayer &&
         (options.ignoreOptout || !pageOptout);
 
-    utils.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    utils.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: (options: Object) => void) => {
         if (shouldLoad) {
             sendMessageToPage(message).then((response) => {
                 sendResponse({

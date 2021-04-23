@@ -1,11 +1,16 @@
 import * as utils from "./utils";
 
-function camelize(string) {
-    return string.replace(/[^a-z\d](.)/gi, (_, char) => char.toUpperCase());
+function camelize(s: string) {
+    return s.replace(/[^a-z\d](.)/gi, (_, char) => char.toUpperCase());
+}
+
+export interface Options {
+    ruffleEnable: boolean,
+    ignoreOptout: boolean,
 }
 
 function getBooleanElements() {
-    const elements = {};
+    const elements: Record<string, any> = {};
     for (const option of document.getElementsByClassName("option")) {
         const [checkbox] = option.getElementsByTagName("input");
         if (checkbox.type !== "checkbox") {
@@ -18,7 +23,7 @@ function getBooleanElements() {
     return elements;
 }
 
-export async function bindBooleanOptions(onChange) {
+export async function bindBooleanOptions(onChange?: (options: Options) => void) {
     const elements = getBooleanElements();
 
     // Bind initial values.
@@ -45,7 +50,7 @@ export async function bindBooleanOptions(onChange) {
     }
 
     // Listen for future changes.
-    utils.storage.onChanged.addListener((changes, namespace) => {
+    utils.storage.onChanged.addListener((changes: Object, namespace: string) => {
         if (namespace !== "sync") {
             return;
         }
