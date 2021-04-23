@@ -586,26 +586,12 @@ impl<'gc> MovieClip<'gc> {
                     .and_then(|v| v.coerce_to_object(&mut activation));
 
                 match constr {
-                    Ok(mut constr) => {
-                        let proto = constr
-                            .get_property(
-                                constr,
-                                &Avm2QName::new(Avm2Namespace::public(), "prototype"),
-                                &mut activation,
-                            )
-                            .and_then(|v| v.coerce_to_object(&mut activation));
-                        match proto {
-                            Ok(proto) => activation
-                                .context
-                                .library
-                                .avm2_constructor_registry_mut()
-                                .set_proto_symbol(proto, movie.clone(), id),
-                            Err(e) => log::warn!(
-                                "Got AVM2 error {} when getting prototype of symbol class {}",
-                                e,
-                                class_name
-                            ),
-                        };
+                    Ok(constr) => {
+                        activation
+                            .context
+                            .library
+                            .avm2_constructor_registry_mut()
+                            .set_constr_symbol(constr, movie.clone(), id);
 
                         let library = activation
                             .context

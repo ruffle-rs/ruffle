@@ -21,19 +21,24 @@ pub fn instance_init<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
+    if let Some(mut this) = this {
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let proto = this.proto();
+            let constructor = this
+                .get_property(
+                    this,
+                    &QName::new(Namespace::public(), "constructor"),
+                    activation,
+                )?
+                .coerce_to_object(activation)?;
 
-            if let Some((movie, symbol)) = proto.and_then(|proto| {
-                activation
-                    .context
-                    .library
-                    .avm2_constructor_registry()
-                    .proto_symbol(proto)
-            }) {
+            if let Some((movie, symbol)) = activation
+                .context
+                .library
+                .avm2_constructor_registry()
+                .constr_symbol(constructor)
+            {
                 let mut child = activation
                     .context
                     .library
