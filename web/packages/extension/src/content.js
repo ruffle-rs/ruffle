@@ -91,6 +91,7 @@ function checkPageOptout() {
     const options = await utils.getOptions(["ruffleEnable", "ignoreOptout"]);
     const pageOptout = checkPageOptout();
     const shouldLoad =
+        !document.xmlVersion &&
         options.ruffleEnable &&
         !window.RufflePlayer &&
         (options.ignoreOptout || !pageOptout);
