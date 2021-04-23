@@ -1,23 +1,25 @@
-import { PublicAPI, SourceAPI, publicPath } from "ruffle-core";
+import { PublicAPI, SourceAPI, publicPath, Letterbox, LogLevel } from "ruffle-core";
 
-window.RufflePlayer = PublicAPI.negotiate(
-    window.RufflePlayer,
+const api = PublicAPI.negotiate(
+    window.RufflePlayer!,
     "local",
-    new SourceAPI("local")
+    new SourceAPI("local"),
 );
-__webpack_public_path__ = publicPath(window.RufflePlayer.config, "local");
-const ruffle = window.RufflePlayer.newest();
+window.RufflePlayer = api;
+__webpack_public_path__ = publicPath(api.config, "local");
+const ruffle = api.newest()!;
 
 let player;
 
 // Default config used by the player.
 const config = {
-    letterbox: "on",
-    logLevel: "warn",
+    letterbox: Letterbox.On,
+    logLevel: LogLevel.Warn,
 };
 
 window.addEventListener("DOMContentLoaded", () => {
-    const url = new URL(window.location);
+    // TypeScript doesn't accept window.location alone.
+    const url = new URL(window.location.href);
     const swfUrl = url.searchParams.get("url");
     if (!swfUrl) {
         return;
@@ -32,7 +34,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     player = ruffle.createPlayer();
     player.id = "player";
-    document.getElementById("main").append(player);
+    document.getElementById("main")!.append(player);
 
     player.load({ url: swfUrl, ...config });
 });

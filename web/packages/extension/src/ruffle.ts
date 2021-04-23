@@ -1,13 +1,14 @@
 import { PublicAPI, SourceAPI, publicPath } from "ruffle-core";
 
-window.RufflePlayer = PublicAPI.negotiate(
-    window.RufflePlayer,
+const api = PublicAPI.negotiate(
+    window.RufflePlayer!,
     "extension",
-    new SourceAPI("extension")
+    new SourceAPI("extension"),
 );
-__webpack_public_path__ = publicPath(window.RufflePlayer.config, "extension");
+window.RufflePlayer = api;
+__webpack_public_path__ = publicPath(api.config, "extension");
 
-let uniqueMessageSuffix = null;
+let uniqueMessageSuffix: string | null = null;
 if (
     document.currentScript !== undefined &&
     document.currentScript !== null &&
@@ -33,10 +34,8 @@ if (uniqueMessageSuffix) {
         const { type, index, data } = event.data;
         if (type === `FROM_RUFFLE${uniqueMessageSuffix}`) {
             // Ping back.
-            window.postMessage(
-                { type: `TO_RUFFLE${uniqueMessageSuffix}`, index, data },
-                "*"
-            );
+            const message = { type: `TO_RUFFLE${uniqueMessageSuffix}`, index, data };
+            window.postMessage(message, "*");
         }
     });
 }

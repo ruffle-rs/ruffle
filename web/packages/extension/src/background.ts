@@ -1,16 +1,20 @@
 import * as utils from "./utils";
 
-function isSwf(details) {
-    const typeHeader = details.responseHeaders.find(
+type WebResponseHeadersDetails = chrome.webRequest.WebResponseHeadersDetails | browser.webRequest._OnHeadersReceivedDetails;
+
+function isSwf(details: WebResponseHeadersDetails) {
+    // TypeScript doesn't compile without this explicit type delaration.
+    const headers: (chrome.webRequest.HttpHeader | browser.webRequest._HttpHeaders)[] = details.responseHeaders!;
+    const typeHeader = headers.find(
         ({ name }) => name.toLowerCase() === "content-type"
     );
     if (!typeHeader) {
         return false;
     }
 
-    const mime = typeHeader.value
+    const mime = typeHeader.value!
         .toLowerCase()
-        .match(/^\s*(.*?)\s*(?:;.*)?$/)[1];
+        .match(/^\s*(.*?)\s*(?:;.*)?$/)![1];
 
     // Some sites (e.g. swfchan.net) might (wrongly?) send octet-stream, so check file extension too.
     if (mime === "application/octet-stream") {
@@ -22,7 +26,7 @@ function isSwf(details) {
     return mime === "application/x-shockwave-flash";
 }
 
-function onHeadersReceived(details) {
+function onHeadersReceived(details: WebResponseHeadersDetails) {
     if (isSwf(details)) {
         const baseUrl = utils.runtime.getURL("player.html");
         return { redirectUrl: `${baseUrl}?url=${details.url}` };
@@ -53,7 +57,7 @@ function disable() {
         enable();
     }
 
-    utils.storage.onChanged.addListener((changes, namespace) => {
+    utils.storage.onChanged.addListener((changes: any, namespace: string) => {
         if (
             namespace === "sync" &&
             Object.prototype.hasOwnProperty.call(changes, "ruffleEnable")
