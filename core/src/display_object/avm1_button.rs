@@ -18,11 +18,11 @@ use swf::ButtonActionCondition;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
-pub struct Button<'gc>(GcCell<'gc, ButtonData<'gc>>);
+pub struct Avm1Button<'gc>(GcCell<'gc, Avm1ButtonData<'gc>>);
 
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
-pub struct ButtonData<'gc> {
+pub struct Avm1ButtonData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: GcCell<'gc, ButtonStatic>,
     state: ButtonState,
@@ -36,7 +36,7 @@ pub struct ButtonData<'gc> {
     use_hand_cursor: bool,
 }
 
-impl<'gc> Button<'gc> {
+impl<'gc> Avm1Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
         source_movie: &SwfSlice,
@@ -75,9 +75,9 @@ impl<'gc> Button<'gc> {
             over_to_up_sound: None,
         };
 
-        Button(GcCell::allocate(
+        Avm1Button(GcCell::allocate(
             gc_context,
-            ButtonData {
+            Avm1ButtonData {
                 base: Default::default(),
                 static_data: GcCell::allocate(gc_context, static_data),
                 container: ChildContainer::new(),
@@ -232,7 +232,7 @@ impl<'gc> Button<'gc> {
     }
 }
 
-impl<'gc> TDisplayObject<'gc> for Button<'gc> {
+impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     impl_display_object!(base);
 
     fn id(&self) -> CharacterId {
@@ -388,7 +388,7 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
             .unwrap_or(Value::Undefined)
     }
 
-    fn as_button(&self) -> Option<Self> {
+    fn as_avm1_button(&self) -> Option<Self> {
         Some(*self)
     }
 
@@ -527,11 +527,11 @@ impl<'gc> TDisplayObject<'gc> for Button<'gc> {
     }
 }
 
-impl<'gc> TDisplayObjectContainer<'gc> for Button<'gc> {
+impl<'gc> TDisplayObjectContainer<'gc> for Avm1Button<'gc> {
     impl_display_object_container!(container);
 }
 
-impl<'gc> ButtonData<'gc> {
+impl<'gc> Avm1ButtonData<'gc> {
     fn play_sound(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,

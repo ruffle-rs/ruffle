@@ -20,8 +20,8 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use swf::Fixed8;
 
+mod avm1_button;
 mod bitmap;
-mod button;
 mod container;
 mod edit_text;
 mod graphic;
@@ -37,8 +37,8 @@ pub use crate::display_object::container::{
     DisplayObjectContainer, Lists, TDisplayObjectContainer,
 };
 use crate::events::{ClipEvent, ClipEventResult};
+pub use avm1_button::Avm1Button;
 pub use bitmap::Bitmap;
-pub use button::Button;
 pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
@@ -466,7 +466,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     pub enum DisplayObject<'gc> {
         Stage(Stage<'gc>),
         Bitmap(Bitmap<'gc>),
-        Button(Button<'gc>),
+        Avm1Button(Avm1Button<'gc>),
         EditText(EditText<'gc>),
         Graphic(Graphic<'gc>),
         MorphShape(MorphShape<'gc>),
@@ -996,7 +996,7 @@ pub trait TDisplayObject<'gc>:
     fn as_stage(&self) -> Option<Stage<'gc>> {
         None
     }
-    fn as_button(&self) -> Option<Button<'gc>> {
+    fn as_avm1_button(&self) -> Option<Avm1Button<'gc>> {
         None
     }
     fn as_movie_clip(&self) -> Option<MovieClip<'gc>> {

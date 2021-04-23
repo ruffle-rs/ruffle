@@ -19,8 +19,8 @@ use crate::display_object::container::{
     ChildContainer, TDisplayObjectContainer,
 };
 use crate::display_object::{
-    Bitmap, Button, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject, Text,
-    Video,
+    Avm1Button, Bitmap, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject,
+    Text, Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -2687,7 +2687,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_1()?;
-        let button = Button::from_swf_tag(
+        let button = Avm1Button::from_swf_tag(
             &swf_button,
             &self.static_data.swf,
             &context.library,
@@ -2696,7 +2696,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(swf_button.id, Character::Button(button));
+            .register_character(swf_button.id, Character::Avm1Button(button));
         Ok(())
     }
 
@@ -2707,7 +2707,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_2()?;
-        let button = Button::from_swf_tag(
+        let button = Avm1Button::from_swf_tag(
             &swf_button,
             &self.static_data.swf,
             &context.library,
@@ -2716,7 +2716,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(swf_button.id, Character::Button(button));
+            .register_character(swf_button.id, Character::Avm1Button(button));
         Ok(())
     }
 
@@ -2733,7 +2733,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library_for_movie_mut(self.movie())
             .character_by_id(button_colors.id)
         {
-            if let Character::Button(button) = button {
+            if let Character::Avm1Button(button) = button {
                 button.set_colors(context.gc_context, &button_colors.color_transforms[..]);
             } else {
                 log::warn!(
@@ -2762,7 +2762,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library_for_movie_mut(self.movie())
             .character_by_id(button_sounds.id)
         {
-            if let Character::Button(button) = button {
+            if let Character::Avm1Button(button) = button {
                 button.set_sounds(context.gc_context, button_sounds);
             } else {
                 log::warn!(
