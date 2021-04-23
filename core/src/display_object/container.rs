@@ -2,7 +2,7 @@
 
 use crate::avm2::{Avm2, Event as Avm2Event, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::button::Button;
+use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject};
@@ -152,7 +152,7 @@ bitflags! {
     #[collect(no_drop)]
     pub enum DisplayObjectContainer<'gc> {
         Stage(Stage<'gc>),
-        Button(Button<'gc>),
+        Avm1Button(Avm1Button<'gc>),
         MovieClip(MovieClip<'gc>),
     }
 )]

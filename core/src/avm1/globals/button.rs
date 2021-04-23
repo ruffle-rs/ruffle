@@ -6,7 +6,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::display_object;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::display_object::{Button, TDisplayObject};
+use crate::display_object::{Avm1Button, TDisplayObject};
 use gc_arena::MutationContext;
 
 macro_rules! with_button_props {
@@ -28,7 +28,7 @@ macro_rules! with_button_props {
             Executable::Native(
                 |activation: &mut Activation<'_, 'gc, '_>, this, _args| -> Result<Value<'gc>, Error<'gc>> {
                     if let Some(display_object) = this.as_display_object() {
-                        if let Some(button) = display_object.as_button() {
+                        if let Some(button) = display_object.as_avm1_button() {
                             return $get(button, activation);
                         }
                     }
@@ -46,7 +46,7 @@ macro_rules! with_button_props {
             Executable::Native(
                 |activation: &mut Activation<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
                     if let Some(display_object) = this.as_display_object() {
-                        if let Some(button) = display_object.as_button() {
+                        if let Some(button) = display_object.as_avm1_button() {
                             let value = args
                                 .get(0)
                                 .unwrap_or(&Value::Undefined)
@@ -95,14 +95,14 @@ pub fn constructor<'gc>(
 }
 
 fn enabled<'gc>(
-    this: Button<'gc>,
+    this: Avm1Button<'gc>,
     _activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.enabled().into())
 }
 
 fn set_enabled<'gc>(
-    this: Button<'gc>,
+    this: Avm1Button<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
@@ -112,14 +112,14 @@ fn set_enabled<'gc>(
 }
 
 fn use_hand_cursor<'gc>(
-    this: Button<'gc>,
+    this: Avm1Button<'gc>,
     _activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.use_hand_cursor().into())
 }
 
 fn set_use_hand_cursor<'gc>(
-    this: Button<'gc>,
+    this: Avm1Button<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
