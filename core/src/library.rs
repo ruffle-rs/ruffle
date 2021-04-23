@@ -79,17 +79,17 @@ impl WeakElement for WeakMovieSymbol {
     }
 }
 
-/// The mappings between prototypes and library characters defined by
+/// The mappings between constructors and library characters defined by
 /// `SymbolClass`.
 pub struct Avm2ConstructorRegistry<'gc> {
-    /// A list of AVM2 class prototypes and the character IDs they are expected
+    /// A list of AVM2 class constructors and the character IDs they are expected
     /// to instantiate.
-    proto_map: WeakValueHashMap<Avm2Object<'gc>, WeakMovieSymbol>,
+    constr_map: WeakValueHashMap<Avm2Object<'gc>, WeakMovieSymbol>,
 }
 
 unsafe impl Collect for Avm2ConstructorRegistry<'_> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        for (k, _) in self.proto_map.iter() {
+        for (k, _) in self.constr_map.iter() {
             k.trace(cc);
         }
     }
@@ -104,29 +104,29 @@ impl Default for Avm2ConstructorRegistry<'_> {
 impl<'gc> Avm2ConstructorRegistry<'gc> {
     pub fn new() -> Self {
         Self {
-            proto_map: WeakValueHashMap::new(),
+            constr_map: WeakValueHashMap::new(),
         }
     }
 
-    /// Retrieve the library symbol for a given AVM2 prototype.
+    /// Retrieve the library symbol for a given AVM2 class constructor.
     ///
     /// A value of `None` indicates that this AVM2 class is not associated with
     /// a library symbol.
-    pub fn proto_symbol(&self, proto: Avm2Object<'gc>) -> Option<(Arc<SwfMovie>, CharacterId)> {
-        match self.proto_map.get(&proto) {
+    pub fn constr_symbol(&self, proto: Avm2Object<'gc>) -> Option<(Arc<SwfMovie>, CharacterId)> {
+        match self.constr_map.get(&proto) {
             Some(MovieSymbol(movie, symbol)) => Some((movie, symbol)),
             None => None,
         }
     }
 
-    /// Associate an AVM2 prototype with a given library symbol.
-    pub fn set_proto_symbol(
+    /// Associate an AVM2 class constructor with a given library symbol.
+    pub fn set_constr_symbol(
         &mut self,
         proto: Avm2Object<'gc>,
         movie: Arc<SwfMovie>,
         symbol: CharacterId,
     ) {
-        self.proto_map.insert(proto, MovieSymbol(movie, symbol));
+        self.constr_map.insert(proto, MovieSymbol(movie, symbol));
     }
 }
 
