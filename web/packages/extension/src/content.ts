@@ -20,7 +20,10 @@
 
 import * as utils from "./utils";
 
-const pendingMessages: ({ resolve(value: any): void, reject(reason?: any): void } | null)[] = [];
+const pendingMessages: ({
+    resolve(value: unknown): void;
+    reject(reason?: unknown): void;
+} | null)[] = [];
 const uniqueMessageSuffix = Math.floor(Math.random() * 100000000000);
 
 /**
@@ -28,7 +31,7 @@ const uniqueMessageSuffix = Math.floor(Math.random() * 100000000000);
  * @param {*} data - JSON-serializable data to send to main world.
  * @returns {Promise<*>} JSON-serializable response from main world.
  */
-function sendMessageToPage(data: any): Promise<any> {
+function sendMessageToPage(data: unknown): Promise<unknown> {
     const message = {
         type: `FROM_RUFFLE${uniqueMessageSuffix}`,
         index: pendingMessages.length,
@@ -87,6 +90,12 @@ function checkPageOptout(): boolean {
     return false;
 }
 
+declare global {
+    interface Document {
+        xmlVersion: string | null;
+    }
+}
+
 (async () => {
     const options = await utils.getOptions(["ruffleEnable", "ignoreOptout"]);
     const pageOptout = checkPageOptout();
@@ -96,7 +105,7 @@ function checkPageOptout(): boolean {
         !window.RufflePlayer &&
         (options.ignoreOptout || !pageOptout);
 
-    utils.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: (options: Object) => void) => {
+    utils.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (shouldLoad) {
             sendMessageToPage(message).then((response) => {
                 sendResponse({

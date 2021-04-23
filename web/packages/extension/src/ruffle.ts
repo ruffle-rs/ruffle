@@ -3,7 +3,7 @@ import { PublicAPI, SourceAPI, publicPath } from "ruffle-core";
 const api = PublicAPI.negotiate(
     window.RufflePlayer!,
     "extension",
-    new SourceAPI("extension"),
+    new SourceAPI("extension")
 );
 window.RufflePlayer = api;
 __webpack_public_path__ = publicPath(api.config, "extension");
@@ -34,7 +34,11 @@ if (uniqueMessageSuffix) {
         const { type, index, data } = event.data;
         if (type === `FROM_RUFFLE${uniqueMessageSuffix}`) {
             // Ping back.
-            const message = { type: `TO_RUFFLE${uniqueMessageSuffix}`, index, data };
+            const message = {
+                type: `TO_RUFFLE${uniqueMessageSuffix}`,
+                index,
+                data,
+            };
             window.postMessage(message, "*");
         }
     });

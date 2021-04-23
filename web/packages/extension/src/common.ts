@@ -5,12 +5,15 @@ function camelize(s: string) {
 }
 
 export interface Options {
-    ruffleEnable: boolean,
-    ignoreOptout: boolean,
+    ruffleEnable: boolean;
+    ignoreOptout: boolean;
 }
 
 function getBooleanElements() {
-    const elements: Record<string, any> = {};
+    const elements: Record<
+        string,
+        { option: Element; checkbox: HTMLInputElement; label: HTMLLabelElement }
+    > = {};
     for (const option of document.getElementsByClassName("option")) {
         const [checkbox] = option.getElementsByTagName("input");
         if (checkbox.type !== "checkbox") {
@@ -23,7 +26,9 @@ function getBooleanElements() {
     return elements;
 }
 
-export async function bindBooleanOptions(onChange?: (options: Options) => void) {
+export async function bindBooleanOptions(
+    onChange?: (options: Options) => void
+): Promise<void> {
     const elements = getBooleanElements();
 
     // Bind initial values.
@@ -36,7 +41,7 @@ export async function bindBooleanOptions(onChange?: (options: Options) => void) 
         // TODO: click/change/input?
         checkbox.addEventListener("click", () => {
             const value = checkbox.checked;
-            options[key] = value;
+            options[key as keyof Options] = value;
             utils.storage.sync.set({ [key]: value });
         });
 
@@ -50,7 +55,7 @@ export async function bindBooleanOptions(onChange?: (options: Options) => void) 
     }
 
     // Listen for future changes.
-    utils.storage.onChanged.addListener((changes: Object, namespace: string) => {
+    utils.storage.onChanged.addListener((changes, namespace) => {
         if (namespace !== "sync") {
             return;
         }
@@ -60,7 +65,7 @@ export async function bindBooleanOptions(onChange?: (options: Options) => void) 
                 continue;
             }
             elements[key].checkbox.checked = option.newValue;
-            options[key] = option.newValue;
+            options[key as keyof Options] = option.newValue;
         }
 
         if (onChange) {
