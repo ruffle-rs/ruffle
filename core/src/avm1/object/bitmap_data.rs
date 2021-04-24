@@ -215,8 +215,12 @@ impl BitmapData {
         &self.pixels
     }
 
-    pub fn set_pixels(&mut self, pixels: Vec<Color>) {
+    pub fn set_pixels(&mut self, width: u32, height: u32, transparency: bool, pixels: Vec<Color>) {
+        self.width = width;
+        self.height = height;
+        self.transparency = transparency;
         self.pixels = pixels;
+        self.dirty = true;
     }
 
     pub fn pixels_rgba(&self) -> Vec<u8> {

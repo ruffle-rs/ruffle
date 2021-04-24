@@ -368,27 +368,22 @@ pub fn clone<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            let proto = activation.context.avm1.prototypes.bitmap_data_constructor;
-            let new_bitmap_data = proto.construct(
-                activation,
-                &[
-                    bitmap_data.bitmap_data().read().width().into(),
-                    bitmap_data.bitmap_data().read().height().into(),
-                    bitmap_data.bitmap_data().read().transparency().into(),
-                    0xFFFFFF.into(),
-                ],
-            )?;
-            let new_bitmap_data_object = new_bitmap_data
-                .coerce_to_object(activation)
-                .as_bitmap_data_object()
-                .unwrap();
+            let prototype = activation.context.avm1.prototypes.bitmap_data;
+            let new_bitmap_data = prototype.create_bare_object(activation, prototype)?;
 
-            new_bitmap_data_object
+            new_bitmap_data
+                .as_bitmap_data_object()
+                .unwrap()
                 .bitmap_data()
                 .write(activation.context.gc_context)
-                .set_pixels(bitmap_data.bitmap_data().read().pixels().to_vec());
+                .set_pixels(
+                    bitmap_data.bitmap_data().read().width(),
+                    bitmap_data.bitmap_data().read().height(),
+                    bitmap_data.bitmap_data().read().transparency(),
+                    bitmap_data.bitmap_data().read().pixels().to_vec(),
+                );
 
-            return Ok(new_bitmap_data);
+            return Ok(new_bitmap_data.into());
         }
     }
 
@@ -1305,22 +1300,23 @@ pub fn load_bitmap<'gc>(
 
     if let Some(Character::Bitmap(bitmap_object)) = character {
         if let Some(bitmap) = renderer.get_bitmap_pixels(bitmap_object.bitmap_handle()) {
-            let proto = activation.context.avm1.prototypes.bitmap_data_constructor;
-            let new_bitmap =
-                proto.construct(activation, &[bitmap.width.into(), bitmap.height.into()])?;
-            let new_bitmap_object = new_bitmap
-                .coerce_to_object(activation)
-                .as_bitmap_data_object()
-                .unwrap();
+            let prototype = activation.context.avm1.prototypes.bitmap_data;
+            let new_bitmap_data = prototype.create_bare_object(activation, prototype)?;
 
             let pixels: Vec<i32> = bitmap.data.into();
-
-            new_bitmap_object
+            new_bitmap_data
+                .as_bitmap_data_object()
+                .unwrap()
                 .bitmap_data()
                 .write(activation.context.gc_context)
-                .set_pixels(pixels.into_iter().map(|p| p.into()).collect());
+                .set_pixels(
+                    bitmap.width,
+                    bitmap.height,
+                    true,
+                    pixels.into_iter().map(|p| p.into()).collect(),
+                );
 
-            return Ok(new_bitmap);
+            return Ok(new_bitmap_data.into());
         }
     }
 
