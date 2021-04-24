@@ -13,6 +13,7 @@ pub mod loaderinfo;
 pub mod movieclip;
 pub mod scene;
 pub mod shape;
+pub mod simplebutton;
 pub mod sprite;
 pub mod stage;
 pub mod stagealign;
