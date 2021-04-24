@@ -170,7 +170,7 @@ impl BitmapData {
         self.transparency = transparency;
         self.pixels = vec![
             Color(fill_color).to_premultiplied_alpha(self.transparency());
-            (width * height) as usize
+            width as usize * height as usize
         ];
         self.dirty = true;
     }

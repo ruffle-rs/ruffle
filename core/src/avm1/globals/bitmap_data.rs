@@ -27,8 +27,14 @@ fn is_size_valid(swf_version: u8, width: u32, height: u32) -> bool {
         if width > 2880 || height > 2880 {
             return false;
         }
-    } else if swf_version == 10 {
+    } else if swf_version <= 12 {
         if width >= 0x2000 || height >= 0x2000 || width * height >= 0x1000000 {
+            return false;
+        }
+    } else {
+        // These limits are undocumented, but seem to be reliable.
+        // TODO: Do they vary across different machines?
+        if width > 0x6666666 || height > 0x6666666 || width as u64 * height as u64 >= 0x20000000 {
             return false;
         }
     }
