@@ -10,6 +10,31 @@ use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
 
+fn is_size_valid(swf_version: u8, width: u32, height: u32) -> bool {
+    // From https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/BitmapData.html:
+    // "In AIR 1.5 and Flash Player 10, the maximum size for a BitmapData object is 8,191 pixels in
+    // width or height, and the total number of pixels cannot exceed 16,777,215 pixels. (So, if a
+    // BitmapData object is 8,191 pixels wide, it can only be 2,048 pixels high.) In Flash Player 9
+    // and earlier and AIR 1.1 and earlier, the limitation is 2,880 pixels in height and 2,880 in width.
+    // Starting with AIR 3 and Flash player 11, the size limits for a BitmapData object have been removed.
+    // The maximum size of a bitmap is now dependent on the operating system."
+    //
+    // In addition, width and height of 0 are invalid in all versions.
+    if width == 0 || height == 0 {
+        return false;
+    }
+    if swf_version <= 9 {
+        if width > 2880 || height > 2880 {
+            return false;
+        }
+    } else if swf_version == 10 {
+        if width >= 0x2000 || height >= 0x2000 || width * height >= 0x1000000 {
+            return false;
+        }
+    }
+    true
+}
+
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
@@ -18,17 +43,12 @@ pub fn constructor<'gc>(
     let width = args
         .get(0)
         .unwrap_or(&Value::Number(0.0))
-        .coerce_to_i32(activation)?;
+        .coerce_to_i32(activation)? as u32;
 
     let height = args
         .get(1)
         .unwrap_or(&Value::Number(0.0))
-        .coerce_to_i32(activation)?;
-
-    if width > 2880 || height > 2880 || width <= 0 || height <= 0 {
-        log::warn!("Invalid BitmapData size {}x{}", width, height);
-        return Ok(Value::Undefined);
-    }
+        .coerce_to_i32(activation)? as u32;
 
     let transparency = args
         .get(2)
@@ -37,16 +57,19 @@ pub fn constructor<'gc>(
 
     let fill_color = args
         .get(3)
-        // can't write this in hex
-        // 0xFFFFFFFF as f64;
-        .unwrap_or(&Value::Number(4294967295_f64))
+        .unwrap_or(&Value::Number(4294967295f64)) // 0xFFFFFFFF
         .coerce_to_i32(activation)?;
+
+    if !is_size_valid(activation.swf_version(), width, height) {
+        log::warn!("Invalid BitmapData size: {}x{}", width, height);
+        return Ok(Value::Undefined);
+    }
 
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         bitmap_data
             .bitmap_data()
             .write(activation.context.gc_context)
-            .init_pixels(width as u32, height as u32, fill_color, transparency);
+            .init_pixels(width, height, transparency, fill_color);
     }
 
     Ok(this.into())

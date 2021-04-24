@@ -164,7 +164,7 @@ pub struct BitmapData {
 }
 
 impl BitmapData {
-    pub fn init_pixels(&mut self, width: u32, height: u32, fill_color: i32, transparency: bool) {
+    pub fn init_pixels(&mut self, width: u32, height: u32, transparency: bool, fill_color: i32) {
         self.width = width;
         self.height = height;
         self.transparency = transparency;
