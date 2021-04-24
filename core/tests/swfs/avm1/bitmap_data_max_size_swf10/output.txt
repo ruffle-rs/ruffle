@@ -1,0 +1,12 @@
+// new BitmapData(8191, 1)
+[object Object]
+// new BitmapData(8192, 1)
+undefined
+// new BitmapData(1, 8191)
+[object Object]
+// new BitmapData(1, 8192)
+undefined
+// new BitmapData(4095, 4096)
+[object Object]
+// new BitmapData(4096, 4096)
+undefined
