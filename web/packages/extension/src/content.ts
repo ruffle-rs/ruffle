@@ -90,17 +90,19 @@ function checkPageOptout(): boolean {
     return false;
 }
 
-declare global {
-    interface Document {
-        xmlVersion: string | null;
-    }
+/**
+ * @returns {boolean} Whether the current page is an XML document or not.
+ */
+function isXMLDocument(): boolean {
+    // Based on https://developer.mozilla.org/en-US/docs/Web/API/Document/xmlVersion
+    return document.createElement("foo").tagName !== "FOO";
 }
 
 (async () => {
     const options = await utils.getOptions(["ruffleEnable", "ignoreOptout"]);
     const pageOptout = checkPageOptout();
     const shouldLoad =
-        !document.xmlVersion &&
+        !isXMLDocument() &&
         options.ruffleEnable &&
         !window.RufflePlayer &&
         (options.ignoreOptout || !pageOptout);
