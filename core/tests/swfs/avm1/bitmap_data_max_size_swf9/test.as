@@ -1,0 +1,11 @@
+import flash.display.BitmapData;
+trace("// new BitmapData(2800, 1)");
+trace(new BitmapData(2880, 1));
+trace("// new BitmapData(2881, 1)");
+trace(new BitmapData(2881, 1));
+trace("// new BitmapData(1, 2880)");
+trace(new BitmapData(1, 2880));
+trace("// new BitmapData(1, 2881)");
+trace(new BitmapData(1, 2881));
+trace("// new BitmapData(2880, 2880)");
+trace(new BitmapData(2880, 2880));

@@ -1,0 +1,10 @@
+// new BitmapData(2800, 1)
+[object Object]
+// new BitmapData(2881, 1)
+undefined
+// new BitmapData(1, 2880)
+[object Object]
+// new BitmapData(1, 2881)
+undefined
+// new BitmapData(2880, 2880)
+[object Object]

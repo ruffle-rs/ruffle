@@ -330,6 +330,8 @@ swf_tests! {
     (gradient_bevel_filter, "avm1/gradient_bevel_filter", 1),
     (gradient_glow_filter, "avm1/gradient_glow_filter", 1),
     (bitmap_data, "avm1/bitmap_data", 1),
+    (bitmap_data_max_size_swf9, "avm1/bitmap_data_max_size_swf9", 1),
+    (bitmap_data_max_size_swf10, "avm1/bitmap_data_max_size_swf10", 1),
     (bitmap_data_noise, "avm1/bitmap_data_noise", 1),
     (array_call_method, "avm1/array_call_method", 1),
     (bad_placeobject_clipaction, "avm1/bad_placeobject_clipaction", 2),
