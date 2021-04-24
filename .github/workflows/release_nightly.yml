@@ -16,6 +16,7 @@ jobs:
       activity_check: ${{ env.GHA_REPO_ALIVE }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
+      package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
     steps:
       - name: Activity check
         run: |
@@ -68,16 +69,159 @@ jobs:
           prerelease: true
 
   build:
-    name: Build ${{ matrix.os }}
+    name: Build ${{ matrix.build_name }}
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.activity_check == 'true'
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        include:
+          - build_name: linux-x86_64
+            os: ubuntu-latest
+
+          # Mac does two Rust builds to make a universal binary
+          - build_name: macos-x86_64
+            os: macos-latest
+            target: x86_64-apple-darwin
+
+          - build_name: macos-aarch64
+            os: macos-latest
+            target: aarch64-apple-darwin
+
+          - build_name: windows-x86_32
+            os: windows-latest
+            target: i686-pc-windows-msvc
+            RUSTFLAGS: -Ctarget-feature=+crt-static
+
+          - build_name: windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            RUSTFLAGS: -Ctarget-feature=+crt-static
+
+    env:
+      PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
+      CARGO_BUILD_DIR: target/${{ matrix.target }}/release
+
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Clone Ruffle repo
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
+
+      # We need macOS SDK 11.0 to build for aarch64.
+      # GitHub Actions runners have the 11.0 SDK installed, but are still stuck on macOS 10.15.
+      # Various efforts of changing SDKPATH, CFLAGS, etc. to use the proper SDK have not compiled or linked correctly.
+      # This hack deletes all other SDKs which forces the build tools to use the proper version.
+      # Remove this hack when macOS 11 is publicly available on GitHub Actions.
+      # From https://github.com/actions/virtual-environments/issues/2211
+      - name: Set SDK for macOS aarch64
+        if: matrix.target == 'aarch64-apple-darwin'
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_12.4.app"
+          sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/*
+
+      - name: Cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --package ruffle_desktop --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        env:
+          RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
+
+      - name: Package common
+        run: |
+          mkdir package
+          cp README.md package/README.md
+          cp LICENSE.md package/LICENSE.md
+
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        run: |
+          cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop.exe package/ruffle.exe
+          7z a ${{ env.PACKAGE_FILE }} ./package/*
+
+      - name: Package Linux
+        if: runner.os == 'Linux'
+        run: |
+          cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop package/ruffle
+          cd package/
+          tar -czvf ../${{ env.PACKAGE_FILE }} *
+
+      - name: Upload package
+        if: runner.os != 'macOS'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./${{ env.PACKAGE_FILE }}
+          asset_name: ${{ env.PACKAGE_FILE }}
+          asset_content_type: ${{ endsWith(env.PACKAGE_FILE, 'tar.gz') && 'application/gzip' || 'application/zip' }}
+
+      - name: Upload macOS build artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.build_name }}
+          path: |
+            ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop
+            package
+
+  build-mac-universal-binary:
+    name: Build macOS universal binary
+    needs: [create-nightly-release, build]
+    runs-on: macos-latest
+    env:
+      PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
+    steps:
+      - name: Download x86_64 binary
+        uses: actions/download-artifact@v2
+        with:
+          name: macos-aarch64
+
+      - name: Download aarch64 binary
+        uses: actions/download-artifact@v2
+        with:
+          name: macos-x86_64
+
+      - name: Make universal binary
+        run: |
+          lipo -create -output package/ruffle target/x86_64-apple-darwin/release/ruffle_desktop target/aarch64-apple-darwin/release/ruffle_desktop
+          chmod +x package/ruffle
+
+      - name: Package macOS
+        run: |
+          cd package
+          tar -czvf ../${{ env.PACKAGE_FILE }} *
+
+      - name: Upload package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./${{ env.PACKAGE_FILE }}
+          asset_name: ${{ env.PACKAGE_FILE }}
+          asset_content_type: application/gzip
+
+  build-web:
+    name: Build web
+    needs: create-nightly-release
+    if: needs.create-nightly-release.outputs.activity_check == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone Ruffle repo
+        uses: actions/checkout@v2
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -86,20 +230,18 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
 
-      - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
-
       - name: Setup Node.js
-        if: matrix.os == 'ubuntu-latest'
         uses: actions/setup-node@v1
         with:
-          node-version: '14'
+          node-version: "14"
 
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
       # Be sure to update in test_web.yml, web/Cargo.toml and web/README.md.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.73
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: wasm-bindgen-cli --version 0.2.73
 
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2
@@ -113,7 +255,6 @@ jobs:
         run: conda install -c conda-forge binaryen
 
       - name: Build web
-        if: matrix.os == 'ubuntu-latest'
         env:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
           MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
@@ -126,115 +267,42 @@ jobs:
           npm run build
           npm run docs
 
-      - name: Build Windows
-        if: matrix.os == 'windows-latest'
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
-        env:
-          RUSTFLAGS: -Ctarget-feature=+crt-static
-
-      - name: Build macOS / Linux
-        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
-
-      - name: Package common
-        run: |
-          mkdir package
-          cp README.md package/README.md
-          cp LICENSE.md package/LICENSE.md
-
-      - name: Package Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          cp target/release/ruffle_desktop.exe package/ruffle.exe
-          7z a release.zip ./package/*
-
-      - name: Package macOS / Linux
-        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
-        run: |
-          cp target/release/ruffle_desktop package/ruffle
-          cd package/
-          tar -czvf ../release.tar.gz *
-
       - name: Package selfhosted
-        if: matrix.os == 'ubuntu-latest'
         run: |
           cd web/packages/selfhosted/dist/
           zip -r release.zip .
 
-      - name: Upload Windows
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./release.zip
-          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_windows.zip
-          asset_content_type: application/zip
-
-      - name: Upload macOS
-        if: matrix.os == 'macOS-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./release.tar.gz
-          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_mac.tar.gz
-          asset_content_type: application/gzip
-
-      - name: Upload Linux
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./release.tar.gz
-          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_linux.tar.gz
-          asset_content_type: application/gzip
-
       - name: Upload selfhosted
-        if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
           asset_path: ./web/packages/selfhosted/dist/release.zip
-          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_selfhosted.zip
+          asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip
           asset_content_type: application/zip
 
       - name: Upload generic extension
-        if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
           asset_path: ./web/packages/extension/dist/ruffle_extension.zip
-          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_extension.zip
+          asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip
           asset_content_type: application/zip
 
       - name: Upload Firefox extension
-        if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
           asset_path: ./web/packages/extension/dist/firefox.xpi
-          asset_name: ruffle_nightly_${{ needs.create-nightly-release.outputs.date }}_firefox.xpi
+          asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox.xpi
           asset_content_type: application/x-xpinstall
 
       - name: Clone web demo
-        if: matrix.os == 'ubuntu-latest'
         uses: actions/checkout@v2
         with:
           repository: ruffle-rs/demo
@@ -244,7 +312,6 @@ jobs:
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
       - name: Update web demo
-        if: matrix.os == 'ubuntu-latest'
         run: |
           cd demo/
 
@@ -261,7 +328,6 @@ jobs:
           git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
 
       - name: Push web demo
-        if: matrix.os == 'ubuntu-latest'
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/demo
@@ -270,7 +336,6 @@ jobs:
           force: true
 
       - name: Clone JS docs
-        if: matrix.os == 'ubuntu-latest'
         uses: actions/checkout@v2
         with:
           repository: ruffle-rs/js-docs
@@ -280,7 +345,6 @@ jobs:
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
       - name: Update JS docs
-        if: matrix.os == 'ubuntu-latest'
         run: |
           cd js-docs/
 
@@ -297,7 +361,6 @@ jobs:
           git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
 
       - name: Push JS docs
-        if: matrix.os == 'ubuntu-latest'
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/js-docs
