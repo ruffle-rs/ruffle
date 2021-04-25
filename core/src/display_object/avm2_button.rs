@@ -1,5 +1,8 @@
 use crate::avm1::Object as Avm1Object;
-use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value};
+use crate::avm2::{
+    Activation as Avm2Activation, Namespace as Avm2Namespace, Object as Avm2Object,
+    QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
+};
 use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
@@ -199,7 +202,20 @@ impl<'gc> Avm2Button<'gc> {
             child
         } else {
             let empty_slice = SwfSlice::empty(movie);
-            let sprite_constr = context.avm2.prototypes().sprite;
+            let mut sprite_proto = context.avm2.prototypes().sprite;
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let sprite_constr = sprite_proto
+                .get_property(
+                    sprite_proto,
+                    &Avm2QName::new(Avm2Namespace::public(), "constructor"),
+                    &mut activation,
+                )
+                .unwrap()
+                .coerce_to_object(&mut activation)
+                .unwrap();
+
+            drop(activation);
+
             let state_sprite = MovieClip::new(empty_slice, context.gc_context);
 
             state_sprite.set_avm2_constructor(context.gc_context, Some(sprite_constr));
