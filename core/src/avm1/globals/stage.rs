@@ -6,7 +6,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use gc_arena::MutationContext;
 
@@ -109,16 +109,44 @@ fn align<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Stage.align: unimplemented");
-    Ok("".into())
+    let align = activation.context.stage.align();
+    let mut s = String::with_capacity(4);
+    // Match string values returned by AS.
+    // It's possible to have an oxymoronic "LTRB".
+    // This acts the same as "TL" (top-left takes priority).
+    // This order is different between AVM1 and AVM2!
+    use crate::display_object::StageAlign;
+    if align.contains(StageAlign::LEFT) {
+        s.push('L');
+    }
+    if align.contains(StageAlign::TOP) {
+        s.push('T');
+    }
+    if align.contains(StageAlign::RIGHT) {
+        s.push('R');
+    }
+    if align.contains(StageAlign::BOTTOM) {
+        s.push('B');
+    }
+    let align = AvmString::new(activation.context.gc_context, s);
+    Ok(align.into())
 }
 
 fn set_align<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Stage.align: unimplemented");
+    let align = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?
+        .parse()
+        .unwrap_or_default();
+    activation
+        .context
+        .stage
+        .set_align(&mut activation.context, align);
     Ok(Value::Undefined)
 }
 
@@ -135,16 +163,28 @@ fn scale_mode<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Stage.scaleMode: unimplemented");
-    Ok("noScale".into())
+    let scale_mode = AvmString::new(
+        activation.context.gc_context,
+        activation.context.stage.scale_mode().to_string(),
+    );
+    Ok(scale_mode.into())
 }
 
 fn set_scale_mode<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Stage.scaleMode: unimplemented");
+    let scale_mode = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?
+        .parse()
+        .unwrap_or_default();
+    activation
+        .context
+        .stage
+        .set_scale_mode(&mut activation.context, scale_mode);
     Ok(Value::Undefined)
 }
 
