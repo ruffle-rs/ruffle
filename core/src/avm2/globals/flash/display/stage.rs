@@ -5,6 +5,7 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -250,6 +251,54 @@ pub fn set_y<'gc>(
     Err("Error: You cannot move the stage vertically.".into())
 }
 
+/// Implement `align`'s getter
+pub fn align<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let align = activation.context.stage.align();
+    let mut s = String::with_capacity(4);
+    // Match string values returned by AS.
+    // It's possible to have an oxymoronic "TBLR".
+    // This acts the same as "TL" (top-left takes priority).
+    // This order is different between AVM1 and AVM2!
+    use crate::display_object::StageAlign;
+    if align.contains(StageAlign::TOP) {
+        s.push('T');
+    }
+    if align.contains(StageAlign::BOTTOM) {
+        s.push('B');
+    }
+    if align.contains(StageAlign::LEFT) {
+        s.push('L');
+    }
+    if align.contains(StageAlign::RIGHT) {
+        s.push('R');
+    }
+    let align = AvmString::new(activation.context.gc_context, s);
+    Ok(align.into())
+}
+
+/// Implement `align`'s setter
+pub fn set_align<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let align = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?
+        .parse()
+        .unwrap_or_default();
+    activation
+        .context
+        .stage
+        .set_align(&mut activation.context, align);
+    Ok(Value::Undefined)
+}
+
 /// Implement `browserZoomFactor`'s getter
 pub fn browser_zoom_factor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -398,6 +447,44 @@ pub fn set_frame_rate<'gc>(
         .coerce_to_number(activation)?;
     *activation.context.frame_rate = new_frame_rate;
 
+    Ok(Value::Undefined)
+}
+
+/// Implement `scaleMode`'s getter
+pub fn scale_mode<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let scale_mode = AvmString::new(
+        activation.context.gc_context,
+        activation.context.stage.scale_mode().to_string(),
+    );
+    Ok(scale_mode.into())
+}
+
+/// Implement `scaleMode`'s setter
+pub fn set_scale_mode<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Ok(scale_mode) = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?
+        .parse()
+    {
+        activation
+            .context
+            .stage
+            .set_scale_mode(&mut activation.context, scale_mode);
+    } else {
+        return Err(
+            "ArgumentError: Error #2008: Parameter scaleMode must be one of the accepted values."
+                .into(),
+        );
+    }
     Ok(Value::Undefined)
 }
 
@@ -677,6 +764,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         .with_override(),
     );
     write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "align"),
+        Method::from_builtin(align),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "align"),
+        Method::from_builtin(set_align),
+    ));
+    write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "browserZoomFactor"),
         Method::from_builtin(browser_zoom_factor),
     ));
@@ -711,6 +806,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "frameRate"),
         Method::from_builtin(set_frame_rate),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "scaleMode"),
+        Method::from_builtin(scale_mode),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "scaleMode"),
+        Method::from_builtin(set_scale_mode),
     ));
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "stageWidth"),
