@@ -43,7 +43,7 @@ pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
-pub use stage::Stage;
+pub use stage::{Stage, StageAlign, StageScaleMode};
 pub use text::Text;
 pub use video::Video;
 

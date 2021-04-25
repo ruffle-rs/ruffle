@@ -375,7 +375,7 @@ impl Player {
         self.instance_counter = 0;
 
         self.mutate_with_update_context(|context| {
-            context.stage.set_stage_size(
+            context.stage.set_movie_size(
                 context.gc_context,
                 context.swf.width(),
                 context.swf.height(),
@@ -601,11 +601,11 @@ impl Player {
     }
 
     pub fn movie_width(&mut self) -> u32 {
-        self.mutate_with_update_context(|context| context.stage.stage_size().0)
+        self.mutate_with_update_context(|context| context.stage.movie_size().0)
     }
 
     pub fn movie_height(&mut self) -> u32 {
-        self.mutate_with_update_context(|context| context.stage.stage_size().1)
+        self.mutate_with_update_context(|context| context.stage.movie_size().1)
     }
 
     pub fn viewport_dimensions(&mut self) -> (u32, u32) {
