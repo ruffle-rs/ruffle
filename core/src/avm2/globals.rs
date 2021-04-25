@@ -767,6 +767,13 @@ pub fn load_player_globals<'gc>(
     )?;
     class(
         activation,
+        flash::display::stagescalemode::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
+    class(
+        activation,
         flash::display::stagealign::create_class(mc),
         implicit_deriver,
         domain,
