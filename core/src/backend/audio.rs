@@ -190,6 +190,12 @@ impl<'gc> AudioManager<'gc> {
         }
     }
 
+	/// Get the number of sound instances.
+	pub fn sounds_count(&mut self,
+	)-> usize {
+		self.sounds.len()
+	}
+	
     /// Update state of active sounds. Should be called once per frame.
     pub fn update_sounds(
         &mut self,

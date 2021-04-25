@@ -94,6 +94,9 @@ struct GcRootData<'gc> {
 
     /// Manager of active sound instances.
     audio_manager: AudioManager<'gc>,
+
+    /// Modified frame rate.
+    frame_rate: Option<f64>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -115,6 +118,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Timers<'gc>,
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
+        &mut Option<f64>,
     ) {
         (
             &mut self.levels,
@@ -129,6 +133,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.timers,
             &mut self.external_interface,
             &mut self.audio_manager,
+            &mut self.frame_rate,
         )
     }
 }
@@ -184,7 +189,9 @@ pub struct Player {
     gc_arena: GcArena,
     background_color: Option<Color>,
 
-    frame_rate: f64,
+    /// Current frame rate.
+	frame_rate: f64,
+	root_frame_rate: f64, 
 
     /// A time budget for executing frames.
     /// Gained by passage of time between host frames, spent by executing SWF frames.
@@ -248,7 +255,8 @@ impl Player {
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
         let movie_width = 550;
         let movie_height = 400;
-        let frame_rate = 12.0;
+       	let root_frame_rate = 12.0; 
+        let frame_rate = root_frame_rate;
         // Disable script timeout in debug builds by default.
         let max_execution_duration = if cfg!(debug_assertions) { u64::MAX } else { 15 };
 
@@ -288,11 +296,13 @@ impl Player {
                         external_interface: ExternalInterface::new(),
                         focus_tracker: FocusTracker::new(gc_context),
                         audio_manager: AudioManager::new(),
+                        frame_rate: None,
                     },
                 ))
             }),
 
             frame_rate,
+			root_frame_rate,
             frame_accumulator: 0.0,
             recent_run_frame_timings: VecDeque::with_capacity(10),
             time_offset: 0,
@@ -349,6 +359,14 @@ impl Player {
         Ok(player_box)
     }
 
+    /// Set the current frame rate
+    pub fn set_frame_rate(&mut self, nframe_rate: f64) -> &mut Player {
+     	info!("Setting frame rate to {}", nframe_rate);
+ 		self.frame_rate = nframe_rate;
+        self.audio.set_frame_rate(nframe_rate);
+        self
+    }
+
     /// Fetch the root movie.
     ///
     /// This should not be called if a root movie fetch has already been kicked
@@ -388,7 +406,8 @@ impl Player {
 
         self.movie_width = movie.width();
         self.movie_height = movie.height();
-        self.frame_rate = movie.header().frame_rate.into();
+        self.root_frame_rate = movie.header().frame_rate.into();
+        self.frame_rate = self.root_frame_rate;
         self.swf = movie;
         self.instance_counter = 0;
 
@@ -1042,6 +1061,11 @@ impl Player {
         self.frame_rate
     }
 
+    // The frame rate of the root movie in FPS.
+    pub fn root_frame_rate(&self) -> f64 {
+        self.root_frame_rate
+    }
+
     pub fn renderer(&self) -> &Renderer {
         &self.renderer
     }
@@ -1263,6 +1287,7 @@ impl Player {
             max_execution_duration,
             current_frame,
             time_offset,
+			root_frame_rate, 
         ) = (
             self.player_version,
             &self.swf,
@@ -1286,6 +1311,7 @@ impl Player {
             self.max_execution_duration,
             &mut self.current_frame,
             &mut self.time_offset,
+			&mut self.root_frame_rate,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -1305,6 +1331,7 @@ impl Player {
                 timers,
                 external_interface,
                 audio_manager,
+                frame_rate,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -1345,6 +1372,8 @@ impl Player {
                 times_get_time_called: 0,
                 time_offset,
                 audio_manager,
+                frame_rate,
+                root_frame_rate,
             };
 
             let ret = f(&mut update_context);
@@ -1401,6 +1430,14 @@ impl Player {
 
             rval
         });
+
+        // Update frame rate if specified
+        let v = self.gc_arena.root.0.read().frame_rate;
+        if let Some(nframe_rate) = v {
+       		if (nframe_rate - self.frame_rate()).abs() > f64::EPSILON {
+                self.set_frame_rate(nframe_rate);
+			}
+        };
 
         // Update mouse state (check for new hovered button, etc.)
         self.update_roll_over();

@@ -158,6 +158,13 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// This frame's current fake time offset, used to pretend passage of time in time functions
     pub time_offset: &'a mut u32,
+
+    /// The current frame rate. Is set when frame is modified.
+    pub frame_rate: &'a mut Option<f64>,
+
+    /// The root_frame rate. Is set when the root movie is loaded.
+    pub root_frame_rate: &'a mut f64,
+
 }
 
 /// Convenience methods for controlling audio.
@@ -286,6 +293,8 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             focus_tracker: self.focus_tracker,
             times_get_time_called: self.times_get_time_called,
             time_offset: self.time_offset,
+            frame_rate: self.frame_rate,
+            root_frame_rate: self.root_frame_rate,
         }
     }
 }
