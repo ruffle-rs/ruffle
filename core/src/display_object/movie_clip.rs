@@ -19,8 +19,8 @@ use crate::display_object::container::{
     ChildContainer, TDisplayObjectContainer,
 };
 use crate::display_object::{
-    Avm1Button, Bitmap, DisplayObjectBase, EditText, Graphic, MorphShapeStatic, TDisplayObject,
-    Text, Video,
+    Avm1Button, Avm2Button, Bitmap, DisplayObjectBase, EditText, Graphic, MorphShapeStatic,
+    TDisplayObject, Text, Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -2687,17 +2687,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_1()?;
-        let button = Avm1Button::from_swf_tag(
-            &swf_button,
-            &self.static_data.swf,
-            &context.library,
-            context.gc_context,
-        );
-        context
-            .library
-            .library_for_movie_mut(self.movie())
-            .register_character(swf_button.id, Character::Avm1Button(button));
-        Ok(())
+
+        self.define_button_any(context, swf_button)
     }
 
     #[inline]
@@ -2707,16 +2698,37 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> DecodeResult {
         let swf_button = reader.read_define_button_2()?;
-        let button = Avm1Button::from_swf_tag(
-            &swf_button,
-            &self.static_data.swf,
-            &context.library,
-            context.gc_context,
-        );
-        context
-            .library
-            .library_for_movie_mut(self.movie())
-            .register_character(swf_button.id, Character::Avm1Button(button));
+
+        self.define_button_any(context, swf_button)
+    }
+
+    #[inline]
+    fn define_button_any(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        swf_button: swf::Button<'a>,
+    ) -> DecodeResult {
+        let movie = self.movie();
+        let library = context.library.library_for_movie_mut(movie.clone());
+        if library.avm_type() == AvmType::Avm1 {
+            let button = Avm1Button::from_swf_tag(
+                &swf_button,
+                &self.static_data.swf,
+                &context.library,
+                context.gc_context,
+            );
+            context
+                .library
+                .library_for_movie_mut(movie)
+                .register_character(swf_button.id, Character::Avm1Button(button));
+        } else {
+            let button = Avm2Button::from_swf_tag(&swf_button, &self.static_data.swf, context);
+            context
+                .library
+                .library_for_movie_mut(movie)
+                .register_character(swf_button.id, Character::Avm2Button(button));
+        }
+
         Ok(())
     }
 
