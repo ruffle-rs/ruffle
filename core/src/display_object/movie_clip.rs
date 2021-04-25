@@ -933,10 +933,10 @@ impl<'gc> MovieClip<'gc> {
     pub fn set_avm2_constructor(
         self,
         gc_context: MutationContext<'gc, '_>,
-        prototype: Option<Avm2Object<'gc>>,
+        constr: Option<Avm2Object<'gc>>,
     ) {
         let mut write = self.0.write(gc_context);
-        write.avm2_constructor = prototype;
+        write.avm2_constructor = constr;
     }
 
     pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
