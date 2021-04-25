@@ -192,7 +192,7 @@ impl<'gc> Avm2Button<'gc> {
             }
         }
 
-        if children.len() > 1 {
+        if children.len() == 1 {
             let child = children.first().cloned().unwrap().0;
 
             child.set_parent(context.gc_context, Some(self.into()));
