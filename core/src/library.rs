@@ -255,6 +255,7 @@ impl<'gc> MovieLibrary<'gc> {
             Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(gc_context)),
             Character::MovieClip(movie_clip) => Ok(movie_clip.instantiate(gc_context)),
             Character::Avm1Button(button) => Ok(button.instantiate(gc_context)),
+            Character::Avm2Button(button) => Ok(button.instantiate(gc_context)),
             Character::Text(text) => Ok(text.instantiate(gc_context)),
             Character::Video(video) => Ok(video.instantiate(gc_context)),
             _ => Err("Not a DisplayObject".into()),

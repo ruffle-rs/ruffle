@@ -53,7 +53,6 @@ impl<'gc> Avm2Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
         source_movie: &SwfSlice,
-        _library: &crate::library::Library<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Self {
         let mut actions = vec![];
