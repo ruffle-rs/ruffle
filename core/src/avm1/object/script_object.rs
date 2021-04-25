@@ -989,7 +989,7 @@ mod tests {
                 Attribute::DONT_DELETE,
             );
 
-            assert_eq!(object.delete(activation, "test"), false);
+            assert!(!object.delete(activation, "test"));
             assert_eq!(object.get("test", activation).unwrap(), "initial".into());
 
             object
@@ -998,7 +998,7 @@ mod tests {
                 .set("test", "replaced".into(), activation)
                 .unwrap();
 
-            assert_eq!(object.delete(activation, "test"), false);
+            assert!(!object.delete(activation, "test"));
             assert_eq!(object.get("test", activation).unwrap(), "replaced".into());
         })
     }
@@ -1066,11 +1066,11 @@ mod tests {
                 Attribute::DONT_DELETE,
             );
 
-            assert_eq!(object.delete(activation, "virtual"), true);
-            assert_eq!(object.delete(activation, "virtual_un"), false);
-            assert_eq!(object.delete(activation, "stored"), true);
-            assert_eq!(object.delete(activation, "stored_un"), false);
-            assert_eq!(object.delete(activation, "non_existent"), false);
+            assert!(object.delete(activation, "virtual"));
+            assert!(!object.delete(activation, "virtual_un"));
+            assert!(object.delete(activation, "stored"));
+            assert!(!object.delete(activation, "stored_un"));
+            assert!(!object.delete(activation, "non_existent"));
 
             assert_eq!(object.get("virtual", activation).unwrap(), Value::Undefined);
             assert_eq!(
@@ -1124,10 +1124,10 @@ mod tests {
 
             let keys: Vec<_> = object.get_keys(activation);
             assert_eq!(keys.len(), 2);
-            assert_eq!(keys.contains(&"stored".to_string()), true);
-            assert_eq!(keys.contains(&"stored_hidden".to_string()), false);
-            assert_eq!(keys.contains(&"virtual".to_string()), true);
-            assert_eq!(keys.contains(&"virtual_hidden".to_string()), false);
+            assert!(keys.contains(&"stored".to_string()));
+            assert!(!keys.contains(&"stored_hidden".to_string()));
+            assert!(keys.contains(&"virtual".to_string()));
+            assert!(!keys.contains(&"virtual_hidden".to_string()));
         })
     }
 }

@@ -6,8 +6,8 @@ use crate::avm1::{
     Value as Avm1Value,
 };
 use crate::avm2::{
-    Activation as Avm2Activation, ArrayObject as Avm2ArrayObject, ArrayStorage as Avm2ArrayStorage,
-    Error as Avm2Error, Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName,
+    Activation as Avm2Activation, ArrayObject as Avm2ArrayObject, Error as Avm2Error,
+    Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName,
     ScriptObject as Avm2ScriptObject, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::context::UpdateContext;
@@ -17,7 +17,6 @@ use crate::xml::{Step, XmlDocument, XmlName, XmlNode};
 use gc_arena::{Collect, MutationContext};
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
-use std::iter::FromIterator;
 use std::sync::Arc;
 
 /// Replace HTML entities with their equivalent characters.
@@ -855,7 +854,7 @@ impl TextFormat {
         )?;
 
         if let Some(ts) = &self.tab_stops {
-            let tab_stop_storage = Avm2ArrayStorage::from_iter(ts.iter().copied());
+            let tab_stop_storage = ts.iter().copied().collect();
             let tab_stops = Avm2ArrayObject::from_array(
                 tab_stop_storage,
                 activation.context.avm2.prototypes().array,
