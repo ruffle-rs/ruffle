@@ -229,11 +229,29 @@ impl<'gc> Avm2Button<'gc> {
     }
 
     /// Get the display object that represents a particular button state.
-    pub fn get_state_child(self, state: ButtonState) -> Option<DisplayObject<'gc>> {
+    pub fn get_state_child(self, state: swf::ButtonState) -> Option<DisplayObject<'gc>> {
         match state {
-            ButtonState::Up => self.0.read().up_state,
-            ButtonState::Over => self.0.read().over_state,
-            ButtonState::Down => self.0.read().down_state,
+            swf::ButtonState::UP => self.0.read().up_state,
+            swf::ButtonState::OVER => self.0.read().over_state,
+            swf::ButtonState::DOWN => self.0.read().down_state,
+            swf::ButtonState::HIT_TEST => self.0.read().hit_area,
+            _ => None,
+        }
+    }
+
+    /// Set the display object that represents a particular button state.
+    pub fn set_state_child(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        state: swf::ButtonState,
+        child: Option<DisplayObject<'gc>>,
+    ) {
+        match state {
+            swf::ButtonState::UP => self.0.write(gc_context).up_state = child,
+            swf::ButtonState::OVER => self.0.write(gc_context).over_state = child,
+            swf::ButtonState::DOWN => self.0.write(gc_context).down_state = child,
+            swf::ButtonState::HIT_TEST => self.0.write(gc_context).hit_area = child,
+            _ => (),
         }
     }
 
@@ -337,7 +355,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
         let state = self.0.read().state;
-        let current_state = self.get_state_child(state);
+        let current_state = self.get_state_child(state.into());
 
         if let Some(state) = current_state {
             state.render(context);
@@ -373,7 +391,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         // The button is hovered if the mouse is over any child nodes.
         if self.visible() {
             let state = self.0.read().state;
-            let state_child = self.get_state_child(state);
+            let state_child = self.get_state_child(state.into());
 
             if let Some(state_child) = state_child {
                 let mouse_pick = state_child.mouse_pick(context, state_child, point);
@@ -414,7 +432,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
     fn allow_as_mask(&self) -> bool {
         let state = self.0.read().state;
-        let current_state = self.get_state_child(state);
+        let current_state = self.get_state_child(state.into());
 
         if let Some(current_state) = current_state.and_then(|cs| cs.as_container()) {
             current_state.is_empty()
@@ -441,7 +459,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
         if event.propagates() {
             let state = self.0.read().state;
-            let current_state = self.get_state_child(state);
+            let current_state = self.get_state_child(state.into());
 
             if let Some(current_state) = current_state {
                 if current_state.handle_clip_event(context, event) == ClipEventResult::Handled {
@@ -608,6 +626,16 @@ pub enum ButtonState {
     Up,
     Over,
     Down,
+}
+
+impl From<ButtonState> for swf::ButtonState {
+    fn from(bs: ButtonState) -> Self {
+        match bs {
+            ButtonState::Up => Self::UP,
+            ButtonState::Over => Self::OVER,
+            ButtonState::Down => Self::DOWN,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
