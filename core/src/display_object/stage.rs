@@ -268,7 +268,7 @@ impl<'gc> Stage<'gc> {
             }
             StageScaleMode::NoScale => {
                 // No adjustment.
-                (1.0, 1.0)
+                (stage.viewport_scale_factor, stage.viewport_scale_factor)
             }
         };
 
