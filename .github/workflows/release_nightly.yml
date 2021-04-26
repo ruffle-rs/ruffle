@@ -184,12 +184,12 @@ jobs:
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
-      - name: Download x86_64 binary
+      - name: Download aarch64 binary
         uses: actions/download-artifact@v2
         with:
           name: macos-aarch64
 
-      - name: Download aarch64 binary
+      - name: Download x86_64 binary
         uses: actions/download-artifact@v2
         with:
           name: macos-x86_64
