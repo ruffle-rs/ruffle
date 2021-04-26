@@ -678,27 +678,31 @@ export class RufflePlayer extends HTMLElement {
             }
         }
         if (this.instance) {
-            const canShowDefaultMenuItems = this.instance.can_show_default_menu_items();
-            if (canShowDefaultMenuItems) {
-                const isPlayingRootMovie = this.instance.is_playing_root_movie();
-                items.push({
-                    text: isPlayingRootMovie ? `Play (☑)` : `Play (☐)`,
-                    onClick: () => this.instance?.toggle_play_root_movie(),
-                });
-                items.push({
-                    text: `Rewind`,
-                    onClick: () => this.instance?.rewind_root_movie(),
-                    separator: false,
-                });
-                items.push({
-                    text: `Forward`,
-                    onClick: () => this.instance?.forward_root_movie(),
-                    separator: false,
-                });
-                items.push({
-                    text: `Back`,
-                    onClick: () => this.instance?.back_root_movie(),
-                });
+            const builtinMenuItems = this.instance.get_builtin_menu_items();
+            for (const item of builtinMenuItems) {
+                if (item == "play") {
+                    const isPlayingRootMovie = this.instance.is_playing_root_movie();
+                    items.push({
+                        text: isPlayingRootMovie ? `Play (☑)` : `Play (☐)`,
+                        onClick: () => this.instance?.toggle_play_root_movie(),
+                    });
+                } else if (item == "rewind") {
+                    items.push({
+                        text: `Rewind`,
+                        onClick: () => this.instance?.rewind_root_movie(),
+                        separator: false,
+                    });
+                } else if (item == "forward_back") {
+                    items.push({
+                        text: `Forward`,
+                        onClick: () => this.instance?.forward_root_movie(),
+                        separator: false,
+                    });
+                    items.push({
+                        text: `Back`,
+                        onClick: () => this.instance?.back_root_movie(),
+                    });
+                }
             }
         }
 

@@ -556,10 +556,38 @@ impl Player {
         self.is_playing
     }
 
-    pub fn can_show_default_menu_items(&mut self) -> bool {
-        self.gc_arena.mutate(|_gc_context, gc_root| {
-            let root_data = gc_root.0.read();
-            root_data.stage.show_menu()
+    pub fn get_builtin_menu_items(&mut self) -> Vec<&'static str> {
+        self.mutate_with_update_context(|context| {
+            if !context.stage.show_menu() {
+                return vec![];
+            }
+            let mut names = vec![
+                "zoom",
+                "quality",
+                "play",
+                "loop",
+                "rewind",
+                "forward_back",
+                "print",
+            ];
+
+            let mut activation = Activation::from_stub(
+                context.reborrow(),
+                ActivationIdentifier::root("[ContextMenu]"),
+            );
+
+            let dobj = activation.context.stage.root_clip();
+
+            if let Value::Object(obj) = dobj.object() {
+                if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation) {
+                    if let Ok(Value::Object(menu)) = menu.get("builtInItems", &mut activation) {
+                        names.retain(|name| {
+                            !matches!(menu.get(name, &mut activation), Ok(Value::Bool(false)))
+                        });
+                    }
+                }
+            }
+            names
         })
     }
 
