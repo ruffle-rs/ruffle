@@ -663,7 +663,6 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private contextMenuItems(): ContextMenuItem[] {
-
         const items = [];
         if (this.fullscreenEnabled) {
             if (this.isFullscreen) {
@@ -679,11 +678,11 @@ export class RufflePlayer extends HTMLElement {
             }
         }
         if (this.instance) {
-            let can_show_default_menu_items = this.instance.can_show_default_menu_items();
-            if (can_show_default_menu_items) {
-                let is_playing_root_movie = this.instance.is_playing_root_movie();
+            const canShowDefaultMenuItems = this.instance.can_show_default_menu_items();
+            if (canShowDefaultMenuItems) {
+                const isPlayingRootMovie = this.instance.is_playing_root_movie();
                 items.push({
-                    text: is_playing_root_movie ? `Play (☑)` : `Play (☐)`,
+                    text: isPlayingRootMovie ? `Play (☑)` : `Play (☐)`,
                     onClick: () => this.instance?.toggle_play_root_movie(),
                 });
                 items.push({
