@@ -290,6 +290,13 @@ impl<'gc> Trait<'gc> {
         self.attributes.0 = attribs;
     }
 
+    /// Convenience chaining method that adds the override flag to a trait.
+    pub fn with_override(mut self) -> Self {
+        self.attributes.0 |= TraitAttributes::OVERRIDE;
+
+        self
+    }
+
     /// Set the slot or dispatch ID of this trait.
     pub fn set_slot_id(&mut self, id: u32) {
         match &mut self.kind {

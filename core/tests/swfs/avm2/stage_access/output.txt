@@ -1,0 +1,10 @@
+// (in MainTimeline...)
+// this.stage
+[object Stage]
+// this.parent
+[object Stage]
+// (in Child...)
+// this.stage
+[object Stage]
+// this.parent.parent
+[object Stage]

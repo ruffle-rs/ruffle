@@ -1,0 +1,24 @@
+//this.stage.alpha
+1
+//this.stage.height
+80.95
+//this.stage.name
+null
+//this.stage.parent
+null
+//this.stage.root
+[object Stage]
+//this.stage.rotation
+0
+//this.stage.scaleX
+1
+//this.stage.scaleY
+1
+//this.stage.visible
+true
+//this.stage.width
+87
+//this.stage.x
+0
+//this.stage.y
+0

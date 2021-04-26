@@ -27,6 +27,7 @@ mod edit_text;
 mod graphic;
 mod morph_shape;
 mod movie_clip;
+mod stage;
 mod text;
 mod video;
 
@@ -42,6 +43,7 @@ pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
+pub use stage::{Stage, StageAlign, StageScaleMode};
 pub use text::Text;
 pub use video::Video;
 
@@ -316,7 +318,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.clip_depth = depth;
     }
 
-    fn parent(&self) -> Option<DisplayObject<'gc>> {
+    fn avm2_parent(&self) -> Option<DisplayObject<'gc>> {
         self.parent
     }
 
@@ -425,10 +427,44 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 }
 
+pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
+    if this.maskee().is_some() {
+        return;
+    }
+    context.transform_stack.push(&*this.transform());
+
+    let mask = this.masker();
+    let mut mask_transform = crate::transform::Transform::default();
+    if let Some(m) = mask {
+        mask_transform.matrix = this.global_to_local_matrix();
+        mask_transform.matrix *= m.local_to_global_matrix();
+        context.renderer.push_mask();
+        context.allow_mask = false;
+        context.transform_stack.push(&mask_transform);
+        m.render_self(context);
+        context.transform_stack.pop();
+        context.allow_mask = true;
+        context.renderer.activate_mask();
+    }
+    this.render_self(context);
+    if let Some(m) = mask {
+        context.renderer.deactivate_mask();
+        context.allow_mask = false;
+        context.transform_stack.push(&mask_transform);
+        m.render_self(context);
+        context.transform_stack.pop();
+        context.allow_mask = true;
+        context.renderer.pop_mask();
+    }
+
+    context.transform_stack.pop();
+}
+
 #[enum_trait_object(
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
     pub enum DisplayObject<'gc> {
+        Stage(Stage<'gc>),
         Bitmap(Bitmap<'gc>),
         Button(Button<'gc>),
         EditText(EditText<'gc>),
@@ -728,8 +764,25 @@ pub trait TDisplayObject<'gc>:
 
     fn clip_depth(&self) -> Depth;
     fn set_clip_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth);
-    fn parent(&self) -> Option<DisplayObject<'gc>>;
+
+    /// Retrieve the parent of this display object.
+    ///
+    /// This version of the function allows access to the `Stage`; which is
+    /// only suitable for code aware of AVM2's altered display list hierarchy.
+    /// For AVM1 code, please call `parent`.
+    fn avm2_parent(&self) -> Option<DisplayObject<'gc>>;
+
+    /// Set the parent of this display object.
     fn set_parent(&self, gc_context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
+
+    /// Retrieve the parent of this display object.
+    ///
+    /// This version of the function disallows access to the `Stage`; if you
+    /// want to be able to access the stage, please call `avm2_parent`.
+    fn parent(&self) -> Option<DisplayObject<'gc>> {
+        self.avm2_parent().filter(|p| p.as_stage().is_none())
+    }
+
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
     fn set_prev_sibling(
         &self,
@@ -913,36 +966,7 @@ pub trait TDisplayObject<'gc>:
     fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
-        if self.maskee().is_some() {
-            return;
-        }
-        context.transform_stack.push(&*self.transform());
-
-        let mask = self.masker();
-        let mut mask_transform = crate::transform::Transform::default();
-        if let Some(m) = mask {
-            mask_transform.matrix = self.global_to_local_matrix();
-            mask_transform.matrix *= m.local_to_global_matrix();
-            context.renderer.push_mask();
-            context.allow_mask = false;
-            context.transform_stack.push(&mask_transform);
-            m.render_self(context);
-            context.transform_stack.pop();
-            context.allow_mask = true;
-            context.renderer.activate_mask();
-        }
-        self.render_self(context);
-        if let Some(m) = mask {
-            context.renderer.deactivate_mask();
-            context.allow_mask = false;
-            context.transform_stack.push(&mask_transform);
-            m.render_self(context);
-            context.transform_stack.pop();
-            context.allow_mask = true;
-            context.renderer.pop_mask();
-        }
-
-        context.transform_stack.pop();
+        render_base((*self).into(), context)
     }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -969,6 +993,9 @@ pub trait TDisplayObject<'gc>:
         self.set_removed(context.gc_context, true);
     }
 
+    fn as_stage(&self) -> Option<Stage<'gc>> {
+        None
+    }
     fn as_button(&self) -> Option<Button<'gc>> {
         None
     }
@@ -1157,8 +1184,8 @@ pub trait TDisplayObject<'gc>:
         MouseCursor::Hand
     }
 
-    /// Obtain the top-most parent of the display tree hierarchy, if a suitable
-    /// object exists.
+    /// Obtain the top-most non-Stage parent of the display tree hierarchy, if
+    /// a suitable object exists.
     fn root(&self, context: &UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
         let mut parent = if self.lock_root() {
             None
@@ -1197,20 +1224,17 @@ pub trait TDisplayObject<'gc>:
 
     /// Determine if this display object is currently on the stage.
     fn is_on_stage(self, context: &UpdateContext<'_, 'gc, '_>) -> bool {
-        let mut ancestor = self.parent();
+        let mut ancestor = self.avm2_parent();
         while let Some(parent) = ancestor {
-            if parent.parent().is_some() {
-                ancestor = parent.parent();
+            if parent.avm2_parent().is_some() {
+                ancestor = parent.avm2_parent();
             } else {
                 break;
             }
         }
 
         let ancestor = ancestor.unwrap_or_else(|| self.into());
-        context
-            .levels
-            .values()
-            .any(|o| DisplayObject::ptr_eq(*o, ancestor))
+        DisplayObject::ptr_eq(ancestor, context.stage.into())
     }
 
     /// Obtain the top-most parent of the display tree hierarchy, or some kind
@@ -1360,8 +1384,8 @@ macro_rules! impl_display_object_sansbounds {
         ) {
             self.0.write(context).$field.set_clip_depth(depth)
         }
-        fn parent(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
-            self.0.read().$field.parent()
+        fn avm2_parent(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
+            self.0.read().$field.avm2_parent()
         }
         fn set_parent(
             &self,

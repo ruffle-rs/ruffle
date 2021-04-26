@@ -913,7 +913,11 @@ impl Ruffle {
                     canvas.set_width(viewport_width);
                     canvas.set_height(viewport_height);
 
-                    core_lock.set_viewport_dimensions(viewport_width, viewport_height);
+                    core_lock.set_viewport_dimensions(
+                        viewport_width,
+                        viewport_height,
+                        device_pixel_ratio,
+                    );
                     core_lock
                         .renderer_mut()
                         .set_viewport_dimensions(viewport_width, viewport_height);

@@ -13,7 +13,7 @@ use crate::backend::{
     ui::UiBackend,
     video::VideoBackend,
 };
-use crate::display_object::{EditText, MovieClip, SoundTransform};
+use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
@@ -26,7 +26,7 @@ use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
@@ -37,10 +37,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The queue of actions that will be run after the display list updates.
     /// Display objects and actions can push actions onto the queue.
     pub action_queue: &'a mut ActionQueue<'gc>,
-
-    /// The background color of the Stage. Changed by the `SetBackgroundColor` SWF tag.
-    /// TODO: Move this into a `Stage` display object.
-    pub background_color: &'a mut Option<Color>,
 
     /// The mutation context to allocate and mutate `GcCell` types.
     pub gc_context: MutationContext<'gc, 'gc_context>,
@@ -92,8 +88,8 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
 
-    /// All loaded levels of the current player.
-    pub levels: &'a mut BTreeMap<u32, DisplayObject<'gc>>,
+    /// The current player's stage (including all loaded levels)
+    pub stage: Stage<'gc>,
 
     /// The display object that the mouse is currently hovering over.
     pub mouse_hovered_object: Option<DisplayObject<'gc>>,
@@ -103,9 +99,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The object being dragged via a `startDrag` action.
     pub drag_object: &'a mut Option<crate::player::DragObject<'gc>>,
-
-    /// The dimensions of the stage.
-    pub stage_size: (Twips, Twips),
 
     /// Weak reference to the player.
     ///
@@ -173,7 +166,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             self.audio,
             self.gc_context,
             self.action_queue,
-            *self.levels.get(&0).unwrap(),
+            self.stage.root_clip(),
         );
     }
 
@@ -256,7 +249,6 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     {
         UpdateContext {
             action_queue: self.action_queue,
-            background_color: self.background_color,
             gc_context: self.gc_context,
             library: self.library,
             player_version: self.player_version,
@@ -272,11 +264,10 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             video: self.video,
             storage: self.storage,
             rng: self.rng,
-            levels: self.levels,
+            stage: self.stage,
             mouse_hovered_object: self.mouse_hovered_object,
             mouse_position: self.mouse_position,
             drag_object: self.drag_object,
-            stage_size: self.stage_size,
             player: self.player.clone(),
             load_manager: self.load_manager,
             system: self.system,
@@ -378,13 +369,17 @@ pub struct RenderContext<'a, 'gc> {
     /// The renderer, used by the display objects to draw themselves.
     pub renderer: &'a mut dyn RenderBackend,
 
+    /// The UI backend, used to detect user interactions.
+    pub ui: &'a mut dyn UiBackend,
+
     /// The library, which provides access to fonts and other definitions when rendering.
     pub library: &'a Library<'gc>,
 
     /// The transform stack controls the matrix and color transform as we traverse the display hierarchy.
     pub transform_stack: &'a mut TransformStack,
-    /// The bounds of the current viewport in twips. Used for culling.
-    pub view_bounds: BoundingBox,
+
+    /// The current player's stage (including all loaded levels)
+    pub stage: Stage<'gc>,
 
     /// The stack of clip depths, used in masking.
     pub clip_depth_stack: Vec<Depth>,

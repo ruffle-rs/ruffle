@@ -1,3 +1,4 @@
+use gc_arena::Collect;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -6,7 +7,8 @@ use serde::{Deserialize, Serialize};
 ///
 /// When letterboxed, black bars will be rendered around the exterior
 /// margins of the content.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Collect)]
+#[collect(require_static)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename = "letterbox"))]
 pub enum Letterbox {
