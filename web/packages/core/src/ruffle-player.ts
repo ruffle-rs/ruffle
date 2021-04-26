@@ -679,25 +679,28 @@ export class RufflePlayer extends HTMLElement {
             }
         }
         if (this.instance) {
-            let is_playing_root_movie = this.instance.is_playing_root_movie();
-            items.push({
-                text: is_playing_root_movie ? `Play (☑)` : `Play (☐)`,
-                onClick: () => this.instance?.toggle_play_root_movie(),
-            });
-            items.push({
-                text: `Rewind`,
-                onClick: () => this.instance?.rewind_root_movie(),
-                separator: false,
-            });
-            items.push({
-                text: `Forward`,
-                onClick: () => this.instance?.forward_root_movie(),
-                separator: false,
-            });
-            items.push({
-                text: `Back`,
-                onClick: () => this.instance?.back_root_movie(),
-            });
+            let can_show_default_menu_items = this.instance.can_show_default_menu_items();
+            if (can_show_default_menu_items) {
+                let is_playing_root_movie = this.instance.is_playing_root_movie();
+                items.push({
+                    text: is_playing_root_movie ? `Play (☑)` : `Play (☐)`,
+                    onClick: () => this.instance?.toggle_play_root_movie(),
+                });
+                items.push({
+                    text: `Rewind`,
+                    onClick: () => this.instance?.rewind_root_movie(),
+                    separator: false,
+                });
+                items.push({
+                    text: `Forward`,
+                    onClick: () => this.instance?.forward_root_movie(),
+                    separator: false,
+                });
+                items.push({
+                    text: `Back`,
+                    onClick: () => this.instance?.back_root_movie(),
+                });
+            }
         }
 
         items.push({

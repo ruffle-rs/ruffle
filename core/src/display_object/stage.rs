@@ -76,6 +76,9 @@ pub struct StageData<'gc> {
     /// The bounds of the current viewport in twips, used for culling.
     view_bounds: BoundingBox,
 
+    /// Whether to show default context menu items
+    show_menu: bool,
+
     /// The AVM2 view of this stage object.
     avm2_object: Avm2Object<'gc>,
 }
@@ -96,6 +99,7 @@ impl<'gc> Stage<'gc> {
                 viewport_size: (width, height),
                 viewport_scale_factor: 1.0,
                 view_bounds: Default::default(),
+                show_menu: true,
                 avm2_object: Avm2ScriptObject::bare_object(gc_context),
             },
         ))
@@ -202,6 +206,15 @@ impl<'gc> Stage<'gc> {
 
     pub fn view_bounds(self) -> BoundingBox {
         self.0.read().view_bounds.clone()
+    }
+
+    pub fn show_menu(self) -> bool {
+        self.0.read().show_menu
+    }
+
+    pub fn set_show_menu(self, context: &mut UpdateContext<'_, 'gc, '_>, show_menu: bool) {
+        let mut write = self.0.write(context.gc_context);
+        write.show_menu = show_menu;
     }
 
     /// Determine if we should letterbox the stage content.

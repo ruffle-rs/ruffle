@@ -556,6 +556,13 @@ impl Player {
         self.is_playing
     }
 
+    pub fn can_show_default_menu_items(&mut self) -> bool {
+        self.gc_arena.mutate(|_gc_context, gc_root| {
+            let root_data = gc_root.0.read();
+            root_data.stage.show_menu()
+        })
+    }
+
     pub fn is_playing_root_movie(&mut self) -> bool {
         self.gc_arena.mutate(|_gc_context, gc_root| {
             let root_data = gc_root.0.read();
