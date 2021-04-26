@@ -2,8 +2,9 @@
 
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Object as Avm2Object, ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject,
-    Value as Avm2Value,
+    Activation as Avm2Activation, Event as Avm2Event, Namespace as Avm2Namespace,
+    Object as Avm2Object, QName as Avm2QName, ScriptObject as Avm2ScriptObject,
+    StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::ui::UiBackend;
 use crate::config::Letterbox;
@@ -14,7 +15,7 @@ use crate::display_object::container::{
 use crate::display_object::{render_base, DisplayObject, DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::types::{Degrees, Percent};
-use crate::vminterface::Instantiator;
+use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt::{self, Display, Formatter};
@@ -220,6 +221,7 @@ impl<'gc> Stage<'gc> {
         let mut stage = self.0.write(context.gc_context);
         let scale_mode = stage.scale_mode;
         let align = stage.align;
+        let prev_stage_size = stage.stage_size;
 
         // Update stage size based on scale mode and DPI.
         stage.stage_size = if stage.scale_mode == StageScaleMode::NoScale {
@@ -230,6 +232,7 @@ impl<'gc> Stage<'gc> {
         } else {
             stage.movie_size
         };
+        let stage_size_changed = prev_stage_size != stage.stage_size;
 
         // Create view matrix to scale stage into viewport area.
         let (movie_width, movie_height) = stage.movie_size;
@@ -324,6 +327,11 @@ impl<'gc> Stage<'gc> {
                 valid: true,
             }
         };
+
+        // Fire resize handler if stage size has changed.
+        if scale_mode == StageScaleMode::NoScale && stage_size_changed {
+            self.fire_resize_event(context);
+        }
     }
 
     /// Draw the stage's letterbox.
@@ -407,6 +415,30 @@ impl<'gc> Stage<'gc> {
         self.child_by_depth(0)
             .expect("Stage must always have a root movie")
     }
+
+    /// Fires `Stage.onResize` in AVM1 or `Event.RESIZE` in AVM2.
+    fn fire_resize_event(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // This event fires immediately when scaleMode is changed;
+        // it doesn't queue up.
+        let library = context.library.library_for_movie_mut(context.swf.clone());
+        if library.avm_type() == AvmType::Avm1 {
+            crate::avm1::Avm1::notify_system_listeners(
+                self.root_clip(),
+                context.swf.version(),
+                context,
+                "Stage",
+                "onResize",
+                &[],
+            );
+        } else if let Avm2Value::Object(stage) = self.object2() {
+            let mut resized_event = Avm2Event::new("resize");
+            resized_event.set_bubbles(false);
+            resized_event.set_cancelable(false);
+            if let Err(e) = crate::avm2::Avm2::dispatch_event(context, resized_event, stage) {
+                log::error!("Encountered AVM2 error when dispatching event: {}", e);
+            }
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
@@ -421,10 +453,31 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         _run_frame: bool,
     ) {
         let stage_proto = context.avm2.prototypes().stage;
-        let actual_avm2_object =
+        let avm2_stage =
             Avm2StageObject::for_display_object(context.gc_context, (*self).into(), stage_proto);
 
-        self.0.write(context.gc_context).avm2_object = actual_avm2_object.into();
+        // TODO: Replace this when we have a convenience method for constructing AVM2 native objects.
+        // TODO: We should only do this if the movie is actually an AVM2 movie.
+        // This is necessary for EventDispatcher super-constructor to run.
+        use crate::avm2::TObject;
+        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+        let mut proto = activation.context.avm2.prototypes().stage;
+        if let Err(e) = proto
+            .get_property(
+                proto,
+                &Avm2QName::new(Avm2Namespace::public(), "constructor"),
+                &mut activation,
+            )
+            .and_then(|v| v.coerce_to_object(&mut activation))
+            .and_then(|constr| {
+                // TODO: Stage's AS-visible constructor actually throws. Have to call non-throwing native constructor here.
+                constr.call(Some(avm2_stage.into()), &[], &mut activation, Some(proto))
+            })
+        {
+            log::error!("Unable to construct AVM2 Stage: {}", e);
+        }
+
+        self.0.write(context.gc_context).avm2_object = avm2_stage.into();
     }
 
     fn id(&self) -> CharacterId {
