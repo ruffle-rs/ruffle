@@ -272,17 +272,20 @@ impl Ruffle {
         })
     }
 
-    pub fn can_show_default_menu_items(&mut self) -> bool {
+    pub fn get_builtin_menu_items(&mut self) -> Vec<JsValue> {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
-            let can_show_default_menu_items = instance
+            let builtin_menu_items = instance
                 .borrow()
                 .core
                 .lock()
                 .unwrap()
-                .can_show_default_menu_items();
-            can_show_default_menu_items
+                .get_builtin_menu_items();
+            builtin_menu_items
+                .into_iter()
+                .map(JsValue::from_str)
+                .collect()
         })
     }
 
