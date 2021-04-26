@@ -197,7 +197,7 @@ impl<'gc> Avm2Button<'gc> {
 
             child.set_parent(context.gc_context, Some(self.into()));
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
-            child.run_frame(context);
+            child.construct_frame(context);
 
             child
         } else {
@@ -226,7 +226,7 @@ impl<'gc> Avm2Button<'gc> {
 
                 child.set_parent(context.gc_context, Some(self.into()));
                 child.post_instantiation(context, child, None, Instantiator::Movie, false);
-                child.run_frame(context);
+                child.construct_frame(context);
 
                 dispatch_added_event(self.into(), child, false, context);
                 if let Some(removed_child) = removed_child {
