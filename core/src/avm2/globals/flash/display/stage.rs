@@ -450,6 +450,27 @@ pub fn set_frame_rate<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn show_default_context_menu<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(activation.context.stage.show_menu().into())
+}
+
+pub fn set_show_default_context_menu<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let show_default_context_menu = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
+    activation
+        .context
+        .stage
+        .set_show_menu(&mut activation.context, show_default_context_menu);
+    Ok(Value::Undefined)
+}
+
 /// Implement `scaleMode`'s getter
 pub fn scale_mode<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -814,6 +835,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "scaleMode"),
         Method::from_builtin(set_scale_mode),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "showDefaultContextMenu"),
+        Method::from_builtin(show_default_context_menu),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "showDefaultContextMenu"),
+        Method::from_builtin(set_show_default_context_menu),
     ));
     write.define_instance_trait(Trait::from_getter(
         QName::new(Namespace::public(), "stageWidth"),
