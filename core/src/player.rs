@@ -561,23 +561,28 @@ impl Player {
             if !context.stage.show_menu() {
                 return vec![];
             }
-            let mut names = vec![
-                "zoom",
-                "quality",
-                "play",
-                "loop",
-                "rewind",
-                "forward_back",
-                "print",
-            ];
 
             let mut activation = Activation::from_stub(
                 context.reborrow(),
                 ActivationIdentifier::root("[ContextMenu]"),
             );
 
-            let dobj = activation.context.stage.root_clip();
+            let is_multiframe_movie = activation.context.swf.header().num_frames > 1;
+            let mut names = if is_multiframe_movie {
+                vec![
+                    "zoom",
+                    "quality",
+                    "play",
+                    "loop",
+                    "rewind",
+                    "forward_back",
+                    "print",
+                ]
+            } else {
+                vec!["zoom", "quality", "print"]
+            };
 
+            let dobj = activation.context.stage.root_clip();
             if let Value::Object(obj) = dobj.object() {
                 if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation) {
                     if let Ok(Value::Object(menu)) = menu.get("builtInItems", &mut activation) {
