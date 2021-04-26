@@ -2309,9 +2309,7 @@ impl<'gc> MovieClipData<'gc> {
         if let Some(audio_stream) = self.audio_stream.take() {
             context.stop_sound(audio_stream);
             if context.audio_manager.sounds_count() == 0 {
-                if let Some(_frame_rate) = context.frame_rate {
-                    *context.frame_rate = Some(*context.root_frame_rate);
-                }
+                *context.frame_rate = Some(*context.root_frame_rate);
             }
         }
     }

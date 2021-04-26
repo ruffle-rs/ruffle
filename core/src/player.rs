@@ -94,9 +94,6 @@ struct GcRootData<'gc> {
 
     /// Manager of active sound instances.
     audio_manager: AudioManager<'gc>,
-
-    /// Modified frame rate.
-    frame_rate: Option<f64>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -118,7 +115,6 @@ impl<'gc> GcRootData<'gc> {
         &mut Timers<'gc>,
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
-        &mut Option<f64>,
     ) {
         (
             &mut self.levels,
@@ -133,7 +129,6 @@ impl<'gc> GcRootData<'gc> {
             &mut self.timers,
             &mut self.external_interface,
             &mut self.audio_manager,
-            &mut self.frame_rate,
         )
     }
 }
@@ -296,7 +291,6 @@ impl Player {
                         external_interface: ExternalInterface::new(),
                         focus_tracker: FocusTracker::new(gc_context),
                         audio_manager: AudioManager::new(),
-                        frame_rate: None,
                     },
                 ))
             }),
@@ -1331,7 +1325,6 @@ impl Player {
                 timers,
                 external_interface,
                 audio_manager,
-                frame_rate,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -1372,7 +1365,7 @@ impl Player {
                 times_get_time_called: 0,
                 time_offset,
                 audio_manager,
-                frame_rate,
+                frame_rate: &mut None,
                 root_frame_rate,
             };
 
@@ -1423,17 +1416,16 @@ impl Player {
     {
         self.update_drag();
 
-        let rval = self.mutate_with_update_context(|context| {
+        let (rval, cframe_rate) = self.mutate_with_update_context(|context| {
             let rval = func(context);
 
             Self::run_actions(context);
 
-            rval
+            (rval, *context.frame_rate)
         });
 
         // Update frame rate if specified
-        let v = self.gc_arena.root.0.read().frame_rate;
-        if let Some(nframe_rate) = v {
+        if let Some(nframe_rate) = cframe_rate {
             if (nframe_rate - self.frame_rate()).abs() > f64::EPSILON {
                 self.set_frame_rate(nframe_rate);
             }
