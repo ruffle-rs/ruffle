@@ -346,6 +346,28 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         self.set_state(context, ButtonState::Up);
     }
 
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let up_state = self.0.read().up_state;
+        if let Some(up_state) = up_state {
+            up_state.construct_frame(context);
+        }
+
+        let over_state = self.0.read().over_state;
+        if let Some(over_state) = over_state {
+            over_state.construct_frame(context);
+        }
+
+        let down_state = self.0.read().up_state;
+        if let Some(down_state) = down_state {
+            down_state.construct_frame(context);
+        }
+
+        let hit_area = self.0.read().hit_area;
+        if let Some(hit_area) = hit_area {
+            hit_area.construct_frame(context);
+        }
+    }
+
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let up_state = self.0.read().up_state;
         if let Some(up_state) = up_state {
@@ -365,6 +387,28 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         let hit_area = self.0.read().hit_area;
         if let Some(hit_area) = hit_area {
             hit_area.run_frame(context);
+        }
+    }
+
+    fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let up_state = self.0.read().up_state;
+        if let Some(up_state) = up_state {
+            up_state.run_frame_scripts(context);
+        }
+
+        let over_state = self.0.read().over_state;
+        if let Some(over_state) = over_state {
+            over_state.run_frame_scripts(context);
+        }
+
+        let down_state = self.0.read().up_state;
+        if let Some(down_state) = down_state {
+            down_state.run_frame_scripts(context);
+        }
+
+        let hit_area = self.0.read().hit_area;
+        if let Some(hit_area) = hit_area {
+            hit_area.run_frame_scripts(context);
         }
     }
 
