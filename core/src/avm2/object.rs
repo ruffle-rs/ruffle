@@ -317,11 +317,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// not instances. For resolving traits for normal `TObject` methods, use
     /// `get_trait` and `has_trait` as it will tell you if the current object
     /// has a given trait.
-    fn get_provided_trait_slot(
-        &self,
-        id: u32,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error>;
+    fn get_provided_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error>;
 
     /// Retrieves the scope chain of the object at time of its creation.
     ///

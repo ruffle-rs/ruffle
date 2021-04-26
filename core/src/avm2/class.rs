@@ -111,16 +111,10 @@ fn do_trait_lookup<'gc>(
 }
 
 /// Find traits in a list of traits matching a slot ID.
-///
-/// This function also enforces final/override bits on the traits, and will
-/// raise `VerifyError`s as needed.
-///
-/// TODO: This is an O(n^2) algorithm, it sucks.
 fn do_trait_lookup_by_slot<'gc>(
     id: u32,
-    known_traits: &mut Vec<Trait<'gc>>,
     all_traits: &[Trait<'gc>],
-) -> Result<(), Error> {
+) -> Result<Option<Trait<'gc>>, Error> {
     for trait_entry in all_traits {
         let trait_id = match trait_entry.kind() {
             TraitKind::Slot { slot_id, .. } => slot_id,
@@ -131,21 +125,11 @@ fn do_trait_lookup_by_slot<'gc>(
         };
 
         if id == *trait_id {
-            for known_trait in known_traits.iter() {
-                if known_trait.is_final() {
-                    return Err("Attempting to override a final definition".into());
-                }
-
-                if !trait_entry.is_override() {
-                    return Err("Definition override is not marked as override".into());
-                }
-            }
-
-            known_traits.push(trait_entry.clone());
+            return Ok(Some(trait_entry.clone()));
         }
     }
 
-    Ok(())
+    Ok(None)
 }
 
 impl<'gc> Class<'gc> {
@@ -394,12 +378,8 @@ impl<'gc> Class<'gc> {
     /// If a given trait has an invalid name, attempts to override a final trait,
     /// or overlaps an existing trait without being an override, then this function
     /// returns an error.
-    pub fn lookup_class_traits_by_slot(
-        &self,
-        id: u32,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error> {
-        do_trait_lookup_by_slot(id, known_traits, &self.class_traits)
+    pub fn lookup_class_traits_by_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
+        do_trait_lookup_by_slot(id, &self.class_traits)
     }
 
     /// Determines if this class provides a given trait on itself.
@@ -465,12 +445,8 @@ impl<'gc> Class<'gc> {
     /// If a given trait has an invalid name, attempts to override a final trait,
     /// or overlaps an existing trait without being an override, then this function
     /// returns an error.
-    pub fn lookup_instance_traits_by_slot(
-        &self,
-        id: u32,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error> {
-        do_trait_lookup_by_slot(id, known_traits, &self.instance_traits)
+    pub fn lookup_instance_traits_by_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
+        do_trait_lookup_by_slot(id, &self.instance_traits)
     }
 
     /// Determines if this class provides a given trait on its instances.
