@@ -164,7 +164,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The root_frame rate. Is set when the root movie is loaded.
     pub root_frame_rate: &'a mut f64,
-
 }
 
 /// Convenience methods for controlling audio.

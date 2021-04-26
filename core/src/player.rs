@@ -190,8 +190,8 @@ pub struct Player {
     background_color: Option<Color>,
 
     /// Current frame rate.
-	frame_rate: f64,
-	root_frame_rate: f64, 
+    frame_rate: f64,
+    root_frame_rate: f64,
 
     /// A time budget for executing frames.
     /// Gained by passage of time between host frames, spent by executing SWF frames.
@@ -255,7 +255,7 @@ impl Player {
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
         let movie_width = 550;
         let movie_height = 400;
-       	let root_frame_rate = 12.0; 
+        let root_frame_rate = 12.0;
         let frame_rate = root_frame_rate;
         // Disable script timeout in debug builds by default.
         let max_execution_duration = if cfg!(debug_assertions) { u64::MAX } else { 15 };
@@ -302,7 +302,7 @@ impl Player {
             }),
 
             frame_rate,
-			root_frame_rate,
+            root_frame_rate,
             frame_accumulator: 0.0,
             recent_run_frame_timings: VecDeque::with_capacity(10),
             time_offset: 0,
@@ -361,8 +361,8 @@ impl Player {
 
     /// Set the current frame rate
     pub fn set_frame_rate(&mut self, nframe_rate: f64) -> &mut Player {
-     	info!("Setting frame rate to {}", nframe_rate);
- 		self.frame_rate = nframe_rate;
+        info!("Setting frame rate to {}", nframe_rate);
+        self.frame_rate = nframe_rate;
         self.audio.set_frame_rate(nframe_rate);
         self
     }
@@ -1287,7 +1287,7 @@ impl Player {
             max_execution_duration,
             current_frame,
             time_offset,
-			root_frame_rate, 
+            root_frame_rate,
         ) = (
             self.player_version,
             &self.swf,
@@ -1311,7 +1311,7 @@ impl Player {
             self.max_execution_duration,
             &mut self.current_frame,
             &mut self.time_offset,
-			&mut self.root_frame_rate,
+            &mut self.root_frame_rate,
         );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
@@ -1434,9 +1434,9 @@ impl Player {
         // Update frame rate if specified
         let v = self.gc_arena.root.0.read().frame_rate;
         if let Some(nframe_rate) = v {
-       		if (nframe_rate - self.frame_rate()).abs() > f64::EPSILON {
+            if (nframe_rate - self.frame_rate()).abs() > f64::EPSILON {
                 self.set_frame_rate(nframe_rate);
-			}
+            }
         };
 
         // Update mouse state (check for new hovered button, etc.)
