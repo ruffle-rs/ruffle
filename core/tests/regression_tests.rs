@@ -710,6 +710,25 @@ fn timeout_avm1() -> Result<(), Error> {
     )
 }
 
+#[test]
+fn stage_scale_mode() -> Result<(), Error> {
+    set_logger();
+    test_swf_with_hooks(
+        "tests/swfs/avm1/stage_scale_mode/test.swf",
+        1,
+        "tests/swfs/avm1/stage_scale_mode/output.txt",
+        |player| {
+            // Simulate a large viewport to test stage size.
+            player
+                .lock()
+                .unwrap()
+                .set_viewport_dimensions(900, 900, 1.0);
+            Ok(())
+        },
+        |_| Ok(()),
+    )
+}
+
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
 /// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
 /// test failures to show nice diffs.
