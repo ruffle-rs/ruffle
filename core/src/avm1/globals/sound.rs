@@ -204,8 +204,8 @@ fn attach_sound<'gc>(
         let name = name.coerce_to_string(activation)?;
         let movie = sound_object
             .owner()
-            .or_else(|| activation.context.levels.get(&0).copied())
-            .and_then(|o| o.movie());
+            .unwrap_or_else(|| activation.context.stage.root_clip())
+            .movie();
         if let Some(movie) = movie {
             if let Some(Character::Sound(sound)) = activation
                 .context
@@ -539,8 +539,8 @@ fn stop<'gc>(
             let name = name.coerce_to_string(activation)?;
             let movie = sound
                 .owner()
-                .or_else(|| activation.context.levels.get(&0).copied())
-                .and_then(|o| o.movie());
+                .unwrap_or_else(|| activation.context.stage.root_clip())
+                .movie();
             if let Some(movie) = movie {
                 if let Some(Character::Sound(sound)) = activation
                     .context

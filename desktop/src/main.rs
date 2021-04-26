@@ -219,6 +219,7 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     );
     window.set_inner_size(movie_size);
     let viewport_size = window.inner_size();
+    let viewport_scale_factor = window.scale_factor();
 
     let renderer = Box::new(WgpuRenderBackend::for_window(
         window.as_ref(),
@@ -253,7 +254,11 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         player.set_root_movie(Arc::new(movie));
         player.set_is_playing(true); // Desktop player will auto-play.
         player.set_letterbox(Letterbox::On);
-        player.set_viewport_dimensions(viewport_size.width, viewport_size.height);
+        player.set_viewport_dimensions(
+            viewport_size.width,
+            viewport_size.height,
+            viewport_scale_factor,
+        );
     }
 
     let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
@@ -300,8 +305,13 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
                         // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
                         minimized = size.width == 0 && size.height == 0;
 
+                        let viewport_scale_factor = window.scale_factor();
                         let mut player_lock = player.lock().unwrap();
-                        player_lock.set_viewport_dimensions(size.width, size.height);
+                        player_lock.set_viewport_dimensions(
+                            size.width,
+                            size.height,
+                            viewport_scale_factor,
+                        );
                         player_lock
                             .renderer_mut()
                             .set_viewport_dimensions(size.width, size.height);
@@ -454,6 +464,7 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
 
     let viewport_width = 1920;
     let viewport_height = 1080;
+    let viewport_scale_factor = 1.0;
 
     let renderer = Box::new(WgpuRenderBackend::for_offscreen(
         (viewport_width, viewport_height),
@@ -473,10 +484,11 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     player.lock().unwrap().set_root_movie(Arc::new(movie));
     player.lock().unwrap().set_is_playing(true);
 
-    player
-        .lock()
-        .unwrap()
-        .set_viewport_dimensions(viewport_width, viewport_height);
+    player.lock().unwrap().set_viewport_dimensions(
+        viewport_width,
+        viewport_height,
+        viewport_scale_factor,
+    );
 
     println!("Running {}...", opt.input_path.unwrap().to_string_lossy(),);
 

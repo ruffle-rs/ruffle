@@ -1,0 +1,40 @@
+// Stage.align
+
+// Stage.align = 'TL'
+LT
+// Stage.align = 'BR'
+RB
+// Stage.align = 'r'
+R
+// Stage.align = 'lb'
+LB
+// Stage.align = ' @!@!*(@#*(@&(*!#(*&@#@!#l!!!!!!'
+L
+// Stage.align = 'TllLBbbtRrrlBr'
+LTRB
+// Stage.align = 'asdfasdfasdf'
+
+// Stage.align = true
+TR
+// Stage.align = undefined
+
+
+// Stage.scaleMode = 'showAll'
+showAll
+// Stage.scaleMode = 'EXACTFIT'
+exactFit
+// Stage.scaleMode = 'jkadskjasd kjh'
+showAll
+// Stage.scaleMode = 'noborder'
+noBorder
+// Stage.scaleMode = true
+showAll
+
+// Stage size (showAll)
+550
+400
+// onResize event: 900 900
+// Stage size (noScale)
+900
+900
+

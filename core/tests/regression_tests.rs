@@ -560,6 +560,10 @@ swf_tests! {
     (as3_op_coerce, "avm2/op_coerce", 1),
     (as3_domain_memory, "avm2/domain_memory", 1),
     (as3_movieclip_symbol_constr, "avm2/movieclip_symbol_constr", 1),
+    (as3_stage_access, "avm2/stage_access", 1),
+    (as3_stage_displayobject_properties, "avm2/stage_displayobject_properties", 1),
+    (as3_stage_loaderinfo_properties, "avm2/stage_loaderinfo_properties", 2),
+    (as3_stage_properties, "avm2/stage_properties", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
@@ -700,6 +704,25 @@ fn timeout_avm1() -> Result<(), Error> {
                 .lock()
                 .unwrap()
                 .set_max_execution_duration(Duration::from_secs(5));
+            Ok(())
+        },
+        |_| Ok(()),
+    )
+}
+
+#[test]
+fn stage_scale_mode() -> Result<(), Error> {
+    set_logger();
+    test_swf_with_hooks(
+        "tests/swfs/avm1/stage_scale_mode/test.swf",
+        1,
+        "tests/swfs/avm1/stage_scale_mode/output.txt",
+        |player| {
+            // Simulate a large viewport to test stage size.
+            player
+                .lock()
+                .unwrap()
+                .set_viewport_dimensions(900, 900, 1.0);
             Ok(())
         },
         |_| Ok(()),

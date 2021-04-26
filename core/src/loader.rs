@@ -454,9 +454,7 @@ impl<'gc> Loader<'gc> {
                         _ => unreachable!(),
                     };
 
-                    if let Some(root) = uc.levels.get(&0).copied() {
-                        replacing_root_movie = DisplayObject::ptr_eq(clip, root);
-                    }
+                    replacing_root_movie = DisplayObject::ptr_eq(clip, uc.stage.root_clip());
 
                     clip.as_movie_clip().unwrap().unload(uc);
 

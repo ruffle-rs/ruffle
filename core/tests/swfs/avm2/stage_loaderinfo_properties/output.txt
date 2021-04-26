@@ -1,0 +1,8 @@
+//this.stage.loaderInfo.bytesLoaded
+668
+//this.stage.loaderInfo.bytesTotal
+668
+//this.stage.loaderInfo.content === this
+true
+//this.stage.loaderInfo.contentType
+null
