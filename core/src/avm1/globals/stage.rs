@@ -7,7 +7,6 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
-use crate::avm_warn;
 use gc_arena::MutationContext;
 
 pub fn create_stage_object<'gc>(
@@ -193,16 +192,23 @@ fn show_menu<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Stage.showMenu: unimplemented");
-    Ok(true.into())
+    Ok(activation.context.stage.show_menu().into())
 }
 
 fn set_show_menu<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Stage.showMenu: unimplemented");
+    let show_menu = args
+        .get(0)
+        .unwrap_or(&true.into())
+        .to_owned()
+        .as_bool(activation.swf_version());
+    activation
+        .context
+        .stage
+        .set_show_menu(&mut activation.context, show_menu);
     Ok(Value::Undefined)
 }
 

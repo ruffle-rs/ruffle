@@ -272,6 +272,20 @@ impl Ruffle {
         })
     }
 
+    pub fn can_show_default_menu_items(&mut self) -> bool {
+        INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
+            let can_show_default_menu_items = instance
+                .borrow()
+                .core
+                .lock()
+                .unwrap()
+                .can_show_default_menu_items();
+            can_show_default_menu_items
+        })
+    }
+
     pub fn is_playing_root_movie(&mut self) -> bool {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
