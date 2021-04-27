@@ -8,12 +8,20 @@
 [object SimpleButton]
 //my_button.upState
 [object Sprite]
+// numChildren:  2
+[object Shape]
+[object UpButtonShape]
 //my_button.overState
 [object OverButtonShape]
+// numChildren:  1
+[object Shape]
 //my_button.downState
 [object DownButtonShape]
+// numChildren:  1
+[object Shape]
 //my_button.hitTestState
 [object Shape]
+//MainTimeline frame 2
 //Up Button Shape Frame 2
 //Down Button Shape Frame 2
 //Over Button Shape Frame 2
