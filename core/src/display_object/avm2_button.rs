@@ -315,39 +315,15 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        display_object: DisplayObject<'gc>,
+        _display_object: DisplayObject<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
         self.set_default_instance_name(context);
 
-        let up_state = self.create_state(context, swf::ButtonState::UP);
-        let over_state = self.create_state(context, swf::ButtonState::OVER);
-        let down_state = self.create_state(context, swf::ButtonState::DOWN);
-        let hit_area = self.create_state(context, swf::ButtonState::HIT_TEST);
-
-        let mut write = self.0.write(context.gc_context);
-        write.up_state = Some(up_state);
-        write.over_state = Some(over_state);
-        write.down_state = Some(down_state);
-        write.hit_area = Some(hit_area);
-
-        if write.object.is_none() {
-            let object = Avm2StageObject::for_display_object(
-                context.gc_context,
-                display_object,
-                context.avm2.prototypes().simplebutton,
-            );
-            write.object = Some(object.into());
-
-            drop(write);
-
-            if run_frame {
-                self.run_frame(context);
-            }
-        } else {
-            drop(write);
+        if run_frame {
+            self.run_frame(context);
         }
 
         self.set_state(context, ButtonState::Up);
@@ -373,6 +349,38 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         if let Some(hit_area) = hit_area {
             hit_area.construct_frame(context);
         }
+
+        if self.0.read().object.is_none() {
+            let object = Avm2StageObject::for_display_object(
+                context.gc_context,
+                (*self).into(),
+                context.avm2.prototypes().simplebutton,
+            );
+            self.0.write(context.gc_context).object = Some(object.into());
+
+            let up_state = self.create_state(context, swf::ButtonState::UP);
+            let over_state = self.create_state(context, swf::ButtonState::OVER);
+            let down_state = self.create_state(context, swf::ButtonState::DOWN);
+            let hit_area = self.create_state(context, swf::ButtonState::HIT_TEST);
+
+            let mut write = self.0.write(context.gc_context);
+            write.up_state = Some(up_state);
+            write.over_state = Some(over_state);
+            write.down_state = Some(down_state);
+            write.hit_area = Some(hit_area);
+
+            drop(write);
+
+            up_state.run_frame(context);
+            over_state.run_frame(context);
+            down_state.run_frame(context);
+            hit_area.run_frame(context);
+
+            up_state.run_frame_scripts(context);
+            over_state.run_frame_scripts(context);
+            down_state.run_frame_scripts(context);
+            hit_area.run_frame_scripts(context);
+        }
     }
 
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -381,14 +389,14 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             up_state.run_frame(context);
         }
 
+        let down_state = self.0.read().down_state;
+        if let Some(down_state) = down_state {
+            down_state.run_frame(context);
+        }
+
         let over_state = self.0.read().over_state;
         if let Some(over_state) = over_state {
             over_state.run_frame(context);
-        }
-
-        let down_state = self.0.read().up_state;
-        if let Some(down_state) = down_state {
-            down_state.run_frame(context);
         }
 
         let hit_area = self.0.read().hit_area;
@@ -403,14 +411,14 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             up_state.run_frame_scripts(context);
         }
 
+        let down_state = self.0.read().down_state;
+        if let Some(down_state) = down_state {
+            down_state.run_frame_scripts(context);
+        }
+
         let over_state = self.0.read().over_state;
         if let Some(over_state) = over_state {
             over_state.run_frame_scripts(context);
-        }
-
-        let down_state = self.0.read().up_state;
-        if let Some(down_state) = down_state {
-            down_state.run_frame_scripts(context);
         }
 
         let hit_area = self.0.read().hit_area;
