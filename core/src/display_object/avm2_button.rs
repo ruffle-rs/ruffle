@@ -157,6 +157,33 @@ impl<'gc> Avm2Button<'gc> {
         let movie = self
             .movie()
             .expect("All SWF-defined buttons should have movies");
+        let empty_slice = SwfSlice::empty(movie.clone());
+        let mut sprite_proto = context.avm2.prototypes().sprite;
+        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+        let sprite_constr = sprite_proto
+            .get_property(
+                sprite_proto,
+                &Avm2QName::new(Avm2Namespace::public(), "constructor"),
+                &mut activation,
+            )
+            .unwrap()
+            .coerce_to_object(&mut activation)
+            .unwrap();
+
+        drop(activation);
+
+        let state_sprite = MovieClip::new(empty_slice, context.gc_context);
+
+        state_sprite.set_avm2_constructor(context.gc_context, Some(sprite_constr));
+        state_sprite.post_instantiation(
+            context,
+            state_sprite.into(),
+            None,
+            Instantiator::Movie,
+            false,
+        );
+        state_sprite.construct_frame(context);
+
         let mut children = Vec::new();
         let static_data = self.0.read().static_data;
 
@@ -201,26 +228,6 @@ impl<'gc> Avm2Button<'gc> {
 
             child
         } else {
-            let empty_slice = SwfSlice::empty(movie);
-            let mut sprite_proto = context.avm2.prototypes().sprite;
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let sprite_constr = sprite_proto
-                .get_property(
-                    sprite_proto,
-                    &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                    &mut activation,
-                )
-                .unwrap()
-                .coerce_to_object(&mut activation)
-                .unwrap();
-
-            drop(activation);
-
-            let state_sprite = MovieClip::new(empty_slice, context.gc_context);
-
-            state_sprite.set_avm2_constructor(context.gc_context, Some(sprite_constr));
-            state_sprite.construct_frame(context);
-
             for (child, depth) in children {
                 let removed_child = state_sprite.replace_at_depth(context, child, depth.into());
 
