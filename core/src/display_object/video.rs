@@ -2,7 +2,7 @@
 
 use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
 use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
-use crate::backend::render::BitmapHandle;
+use crate::backend::render::BitmapInfo;
 use crate::backend::video::{EncodedFrame, VideoStreamHandle};
 use crate::bounding_box::BoundingBox;
 use crate::collect::CollectWrapper;
@@ -40,7 +40,7 @@ pub struct VideoData<'gc> {
     stream: VideoStream,
 
     /// The last decoded frame in the video stream.
-    decoded_frame: Option<(u32, CollectWrapper<BitmapHandle>)>,
+    decoded_frame: Option<(u32, CollectWrapper<BitmapInfo>)>,
 
     /// AVM representation of this video player.
     object: Option<AvmObject<'gc>>,
@@ -248,7 +248,6 @@ impl<'gc> Video<'gc> {
                     context
                         .video
                         .decode_video_stream_frame(*stream, encframe, context.renderer)
-                        .map(|bi| bi.handle)
                 }
                 None => {
                     if let Some((_old_id, old_frame)) = &read.decoded_frame {
@@ -415,9 +414,19 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         context.transform_stack.push(&*self.transform());
 
         if let Some((_frame_id, ref bitmap)) = self.0.read().decoded_frame {
+            let mut transform = context.transform_stack.transform().clone();
+            let bounds = self.self_bounds();
+
+            // The actual decoded frames might be different in size than the declared
+            // bounds of the VideoStream tag, so a final scale adjustment has to be done.
+            transform.matrix *= Matrix::scale(
+                bounds.width().to_pixels() as f32 / bitmap.0.width as f32,
+                bounds.height().to_pixels() as f32 / bitmap.0.height as f32,
+            );
+
             context
                 .renderer
-                .render_bitmap(bitmap.0, context.transform_stack.transform(), false);
+                .render_bitmap(bitmap.0.handle, &transform, false);
         } else {
             log::warn!("Video has no decoded frame to render.");
         }
