@@ -3037,6 +3037,7 @@ dependencies = [
  "ruffle_render_webgl",
  "ruffle_web_common",
  "serde",
+ "thiserror",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
