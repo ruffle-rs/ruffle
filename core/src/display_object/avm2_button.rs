@@ -50,6 +50,13 @@ pub struct Avm2ButtonData<'gc> {
     has_focus: bool,
     enabled: bool,
     use_hand_cursor: bool,
+
+    /// Skip the next `run_frame` call.
+    ///
+    /// This flag exists due to a really odd feature of buttons: they run their
+    /// children for one frame before parents can run. Then they go back to the
+    /// normal AVM2 execution order for future frames.
+    skip_current_frame: bool,
 }
 
 impl<'gc> Avm2Button<'gc> {
@@ -109,6 +116,7 @@ impl<'gc> Avm2Button<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
+                skip_current_frame: false,
             },
         ))
     }
@@ -368,6 +376,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             write.over_state = Some(over_state);
             write.down_state = Some(down_state);
             write.hit_area = Some(hit_area);
+            write.skip_current_frame = true;
 
             drop(write);
 
@@ -384,6 +393,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if self.0.read().skip_current_frame {
+            self.0.write(context.gc_context).skip_current_frame = false;
+            return;
+        }
+
         let up_state = self.0.read().up_state;
         if let Some(up_state) = up_state {
             up_state.run_frame(context);
