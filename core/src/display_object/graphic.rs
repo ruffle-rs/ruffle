@@ -196,6 +196,10 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
+        if self.vm_type(context) == AvmType::Avm2 {
+            self.set_default_instance_name(context);
+        }
+
         if run_frame {
             self.run_frame(context);
         }
