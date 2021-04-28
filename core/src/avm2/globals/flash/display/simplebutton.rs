@@ -71,7 +71,7 @@ pub fn set_down_state<'gc>(
             .ok()
             .and_then(|val| val.as_display_object());
 
-        btn.set_state_child(activation.context.gc_context, ButtonState::DOWN, new_state);
+        btn.set_state_child(&mut activation.context, ButtonState::DOWN, new_state);
     }
 
     Ok(Value::Undefined)
@@ -114,7 +114,7 @@ pub fn set_over_state<'gc>(
             .ok()
             .and_then(|val| val.as_display_object());
 
-        btn.set_state_child(activation.context.gc_context, ButtonState::OVER, new_state);
+        btn.set_state_child(&mut activation.context, ButtonState::OVER, new_state);
     }
 
     Ok(Value::Undefined)
@@ -157,11 +157,7 @@ pub fn set_hit_test_state<'gc>(
             .ok()
             .and_then(|val| val.as_display_object());
 
-        btn.set_state_child(
-            activation.context.gc_context,
-            ButtonState::HIT_TEST,
-            new_state,
-        );
+        btn.set_state_child(&mut activation.context, ButtonState::HIT_TEST, new_state);
     }
 
     Ok(Value::Undefined)
@@ -204,7 +200,7 @@ pub fn set_up_state<'gc>(
             .ok()
             .and_then(|val| val.as_display_object());
 
-        btn.set_state_child(activation.context.gc_context, ButtonState::UP, new_state);
+        btn.set_state_child(&mut activation.context, ButtonState::UP, new_state);
     }
 
     Ok(Value::Undefined)
