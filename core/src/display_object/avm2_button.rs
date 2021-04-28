@@ -157,11 +157,14 @@ impl<'gc> Avm2Button<'gc> {
     /// button children. This means that, for example, a child that exists in
     /// multiple states in the SWF will actually be instantiated multiple
     /// times.
+    ///
+    /// If the boolean parameter is `true`, then the caller of this function
+    /// should signal events on all children of the returned display object.
     fn create_state(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         swf_state: swf::ButtonState,
-    ) -> DisplayObject<'gc> {
+    ) -> (DisplayObject<'gc>, bool) {
         let movie = self
             .movie()
             .expect("All SWF-defined buttons should have movies");
@@ -234,22 +237,17 @@ impl<'gc> Avm2Button<'gc> {
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.construct_frame(context);
 
-            child
+            (child, false)
         } else {
             for (child, depth) in children {
-                let removed_child = state_sprite.replace_at_depth(context, child, depth.into());
+                state_sprite.replace_at_depth(context, child, depth.into());
 
                 child.set_parent(context.gc_context, Some(self.into()));
                 child.post_instantiation(context, child, None, Instantiator::Movie, false);
                 child.construct_frame(context);
-
-                dispatch_added_event(self.into(), child, false, context);
-                if let Some(removed_child) = removed_child {
-                    dispatch_removed_event(removed_child, context);
-                }
             }
 
-            state_sprite.into()
+            (state_sprite.into(), true)
         }
     }
 
@@ -272,16 +270,27 @@ impl<'gc> Avm2Button<'gc> {
     /// Set the display object that represents a particular button state.
     pub fn set_state_child(
         self,
-        gc_context: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         state: swf::ButtonState,
         child: Option<DisplayObject<'gc>>,
     ) {
+        let child_was_on_stage = child.map(|c| c.is_on_stage(context)).unwrap_or(false);
+        let old_state_child = self.get_state_child(state);
+
         match state {
-            swf::ButtonState::UP => self.0.write(gc_context).up_state = child,
-            swf::ButtonState::OVER => self.0.write(gc_context).over_state = child,
-            swf::ButtonState::DOWN => self.0.write(gc_context).down_state = child,
-            swf::ButtonState::HIT_TEST => self.0.write(gc_context).hit_area = child,
+            swf::ButtonState::UP => self.0.write(context.gc_context).up_state = child,
+            swf::ButtonState::OVER => self.0.write(context.gc_context).over_state = child,
+            swf::ButtonState::DOWN => self.0.write(context.gc_context).down_state = child,
+            swf::ButtonState::HIT_TEST => self.0.write(context.gc_context).hit_area = child,
             _ => (),
+        }
+
+        if let Some(new_state_child) = child {
+            dispatch_added_event(self.into(), new_state_child, child_was_on_stage, context);
+        }
+
+        if let Some(old_state_child) = old_state_child {
+            dispatch_removed_event(old_state_child, context);
         }
     }
 
@@ -366,10 +375,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             );
             self.0.write(context.gc_context).object = Some(object.into());
 
-            let up_state = self.create_state(context, swf::ButtonState::UP);
-            let over_state = self.create_state(context, swf::ButtonState::OVER);
-            let down_state = self.create_state(context, swf::ButtonState::DOWN);
-            let hit_area = self.create_state(context, swf::ButtonState::HIT_TEST);
+            let (up_state, up_should_fire) = self.create_state(context, swf::ButtonState::UP);
+            let (over_state, over_should_fire) = self.create_state(context, swf::ButtonState::OVER);
+            let (down_state, down_should_fire) = self.create_state(context, swf::ButtonState::DOWN);
+            let (hit_area, hit_should_fire) =
+                self.create_state(context, swf::ButtonState::HIT_TEST);
 
             let mut write = self.0.write(context.gc_context);
             write.up_state = Some(up_state);
@@ -380,6 +390,42 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
             drop(write);
 
+            if up_should_fire {
+                if let Some(up_container) = up_state.as_container() {
+                    for (_depth, child) in up_container.iter_depth_list() {
+                        dispatch_added_event((*self).into(), child, false, context);
+                    }
+                }
+            }
+
+            if over_should_fire {
+                if let Some(over_container) = over_state.as_container() {
+                    for (_depth, child) in over_container.iter_depth_list() {
+                        dispatch_added_event((*self).into(), child, false, context);
+                    }
+                }
+            }
+
+            if down_should_fire {
+                if let Some(down_container) = down_state.as_container() {
+                    for (_depth, child) in down_container.iter_depth_list() {
+                        dispatch_added_event((*self).into(), child, false, context);
+                    }
+                }
+            }
+
+            if hit_should_fire {
+                if let Some(hit_container) = hit_area.as_container() {
+                    for (_depth, child) in hit_container.iter_depth_list() {
+                        dispatch_added_event((*self).into(), child, false, context);
+                    }
+                }
+            }
+
+            self.frame_constructed(context);
+
+            //NOTE: Yes, we do have to run these in a different order from the
+            //regular run_frame method.
             up_state.run_frame(context);
             over_state.run_frame(context);
             down_state.run_frame(context);
@@ -389,6 +435,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             over_state.run_frame_scripts(context);
             down_state.run_frame_scripts(context);
             hit_area.run_frame_scripts(context);
+
+            self.exit_frame(context);
         }
     }
 
