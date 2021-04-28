@@ -1,0 +1,31 @@
+//Constructed UpButtonShape ( instance2 )!
+//Constructed OverButtonShape ( instance4 )!
+//Constructed DownButtonShape ( instance6 )!
+instance2:[Event type="added" bubbles=true cancelable=false eventPhase=2]
+instance2:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+instance2:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+instance4:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+instance6:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//Up Button Shape frame 1
+//Over Button Shape frame 1
+//Down Button Shape frame 1
+instance2:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+instance4:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+instance6:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+instance2:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+instance4:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+instance6:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+instance2:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+instance4:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+instance6:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+instance2:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+instance4:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+instance6:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+instance2:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+instance4:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+instance6:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+//Up Button Shape Frame 2
+//Down Button Shape Frame 2
+//Over Button Shape Frame 2

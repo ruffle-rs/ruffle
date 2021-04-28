@@ -573,6 +573,7 @@ swf_tests! {
     (as3_stage_properties, "avm2/stage_properties", 1),
     (as3_closures, "avm2/closures", 1),
     (as3_simplebutton_structure, "avm2/simplebutton_structure", 2),
+    (as3_simplebutton_childevents, "avm2/simplebutton_childevents", 2),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
