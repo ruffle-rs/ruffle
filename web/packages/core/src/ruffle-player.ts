@@ -683,7 +683,9 @@ export class RufflePlayer extends HTMLElement {
                 if (item == "play") {
                     const isPlayingRootMovie = this.instance.is_playing_root_movie();
                     items.push({
-                        text: isPlayingRootMovie ? `Play (☑)` : `Play (☐)`,
+                        text: isPlayingRootMovie
+                            ? `Play (\u2611)`
+                            : `Play (\u2610)`,
                         onClick: () => this.instance?.toggle_play_root_movie(),
                     });
                 } else if (item == "rewind") {
