@@ -895,6 +895,7 @@ mod tests {
                 shared_objects: &mut HashMap::new(),
                 unbound_text_fields: &mut Vec::new(),
                 timers: &mut Timers::new(),
+                current_context_menu: &mut None,
                 needs_render: &mut false,
                 avm1: &mut avm1,
                 avm2: &mut avm2,

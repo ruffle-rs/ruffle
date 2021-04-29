@@ -68,13 +68,6 @@ interface ContextMenuItem {
     onClick: (event: MouseEvent) => void;
 
     /**
-     * Whether to add a separator right after the item
-     *
-     * @default true
-     */
-    separator?: boolean;
-
-    /**
      * Whether the item is clickable
      *
      * @default true
@@ -670,47 +663,52 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    private contextMenuItems(): ContextMenuItem[] {
+    private contextMenuItems(): Array<ContextMenuItem | null> {
         const items = [];
 
         if (this.instance) {
             const menuInfo: ContextMenuInfo = this.instance.init_custom_menu_info();
             // forEach needed to get loop index for callback
             menuInfo.customItems.forEach((item, index) => {
+                console.log(item);
+                if (item.separatorBefore)
+                    items.push(null);
                 items.push({
                     text: item.caption,
                     onClick: () => this.instance?.run_context_menu_callback(index),
                     enabled: item.enabled,
-                    separator: false,
                 });
             });
-            for (const item of menuInfo.builtinItems) {
-                if (item == "play") {
-                    items.push({
-                        text: menuInfo.playing
-                            ? `Play (\u2611)`
-                            : `Play (\u2610)`,
-                        onClick: () => this.instance?.toggle_play_root_movie(),
-                    });
-                } else if (item == "rewind") {
-                    items.push({
-                        text: `Rewind`,
-                        onClick: () => this.instance?.rewind_root_movie(),
-                        separator: false,
-                    });
-                } else if (item == "forward_back") {
-                    items.push({
-                        text: `Forward`,
-                        onClick: () => this.instance?.forward_root_movie(),
-                        separator: false,
-                    });
-                    items.push({
-                        text: `Back`,
-                        onClick: () => this.instance?.back_root_movie(),
-                    });
-                }
+            items.push(null);
+            if (menuInfo.builtinItems.includes("play")) {
+                items.push({
+                    text: menuInfo.playing
+                        ? `Play (\u2611)`
+                        : `Play (\u2610)`,
+                    onClick: () => this.instance?.toggle_play_root_movie(),
+                });
+            }
+            items.push(null);
+            if (menuInfo.builtinItems.includes("rewind")) {
+                items.push({
+                    text: `Rewind`,
+                    onClick: () => this.instance?.rewind_root_movie(),
+                    separator: false,
+                });
+            }
+            if (menuInfo.builtinItems.includes("forward_back")) {
+                items.push({
+                    text: `Forward`,
+                    onClick: () => this.instance?.forward_root_movie(),
+                    separator: false,
+                });
+                items.push({
+                    text: `Back`,
+                    onClick: () => this.instance?.back_root_movie(),
+                });
             }
         }
+        items.push(null);
 
         if (this.fullscreenEnabled) {
             if (this.isFullscreen) {
@@ -725,13 +723,12 @@ export class RufflePlayer extends HTMLElement {
                 });
             }
         }
-
+        items.push(null);
         items.push({
             text: `About Ruffle (%VERSION_NAME%)`,
             onClick() {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
-            separator: false,
         });
         return items;
     }
@@ -751,24 +748,30 @@ export class RufflePlayer extends HTMLElement {
         }
 
         // Populate context menu items.
-        for (const { text, onClick, separator, enabled } of this.contextMenuItems()) {
-            const menuItem = document.createElement("li");
-            menuItem.className = "menu_item active";
-            menuItem.textContent = text;
-            this.contextMenuElement.appendChild(menuItem);
+        for (const item of this.contextMenuItems()) {
+            if (item === null) {
+                if (!this.contextMenuElement.lastElementChild)
+                    continue; // don't start with separators
+                if (this.contextMenuElement.lastElementChild.classList.contains("menu_separator"))
+                    continue; // don't repeat separators
 
-            if (enabled !== false) {
-                menuItem.addEventListener("click", onClick);
-            } else {
-                menuItem.classList.add("disabled");
-            }
-
-            if (separator !== false) {
                 const menuSeparator = document.createElement("li");
                 menuSeparator.className = "menu_separator";
                 const hr = document.createElement("hr");
                 menuSeparator.appendChild(hr);
                 this.contextMenuElement.appendChild(menuSeparator);
+            } else {
+                const { text, onClick, enabled } = item;
+                const menuItem = document.createElement("li");
+                menuItem.className = "menu_item active";
+                menuItem.textContent = text;
+                this.contextMenuElement.appendChild(menuItem);
+
+                if (enabled !== false) {
+                    menuItem.addEventListener("click", onClick);
+                } else {
+                    menuItem.classList.add("disabled");
+                }
             }
         }
 

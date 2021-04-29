@@ -53,6 +53,7 @@ impl ContextMenuInfo {
 #[derive(Serialize)]
 pub struct ContextMenuItemInfo {
     pub enabled: bool,
+    #[serde(rename = "separatorBefore")]
     pub separator_before: bool,
     pub caption: String,
 }
@@ -117,6 +118,10 @@ impl<'gc> ContextMenuState<'gc> {
                             // true if `true`, everything else is false
                             let enabled =
                                 matches!(item.get("enabled", activation), Ok(Value::Bool(true)));
+                            let separator_before = matches!(
+                                item.get("separatorBefore", activation),
+                                Ok(Value::Bool(true))
+                            );
 
                             if !visible {
                                 continue;
@@ -124,9 +129,9 @@ impl<'gc> ContextMenuState<'gc> {
 
                             items.push(ContextMenuItemState {
                                 enabled,
-                                separator_before: false,
-                                caption: caption,
-                                item: item,
+                                separator_before,
+                                caption,
+                                item,
                                 callback: on_select,
                             });
                         }
