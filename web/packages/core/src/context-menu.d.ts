@@ -7,4 +7,6 @@ export interface ContextMenuInfo {
 
 export interface ContextMenuItemInfo {
     readonly caption: string;
+    readonly enabled: boolean;
+    readonly separatorBefore: boolean;
 }

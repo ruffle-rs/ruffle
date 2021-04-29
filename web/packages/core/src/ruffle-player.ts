@@ -73,6 +73,13 @@ interface ContextMenuItem {
      * @default true
      */
     separator?: boolean;
+
+    /**
+     * Whether the item is clickable
+     *
+     * @default true
+     */
+    enabled?: boolean;
 }
 
 /**
@@ -673,6 +680,7 @@ export class RufflePlayer extends HTMLElement {
                 items.push({
                     text: item.caption,
                     onClick: () => this.instance?.run_context_menu_callback(index),
+                    enabled: item.enabled,
                     separator: false,
                 });
             });
@@ -743,12 +751,17 @@ export class RufflePlayer extends HTMLElement {
         }
 
         // Populate context menu items.
-        for (const { text, onClick, separator } of this.contextMenuItems()) {
+        for (const { text, onClick, separator, enabled } of this.contextMenuItems()) {
             const menuItem = document.createElement("li");
             menuItem.className = "menu_item active";
             menuItem.textContent = text;
-            menuItem.addEventListener("click", onClick);
             this.contextMenuElement.appendChild(menuItem);
+
+            if (enabled !== false) {
+                menuItem.addEventListener("click", onClick);
+            } else {
+                menuItem.classList.add("disabled");
+            }
 
             if (separator !== false) {
                 const menuSeparator = document.createElement("li");
