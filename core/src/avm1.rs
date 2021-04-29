@@ -20,6 +20,7 @@ pub mod error;
 mod fscommand;
 #[macro_use]
 pub mod function;
+mod contextmenu;
 pub mod globals;
 pub mod object;
 pub mod property;
@@ -35,6 +36,9 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 pub use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
+pub use contextmenu::ContextMenuInfo;
+pub use contextmenu::ContextMenuItemInfo;
+pub use contextmenu::ContextMenuState;
 pub use globals::SystemPrototypes;
 pub use object::script_object::ScriptObject;
 pub use object::sound_object::SoundObject;

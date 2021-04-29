@@ -50,6 +50,8 @@ pub mod backend;
 pub mod config;
 pub mod external;
 
+pub use avm1::ContextMenuInfo;
+pub use avm1::ContextMenuItemInfo;
 pub use chrono;
 pub use events::PlayerEvent;
 pub use indexmap;

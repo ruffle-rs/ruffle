@@ -272,34 +272,45 @@ impl Ruffle {
         })
     }
 
-    pub fn get_builtin_menu_items(&mut self) -> Vec<JsValue> {
+    // after the context menu is closed, remember to call `clear_custom_menu_items`!
+    pub fn init_custom_menu_info(&mut self) -> JsValue {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
-            let builtin_menu_items = instance
+            let info = instance
                 .borrow()
                 .core
                 .lock()
                 .unwrap()
-                .get_builtin_menu_items();
-            builtin_menu_items
-                .into_iter()
-                .map(JsValue::from_str)
-                .collect()
+                .init_custom_menu_info();
+
+            JsValue::from_serde(&info).unwrap()
         })
     }
 
-    pub fn is_playing_root_movie(&mut self) -> bool {
+    pub fn run_context_menu_callback(&mut self, index: usize) {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
-            let is_playing_root_movie = instance
+            instance
                 .borrow()
                 .core
                 .lock()
                 .unwrap()
-                .is_playing_root_movie();
-            is_playing_root_movie
+                .run_context_menu_callback(index);
+        })
+    }
+
+    pub fn clear_custom_menu_items(&mut self) {
+        INSTANCES.with(|instances| {
+            let instances = instances.borrow();
+            let instance = instances.get(self.0).unwrap();
+            instance
+                .borrow()
+                .core
+                .lock()
+                .unwrap()
+                .clear_custom_menu_items();
         })
     }
 

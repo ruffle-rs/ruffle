@@ -3,7 +3,7 @@ use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
+use crate::avm1::{Avm1, AvmString, ContextMenuState, ScriptObject, TObject, Timers, Value};
 use crate::avm2::{Avm2, Domain as Avm2Domain};
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -85,6 +85,8 @@ struct GcRootData<'gc> {
     /// Timed callbacks created with `setInterval`/`setTimeout`.
     timers: Timers<'gc>,
 
+    current_context_menu: Option<ContextMenuState<'gc>>,
+
     /// External interface for (for example) JavaScript <-> ActionScript interaction
     external_interface: ExternalInterface<'gc>,
 
@@ -112,6 +114,7 @@ impl<'gc> GcRootData<'gc> {
         &mut HashMap<String, Object<'gc>>,
         &mut Vec<EditText<'gc>>,
         &mut Timers<'gc>,
+        &mut Option<ContextMenuState<'gc>>,
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
     ) {
@@ -126,6 +129,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.shared_objects,
             &mut self.unbound_text_fields,
             &mut self.timers,
+            &mut self.current_context_menu,
             &mut self.external_interface,
             &mut self.audio_manager,
         )
@@ -270,6 +274,7 @@ impl Player {
                         shared_objects: HashMap::new(),
                         unbound_text_fields: Vec::new(),
                         timers: Timers::new(),
+                        current_context_menu: None,
                         external_interface: ExternalInterface::new(),
                         focus_tracker: FocusTracker::new(gc_context),
                         audio_manager: AudioManager::new(),
@@ -556,10 +561,10 @@ impl Player {
         self.is_playing
     }
 
-    pub fn get_builtin_menu_items(&mut self) -> Vec<&'static str> {
+    pub fn init_custom_menu_info(&mut self) -> crate::ContextMenuInfo {
         self.mutate_with_update_context(|context| {
             if !context.stage.show_menu() {
-                return vec![];
+                return crate::ContextMenuInfo::empty();
             }
 
             let mut activation = Activation::from_stub(
@@ -567,44 +572,47 @@ impl Player {
                 ActivationIdentifier::root("[ContextMenu]"),
             );
 
-            let is_multiframe_movie = activation.context.swf.header().num_frames > 1;
-            let mut names = if is_multiframe_movie {
-                vec![
-                    "zoom",
-                    "quality",
-                    "play",
-                    "loop",
-                    "rewind",
-                    "forward_back",
-                    "print",
-                ]
-            } else {
-                vec!["zoom", "quality", "print"]
+            // TODO: this should use a pointed display object with `.menu`
+            let menu_object = {
+                let dobj = activation.context.stage.root_clip();
+                if let Value::Object(obj) = dobj.object() {
+                    if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation) {
+                        Some(menu)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
             };
 
-            let dobj = activation.context.stage.root_clip();
-            if let Value::Object(obj) = dobj.object() {
-                if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation) {
-                    if let Ok(Value::Object(menu)) = menu.get("builtInItems", &mut activation) {
-                        names.retain(|name| {
-                            !matches!(menu.get(name, &mut activation), Ok(Value::Bool(false)))
-                        });
-                    }
-                }
-            }
-            names
+            let menu = ContextMenuState::new(menu_object, &mut activation);
+            let ret = menu.get_info();
+            *activation.context.current_context_menu = Some(menu);
+            ret
         })
     }
 
-    pub fn is_playing_root_movie(&mut self) -> bool {
-        self.gc_arena.mutate(|_gc_context, gc_root| {
-            let root_data = gc_root.0.read();
-            if let Some(mc) = root_data.stage.root_clip().as_movie_clip() {
-                mc.playing()
-            } else {
-                false
+    pub fn run_context_menu_callback(&mut self, index: usize) {
+        self.mutate_with_update_context(|context| {
+            // Need this to prevent `context` double borrow.
+            // Alternative would be abandon the method approach
+            // and do it the same way Timers do.
+            let menu = context.current_context_menu.take();
+            if let Some(ref menu) = menu {
+                menu.run_callback(index, context);
             }
-        })
+            // Technically this is not needed as we don't need the context menu anymore
+            // after the user clicked the option, but let's be nice I guess
+            *context.current_context_menu = menu;
+        });
+    }
+
+    pub fn clear_custom_menu_items(&mut self) {
+        self.gc_arena.mutate(|gc_context, gc_root| {
+            let mut root_data = gc_root.0.write(gc_context);
+            root_data.current_context_menu = None;
+        });
     }
 
     pub fn toggle_play_root_movie(&mut self) {
@@ -1291,6 +1299,7 @@ impl Player {
                 shared_objects,
                 unbound_text_fields,
                 timers,
+                current_context_menu,
                 external_interface,
                 audio_manager,
             ) = root_data.update_context_params();
@@ -1321,6 +1330,7 @@ impl Player {
                 shared_objects,
                 unbound_text_fields,
                 timers,
+                current_context_menu,
                 needs_render,
                 avm1,
                 avm2,

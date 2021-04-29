@@ -1,7 +1,7 @@
 //! Contexts and helper types passed between functions.
 
 use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::{Avm1, Object as Avm1Object, Timers, Value as Avm1Value};
+use crate::avm1::{Avm1, ContextMenuState, Object as Avm1Object, Timers, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, Value as Avm2Value};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
@@ -126,6 +126,8 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// Timed callbacks created with `setInterval`/`setTimeout`.
     pub timers: &'a mut Timers<'gc>,
+
+    pub current_context_menu: &'a mut Option<ContextMenuState<'gc>>,
 
     /// The AVM1 global state.
     pub avm1: &'a mut Avm1<'gc>,
@@ -272,6 +274,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             shared_objects: self.shared_objects,
             unbound_text_fields: self.unbound_text_fields,
             timers: self.timers,
+            current_context_menu: self.current_context_menu,
             avm1: self.avm1,
             avm2: self.avm2,
             external_interface: self.external_interface,

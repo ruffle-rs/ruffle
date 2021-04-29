@@ -12,6 +12,7 @@ import {
     UnmuteOverlay,
 } from "./load-options";
 import { MovieMetadata } from "./movie-metadata";
+import { ContextMenuInfo } from "./context-menu";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -664,26 +665,21 @@ export class RufflePlayer extends HTMLElement {
 
     private contextMenuItems(): ContextMenuItem[] {
         const items = [];
-        if (this.fullscreenEnabled) {
-            if (this.isFullscreen) {
-                items.push({
-                    text: "Exit fullscreen",
-                    onClick: this.exitFullscreen.bind(this),
-                });
-            } else {
-                items.push({
-                    text: "Enter fullscreen",
-                    onClick: this.enterFullscreen.bind(this),
-                });
-            }
-        }
+
         if (this.instance) {
-            const builtinMenuItems = this.instance.get_builtin_menu_items();
-            for (const item of builtinMenuItems) {
+            const menuInfo: ContextMenuInfo = this.instance.init_custom_menu_info();
+            // forEach needed to get loop index for callback
+            menuInfo.customItems.forEach((item, index) => {
+                items.push({
+                    text: item.caption,
+                    onClick: () => this.instance?.run_context_menu_callback(index),
+                    separator: false,
+                });
+            });
+            for (const item of menuInfo.builtinItems) {
                 if (item == "play") {
-                    const isPlayingRootMovie = this.instance.is_playing_root_movie();
                     items.push({
-                        text: isPlayingRootMovie
+                        text: menuInfo.playing
                             ? `Play (\u2611)`
                             : `Play (\u2610)`,
                         onClick: () => this.instance?.toggle_play_root_movie(),
@@ -705,6 +701,20 @@ export class RufflePlayer extends HTMLElement {
                         onClick: () => this.instance?.back_root_movie(),
                     });
                 }
+            }
+        }
+
+        if (this.fullscreenEnabled) {
+            if (this.isFullscreen) {
+                items.push({
+                    text: "Exit fullscreen",
+                    onClick: this.exitFullscreen.bind(this),
+                });
+            } else {
+                items.push({
+                    text: "Enter fullscreen",
+                    onClick: this.enterFullscreen.bind(this),
+                });
             }
         }
 
@@ -768,6 +778,7 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private hideContextMenu(): void {
+        this.instance?.clear_custom_menu_items();
         this.contextMenuElement.style.display = "none";
     }
 
