@@ -23,7 +23,6 @@ pub struct ContextMenuState<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct ContextMenuItemState<'gc> {
-    visible: bool,
     enabled: bool,
     separator_before: bool,
     caption: AvmString<'gc>,
@@ -53,7 +52,6 @@ impl ContextMenuInfo {
 
 #[derive(Serialize)]
 pub struct ContextMenuItemInfo {
-    pub visible: bool,
     pub enabled: bool,
     pub separator_before: bool,
     pub caption: String,
@@ -125,7 +123,6 @@ impl<'gc> ContextMenuState<'gc> {
                             }
 
                             items.push(ContextMenuItemState {
-                                visible,
                                 enabled,
                                 separator_before: false,
                                 caption: caption,
@@ -151,7 +148,6 @@ impl<'gc> ContextMenuState<'gc> {
             .custom_items
             .iter()
             .map(|item| ContextMenuItemInfo {
-                visible: item.visible,
                 enabled: item.enabled,
                 separator_before: item.separator_before,
                 caption: item.caption.to_string(),
@@ -185,7 +181,7 @@ impl<'gc> ContextMenuState<'gc> {
         let undefined = Value::Undefined.coerce_to_object(&mut activation);
 
         // TODO: remember to also change the first arg
-        // we support contextmenu on non-root-movie
+        // when we support contextmenu on non-root-movie
         let params = vec![root_clip.object(), Value::Object(item.item)];
 
         let _ = item.callback.call(
