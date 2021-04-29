@@ -472,27 +472,31 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
-                                        resource: wgpu::BindingResource::Buffer {
-                                            buffer: &tex_transforms_ubo,
-                                            offset: 0,
-                                            size: wgpu::BufferSize::new(std::mem::size_of::<
-                                                TextureTransforms,
-                                            >(
-                                            )
-                                                as u64),
-                                        },
+                                        resource: wgpu::BindingResource::Buffer(
+                                            wgpu::BufferBinding {
+                                                buffer: &tex_transforms_ubo,
+                                                offset: 0,
+                                                size: wgpu::BufferSize::new(std::mem::size_of::<
+                                                    TextureTransforms,
+                                                >(
+                                                )
+                                                    as u64),
+                                            },
+                                        ),
                                     },
                                     wgpu::BindGroupEntry {
                                         binding: 1,
-                                        resource: wgpu::BindingResource::Buffer {
-                                            buffer: &gradient_ubo,
-                                            offset: 0,
-                                            size: wgpu::BufferSize::new(std::mem::size_of::<
-                                                GradientUniforms,
-                                            >(
-                                            )
-                                                as u64),
-                                        },
+                                        resource: wgpu::BindingResource::Buffer(
+                                            wgpu::BufferBinding {
+                                                buffer: &gradient_ubo,
+                                                offset: 0,
+                                                size: wgpu::BufferSize::new(std::mem::size_of::<
+                                                    GradientUniforms,
+                                                >(
+                                                )
+                                                    as u64),
+                                            },
+                                        ),
                                     },
                                 ],
                                 label: bind_group_label.as_deref(),
@@ -543,15 +547,17 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
-                                        resource: wgpu::BindingResource::Buffer {
-                                            buffer: &tex_transforms_ubo,
-                                            offset: 0,
-                                            size: wgpu::BufferSize::new(std::mem::size_of::<
-                                                TextureTransforms,
-                                            >(
-                                            )
-                                                as u64),
-                                        },
+                                        resource: wgpu::BindingResource::Buffer(
+                                            wgpu::BufferBinding {
+                                                buffer: &tex_transforms_ubo,
+                                                offset: 0,
+                                                size: wgpu::BufferSize::new(std::mem::size_of::<
+                                                    TextureTransforms,
+                                                >(
+                                                )
+                                                    as u64),
+                                            },
+                                        ),
                                     },
                                     wgpu::BindGroupEntry {
                                         binding: 1,
@@ -646,13 +652,13 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::Buffer {
+                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
                             buffer: &self.quad_tex_transforms,
                             offset: 0,
                             size: wgpu::BufferSize::new(
                                 std::mem::size_of::<TextureTransforms>() as u64
                             ),
-                        },
+                        }),
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,

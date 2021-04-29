@@ -48,11 +48,11 @@ impl Globals {
             layout: &layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer {
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
                     buffer: &buffer,
                     offset: 0,
                     size: wgpu::BufferSize::new(std::mem::size_of::<GlobalsUniform>() as u64),
-                },
+                }),
             }],
         });
 
