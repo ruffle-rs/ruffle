@@ -671,20 +671,18 @@ export class RufflePlayer extends HTMLElement {
             // forEach needed to get loop index for callback
             menuInfo.customItems.forEach((item, index) => {
                 console.log(item);
-                if (item.separatorBefore)
-                    items.push(null);
+                if (item.separatorBefore) items.push(null);
                 items.push({
                     text: item.caption,
-                    onClick: () => this.instance?.run_context_menu_callback(index),
+                    onClick: () =>
+                        this.instance?.run_context_menu_callback(index),
                     enabled: item.enabled,
                 });
             });
             items.push(null);
             if (menuInfo.builtinItems.includes("play")) {
                 items.push({
-                    text: menuInfo.playing
-                        ? `Play (\u2611)`
-                        : `Play (\u2610)`,
+                    text: menuInfo.playing ? `Play (\u2611)` : `Play (\u2610)`,
                     onClick: () => this.instance?.toggle_play_root_movie(),
                 });
             }
@@ -750,9 +748,12 @@ export class RufflePlayer extends HTMLElement {
         // Populate context menu items.
         for (const item of this.contextMenuItems()) {
             if (item === null) {
-                if (!this.contextMenuElement.lastElementChild)
-                    continue; // don't start with separators
-                if (this.contextMenuElement.lastElementChild.classList.contains("menu_separator"))
+                if (!this.contextMenuElement.lastElementChild) continue; // don't start with separators
+                if (
+                    this.contextMenuElement.lastElementChild.classList.contains(
+                        "menu_separator"
+                    )
+                )
                     continue; // don't repeat separators
 
                 const menuSeparator = document.createElement("li");

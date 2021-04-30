@@ -1,4 +1,3 @@
-
 export interface ContextMenuInfo {
     readonly playing: boolean;
     readonly customItems: ContextMenuItemInfo[];
