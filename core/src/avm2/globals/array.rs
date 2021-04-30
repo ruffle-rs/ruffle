@@ -688,9 +688,10 @@ pub fn resolve_index<'gc>(
     let index = index.coerce_to_i32(activation)?;
 
     Ok(if index < 0 {
-        (length as isize).saturating_add(index as isize) as usize
+        let offset = index as isize;
+        length.saturating_sub((-offset) as usize)
     } else {
-        index as usize
+        (index as usize).min(length)
     })
 }
 
@@ -753,37 +754,32 @@ pub fn splice<'gc>(
                     .unwrap_or_else(|| array_length.into())
                     .coerce_to_i32(activation)?;
 
-                let mut removed_array = ArrayStorage::new(0);
-                if delete_count > 0 {
-                    let actual_end = min(array_length, actual_start + delete_count as usize);
-                    let args_slice = if args.len() > 2 {
-                        args[2..].iter().cloned()
-                    } else {
-                        [].iter().cloned()
-                    };
+                let actual_end = min(array_length, actual_start + delete_count as usize);
+                let args_slice = if args.len() > 2 {
+                    args[2..].iter().cloned()
+                } else {
+                    [].iter().cloned()
+                };
 
-                    let contents = this
-                        .as_array_storage()
-                        .map(|a| a.iter().collect::<Vec<Option<Value<'gc>>>>())
-                        .unwrap();
-                    let mut resolved = Vec::new();
+                let contents = this
+                    .as_array_storage()
+                    .map(|a| a.iter().collect::<Vec<Option<Value<'gc>>>>())
+                    .unwrap();
+                let mut resolved = Vec::new();
 
-                    for (i, v) in contents.iter().enumerate() {
-                        resolved.push(resolve_array_hole(activation, this, i, v.clone())?);
-                    }
+                for (i, v) in contents.iter().enumerate() {
+                    resolved.push(resolve_array_hole(activation, this, i, v.clone())?);
+                }
 
-                    let removed = resolved
-                        .splice(actual_start..actual_end, args_slice)
-                        .collect::<Vec<Value<'gc>>>();
-                    removed_array = ArrayStorage::from_args(&removed[..]);
+                let removed = resolved
+                    .splice(actual_start..actual_end, args_slice)
+                    .collect::<Vec<Value<'gc>>>();
+                let removed_array = ArrayStorage::from_args(&removed[..]);
 
-                    let mut resolved_array = ArrayStorage::from_args(&resolved[..]);
+                let mut resolved_array = ArrayStorage::from_args(&resolved[..]);
 
-                    if let Some(mut array) =
-                        this.as_array_storage_mut(activation.context.gc_context)
-                    {
-                        swap(&mut *array, &mut resolved_array)
-                    }
+                if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
+                    swap(&mut *array, &mut resolved_array)
                 }
 
                 return build_array(activation, removed_array);

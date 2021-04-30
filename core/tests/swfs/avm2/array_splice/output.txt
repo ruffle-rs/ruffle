@@ -74,6 +74,22 @@ test6
 //a[2] = 2
 //a[4] = 4
 //a[6] = 6
+//var e = a.splice(20, 0 "test7");
+//(contents of a)
+999
+998
+2
+997
+4
+996
+6
+995
+test7
+//(contents of e)
+//var a = new Array(8)
+//a[2] = 2
+//a[4] = 4
+//a[6] = 6
 //var f = a.splice(2);
 //(contents of a)
 999
@@ -108,9 +124,6 @@ test6
 //(contents of d)
 995
 //(contents of e)
-996
-6
-995
 //(contents of f)
 2
 997
