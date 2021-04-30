@@ -285,14 +285,14 @@ pub fn join<'gc>(
     .into())
 }
 
-fn make_index_absolute(mut index: i32, length: usize) -> usize {
+/// Handles an index parameter that may be positive (starting from beginning) or negaitve (starting from end).
+/// The returned index will be positive and clamped from [0, length].
+fn make_index_absolute(index: i32, length: usize) -> usize {
     if index < 0 {
-        index += length as i32;
-    }
-    if index < 0 {
-        0
+        let offset = index as isize;
+        length.saturating_sub((-offset) as usize)
     } else {
-        index as usize
+        (index as usize).min(length)
     }
 }
 
@@ -365,7 +365,6 @@ pub fn splice<'gc>(
     let to_add = if args.len() > 2 { &args[2..] } else { &[] };
     let offset = to_remove as i32 - to_add.len() as i32;
     let new_length = old_length + to_add.len() - to_remove;
-
     for i in start..start + to_remove {
         removed.set_array_element(
             i - start,
