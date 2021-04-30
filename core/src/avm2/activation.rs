@@ -2404,11 +2404,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_instance_of(&mut self) -> Result<FrameControl<'gc>, Error> {
         let type_object = self.context.avm2.pop().coerce_to_object(self)?;
-        let value = self.context.avm2.pop().coerce_to_object(self)?;
+        let value = self.context.avm2.pop().coerce_to_object(self).ok();
 
-        let is_instance_of = value.is_instance_of(self, type_object, false)?;
+        if let Some(value) = value {
+            let is_instance_of = value.is_instance_of(self, type_object, false)?;
 
-        self.context.avm2.push(is_instance_of);
+            self.context.avm2.push(is_instance_of);
+        } else {
+            self.context.avm2.push(false);
+        }
 
         Ok(FrameControl::Continue)
     }
