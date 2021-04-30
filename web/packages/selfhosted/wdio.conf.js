@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 let chrome_binary = undefined;
 
 if (process.platform === "win32" && process.env.CI) {

@@ -132,8 +132,7 @@ export class RufflePlayer extends HTMLElement {
     private _metadata: MovieMetadata | null;
     private _readyState: ReadyState;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private ruffleConstructor: Promise<{ new (...args: any[]): Ruffle }>;
+    private ruffleConstructor: Promise<typeof Ruffle>;
     private panicked = false;
 
     /**

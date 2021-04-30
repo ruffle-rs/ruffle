@@ -67,10 +67,7 @@ function disable() {
     }
 
     utils.storage.onChanged.addListener((changes, namespace) => {
-        if (
-            namespace === "sync" &&
-            Object.prototype.hasOwnProperty.call(changes, "ruffleEnable")
-        ) {
+        if (namespace === "sync" && "ruffleEnable" in changes) {
             if (changes.ruffleEnable.newValue) {
                 enable();
             } else {

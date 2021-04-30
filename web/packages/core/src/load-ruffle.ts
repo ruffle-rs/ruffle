@@ -1,5 +1,3 @@
-/* eslint @typescript-eslint/no-explicit-any: "off" */
-
 /**
  * Conditional ruffle loader
  */
@@ -17,7 +15,7 @@ import { setPolyfillsOnLoad } from "./js-polyfills";
  * @returns A ruffle constructor that may be used to create new Ruffle
  * instances.
  */
-async function fetchRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
+async function fetchRuffle(): Promise<typeof Ruffle> {
     // Apply some pure JavaScript polyfills to prevent conflicts with external
     // libraries, if needed.
     setPolyfillsOnLoad();
@@ -33,7 +31,7 @@ async function fetchRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
     return Ruffle;
 }
 
-let lastLoaded: Promise<{ new (...args: any[]): Ruffle }> | null = null;
+let lastLoaded: Promise<typeof Ruffle> | null = null;
 
 /**
  * Obtain an instance of `Ruffle`.
@@ -43,7 +41,7 @@ let lastLoaded: Promise<{ new (...args: any[]): Ruffle }> | null = null;
  * @returns A ruffle constructor that may be used to create new Ruffle
  * instances.
  */
-export function loadRuffle(): Promise<{ new (...args: any[]): Ruffle }> {
+export function loadRuffle(): Promise<typeof Ruffle> {
     if (lastLoaded == null) {
         lastLoaded = fetchRuffle();
     }
