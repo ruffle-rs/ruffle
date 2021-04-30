@@ -8,7 +8,8 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{Avm2Button, TDisplayObject};
+use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
 use swf::ButtonState;
 
@@ -20,6 +21,19 @@ pub fn instance_init<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
+
+        if this.as_display_object().is_none() {
+            let new_do = Avm2Button::empty_button(&mut activation.context);
+
+            new_do.post_instantiation(
+                &mut activation.context,
+                new_do.into(),
+                None,
+                Instantiator::Avm2,
+                false,
+            );
+            this.init_display_object(activation.context.gc_context, new_do.into());
+        }
     }
 
     Ok(Value::Undefined)

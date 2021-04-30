@@ -121,6 +121,18 @@ impl<'gc> Avm2Button<'gc> {
         ))
     }
 
+    pub fn empty_button(context: &mut UpdateContext<'_, 'gc, '_>) -> Self {
+        let movie = Arc::new(SwfMovie::empty(context.swf.version()));
+        let button_record = swf::Button {
+            id: 0,
+            is_track_as_menu: false,
+            records: Vec::new(),
+            actions: Vec::new(),
+        };
+
+        Self::from_swf_tag(&button_record, &movie.into(), context)
+    }
+
     pub fn set_sounds(self, gc_context: MutationContext<'gc, '_>, sounds: swf::ButtonSounds) {
         let button = self.0.write(gc_context);
         let mut static_data = button.static_data.write(gc_context);
