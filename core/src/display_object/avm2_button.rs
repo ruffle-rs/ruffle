@@ -290,12 +290,30 @@ impl<'gc> Avm2Button<'gc> {
             _ => (),
         }
 
-        if let Some(new_state_child) = child {
-            dispatch_added_event(self.into(), new_state_child, child_was_on_stage, context);
+        if let Some(child) = child {
+            child.set_parent(context.gc_context, Some(self.into()));
         }
 
         if let Some(old_state_child) = old_state_child {
-            dispatch_removed_event(old_state_child, context);
+            old_state_child.unload(context);
+            old_state_child.set_parent(context.gc_context, None);
+        }
+
+        if swf::ButtonState::from(self.0.read().state) == state {
+            if let Some(child) = child {
+                dispatch_added_event(self.into(), child, child_was_on_stage, context);
+            }
+
+            if let Some(old_state_child) = old_state_child {
+                dispatch_removed_event(old_state_child, context);
+            }
+
+            if let Some(child) = child {
+                child.frame_constructed(context);
+                child.run_frame(context);
+                child.run_frame_scripts(context);
+                child.exit_frame(context);
+            }
         }
     }
 
