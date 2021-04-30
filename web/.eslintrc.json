@@ -10,10 +10,6 @@
         "commonjs": true
     },
     "rules": {
-        "no-console": "off",
-        "no-constant-condition": ["error", { "checkLoops": false }]
-    },
-    "globals": {
-        "navigator": true
+        "no-console": "off"
     }
 }

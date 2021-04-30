@@ -1,9 +1,6 @@
-/* eslint @typescript-eslint/no-explicit-any: "off" */
-/* eslint @typescript-eslint/ban-types: "off" */
-
 declare global {
     interface Window {
-        Prototype?: any;
+        Prototype?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
     }
 }
 
@@ -15,9 +12,9 @@ declare global {
  * https://tc39.github.io/ecma262/#sec-array.prototype.reduce
  *
  */
-function polyfillArrayPrototypeReduce(): any {
+function polyfillArrayPrototypeReduce() {
     Object.defineProperty(Array.prototype, "reduce", {
-        value: function (...args: any) {
+        value(...args: unknown[]) {
             if (
                 args.length === 0 &&
                 window.Prototype &&
@@ -99,14 +96,14 @@ function tryPolyfillReflect(): void {
     }
     if (typeof Reflect.get !== "function") {
         Object.defineProperty(Reflect, "get", {
-            value: function (target: any, key: any) {
+            value<T>(target: T, key: keyof T) {
                 return target[key];
             },
         });
     }
     if (typeof Reflect.set !== "function") {
         Object.defineProperty(Reflect, "set", {
-            value: function (target: any, key: any, value: any) {
+            value<T>(target: T, key: keyof T, value: T[keyof T]) {
                 target[key] = value;
             },
         });
@@ -119,6 +116,7 @@ function tryPolyfillReflect(): void {
  * @param func The function to test.
  * @returns True if the function hasn't been overridden.
  */
+// eslint-disable-next-line @typescript-eslint/ban-types
 function isNativeFunction(func: Function): boolean {
     const val =
         typeof Function.prototype.toString === "function"

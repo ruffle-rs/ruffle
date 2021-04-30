@@ -79,16 +79,15 @@ async function queryTabStatus(
     optionsChanged();
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function objectsEqual(x: any, y: any) {
+function objectsEqual<T>(x: T, y: T) {
     for (const [key, value] of Object.entries(x)) {
-        if (y[key] !== value) {
+        if (y[key as keyof T] !== value) {
             return false;
         }
     }
 
     for (const [key, value] of Object.entries(y)) {
-        if (x[key] !== value) {
+        if (x[key as keyof T] !== value) {
             return false;
         }
     }
