@@ -124,4 +124,30 @@ undefined
 // splice.length
 undefined
 
+// splice = original.splice(1, 0, 'a')
+// original
+a
+
+// original.length
+1
+
+// splice
+
+
+// splice.length
+0
+
+// splice = original.splice(-9, 0, 'c')
+// original
+c,a,b
+
+// original.length
+3
+
+// splice
+
+
+// splice.length
+0
+
 
