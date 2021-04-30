@@ -86,6 +86,17 @@ assert_array(e);
 
 var a = test_vector();
 
+trace("//var e = a.splice(20, 0 \"test7\");");
+var e = a.splice(20, 0, "test7");
+
+trace("//(contents of a)");
+assert_array(a);
+
+trace("//(contents of e)");
+assert_array(e);
+
+var a = test_vector();
+
 trace("//var f = a.splice(2);");
 var f = a.splice(2);
 
