@@ -829,7 +829,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_call_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let method = self.context.avm1.pop();
+        let method_name = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
         let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize; // TODO(Herschel): max arg count?
         let num_args = num_args.min(self.context.avm1.stack.len());
@@ -846,28 +846,24 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let object = object_val.coerce_to_object(self);
 
-        let method_name = if method != Value::Undefined {
-            let name = method.coerce_to_string(self)?;
-            if name.is_empty() {
-                None
-            } else {
-                Some(name)
-            }
+        let method_name = if method_name == Value::Undefined {
+            "".into()
         } else {
-            None
+            method_name.coerce_to_string(self)?
         };
 
-        let result = if let Some(method_name) = method_name {
-            // Call `this[method_name]`
-            object.call_method(&method_name.as_str(), &args, self)?
-        } else {
+        let result = if method_name.is_empty() {
             // Undefined/empty method name; call `this` as a function.
             // TODO: Pass primitive value instead of boxing (#843).
             let this = Value::Undefined.coerce_to_object(self);
             object.call("[Anonymous]", self, this, None, &args)?
+        } else {
+            // Call `this[method_name]`.
+            object.call_method(&method_name.as_str(), &args, self)?
         };
 
         self.context.avm1.push(result);
+
         self.continue_if_base_clip_exists()
     }
 
