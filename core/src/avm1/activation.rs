@@ -804,7 +804,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_call_function(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let fn_name_value = self.context.avm1.pop();
         let fn_name = fn_name_value.coerce_to_string(self)?;
-        let num_args = self.context.avm1.pop().coerce_to_f64(self)? as usize; // TODO(Herschel): max arg count?
+        let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize; // TODO(Herschel): max arg count?
+        let num_args = num_args.min(self.context.avm1.stack.len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
@@ -830,7 +831,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_call_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let method = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
-        let num_args = self.context.avm1.pop().coerce_to_f64(self)? as usize; // TODO(Herschel): max arg count?
+        let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize; // TODO(Herschel): max arg count?
+        let num_args = num_args.min(self.context.avm1.stack.len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
@@ -1686,7 +1688,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_new_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let method_name = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
-        let num_args = self.context.avm1.pop().coerce_to_f64(self)? as usize;
+        let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
+        let num_args = num_args.min(self.context.avm1.stack.len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
@@ -1719,7 +1722,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_new_object(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let fn_name_val = self.context.avm1.pop();
         let fn_name = fn_name_val.coerce_to_string(self)?;
-        let num_args = self.context.avm1.pop().coerce_to_f64(self)? as usize;
+        let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
+        let num_args = num_args.min(self.context.avm1.stack.len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
