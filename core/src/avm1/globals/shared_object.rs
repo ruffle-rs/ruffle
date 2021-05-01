@@ -282,7 +282,7 @@ pub fn get_local<'gc>(
         activation.context.gc_context,
         "data",
         data,
-        Attribute::empty(),
+        Attribute::DONT_DELETE,
     );
 
     activation.context.shared_objects.insert(full_name, this);
