@@ -804,7 +804,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_call_function(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let fn_name_value = self.context.avm1.pop();
         let fn_name = fn_name_value.coerce_to_string(self)?;
-        let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize; // TODO(Herschel): max arg count?
+        let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
         let num_args = num_args.min(self.context.avm1.stack.len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
@@ -831,7 +831,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_call_method(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let method_name = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
-        let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize; // TODO(Herschel): max arg count?
+        let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
         let num_args = num_args.min(self.context.avm1.stack.len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
@@ -1471,35 +1471,45 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_init_array(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let num_elements = self.context.avm1.pop().coerce_to_f64(self)? as i64;
-        let array = ScriptObject::array(
-            self.context.gc_context,
-            Some(self.context.avm1.prototypes.array),
-        );
+        let num_elements = self.context.avm1.pop().coerce_to_f64(self)?;
+        let result = if num_elements < 0.0 || num_elements > std::i32::MAX as f64 {
+            // InitArray pops no args and pushes undefined if num_elements is out of range.
+            Value::Undefined
+        } else {
+            let array = ScriptObject::array(
+                self.context.gc_context,
+                Some(self.context.avm1.prototypes.array),
+            );
+            for i in 0..num_elements as usize {
+                array.set_array_element(i, self.context.avm1.pop(), self.context.gc_context);
+            }
+            Value::Object(array.into())
+        };
 
-        for i in 0..num_elements {
-            array.set_array_element(i as usize, self.context.avm1.pop(), self.context.gc_context);
-        }
-
-        self.context.avm1.push(Value::Object(array.into()));
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
     fn action_init_object(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let num_props = self.context.avm1.pop().coerce_to_f64(self)? as i64;
-        let object = ScriptObject::object(
-            self.context.gc_context,
-            Some(self.context.avm1.prototypes.object),
-        );
-        for _ in 0..num_props {
-            let value = self.context.avm1.pop();
-            let name_val = self.context.avm1.pop();
-            let name = name_val.coerce_to_string(self)?;
-            object.set(&name, value, self)?;
-        }
+        let num_props = self.context.avm1.pop().coerce_to_f64(self)?;
+        let result = if num_props < 0.0 || num_props > std::i32::MAX as f64 {
+            // InitArray pops no args and pushes undefined if num_props is out of range.
+            Value::Undefined
+        } else {
+            let object = ScriptObject::object(
+                self.context.gc_context,
+                Some(self.context.avm1.prototypes.object),
+            );
+            for _ in 0..num_props as usize {
+                let value = self.context.avm1.pop();
+                let name_val = self.context.avm1.pop();
+                let name = name_val.coerce_to_string(self)?;
+                object.set(&name, value, self)?;
+            }
+            Value::Object(object.into())
+        };
 
-        self.context.avm1.push(Value::Object(object.into()));
-
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
