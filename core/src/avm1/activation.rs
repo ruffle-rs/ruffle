@@ -1514,18 +1514,28 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_implements_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let constr = self.context.avm1.pop().coerce_to_object(self);
-        let count = self.context.avm1.pop().coerce_to_f64(self)? as i64; //TODO: Is this coercion actually performed by Flash?
-        let mut interfaces = vec![];
+        let constructor = self.context.avm1.pop().coerce_to_object(self);
+        let count = self.context.avm1.pop();
+        // Old Flash Players (at least FP9) used to coerce objects as well. However, this was
+        // changed at some point and instead the following is logged:
+        // "Parameters of type Object are no longer coerced into the required primitive type - number."
+        // Newer Flash Players coerce only primitives, and treat objects as 0.
+        let count = if count.is_primitive() {
+            count.coerce_to_i32(self)? as usize
+        } else {
+            avm_warn!(self, "ImplementsOp: Object not coerced into number");
+            0
+        };
+        let count = count.min(self.context.avm1.stack.len());
+        let mut interfaces = Vec::with_capacity(count);
 
-        //TODO: If one of the interfaces is not an object, do we leave the
-        //whole stack dirty, or...?
+        // TODO: If one of the interfaces is not an object, do we leave the
+        // whole stack dirty, or...?
         for _ in 0..count {
             interfaces.push(self.context.avm1.pop().coerce_to_object(self));
         }
 
-        let prototype = constr.get("prototype", self)?.coerce_to_object(self);
-
+        let prototype = constructor.get("prototype", self)?.coerce_to_object(self);
         prototype.set_interfaces(self.context.gc_context, interfaces);
 
         Ok(FrameControl::Continue)
