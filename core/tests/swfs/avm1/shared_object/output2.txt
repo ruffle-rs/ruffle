@@ -9,3 +9,6 @@ array['prop']: property
 array[-1]: elem negative one
 o.a: a
 o.b: b
+delete
+false
+saved: true

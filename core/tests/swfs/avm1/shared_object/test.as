@@ -30,6 +30,9 @@ class Test {
             
             trace("o.a: " + obj.data.o.a);
             trace("o.b: " + obj.data.o.b);
+            trace("delete");
+            trace(delete obj.data);
+            trace("saved: " + obj.data.saved);
         }
     }
 }
