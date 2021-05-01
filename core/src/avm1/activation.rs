@@ -1718,19 +1718,32 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         let object = object_val.coerce_to_object(self);
-        let constructor = object.get(&method_name.coerce_to_string(self)?, self)?;
-        if let Value::Object(constructor) = constructor {
-            //TODO: What happens if you `ActionNewMethod` without a method name?
-            let this = constructor.construct(self, &args)?;
-            self.context.avm1.push(this);
+
+        let method_name = if method_name == Value::Undefined {
+            "".into()
         } else {
-            avm_warn!(
-                self,
-                "Tried to construct with non-object constructor {:?}",
-                constructor
-            );
-            self.context.avm1.push(Value::Undefined);
-        }
+            method_name.coerce_to_string(self)?
+        };
+
+        let result = if method_name.is_empty() {
+            // Undefined/empty method name; construct `this` as a function.
+            object.construct(self, &args)?
+        } else {
+            let constructor = object.get(&method_name.as_str(), self)?;
+            if let Value::Object(constructor) = constructor {
+                // Construct `this[method_name]`.
+                constructor.construct(self, &args)?
+            } else {
+                avm_warn!(
+                    self,
+                    "Tried to construct with non-object constructor {:?}",
+                    constructor
+                );
+                Value::Undefined
+            }
+        };
+
+        self.context.avm1.push(result);
 
         self.continue_if_base_clip_exists()
     }
