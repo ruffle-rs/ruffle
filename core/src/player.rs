@@ -618,6 +618,7 @@ impl Player {
                     ContextMenuCallback::Rewind => Self::rewind_root_movie(context),
                     _ => {}
                 }
+                Self::run_actions(context);
             }
         });
     }
@@ -654,8 +655,6 @@ impl Player {
             None,
             &params,
         );
-
-        crate::player::Player::run_actions(&mut activation.context);
     }
 
     fn toggle_play_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
