@@ -4,6 +4,8 @@ use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
+use crate::context_menu::ContextMenuState;
+use crate::display_object::TDisplayObject;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
@@ -155,4 +157,94 @@ pub fn create_proto<'gc>(
     );
 
     object.into()
+}
+
+pub fn make_context_menu_state<'gc>(
+    menu: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> ContextMenuState<'gc> {
+    let is_playing_root_movie =
+        if let Some(mc) = activation.context.stage.root_clip().as_movie_clip() {
+            mc.playing()
+        } else {
+            false
+        };
+
+    let builtin_items = {
+        let is_multiframe_movie = activation.context.swf.header().num_frames > 1;
+        let mut names = if is_multiframe_movie {
+            vec![
+                "zoom",
+                "quality",
+                "play",
+                "loop",
+                "rewind",
+                "forward_back",
+                "print",
+            ]
+        } else {
+            vec!["zoom", "quality", "print"]
+        };
+        if let Some(menu) = menu {
+            if let Ok(Value::Object(builtins)) = menu.get("builtInItems", activation) {
+                names.retain(|name| {
+                    !matches!(builtins.get(name, activation), Ok(Value::Bool(false)))
+                });
+            }
+        }
+        names
+    };
+
+    let custom_items = {
+        let mut items = vec![];
+        if let Some(menu) = menu {
+            if let Ok(Value::Object(custom_items)) = menu.get("customItems", activation) {
+                for item in custom_items.array() {
+                    if let Value::Object(item) = item {
+                        let caption =
+                            if let Ok(Value::String(caption)) = item.get("caption", activation) {
+                                caption
+                            } else {
+                                continue;
+                            };
+                        let on_select = if let Ok(Value::Object(on_select)) =
+                            item.get("onSelect", activation)
+                        {
+                            on_select
+                        } else {
+                            continue;
+                        };
+                        // false if `false`, everything else is true
+                        let visible =
+                            !matches!(item.get("visible", activation), Ok(Value::Bool(false)));
+                        // true if `true`, everything else is false
+                        let enabled =
+                            matches!(item.get("enabled", activation), Ok(Value::Bool(true)));
+                        let separator_before = matches!(
+                            item.get("separatorBefore", activation),
+                            Ok(Value::Bool(true))
+                        );
+
+                        if !visible {
+                            continue;
+                        }
+
+                        items.push(ContextMenuItemState {
+                            enabled,
+                            separator_before,
+                            caption,
+                            item,
+                            callback: on_select,
+                        });
+                    }
+                }
+            }
+        }
+        items
+    };
+
+    ContextMenuState {
+        infos: vec![],
+        callbacks: vec![],
+    }
 }

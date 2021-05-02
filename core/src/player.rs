@@ -3,7 +3,7 @@ use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1, AvmString, ContextMenuState, ScriptObject, TObject, Timers, Value};
+use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
 use crate::avm2::{Avm2, Domain as Avm2Domain};
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -17,6 +17,7 @@ use crate::backend::{
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
+use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, MorphShape, MovieClip, Stage};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::external::Value as ExternalValue;
@@ -586,7 +587,10 @@ impl Player {
                 }
             };
 
-            let menu = ContextMenuState::new(menu_object, &mut activation);
+            let menu = crate::avm1::globals::context_menu::make_context_menu_state(
+                menu_object,
+                &mut activation,
+            );
             let ret = menu.get_info();
             *activation.context.current_context_menu = Some(menu);
             ret
@@ -598,14 +602,57 @@ impl Player {
             // Need this to prevent `context` double borrow.
             // Alternative would be abandon the method approach
             // and do it the same way Timers do.
-            let menu = context.current_context_menu.take();
-            if let Some(ref menu) = menu {
-                menu.run_callback(index, context);
-            }
+            //let menu = context.current_context_menu.take();
+            //if let Some(ref menu) = menu {
+            //    Self::run_context_menu_custom_callback(menu, index, context);
+            //}
             // Technically this is not needed as we don't need the context menu anymore
             // after the user clicked the option, but let's be nice I guess
-            *context.current_context_menu = menu;
+            //*context.current_context_menu = menu;
+
+            let menu = context.current_context_menu.take();
+            if let Some(ref menu) = menu {
+                Self::run_context_menu_custom_callback(menu, index, context);
+            }
         });
+    }
+
+    pub fn run_context_menu_custom_callback<'gc>(
+        menu: &ContextMenuState<'gc>,
+        index: usize,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        let version = context.swf.header().version;
+        let globals = context.avm1.global_object_cell();
+        let root_clip = context.stage.root_clip();
+
+        let mut activation = Activation::from_nothing(
+            context.reborrow(),
+            ActivationIdentifier::root("[Context Menu Callback]"),
+            version,
+            globals,
+            root_clip,
+        );
+
+        let item = &menu.custom_items[index];
+
+        // TODO: `this` is undefined, but our VM
+        // currently doesn't allow `this` to be a Value (#843).
+        let undefined = Value::Undefined.coerce_to_object(&mut activation);
+
+        // TODO: remember to also change the first arg
+        // when we support contextmenu on non-root-movie
+        let params = vec![root_clip.object(), Value::Object(item.item)];
+
+        let _ = item.callback.call(
+            "[Context Menu Callback]",
+            &mut activation,
+            undefined,
+            None,
+            &params,
+        );
+
+        crate::player::Player::run_actions(&mut activation.context);
     }
 
     pub fn clear_custom_menu_items(&mut self) {

@@ -1,7 +1,7 @@
 //! Contexts and helper types passed between functions.
 
 use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::{Avm1, ContextMenuState, Object as Avm1Object, Timers, Value as Avm1Value};
+use crate::avm1::{Avm1, Object as Avm1Object, Timers, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, Value as Avm2Value};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
@@ -13,6 +13,7 @@ use crate::backend::{
     ui::UiBackend,
     video::VideoBackend,
 };
+use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
