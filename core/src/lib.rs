@@ -27,6 +27,7 @@ mod character;
 mod collect;
 pub mod color_transform;
 pub mod context;
+pub mod context_menu;
 mod drawing;
 mod ecma_conversions;
 pub mod events;
@@ -51,6 +52,7 @@ pub mod config;
 pub mod external;
 
 pub use chrono;
+pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
 pub use indexmap;
 pub use player::Player;

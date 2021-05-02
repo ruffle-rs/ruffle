@@ -13,6 +13,7 @@ use crate::backend::{
     ui::UiBackend,
     video::VideoBackend,
 };
+use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
@@ -126,6 +127,8 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// Timed callbacks created with `setInterval`/`setTimeout`.
     pub timers: &'a mut Timers<'gc>,
+
+    pub current_context_menu: &'a mut Option<ContextMenuState<'gc>>,
 
     /// The AVM1 global state.
     pub avm1: &'a mut Avm1<'gc>,
@@ -272,6 +275,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             shared_objects: self.shared_objects,
             unbound_text_fields: self.unbound_text_fields,
             timers: self.timers,
+            current_context_menu: self.current_context_menu,
             avm1: self.avm1,
             avm2: self.avm2,
             external_interface: self.external_interface,

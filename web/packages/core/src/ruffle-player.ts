@@ -12,6 +12,7 @@ import {
     UnmuteOverlay,
 } from "./load-options";
 import { MovieMetadata } from "./movie-metadata";
+import { InternalContextMenuItem } from "./context-menu";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -67,11 +68,11 @@ interface ContextMenuItem {
     onClick: (event: MouseEvent) => void;
 
     /**
-     * Whether to add a separator right after the item
+     * Whether the item is clickable
      *
      * @default true
      */
-    separator?: boolean;
+    enabled?: boolean;
 }
 
 /**
@@ -661,8 +662,24 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    private contextMenuItems(): ContextMenuItem[] {
+    private contextMenuItems(): Array<ContextMenuItem | null> {
         const items = [];
+
+        if (this.instance) {
+            const customItems: InternalContextMenuItem[] = this.instance.prepare_context_menu();
+            customItems.forEach((item, index) => {
+                if (item.separatorBefore) items.push(null);
+                items.push({
+                    // TODO: better checkboxes
+                    text: item.caption + (item.checked ? ` (\u2611)` : ``),
+                    onClick: () =>
+                        this.instance?.run_context_menu_callback(index),
+                    enabled: item.enabled,
+                });
+            });
+        }
+        items.push(null);
+
         if (this.fullscreenEnabled) {
             if (this.isFullscreen) {
                 items.push({
@@ -676,43 +693,12 @@ export class RufflePlayer extends HTMLElement {
                 });
             }
         }
-        if (this.instance) {
-            const builtinMenuItems = this.instance.get_builtin_menu_items();
-            for (const item of builtinMenuItems) {
-                if (item == "play") {
-                    const isPlayingRootMovie = this.instance.is_playing_root_movie();
-                    items.push({
-                        text: isPlayingRootMovie
-                            ? `Play (\u2611)`
-                            : `Play (\u2610)`,
-                        onClick: () => this.instance?.toggle_play_root_movie(),
-                    });
-                } else if (item == "rewind") {
-                    items.push({
-                        text: `Rewind`,
-                        onClick: () => this.instance?.rewind_root_movie(),
-                        separator: false,
-                    });
-                } else if (item == "forward_back") {
-                    items.push({
-                        text: `Forward`,
-                        onClick: () => this.instance?.forward_root_movie(),
-                        separator: false,
-                    });
-                    items.push({
-                        text: `Back`,
-                        onClick: () => this.instance?.back_root_movie(),
-                    });
-                }
-            }
-        }
-
+        items.push(null);
         items.push({
             text: `About Ruffle (%VERSION_NAME%)`,
             onClick() {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
-            separator: false,
         });
         return items;
     }
@@ -732,19 +718,33 @@ export class RufflePlayer extends HTMLElement {
         }
 
         // Populate context menu items.
-        for (const { text, onClick, separator } of this.contextMenuItems()) {
-            const menuItem = document.createElement("li");
-            menuItem.className = "menu_item active";
-            menuItem.textContent = text;
-            menuItem.addEventListener("click", onClick);
-            this.contextMenuElement.appendChild(menuItem);
+        for (const item of this.contextMenuItems()) {
+            if (item === null) {
+                if (!this.contextMenuElement.lastElementChild) continue; // don't start with separators
+                if (
+                    this.contextMenuElement.lastElementChild.classList.contains(
+                        "menu_separator"
+                    )
+                )
+                    continue; // don't repeat separators
 
-            if (separator !== false) {
                 const menuSeparator = document.createElement("li");
                 menuSeparator.className = "menu_separator";
                 const hr = document.createElement("hr");
                 menuSeparator.appendChild(hr);
                 this.contextMenuElement.appendChild(menuSeparator);
+            } else {
+                const { text, onClick, enabled } = item;
+                const menuItem = document.createElement("li");
+                menuItem.className = "menu_item active";
+                menuItem.textContent = text;
+                this.contextMenuElement.appendChild(menuItem);
+
+                if (enabled !== false) {
+                    menuItem.addEventListener("click", onClick);
+                } else {
+                    menuItem.classList.add("disabled");
+                }
             }
         }
 
@@ -767,6 +767,7 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private hideContextMenu(): void {
+        this.instance?.clear_custom_menu_items();
         this.contextMenuElement.style.display = "none";
     }
 

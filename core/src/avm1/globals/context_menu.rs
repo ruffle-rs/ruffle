@@ -4,6 +4,8 @@ use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
+use crate::context_menu;
+use crate::display_object::TDisplayObject;
 use gc_arena::MutationContext;
 
 pub fn constructor<'gc>(
@@ -155,4 +157,132 @@ pub fn create_proto<'gc>(
     );
 
     object.into()
+}
+
+pub fn make_context_menu_state<'gc>(
+    menu: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> context_menu::ContextMenuState<'gc> {
+    let mut result = context_menu::ContextMenuState::new();
+
+    let root_mc = activation.context.stage.root_clip().as_movie_clip();
+    let builtin_items = {
+        let is_multiframe_movie = root_mc.map(|mc| mc.total_frames() > 1).unwrap_or(false);
+        let mut names = if is_multiframe_movie {
+            vec![
+                "zoom",
+                "quality",
+                "play",
+                "loop",
+                "rewind",
+                "forward_back",
+                "print",
+            ]
+        } else {
+            vec!["zoom", "quality", "print"]
+        };
+        if let Some(menu) = menu {
+            if let Ok(Value::Object(builtins)) = menu.get("builtInItems", activation) {
+                names.retain(|name| {
+                    !matches!(builtins.get(name, activation), Ok(Value::Bool(false)))
+                });
+            }
+        }
+        names
+    };
+
+    if builtin_items.contains(&"play") {
+        let is_playing_root_movie = root_mc.unwrap().playing();
+        result.push(
+            context_menu::ContextMenuItem {
+                enabled: true,
+                separator_before: true,
+                caption: "Play".to_string(),
+                checked: is_playing_root_movie,
+            },
+            context_menu::ContextMenuCallback::Play,
+        );
+    }
+    if builtin_items.contains(&"rewind") {
+        let is_first_frame = root_mc.unwrap().current_frame() <= 1;
+        result.push(
+            context_menu::ContextMenuItem {
+                enabled: !is_first_frame,
+                separator_before: true,
+                caption: "Rewind".to_string(),
+                checked: false,
+            },
+            context_menu::ContextMenuCallback::Rewind,
+        );
+    }
+    if builtin_items.contains(&"forward_back") {
+        let is_first_frame = root_mc.unwrap().current_frame() <= 1;
+        result.push(
+            context_menu::ContextMenuItem {
+                enabled: true,
+                separator_before: false,
+                caption: "Forward".to_string(),
+                checked: false,
+            },
+            context_menu::ContextMenuCallback::Forward,
+        );
+        result.push(
+            context_menu::ContextMenuItem {
+                enabled: !is_first_frame,
+                separator_before: false,
+                caption: "Back".to_string(),
+                checked: false,
+            },
+            context_menu::ContextMenuCallback::Back,
+        );
+    }
+
+    if let Some(menu) = menu {
+        if let Ok(Value::Object(custom_items)) = menu.get("customItems", activation) {
+            for (i, item) in custom_items.array().iter().enumerate() {
+                if let Value::Object(item) = item {
+                    let caption =
+                        if let Ok(Value::String(caption)) = item.get("caption", activation) {
+                            caption
+                        } else {
+                            continue;
+                        };
+                    let on_select =
+                        if let Ok(Value::Object(on_select)) = item.get("onSelect", activation) {
+                            on_select
+                        } else {
+                            continue;
+                        };
+                    // false if `false`, everything else is true
+                    let visible =
+                        !matches!(item.get("visible", activation), Ok(Value::Bool(false)));
+                    // true if `true`, everything else is false
+                    let enabled = matches!(item.get("enabled", activation), Ok(Value::Bool(true)));
+                    let separator_before = matches!(
+                        item.get("separatorBefore", activation),
+                        Ok(Value::Bool(true))
+                    );
+
+                    if !visible {
+                        continue;
+                    }
+
+                    result.push(
+                        context_menu::ContextMenuItem {
+                            enabled,
+                            separator_before: separator_before || i == 0,
+                            caption: caption.to_string(),
+                            checked: false,
+                        },
+                        context_menu::ContextMenuCallback::Avm1 {
+                            item: *item,
+                            callback: on_select,
+                        },
+                    );
+                }
+            }
+        }
+    }
+
+    result
 }

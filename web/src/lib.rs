@@ -272,38 +272,23 @@ impl Ruffle {
         })
     }
 
-    pub fn get_builtin_menu_items(&mut self) -> Vec<JsValue> {
+    // after the context menu is closed, remember to call `clear_custom_menu_items`!
+    pub fn prepare_context_menu(&mut self) -> JsValue {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
-            let builtin_menu_items = instance
+            let info = instance
                 .borrow()
                 .core
                 .lock()
                 .unwrap()
-                .get_builtin_menu_items();
-            builtin_menu_items
-                .into_iter()
-                .map(JsValue::from_str)
-                .collect()
+                .prepare_context_menu();
+
+            JsValue::from_serde(&info).unwrap()
         })
     }
 
-    pub fn is_playing_root_movie(&mut self) -> bool {
-        INSTANCES.with(|instances| {
-            let instances = instances.borrow();
-            let instance = instances.get(self.0).unwrap();
-            let is_playing_root_movie = instance
-                .borrow()
-                .core
-                .lock()
-                .unwrap()
-                .is_playing_root_movie();
-            is_playing_root_movie
-        })
-    }
-
-    pub fn toggle_play_root_movie(&mut self) {
+    pub fn run_context_menu_callback(&mut self, index: usize) {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
@@ -312,32 +297,21 @@ impl Ruffle {
                 .core
                 .lock()
                 .unwrap()
-                .toggle_play_root_movie();
-        });
+                .run_context_menu_callback(index);
+        })
     }
 
-    pub fn rewind_root_movie(&mut self) {
+    pub fn clear_custom_menu_items(&mut self) {
         INSTANCES.with(|instances| {
             let instances = instances.borrow();
             let instance = instances.get(self.0).unwrap();
-            instance.borrow().core.lock().unwrap().rewind_root_movie();
-        });
-    }
-
-    pub fn forward_root_movie(&mut self) {
-        INSTANCES.with(|instances| {
-            let instances = instances.borrow();
-            let instance = instances.get(self.0).unwrap();
-            instance.borrow().core.lock().unwrap().forward_root_movie();
-        });
-    }
-
-    pub fn back_root_movie(&mut self) {
-        INSTANCES.with(|instances| {
-            let instances = instances.borrow();
-            let instance = instances.get(self.0).unwrap();
-            instance.borrow().core.lock().unwrap().back_root_movie();
-        });
+            instance
+                .borrow()
+                .core
+                .lock()
+                .unwrap()
+                .clear_custom_menu_items();
+        })
     }
 
     pub fn destroy(&mut self) {
