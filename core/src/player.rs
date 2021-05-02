@@ -17,7 +17,7 @@ use crate::backend::{
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
-use crate::context_menu::ContextMenuState;
+use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
 use crate::display_object::{EditText, MorphShape, MovieClip, Stage};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::external::Value as ExternalValue;
@@ -562,10 +562,10 @@ impl Player {
         self.is_playing
     }
 
-    pub fn init_custom_menu_info(&mut self) -> crate::ContextMenuInfo {
+    pub fn prepare_context_menu(&mut self) -> Vec<ContextMenuItem> {
         self.mutate_with_update_context(|context| {
             if !context.stage.show_menu() {
-                return crate::ContextMenuInfo::empty();
+                return vec![];
             }
 
             let mut activation = Activation::from_stub(
@@ -591,35 +591,40 @@ impl Player {
                 menu_object,
                 &mut activation,
             );
-            let ret = menu.get_info();
+            let ret = menu.info().clone();
             *activation.context.current_context_menu = Some(menu);
             ret
         })
     }
 
+    pub fn clear_custom_menu_items(&mut self) {
+        self.gc_arena.mutate(|gc_context, gc_root| {
+            let mut root_data = gc_root.0.write(gc_context);
+            root_data.current_context_menu = None;
+        });
+    }
+
     pub fn run_context_menu_callback(&mut self, index: usize) {
         self.mutate_with_update_context(|context| {
-            // Need this to prevent `context` double borrow.
-            // Alternative would be abandon the method approach
-            // and do it the same way Timers do.
-            //let menu = context.current_context_menu.take();
-            //if let Some(ref menu) = menu {
-            //    Self::run_context_menu_custom_callback(menu, index, context);
-            //}
-            // Technically this is not needed as we don't need the context menu anymore
-            // after the user clicked the option, but let's be nice I guess
-            //*context.current_context_menu = menu;
-
-            let menu = context.current_context_menu.take();
+            let menu = &context.current_context_menu;
             if let Some(ref menu) = menu {
-                Self::run_context_menu_custom_callback(menu, index, context);
+                match menu.callback(index) {
+                    ContextMenuCallback::Avm1 { item, callback } => {
+                        Self::run_context_menu_custom_callback(*item, *callback, context)
+                    }
+                    ContextMenuCallback::Play => Self::toggle_play_root_movie(context),
+                    ContextMenuCallback::Forward => Self::forward_root_movie(context),
+                    ContextMenuCallback::Back => Self::back_root_movie(context),
+                    ContextMenuCallback::Rewind => Self::rewind_root_movie(context),
+                    _ => {}
+                }
             }
         });
     }
 
-    pub fn run_context_menu_custom_callback<'gc>(
-        menu: &ContextMenuState<'gc>,
-        index: usize,
+    fn run_context_menu_custom_callback<'gc>(
+        item: Object<'gc>,
+        callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         let version = context.swf.header().version;
@@ -634,17 +639,15 @@ impl Player {
             root_clip,
         );
 
-        let item = &menu.custom_items[index];
-
         // TODO: `this` is undefined, but our VM
         // currently doesn't allow `this` to be a Value (#843).
         let undefined = Value::Undefined.coerce_to_object(&mut activation);
 
         // TODO: remember to also change the first arg
         // when we support contextmenu on non-root-movie
-        let params = vec![root_clip.object(), Value::Object(item.item)];
+        let params = vec![root_clip.object(), Value::Object(item)];
 
-        let _ = item.callback.call(
+        let _ = callback.call(
             "[Context Menu Callback]",
             &mut activation,
             undefined,
@@ -655,45 +658,29 @@ impl Player {
         crate::player::Player::run_actions(&mut activation.context);
     }
 
-    pub fn clear_custom_menu_items(&mut self) {
-        self.gc_arena.mutate(|gc_context, gc_root| {
-            let mut root_data = gc_root.0.write(gc_context);
-            root_data.current_context_menu = None;
-        });
-    }
-
-    pub fn toggle_play_root_movie(&mut self) {
-        self.mutate_with_update_context(|context| {
-            if let Some(mc) = context.stage.root_clip().as_movie_clip() {
-                // TODO: no clue if we handle audio properly here?
-                if mc.playing() {
-                    mc.stop(context);
-                } else {
-                    mc.play(context);
-                }
+    fn toggle_play_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+            if mc.playing() {
+                mc.stop(context);
+            } else {
+                mc.play(context);
             }
-        });
+        }
     }
-    pub fn rewind_root_movie(&mut self) {
-        self.mutate_with_update_context(|context| {
-            if let Some(mc) = context.stage.root_clip().as_movie_clip() {
-                mc.goto_frame(context, 1, true)
-            }
-        });
+    fn rewind_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+            mc.goto_frame(context, 1, true)
+        }
     }
-    pub fn forward_root_movie(&mut self) {
-        self.mutate_with_update_context(|context| {
-            if let Some(mc) = context.stage.root_clip().as_movie_clip() {
-                mc.next_frame(context);
-            }
-        });
+    fn forward_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+            mc.next_frame(context);
+        }
     }
-    pub fn back_root_movie(&mut self) {
-        self.mutate_with_update_context(|context| {
-            if let Some(mc) = context.stage.root_clip().as_movie_clip() {
-                mc.prev_frame(context);
-            }
-        });
+    fn back_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+            mc.prev_frame(context);
+        }
     }
 
     pub fn set_is_playing(&mut self, v: bool) {

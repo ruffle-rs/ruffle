@@ -12,7 +12,7 @@ import {
     UnmuteOverlay,
 } from "./load-options";
 import { MovieMetadata } from "./movie-metadata";
-import { ContextMenuInfo } from "./context-menu";
+import { InternalContextMenuItem } from "./context-menu";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -667,44 +667,17 @@ export class RufflePlayer extends HTMLElement {
         const items = [];
 
         if (this.instance) {
-            const menuInfo: ContextMenuInfo = this.instance.init_custom_menu_info();
-            // forEach needed to get loop index for callback
-            menuInfo.customItems.forEach((item, index) => {
-                console.log(item);
+            const customItems: InternalContextMenuItem[] = this.instance.prepare_context_menu();
+            customItems.forEach((item, index) => {
                 if (item.separatorBefore) items.push(null);
                 items.push({
-                    text: item.caption,
+                    // TODO: better checkboxes
+                    text: item.caption + (item.checked ? ` (\u2611)` : ``),
                     onClick: () =>
                         this.instance?.run_context_menu_callback(index),
                     enabled: item.enabled,
                 });
             });
-            items.push(null);
-            if (menuInfo.builtinItems.includes("play")) {
-                items.push({
-                    text: menuInfo.playing ? `Play (\u2611)` : `Play (\u2610)`,
-                    onClick: () => this.instance?.toggle_play_root_movie(),
-                });
-            }
-            items.push(null);
-            if (menuInfo.builtinItems.includes("rewind")) {
-                items.push({
-                    text: `Rewind`,
-                    onClick: () => this.instance?.rewind_root_movie(),
-                    separator: false,
-                });
-            }
-            if (menuInfo.builtinItems.includes("forward_back")) {
-                items.push({
-                    text: `Forward`,
-                    onClick: () => this.instance?.forward_root_movie(),
-                    separator: false,
-                });
-                items.push({
-                    text: `Back`,
-                    onClick: () => this.instance?.back_root_movie(),
-                });
-            }
         }
         items.push(null);
 

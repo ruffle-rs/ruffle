@@ -52,8 +52,7 @@ pub mod config;
 pub mod external;
 
 pub use chrono;
-pub use context_menu::ContextMenuInfo;
-pub use context_menu::ContextMenuItemInfo;
+pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
 pub use indexmap;
 pub use player::Player;

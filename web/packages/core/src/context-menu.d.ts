@@ -1,11 +1,6 @@
-export interface ContextMenuInfo {
-    readonly playing: boolean;
-    readonly customItems: ContextMenuItemInfo[];
-    readonly builtinItems: string[];
-}
-
-export interface ContextMenuItemInfo {
+export interface InternalContextMenuItem {
     readonly caption: string;
+    readonly checked: boolean;
     readonly enabled: boolean;
     readonly separatorBefore: boolean;
 }
