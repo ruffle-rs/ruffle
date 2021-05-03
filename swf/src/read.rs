@@ -166,6 +166,8 @@ fn make_lzma_reader<'a, R: Read + 'a>(
         &mut output,
         &Options {
             unpacked_size: UnpackedSize::UseProvided(Some(uncompressed_length.into())),
+            allow_incomplete: true,
+            memlimit: None,
         },
     )
     .map_err(|_| Error::invalid_data("Unable to decompress LZMA SWF."))?;
