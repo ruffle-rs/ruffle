@@ -605,6 +605,10 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             .unwrap_or(Avm2Value::Undefined)
     }
 
+    fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
+        self.0.write(mc).object = Some(to);
+    }
+
     fn as_avm2_button(&self) -> Option<Self> {
         Some(*self)
     }
