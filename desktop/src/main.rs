@@ -158,16 +158,15 @@ fn load_movie_from_path(
 }
 
 fn set_movie_parameters(movie: &mut SwfMovie, parameters: &[String]) {
-    for parameter in parameters {
+    let parameters = parameters.iter().map(|parameter| {
         let mut split = parameter.splitn(2, '=');
         if let (Some(key), Some(value)) = (split.next(), split.next()) {
-            movie.parameters_mut().insert(key, value.to_string(), true);
+            (key.to_owned(), value.to_owned())
         } else {
-            movie
-                .parameters_mut()
-                .insert(&parameter, "".to_string(), true);
+            (parameter.clone(), "".to_string())
         }
-    }
+    });
+    movie.append_parameters(parameters)
 }
 
 fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {

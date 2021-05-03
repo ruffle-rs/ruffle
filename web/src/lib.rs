@@ -27,7 +27,6 @@ use ruffle_core::events::{KeyCode, MouseWheelDelta};
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
-use ruffle_core::property_map::PropertyMap;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Color, Player, PlayerEvent};
 use ruffle_web_common::JsResult;
@@ -205,8 +204,7 @@ impl Ruffle {
     /// This method should only be called once per player.
     pub fn stream_from(&mut self, movie_url: &str, parameters: &JsValue) -> Result<(), JsValue> {
         let _ = self.with_core_mut(|core| {
-            let mut parameters_to_load = PropertyMap::new();
-            populate_movie_parameters(&parameters, &mut parameters_to_load);
+            let parameters_to_load = parse_movie_parameters(&parameters);
 
             let ruffle = *self;
             let on_metadata = move |swf_header: &ruffle_core::swf::Header| {
@@ -227,7 +225,7 @@ impl Ruffle {
             swf_data.copy_to(&mut data[..]);
             let mut movie = SwfMovie::from_data(&data, None, None)
                 .map_err(|e| format!("Error loading movie: {}", e))?;
-            populate_movie_parameters(&parameters, movie.parameters_mut());
+            movie.append_parameters(parse_movie_parameters(&parameters));
             movie
         });
 
@@ -1260,16 +1258,18 @@ pub fn set_panic_handler() {
     });
 }
 
-fn populate_movie_parameters(input: &JsValue, output: &mut PropertyMap<String>) {
+fn parse_movie_parameters(input: &JsValue) -> Vec<(String, String)> {
+    let mut params = Vec::new();
     if let Ok(keys) = js_sys::Reflect::own_keys(input) {
         for key in keys.values().into_iter().flatten() {
             if let Ok(value) = js_sys::Reflect::get(input, &key) {
                 if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
-                    output.insert(&key, value, false);
+                    params.push((key, value))
                 }
             }
         }
     }
+    params
 }
 
 fn parse_html_color(color: impl AsRef<str>) -> Option<Color> {

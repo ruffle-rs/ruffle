@@ -1,5 +1,4 @@
 use crate::backend::navigator::url_from_relative_path;
-use crate::property_map::PropertyMap;
 use gc_arena::Collect;
 use std::path::Path;
 use std::sync::Arc;
@@ -26,8 +25,9 @@ pub struct SwfMovie {
     /// The URL that triggered the SWF load.
     loader_url: Option<String>,
 
-    /// Any parameters provided when loading this movie (also known as 'flashvars')
-    parameters: PropertyMap<String>,
+    /// Any parameters provided when loading this movie (also known as 'flashvars'),
+    /// as a list of key-value pairs.
+    parameters: Vec<(String, String)>,
 
     /// The suggest encoding for this SWF.
     encoding: &'static swf::Encoding,
@@ -51,7 +51,7 @@ impl SwfMovie {
             data: vec![],
             url: None,
             loader_url: None,
-            parameters: PropertyMap::new(),
+            parameters: Vec::new(),
             encoding: swf::UTF_8,
             compressed_length: 0,
         }
@@ -100,7 +100,7 @@ impl SwfMovie {
             data: swf_buf.data,
             url,
             loader_url,
-            parameters: PropertyMap::new(),
+            parameters: Vec::new(),
             encoding,
             compressed_length,
         })
@@ -145,12 +145,12 @@ impl SwfMovie {
         self.loader_url.as_deref()
     }
 
-    pub fn parameters(&self) -> &PropertyMap<String> {
+    pub fn parameters(&self) -> &[(String, String)] {
         &self.parameters
     }
 
-    pub fn parameters_mut(&mut self) -> &mut PropertyMap<String> {
-        &mut self.parameters
+    pub fn append_parameters(&mut self, params: impl IntoIterator<Item = (String, String)>) {
+        self.parameters.extend(params);
     }
 
     pub fn compressed_length(&self) -> usize {

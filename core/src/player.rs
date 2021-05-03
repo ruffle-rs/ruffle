@@ -26,7 +26,6 @@ use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
-use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
 use crate::vminterface::{AvmType, Instantiator};
@@ -346,7 +345,7 @@ impl Player {
     pub fn fetch_root_movie(
         &mut self,
         movie_url: &str,
-        parameters: PropertyMap<String>,
+        parameters: Vec<(String, String)>,
         on_metadata: Box<dyn FnOnce(&swf::Header)>,
     ) {
         self.mutate_with_update_context(|context| {
