@@ -310,7 +310,15 @@ impl<'gc> Avm2Button<'gc> {
 
             if let Some(child) = child {
                 child.frame_constructed(context);
-                child.run_frame(context);
+            }
+        }
+
+        if let Some(child) = child {
+            child.run_frame(context);
+        }
+
+        if swf::ButtonState::from(self.0.read().state) == state {
+            if let Some(child) = child {
                 child.run_frame_scripts(context);
                 child.exit_frame(context);
             }
