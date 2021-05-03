@@ -7,7 +7,6 @@ use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
-use crate::property_map::PropertyMap;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use crate::xml::XmlNode;
@@ -127,7 +126,7 @@ impl<'gc> LoadManager<'gc> {
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
         url: String,
-        parameters: PropertyMap<String>,
+        parameters: Vec<(String, String)>,
         on_metadata: Box<dyn FnOnce(&swf::Header)>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::RootMovie { self_handle: None };
@@ -366,7 +365,7 @@ impl<'gc> Loader<'gc> {
         player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
         mut url: String,
-        parameters: PropertyMap<String>,
+        parameters: Vec<(String, String)>,
         on_metadata: Box<dyn FnOnce(&swf::Header)>,
     ) -> OwnedFuture<(), Error> {
         let _handle = match self {
@@ -399,12 +398,8 @@ impl<'gc> Loader<'gc> {
 
             if let Ok((_length, mut movie)) = data {
                 on_metadata(movie.header());
-
-                for (key, value) in parameters.iter() {
-                    movie.parameters_mut().insert(key, value.to_owned(), false);
-                }
+                movie.append_parameters(parameters);
                 player.lock().unwrap().set_root_movie(Arc::new(movie));
-
                 Ok(())
             } else {
                 Err(Error::FetchError(url))
