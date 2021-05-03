@@ -191,12 +191,6 @@ checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
 name = "bitstream-io"
-version = "0.8.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "614aa3f2bac03707e62a84d18a48dd3d9ea6171313fd5e6a53b5054d8ae74601"
-
-[[package]]
-name = "bitstream-io"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03539c739e37dab2c322ce07b1990089ca1fc7ad14b813e1538bf11bef98fe06"
@@ -2192,7 +2186,7 @@ name = "nellymoser-rs"
 version = "0.1.0"
 source = "git+https://github.com/ruffle-rs/nellymoser?branch=main#77000f763b58021295429ca5740e3dc3b5228cbd"
 dependencies = [
- "bitstream-io 1.0.0",
+ "bitstream-io",
  "rustdct",
 ]
 
@@ -2693,16 +2687,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3a66d5e88679f2720126c11ee29da07a08f094eac52306b066edd7d393752d6"
 
 [[package]]
-name = "puremp3"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2b7efbb39e373af70c139e0611375fa6cad751fb93d528a610b55302710d883"
-dependencies = [
- "bitstream-io 0.8.5",
- "byteorder",
-]
-
-[[package]]
 name = "quick-xml"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2875,7 +2859,7 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "bitflags",
- "bitstream-io 1.0.0",
+ "bitstream-io",
  "chrono",
  "downcast-rs",
  "encoding_rs",
@@ -2898,7 +2882,6 @@ dependencies = [
  "percent-encoding",
  "png",
  "pretty_assertions",
- "puremp3",
  "quick-xml",
  "rand",
  "regress",
@@ -3349,7 +3332,7 @@ version = "0.1.2"
 dependencies = [
  "approx",
  "bitflags",
- "bitstream-io 1.0.0",
+ "bitstream-io",
  "byteorder",
  "encoding_rs",
  "flate2",
