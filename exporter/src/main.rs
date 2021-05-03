@@ -125,7 +125,7 @@ fn take_screenshot(
 
     for i in 0..totalframes {
         if let Some(progress) = &progress {
-            progress.set_message(&format!(
+            progress.set_message(format!(
                 "{} frame {}",
                 swf_path.file_stem().unwrap().to_string_lossy(),
                 i
@@ -182,13 +182,13 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
         if f_name.ends_with(".swf") {
             results.push(entry);
             if let Some(progress) = &progress {
-                progress.set_message(&format!("Searching for swf files... {}", results.len()));
+                progress.set_message(format!("Searching for swf files... {}", results.len()));
             }
         }
     }
 
     if let Some(progress) = &progress {
-        progress.finish_with_message(&format!("Found {} swf files to export", results.len()));
+        progress.finish_with_message(format!("Found {} swf files to export", results.len()));
     }
 
     results
@@ -232,7 +232,7 @@ fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn
     )?;
 
     if let Some(progress) = &progress {
-        progress.set_message(&opt.swf.file_stem().unwrap().to_string_lossy());
+        progress.set_message(opt.swf.file_stem().unwrap().to_string_lossy().into_owned());
     }
 
     if frames.len() == 1 {
@@ -261,7 +261,7 @@ fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn
     };
 
     if let Some(progress) = progress {
-        progress.finish_with_message(&message);
+        progress.finish_with_message(message);
     } else {
         println!("{}", message);
     }
@@ -300,7 +300,13 @@ fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), 
         descriptors = new_descriptors;
 
         if let Some(progress) = &progress {
-            progress.set_message(&file.path().file_stem().unwrap().to_string_lossy());
+            progress.set_message(
+                file.path()
+                    .file_stem()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+            );
         }
 
         let mut relative_path = file
@@ -346,7 +352,7 @@ fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), 
     };
 
     if let Some(progress) = progress {
-        progress.finish_with_message(&message);
+        progress.finish_with_message(message);
     } else {
         println!("{}", message);
     }

@@ -15,7 +15,7 @@ log = "0.4"
 futures = "0.3.14"
 path-slash = "0.1.4"
 walkdir = "2.3.2"
-indicatif = "0.15"
+indicatif = "0.16"
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]
