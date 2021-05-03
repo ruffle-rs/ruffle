@@ -12,6 +12,8 @@ members = [
     "render/wgpu",
     "render/common_tess",
     "render/webgl",
+
+    "tests",
 ]
 resolver = "2"
 
