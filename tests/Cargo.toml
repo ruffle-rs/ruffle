@@ -1,0 +1,15 @@
+[package]
+name = "tests"
+version = "0.1.0"
+authors = ["Aaron Hill <aa1ronham@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ruffle_core = { path = "../core" }
+
+[dev-dependencies]
+approx = "0.4.0"
+pretty_assertions = "0.6.1"
+env_logger = "0.8.3"
