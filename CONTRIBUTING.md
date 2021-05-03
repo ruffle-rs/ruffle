@@ -139,8 +139,11 @@ Most tests are swf-based, with the swfs stored in `core/tests/swfs`. They are co
 
 To add a test here, create a .swf file that runs `trace()` statements. You can do this by:
 * creating a .fla file in a Flash authoring tool
-* creating a .as file in a text editor, and compiling it using [`mtasc`](http://web.archive.org/web/20210324063628/http://tech.motion-twin.com/mtasc.html) (ActionScript 2 only)
-    * if you create a file `test.as` with a `class Test` with a `static function main` with the code you want to run, you can compile it using `mtasc -main -header 200:150:30 test.as -swf test.swf`
+* creating a .as file in a text editor, and compiling it using a commandline compilation tool:
+    * [`mtasc`](http://web.archive.org/web/20210324063628/http://tech.motion-twin.com/mtasc.html) (ActionScript 2 only)
+        * if you create a file `test.as` with a `class Test` with a `static function main` with the code you want to run, you can compile it using `mtasc -main -header 200:150:30 test.as -swf test.swf`
+    * [`mxmlc`](https://helpx.adobe.com/air/kb/archived-air-sdk-version.html) (ActionScript 3 only)
+        * if you create a file `test.as`, you can compile it using `mxmlc test.as`. `mxmlc` is located in the `bin` folder of the downloadable AIR SDK.
 
 Run the .swf in Flash Player and create a file `output.txt` with the contents of the trace statements. Add the `output.txt`, `test.swf` and either the `test.as` or `test.fla` file to a directory under `core/tests/swfs/avm1` (or `avm2`) named after what your test tests, and add a line in `regression_tests.rs` to have Ruffle run it.
 
