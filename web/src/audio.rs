@@ -1,7 +1,7 @@
 use fnv::FnvHashMap;
 use generational_arena::Arena;
 use ruffle_core::backend::audio::{
-    decoders::{AdpcmDecoder, Mp3Decoder, NellymoserDecoder},
+    decoders::{AdpcmDecoder, NellymoserDecoder},
     swf::{self, AudioCompression},
     AudioBackend, PreloadStreamHandle, SoundHandle, SoundInstanceHandle, SoundTransform,
 };
@@ -446,11 +446,6 @@ impl WebAudioBackend {
                         std::io::Cursor::new(audio_data.to_vec()),
                         sound.format.is_stereo,
                         sound.format.sample_rate,
-                    )),
-                    AudioCompression::Mp3 => Box::new(Mp3Decoder::new(
-                        if sound.format.is_stereo { 2 } else { 1 },
-                        sound.format.sample_rate.into(),
-                        std::io::Cursor::new(audio_data.to_vec()), //&sound.data[..]
                     )),
                     AudioCompression::Nellymoser => Box::new(NellymoserDecoder::new(
                         std::io::Cursor::new(audio_data.to_vec()),

@@ -1,13 +1,13 @@
 //! Audio decoders.
 
 mod adpcm;
-#[cfg(any(feature = "puremp3", feature = "minimp3"))]
+#[cfg(feature = "minimp3")]
 mod mp3;
 mod nellymoser;
 mod pcm;
 
 pub use adpcm::AdpcmDecoder;
-#[cfg(any(feature = "puremp3", feature = "minimp3"))]
+#[cfg(feature = "minimp3")]
 pub use mp3::Mp3Decoder;
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
@@ -55,7 +55,7 @@ pub fn make_decoder<'a, R: 'a + Send + Read>(
             format.is_stereo,
             format.sample_rate,
         )),
-        #[cfg(any(feature = "puremp3", feature = "minimp3"))]
+        #[cfg(feature = "minimp3")]
         AudioCompression::Mp3 => Box::new(Mp3Decoder::new(
             if format.is_stereo { 2 } else { 1 },
             format.sample_rate.into(),
