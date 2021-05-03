@@ -44,11 +44,11 @@ fn find_files(root: &Path, ignore: &[String]) -> Vec<DirEntry> {
 
         if f_name.ends_with(".swf") && !ignore.iter().any(|x| x == &f_name) {
             results.push(entry);
-            progress.set_message(&format!("Searching for swf files... {}", results.len()));
+            progress.set_message(format!("Searching for swf files... {}", results.len()));
         }
     }
 
-    progress.finish_with_message(&format!("Found {} swf files to scan", results.len()));
+    progress.finish_with_message(format!("Found {} swf files to scan", results.len()));
     results
 }
 
@@ -115,7 +115,7 @@ fn main() -> Result<(), std::io::Error> {
             .unwrap_or_else(|_| file.path())
             .to_slash_lossy();
         progress.inc(1);
-        progress.set_message(&name);
+        progress.set_message(name.clone());
         let result = scan_file(file, name);
 
         if result.error.is_none() {
@@ -127,7 +127,7 @@ fn main() -> Result<(), std::io::Error> {
         writer.serialize(result)?;
     }
 
-    progress.finish_with_message(&format!(
+    progress.finish_with_message(format!(
         "Scanned {} swf files. {} successfully parsed, {} encountered errors",
         total, good, bad
     ));
