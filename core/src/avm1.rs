@@ -23,6 +23,7 @@ pub mod function;
 pub mod globals;
 pub mod object;
 pub mod property;
+pub mod property_map;
 mod scope;
 mod string;
 mod timer;
