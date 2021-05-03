@@ -256,7 +256,7 @@ impl<'gc> XmlNode<'gc> {
                 Event::End(_) => {
                     open_tags.pop();
                 }
-                Event::Text(bt) => {
+                Event::Text(bt) | Event::CData(bt) => {
                     let child = XmlNode::text_from_text_event(mc, bt, document, process_entity)?;
                     if child.node_value().as_deref() != Some("")
                         && (!ignore_white || !child.is_whitespace_text())

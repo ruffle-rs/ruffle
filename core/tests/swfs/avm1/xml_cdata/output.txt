@@ -1,0 +1,11 @@
+<test>text inside cdatanormal text</test>!
+// childNodes.length
+2
+// childNodes[0]
+text inside cdata
+// childNodes[0].nodeType
+3
+// childNodes[1]
+normal text
+// childNodes[1].nodeType
+3
