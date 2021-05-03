@@ -1929,9 +1929,9 @@ dependencies = [
 
 [[package]]
 name = "lzma-rs"
-version = "0.1.3"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adc181f57e3b64bb860c476fe5751eb6f60e9fcf588b1447e24c0757c1c3101f"
+checksum = "aba8ecb0450dfabce4ad72085eed0a75dffe8f21f7ada05638564ea9db2d7fb1"
 dependencies = [
  "byteorder",
  "crc",
