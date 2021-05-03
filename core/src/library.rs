@@ -1,14 +1,13 @@
+use crate::avm1::function::FunctionObject;
+use crate::avm1::property_map::PropertyMap as Avm1PropertyMap;
+use crate::avm2::{Domain as Avm2Domain, Object as Avm2Object};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
-use crate::property_map::PropertyMap;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::AvmType;
-use crate::{
-    avm1::function::FunctionObject, avm2::Domain as Avm2Domain, avm2::Object as Avm2Object,
-};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
@@ -23,14 +22,14 @@ type Error = Box<dyn std::error::Error>;
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct Avm1ConstructorRegistry<'gc> {
-    symbol_map: GcCell<'gc, PropertyMap<FunctionObject<'gc>>>,
+    symbol_map: GcCell<'gc, Avm1PropertyMap<FunctionObject<'gc>>>,
     is_case_sensitive: bool,
 }
 
 impl<'gc> Avm1ConstructorRegistry<'gc> {
     pub fn new(is_case_sensitive: bool, gc_context: MutationContext<'gc, '_>) -> Self {
         Self {
-            symbol_map: GcCell::allocate(gc_context, PropertyMap::new()),
+            symbol_map: GcCell::allocate(gc_context, Avm1PropertyMap::new()),
             is_case_sensitive,
         }
     }
@@ -135,7 +134,7 @@ impl<'gc> Avm2ConstructorRegistry<'gc> {
 #[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
-    export_characters: PropertyMap<Character<'gc>>,
+    export_characters: Avm1PropertyMap<Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm_type: AvmType,
@@ -150,7 +149,7 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn new(avm_type: AvmType) -> Self {
         MovieLibrary {
             characters: HashMap::new(),
-            export_characters: PropertyMap::new(),
+            export_characters: Avm1PropertyMap::new(),
             jpeg_tables: None,
             fonts: HashMap::new(),
             avm_type,

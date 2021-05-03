@@ -107,10 +107,6 @@ impl<V> PropertyMap<V> {
             self.0.shift_remove(&CaseInsensitiveStr(key))
         }
     }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
 }
 
 unsafe impl<V: Collect> Collect for PropertyMap<V> {
