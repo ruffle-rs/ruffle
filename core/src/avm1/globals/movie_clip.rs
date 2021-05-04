@@ -824,10 +824,15 @@ fn get_bytes_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(movie_clip
-        .movie()
-        .map(|mv| (mv.header().uncompressed_length).into())
-        .unwrap_or(Value::Undefined))
+    let bytes_loaded = if movie_clip.is_swf() {
+        movie_clip
+            .movie()
+            .map(|mv| mv.header().uncompressed_length)
+            .unwrap_or_default()
+    } else {
+        movie_clip.tag_stream_len() as u32
+    };
+    Ok(bytes_loaded.into())
 }
 
 fn get_bytes_total<'gc>(
@@ -835,10 +840,17 @@ fn get_bytes_total<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(movie_clip
-        .movie()
-        .map(|mv| (mv.header().uncompressed_length).into())
-        .unwrap_or(Value::Undefined))
+    // For a loaded SWF, returns the uncompressed size of the SWF.
+    // Otherwise, returns the size of the tag list in the clip's DefineSprite tag.
+    let bytes_total = if movie_clip.is_swf() {
+        movie_clip
+            .movie()
+            .map(|mv| mv.header().uncompressed_length)
+            .unwrap_or_default()
+    } else {
+        movie_clip.tag_stream_len() as u32
+    };
+    Ok(bytes_total.into())
 }
 
 fn get_instance_at_depth<'gc>(
