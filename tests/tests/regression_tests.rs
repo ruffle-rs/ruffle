@@ -678,6 +678,15 @@ fn shared_object_avm1() -> Result<(), Error> {
         },
     )?;
 
+    // Verify that the flash cookie matches the expected one
+    let expected = std::fs::read("tests/swfs/avm1/shared_object/RuffleTest.sol")?;
+    assert_eq!(
+        expected,
+        memory_storage_backend
+            .get("localhost//RuffleTest")
+            .unwrap_or_default()
+    );
+
     // Re-run the SWF, verifying that the shared object persists.
     test_swf_with_hooks(
         "tests/swfs/avm1/shared_object/test.swf",
