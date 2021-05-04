@@ -2,11 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
@@ -866,155 +865,52 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "autoSize"),
-        Method::from_builtin(autosize),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "autoSize"),
-        Method::from_builtin(set_autosize),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "backgroundColor"),
-        Method::from_builtin(background_color),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "backgroundColor"),
-        Method::from_builtin(set_background_color),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "border"),
-        Method::from_builtin(border),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "border"),
-        Method::from_builtin(set_border),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "borderColor"),
-        Method::from_builtin(border_color),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "borderColor"),
-        Method::from_builtin(set_border_color),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "defaultTextFormat"),
-        Method::from_builtin(default_text_format),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "defaultTextFormat"),
-        Method::from_builtin(set_default_text_format),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "displayAsPassword"),
-        Method::from_builtin(display_as_password),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "displayAsPassword"),
-        Method::from_builtin(set_display_as_password),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "embedFonts"),
-        Method::from_builtin(embed_fonts),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "embedFonts"),
-        Method::from_builtin(set_embed_fonts),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "htmlText"),
-        Method::from_builtin(html_text),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "htmlText"),
-        Method::from_builtin(set_html_text),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "length"),
-        Method::from_builtin(length),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "multiline"),
-        Method::from_builtin(multiline),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "multiline"),
-        Method::from_builtin(set_multiline),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "selectable"),
-        Method::from_builtin(selectable),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "selectable"),
-        Method::from_builtin(set_selectable),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "text"),
-        Method::from_builtin(text),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "text"),
-        Method::from_builtin(set_text),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "textColor"),
-        Method::from_builtin(text_color),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "textColor"),
-        Method::from_builtin(set_text_color),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "textHeight"),
-        Method::from_builtin(text_height),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "textWidth"),
-        Method::from_builtin(text_width),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "type"),
-        Method::from_builtin(get_type),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "type"),
-        Method::from_builtin(set_type),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "wordWrap"),
-        Method::from_builtin(word_wrap),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "wordWrap"),
-        Method::from_builtin(set_word_wrap),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[
+        ("autoSize", Some(autosize), Some(set_autosize)),
+        (
+            "backgroundColor",
+            Some(background_color),
+            Some(set_background_color),
+        ),
+        ("border", Some(border), Some(set_border)),
+        ("borderColor", Some(border_color), Some(set_border_color)),
+        (
+            "defaultTextFormat",
+            Some(default_text_format),
+            Some(set_default_text_format),
+        ),
+        (
+            "displayAsPassword",
+            Some(display_as_password),
+            Some(set_display_as_password),
+        ),
+        ("embedFonts", Some(embed_fonts), Some(set_embed_fonts)),
+        ("htmlText", Some(html_text), Some(set_html_text)),
+        ("length", Some(length), None),
+        ("multiline", Some(multiline), Some(set_multiline)),
+        ("selectable", Some(selectable), Some(set_selectable)),
+        ("text", Some(text), Some(set_text)),
+        ("textColor", Some(text_color), Some(set_text_color)),
+        ("textHeight", Some(text_height), None),
+        ("textWidth", Some(text_width), None),
+        ("type", Some(get_type), Some(set_type)),
+        ("wordWrap", Some(word_wrap), Some(set_word_wrap)),
+    ];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "appendText"),
-        Method::from_builtin(append_text),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "getTextFormat"),
-        Method::from_builtin(get_text_format),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "replaceSelectedText"),
-        Method::from_builtin(replace_selected_text),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "replaceText"),
-        Method::from_builtin(replace_text),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "setSelection"),
-        Method::from_builtin(set_selection),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "setTextFormat"),
-        Method::from_builtin(set_text_format),
-    ));
+    const PUBLIC_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+        ("appendText", append_text),
+        ("getTextFormat", get_text_format),
+        ("replaceSelectedText", replace_selected_text),
+        ("replaceText", replace_text),
+        ("setSelection", set_selection),
+        ("setTextFormat", set_text_format),
+    ];
+    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
 
     class
 }

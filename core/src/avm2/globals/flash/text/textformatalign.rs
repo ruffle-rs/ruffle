@@ -5,7 +5,6 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -46,36 +45,15 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "CENTER"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("center".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "END"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("end".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "JUSTIFY"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("justify".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "LEFT"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("left".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "RIGHT"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("right".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "START"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("start".into()),
-    ));
+    const CONSTANTS: &[(&'static str, &'static str)] = &[
+        ("CENTER", "center"),
+        ("END", "end"),
+        ("JUSTIFY", "justify"),
+        ("LEFT", "left"),
+        ("RIGHT", "right"),
+        ("START", "start"),
+    ];
+    write.define_public_constant_string_class_traits(CONSTANTS);
 
     class
 }

@@ -2,10 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
@@ -366,38 +365,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "beginFill"),
-        Method::from_builtin(begin_fill),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "clear"),
-        Method::from_builtin(clear),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "curveTo"),
-        Method::from_builtin(curve_to),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "endFill"),
-        Method::from_builtin(end_fill),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "lineStyle"),
-        Method::from_builtin(line_style),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "lineTo"),
-        Method::from_builtin(line_to),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "moveTo"),
-        Method::from_builtin(move_to),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "drawRect"),
-        Method::from_builtin(draw_rect),
-    ));
+    const PUBLIC_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+        ("beginFill", begin_fill),
+        ("clear", clear),
+        ("curveTo", curve_to),
+        ("endFill", end_fill),
+        ("lineStyle", line_style),
+        ("lineTo", line_to),
+        ("moveTo", move_to),
+        ("drawRect", draw_rect),
+    ];
+    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
 
     class
 }

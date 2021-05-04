@@ -6,7 +6,7 @@ use crate::avm2::events::{
     dispatch_event as dispatch_event_internal, parent_of, NS_EVENT_DISPATCHER,
 };
 use crate::avm2::globals::NS_RUFFLE_INTERNAL;
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::traits::Trait;
@@ -253,26 +253,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.implements(QName::new(Namespace::package("flash.events"), "IEventDispatcher").into());
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "addEventListener"),
-        Method::from_builtin(add_event_listener),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "removeEventListener"),
-        Method::from_builtin(remove_event_listener),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "hasEventListener"),
-        Method::from_builtin(has_event_listener),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "willTrigger"),
-        Method::from_builtin(will_trigger),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "dispatchEvent"),
-        Method::from_builtin(dispatch_event),
-    ));
+    const PUBLIC_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+        ("addEventListener", add_event_listener),
+        ("removeEventListener", remove_event_listener),
+        ("hasEventListener", has_event_listener),
+        ("willTrigger", will_trigger),
+        ("dispatchEvent", dispatch_event),
+    ];
+    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
 
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),

@@ -5,7 +5,6 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -46,46 +45,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED | ClassAttributes::FINAL);
 
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "BOTTOM"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("B".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "BOTTOM_LEFT"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("BL".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "BOTTOM_RIGHT"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("BR".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "LEFT"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("L".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "RIGHT"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("R".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "TOP"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("T".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "TOP_LEFT"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("TL".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "TOP_RIGHT"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("TR".into()),
-    ));
+    const CONSTANTS: &[(&'static str, &'static str)] = &[
+        ("BOTTOM", "B"),
+        ("BOTTOM_LEFT", "BL"),
+        ("BOTTOM_RIGHT", "BR"),
+        ("LEFT", "L"),
+        ("RIGHT", "R"),
+        ("TOP", "T"),
+        ("TOP_LEFT", "TL"),
+        ("TOP_RIGHT", "TR"),
+    ];
+    write.define_public_constant_string_class_traits(CONSTANTS);
 
     class
 }

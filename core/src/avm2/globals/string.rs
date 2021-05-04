@@ -1,13 +1,13 @@
 //! `String` impl
 
+use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::{activation::Activation, traits::Trait};
 use crate::string_utils;
 use gc_arena::{GcCell, MutationContext};
 
@@ -129,19 +129,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "length"),
-        Method::from_builtin(length),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[("length", Some(length), None)];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "charAt"),
-        Method::from_builtin(char_at),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "charCodeAt"),
-        Method::from_builtin(char_code_at),
-    ));
+    const AS3_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] =
+        &[("charAt", char_at), ("charCodeAt", char_code_at)];
+    write.define_as3_builtin_instance_methods(AS3_INSTANCE_METHODS);
 
     class
 }

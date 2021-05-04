@@ -5,7 +5,6 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -46,26 +45,13 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "HORIZONTAL"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("horizontal".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "NONE"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("none".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "NORMAL"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("normal".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "VERTICAL"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("vertical".into()),
-    ));
+    const CONSTANTS: &[(&'static str, &'static str)] = &[
+        ("HORIZONTAL", "horizontal"),
+        ("NONE", "none"),
+        ("NORMAL", "normal"),
+        ("VERTICAL", "vertical"),
+    ];
+    write.define_public_constant_string_class_traits(CONSTANTS);
 
     class
 }

@@ -31,6 +31,12 @@ pub type NativeMethod<'gc> = fn(
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error>;
 
+pub type GenericNativeMethod = for<'gc> fn(
+    &mut Activation<'_, 'gc, '_>,
+    Option<Object<'gc>>,
+    &[Value<'gc>],
+) -> Result<Value<'gc>, Error>;
+
 /// Represents a reference to an AVM2 method and body.
 #[derive(Collect, Clone, Debug)]
 #[collect(no_drop)]

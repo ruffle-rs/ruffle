@@ -2,10 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -102,15 +101,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "name"),
-        Method::from_builtin(name),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "frame"),
-        Method::from_builtin(frame),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[("name", Some(name), None), ("frame", Some(frame), None)];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

@@ -5,7 +5,6 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -46,26 +45,13 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED | ClassAttributes::FINAL);
 
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "EXACT_FIT"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("exactFit".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "NO_BORDER"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("noBorder".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "NO_SCALE"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("noScale".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "SHOW_ALL"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("showAll".into()),
-    ));
+    const CONSTANTS: &[(&'static str, &'static str)] = &[
+        ("EXACT_FIT", "exactFit"),
+        ("NO_BORDER", "noBorder"),
+        ("NO_SCALE", "noScale"),
+        ("SHOW_ALL", "showAll"),
+    ];
+    write.define_public_constant_string_class_traits(CONSTANTS);
 
     class
 }

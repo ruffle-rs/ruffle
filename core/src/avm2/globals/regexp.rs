@@ -1,12 +1,11 @@
 //! `RegExp` impl
 
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ArrayObject, Object, RegExpObject, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{activation::Activation, array::ArrayStorage};
@@ -275,47 +274,24 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "dotall"),
-        Method::from_builtin(dotall),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "extended"),
-        Method::from_builtin(extended),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "global"),
-        Method::from_builtin(global),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "ignoreCase"),
-        Method::from_builtin(ignore_case),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "multiline"),
-        Method::from_builtin(multiline),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "lastIndex"),
-        Method::from_builtin(last_index),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "lastIndex"),
-        Method::from_builtin(set_last_index),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "source"),
-        Method::from_builtin(source),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[
+        ("dotall", Some(dotall), None),
+        ("extended", Some(extended), None),
+        ("global", Some(global), None),
+        ("ignoreCase", Some(ignore_case), None),
+        ("multiline", Some(multiline), None),
+        ("lastIndex", Some(last_index), Some(set_last_index)),
+        ("source", Some(source), None),
+    ];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "exec"),
-        Method::from_builtin(exec),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "test"),
-        Method::from_builtin(test),
-    ));
+    const AS3_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] =
+        &[("exec", exec), ("test", test)];
+    write.define_as3_builtin_instance_methods(AS3_INSTANCE_METHODS);
 
     class
 }

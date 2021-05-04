@@ -125,96 +125,33 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "align"),
-        QName::new(Namespace::public(), "String").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "blockIndent"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "bold"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "bullet"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "color"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "font"),
-        QName::new(Namespace::public(), "String").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "indent"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "italic"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "kerning"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "leading"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "leftMargin"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "letterSpacing"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "rightMargin"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "size"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "tabStops"),
-        QName::new(Namespace::public(), "Array").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "target"),
-        QName::new(Namespace::public(), "String").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "underline"),
-        QName::new(Namespace::public(), "Object").into(),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "url"),
-        QName::new(Namespace::public(), "String").into(),
-        None,
-    ));
+    const ITEMS: &[(&'static str, &'static str)] = &[
+        ("align", "String"),
+        ("blockIndent", "Object"),
+        ("bold", "Object"),
+        ("bullet", "Object"),
+        ("color", "Object"),
+        ("font", "String"),
+        ("indent", "Object"),
+        ("italic", "Object"),
+        ("kerning", "Object"),
+        ("leading", "Object"),
+        ("leftMargin", "Object"),
+        ("letterSpacing", "Object"),
+        ("rightMargin", "Object"),
+        ("size", "Object"),
+        ("tabStops", "Array"),
+        ("target", "String"),
+        ("underline", "Object"),
+        ("url", "String"),
+    ];
+    for &(name, type_name) in ITEMS {
+        write.define_instance_trait(Trait::from_slot(
+            QName::new(Namespace::public(), name),
+            QName::new(Namespace::public(), type_name).into(),
+            None,
+        ));
+    }
 
     class
 }

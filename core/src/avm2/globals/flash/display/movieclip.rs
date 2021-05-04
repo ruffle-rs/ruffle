@@ -4,11 +4,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::globals::flash::display::{framelabel, scene};
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{MovieClip, Scene, TDisplayObject};
@@ -547,95 +546,35 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "addFrameScript"),
-        Method::from_builtin(add_frame_script),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[
+        ("currentFrame", Some(current_frame), None),
+        ("currentFrameLabel", Some(current_frame_label), None),
+        ("currentLabel", Some(current_label), None),
+        ("currentLabels", Some(current_labels), None),
+        ("currentScene", Some(current_scene), None),
+        ("scenes", Some(scenes), None),
+        ("framesLoaded", Some(frames_loaded), None),
+        ("isPlaying", Some(is_playing), None),
+        ("totalFrames", Some(total_frames), None),
+    ];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "currentFrame"),
-        Method::from_builtin(current_frame),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "currentFrameLabel"),
-        Method::from_builtin(current_frame_label),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "currentLabel"),
-        Method::from_builtin(current_label),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "currentLabels"),
-        Method::from_builtin(current_labels),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "currentScene"),
-        Method::from_builtin(current_scene),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "scenes"),
-        Method::from_builtin(scenes),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "framesLoaded"),
-        Method::from_builtin(frames_loaded),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "isPlaying"),
-        Method::from_builtin(is_playing),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "totalFrames"),
-        Method::from_builtin(total_frames),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "gotoAndPlay"),
-        Method::from_builtin(goto_and_play),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "gotoAndStop"),
-        Method::from_builtin(goto_and_stop),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "stop"),
-        Method::from_builtin(stop),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "play"),
-        Method::from_builtin(play),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "prevFrame"),
-        Method::from_builtin(prev_frame),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "nextFrame"),
-        Method::from_builtin(next_frame),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "prevScene"),
-        Method::from_builtin(prev_scene),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "nextScene"),
-        Method::from_builtin(next_scene),
-    ));
+    const PUBLIC_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+        ("addFrameScript", add_frame_script),
+        ("gotoAndPlay", goto_and_play),
+        ("gotoAndStop", goto_and_stop),
+        ("stop", stop),
+        ("play", play),
+        ("prevFrame", prev_frame),
+        ("nextFrame", next_frame),
+        ("prevScene", prev_scene),
+        ("nextScene", next_scene),
+    ];
+    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
 
     class
 }

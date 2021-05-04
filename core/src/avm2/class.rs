@@ -1,6 +1,6 @@
 //! AVM2 classes
 
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
@@ -342,6 +342,100 @@ impl<'gc> Class<'gc> {
         &self.super_class
     }
 
+    #[inline(never)]
+    pub fn define_public_constant_string_class_traits(
+        &mut self,
+        items: &[(&'static str, &'static str)],
+    ) {
+        for &(name, value) in items {
+            self.define_class_trait(Trait::from_const(
+                QName::new(Namespace::public(), name),
+                QName::new(Namespace::public(), "String").into(),
+                Some(value.into()),
+            ));
+        }
+    }
+    #[inline(never)]
+    pub fn define_public_constant_number_class_traits(&mut self, items: &[(&'static str, f64)]) {
+        for &(name, value) in items {
+            self.define_class_trait(Trait::from_const(
+                QName::new(Namespace::public(), name),
+                QName::new(Namespace::public(), "Number").into(),
+                Some(value.into()),
+            ));
+        }
+    }
+    #[inline(never)]
+    pub fn define_public_constant_uint_class_traits(&mut self, items: &[(&'static str, u32)]) {
+        for &(name, value) in items {
+            self.define_class_trait(Trait::from_const(
+                QName::new(Namespace::public(), name),
+                QName::new(Namespace::public(), "uint").into(),
+                Some(value.into()),
+            ));
+        }
+    }
+    #[inline(never)]
+    pub fn define_public_builtin_instance_methods(
+        &mut self,
+        items: &[(&'static str, GenericNativeMethod)],
+    ) {
+        for &(name, value) in items {
+            self.define_instance_trait(Trait::from_method(
+                QName::new(Namespace::public(), name),
+                Method::from_builtin(value),
+            ));
+        }
+    }
+    #[inline(never)]
+    pub fn define_as3_builtin_instance_methods(
+        &mut self,
+        items: &[(&'static str, GenericNativeMethod)],
+    ) {
+        for &(name, value) in items {
+            self.define_instance_trait(Trait::from_method(
+                QName::new(Namespace::as3_namespace(), name),
+                Method::from_builtin(value),
+            ));
+        }
+    }
+    #[inline(never)]
+    pub fn define_public_builtin_class_methods(
+        &mut self,
+        items: &[(&'static str, GenericNativeMethod)],
+    ) {
+        for &(name, value) in items {
+            self.define_class_trait(Trait::from_method(
+                QName::new(Namespace::public(), name),
+                Method::from_builtin(value),
+            ));
+        }
+    }
+    #[inline(never)]
+    pub fn define_public_builtin_instance_properties(
+        &mut self,
+        items: &[(
+            &'static str,
+            Option<GenericNativeMethod>,
+            Option<GenericNativeMethod>,
+        )],
+    ) {
+        for &(name, getter, setter) in items {
+            if let Some(getter) = getter {
+                self.define_instance_trait(Trait::from_getter(
+                    QName::new(Namespace::public(), name),
+                    Method::from_builtin(getter),
+                ));
+            }
+            if let Some(setter) = setter {
+                self.define_instance_trait(Trait::from_setter(
+                    QName::new(Namespace::public(), name),
+                    Method::from_builtin(setter),
+                ));
+            }
+        }
+    }
+
     /// Define a trait on the class.
     ///
     /// Class traits will be accessible as properties on the class constructor
@@ -349,6 +443,7 @@ impl<'gc> Class<'gc> {
     pub fn define_class_trait(&mut self, my_trait: Trait<'gc>) {
         self.class_traits.push(my_trait);
     }
+
 
     /// Given a name, append class traits matching the name to a list of known
     /// traits.

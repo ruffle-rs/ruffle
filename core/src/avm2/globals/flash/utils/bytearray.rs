@@ -1,11 +1,10 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use encoding_rs::Encoding;
@@ -744,189 +743,51 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeByte"),
-        Method::from_builtin(write_byte),
-    ));
+    const PUBLIC_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+        ("writeByte", write_byte),
+        ("writeBytes", write_bytes),
+        ("readBytes", read_bytes),
+        ("toString", to_string),
+        ("readShort", read_short),
+        ("writeShort", write_short),
+        ("readUnsignedShort", read_unsigned_short),
+        ("readDouble", read_double),
+        ("writeDouble", write_double),
+        ("readFloat", read_float),
+        ("writeFloat", write_float),
+        ("readInt", read_int),
+        ("writeInt", write_int),
+        ("readUnsignedInt", read_unsigned_int),
+        ("writeUnsignedInt", write_unsigned_int),
+        ("readBoolean", read_boolean),
+        ("writeBoolean", write_boolean),
+        ("readByte", read_byte),
+        ("readUnsignedByte", read_unsigned_byte),
+        ("writeUTF", write_utf),
+        ("readUTF", read_utf),
+        ("clear", clear),
+        ("compress", compress),
+        ("uncompress", uncompress),
+        ("inflate", inflate),
+        ("deflate", deflate),
+        ("writeMultiByte", write_multibyte),
+        ("readMultiByte", read_multibyte),
+        ("writeUTFBytes", write_utf_bytes),
+        ("readUTFBytes", read_utf_bytes),
+    ];
+    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeBytes"),
-        Method::from_builtin(write_bytes),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readBytes"),
-        Method::from_builtin(read_bytes),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "toString"),
-        Method::from_builtin(to_string),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readShort"),
-        Method::from_builtin(read_short),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeShort"),
-        Method::from_builtin(write_short),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readUnsignedShort"),
-        Method::from_builtin(read_unsigned_short),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readDouble"),
-        Method::from_builtin(read_double),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeDouble"),
-        Method::from_builtin(write_double),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readFloat"),
-        Method::from_builtin(read_float),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeFloat"),
-        Method::from_builtin(write_float),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readInt"),
-        Method::from_builtin(read_int),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeInt"),
-        Method::from_builtin(write_int),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readUnsignedInt"),
-        Method::from_builtin(read_unsigned_int),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeUnsignedInt"),
-        Method::from_builtin(write_unsigned_int),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readBoolean"),
-        Method::from_builtin(read_boolean),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeBoolean"),
-        Method::from_builtin(write_boolean),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readByte"),
-        Method::from_builtin(read_byte),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readUnsignedByte"),
-        Method::from_builtin(read_unsigned_byte),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeUTF"),
-        Method::from_builtin(write_utf),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readUTF"),
-        Method::from_builtin(read_utf),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "clear"),
-        Method::from_builtin(clear),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "compress"),
-        Method::from_builtin(compress),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "uncompress"),
-        Method::from_builtin(uncompress),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "inflate"),
-        Method::from_builtin(inflate),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "deflate"),
-        Method::from_builtin(deflate),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeMultiByte"),
-        Method::from_builtin(write_multibyte),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readMultiByte"),
-        Method::from_builtin(read_multibyte),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "writeUTFBytes"),
-        Method::from_builtin(write_utf_bytes),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "readUTFBytes"),
-        Method::from_builtin(read_utf_bytes),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "bytesAvailable"),
-        Method::from_builtin(bytes_available),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "length"),
-        Method::from_builtin(length),
-    ));
-
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "length"),
-        Method::from_builtin(set_length),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "position"),
-        Method::from_builtin(position),
-    ));
-
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "position"),
-        Method::from_builtin(set_position),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "endian"),
-        Method::from_builtin(endian),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "endian"),
-        Method::from_builtin(set_endian),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[
+        ("bytesAvailable", Some(bytes_available), None),
+        ("length", Some(length), Some(set_length)),
+        ("position", Some(position), Some(set_position)),
+        ("endian", Some(endian), Some(set_endian)),
+    ];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

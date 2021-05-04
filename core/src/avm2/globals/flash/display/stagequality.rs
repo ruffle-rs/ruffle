@@ -5,7 +5,6 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -46,46 +45,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED | ClassAttributes::FINAL);
 
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "BEST"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("best".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "HIGH"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("high".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "HIGH_16X16"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("16x16".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "HIGH_16x16_LINEAR"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("16x16linear".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "HIGH_8X8"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("8x8".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "HIGH_8x8_LINEAR"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("8x8linear".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "LOW"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("low".into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "MEDIUM"),
-        QName::new(Namespace::public(), "String").into(),
-        Some("medium".into()),
-    ));
+    const CONSTANTS: &[(&'static str, &'static str)] = &[
+        ("BEST", "best"),
+        ("HIGH", "high"),
+        ("HIGH_16X16", "16x16"),
+        ("HIGH_16x16_LINEAR", "16x16linear"),
+        ("HIGH_8X8", "8x8"),
+        ("HIGH_8x8_LINEAR", "8x8linear"),
+        ("LOW", "low"),
+        ("MEDIUM", "medium"),
+    ];
+    write.define_public_constant_string_class_traits(CONSTANTS);
 
     class
 }
