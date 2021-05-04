@@ -12,7 +12,6 @@ null
 null
 //my_button.upState = new UpButtonShape();
 //Constructed UpButtonShape ( instance2 )!
-//Up Button Shape frame 1
 //my_button.overState = new OverButtonShape();
 //Constructed OverButtonShape ( instance4 )!
 //my_button.downState = new DownButtonShape();
@@ -35,9 +34,3 @@ null
 [object HitButtonShape]
 // numChildren:  1
 [object Shape]
-//Down Button Shape frame 1
-//Hit Button Shape frame 1
-//Hit Button Shape Frame 2
-//Down Button Shape Frame 2
-//Over Button Shape Frame 2
-//Up Button Shape Frame 2
