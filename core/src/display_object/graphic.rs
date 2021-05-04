@@ -205,6 +205,10 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        self.0.read().static_data.movie.clone()
+    }
+
     fn object2(&self) -> Avm2Value<'gc> {
         self.0
             .read()
