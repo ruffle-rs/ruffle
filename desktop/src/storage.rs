@@ -25,13 +25,13 @@ impl DiskStorageBackend {
 }
 
 impl StorageBackend for DiskStorageBackend {
-    fn get_string(&self, name: &str) -> Option<String> {
+    fn get(&self, name: &str) -> Option<Vec<u8>> {
         let full_path = self.base_path.join(Path::new(name));
 
         match File::open(full_path) {
             Ok(mut file) => {
-                let mut buffer = String::new();
-                if let Err(r) = file.read_to_string(&mut buffer) {
+                let mut buffer = Vec::new();
+                if let Err(r) = file.read_to_end(&mut buffer) {
                     log::warn!("Unable to read file content {:?}", r);
                     None
                 } else {
@@ -45,7 +45,7 @@ impl StorageBackend for DiskStorageBackend {
         }
     }
 
-    fn put_string(&mut self, name: &str, value: String) -> bool {
+    fn put(&mut self, name: &str, value: &[u8]) -> bool {
         let full_path = self.base_path.join(Path::new(name));
         if let Some(parent_dir) = full_path.parent() {
             if !parent_dir.exists() {
@@ -58,7 +58,7 @@ impl StorageBackend for DiskStorageBackend {
 
         match File::create(full_path) {
             Ok(mut file) => {
-                if let Err(r) = file.write_all(value.as_bytes()) {
+                if let Err(r) = file.write_all(&value) {
                     log::warn!("Unable to write file content {:?}", r);
                     false
                 } else {

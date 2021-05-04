@@ -28,7 +28,6 @@ url = "2.2.2"
 weak-table = "0.3.0"
 percent-encoding = "2.1.0"
 thiserror = "1.0"
-json = "0.12.4"
 chrono = "0.4"
 num-traits = "0.2"
 instant = "0.1"
@@ -37,6 +36,8 @@ rand = { version = "0.8.3", features = ["std", "small_rng"], default-features = 
 serde = { version = "1.0.125", features = ["derive"], optional = true }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", branch = "main" }
 regress = "0.2"
+flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "e39a8abc897289696672858e30bbc9e43b1c98ac" }
+json = "0.12.4"
 
 [dependencies.jpeg-decoder]
 version = "0.1.22"

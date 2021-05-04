@@ -1,15 +1,14 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
+use flash_lso::types::Value as AmfValue;
+use flash_lso::types::{AMFVersion, Element, Lso};
 use gc_arena::MutationContext;
-
-use crate::avm1::object::shared_object::SharedObject;
-
-use json::JsonValue;
 
 pub fn delete_all<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -29,127 +28,176 @@ pub fn get_disk_usage<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Serialize a Value to an AmfValue
+fn serialize_value<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    elem: Value<'gc>,
+) -> Option<AmfValue> {
+    match elem {
+        Value::Undefined => Some(AmfValue::Undefined),
+        Value::Null => Some(AmfValue::Null),
+        Value::Bool(b) => Some(AmfValue::Bool(b)),
+        Value::Number(f) => Some(AmfValue::Number(f)),
+        Value::String(s) => Some(AmfValue::String(s.to_string())),
+        Value::Object(o) => {
+            // Don't attempt to serialize functions
+            let function = activation.context.avm1.prototypes.function;
+            let array = activation.context.avm1.prototypes.array;
+            let xml = activation.context.avm1.prototypes.xml_node;
+            let date = activation.context.avm1.prototypes.date;
+
+            if !o
+                .is_instance_of(activation, o, function)
+                .unwrap_or_default()
+            {
+                if o.is_instance_of(activation, o, array).unwrap_or_default() {
+                    let mut values = Vec::new();
+                    let len = o.length();
+                    recursive_serialize(activation, o, &mut values);
+
+                    Some(AmfValue::ECMAArray(vec![], values, len as u32))
+                } else if o.is_instance_of(activation, o, xml).unwrap_or_default() {
+                    o.as_xml_node().and_then(|xml_node| {
+                        xml_node
+                            .into_string(&mut |_| true)
+                            .map(|xml_string| AmfValue::XML(xml_string, true))
+                            .ok()
+                    })
+                } else if o.is_instance_of(activation, o, date).unwrap_or_default() {
+                    o.as_date_object()
+                        .and_then(|date_obj| {
+                            date_obj
+                                .date_time()
+                                .map(|date_time| date_time.timestamp_millis())
+                        })
+                        .map(|millis| AmfValue::Date(millis as f64, None))
+                } else {
+                    let mut object_body = Vec::new();
+                    recursive_serialize(activation, o, &mut object_body);
+                    Some(AmfValue::Object(object_body, None))
+                }
+            } else {
+                None
+            }
+        }
+    }
+}
+
 /// Serialize an Object and any children to a JSON object
-/// It would be best if this was implemented via serde but due to avm and context it can't
-/// Undefined fields aren't serialized
 fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     obj: Object<'gc>,
-    json_obj: &mut JsonValue,
+    elements: &mut Vec<Element>,
 ) {
-    for k in &obj.get_keys(activation) {
-        if let Ok(elem) = obj.get(k, activation) {
-            match elem {
-                Value::Undefined => {}
-                Value::Null => json_obj[k] = JsonValue::Null,
-                Value::Bool(b) => json_obj[k] = b.into(),
-                Value::Number(f) => json_obj[k] = f.into(),
-                Value::String(s) => json_obj[k] = s.to_string().into(),
-                Value::Object(o) => {
-                    // Don't attempt to serialize functions
-                    let function = activation.context.avm1.prototypes.function;
-                    let array = activation.context.avm1.prototypes.array;
-                    if !o
-                        .is_instance_of(activation, o, function)
-                        .unwrap_or_default()
-                    {
-                        let mut sub_data_json = JsonValue::new_object();
-                        recursive_serialize(activation, o, &mut sub_data_json);
-                        if o.is_instance_of(activation, o, array).unwrap_or_default() {
-                            sub_data_json["__proto__"] = "Array".into();
-                            sub_data_json["length"] = o.length().into();
-                        }
-                        json_obj[k] = sub_data_json;
+    // Reversed to match flash player ordering
+    for element_name in obj.get_keys(activation).iter().rev() {
+        if let Ok(elem) = obj.get(element_name, activation) {
+            if let Some(v) = serialize_value(activation, elem) {
+                elements.push(Element::new(element_name, v));
+            }
+        }
+    }
+}
+
+/// Deserialize a AmfValue to a Value
+fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfValue) -> Value<'gc> {
+    match val {
+        AmfValue::Null => Value::Null,
+        AmfValue::Undefined => Value::Undefined,
+        AmfValue::Number(f) => Value::Number(*f),
+        AmfValue::String(s) => Value::String(AvmString::new(activation.context.gc_context, s)),
+        AmfValue::Bool(b) => Value::Bool(*b),
+        AmfValue::ECMAArray(_, associative, len) => {
+            let array_constructor = activation.context.avm1.prototypes.array_constructor;
+            if let Ok(Value::Object(obj)) =
+                array_constructor.construct(activation, &[Value::Number(*len as f64)])
+            {
+                for entry in associative {
+                    let value = deserialize_value(activation, entry.value());
+
+                    if let Ok(i) = entry.name().parse::<usize>() {
+                        obj.set_array_element(i, value, activation.context.gc_context);
+                    } else {
+                        obj.define_value(
+                            activation.context.gc_context,
+                            &entry.name,
+                            value,
+                            Attribute::empty(),
+                        );
                     }
                 }
+
+                obj.into()
+            } else {
+                Value::Undefined
             }
         }
-    }
-}
-
-fn recursive_deserialize<'gc>(
-    json_value: JsonValue,
-    activation: &mut Activation<'_, 'gc, '_>,
-) -> Value<'gc> {
-    match json_value {
-        JsonValue::Null => Value::Null,
-        JsonValue::Short(s) => {
-            Value::String(AvmString::new(activation.context.gc_context, s.to_string()))
-        }
-        JsonValue::String(s) => Value::String(AvmString::new(activation.context.gc_context, s)),
-        JsonValue::Number(f) => Value::Number(f.into()),
-        JsonValue::Boolean(b) => Value::Bool(b),
-        JsonValue::Object(o) => {
-            if o.get("__proto__").and_then(JsonValue::as_str) == Some("Array") {
-                deserialize_array(o, activation)
+        AmfValue::Object(elements, _) => {
+            // Deserialize Object
+            let obj_proto = activation.context.avm1.prototypes.object;
+            if let Ok(obj) = obj_proto.create_bare_object(activation, obj_proto) {
+                for entry in elements {
+                    let value = deserialize_value(activation, entry.value());
+                    obj.define_value(
+                        activation.context.gc_context,
+                        &entry.name,
+                        value,
+                        Attribute::empty(),
+                    );
+                }
+                obj.into()
             } else {
-                deserialize_object(o, activation)
+                Value::Undefined
             }
         }
-        JsonValue::Array(_) => Value::Undefined,
-    }
-}
+        AmfValue::Date(time, _) => {
+            let date_proto = activation.context.avm1.prototypes.date_constructor;
 
-/// Deserialize an Object and any children from a JSON object
-/// It would be best if this was implemented via serde but due to avm and context it can't
-/// Undefined fields aren't deserialized
-fn deserialize_object<'gc>(
-    json_obj: json::object::Object,
-    activation: &mut Activation<'_, 'gc, '_>,
-) -> Value<'gc> {
-    // Deserialize Object
-    let obj_proto = activation.context.avm1.prototypes.object;
-    if let Ok(obj) = obj_proto.create_bare_object(activation, obj_proto) {
-        for entry in json_obj.iter() {
-            let value = recursive_deserialize(entry.1.clone(), activation);
-            obj.define_value(
-                activation.context.gc_context,
-                entry.0,
-                value,
-                Attribute::empty(),
-            );
-        }
-        obj.into()
-    } else {
-        Value::Undefined
-    }
-}
-
-/// Deserialize an Object and any children from a JSON object
-/// It would be best if this was implemented via serde but due to avm and context it can't
-/// Undefined fields aren't deserialized
-fn deserialize_array<'gc>(
-    mut json_obj: json::object::Object,
-    activation: &mut Activation<'_, 'gc, '_>,
-) -> Value<'gc> {
-    let array_constructor = activation.context.avm1.prototypes.array_constructor;
-    let len = json_obj
-        .get("length")
-        .and_then(JsonValue::as_i32)
-        .unwrap_or_default();
-    if let Ok(Value::Object(obj)) = array_constructor.construct(activation, &[len.into()]) {
-        // Remove length and proto meta-properties.
-        json_obj.remove("length");
-        json_obj.remove("__proto__");
-
-        for entry in json_obj.iter() {
-            let value = recursive_deserialize(entry.1.clone(), activation);
-            if let Ok(i) = entry.0.parse::<usize>() {
-                obj.set_array_element(i, value, activation.context.gc_context);
+            if let Ok(Value::Object(obj)) =
+                date_proto.construct(activation, &[Value::Number(*time)])
+            {
+                Value::Object(obj)
             } else {
-                obj.define_value(
+                Value::Undefined
+            }
+        }
+        AmfValue::XML(content, _) => {
+            let xml_proto = activation.context.avm1.prototypes.xml_constructor;
+
+            if let Ok(Value::Object(obj)) = xml_proto.construct(
+                activation,
+                &[Value::String(AvmString::new(
                     activation.context.gc_context,
-                    entry.0,
-                    value,
-                    Attribute::empty(),
-                );
+                    content,
+                ))],
+            ) {
+                Value::Object(obj)
+            } else {
+                Value::Undefined
             }
         }
 
-        obj.into()
-    } else {
-        Value::Undefined
+        _ => Value::Undefined,
     }
+}
+
+fn deserialize_lso<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    lso: &Lso,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let obj_proto = activation.context.avm1.prototypes.object;
+    let obj = obj_proto.create_bare_object(activation, obj_proto)?;
+
+    for child in &lso.body {
+        obj.define_value(
+            activation.context.gc_context,
+            &child.name,
+            deserialize_value(activation, child.value()),
+            Attribute::empty(),
+        );
+    }
+
+    Ok(obj)
 }
 
 pub fn get_local<'gc>(
@@ -263,18 +311,18 @@ pub fn get_local<'gc>(
     let obj_so = this.as_shared_object().unwrap();
     obj_so.set_name(activation.context.gc_context, full_name.clone());
 
-    let prototype = activation.context.avm1.prototypes.object;
     let mut data = Value::Undefined;
 
     // Load the data object from storage if it existed prior
-    if let Some(saved) = activation.context.storage.get_string(&full_name) {
-        if let Ok(json_data) = json::parse(&saved) {
-            data = recursive_deserialize(json_data, activation);
+    if let Some(saved) = activation.context.storage.get(&full_name) {
+        if let Ok(lso) = flash_lso::read::Reader::default().parse(&saved) {
+            data = deserialize_lso(activation, &lso)?.into();
         }
     }
 
     if data == Value::Undefined {
         // No data; create a fresh data object.
+        let prototype = activation.context.avm1.prototypes.object;
         data = prototype.create_bare_object(activation, prototype)?.into();
     }
 
@@ -443,17 +491,26 @@ pub fn flush<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let data = this.get("data", activation)?.coerce_to_object(activation);
 
-    let mut data_json = JsonValue::new_object();
-    recursive_serialize(activation, data, &mut data_json);
-
     let this_obj = this.as_shared_object().unwrap();
     let name = this_obj.get_name();
 
-    Ok(activation
-        .context
-        .storage
-        .put_string(&name, data_json.dump())
-        .into())
+    let mut elements = Vec::new();
+    recursive_serialize(activation, data, &mut elements);
+    let mut lso = Lso::new(
+        elements,
+        &name
+            .split('/')
+            .last()
+            .map(|e| e.to_string())
+            .unwrap_or_else(|| "<unknown>".to_string()),
+        AMFVersion::AMF0,
+    );
+
+    // TODO: make write_to_bytes return result
+
+    let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
+
+    Ok(activation.context.storage.put(&name, &bytes).into())
 }
 
 pub fn get_size<'gc>(
