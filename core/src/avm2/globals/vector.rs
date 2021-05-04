@@ -281,13 +281,12 @@ pub fn every<'gc>(
             .unwrap_or(Value::Null)
             .coerce_to_object(activation)
             .ok();
-        let mut is_every = true;
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
 
-            is_every &= callback
+            let result = callback
                 .call(
                     receiver,
                     &[item, i.into(), this.into()],
@@ -295,9 +294,13 @@ pub fn every<'gc>(
                     receiver.and_then(|r| r.proto()),
                 )?
                 .coerce_to_boolean();
+
+            if !result {
+                return Ok(false.into());
+            }
         }
 
-        return Ok(is_every.into());
+        return Ok(true.into());
     }
 
     Ok(Value::Undefined)
