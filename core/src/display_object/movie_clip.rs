@@ -185,12 +185,34 @@ impl<'gc> MovieClip<'gc> {
 
     /// Construct a movie clip that represents an entire movie.
     pub fn from_movie(gc_context: MutationContext<'gc, '_>, movie: Arc<SwfMovie>) -> Self {
-        Self::new_with_data(
+        let num_frames = movie.header().num_frames;
+        MovieClip(GcCell::allocate(
             gc_context,
-            0,
-            movie.clone().into(),
-            movie.header().num_frames,
-        )
+            MovieClipData {
+                base: Default::default(),
+                static_data: Gc::allocate(
+                    gc_context,
+                    MovieClipStatic::with_data(0, movie.into(), num_frames),
+                ),
+                tag_stream_pos: 0,
+                current_frame: 0,
+                audio_stream: None,
+                container: ChildContainer::new(),
+                object: None,
+                clip_actions: Vec::new(),
+                frame_scripts: Vec::new(),
+                has_button_clip_event: false,
+                flags: MovieClipFlags::PLAYING | MovieClipFlags::IS_SWF,
+                avm2_constructor: None,
+                drawing: Drawing::new(),
+                is_focusable: false,
+                has_focus: false,
+                enabled: true,
+                use_hand_cursor: true,
+                last_queued_script_frame: None,
+                queued_script_frame: None,
+            },
+        ))
     }
 
     /// Replace the current MovieClip with a completely new SwfMovie.
@@ -674,6 +696,10 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_programmatically_played(self, mc: MutationContext<'gc, '_>) {
         self.0.write(mc).set_programmatically_played()
+    }
+
+    pub fn is_swf(&self) -> bool {
+        self.0.read().flags.contains(MovieClipFlags::IS_SWF)
     }
 
     pub fn next_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -1656,6 +1682,10 @@ impl<'gc> MovieClip<'gc> {
     ) {
         self.0.write(context.gc_context).use_hand_cursor = use_hand_cursor;
     }
+
+    pub fn tag_stream_len(&self) -> usize {
+        self.0.read().tag_stream_len()
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -2117,6 +2147,7 @@ impl<'gc> MovieClipData<'gc> {
         gc_context: MutationContext<'gc, '_>,
         movie: Option<Arc<SwfMovie>>,
     ) {
+        let is_swf = movie.is_some();
         let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(self.movie().version())));
         let total_frames = movie.header().num_frames;
 
@@ -2127,6 +2158,9 @@ impl<'gc> MovieClipData<'gc> {
         );
         self.tag_stream_pos = 0;
         self.flags = MovieClipFlags::PLAYING;
+        if is_swf {
+            self.flags |= MovieClipFlags::IS_SWF;
+        }
         self.current_frame = 0;
         self.audio_stream = None;
         self.container = ChildContainer::new();
@@ -3462,6 +3496,9 @@ bitflags! {
         /// The AS3 `isPlaying` property is broken and yields false until you first
         /// call `play` to unbreak it. This flag tracks that bug.
         const PROGRAMMATICALLY_PLAYED = 1 << 2;
+
+        /// Whether this `MovieClip` is a loaded SWF.
+        const IS_SWF = 1 << 3;
     }
 }
 
