@@ -306,6 +306,49 @@ pub fn every<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Vector.some`
+pub fn some<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let callback = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let receiver = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok();
+        let mut iter = ArrayIter::new(activation, this)?;
+
+        while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
+
+            let result = callback
+                .call(
+                    receiver,
+                    &[item, i.into(), this.into()],
+                    activation,
+                    receiver.and_then(|r| r.proto()),
+                )?
+                .coerce_to_boolean();
+
+            if result {
+                return Ok(true.into());
+            }
+        }
+
+        return Ok(false.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Sprite`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -336,6 +379,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("join", join),
         ("toString", to_string),
         ("every", every),
+        ("some", some),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
