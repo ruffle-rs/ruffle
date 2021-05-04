@@ -457,6 +457,7 @@ impl<'gc> MovieClip<'gc> {
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
 
+        static_data.actual_num_frames = cur_frame - 1;
         // Finalize audio stream.
         if let Some(stream) = preload_stream_handle {
             if let Some(sound) = context.audio.preload_sound_stream_end(stream) {
@@ -677,7 +678,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn next_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.current_frame() < self.total_frames() {
+        if self.current_frame() < self.actual_num_frames() {
             self.goto_frame(context, self.current_frame() + 1, true);
         }
     }
@@ -895,6 +896,12 @@ impl<'gc> MovieClip<'gc> {
         values
     }
 
+
+    pub fn actual_num_frames(self) -> FrameNumber {
+        self.0.read().static_data.actual_num_frames
+    }
+
+
     pub fn total_frames(self) -> FrameNumber {
         self.0.read().static_data.total_frames
     }
@@ -942,7 +949,7 @@ impl<'gc> MovieClip<'gc> {
         let frame = frame.unwrap();
 
         if scene <= frame {
-            let mut end = self.total_frames();
+            let mut end = self.actual_num_frames();
             for (
                 _label,
                 Scene {
@@ -1028,9 +1035,9 @@ impl<'gc> MovieClip<'gc> {
 
     /// Determine what the clip's next frame should be.
     fn determine_next_frame(self) -> NextFrame {
-        if self.current_frame() < self.total_frames() {
+        if self.current_frame() < self.actual_num_frames() {
             NextFrame::Next
-        } else if self.total_frames() > 1 {
+        } else if self.actual_num_frames() > 1 {
             NextFrame::First
         } else {
             NextFrame::Same
@@ -1054,6 +1061,7 @@ impl<'gc> MovieClip<'gc> {
         let data = mc.static_data.swf.clone();
         let mut reader = data.read_from(mc.tag_stream_pos);
         let mut has_stream_block = false;
+        let mut end_tag_encountered = false;
         drop(mc);
 
         let vm_type = self.vm_type(context);
@@ -1081,9 +1089,28 @@ impl<'gc> MovieClip<'gc> {
                 has_stream_block = true;
                 self.sound_stream_block(context, reader)
             }
+            // TagCode::ShowFrame => {
+            //     show_frame_encountered = true;
+            //     Ok(())
+            // }
+            TagCode::End => {
+                end_tag_encountered = true;
+                Ok(())
+            }
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+
+        if end_tag_encountered {
+            // Hitting an "End" tag causes a loop, and acts exactly like a gotoAndPlay(1).
+            if self.current_frame() > 1 {
+                self.run_goto(self_display_object, context, 1, true);
+                return;
+            } else {
+                // Single frame clips stop and do not loop.
+                self.stop(context);
+            }
+        }
 
         self.0.write(context.gc_context).tag_stream_pos =
             reader.get_ref().as_ptr() as u64 - tag_stream_start;
@@ -2140,6 +2167,10 @@ impl<'gc> MovieClipData<'gc> {
         self.current_frame
     }
 
+    pub fn actual_num_frames(&self) -> FrameNumber {
+        self.static_data.actual_num_frames
+    }
+
     fn total_frames(&self) -> FrameNumber {
         self.static_data.total_frames
     }
@@ -2162,7 +2193,7 @@ impl<'gc> MovieClipData<'gc> {
 
     fn play(&mut self) {
         // Can only play clips with multiple frames.
-        if self.total_frames() > 1 {
+        if self.actual_num_frames() > 1 {
             self.set_playing(true);
         }
     }
@@ -3314,6 +3345,7 @@ struct MovieClipStatic {
     audio_stream_info: Option<swf::SoundStreamHead>,
     audio_stream_handle: Option<SoundHandle>,
     total_frames: FrameNumber,
+    actual_num_frames: FrameNumber,
     /// The last known symbol name under which this movie clip was exported.
     /// Used for looking up constructors registered with `Object.registerClass`.
     exported_name: RefCell<Option<String>>,
@@ -3329,6 +3361,7 @@ impl MovieClipStatic {
             id,
             swf,
             total_frames,
+            actual_num_frames: total_frames,
             frame_labels: HashMap::new(),
             scene_labels: HashMap::new(),
             audio_stream_info: None,
