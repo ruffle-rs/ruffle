@@ -3,13 +3,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
     ByteArrayObject, DomainObject, LoaderInfoObject, LoaderStream, Object, ScriptObject, TObject,
 };
 use crate::avm2::scope::Scope;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
 use crate::display_object::TDisplayObject;
@@ -434,66 +433,28 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "actionScriptVersion"),
-        Method::from_builtin(action_script_version),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "applicationDomain"),
-        Method::from_builtin(application_domain),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "bytesLoaded"),
-        Method::from_builtin(bytes_total),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "bytesTotal"),
-        Method::from_builtin(bytes_total),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "content"),
-        Method::from_builtin(content),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "contentType"),
-        Method::from_builtin(content_type),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "frameRate"),
-        Method::from_builtin(frame_rate),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "height"),
-        Method::from_builtin(height),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "isURLInaccessible"),
-        Method::from_builtin(is_url_inaccessible),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "swfVersion"),
-        Method::from_builtin(swf_version),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "url"),
-        Method::from_builtin(url),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "width"),
-        Method::from_builtin(width),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "bytes"),
-        Method::from_builtin(bytes),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "loaderUrl"),
-        Method::from_builtin(loader_url),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "parameters"),
-        Method::from_builtin(parameters),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[
+        ("actionScriptVersion", Some(action_script_version), None),
+        ("applicationDomain", Some(application_domain), None),
+        ("bytesLoaded", Some(bytes_total), None),
+        ("bytesTotal", Some(bytes_total), None),
+        ("content", Some(content), None),
+        ("contentType", Some(content_type), None),
+        ("frameRate", Some(frame_rate), None),
+        ("height", Some(height), None),
+        ("isURLInaccessible", Some(is_url_inaccessible), None),
+        ("swfVersion", Some(swf_version), None),
+        ("url", Some(url), None),
+        ("width", Some(width), None),
+        ("bytes", Some(bytes), None),
+        ("loaderUrl", Some(loader_url), None),
+        ("parameters", Some(parameters), None),
+    ];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

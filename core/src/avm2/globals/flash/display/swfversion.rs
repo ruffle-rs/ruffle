@@ -5,7 +5,6 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -46,66 +45,21 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH1"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(1.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH2"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(2.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH3"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(3.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH4"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(4.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH5"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(5.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH6"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(6.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH7"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(7.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH8"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(8.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH9"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(9.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH10"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(10.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH11"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(11.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "FLASH12"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(12.into()),
-    ));
+    const CONSTANTS: &[(&'static str, u32)] = &[
+        ("FLASH1", 1),
+        ("FLASH2", 2),
+        ("FLASH3", 3),
+        ("FLASH4", 4),
+        ("FLASH5", 5),
+        ("FLASH6", 6),
+        ("FLASH7", 7),
+        ("FLASH8", 8),
+        ("FLASH9", 9),
+        ("FLASH10", 10),
+        ("FLASH11", 11),
+        ("FLASH12", 12),
+    ];
+    write.define_public_constant_uint_class_traits(CONSTANTS);
 
     class
 }

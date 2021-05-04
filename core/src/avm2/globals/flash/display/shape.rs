@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::globals::NS_RUFFLE_INTERNAL;
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, StageObject, TObject};
 use crate::avm2::traits::Trait;
@@ -97,10 +97,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "graphics"),
-        Method::from_builtin(graphics),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[("graphics", Some(graphics), None)];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
     // Slot for lazy-initialized Graphics object.
     write.define_instance_trait(Trait::from_slot(

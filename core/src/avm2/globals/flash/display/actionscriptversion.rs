@@ -5,7 +5,6 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -46,16 +45,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "ACTIONSCRIPT2"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(2.into()),
-    ));
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "ACTIONSCRIPT3"),
-        QName::new(Namespace::public(), "uint").into(),
-        Some(3.into()),
-    ));
+    const CONSTANTS: &[(&'static str, u32)] = &[("ACTIONSCRIPT2", 2), ("ACTIONSCRIPT3", 3)];
+    write.define_public_constant_uint_class_traits(CONSTANTS);
 
     class
 }

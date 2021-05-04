@@ -2,11 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{LoaderInfoObject, Object, TObject};
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
@@ -598,118 +597,35 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "alpha"),
-        Method::from_builtin(alpha),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "alpha"),
-        Method::from_builtin(set_alpha),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "height"),
-        Method::from_builtin(height),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "height"),
-        Method::from_builtin(set_height),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "scaleY"),
-        Method::from_builtin(scale_y),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "scaleY"),
-        Method::from_builtin(set_scale_y),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "width"),
-        Method::from_builtin(width),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "width"),
-        Method::from_builtin(set_width),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "scaleX"),
-        Method::from_builtin(scale_x),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "scaleX"),
-        Method::from_builtin(set_scale_x),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "x"),
-        Method::from_builtin(x),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "x"),
-        Method::from_builtin(set_x),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "y"),
-        Method::from_builtin(y),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "y"),
-        Method::from_builtin(set_y),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "rotation"),
-        Method::from_builtin(rotation),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "rotation"),
-        Method::from_builtin(set_rotation),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "name"),
-        Method::from_builtin(name),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "name"),
-        Method::from_builtin(set_name),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "parent"),
-        Method::from_builtin(parent),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "root"),
-        Method::from_builtin(root),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "stage"),
-        Method::from_builtin(stage),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "visible"),
-        Method::from_builtin(visible),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "visible"),
-        Method::from_builtin(set_visible),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "mouseX"),
-        Method::from_builtin(mouse_x),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "mouseY"),
-        Method::from_builtin(mouse_y),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "hitTestPoint"),
-        Method::from_builtin(hit_test_point),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "hitTestObject"),
-        Method::from_builtin(hit_test_object),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "loaderInfo"),
-        Method::from_builtin(loader_info),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[
+        ("alpha", Some(alpha), Some(set_alpha)),
+        ("height", Some(height), Some(set_height)),
+        ("scaleY", Some(scale_y), Some(set_scale_y)),
+        ("width", Some(width), Some(set_width)),
+        ("scaleX", Some(scale_x), Some(set_scale_x)),
+        ("x", Some(x), Some(set_x)),
+        ("y", Some(y), Some(set_y)),
+        ("rotation", Some(rotation), Some(set_rotation)),
+        ("name", Some(name), Some(set_name)),
+        ("parent", Some(parent), None),
+        ("root", Some(root), None),
+        ("stage", Some(stage), None),
+        ("visible", Some(visible), Some(set_visible)),
+        ("mouseX", Some(mouse_x), None),
+        ("mouseY", Some(mouse_y), None),
+        ("loaderInfo", Some(loader_info), None),
+    ];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+        ("hitTestPoint", hit_test_point),
+        ("hitTestObject", hit_test_object),
+    ];
+    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
 
     class
 }

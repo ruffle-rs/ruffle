@@ -2,8 +2,7 @@
 
 use crate::avm1::AvmString;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::Method;
-use crate::avm2::traits::Trait;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::{Activation, Error, Namespace, Object, QName, TObject, Value};
 use gc_arena::{GcCell, MutationContext};
 
@@ -342,58 +341,31 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
     write.set_attributes(ClassAttributes::SEALED);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "length"),
-        Method::from_builtin(length),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "add"),
-        Method::from_builtin(add),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "clone"),
-        Method::from_builtin(clone),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "copyFrom"),
-        Method::from_builtin(copy_from),
-    ));
-    write.define_class_trait(Trait::from_method(
-        QName::new(Namespace::public(), "distance"),
-        Method::from_builtin(distance),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "equals"),
-        Method::from_builtin(equals),
-    ));
-    write.define_class_trait(Trait::from_method(
-        QName::new(Namespace::public(), "interpolate"),
-        Method::from_builtin(interpolate),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "normalize"),
-        Method::from_builtin(normalize),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "offset"),
-        Method::from_builtin(offset),
-    ));
-    write.define_class_trait(Trait::from_method(
-        QName::new(Namespace::public(), "polar"),
-        Method::from_builtin(polar),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "setTo"),
-        Method::from_builtin(set_to),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "subtract"),
-        Method::from_builtin(subtract),
-    ));
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "toString"),
-        Method::from_builtin(to_string),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[("length", Some(length), None)];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
+    const PUBLIC_CLASS_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+        ("distance", distance),
+        ("interpolate", interpolate),
+        ("polar", polar),
+    ];
+    write.define_public_builtin_class_methods(PUBLIC_CLASS_METHODS);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+        ("add", add),
+        ("clone", clone),
+        ("copyFrom", copy_from),
+        ("equals", equals),
+        ("normalize", normalize),
+        ("offset", offset),
+        ("setTo", set_to),
+        ("subtract", subtract),
+        ("toString", to_string),
+    ];
+    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
     class
 }

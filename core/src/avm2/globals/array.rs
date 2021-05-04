@@ -3,11 +3,10 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
-use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::method::{GenericNativeMethod, Method};
+use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use bitflags::bitflags;
@@ -1230,149 +1229,56 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "length"),
-        Method::from_builtin(length),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "length"),
-        Method::from_builtin(set_length),
-    ));
+    const PUBLIC_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+        ("toString", to_string),
+        ("toLocaleString", to_locale_string),
+        ("valueOf", value_of),
+    ];
+    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "concat"),
-        Method::from_builtin(concat),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[("length", Some(length), Some(set_length))];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "join"),
-        Method::from_builtin(join),
-    ));
+    const AS3_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+        ("concat", concat),
+        ("join", join),
+        ("forEach", for_each),
+        ("map", map),
+        ("filter", filter),
+        ("every", every),
+        ("some", some),
+        ("indexOf", index_of),
+        ("lastIndexOf", last_index_of),
+        ("pop", pop),
+        ("push", push),
+        ("reverse", reverse),
+        ("shift", shift),
+        ("unshift", unshift),
+        ("slice", slice),
+        ("splice", splice),
+        ("sort", sort),
+        ("sortOn", sort_on),
+    ];
+    write.define_as3_builtin_instance_methods(AS3_INSTANCE_METHODS);
 
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "toString"),
-        Method::from_builtin(to_string),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "toLocaleString"),
-        Method::from_builtin(to_locale_string),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::public(), "valueOf"),
-        Method::from_builtin(value_of),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "forEach"),
-        Method::from_builtin(for_each),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "map"),
-        Method::from_builtin(map),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "filter"),
-        Method::from_builtin(filter),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "every"),
-        Method::from_builtin(every),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "some"),
-        Method::from_builtin(some),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "indexOf"),
-        Method::from_builtin(index_of),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "lastIndexOf"),
-        Method::from_builtin(last_index_of),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "pop"),
-        Method::from_builtin(pop),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "push"),
-        Method::from_builtin(push),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "reverse"),
-        Method::from_builtin(reverse),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "shift"),
-        Method::from_builtin(shift),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "unshift"),
-        Method::from_builtin(unshift),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "slice"),
-        Method::from_builtin(slice),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "splice"),
-        Method::from_builtin(splice),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "sort"),
-        Method::from_builtin(sort),
-    ));
-
-    write.define_instance_trait(Trait::from_method(
-        QName::new(Namespace::as3_namespace(), "sortOn"),
-        Method::from_builtin(sort_on),
-    ));
-
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "CASEINSENSITIVE"),
-        Multiname::from(QName::new(Namespace::public(), "uint")),
-        Some(SortOptions::CASE_INSENSITIVE.bits().into()),
-    ));
-
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "DESCENDING"),
-        Multiname::from(QName::new(Namespace::public(), "uint")),
-        Some(SortOptions::DESCENDING.bits().into()),
-    ));
-
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "NUMERIC"),
-        Multiname::from(QName::new(Namespace::public(), "uint")),
-        Some(SortOptions::NUMERIC.bits().into()),
-    ));
-
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "RETURNINDEXEDARRAY"),
-        Multiname::from(QName::new(Namespace::public(), "uint")),
-        Some(SortOptions::RETURN_INDEXED_ARRAY.bits().into()),
-    ));
-
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "UNIQUESORT"),
-        Multiname::from(QName::new(Namespace::public(), "uint")),
-        Some(SortOptions::UNIQUE_SORT.bits().into()),
-    ));
+    const CONSTANTS: &[(&'static str, u32)] = &[
+        (
+            "CASEINSENSITIVE",
+            SortOptions::CASE_INSENSITIVE.bits() as u32,
+        ),
+        ("DESCENDING", SortOptions::DESCENDING.bits() as u32),
+        ("NUMERIC", SortOptions::NUMERIC.bits() as u32),
+        (
+            "RETURNINDEXEDARRAY",
+            SortOptions::RETURN_INDEXED_ARRAY.bits() as u32,
+        ),
+        ("UNIQUESORT", SortOptions::UNIQUE_SORT.bits() as u32),
+    ];
+    write.define_public_constant_uint_class_traits(CONSTANTS);
 
     class
 }

@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::string::AvmString;
@@ -614,265 +614,89 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "accessibilityProperties"),
-            Method::from_builtin(set_accessibility_properties),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "alpha"),
-            Method::from_builtin(set_alpha),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "blendMode"),
-            Method::from_builtin(set_blend_mode),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "cacheAsBitmap"),
-            Method::from_builtin(set_cache_as_bitmap),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "contextMenu"),
-            Method::from_builtin(set_context_menu),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "filters"),
-            Method::from_builtin(set_filters),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "focusRect"),
-            Method::from_builtin(set_focus_rect),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "loaderInfo"),
-            Method::from_builtin(set_loader_info),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "mask"),
-            Method::from_builtin(set_mask),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "mouseEnabled"),
-            Method::from_builtin(set_mouse_enabled),
-        )
-        .with_override(),
-    );
+    const PUBLIC_OVERRIDE_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[
+        (
+            "accessibilityProperties",
+            None,
+            Some(set_accessibility_properties),
+        ),
+        ("alpha", None, Some(set_alpha)),
+        ("blendMode", None, Some(set_blend_mode)),
+        ("cacheAsBitmap", None, Some(set_cache_as_bitmap)),
+        ("contextMenu", None, Some(set_context_menu)),
+        ("filters", None, Some(set_filters)),
+        ("focusRect", None, Some(set_focus_rect)),
+        ("loaderInfo", None, Some(set_loader_info)),
+        ("mask", None, Some(set_mask)),
+        ("mouseEnabled", None, Some(set_mouse_enabled)),
+        ("name", Some(name), Some(set_name)),
+        ("opaqueBackground", None, Some(set_opaque_background)),
+        ("rotation", None, Some(set_rotation)),
+        ("scale9Grid", None, Some(set_scale_nine_grid)),
+        ("scaleX", None, Some(set_scale_x)),
+        ("scaleY", None, Some(set_scale_y)),
+        ("scrollRect", None, Some(set_scroll_rect)),
+        ("tabEnabled", None, Some(set_tab_enabled)),
+        ("tabIndex", None, Some(set_tab_index)),
+        ("transform", None, Some(set_transform)),
+        ("visible", None, Some(set_visible)),
+        ("x", None, Some(set_x)),
+        ("y", None, Some(set_y)),
+    ];
+    for &(name, getter, setter) in PUBLIC_OVERRIDE_INSTANCE_PROPERTIES {
+        if let Some(getter) = getter {
+            write.define_instance_trait(
+                Trait::from_getter(
+                    QName::new(Namespace::public(), name),
+                    Method::from_builtin(getter),
+                )
+                .with_override(),
+            );
+        }
+        if let Some(setter) = setter {
+            write.define_instance_trait(
+                Trait::from_setter(
+                    QName::new(Namespace::public(), name),
+                    Method::from_builtin(setter),
+                )
+                .with_override(),
+            );
+        }
+    }
 
-    write.define_instance_trait(
-        Trait::from_getter(
-            QName::new(Namespace::public(), "name"),
-            Method::from_builtin(name),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "name"),
-            Method::from_builtin(set_name),
-        )
-        .with_override(),
-    );
-
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "opaqueBackground"),
-            Method::from_builtin(set_opaque_background),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "rotation"),
-            Method::from_builtin(set_rotation),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "scale9Grid"),
-            Method::from_builtin(set_scale_nine_grid),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "scaleX"),
-            Method::from_builtin(set_scale_x),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "scaleY"),
-            Method::from_builtin(set_scale_y),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "scrollRect"),
-            Method::from_builtin(set_scroll_rect),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "tabEnabled"),
-            Method::from_builtin(set_tab_enabled),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "tabIndex"),
-            Method::from_builtin(set_tab_index),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "transform"),
-            Method::from_builtin(set_transform),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "visible"),
-            Method::from_builtin(set_visible),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "x"),
-            Method::from_builtin(set_x),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(
-        Trait::from_setter(
-            QName::new(Namespace::public(), "y"),
-            Method::from_builtin(set_y),
-        )
-        .with_override(),
-    );
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "align"),
-        Method::from_builtin(align),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "align"),
-        Method::from_builtin(set_align),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "browserZoomFactor"),
-        Method::from_builtin(browser_zoom_factor),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "color"),
-        Method::from_builtin(color),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "color"),
-        Method::from_builtin(set_color),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "contentsScaleFactor"),
-        Method::from_builtin(contents_scale_factor),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "displayState"),
-        Method::from_builtin(display_state),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "focus"),
-        Method::from_builtin(focus),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "focus"),
-        Method::from_builtin(set_focus),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "frameRate"),
-        Method::from_builtin(frame_rate),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "frameRate"),
-        Method::from_builtin(set_frame_rate),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "scaleMode"),
-        Method::from_builtin(scale_mode),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "scaleMode"),
-        Method::from_builtin(set_scale_mode),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "showDefaultContextMenu"),
-        Method::from_builtin(show_default_context_menu),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "showDefaultContextMenu"),
-        Method::from_builtin(set_show_default_context_menu),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "stageWidth"),
-        Method::from_builtin(stage_width),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "stageWidth"),
-        Method::from_builtin(set_stage_width),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "stageHeight"),
-        Method::from_builtin(stage_height),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "stageHeight"),
-        Method::from_builtin(set_stage_height),
-    ));
-
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "allowsFullScreen"),
-        Method::from_builtin(allows_full_screen),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "allowsFullScreenInteractive"),
-        Method::from_builtin(allows_full_screen_interactive),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "quality"),
-        Method::from_builtin(quality),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &'static str,
+        Option<GenericNativeMethod>,
+        Option<GenericNativeMethod>,
+    )] = &[
+        ("align", Some(align), Some(set_align)),
+        ("browserZoomFactor", Some(browser_zoom_factor), None),
+        ("color", Some(color), Some(set_color)),
+        ("contentsScaleFactor", Some(contents_scale_factor), None),
+        ("displayState", Some(display_state), None),
+        ("focus", Some(focus), Some(set_focus)),
+        ("frameRate", Some(frame_rate), Some(set_frame_rate)),
+        ("scaleMode", Some(scale_mode), Some(set_scale_mode)),
+        (
+            "showDefaultContextMenu",
+            Some(show_default_context_menu),
+            Some(set_show_default_context_menu),
+        ),
+        ("stageWidth", Some(stage_width), Some(set_stage_width)),
+        ("stageHeight", Some(stage_height), Some(set_stage_height)),
+        ("allowsFullScreen", Some(allows_full_screen), None),
+        (
+            "allowsFullScreenInteractive",
+            Some(allows_full_screen_interactive),
+            None,
+        ),
+        ("quality", Some(quality), None),
+    ];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

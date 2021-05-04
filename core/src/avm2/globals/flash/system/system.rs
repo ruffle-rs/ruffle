@@ -2,10 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{GenericNativeMethod, Method};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -53,10 +52,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.define_class_trait(Trait::from_method(
-        QName::new(Namespace::public(), "gc"),
-        Method::from_builtin(gc),
-    ));
+    const PUBLIC_CLASS_METHODS: &[(&'static str, GenericNativeMethod)] = &[("gc", gc)];
+    write.define_public_builtin_class_methods(PUBLIC_CLASS_METHODS);
 
     class
 }
