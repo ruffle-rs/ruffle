@@ -129,12 +129,11 @@ pub fn concat<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let mut new_vector_storage =
-            if let Some(vector) = this.as_vector_storage_mut(activation.context.gc_context) {
-                vector.clone()
-            } else {
-                return Err("Not a vector-structured object".into());
-            };
+        let mut new_vector_storage = if let Some(vector) = this.as_vector_storage() {
+            vector.clone()
+        } else {
+            return Err("Not a vector-structured object".into());
+        };
 
         let my_class = this
             .as_class_object()
