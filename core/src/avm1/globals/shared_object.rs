@@ -506,8 +506,6 @@ pub fn flush<'gc>(
         AMFVersion::AMF0,
     );
 
-    // TODO: make write_to_bytes return result
-
     let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
 
     Ok(activation.context.storage.put(&name, &bytes).into())
