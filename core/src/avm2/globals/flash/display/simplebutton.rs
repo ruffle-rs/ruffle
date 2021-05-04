@@ -23,7 +23,7 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let new_do = Avm2Button::empty_button(&mut activation.context);
+            let mut new_do = Avm2Button::empty_button(&mut activation.context);
 
             new_do.post_instantiation(
                 &mut activation.context,
@@ -33,6 +33,7 @@ pub fn instance_init<'gc>(
                 false,
             );
             this.init_display_object(activation.context.gc_context, new_do.into());
+            new_do.set_object2(activation.context.gc_context, this);
         }
     }
 
