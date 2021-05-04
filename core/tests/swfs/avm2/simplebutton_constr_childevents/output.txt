@@ -11,7 +11,6 @@
 instance2:[Event type="added" bubbles=true cancelable=false eventPhase=2]
 instance2:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
 instance2:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-//Up Button Shape frame 1
 instance2:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
 //my_button.overState = new OverButtonShape();
 //Constructed OverButtonShape ( instance4 )!
@@ -35,8 +34,6 @@ instance2:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
 [object HitButtonShape] , instance8
 // numChildren:  1
 [object Shape] , instance9
-//Down Button Shape frame 1
-//Hit Button Shape frame 1
 instance2:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
 instance4:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
 instance6:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
@@ -49,7 +46,3 @@ instance2:[Event type="frameConstructed" bubbles=false cancelable=false eventPha
 instance4:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
 instance6:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
 instance8:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-//Hit Button Shape Frame 2
-//Down Button Shape Frame 2
-//Over Button Shape Frame 2
-//Up Button Shape Frame 2
