@@ -45,7 +45,6 @@ pub fn xmlnode_constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    println!("Creating xml({:?})", args);
     let blank_document = XmlDocument::new(activation.context.gc_context);
 
     match (
