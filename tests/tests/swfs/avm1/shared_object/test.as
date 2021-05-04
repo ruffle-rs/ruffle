@@ -1,4 +1,4 @@
-class Test {
+class test {
     static function main(mc) {
         var obj = SharedObject.getLocal("RuffleTest", "/");
 

@@ -2,12 +2,12 @@ use downcast_rs::Downcast;
 use std::collections::HashMap;
 
 pub trait StorageBackend: Downcast {
-    fn get_string(&self, name: &str) -> Option<String>;
+    fn get(&self, name: &str) -> Option<Vec<u8>>;
 
-    fn put_string(&mut self, name: &str, value: String) -> bool;
+    fn put(&mut self, name: &str, value: &[u8]) -> bool;
 
     fn get_size(&self, name: &str) -> Option<usize> {
-        self.get_string(name).map(|x| x.as_bytes().len())
+        self.get(name).map(|x| x.len())
     }
 
     fn remove_key(&mut self, name: &str);
@@ -15,7 +15,7 @@ pub trait StorageBackend: Downcast {
 impl_downcast!(StorageBackend);
 
 pub struct MemoryStorageBackend {
-    map: HashMap<String, String>,
+    map: HashMap<String, Vec<u8>>,
 }
 
 impl Default for MemoryStorageBackend {
@@ -27,12 +27,12 @@ impl Default for MemoryStorageBackend {
 }
 
 impl StorageBackend for MemoryStorageBackend {
-    fn get_string(&self, name: &str) -> Option<String> {
+    fn get(&self, name: &str) -> Option<Vec<u8>> {
         self.map.get(name).cloned()
     }
 
-    fn put_string(&mut self, name: &str, value: String) -> bool {
-        self.map.insert(name.into(), value);
+    fn put(&mut self, name: &str, value: &[u8]) -> bool {
+        self.map.insert(name.into(), value.to_vec());
         true
     }
 
