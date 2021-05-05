@@ -1,0 +1,23 @@
+// var mc = new MovieClip();
+// var btn = new SimpleButton();
+// this.addChild(mc);
+// mc.parent;
+[object MainTimeline]
+// this.numChildren;
+1
+// btn.upState;
+null
+//btn.upState = mc;
+// mc.parent;
+null
+// this.numChildren;
+0
+// btn.upState;
+[object MovieClip]
+// this.addChild(mc);
+// mc.parent;
+[object MainTimeline]
+// this.numChildren;
+1
+// btn.upState;
+[object MovieClip]
