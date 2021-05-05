@@ -1,6 +1,6 @@
 //! AVM2 classes
 
-use crate::avm2::method::{GenericNativeMethod, Method};
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
@@ -378,7 +378,7 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_public_builtin_instance_methods(
         &mut self,
-        items: &[(&'static str, GenericNativeMethod)],
+        items: &[(&'static str, NativeMethod)],
     ) {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_method(
@@ -388,10 +388,7 @@ impl<'gc> Class<'gc> {
         }
     }
     #[inline(never)]
-    pub fn define_as3_builtin_instance_methods(
-        &mut self,
-        items: &[(&'static str, GenericNativeMethod)],
-    ) {
+    pub fn define_as3_builtin_instance_methods(&mut self, items: &[(&'static str, NativeMethod)]) {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_method(
                 QName::new(Namespace::as3_namespace(), name),
@@ -400,10 +397,7 @@ impl<'gc> Class<'gc> {
         }
     }
     #[inline(never)]
-    pub fn define_public_builtin_class_methods(
-        &mut self,
-        items: &[(&'static str, GenericNativeMethod)],
-    ) {
+    pub fn define_public_builtin_class_methods(&mut self, items: &[(&'static str, NativeMethod)]) {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_method(
                 QName::new(Namespace::public(), name),
@@ -414,11 +408,7 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_public_builtin_instance_properties(
         &mut self,
-        items: &[(
-            &'static str,
-            Option<GenericNativeMethod>,
-            Option<GenericNativeMethod>,
-        )],
+        items: &[(&'static str, Option<NativeMethod>, Option<NativeMethod>)],
     ) {
         for &(name, getter, setter) in items {
             if let Some(getter) = getter {
@@ -443,7 +433,6 @@ impl<'gc> Class<'gc> {
     pub fn define_class_trait(&mut self, my_trait: Trait<'gc>) {
         self.class_traits.push(my_trait);
     }
-
 
     /// Given a name, append class traits matching the name to a list of known
     /// traits.

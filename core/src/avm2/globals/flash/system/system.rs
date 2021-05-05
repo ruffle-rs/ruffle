@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::{GenericNativeMethod, Method};
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
@@ -52,7 +52,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    const PUBLIC_CLASS_METHODS: &[(&'static str, GenericNativeMethod)] = &[("gc", gc)];
+    const PUBLIC_CLASS_METHODS: &[(&'static str, NativeMethod)] = &[("gc", gc)];
     write.define_public_builtin_class_methods(PUBLIC_CLASS_METHODS);
 
     class

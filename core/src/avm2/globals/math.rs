@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{GenericNativeMethod, Method};
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
@@ -67,7 +67,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_constant_number_class_traits(CONSTANTS);
 
-    const PUBLIC_CLASS_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+    const PUBLIC_CLASS_METHODS: &[(&'static str, NativeMethod)] = &[
         ("atan2", atan2),
         ("max", max),
         ("min", min),

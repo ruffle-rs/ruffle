@@ -25,13 +25,8 @@ use swf::avm2::types::{AbcFile, Index, Method as AbcMethod, MethodBody as AbcMet
 /// resolve on the AVM stack, as if you had called a non-native function. If
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
-pub type NativeMethod<'gc> = fn(
-    &mut Activation<'_, 'gc, '_>,
-    Option<Object<'gc>>,
-    &[Value<'gc>],
-) -> Result<Value<'gc>, Error>;
 
-pub type GenericNativeMethod = for<'gc> fn(
+pub type NativeMethod = for<'gc> fn(
     &mut Activation<'_, 'gc, '_>,
     Option<Object<'gc>>,
     &[Value<'gc>],
@@ -125,7 +120,7 @@ impl<'gc> BytecodeMethod<'gc> {
 #[derive(Clone)]
 pub enum Method<'gc> {
     /// A native method.
-    Native(NativeMethod<'gc>),
+    Native(NativeMethod),
 
     /// An ABC-provided method entry.
     Entry(Gc<'gc, BytecodeMethod<'gc>>),
@@ -152,8 +147,8 @@ impl<'gc> fmt::Debug for Method<'gc> {
     }
 }
 
-impl<'gc> From<NativeMethod<'gc>> for Method<'gc> {
-    fn from(nf: NativeMethod<'gc>) -> Self {
+impl<'gc> From<NativeMethod> for Method<'gc> {
+    fn from(nf: NativeMethod) -> Self {
         Self::Native(nf)
     }
 }
@@ -167,7 +162,7 @@ impl<'gc> From<Gc<'gc, BytecodeMethod<'gc>>> for Method<'gc> {
 impl<'gc> Method<'gc> {
     /// Builtin method constructor, because for some reason `nf.into()` just
     /// causes odd lifetime mismatches.
-    pub fn from_builtin(nf: NativeMethod<'gc>) -> Self {
+    pub fn from_builtin(nf: NativeMethod) -> Self {
         Self::Native(nf)
     }
 

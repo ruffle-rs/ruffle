@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{GenericNativeMethod, Method};
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
     ByteArrayObject, DomainObject, LoaderInfoObject, LoaderStream, Object, ScriptObject, TObject,
@@ -435,8 +435,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &'static str,
-        Option<GenericNativeMethod>,
-        Option<GenericNativeMethod>,
+        Option<NativeMethod>,
+        Option<NativeMethod>,
     )] = &[
         ("actionScriptVersion", Some(action_script_version), None),
         ("applicationDomain", Some(application_domain), None),

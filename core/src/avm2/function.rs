@@ -33,7 +33,7 @@ pub enum Executable<'gc> {
     /// Code defined in Ruffle's binary.
     ///
     /// The second parameter stores the bound receiver for this function.
-    Native(NativeMethod<'gc>, Option<Object<'gc>>),
+    Native(NativeMethod, Option<Object<'gc>>),
 
     /// Code defined in a loaded ABC file.
     Action(Gc<'gc, BytecodeExecutable<'gc>>),
