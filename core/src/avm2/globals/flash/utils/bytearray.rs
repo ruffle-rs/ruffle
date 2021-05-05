@@ -1,7 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{GenericNativeMethod, Method};
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::string::AvmString;
@@ -743,7 +743,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&'static str, NativeMethod)] = &[
         ("writeByte", write_byte),
         ("writeBytes", write_bytes),
         ("readBytes", read_bytes),
@@ -779,8 +779,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &'static str,
-        Option<GenericNativeMethod>,
-        Option<GenericNativeMethod>,
+        Option<NativeMethod>,
+        Option<NativeMethod>,
     )] = &[
         ("bytesAvailable", Some(bytes_available), None),
         ("length", Some(length), Some(set_length)),

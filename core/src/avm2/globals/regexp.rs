@@ -1,7 +1,7 @@
 //! `RegExp` impl
 
 use crate::avm2::class::Class;
-use crate::avm2::method::{GenericNativeMethod, Method};
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ArrayObject, Object, RegExpObject, TObject};
 use crate::avm2::scope::Scope;
@@ -276,8 +276,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &'static str,
-        Option<GenericNativeMethod>,
-        Option<GenericNativeMethod>,
+        Option<NativeMethod>,
+        Option<NativeMethod>,
     )] = &[
         ("dotall", Some(dotall), None),
         ("extended", Some(extended), None),
@@ -289,8 +289,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    const AS3_INSTANCE_METHODS: &[(&'static str, GenericNativeMethod)] =
-        &[("exec", exec), ("test", test)];
+    const AS3_INSTANCE_METHODS: &[(&'static str, NativeMethod)] = &[("exec", exec), ("test", test)];
     write.define_as3_builtin_instance_methods(AS3_INSTANCE_METHODS);
 
     class

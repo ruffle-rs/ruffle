@@ -227,7 +227,7 @@ impl<'gc> FunctionObject<'gc> {
     /// Construct a builtin function object from a Rust function.
     pub fn from_builtin(
         mc: MutationContext<'gc, '_>,
-        nf: NativeMethod<'gc>,
+        nf: NativeMethod,
         fn_proto: Object<'gc>,
     ) -> Object<'gc> {
         FunctionObject(GcCell::allocate(
@@ -243,7 +243,7 @@ impl<'gc> FunctionObject<'gc> {
     /// Construct a builtin type from a Rust constructor and prototype.
     pub fn from_builtin_constr(
         mc: MutationContext<'gc, '_>,
-        constr: NativeMethod<'gc>,
+        constr: NativeMethod,
         mut prototype: Object<'gc>,
         fn_proto: Object<'gc>,
     ) -> Result<Object<'gc>, Error> {

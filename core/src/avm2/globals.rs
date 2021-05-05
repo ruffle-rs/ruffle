@@ -164,7 +164,7 @@ fn function<'gc>(
     mc: MutationContext<'gc, '_>,
     package: impl Into<AvmString<'gc>>,
     name: impl Into<AvmString<'gc>>,
-    nf: NativeMethod<'gc>,
+    nf: NativeMethod,
     fn_proto: Object<'gc>,
     mut domain: Domain<'gc>,
     script: Script<'gc>,
