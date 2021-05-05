@@ -1,0 +1,144 @@
+instance2: Constructed
+instance2: Parent
+null
+instance2: Root
+[object MainTimeline]
+instance2: Stage
+[object Stage]
+//this.up_child
+[object EventWatcher]
+instance5: Constructed
+instance5: Parent
+null
+instance5: Root
+[object MainTimeline]
+instance5: Stage
+[object Stage]
+//this.over_child
+[object EventWatcher]
+instance8: Constructed
+instance8: Parent
+null
+instance8: Root
+[object MainTimeline]
+instance8: Stage
+[object Stage]
+//this.down_child
+[object EventWatcher]
+//MainTimeline frame 1
+//my_button.upState
+[object Sprite] - instance12
+//(parent of above...)
+null
+//(root of above...)
+[object MainTimeline]
+//(stage of above...)
+[object Stage]
+// numChildren:  2
+[object Shape] - instance1
+//(parent of above...)
+[object Sprite]
+//(root of above...)
+[object MainTimeline]
+//(stage of above...)
+[object Stage]
+[object UpButtonShape] - instance2
+//(parent of above...)
+[object Sprite]
+//(root of above...)
+[object MainTimeline]
+//(stage of above...)
+[object Stage]
+// numChildren:  2
+[object Shape] - instance3
+//(parent of above...)
+[object UpButtonShape]
+//(root of above...)
+[object MainTimeline]
+//(stage of above...)
+[object Stage]
+[object EventWatcher] - up_child
+//(parent of above...)
+[object UpButtonShape]
+//(root of above...)
+[object MainTimeline]
+//(stage of above...)
+[object Stage]
+// numChildren:  1
+[object Shape] - instance4
+//(parent of above...)
+[object EventWatcher]
+//(root of above...)
+[object MainTimeline]
+//(stage of above...)
+[object Stage]
+//my_button.overState
+[object OverButtonShape] - instance5
+//(parent of above...)
+null
+//(root of above...)
+null
+//(stage of above...)
+null
+// numChildren:  2
+[object Shape] - instance6
+//(parent of above...)
+[object OverButtonShape]
+//(root of above...)
+null
+//(stage of above...)
+null
+[object EventWatcher] - over_child
+//(parent of above...)
+[object OverButtonShape]
+//(root of above...)
+null
+//(stage of above...)
+null
+// numChildren:  1
+[object Shape] - instance7
+//(parent of above...)
+[object EventWatcher]
+//(root of above...)
+null
+//(stage of above...)
+null
+//my_button.downState
+[object DownButtonShape] - instance8
+//(parent of above...)
+null
+//(root of above...)
+null
+//(stage of above...)
+null
+// numChildren:  2
+[object Shape] - instance9
+//(parent of above...)
+[object DownButtonShape]
+//(root of above...)
+null
+//(stage of above...)
+null
+[object EventWatcher] - down_child
+//(parent of above...)
+[object DownButtonShape]
+//(root of above...)
+null
+//(stage of above...)
+null
+// numChildren:  1
+[object Shape] - instance10
+//(parent of above...)
+[object EventWatcher]
+//(root of above...)
+null
+//(stage of above...)
+null
+//my_button.hitTestState
+[object Shape] - instance11
+//(parent of above...)
+null
+//(root of above...)
+null
+//(stage of above...)
+null
