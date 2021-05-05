@@ -320,7 +320,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.clip_depth = depth;
     }
 
-    fn avm2_parent(&self) -> Option<DisplayObject<'gc>> {
+    fn parent(&self) -> Option<DisplayObject<'gc>> {
         self.parent
     }
 
@@ -726,7 +726,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
     fn path(&self) -> String {
-        if let Some(parent) = self.parent() {
+        if let Some(parent) = self.avm1_parent() {
             let mut path = parent.path();
             path.push('.');
             path.push_str(&*self.name());
@@ -740,7 +740,7 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_target` property in AVM1.
     fn slash_path(&self) -> String {
         fn build_slash_path(object: DisplayObject<'_>) -> String {
-            if let Some(parent) = object.parent() {
+            if let Some(parent) = object.avm1_parent() {
                 let mut path = build_slash_path(parent);
                 path.push('/');
                 path.push_str(&*object.name());
@@ -757,7 +757,7 @@ pub trait TDisplayObject<'gc>:
             }
         }
 
-        if self.parent().is_some() {
+        if self.avm1_parent().is_some() {
             build_slash_path((*self).into())
         } else {
             // _target of _level0 should just be '/'.
@@ -770,20 +770,28 @@ pub trait TDisplayObject<'gc>:
 
     /// Retrieve the parent of this display object.
     ///
-    /// This version of the function allows access to the `Stage`; which is
-    /// only suitable for code aware of AVM2's altered display list hierarchy.
-    /// For AVM1 code, please call `parent`.
-    fn avm2_parent(&self) -> Option<DisplayObject<'gc>>;
+    /// This version of the function merely exposes the display object parent,
+    /// without any further filtering.
+    fn parent(&self) -> Option<DisplayObject<'gc>>;
 
     /// Set the parent of this display object.
     fn set_parent(&self, gc_context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>);
 
     /// Retrieve the parent of this display object.
     ///
-    /// This version of the function disallows access to the `Stage`; if you
-    /// want to be able to access the stage, please call `avm2_parent`.
-    fn parent(&self) -> Option<DisplayObject<'gc>> {
-        self.avm2_parent().filter(|p| p.as_stage().is_none())
+    /// This version of the function implements the concept of parenthood as
+    /// seen in AVM1. Notably, it disallows access to the `Stage`; for an
+    /// unfiltered concept of parent, use the `parent` method.
+    fn avm1_parent(&self) -> Option<DisplayObject<'gc>> {
+        self.parent().filter(|p| p.as_stage().is_none())
+    }
+
+    /// Retrieve the parent of this display object.
+    ///
+    /// This version of the function implements the concept of parenthood as
+    /// seen in AVM2. Notably, it disallows access to non-container parents.
+    fn avm2_parent(&self) -> Option<DisplayObject<'gc>> {
+        self.parent()
     }
 
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
@@ -1196,7 +1204,7 @@ pub trait TDisplayObject<'gc>:
         let mut parent = if self.lock_root() {
             None
         } else {
-            self.parent()
+            self.avm1_parent()
         };
 
         while let Some(p) = parent {
@@ -1204,7 +1212,7 @@ pub trait TDisplayObject<'gc>:
                 break;
             }
 
-            let grandparent = p.parent();
+            let grandparent = p.avm1_parent();
 
             if grandparent.is_none() {
                 break;
@@ -1390,8 +1398,8 @@ macro_rules! impl_display_object_sansbounds {
         ) {
             self.0.write(context).$field.set_clip_depth(depth)
         }
-        fn avm2_parent(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
-            self.0.read().$field.avm2_parent()
+        fn parent(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
+            self.0.read().$field.parent()
         }
         fn set_parent(
             &self,

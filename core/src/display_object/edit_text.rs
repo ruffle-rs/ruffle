@@ -959,7 +959,7 @@ impl<'gc> EditText<'gc> {
             let variable = (*var_path).to_string();
             drop(var_path);
 
-            let parent = self.parent().unwrap();
+            let parent = self.avm1_parent().unwrap();
 
             activation.run_with_child_frame_for_display_object(
                 "[Text Field Binding]",
@@ -1038,7 +1038,7 @@ impl<'gc> EditText<'gc> {
                 drop(variable);
 
                 if let Ok(Some((object, property))) =
-                    activation.resolve_variable_path(self.parent().unwrap(), &variable_path)
+                    activation.resolve_variable_path(self.avm1_parent().unwrap(), &variable_path)
                 {
                     let text = if self.0.read().is_html {
                         let html_tree = self.html_tree(&mut activation.context).as_node();
@@ -1052,7 +1052,7 @@ impl<'gc> EditText<'gc> {
                     // (virtual property changes do not affect the text field)
                     activation.run_with_child_frame_for_display_object(
                         "[Propagate Text Binding]",
-                        self.parent().unwrap(),
+                        self.avm1_parent().unwrap(),
                         activation.context.swf.header().version,
                         |activation| {
                             let _ = object.set(

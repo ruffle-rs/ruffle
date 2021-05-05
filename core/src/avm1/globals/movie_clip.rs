@@ -760,7 +760,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
     let init_object = args.get(2);
 
     // Can't duplicate the root!
-    let parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
+    let parent = if let Some(parent) = movie_clip.avm1_parent().and_then(|o| o.as_movie_clip()) {
         parent
     } else {
         return Ok(Value::Undefined);
@@ -1072,7 +1072,8 @@ fn swap_depths<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let mut parent = if let Some(parent) = movie_clip.parent().and_then(|o| o.as_movie_clip()) {
+    let mut parent = if let Some(parent) = movie_clip.avm1_parent().and_then(|o| o.as_movie_clip())
+    {
         parent
     } else {
         return Ok(Value::Undefined);
@@ -1084,7 +1085,7 @@ fn swap_depths<'gc>(
     } else if let Some(target) =
         activation.resolve_target_display_object(movie_clip.into(), arg, false)?
     {
-        if let Some(target_parent) = target.parent() {
+        if let Some(target_parent) = target.avm1_parent() {
             if DisplayObject::ptr_eq(target_parent, parent.into()) && !target.removed() {
                 depth = Some(target.depth())
             } else {

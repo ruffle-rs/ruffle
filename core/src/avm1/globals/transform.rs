@@ -112,7 +112,7 @@ fn concatenated_color_transform<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Walk through parents to get combined color transform.
     let mut color_transform = *clip.color_transform();
-    let mut node = clip.parent();
+    let mut node = clip.avm1_parent();
     while let Some(display_object) = node {
         color_transform = *display_object.color_transform() * color_transform;
         node = display_object.parent();
