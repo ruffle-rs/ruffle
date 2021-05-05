@@ -45,8 +45,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    const CONSTANTS: &[(&'static str, &'static str)] =
-        &[("DYNAMIC", "dynamic"), ("INPUT", "input")];
+    const CONSTANTS: &[(&str, &str)] = &[("DYNAMIC", "dynamic"), ("INPUT", "input")];
     write.define_public_constant_string_class_traits(CONSTANTS);
 
     class

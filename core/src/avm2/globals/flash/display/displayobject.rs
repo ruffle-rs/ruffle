@@ -597,11 +597,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &'static str,
-        Option<NativeMethod>,
-        Option<NativeMethod>,
-    )] = &[
+    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("alpha", Some(alpha), Some(set_alpha)),
         ("height", Some(height), Some(set_height)),
         ("scaleY", Some(scale_y), Some(set_scale_y)),
@@ -621,7 +617,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&'static str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("hitTestPoint", hit_test_point),
         ("hitTestObject", hit_test_object),
     ];

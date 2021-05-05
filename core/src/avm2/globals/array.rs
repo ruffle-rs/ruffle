@@ -1229,21 +1229,18 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&'static str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("toString", to_string),
         ("toLocaleString", to_locale_string),
         ("valueOf", value_of),
     ];
     write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &'static str,
-        Option<NativeMethod>,
-        Option<NativeMethod>,
-    )] = &[("length", Some(length), Some(set_length))];
+    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
+        &[("length", Some(length), Some(set_length))];
     write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    const AS3_INSTANCE_METHODS: &[(&'static str, NativeMethod)] = &[
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("concat", concat),
         ("join", join),
         ("forEach", for_each),
@@ -1265,7 +1262,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_as3_builtin_instance_methods(AS3_INSTANCE_METHODS);
 
-    const CONSTANTS: &[(&'static str, u32)] = &[
+    const CONSTANTS: &[(&str, u32)] = &[
         (
             "CASEINSENSITIVE",
             SortOptions::CASE_INSENSITIVE.bits() as u32,

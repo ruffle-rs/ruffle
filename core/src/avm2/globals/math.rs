@@ -55,7 +55,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
     use std::f64::consts::*;
-    const CONSTANTS: &[(&'static str, f64)] = &[
+    const CONSTANTS: &[(&str, f64)] = &[
         ("E", E),
         ("LN10", LN_10),
         ("LN2", LN_2),
@@ -67,7 +67,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_constant_number_class_traits(CONSTANTS);
 
-    const PUBLIC_CLASS_METHODS: &[(&'static str, NativeMethod)] = &[
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethod)] = &[
         ("atan2", atan2),
         ("max", max),
         ("min", min),

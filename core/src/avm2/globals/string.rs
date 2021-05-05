@@ -129,14 +129,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &'static str,
-        Option<NativeMethod>,
-        Option<NativeMethod>,
-    )] = &[("length", Some(length), None)];
+    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
+        &[("length", Some(length), None)];
     write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    const AS3_INSTANCE_METHODS: &[(&'static str, NativeMethod)] =
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethod)] =
         &[("charAt", char_at), ("charCodeAt", char_code_at)];
     write.define_as3_builtin_instance_methods(AS3_INSTANCE_METHODS);
 

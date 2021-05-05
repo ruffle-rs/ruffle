@@ -865,11 +865,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &'static str,
-        Option<NativeMethod>,
-        Option<NativeMethod>,
-    )] = &[
+    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("autoSize", Some(autosize), Some(set_autosize)),
         (
             "backgroundColor",
@@ -902,7 +898,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&'static str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("appendText", append_text),
         ("getTextFormat", get_text_format),
         ("replaceSelectedText", replace_selected_text),

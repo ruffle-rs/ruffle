@@ -273,11 +273,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &'static str,
-        Option<NativeMethod>,
-        Option<NativeMethod>,
-    )] = &[
+    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("bubbles", Some(bubbles), None),
         ("cancelable", Some(cancelable), None),
         ("type", Some(get_type), None),
@@ -287,7 +283,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&'static str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("clone", clone),
         ("formatToString", format_to_string),
         ("isDefaultPrevented", is_default_prevented),
@@ -298,7 +294,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
 
-    const CONSTANTS: &[(&'static str, &'static str)] = &[
+    const CONSTANTS: &[(&str, &str)] = &[
         ("ACTIVATE", "activate"),
         ("ADDED", "added"),
         ("ADDED_TO_STAGE", "addedToStage"),

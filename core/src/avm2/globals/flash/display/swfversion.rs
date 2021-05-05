@@ -45,7 +45,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    const CONSTANTS: &[(&'static str, u32)] = &[
+    const CONSTANTS: &[(&str, u32)] = &[
         ("FLASH1", 1),
         ("FLASH2", 2),
         ("FLASH3", 3),

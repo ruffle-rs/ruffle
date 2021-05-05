@@ -125,7 +125,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    const ITEMS: &[(&'static str, &'static str)] = &[
+    const ITEMS: &[(&str, &str)] = &[
         ("align", "String"),
         ("blockIndent", "Object"),
         ("bold", "Object"),

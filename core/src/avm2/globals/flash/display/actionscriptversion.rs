@@ -45,7 +45,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    const CONSTANTS: &[(&'static str, u32)] = &[("ACTIONSCRIPT2", 2), ("ACTIONSCRIPT3", 3)];
+    const CONSTANTS: &[(&str, u32)] = &[("ACTIONSCRIPT2", 2), ("ACTIONSCRIPT3", 3)];
     write.define_public_constant_uint_class_traits(CONSTANTS);
 
     class

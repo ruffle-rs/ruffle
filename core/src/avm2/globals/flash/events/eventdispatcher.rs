@@ -253,7 +253,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.implements(QName::new(Namespace::package("flash.events"), "IEventDispatcher").into());
 
-    const PUBLIC_INSTANCE_METHODS: &[(&'static str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("addEventListener", add_event_listener),
         ("removeEventListener", remove_event_listener),
         ("hasEventListener", has_event_listener),
