@@ -45,7 +45,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED | ClassAttributes::FINAL);
 
-    const CONSTANTS: &[(&'static str, &'static str)] = &[
+    const CONSTANTS: &[(&str, &str)] = &[
         ("EXACT_FIT", "exactFit"),
         ("NO_BORDER", "noBorder"),
         ("NO_SCALE", "noScale"),

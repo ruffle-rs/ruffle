@@ -615,7 +615,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_attributes(ClassAttributes::SEALED);
 
     const PUBLIC_OVERRIDE_INSTANCE_PROPERTIES: &[(
-        &'static str,
+        &str,
         Option<NativeMethod>,
         Option<NativeMethod>,
     )] = &[
@@ -668,11 +668,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         }
     }
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &'static str,
-        Option<NativeMethod>,
-        Option<NativeMethod>,
-    )] = &[
+    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("align", Some(align), Some(set_align)),
         ("browserZoomFactor", Some(browser_zoom_factor), None),
         ("color", Some(color), Some(set_color)),

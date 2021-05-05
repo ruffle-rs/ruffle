@@ -41,7 +41,7 @@ pub fn create_interface<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<
 
     write.set_attributes(ClassAttributes::INTERFACE);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&'static str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("addEventListener", bodiless_method),
         ("dispatchEvent", bodiless_method),
         ("hasEventListener", bodiless_method),

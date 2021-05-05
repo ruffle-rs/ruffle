@@ -97,11 +97,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &'static str,
-        Option<NativeMethod>,
-        Option<NativeMethod>,
-    )] = &[("graphics", Some(graphics), None)];
+    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
+        &[("graphics", Some(graphics), None)];
     write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
     // Slot for lazy-initialized Graphics object.

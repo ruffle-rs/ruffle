@@ -44,7 +44,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.set_attributes(ClassAttributes::SEALED);
-    const CONSTANTS: &[(&'static str, &'static str)] =
+    const CONSTANTS: &[(&str, &str)] =
         &[("NONE", "none"), ("ROUND", "round"), ("SQUARE", "square")];
     write.define_public_constant_string_class_traits(CONSTANTS);
 

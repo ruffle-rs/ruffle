@@ -45,7 +45,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    const CONSTANTS: &[(&'static str, &'static str)] = &[
+    const CONSTANTS: &[(&str, &str)] = &[
         ("CENTER", "center"),
         ("END", "end"),
         ("JUSTIFY", "justify"),

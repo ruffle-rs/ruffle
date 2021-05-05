@@ -52,7 +52,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    const PUBLIC_CLASS_METHODS: &[(&'static str, NativeMethod)] = &[("gc", gc)];
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethod)] = &[("gc", gc)];
     write.define_public_builtin_class_methods(PUBLIC_CLASS_METHODS);
 
     class
