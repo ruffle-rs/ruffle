@@ -791,7 +791,7 @@ pub trait TDisplayObject<'gc>:
     /// This version of the function implements the concept of parenthood as
     /// seen in AVM2. Notably, it disallows access to non-container parents.
     fn avm2_parent(&self) -> Option<DisplayObject<'gc>> {
-        self.parent()
+        self.parent().filter(|p| p.as_container().is_some())
     }
 
     fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
