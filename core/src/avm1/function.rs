@@ -390,7 +390,7 @@ impl<'gc> Executable<'gc> {
                     // If _parent is undefined (because this is a root timeline), it actually does not get pushed,
                     // and _global ends up incorrectly taking _parent's register.
                     // See test for more info.
-                    if let Some(parent) = af.base_clip.parent() {
+                    if let Some(parent) = af.base_clip.avm1_parent() {
                         frame.set_local_register(preload_r, parent.object());
                         preload_r += 1;
                     }

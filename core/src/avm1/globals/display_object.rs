@@ -119,7 +119,7 @@ pub fn get_parent<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_display_object()
-        .and_then(|mc| mc.parent())
+        .and_then(|mc| mc.avm1_parent())
         .map(|dn| dn.object().coerce_to_object(activation))
         .map(Value::Object)
         .unwrap_or(Value::Undefined))
@@ -214,7 +214,7 @@ pub fn remove_display_object<'gc>(
     // TODO: Figure out the derivation of this range.
     if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !this.removed() {
         // Need a parent to remove from.
-        if let Some(mut parent) = this.parent().and_then(|o| o.as_movie_clip()) {
+        if let Some(mut parent) = this.avm1_parent().and_then(|o| o.as_movie_clip()) {
             parent.remove_child(&mut activation.context, this, Lists::all());
         }
     }

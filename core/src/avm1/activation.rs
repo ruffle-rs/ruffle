@@ -2567,7 +2567,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     is_slash_path = true;
                 }
                 path = path.get(3..).unwrap_or(&[]);
-                if let Some(parent) = object.as_display_object().and_then(|o| o.parent()) {
+                if let Some(parent) = object.as_display_object().and_then(|o| o.avm1_parent()) {
                     parent.object()
                 } else {
                     // Tried to get parent of root, bail out.
