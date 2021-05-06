@@ -33,7 +33,7 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::io::Read;
 use std::rc::Rc;
-use winit::dpi::{LogicalSize, PhysicalPosition};
+use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize};
 use winit::event::{
     ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent,
 };
@@ -71,6 +71,14 @@ struct Opt {
     /// whereas a low power usage tends prefer integrated GPUs.
     #[clap(long, short, case_insensitive = true, default_value = "high", arg_enum)]
     power: PowerPreference,
+
+    /// Width of window in pixels
+    #[clap(long, display_order = 1)]
+    width: Option<u32>,
+
+    /// Height of window in pixels
+    #[clap(long, display_order = 2)]
+    height: Option<u32>,
 
     /// Location to store a wgpu trace output
     #[clap(long, parse(from_os_str))]
@@ -199,7 +207,6 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut movie = load_movie_from_path(movie_url.to_owned(), opt.proxy.as_ref())?;
     set_movie_parameters(&mut movie, &opt.parameters);
-    let movie_size = LogicalSize::new(movie.width(), movie.height());
 
     let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
     let icon = Icon::from_rgba(icon_bytes.to_vec(), 32, 32)?;
@@ -216,7 +223,18 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
             .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
             .build(&event_loop)?,
     );
-    window.set_inner_size(movie_size);
+
+    let movie_size = LogicalSize::new(movie.width(), movie.height())
+        .cast::<f64>()
+        .to_physical(window.scale_factor());
+    let window_width = opt.width.unwrap_or(
+        movie_size.width * (opt.height.unwrap_or(movie_size.height) / movie_size.height),
+    );
+    let window_height = opt
+        .height
+        .unwrap_or(movie_size.height * (opt.width.unwrap_or(movie_size.width) / movie_size.width));
+    let window_size = PhysicalSize::new(window_width, window_height);
+    window.set_inner_size(window_size);
     let viewport_size = window.inner_size();
     let viewport_scale_factor = window.scale_factor();
 
