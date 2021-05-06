@@ -414,10 +414,17 @@ pub fn root<'gc>(
 /// Implements `stage`.
 pub fn stage<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Ok(activation.context.stage.object2())
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        return Ok(dobj
+            .avm2_stage(&activation.context)
+            .map(|stage| stage.object2())
+            .unwrap_or(Value::Null));
+    }
+
+    Ok(Value::Undefined)
 }
 
 /// Implements `visible`'s getter.

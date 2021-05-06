@@ -1294,6 +1294,31 @@ pub trait TDisplayObject<'gc>:
         })
     }
 
+    /// Obtain the root of the display tree hierarchy, if a suitable object
+    /// exists.
+    ///
+    /// This implements the AVM2 concept of `stage`. Notably, it deliberately
+    /// will fail to locate the current player's stage for objects that are not
+    /// rooted to the DisplayObject hierarchy correctly. If you just want to
+    /// access the current player's stage, grab it from the context.
+    fn avm2_stage(&self, _context: &UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
+        let mut parent = Some((*self).into());
+
+        while let Some(p) = parent {
+            p.as_container()?;
+
+            let grandparent = p.avm2_parent();
+
+            if grandparent.is_none() {
+                break;
+            }
+
+            parent = grandparent;
+        }
+
+        parent.filter(|p| p.as_stage().is_some())
+    }
+
     /// Determine if this display object is currently on the stage.
     fn is_on_stage(self, context: &UpdateContext<'_, 'gc, '_>) -> bool {
         let mut ancestor = self.avm2_parent();
