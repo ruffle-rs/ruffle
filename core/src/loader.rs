@@ -488,12 +488,6 @@ impl<'gc> Loader<'gc> {
                     .lock()
                     .expect("Could not lock player!!")
                     .update(|uc| {
-                        let domain =
-                            Avm2Domain::movie_domain(uc.gc_context, uc.avm2.global_domain());
-                        uc.library
-                            .library_for_movie_mut(movie.clone())
-                            .set_avm2_domain(domain);
-
                         let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
                             Some(Loader::Movie {
                                 target_clip,
@@ -503,6 +497,13 @@ impl<'gc> Loader<'gc> {
                             None => return Err(Error::Cancelled),
                             _ => unreachable!(),
                         };
+
+                        let domain =
+                            Avm2Domain::movie_domain(uc.gc_context, uc.avm2.global_domain());
+                        let library = uc.library.library_for_movie_mut(movie.clone());
+
+                        library.set_avm2_domain(domain);
+                        library.set_root(clip);
 
                         if let Some(broadcaster) = broadcaster {
                             Avm1::run_stack_frame_for_method(
