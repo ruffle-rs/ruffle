@@ -233,24 +233,23 @@ impl<'gc> Avm2Button<'gc> {
         if children.len() == 1 {
             let child = children.first().cloned().unwrap().0;
 
-            child.set_parent(context.gc_context, Some(self.into()));
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.construct_frame(context);
+            child.set_parent(context.gc_context, Some(self.into()));
 
             (child, false)
         } else {
             let state_sprite = MovieClip::new(empty_slice, context.gc_context);
 
-            state_sprite.set_parent(context.gc_context, Some(self.into()));
             state_sprite.set_avm2_constructor(context.gc_context, Some(sprite_constr));
             state_sprite.construct_frame(context);
+            state_sprite.set_parent(context.gc_context, Some(self.into()));
 
             for (child, depth) in children {
-                state_sprite.replace_at_depth(context, child, depth.into());
-
-                child.set_parent(context.gc_context, Some(state_sprite.into()));
                 child.post_instantiation(context, child, None, Instantiator::Movie, false);
                 child.construct_frame(context);
+
+                state_sprite.replace_at_depth(context, child, depth.into());
             }
 
             (state_sprite.into(), true)
