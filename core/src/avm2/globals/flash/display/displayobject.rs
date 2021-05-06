@@ -403,7 +403,7 @@ pub fn root<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
         return Ok(dobj
-            .avm2_root(&activation.context)
+            .avm2_root(&mut activation.context)
             .map(|root| root.object2())
             .unwrap_or(Value::Null));
     }
@@ -558,7 +558,7 @@ pub fn loader_info<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        if let Some(root) = dobj.avm2_root(&activation.context) {
+        if let Some(root) = dobj.avm2_root(&mut activation.context) {
             if DisplayObject::ptr_eq(root, dobj) {
                 let movie = dobj.movie();
 

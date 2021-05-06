@@ -1254,7 +1254,7 @@ pub trait TDisplayObject<'gc>:
     ///
     /// This function implements the AVM2 concept of root clips. For the AVM1
     /// version, see `avm1_root`.
-    fn avm2_root(&self, context: &UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
+    fn avm2_root(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
         let mut parent = Some((*self).into());
 
         while let Some(p) = parent {
@@ -1280,17 +1280,8 @@ pub trait TDisplayObject<'gc>:
         }
 
         parent.or_else(|| {
-            if let Avm1Value::Object(object) = self.object() {
-                object.as_display_object()
-            } else if let Avm2Value::Object(object) = self.object2() {
-                if self.is_on_stage(context) {
-                    object.as_display_object()
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
+            let movie = self.movie()?;
+            context.library.library_for_movie_mut(movie).root()
         })
     }
 

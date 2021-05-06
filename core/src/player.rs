@@ -386,13 +386,13 @@ impl Player {
                 context.swf.height(),
             );
             let domain = Avm2Domain::movie_domain(context.gc_context, context.avm2.global_domain());
-            context
-                .library
-                .library_for_movie_mut(context.swf.clone())
-                .set_avm2_domain(domain);
-
             let root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
+
+            let library = context.library.library_for_movie_mut(context.swf.clone());
+
+            library.set_avm2_domain(domain);
+            library.set_root(root);
 
             root.set_depth(context.gc_context, 0);
             let flashvars = if !context.swf.parameters().is_empty() {
