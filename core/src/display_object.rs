@@ -1292,7 +1292,7 @@ pub trait TDisplayObject<'gc>:
     /// will fail to locate the current player's stage for objects that are not
     /// rooted to the DisplayObject hierarchy correctly. If you just want to
     /// access the current player's stage, grab it from the context.
-    fn avm2_stage(&self, _context: &UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
+    fn avm2_stage(&self, context: &UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
         let mut parent = Some((*self).into());
 
         while let Some(p) = parent {
@@ -1307,7 +1307,11 @@ pub trait TDisplayObject<'gc>:
             parent = grandparent;
         }
 
-        parent.filter(|p| p.as_stage().is_some())
+        Some(
+            parent
+                .filter(|p| p.as_stage().is_some())
+                .unwrap_or_else(|| context.stage.into()),
+        )
     }
 
     /// Determine if this display object is currently on the stage.
