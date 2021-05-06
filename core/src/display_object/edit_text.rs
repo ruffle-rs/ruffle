@@ -974,7 +974,7 @@ impl<'gc> EditText<'gc> {
                             // If the property exists on the object, we overwrite the text with the property's value.
                             if object.has_property(activation, property) {
                                 let value = object.get(property, activation).unwrap();
-                                let _ = self.set_text(
+                                let _ = self.set_html_text(
                                     value
                                         .coerce_to_string(activation)
                                         .unwrap_or_default()
