@@ -1256,12 +1256,25 @@ pub trait TDisplayObject<'gc>:
     /// version, see `avm1_root`.
     fn avm2_root(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
         let mut parent = Some((*self).into());
+        if self.as_stage().is_some() {
+            return parent;
+        }
 
         while let Some(p) = parent {
-            let grandparent = p.avm2_parent();
+            let grandparent = p.parent();
 
             if grandparent.is_none() {
                 break;
+            }
+
+            if let Some(gp_btn) = grandparent.and_then(|gp| gp.as_avm2_button()) {
+                let active_state = gp_btn.get_state_child(gp_btn.state().into());
+                if active_state
+                    .map(|state| !DisplayObject::ptr_eq(state, p))
+                    .unwrap_or(true)
+                {
+                    return None;
+                }
             }
 
             if let Some(gp) = grandparent {
@@ -1273,16 +1286,12 @@ pub trait TDisplayObject<'gc>:
             parent = grandparent;
         }
 
-        if let Some(parent) = parent {
-            if !parent.is_on_stage(context) {
-                return None;
-            }
-        }
-
-        parent.or_else(|| {
-            let movie = self.movie()?;
-            context.library.library_for_movie_mut(movie).root()
-        })
+        let movie = self.movie()?;
+        context
+            .library
+            .library_for_movie_mut(movie)
+            .root()
+            .or_else(|| parent.filter(|p| p.is_on_stage(context)))
     }
 
     /// Obtain the root of the display tree hierarchy, if a suitable object
@@ -1296,12 +1305,20 @@ pub trait TDisplayObject<'gc>:
         let mut parent = Some((*self).into());
 
         while let Some(p) = parent {
-            p.as_container()?;
-
-            let grandparent = p.avm2_parent();
+            let grandparent = p.parent();
 
             if grandparent.is_none() {
                 break;
+            }
+
+            if let Some(gp_btn) = grandparent.and_then(|gp| gp.as_avm2_button()) {
+                let active_state = gp_btn.get_state_child(gp_btn.state().into());
+                if active_state
+                    .map(|state| !DisplayObject::ptr_eq(state, p))
+                    .unwrap_or(true)
+                {
+                    return None;
+                }
             }
 
             parent = grandparent;

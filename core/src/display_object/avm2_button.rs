@@ -256,6 +256,11 @@ impl<'gc> Avm2Button<'gc> {
         }
     }
 
+    /// Get the rendered state of the button.
+    pub fn state(self) -> ButtonState {
+        self.0.read().state
+    }
+
     /// Change the rendered state of the button.
     pub fn set_state(self, context: &mut UpdateContext<'_, 'gc, '_>, state: ButtonState) {
         self.0.write(context.gc_context).state = state;
