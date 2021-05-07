@@ -9,6 +9,7 @@ use crate::display_object::TDisplayObject;
 use flash_lso::types::Value as AmfValue;
 use flash_lso::types::{AMFVersion, Element, Lso};
 use gc_arena::MutationContext;
+use json::JsonValue;
 
 pub fn delete_all<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -181,6 +182,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
     }
 }
 
+/// Deserializes a Lso into an object containing the properties stored
 fn deserialize_lso<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     lso: &Lso,
@@ -198,6 +200,88 @@ fn deserialize_lso<'gc>(
     }
 
     Ok(obj)
+}
+
+/// Deserialize a Json shared object element into a Value
+fn recursive_deserialize_json<'gc>(
+    json_value: JsonValue,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Value<'gc> {
+    match json_value {
+        JsonValue::Null => Value::Null,
+        JsonValue::Short(s) => {
+            Value::String(AvmString::new(activation.context.gc_context, s.to_string()))
+        }
+        JsonValue::String(s) => Value::String(AvmString::new(activation.context.gc_context, s)),
+        JsonValue::Number(f) => Value::Number(f.into()),
+        JsonValue::Boolean(b) => Value::Bool(b),
+        JsonValue::Object(o) => {
+            if o.get("__proto__").and_then(JsonValue::as_str) == Some("Array") {
+                deserialize_array_json(o, activation)
+            } else {
+                deserialize_object_json(o, activation)
+            }
+        }
+        JsonValue::Array(_) => Value::Undefined,
+    }
+}
+
+/// Deserialize an Object and any children from a JSON object
+fn deserialize_object_json<'gc>(
+    json_obj: json::object::Object,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Value<'gc> {
+    // Deserialize Object
+    let obj_proto = activation.context.avm1.prototypes.object;
+    if let Ok(obj) = obj_proto.create_bare_object(activation, obj_proto) {
+        for entry in json_obj.iter() {
+            let value = recursive_deserialize_json(entry.1.clone(), activation);
+            obj.define_value(
+                activation.context.gc_context,
+                entry.0,
+                value,
+                Attribute::empty(),
+            );
+        }
+        obj.into()
+    } else {
+        Value::Undefined
+    }
+}
+
+/// Deserialize an Array and any children from a JSON object
+fn deserialize_array_json<'gc>(
+    mut json_obj: json::object::Object,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Value<'gc> {
+    let array_constructor = activation.context.avm1.prototypes.array_constructor;
+    let len = json_obj
+        .get("length")
+        .and_then(JsonValue::as_i32)
+        .unwrap_or_default();
+    if let Ok(Value::Object(obj)) = array_constructor.construct(activation, &[len.into()]) {
+        // Remove length and proto meta-properties.
+        json_obj.remove("length");
+        json_obj.remove("__proto__");
+
+        for entry in json_obj.iter() {
+            let value = recursive_deserialize_json(entry.1.clone(), activation);
+            if let Ok(i) = entry.0.parse::<usize>() {
+                obj.set_array_element(i, value, activation.context.gc_context);
+            } else {
+                obj.define_value(
+                    activation.context.gc_context,
+                    entry.0,
+                    value,
+                    Attribute::empty(),
+                );
+            }
+        }
+
+        obj.into()
+    } else {
+        Value::Undefined
+    }
 }
 
 pub fn get_local<'gc>(
@@ -315,8 +399,16 @@ pub fn get_local<'gc>(
 
     // Load the data object from storage if it existed prior
     if let Some(saved) = activation.context.storage.get(&full_name) {
+        // Attempt to load it as an Lso
         if let Ok(lso) = flash_lso::read::Reader::default().parse(&saved) {
             data = deserialize_lso(activation, &lso)?.into();
+        } else {
+            // Attempt to load legacy Json
+            if let Ok(saved_string) = String::from_utf8(saved) {
+                if let Ok(json_data) = json::parse(&saved_string) {
+                    data = recursive_deserialize_json(json_data, activation);
+                }
+            }
         }
     }
 
