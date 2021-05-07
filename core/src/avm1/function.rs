@@ -302,7 +302,7 @@ impl<'gc> Executable<'gc> {
                     None
                 };
 
-                let effective_ver = if activation.current_swf_version() > 5 {
+                let effective_ver = if activation.swf_version() > 5 {
                     af.swf_version()
                 } else {
                     this.as_display_object()
@@ -604,7 +604,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             Attribute::DONT_ENUM,
             Attribute::empty(),
         );
-        if activation.current_swf_version() < 7 {
+        if activation.swf_version() < 7 {
             this.set("constructor", (*self).into(), activation)?;
             this.set_attributes(
                 activation.context.gc_context,
@@ -646,7 +646,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             Attribute::DONT_ENUM,
             Attribute::empty(),
         );
-        if activation.current_swf_version() < 7 {
+        if activation.swf_version() < 7 {
             this.set("constructor", (*self).into(), activation)?;
             this.set_attributes(
                 activation.context.gc_context,

@@ -106,7 +106,7 @@ fn set_enabled<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let enabled = value.as_bool(activation.current_swf_version());
+    let enabled = value.as_bool(activation.swf_version());
     this.set_enabled(&mut activation.context, enabled);
     Ok(())
 }
@@ -123,7 +123,7 @@ fn set_use_hand_cursor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let use_hand_cursor = value.as_bool(activation.current_swf_version());
+    let use_hand_cursor = value.as_bool(activation.swf_version());
     this.set_use_hand_cursor(&mut activation.context, use_hand_cursor);
     Ok(())
 }

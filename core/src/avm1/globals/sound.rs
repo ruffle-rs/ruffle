@@ -240,7 +240,7 @@ fn duration<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.current_swf_version() >= 6 {
+    if activation.swf_version() >= 6 {
         if let Some(sound_object) = this.as_sound_object() {
             return Ok(sound_object
                 .duration()
@@ -258,7 +258,7 @@ fn get_bytes_loaded<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.current_swf_version() >= 6 {
+    if activation.swf_version() >= 6 {
         avm_warn!(activation, "Sound.getBytesLoaded: Unimplemented");
         Ok(1.into())
     } else {
@@ -271,7 +271,7 @@ fn get_bytes_total<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.current_swf_version() >= 6 {
+    if activation.swf_version() >= 6 {
         avm_warn!(activation, "Sound.getBytesTotal: Unimplemented");
         Ok(1.into())
     } else {
@@ -350,7 +350,7 @@ fn id3<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.current_swf_version() >= 6 {
+    if activation.swf_version() >= 6 {
         avm_warn!(activation, "Sound.id3: Unimplemented");
     }
     Ok(Value::Undefined)
@@ -361,7 +361,7 @@ fn load_sound<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.current_swf_version() >= 6 {
+    if activation.swf_version() >= 6 {
         avm_warn!(activation, "Sound.loadSound: Unimplemented");
     }
     Ok(Value::Undefined)
@@ -372,7 +372,7 @@ fn position<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.current_swf_version() >= 6 {
+    if activation.swf_version() >= 6 {
         if let Some(sound_object) = this.as_sound_object() {
             // TODO: The position is "sticky"; even if the sound is no longer playing, it should return
             // the previous valid position.

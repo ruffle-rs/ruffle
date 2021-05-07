@@ -157,8 +157,10 @@ pub fn set_password<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let current_swf_version = activation.current_swf_version();
-    this.set_password(value.as_bool(current_swf_version), &mut activation.context);
+    this.set_password(
+        value.as_bool(activation.swf_version()),
+        &mut activation.context,
+    );
     Ok(())
 }
 
@@ -341,8 +343,8 @@ pub fn set_html<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let current_swf_version = activation.current_swf_version();
-    this.set_is_html(&mut activation.context, value.as_bool(current_swf_version));
+    let value = value.as_bool(activation.swf_version());
+    this.set_is_html(&mut activation.context, value);
     Ok(())
 }
 
@@ -405,7 +407,7 @@ pub fn set_background<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let has_background = value.as_bool(activation.current_swf_version());
+    let has_background = value.as_bool(activation.swf_version());
     this.set_has_background(activation.context.gc_context, has_background);
     Ok(())
 }
@@ -439,7 +441,7 @@ pub fn set_border<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let has_border = value.as_bool(activation.current_swf_version());
+    let has_border = value.as_bool(activation.swf_version());
     this.set_has_border(activation.context.gc_context, has_border);
     Ok(())
 }
@@ -473,7 +475,7 @@ pub fn set_embed_fonts<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let embed_fonts = value.as_bool(activation.current_swf_version());
+    let embed_fonts = value.as_bool(activation.swf_version());
     this.set_is_device_font(&mut activation.context, !embed_fonts);
     Ok(())
 }
@@ -513,7 +515,7 @@ pub fn set_multiline<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let is_multiline = value.as_bool(activation.current_swf_version());
+    let is_multiline = value.as_bool(activation.swf_version());
     this.set_multiline(is_multiline, &mut activation.context);
     Ok(())
 }
@@ -530,7 +532,7 @@ pub fn set_selectable<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let set_selectable = value.as_bool(activation.current_swf_version());
+    let set_selectable = value.as_bool(activation.swf_version());
     this.set_selectable(set_selectable, &mut activation.context);
     Ok(())
 }
@@ -572,7 +574,7 @@ pub fn set_word_wrap<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let is_word_wrap = value.as_bool(activation.current_swf_version());
+    let is_word_wrap = value.as_bool(activation.swf_version());
     this.set_word_wrap(is_word_wrap, &mut activation.context);
     Ok(())
 }

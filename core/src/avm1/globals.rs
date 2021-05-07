@@ -204,7 +204,7 @@ pub fn get_infinity<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.current_swf_version() > 4 {
+    if activation.swf_version() > 4 {
         Ok(f64::INFINITY.into())
     } else {
         Ok(Value::Undefined)
@@ -216,7 +216,7 @@ pub fn get_nan<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.current_swf_version() > 4 {
+    if activation.swf_version() > 4 {
         Ok(f64::NAN.into())
     } else {
         Ok(Value::Undefined)

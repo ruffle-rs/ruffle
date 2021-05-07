@@ -15,7 +15,7 @@ pub fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let cons_value = if let Some(val) = args.get(0) {
-        Value::Bool(val.as_bool(activation.current_swf_version()))
+        Value::Bool(val.as_bool(activation.swf_version()))
     } else {
         Value::Bool(false)
     };
@@ -35,7 +35,7 @@ pub fn boolean_function<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let ret_value = if let Some(val) = args.get(0) {
-        Value::Bool(val.as_bool(activation.current_swf_version()))
+        Value::Bool(val.as_bool(activation.swf_version()))
     } else {
         Value::Undefined
     };
