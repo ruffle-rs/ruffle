@@ -19,26 +19,34 @@ use crate::executor::GlutinAsyncExecutor;
 use clap::Clap;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use ruffle_core::{
-    backend::audio::AudioBackend, backend::video::NullVideoBackend, config::Letterbox, Player,
+    backend::{
+        audio::{AudioBackend, NullAudioBackend},
+        log as log_backend,
+        navigator::NullNavigatorBackend,
+        storage::MemoryStorageBackend,
+        ui::NullUiBackend,
+        video,
+    },
+    config::Letterbox,
+    Player,
 };
 use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tinyfiledialogs::open_file_dialog;
 use url::Url;
 
-use ruffle_core::backend::video;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::io::Read;
 use std::rc::Rc;
-use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize};
+use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{
     ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent,
 };
 use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::{Fullscreen, Icon, WindowBuilder};
+use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 #[derive(Clap, Debug)]
 #[clap(
@@ -112,61 +120,36 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
     None
 }
 
-fn main() {
-    // When linked with the windows subsystem windows won't automatically attach
-    // to the console of the parent process, so we do it explicitly. This fails
-    // silently if the parent has no console.
-    #[cfg(windows)]
-    unsafe {
-        use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
-        AttachConsole(ATTACH_PARENT_PROCESS);
-    }
-
-    env_logger::init();
-
-    let opt = Opt::parse();
-
-    let ret = if opt.timedemo {
-        run_timedemo(opt)
+// TODO: Return just `SwfMovie` by making it hold `Url`?
+fn load_movie_from_path(
+    path: &Path,
+    opt: &Opt,
+) -> Result<(SwfMovie, Url), Box<dyn std::error::Error>> {
+    let movie_url = if path.exists() {
+        let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
+        Url::from_file_path(absolute_path)
+            .map_err(|_| "Path must be absolute and cannot be a URL")?
     } else {
-        run_player(opt)
+        Url::parse(path.to_str().unwrap_or_default())
+            .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
     };
 
-    if let Err(e) = ret {
-        eprintln!("Fatal error:\n{}", e);
-        std::process::exit(-1);
-    }
+    let mut movie = if movie_url.scheme() == "file" {
+        SwfMovie::from_path(movie_url.to_file_path().unwrap(), None)?
+    } else {
+        let proxy = opt.proxy.as_ref().and_then(|url| url.as_str().parse().ok());
+        let builder = HttpClient::builder()
+            .proxy(proxy)
+            .redirect_policy(RedirectPolicy::Follow);
+        let client = builder.build()?;
+        let response = client.get(movie_url.to_string())?;
+        let mut buffer: Vec<u8> = Vec::new();
+        response.into_body().read_to_end(&mut buffer)?;
 
-    // Without explicitly detaching the console cmd won't redraw it's prompt.
-    #[cfg(windows)]
-    unsafe {
-        winapi::um::wincon::FreeConsole();
-    }
-}
+        SwfMovie::from_data(&buffer, Some(movie_url.to_string()), None)?
+    };
 
-fn load_movie_from_path(
-    movie_url: Url,
-    proxy: Option<&Url>,
-) -> Result<SwfMovie, Box<dyn std::error::Error>> {
-    if movie_url.scheme() == "file" {
-        if let Ok(path) = movie_url.to_file_path() {
-            return SwfMovie::from_path(path, None);
-        }
-    }
-    let proxy = proxy.and_then(|url| url.as_str().parse().ok());
-    let builder = HttpClient::builder()
-        .proxy(proxy)
-        .redirect_policy(RedirectPolicy::Follow);
-    let client = builder.build()?;
-    let res = client.get(movie_url.to_string())?;
-    let mut buffer: Vec<u8> = Vec::new();
-    res.into_body().read_to_end(&mut buffer)?;
-
-    SwfMovie::from_data(&buffer, Some(movie_url.to_string()), None)
-}
-
-fn set_movie_parameters(movie: &mut SwfMovie, parameters: &[String]) {
-    let parameters = parameters.iter().map(|parameter| {
+    let parameters = opt.parameters.iter().map(|parameter| {
         let mut split = parameter.splitn(2, '=');
         if let (Some(key), Some(value)) = (split.next(), split.next()) {
             (key.to_owned(), value.to_owned())
@@ -174,311 +157,375 @@ fn set_movie_parameters(movie: &mut SwfMovie, parameters: &[String]) {
             (parameter.clone(), "".to_string())
         }
     });
-    movie.append_parameters(parameters)
+    movie.append_parameters(parameters);
+
+    Ok((movie, movie_url))
 }
 
-fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
-    let movie_url = match &opt.input_path {
-        Some(path) => {
-            if path.exists() {
-                let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
-                Url::from_file_path(absolute_path)
-                    .map_err(|_| "Path must be absolute and cannot be a URL")?
-            } else {
-                Url::parse(path.to_str().unwrap_or_default())
-                    .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
+fn load_from_file_dialog(opt: &Opt) -> Result<Option<(SwfMovie, Url)>, Box<dyn std::error::Error>> {
+    let result = open_file_dialog("Load a Flash File", "", Some((&["*.swf"], ".swf")));
+
+    let selected = match result {
+        Some(file_path) => PathBuf::from(file_path),
+        None => return Ok(None),
+    };
+
+    let absolute_path = selected
+        .canonicalize()
+        .unwrap_or_else(|_| selected.to_owned());
+
+    Ok(Some(load_movie_from_path(&absolute_path, opt)?))
+}
+
+struct App {
+    #[allow(dead_code)]
+    opt: Opt,
+    window: Rc<Window>,
+    event_loop: EventLoop<RuffleEvent>,
+    executor: Arc<Mutex<GlutinAsyncExecutor>>,
+    player: Arc<Mutex<Player>>,
+    movie: Option<Arc<SwfMovie>>,
+}
+
+impl App {
+    const DEFAULT_WINDOW_SIZE: LogicalSize<f64> = LogicalSize::new(1280.0, 720.0);
+
+    fn new(opt: Opt) -> Result<Self, Box<dyn std::error::Error>> {
+        let movie = if let Some(path) = opt.input_path.to_owned() {
+            Some(load_movie_from_path(&path, &opt)?)
+        } else {
+            match load_from_file_dialog(&opt)? {
+                Some(movie) => Some(movie),
+                None => {
+                    shutdown(&Ok(()));
+                    std::process::exit(0);
+                }
             }
-        }
-        None => {
-            let result = open_file_dialog("Load a Flash File", "", Some((&["*.swf"], ".swf")));
+        };
 
-            let selected = match result {
-                Some(file_path) => PathBuf::from(file_path),
-                None => return Ok(()),
-            };
+        let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
+        let icon = Icon::from_rgba(icon_bytes.to_vec(), 32, 32)?;
 
-            let absolute_path = selected
-                .canonicalize()
-                .unwrap_or_else(|_| selected.to_owned());
-            Url::from_file_path(absolute_path)
-                .map_err(|_| "Path must be absolute and cannot be a URL")?
-        }
-    };
+        let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
 
-    let mut movie = load_movie_from_path(movie_url.to_owned(), opt.proxy.as_ref())?;
-    set_movie_parameters(&mut movie, &opt.parameters);
+        let (title, movie_size) = if let Some((movie, movie_url)) = &movie {
+            let filename = movie_url
+                .path_segments()
+                .and_then(|segments| segments.last())
+                .unwrap_or_else(|| movie_url.as_str());
 
-    let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
-    let icon = Icon::from_rgba(icon_bytes.to_vec(), 32, 32)?;
+            (
+                format!("Ruffle - {}", filename),
+                LogicalSize::new(movie.width(), movie.height()).cast::<f64>(),
+            )
+        } else {
+            ("Ruffle".into(), Self::DEFAULT_WINDOW_SIZE)
+        };
 
-    let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
-    let window_title = movie_url
-        .path_segments()
-        .and_then(|segments| segments.last())
-        .unwrap_or_else(|| movie_url.as_str());
-    let window = Rc::new(
-        WindowBuilder::new()
-            .with_title(format!("Ruffle - {}", window_title))
+        let window_size: Size = if opt.width.is_none() && opt.height.is_none() {
+            movie_size.into()
+        } else {
+            let window_width = opt
+                .width
+                .unwrap_or(
+                    movie_size.width
+                        * (opt.height.unwrap_or(movie_size.height) / movie_size.height),
+                )
+                .max(1.0);
+            let window_height = opt
+                .height
+                .unwrap_or(
+                    movie_size.height * (opt.width.unwrap_or(movie_size.width) / movie_size.width),
+                )
+                .max(1.0);
+            PhysicalSize::new(window_width, window_height).into()
+        };
+
+        let window = WindowBuilder::new()
+            .with_title(title)
             .with_window_icon(Some(icon))
+            .with_inner_size(window_size)
             .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
-            .build(&event_loop)?,
-    );
+            .build(&event_loop)?;
 
-    let movie_size = LogicalSize::new(movie.width(), movie.height())
-        .cast::<f64>()
-        .to_physical(window.scale_factor());
-    let window_width = opt
-        .width
-        .unwrap_or(movie_size.width * (opt.height.unwrap_or(movie_size.height) / movie_size.height))
-        .max(1.0);
-    let window_height = opt
-        .height
-        .unwrap_or(movie_size.height * (opt.width.unwrap_or(movie_size.width) / movie_size.width))
-        .max(1.0);
-    let window_size = PhysicalSize::new(window_width, window_height);
-    window.set_inner_size(window_size);
-    let viewport_size = window.inner_size();
-    let viewport_scale_factor = window.scale_factor();
+        let viewport_size = window.inner_size();
+        let viewport_scale_factor = window.scale_factor();
 
-    let renderer = Box::new(WgpuRenderBackend::for_window(
-        window.as_ref(),
-        (viewport_size.width, viewport_size.height),
-        opt.graphics.into(),
-        opt.power.into(),
-        trace_path(&opt),
-    )?);
-    let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
-        Ok(audio) => Box::new(audio),
-        Err(e) => {
-            log::error!("Unable to create audio device: {}", e);
-            Box::new(ruffle_core::backend::audio::NullAudioBackend::new())
+        let window = Rc::new(window);
+        let renderer = Box::new(WgpuRenderBackend::for_window(
+            window.as_ref(),
+            (viewport_size.width, viewport_size.height),
+            opt.graphics.into(),
+            opt.power.into(),
+            trace_path(&opt),
+        )?);
+        let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
+            Ok(audio) => Box::new(audio),
+            Err(e) => {
+                log::error!("Unable to create audio device: {}", e);
+                Box::new(NullAudioBackend::new())
+            }
+        };
+        let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
+        let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
+            movie.as_ref().unwrap().1.clone(), // TODO: Get rid of this parameter.
+            channel,
+            event_loop.create_proxy(),
+            opt.proxy.clone(),
+            opt.upgrade_to_https,
+        ));
+        let storage = Box::new(storage::DiskStorageBackend::new());
+        let locale = Box::new(locale::DesktopLocaleBackend::new());
+        let video = Box::new(video::SoftwareVideoBackend::new());
+        let log = Box::new(log_backend::NullLogBackend::new());
+        let ui = Box::new(ui::DesktopUiBackend::new(window.clone()));
+        let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
+
+        let movie = movie.map(|(movie, _)| Arc::new(movie));
+
+        {
+            let mut player_lock = player.lock().unwrap();
+            if let Some(movie) = &movie {
+                player_lock.set_root_movie(movie.to_owned());
+                player_lock.set_is_playing(true); // Desktop player will auto-play.
+            }
+            player_lock.set_letterbox(Letterbox::On);
+            player_lock.set_viewport_dimensions(
+                viewport_size.width,
+                viewport_size.height,
+                viewport_scale_factor,
+            );
         }
-    };
-    let (executor, chan) = GlutinAsyncExecutor::new(event_loop.create_proxy());
-    let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
-        movie_url.clone(),
-        chan,
-        event_loop.create_proxy(),
-        opt.proxy,
-        opt.upgrade_to_https,
-    )); //TODO: actually implement this backend type
-    let storage = Box::new(storage::DiskStorageBackend::new());
-    let locale = Box::new(locale::DesktopLocaleBackend::new());
-    let video = Box::new(video::SoftwareVideoBackend::new());
-    let log = Box::new(ruffle_core::backend::log::NullLogBackend::new());
-    let ui = Box::new(ui::DesktopUiBackend::new(window.clone()));
-    let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
-    {
-        let mut player = player.lock().unwrap();
-        player.set_root_movie(Arc::new(movie));
-        player.set_is_playing(true); // Desktop player will auto-play.
-        player.set_letterbox(Letterbox::On);
-        player.set_viewport_dimensions(
-            viewport_size.width,
-            viewport_size.height,
-            viewport_scale_factor,
-        );
+
+        Ok(Self {
+            opt,
+            window,
+            event_loop,
+            executor,
+            player,
+            movie,
+        })
     }
 
-    let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
-    let mut time = Instant::now();
-    let mut next_frame_time = Instant::now();
-    let mut minimized = false;
-    let mut fullscreen_down = false;
-    loop {
-        // Poll UI events
-        event_loop.run(move |event, _window_target, control_flow| {
-            // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
-            #[allow(deprecated)]
-            match event {
-                winit::event::Event::LoopDestroyed => {
-                    player.lock().unwrap().flush_shared_objects();
-                    return;
-                }
+    // TODO: Change return type to ! once it's stable.
+    fn run(self) {
+        let window = self.window;
+        let player = self.player;
+        let executor = self.executor;
+        let movie = self.movie;
 
-                // Core loop
-                winit::event::Event::MainEventsCleared => {
-                    let new_time = Instant::now();
-                    let dt = new_time.duration_since(time).as_micros();
-                    if dt > 0 {
-                        time = new_time;
-                        let mut player_lock = player.lock().unwrap();
-                        player_lock.tick(dt as f64 / 1000.0);
-                        next_frame_time = new_time + player_lock.time_til_next_frame();
-                        if player_lock.needs_render() {
-                            window.request_redraw();
+        let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
+        let mut time = Instant::now();
+        let mut next_frame_time = Instant::now();
+        let mut minimized = false;
+        let mut fullscreen_down = false;
+        loop {
+            // Poll UI events
+            self.event_loop
+                .run(move |event, _window_target, control_flow| {
+                    if movie.is_none() {
+                        *control_flow = ControlFlow::Wait;
+                    }
+
+                    // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
+                    #[allow(deprecated)]
+                    match &event {
+                        winit::event::Event::LoopDestroyed => {
+                            player.lock().unwrap().flush_shared_objects();
+                            shutdown(&Ok(()));
+                            return;
                         }
-                    }
-                }
-
-                // Render
-                winit::event::Event::RedrawRequested(_) => {
-                    // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
-                    if !minimized {
-                        player.lock().unwrap().render();
-                    }
-                }
-
-                winit::event::Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::Resized(size) => {
-                        // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
-                        minimized = size.width == 0 && size.height == 0;
-
-                        let viewport_scale_factor = window.scale_factor();
-                        let mut player_lock = player.lock().unwrap();
-                        player_lock.set_viewport_dimensions(
-                            size.width,
-                            size.height,
-                            viewport_scale_factor,
-                        );
-                        player_lock
-                            .renderer_mut()
-                            .set_viewport_dimensions(size.width, size.height);
-                        window.request_redraw();
-                    }
-                    WindowEvent::CursorMoved { position, .. } => {
-                        let mut player_lock = player.lock().unwrap();
-                        mouse_pos = position;
-                        let event = ruffle_core::PlayerEvent::MouseMove {
-                            x: position.x,
-                            y: position.y,
-                        };
-                        player_lock.handle_event(event);
-                        if player_lock.needs_render() {
-                            window.request_redraw();
-                        }
-                    }
-                    WindowEvent::MouseInput {
-                        button: MouseButton::Left,
-                        state: pressed,
-                        ..
-                    } => {
-                        let mut player_lock = player.lock().unwrap();
-                        let event = if pressed == ElementState::Pressed {
-                            ruffle_core::PlayerEvent::MouseDown {
-                                x: mouse_pos.x,
-                                y: mouse_pos.y,
+                        winit::event::Event::WindowEvent { event, .. } => match event {
+                            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                            WindowEvent::KeyboardInput {
+                                input:
+                                    KeyboardInput {
+                                        state: ElementState::Pressed,
+                                        virtual_keycode: Some(VirtualKeyCode::Return),
+                                        modifiers,
+                                        ..
+                                    },
+                                ..
+                            } if modifiers.alt() => {
+                                if !fullscreen_down {
+                                    window.set_fullscreen(match window.fullscreen() {
+                                        None => Some(Fullscreen::Borderless(None)),
+                                        Some(_) => None,
+                                    });
+                                }
+                                fullscreen_down = true;
+                                return;
                             }
-                        } else {
-                            ruffle_core::PlayerEvent::MouseUp {
-                                x: mouse_pos.x,
-                                y: mouse_pos.y,
+                            WindowEvent::KeyboardInput {
+                                input:
+                                    KeyboardInput {
+                                        state: ElementState::Released,
+                                        virtual_keycode: Some(VirtualKeyCode::Return),
+                                        ..
+                                    },
+                                ..
+                            } if fullscreen_down => {
+                                fullscreen_down = false;
                             }
-                        };
-                        player_lock.handle_event(event);
-                        if player_lock.needs_render() {
-                            window.request_redraw();
-                        }
-                    }
-                    WindowEvent::MouseWheel { delta, .. } => {
-                        use ruffle_core::events::MouseWheelDelta;
-                        let mut player_lock = player.lock().unwrap();
-                        let delta = match delta {
-                            MouseScrollDelta::LineDelta(_, dy) => MouseWheelDelta::Lines(dy.into()),
-                            MouseScrollDelta::PixelDelta(pos) => MouseWheelDelta::Pixels(pos.y),
-                        };
-                        let event = ruffle_core::PlayerEvent::MouseWheel { delta };
-                        player_lock.handle_event(event);
-                        if player_lock.needs_render() {
-                            window.request_redraw();
-                        }
-                    }
-                    WindowEvent::CursorLeft { .. } => {
-                        let mut player_lock = player.lock().unwrap();
-                        player_lock.handle_event(ruffle_core::PlayerEvent::MouseLeft);
-                        if player_lock.needs_render() {
-                            window.request_redraw();
-                        }
-                    }
-                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                    WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Return),
-                                modifiers, // TODO: Use WindowEvent::ModifiersChanged.
+                            WindowEvent::KeyboardInput {
+                                input:
+                                    KeyboardInput {
+                                        state: ElementState::Pressed,
+                                        virtual_keycode: Some(VirtualKeyCode::Escape),
+                                        ..
+                                    },
                                 ..
-                            },
-                        ..
-                    } if modifiers.alt() => {
-                        if !fullscreen_down {
-                            window.set_fullscreen(match window.fullscreen() {
-                                None => Some(Fullscreen::Borderless(None)),
-                                Some(_) => None,
-                            });
+                            } => {
+                                window.set_fullscreen(None);
+                                return;
+                            }
+                            _ => (),
+                        },
+                        _ => (),
+                    }
+
+                    if movie.is_none() {
+                        return;
+                    }
+
+                    match event {
+                        // Core loop
+                        winit::event::Event::MainEventsCleared => {
+                            let new_time = Instant::now();
+                            let dt = new_time.duration_since(time).as_micros();
+                            if dt > 0 {
+                                time = new_time;
+                                let mut player_lock = player.lock().unwrap();
+                                player_lock.tick(dt as f64 / 1000.0);
+                                next_frame_time = new_time + player_lock.time_til_next_frame();
+                                if player_lock.needs_render() {
+                                    window.request_redraw();
+                                }
+                            }
                         }
-                        fullscreen_down = true;
-                    }
-                    WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                state: ElementState::Released,
-                                virtual_keycode: Some(VirtualKeyCode::Return),
-                                ..
-                            },
-                        ..
-                    } if fullscreen_down => {
-                        fullscreen_down = false;
-                    }
-                    WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
-                        ..
-                    } => {
-                        window.set_fullscreen(None);
-                    }
-                    WindowEvent::KeyboardInput { .. } | WindowEvent::ReceivedCharacter(_) => {
-                        let mut player_lock = player.lock().unwrap();
-                        if let Some(event) = player_lock
-                            .ui_mut()
-                            .downcast_mut::<ui::DesktopUiBackend>()
-                            .unwrap()
-                            .handle_event(event)
-                        {
-                            player_lock.handle_event(event);
-                            if player_lock.needs_render() {
+
+                        // Render
+                        winit::event::Event::RedrawRequested(_) => {
+                            // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
+                            if !minimized {
+                                player.lock().unwrap().render();
+                            }
+                        }
+
+                        winit::event::Event::WindowEvent { event, .. } => match event {
+                            WindowEvent::Resized(size) => {
+                                // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
+                                minimized = size.width == 0 && size.height == 0;
+
+                                let viewport_scale_factor = window.scale_factor();
+                                let mut player_lock = player.lock().unwrap();
+                                player_lock.set_viewport_dimensions(
+                                    size.width,
+                                    size.height,
+                                    viewport_scale_factor,
+                                );
+                                player_lock
+                                    .renderer_mut()
+                                    .set_viewport_dimensions(size.width, size.height);
                                 window.request_redraw();
                             }
-                        }
+                            WindowEvent::CursorMoved { position, .. } => {
+                                let mut player_lock = player.lock().unwrap();
+                                mouse_pos = position;
+                                let event = ruffle_core::PlayerEvent::MouseMove {
+                                    x: position.x,
+                                    y: position.y,
+                                };
+                                player_lock.handle_event(event);
+                                if player_lock.needs_render() {
+                                    window.request_redraw();
+                                }
+                            }
+                            WindowEvent::MouseInput {
+                                button: MouseButton::Left,
+                                state: pressed,
+                                ..
+                            } => {
+                                let mut player_lock = player.lock().unwrap();
+                                let event = if pressed == ElementState::Pressed {
+                                    ruffle_core::PlayerEvent::MouseDown {
+                                        x: mouse_pos.x,
+                                        y: mouse_pos.y,
+                                    }
+                                } else {
+                                    ruffle_core::PlayerEvent::MouseUp {
+                                        x: mouse_pos.x,
+                                        y: mouse_pos.y,
+                                    }
+                                };
+                                player_lock.handle_event(event);
+                                if player_lock.needs_render() {
+                                    window.request_redraw();
+                                }
+                            }
+                            WindowEvent::MouseWheel { delta, .. } => {
+                                use ruffle_core::events::MouseWheelDelta;
+                                let mut player_lock = player.lock().unwrap();
+                                let delta = match delta {
+                                    MouseScrollDelta::LineDelta(_, dy) => {
+                                        MouseWheelDelta::Lines(dy.into())
+                                    }
+                                    MouseScrollDelta::PixelDelta(pos) => {
+                                        MouseWheelDelta::Pixels(pos.y)
+                                    }
+                                };
+                                let event = ruffle_core::PlayerEvent::MouseWheel { delta };
+                                player_lock.handle_event(event);
+                                if player_lock.needs_render() {
+                                    window.request_redraw();
+                                }
+                            }
+                            WindowEvent::CursorLeft { .. } => {
+                                let mut player_lock = player.lock().unwrap();
+                                player_lock.handle_event(ruffle_core::PlayerEvent::MouseLeft);
+                                if player_lock.needs_render() {
+                                    window.request_redraw();
+                                }
+                            }
+                            WindowEvent::KeyboardInput { .. }
+                            | WindowEvent::ReceivedCharacter(_) => {
+                                let mut player_lock = player.lock().unwrap();
+                                if let Some(event) = player_lock
+                                    .ui_mut()
+                                    .downcast_mut::<ui::DesktopUiBackend>()
+                                    .unwrap()
+                                    .handle_event(event)
+                                {
+                                    player_lock.handle_event(event);
+                                    if player_lock.needs_render() {
+                                        window.request_redraw();
+                                    }
+                                }
+                            }
+                            _ => (),
+                        },
+                        winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => executor
+                            .lock()
+                            .expect("active executor reference")
+                            .poll_all(),
+                        _ => (),
                     }
-                    _ => (),
-                },
-                winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => executor
-                    .lock()
-                    .expect("active executor reference")
-                    .poll_all(),
-                _ => (),
-            }
 
-            // After polling events, sleep the event loop until the next event or the next frame.
-            if *control_flow != ControlFlow::Exit {
-                *control_flow = ControlFlow::WaitUntil(next_frame_time);
-            }
-        });
+                    // After polling events, sleep the event loop until the next event or the next frame.
+                    if *control_flow != ControlFlow::Exit {
+                        *control_flow = ControlFlow::WaitUntil(next_frame_time);
+                    }
+                });
+        }
     }
 }
 
 fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
-    let movie_url = match &opt.input_path {
-        Some(path) => {
-            if path.exists() {
-                let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
-                Url::from_file_path(absolute_path)
-                    .map_err(|_| "Path must be absolute and cannot be a URL")?
-            } else {
-                Url::parse(path.to_str().unwrap_or_default())
-                    .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
-            }
-        }
-        None => return Err("Input file necessary for timedemo".into()),
-    };
-
-    let mut movie = load_movie_from_path(movie_url, opt.proxy.as_ref())?;
-    set_movie_parameters(&mut movie, &opt.parameters);
+    let path = opt
+        .input_path
+        .as_ref()
+        .ok_or("Input file necessary for timedemo")?;
+    let (movie, _) = load_movie_from_path(&path, &opt)?;
     let movie_frames = Some(movie.header().num_frames);
 
     let viewport_width = 1920;
@@ -491,33 +538,28 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         opt.power.into(),
         trace_path(&opt),
     )?);
-    let audio: Box<dyn AudioBackend> =
-        Box::new(ruffle_core::backend::audio::NullAudioBackend::new());
-    let navigator = Box::new(ruffle_core::backend::navigator::NullNavigatorBackend::new());
-    let storage = Box::new(ruffle_core::backend::storage::MemoryStorageBackend::default());
+    let audio = Box::new(NullAudioBackend::new());
+    let navigator = Box::new(NullNavigatorBackend::new());
+    let storage = Box::new(MemoryStorageBackend::default());
     let locale = Box::new(locale::DesktopLocaleBackend::new());
-    let video = Box::new(NullVideoBackend::new());
-    let log = Box::new(ruffle_core::backend::log::NullLogBackend::new());
-    let ui = Box::new(ruffle_core::backend::ui::NullUiBackend::new());
+    let video = Box::new(video::NullVideoBackend::new());
+    let log = Box::new(log_backend::NullLogBackend::new());
+    let ui = Box::new(NullUiBackend::new());
     let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
-    player.lock().unwrap().set_root_movie(Arc::new(movie));
-    player.lock().unwrap().set_is_playing(true);
 
-    player.lock().unwrap().set_viewport_dimensions(
-        viewport_width,
-        viewport_height,
-        viewport_scale_factor,
-    );
+    let mut player_lock = player.lock().unwrap();
+    player_lock.set_root_movie(Arc::new(movie));
+    player_lock.set_is_playing(true);
+    player_lock.set_viewport_dimensions(viewport_width, viewport_height, viewport_scale_factor);
 
-    println!("Running {}...", opt.input_path.unwrap().to_string_lossy(),);
+    println!("Running {}...", path.to_string_lossy());
 
     let start = Instant::now();
     let mut num_frames = 0;
     const MAX_FRAMES: u32 = 5000;
-    let mut player = player.lock().unwrap();
-    while num_frames < MAX_FRAMES && player.current_frame() < movie_frames {
-        player.run_frame();
-        player.render();
+    while num_frames < MAX_FRAMES && player_lock.current_frame() < movie_frames {
+        player_lock.run_frame();
+        player_lock.render();
         num_frames += 1;
     }
     let end = Instant::now();
@@ -526,4 +568,41 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     println!("Ran {} frames in {}s.", num_frames, duration.as_secs_f32());
 
     Ok(())
+}
+
+fn init() {
+    // When linked with the windows subsystem windows won't automatically attach
+    // to the console of the parent process, so we do it explicitly. This fails
+    // silently if the parent has no console.
+    #[cfg(windows)]
+    unsafe {
+        use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
+        AttachConsole(ATTACH_PARENT_PROCESS);
+    }
+
+    env_logger::init();
+}
+
+fn shutdown(result: &Result<(), Box<dyn std::error::Error>>) {
+    if let Err(e) = result {
+        eprintln!("Fatal error:\n{}", e);
+    }
+
+    // Without explicitly detaching the console cmd won't redraw it's prompt.
+    #[cfg(windows)]
+    unsafe {
+        winapi::um::wincon::FreeConsole();
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    init();
+    let opt = Opt::parse();
+    let result = if opt.timedemo {
+        run_timedemo(opt)
+    } else {
+        App::new(opt).map(|app| app.run())
+    };
+    shutdown(&result);
+    result
 }
