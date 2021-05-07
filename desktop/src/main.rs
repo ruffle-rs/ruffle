@@ -74,11 +74,11 @@ struct Opt {
 
     /// Width of window in pixels
     #[clap(long, display_order = 1)]
-    width: Option<u32>,
+    width: Option<f64>,
 
     /// Height of window in pixels
     #[clap(long, display_order = 2)]
-    height: Option<u32>,
+    height: Option<f64>,
 
     /// Location to store a wgpu trace output
     #[clap(long, parse(from_os_str))]
@@ -227,12 +227,14 @@ fn run_player(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let movie_size = LogicalSize::new(movie.width(), movie.height())
         .cast::<f64>()
         .to_physical(window.scale_factor());
-    let window_width = opt.width.unwrap_or(
-        movie_size.width * (opt.height.unwrap_or(movie_size.height) / movie_size.height),
-    );
+    let window_width = opt
+        .width
+        .unwrap_or(movie_size.width * (opt.height.unwrap_or(movie_size.height) / movie_size.height))
+        .max(1.0);
     let window_height = opt
         .height
-        .unwrap_or(movie_size.height * (opt.width.unwrap_or(movie_size.width) / movie_size.width));
+        .unwrap_or(movie_size.height * (opt.width.unwrap_or(movie_size.width) / movie_size.width))
+        .max(1.0);
     let window_size = PhysicalSize::new(window_width, window_height);
     window.set_inner_size(window_size);
     let viewport_size = window.inner_size();
