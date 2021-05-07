@@ -448,7 +448,7 @@ pub fn set_use_code_page<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     activation.context.system.use_codepage = value;
 
@@ -472,7 +472,7 @@ pub fn set_exact_settings<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .to_owned()
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     activation.context.system.exact_settings = value;
 

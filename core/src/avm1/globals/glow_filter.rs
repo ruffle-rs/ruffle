@@ -163,7 +163,7 @@ pub fn set_inner<'gc>(
     let inner = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     if let Some(filter) = this.as_glow_filter_object() {
         filter.set_inner(activation.context.gc_context, inner);
@@ -192,7 +192,7 @@ pub fn set_knockout<'gc>(
     let knockout = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     if let Some(filter) = this.as_glow_filter_object() {
         filter.set_knockout(activation.context.gc_context, knockout);

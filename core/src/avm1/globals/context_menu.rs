@@ -65,28 +65,28 @@ pub fn copy<'gc>(
 
     let save = built_in
         .get("save", activation)?
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
     let zoom = built_in
         .get("zoom", activation)?
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
     let quality = built_in
         .get("quality", activation)?
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
     let play = built_in
         .get("play", activation)?
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
     let loop_ = built_in
         .get("loop", activation)?
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
     let rewind = built_in
         .get("rewind", activation)?
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
     let forward_back = built_in
         .get("forward_back", activation)?
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
     let print = built_in
         .get("print", activation)?
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     copy_built_in.set("save", save.into(), activation)?;
     copy_built_in.set("zoom", zoom.into(), activation)?;

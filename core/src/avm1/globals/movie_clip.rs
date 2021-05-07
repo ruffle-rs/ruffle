@@ -124,7 +124,7 @@ pub fn hit_test<'gc>(
         let y = args.get(1).unwrap().coerce_to_f64(activation)?;
         let shape = args
             .get(2)
-            .map(|v| v.as_bool(activation.current_swf_version()))
+            .map(|v| v.as_bool(activation.swf_version()))
             .unwrap_or(false);
         if x.is_finite() && y.is_finite() {
             // The docs say the point is in "Stage coordinates", but actually they are in root coordinates.
@@ -255,12 +255,12 @@ fn attach_bitmap<'gc>(
                 let _pixel_snapping = args
                     .get(2)
                     .unwrap_or(&Value::Undefined)
-                    .as_bool(activation.current_swf_version());
+                    .as_bool(activation.swf_version());
 
                 let smoothing = args
                     .get(3)
                     .unwrap_or(&Value::Undefined)
-                    .as_bool(activation.current_swf_version());
+                    .as_bool(activation.swf_version());
 
                 if let Some(bitmap_handle) = bitmap_handle {
                     //TODO: do attached BitmapDatas have character ids?
@@ -308,7 +308,7 @@ fn line_style<'gc>(
         };
         let is_pixel_hinted = args
             .get(3)
-            .map_or(false, |v| v.as_bool(activation.current_swf_version()));
+            .map_or(false, |v| v.as_bool(activation.swf_version()));
         let (allow_scale_x, allow_scale_y) = match args
             .get(4)
             .and_then(|v| v.coerce_to_string(activation).ok())
@@ -724,7 +724,7 @@ fn create_text_field<'gc>(
         false,
     );
 
-    if activation.current_swf_version() >= 8 {
+    if activation.swf_version() >= 8 {
         //SWF8+ returns the `TextField` instance here
         Ok(text_field.object())
     } else {
@@ -858,7 +858,7 @@ fn get_instance_at_depth<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.current_swf_version() >= 7 {
+    if activation.swf_version() >= 7 {
         let depth = if let Some(depth) = args.get(0) {
             depth
                 .coerce_to_i32(activation)?
@@ -893,7 +893,7 @@ fn get_next_highest_depth<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.current_swf_version() >= 7 {
+    if activation.swf_version() >= 7 {
         let depth = std::cmp::max(
             movie_clip
                 .highest_depth(Depth::MAX)
@@ -1370,7 +1370,7 @@ fn set_enabled<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let enabled = value.as_bool(activation.current_swf_version());
+    let enabled = value.as_bool(activation.swf_version());
     this.set_enabled(&mut activation.context, enabled);
     Ok(())
 }
@@ -1388,7 +1388,7 @@ fn set_focus_enabled<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     this.set_focusable(
-        value.as_bool(activation.current_swf_version()),
+        value.as_bool(activation.swf_version()),
         &mut activation.context,
     );
     Ok(())
@@ -1406,7 +1406,7 @@ fn set_lock_root<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let lock_root = value.as_bool(activation.current_swf_version());
+    let lock_root = value.as_bool(activation.swf_version());
     this.set_lock_root(activation.context.gc_context, lock_root);
     Ok(())
 }
@@ -1423,7 +1423,7 @@ fn set_use_hand_cursor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let use_hand_cursor = value.as_bool(activation.current_swf_version());
+    let use_hand_cursor = value.as_bool(activation.swf_version());
     this.set_use_hand_cursor(&mut activation.context, use_hand_cursor);
     Ok(())
 }

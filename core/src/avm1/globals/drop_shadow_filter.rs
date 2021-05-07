@@ -231,7 +231,7 @@ pub fn set_hide_object<'gc>(
     let hide_object = args
         .get(0)
         .unwrap_or(&false.into())
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     if let Some(object) = this.as_drop_shadow_filter_object() {
         object.set_hide_object(activation.context.gc_context, hide_object);
@@ -260,7 +260,7 @@ pub fn set_inner<'gc>(
     let inner = args
         .get(0)
         .unwrap_or(&false.into())
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     if let Some(object) = this.as_drop_shadow_filter_object() {
         object.set_inner(activation.context.gc_context, inner);
@@ -289,7 +289,7 @@ pub fn set_knockout<'gc>(
     let knockout = args
         .get(0)
         .unwrap_or(&false.into())
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     if let Some(object) = this.as_drop_shadow_filter_object() {
         object.set_knockout(activation.context.gc_context, knockout);

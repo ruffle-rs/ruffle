@@ -59,7 +59,7 @@ pub fn constructor<'gc>(
     let transparency = args
         .get(2)
         .unwrap_or(&Value::Bool(true))
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     let fill_color = args
         .get(3)
@@ -464,7 +464,7 @@ pub fn noise<'gc>(
     let gray_scale = args
         .get(4)
         .unwrap_or(&Value::Bool(false))
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
@@ -583,7 +583,7 @@ pub fn get_color_bounds_rect<'gc>(
             let find_color = args
                 .get(2)
                 .unwrap_or(&Value::Bool(true))
-                .as_bool(activation.current_swf_version());
+                .as_bool(activation.swf_version());
 
             if let (Some(mask_val), Some(color_val)) = (args.get(0), args.get(1)) {
                 let mask = mask_val.coerce_to_i32(activation)?;

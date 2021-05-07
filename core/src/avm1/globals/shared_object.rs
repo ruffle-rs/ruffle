@@ -193,7 +193,7 @@ pub fn get_local<'gc>(
     let secure = args
         .get(2)
         .unwrap_or(&Value::Undefined)
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     // Secure parameter disallows using the shared object from non-HTTPS.
     if secure && movie_url.scheme() != "https" {

@@ -647,11 +647,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // AS1 logical and
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        let version = self.current_swf_version();
-        let result = b.as_bool(version) && a.as_bool(version);
+        let result = b.as_bool(self.swf_version()) && a.as_bool(self.swf_version());
         self.context
             .avm1
-            .push(Value::from_bool(result, self.current_swf_version()));
+            .push(Value::from_bool(result, self.swf_version()));
         Ok(FrameControl::Continue)
     }
 
@@ -790,7 +789,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     let _ = self.run_child_frame_for_action(
                         "[Frame Call]",
                         clip.into(),
-                        self.current_swf_version(),
+                        self.swf_version(),
                         action,
                     )?;
                 }
@@ -1112,7 +1111,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let result = b.into_number_v1() == a.into_number_v1();
         self.context
             .avm1
-            .push(Value::from_bool(result, self.current_swf_version()));
+            .push(Value::from_bool(result, self.swf_version()));
         Ok(FrameControl::Continue)
     }
 
@@ -1461,7 +1460,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         data: &'b SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
-        if val.as_bool(self.current_swf_version()) {
+        if val.as_bool(self.swf_version()) {
             reader.seek(data.movie.data(), jump_offset);
         }
         Ok(FrameControl::Continue)
@@ -1556,7 +1555,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let result = b.into_number_v1() < a.into_number_v1();
         self.context
             .avm1
-            .push(Value::from_bool(result, self.current_swf_version()));
+            .push(Value::from_bool(result, self.swf_version()));
         Ok(FrameControl::Continue)
     }
 
@@ -1664,9 +1663,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_not(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let version = self.current_swf_version();
-        let val = !self.context.avm1.pop().as_bool(version);
-        self.context.avm1.push(Value::from_bool(val, version));
+        let val = !self.context.avm1.pop().as_bool(self.swf_version());
+        self.context
+            .avm1
+            .push(Value::from_bool(val, self.swf_version()));
         Ok(FrameControl::Continue)
     }
 
@@ -1737,9 +1737,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // AS1 logical or
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        let version = self.current_swf_version();
-        let result = b.as_bool(version) || a.as_bool(version);
-        self.context.avm1.push(Value::from_bool(result, version));
+        let result = b.as_bool(self.swf_version()) || a.as_bool(self.swf_version());
+        self.context
+            .avm1
+            .push(Value::from_bool(result, self.swf_version()));
         Ok(FrameControl::Continue)
     }
 
@@ -1993,7 +1994,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let display_object = self.resolve_target_display_object(start_clip, target, true)?;
         if let Some(display_object) = display_object {
             let lock_center = self.context.avm1.pop();
-            let constrain = self.context.avm1.pop().as_bool(self.current_swf_version());
+            let constrain = self.context.avm1.pop().as_bool(self.swf_version());
             if constrain {
                 let y2 = self.context.avm1.pop();
                 let x2 = self.context.avm1.pop();
@@ -2055,7 +2056,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let result = b.coerce_to_string(self)? == a.coerce_to_string(self)?;
         self.context
             .avm1
-            .push(Value::from_bool(result, self.current_swf_version()));
+            .push(Value::from_bool(result, self.swf_version()));
         Ok(FrameControl::Continue)
     }
 
@@ -2097,7 +2098,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .gt(a.coerce_to_string(self)?.bytes());
         self.context
             .avm1
-            .push(Value::from_bool(result, self.current_swf_version()));
+            .push(Value::from_bool(result, self.swf_version()));
         Ok(FrameControl::Continue)
     }
 
@@ -2122,7 +2123,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .lt(a.coerce_to_string(self)?.bytes());
         self.context
             .avm1
-            .push(Value::from_bool(result, self.current_swf_version()));
+            .push(Value::from_bool(result, self.swf_version()));
         Ok(FrameControl::Continue)
     }
 
@@ -2845,14 +2846,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(self.base_clip().avm1_root(&self.context)?.object())
     }
 
-    /// Get the currently executing SWF version.
-    pub fn current_swf_version(&self) -> u8 {
-        self.swf_version()
-    }
-
     /// Returns whether property keys should be case sensitive based on the current SWF version.
     pub fn is_case_sensitive(&self) -> bool {
-        self.current_swf_version() > 6
+        self.swf_version() > 6
     }
 
     /// Resolve a particular named local variable within this activation.

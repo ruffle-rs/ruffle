@@ -166,7 +166,7 @@ fn getbool_from_avm1_object<'gc>(
     Ok(match object.get(name, activation)? {
         Avm1Value::Undefined => None,
         Avm1Value::Null => None,
-        v => Some(v.as_bool(activation.current_swf_version())),
+        v => Some(v.as_bool(activation.swf_version())),
     })
 }
 

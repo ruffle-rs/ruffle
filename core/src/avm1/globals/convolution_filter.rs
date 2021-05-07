@@ -105,7 +105,7 @@ pub fn set_clamp<'gc>(
     let clamp = args
         .get(0)
         .unwrap_or(&true.into())
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     if let Some(filter) = this.as_convolution_filter_object() {
         filter.set_clamp(activation.context.gc_context, clamp);
@@ -305,7 +305,7 @@ pub fn set_preserve_alpha<'gc>(
     let preserve_alpha = args
         .get(0)
         .unwrap_or(&true.into())
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     if let Some(filter) = this.as_convolution_filter_object() {
         filter.set_preserve_alpha(activation.context.gc_context, preserve_alpha);

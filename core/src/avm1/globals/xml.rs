@@ -137,7 +137,7 @@ pub fn xmlnode_clone_node<'gc>(
     if let (Some(xmlnode), deep) = (
         this.as_xml_node(),
         args.get(0)
-            .map(|v| v.as_bool(activation.current_swf_version()))
+            .map(|v| v.as_bool(activation.swf_version()))
             .unwrap_or(false),
     ) {
         let mut clone_node = xmlnode.duplicate(activation.context.gc_context, deep);
@@ -792,7 +792,7 @@ pub fn xml_constructor<'gc>(
             this_node.swap(activation.context.gc_context, xmlnode);
             let ignore_whitespace = this
                 .get("ignoreWhite", activation)?
-                .as_bool(activation.current_swf_version());
+                .as_bool(activation.swf_version());
 
             if let Err(e) = this_node.replace_with_str(
                 activation.context.gc_context,
@@ -901,7 +901,7 @@ pub fn xml_parse_xml<'gc>(
 
         let ignore_whitespace = this
             .get("ignoreWhite", activation)?
-            .as_bool(activation.current_swf_version());
+            .as_bool(activation.swf_version());
 
         let result = node.replace_with_str(
             activation.context.gc_context,

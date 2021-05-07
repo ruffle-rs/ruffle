@@ -291,7 +291,7 @@ pub fn set_knockout<'gc>(
     let knockout = args
         .get(0)
         .unwrap_or(&false.into())
-        .as_bool(activation.current_swf_version());
+        .as_bool(activation.swf_version());
 
     if let Some(filter) = this.as_bevel_filter_object() {
         filter.set_knockout(activation.context.gc_context, knockout);
