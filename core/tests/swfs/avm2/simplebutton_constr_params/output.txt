@@ -1,0 +1,24 @@
+//var my_button = new SimpleButton(new UpButtonShape(), new OverButtonShape(), new DownButtonShape(), new HitButtonShape());
+//Constructed UpButtonShape ( instance1 )!
+//Constructed OverButtonShape ( instance3 )!
+//Constructed DownButtonShape ( instance5 )!
+//Constructed HitButtonShape ( instance7 )!
+//this.addChild(my_button);
+//my_button
+[object SimpleButton]
+//my_button.upState
+[object UpButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.overState
+[object OverButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.downState
+[object DownButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.hitTestState
+[object HitButtonShape]
+// numChildren:  1
+[object Shape]

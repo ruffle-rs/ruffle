@@ -17,7 +17,7 @@ use swf::ButtonState;
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
@@ -34,6 +34,42 @@ pub fn instance_init<'gc>(
             );
             this.init_display_object(activation.context.gc_context, new_do.into());
             new_do.set_object2(activation.context.gc_context, this);
+
+            let up_state = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Null)
+                .coerce_to_object(activation)
+                .ok()
+                .and_then(|o| o.as_display_object());
+            new_do.set_state_child(&mut activation.context, ButtonState::UP, up_state);
+
+            let over_state = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Null)
+                .coerce_to_object(activation)
+                .ok()
+                .and_then(|o| o.as_display_object());
+            new_do.set_state_child(&mut activation.context, ButtonState::OVER, over_state);
+
+            let down_state = args
+                .get(2)
+                .cloned()
+                .unwrap_or(Value::Null)
+                .coerce_to_object(activation)
+                .ok()
+                .and_then(|o| o.as_display_object());
+            new_do.set_state_child(&mut activation.context, ButtonState::DOWN, down_state);
+
+            let hit_state = args
+                .get(3)
+                .cloned()
+                .unwrap_or(Value::Null)
+                .coerce_to_object(activation)
+                .ok()
+                .and_then(|o| o.as_display_object());
+            new_do.set_state_child(&mut activation.context, ButtonState::HIT_TEST, hit_state);
         }
     }
 
