@@ -19,6 +19,9 @@ pub mod swf {
     };
 }
 
+mod mixer;
+pub use mixer::*;
+
 pub type SoundHandle = Index;
 pub type SoundInstanceHandle = Index;
 pub type PreloadStreamHandle = u32;
@@ -106,6 +109,10 @@ pub trait AudioBackend: Downcast {
     fn is_loading_complete(&self) -> bool {
         true
     }
+
+    /// Allows the audio backend to update.
+    ///
+    /// Runs once per event loop iteration.
     fn tick(&mut self) {}
 
     /// Inform the audio backend of the current stage frame rate.
