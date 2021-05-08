@@ -579,6 +579,7 @@ swf_tests! {
     (as3_simplebutton_constr_childevents, "avm2/simplebutton_constr_childevents", 2),
     (as3_simplebutton_childprops, "avm2/simplebutton_childprops", 1),
     (as3_simplebutton_childshuffle, "avm2/simplebutton_childshuffle", 1),
+    (as3_simplebutton_constr_params, "avm2/simplebutton_constr_params", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
