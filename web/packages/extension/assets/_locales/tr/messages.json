@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Flash içeriğini Ruffle ile oynat"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Ruffle'a engel olan sitelerde dahi Flash içeriğini oynatmaya çalış"
+    },
+    "settings_ignore_optout": {
+        "message": "Ignore website compatibility warnings"
+    },
+    "status_init": {
+        "message": "Mevcut sekme okunuyor…"
+    },
+    "status_no_tabs": {
+        "message": "Aktif sekme yok."
+    },
+    "status_tabs_error": {
+        "message": "Mevcut sekmeyi okurken bir hata oluştu"
+    },
+    "status_message_init": {
+        "message": "Mevcut sekmede Ruffle'ın durumu inceleniyor…"
+    },
+    "status_result_running": {
+        "message": "Ruffle yüklendi ve mevcut sekmedeki Flash içeriğini oynatmakta."
+    },
+    "status_result_optout": {
+        "message": "Ruffle yüklenmedi çünkü mevcut sayfa kendini uyumsuz olarak işaretledi."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle yüklenmedi çünkü kullanıcısınca kapatılmış."
+    },
+    "status_result_error": {
+        "message": "Mevcut sekmedeki Ruffle instanceı sorgulanırken bir hata oluştu."
+    },
+    "status_result_protected": {
+        "message": "Korumalı tarayıcı sayfalarında Ruffle yüklenemez."
+    },
+    "action_reload": {
+        "message": "Değişiklikleri uygulamak için sekmeyi yenileyin"
+    },
+    "open_settings_page": {
+        "message": "Ayarlar Sayfasını Aç"
+    },
+    "settings_page": {
+        "message": "Ayarlar Sayfası"
+    },
+    "description": {
+        "message": "Flash'ı ait olduğu Web'de yerini geri verir."
+    },
+    "save_settings": {
+        "message": "Ayarları Kaydet"
+    },
+    "settings_saved": {
+        "message": "Kaydedildi"
+    }
+}
