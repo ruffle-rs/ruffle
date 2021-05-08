@@ -116,7 +116,9 @@ jobs:
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
+        run: |
+          sudo apt-get update
+          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
       # We need macOS SDK 11.0 to build for aarch64.
       # GitHub Actions runners have the 11.0 SDK installed, but are still stuck on macOS 10.15.
