@@ -1,45 +1,21 @@
+up_child: Constructed
 up_child:[Event type="added" bubbles=true cancelable=false eventPhase=2]
 up_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+instance2: Constructed
 //Constructed UpButtonShape ( instance2 )!
+over_child: Constructed
 over_child:[Event type="added" bubbles=true cancelable=false eventPhase=2]
 over_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+instance5: Constructed
 //Constructed OverButtonShape ( instance5 )!
+down_child: Constructed
 down_child:[Event type="added" bubbles=true cancelable=false eventPhase=2]
 down_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+instance8: Constructed
 //Constructed DownButtonShape ( instance8 )!
 instance2:[Event type="added" bubbles=true cancelable=false eventPhase=2]
 instance2:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
 up_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
-up_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance2:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-over_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance5:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-down_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance8:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-up_child:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-instance2:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-over_child:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-instance5:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-down_child:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-instance8:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-up_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance2:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-over_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance5:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-down_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance8:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-up_child:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-instance2:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-over_child:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-instance5:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-down_child:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-instance8:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-up_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance2:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-over_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance5:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-down_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance8:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
 //MainTimeline frame 1
 //my_button
 [object SimpleButton]
@@ -69,22 +45,10 @@ instance8:[Event type="frameConstructed" bubbles=false cancelable=false eventPha
 [object Shape] - instance10
 //my_button.hitTestState
 [object Shape] - instance11
-up_child:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-instance2:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-over_child:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-instance5:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-down_child:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
-instance8:[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
 up_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 instance2:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 over_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 instance5:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 down_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 instance8:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
-up_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance2:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-over_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance5:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-down_child:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
-instance8:[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
 //MainTimeline frame 2
