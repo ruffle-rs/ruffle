@@ -5,22 +5,27 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
+use bitflags::bitflags;
 use gc_arena::MutationContext;
 use std::cmp::Ordering;
 
-// Flags used by `Array.sort` and `sortOn`.
-const CASE_INSENSITIVE: i32 = 1;
-const DESCENDING: i32 = 2;
-const UNIQUE_SORT: i32 = 4;
-const RETURN_INDEXED_ARRAY: i32 = 8;
-const NUMERIC: i32 = 16;
+bitflags! {
+    /// Flags used by `Array.sort` and `Array.sortOn`.
+    struct SortFlags: i32 {
+        const CASE_INSENSITIVE     = 1 << 0;
+        const DESCENDING           = 1 << 1;
+        const UNIQUE_SORT          = 1 << 2;
+        const RETURN_INDEXED_ARRAY = 1 << 3;
+        const NUMERIC              = 1 << 4;
+    }
+}
 
-// Default ordering to return if comparison is invalid.
 // TODO: This won't work accurately in cases like NaN/undefined.
 // We need to actually match Flash's sorting algorithm and not use Rust's Vec::sort.
+/// Default ordering to return if comparison is invalid.
 const DEFAULT_ORDERING: Ordering = Ordering::Equal;
 
-// Compare function used by sort and sortOn.
+/// Compare function used by `Array.sort` and `Array.sortOn`.
 type CompareFn<'a, 'gc> =
     Box<dyn 'a + FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering>;
 
@@ -44,35 +49,35 @@ pub fn create_array_object<'gc>(
     object.define_value(
         gc_context,
         "CASEINSENSITIVE",
-        1.into(),
+        SortFlags::CASE_INSENSITIVE.bits().into(),
         Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "DESCENDING",
-        2.into(),
+        SortFlags::DESCENDING.bits().into(),
         Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "UNIQUESORT",
-        4.into(),
+        SortFlags::UNIQUE_SORT.bits().into(),
         Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "RETURNINDEXEDARRAY",
-        8.into(),
+        SortFlags::RETURN_INDEXED_ARRAY.bits().into(),
         Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
     object.define_value(
         gc_context,
         "NUMERIC",
-        16.into(),
+        SortFlags::NUMERIC.bits().into(),
         Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
     );
 
@@ -488,11 +493,9 @@ fn sort<'gc>(
         [] => (None, 0),
         _ => return Ok(Value::Undefined),
     };
+    let flags = SortFlags::from_bits_truncate(flags);
 
-    let numeric = (flags & NUMERIC) != 0;
-    let case_insensitive = (flags & CASE_INSENSITIVE) != 0;
-
-    let string_compare_fn = if case_insensitive {
+    let string_compare_fn = if flags.contains(SortFlags::CASE_INSENSITIVE) {
         sort_compare_string_ignore_case
     } else {
         sort_compare_string
@@ -504,8 +507,10 @@ fn sort<'gc>(
         Box::new(move |activation, a: &Value<'gc>, b: &Value<'gc>| {
             sort_compare_custom(activation, this, a, b, &f)
         })
-    } else if numeric {
-        Box::new(sort_compare_numeric(case_insensitive))
+    } else if flags.contains(SortFlags::NUMERIC) {
+        Box::new(sort_compare_numeric(
+            flags.contains(SortFlags::CASE_INSENSITIVE),
+        ))
     } else {
         Box::new(string_compare_fn)
     };
@@ -520,7 +525,7 @@ fn sort_on<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // a.sortOn(field_name, flags: Number = 0): Sorts with the given flags.
     // a.sortOn(field_names: Array, flags: Number = 0): Sorts with fields in order of precedence with the given flags.
-    // a.sortOn(field_names: Array, flags: Array: Sorts with fields in order of precedence with the given flags respectively.
+    // a.sortOn(field_names: Array, flags: Array): Sorts with fields in order of precedence with the given flags respectively.
     let fields = match args.get(0) {
         Some(Value::Object(array)) => {
             // Array of field names.
@@ -548,20 +553,26 @@ fn sort_on<'gc>(
             if array.length() == fields.len() {
                 let mut flags = vec![];
                 for flag in array.array() {
-                    flags.push(flag.coerce_to_i32(activation)?);
+                    flags.push(SortFlags::from_bits_truncate(
+                        flag.coerce_to_i32(activation)?,
+                    ));
                 }
                 flags
             } else {
                 // If the lengths of the flags and fields array do not match, the flags array is ignored.
-                std::iter::repeat(0).take(fields.len()).collect()
+                std::iter::repeat(SortFlags::empty())
+                    .take(fields.len())
+                    .collect()
             }
         }
         Some(flags) => {
             // Single field.
-            let flags = flags.coerce_to_i32(activation)?;
+            let flags = SortFlags::from_bits_truncate(flags.coerce_to_i32(activation)?);
             std::iter::repeat(flags).take(fields.len()).collect()
         }
-        None => std::iter::repeat(0).take(fields.len()).collect(),
+        None => std::iter::repeat(SortFlags::empty())
+            .take(fields.len())
+            .collect(),
     };
 
     // CASEINSENSITIVE, UNIQUESORT, and RETURNINDEXEDARRAY are taken from the first set of flags in the array.
@@ -571,17 +582,16 @@ fn sort_on<'gc>(
     let field_compare_fns: Vec<CompareFn<'_, 'gc>> = flags
         .into_iter()
         .map(|flags| {
-            let numeric = (flags & NUMERIC) != 0;
-            let case_insensitive = (flags & CASE_INSENSITIVE) != 0;
-
-            let string_compare_fn = if case_insensitive {
+            let string_compare_fn = if flags.contains(SortFlags::CASE_INSENSITIVE) {
                 sort_compare_string_ignore_case
             } else {
                 sort_compare_string
             };
 
-            if numeric {
-                Box::new(sort_compare_numeric(case_insensitive))
+            if flags.contains(SortFlags::NUMERIC) {
+                Box::new(sort_compare_numeric(
+                    flags.contains(SortFlags::CASE_INSENSITIVE),
+                ))
             } else {
                 Box::new(string_compare_fn) as CompareFn<'_, 'gc>
             }
@@ -597,20 +607,16 @@ fn sort_with_function<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     mut compare_fn: impl FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering,
-    flags: i32,
+    flags: SortFlags,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length();
     let mut values: Vec<(usize, Value<'gc>)> = this.array().into_iter().enumerate().collect();
     let array_proto = activation.context.avm1.prototypes.array;
 
-    let descending = (flags & DESCENDING) != 0;
-    let unique_sort = (flags & UNIQUE_SORT) != 0;
-    let return_indexed_array = (flags & RETURN_INDEXED_ARRAY) != 0;
-
     let mut is_unique = true;
     values.sort_unstable_by(|a, b| {
         let mut ret = compare_fn(activation, &a.1, &b.1);
-        if descending {
+        if flags.contains(SortFlags::DESCENDING) {
             ret = ret.reverse();
         }
         if ret == Ordering::Equal {
@@ -619,14 +625,12 @@ fn sort_with_function<'gc>(
         ret
     });
 
-    if unique_sort && !is_unique {
+    if flags.contains(SortFlags::UNIQUE_SORT) && !is_unique {
         // Check for uniqueness. Return 0 if there is a duplicated value.
-        if !is_unique {
-            return Ok(0.into());
-        }
+        return Ok(0.into());
     }
 
-    if return_indexed_array {
+    if flags.contains(SortFlags::RETURN_INDEXED_ARRAY) {
         // Array.RETURNINDEXEDARRAY returns an array containing the sorted indices, and does not modify
         // the original array.
         let array = ScriptObject::array(activation.context.gc_context, Some(array_proto));
