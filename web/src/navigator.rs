@@ -211,7 +211,7 @@ impl NavigatorBackend for WebNavigatorBackend {
 
         if let Ok(Some(base_uri)) = document.base_uri() {
             if let Ok(new_url) = url_from_relative_url(&base_uri, url) {
-                return new_url.into_string().into();
+                return String::from(new_url).into();
             }
         }
 

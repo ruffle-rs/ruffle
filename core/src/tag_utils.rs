@@ -79,7 +79,7 @@ impl SwfMovie {
         let mut url = path.as_ref().to_string_lossy().to_owned().to_string();
         let cwd = std::env::current_dir()?;
         if let Ok(abs_url) = url_from_relative_path(cwd, &url) {
-            url = abs_url.into_string();
+            url = abs_url.into();
         }
 
         let data = std::fs::read(path)?;
