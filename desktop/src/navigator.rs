@@ -182,7 +182,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
         let relative = self.movie_url.join(url);
         if let Ok(relative) = relative {
-            relative.into_string().into()
+            String::from(relative).into()
         } else {
             url.into()
         }

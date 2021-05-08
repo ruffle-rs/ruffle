@@ -207,8 +207,8 @@ pub fn get_local<'gc>(
     // By default, they are keyed based on the SWF URL, but the `localHost` parameter can modify this path.
     let mut movie_path = movie_url.path();
     // Remove leading/trailing slashes.
-    movie_path = movie_path.strip_prefix("/").unwrap_or(movie_path);
-    movie_path = movie_path.strip_suffix("/").unwrap_or(movie_path);
+    movie_path = movie_path.strip_prefix('/').unwrap_or(movie_path);
+    movie_path = movie_path.strip_suffix('/').unwrap_or(movie_path);
 
     let movie_host = if movie_url.scheme() == "file" {
         // Remove drive letter on Windows (TODO: move this logic into DiskStorageBackend?)
@@ -227,8 +227,8 @@ pub fn get_local<'gc>(
         }
 
         // Remove leading/trailing slashes.
-        let mut local_path = local_path.as_str().strip_prefix("/").unwrap_or(local_path);
-        local_path = local_path.strip_suffix("/").unwrap_or(local_path);
+        let mut local_path = local_path.as_str().strip_prefix('/').unwrap_or(local_path);
+        local_path = local_path.strip_suffix('/').unwrap_or(local_path);
 
         // Verify that local_path is a prefix of the SWF path.
         if movie_path.starts_with(&local_path)

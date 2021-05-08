@@ -379,7 +379,7 @@ impl NavigatorBackend for NullNavigatorBackend {
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
         let relative = url_from_relative_path(&self.relative_base_path, url);
         if let Ok(relative) = relative {
-            relative.into_string().into()
+            String::from(relative).into()
         } else {
             url.into()
         }
