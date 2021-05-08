@@ -146,7 +146,7 @@ impl AudioMixer {
                 format.sample_rate.into(),
                 data,
             )),
-            #[cfg(all(feature = "symphonia_mp3", not(feature = "minimp3")))]
+            #[cfg(all(feature = "symphonia", not(feature = "minimp3")))]
             AudioCompression::Mp3 => Box::new(decoders::Mp3Decoder::new_seekable(
                 if format.is_stereo { 2 } else { 1 },
                 format.sample_rate.into(),
