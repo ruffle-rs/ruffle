@@ -2,9 +2,9 @@ name: Test Rust
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:
@@ -14,37 +14,39 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust_version: ['stable', 'beta', 'nightly']
+        rust_version: ["stable", "beta", "nightly"]
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.rust_version }}
-        override: true
-        components: rustfmt, clippy
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust_version }}
+          override: true
+          components: rustfmt, clippy
 
-    - name: Install Linux dependencies
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
-    - name: Run tests
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
+      - name: Run tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
 
-    - name: Check clippy
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --all --tests -- -D warnings
+      - name: Check clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all --tests -- -D warnings
 
-    - name: Check formatting
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --all -- --check
+      - name: Check formatting
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
