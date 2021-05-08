@@ -1,14 +1,16 @@
 //! Audio decoders.
 
 mod adpcm;
-#[cfg(feature = "minimp3")]
+#[cfg(any(feature = "minimp3", feature = "symphonia"))]
 mod mp3;
 mod nellymoser;
 mod pcm;
 
 pub use adpcm::AdpcmDecoder;
 #[cfg(feature = "minimp3")]
-pub use mp3::Mp3Decoder;
+pub use mp3::minimp3::Mp3Decoder;
+#[cfg(all(feature = "symphonia", not(feature = "minimp3")))]
+pub use mp3::symphonia::Mp3Decoder;
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
@@ -29,11 +31,11 @@ pub trait Decoder: Iterator<Item = [i16; 2]> {
 }
 
 /// Instantiate a decoder for the compression that the sound data uses.
-pub fn make_decoder<'a, R: 'a + Send + Read>(
+pub fn make_decoder<R: 'static + Send + Read>(
     format: &SoundFormat,
     data: R,
-) -> Result<Box<dyn 'a + Send + Decoder>, Error> {
-    let decoder: Box<dyn 'a + Send + Decoder> = match format.compression {
+) -> Result<Box<dyn Send + Decoder>, Error> {
+    let decoder: Box<dyn Send + Decoder> = match format.compression {
         AudioCompression::UncompressedUnknownEndian => {
             // Cross fingers that it's little endian.
             log::warn!("make_decoder: PCM sound is unknown endian; assuming little endian");
@@ -55,7 +57,7 @@ pub fn make_decoder<'a, R: 'a + Send + Read>(
             format.is_stereo,
             format.sample_rate,
         )),
-        #[cfg(feature = "minimp3")]
+        #[cfg(any(feature = "minimp3", feature = "symphonia"))]
         AudioCompression::Mp3 => Box::new(Mp3Decoder::new(
             if format.is_stereo { 2 } else { 1 },
             format.sample_rate.into(),
