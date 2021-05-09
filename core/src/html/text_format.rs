@@ -136,7 +136,7 @@ pub struct TextFormat {
 
 fn getstr_from_avm1_object<'gc>(
     object: Avm1Object<'gc>,
-    name: &str,
+    name: &'static str,
     activation: &mut Avm1Activation<'_, 'gc, '_>,
 ) -> Result<Option<String>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation)? {
@@ -148,7 +148,7 @@ fn getstr_from_avm1_object<'gc>(
 
 fn getfloat_from_avm1_object<'gc>(
     object: Avm1Object<'gc>,
-    name: &str,
+    name: &'static str,
     activation: &mut Avm1Activation<'_, 'gc, '_>,
 ) -> Result<Option<f64>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation)? {
@@ -160,7 +160,7 @@ fn getfloat_from_avm1_object<'gc>(
 
 fn getbool_from_avm1_object<'gc>(
     object: Avm1Object<'gc>,
-    name: &str,
+    name: &'static str,
     activation: &mut Avm1Activation<'_, 'gc, '_>,
 ) -> Result<Option<bool>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation)? {
@@ -172,7 +172,7 @@ fn getbool_from_avm1_object<'gc>(
 
 fn getfloatarray_from_avm1_object<'gc>(
     object: Avm1Object<'gc>,
-    name: &str,
+    name: &'static str,
     activation: &mut Avm1Activation<'_, 'gc, '_>,
 ) -> Result<Option<Vec<f64>>, crate::avm1::error::Error<'gc>> {
     Ok(match object.get(name, activation)? {

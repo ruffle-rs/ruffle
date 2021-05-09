@@ -87,7 +87,7 @@ where
         context.stage.replace_at_depth(&mut context, root, 0);
 
         root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
-        root.set_name(context.gc_context, "");
+        root.set_name(context.gc_context, "".into());
 
         fn run_test<'a, 'gc: 'a, F>(
             activation: &mut Activation<'_, 'gc, '_>,
@@ -126,12 +126,13 @@ macro_rules! test_method {
             $(
                 for version in &$versions {
                     with_avm(*version, |activation, _root| -> Result<(), Error> {
+                        let name = $name.into();
                         let object = $object(activation);
-                        let function = crate::avm1::object::TObject::get(&object, $name, activation)?;
+                        let function = crate::avm1::object::TObject::get(&object, name, activation)?;
 
                         $(
                             let args: Vec<Value> = vec![$($arg.into()),*];
-                            assert_eq!(function.call($name, activation, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
+                            assert_eq!(function.call(name, activation, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
                         )*
 
                         Ok(())

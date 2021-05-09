@@ -3,7 +3,7 @@ use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
+use crate::avm1::{Avm1, AvmString as Avm1String, ScriptObject, TObject, Timers, Value};
 use crate::avm2::{Avm2, Domain as Avm2Domain};
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -403,8 +403,8 @@ impl Player {
                 for (key, value) in context.swf.parameters().iter() {
                     object.define_value(
                         context.gc_context,
-                        key,
-                        AvmString::new(context.gc_context, value).into(),
+                        Avm1String::new(context.gc_context, key),
+                        Avm1String::new(context.gc_context, value).into(),
                         Attribute::empty(),
                     );
                 }
@@ -440,7 +440,7 @@ impl Player {
             object.define_value(
                 activation.context.gc_context,
                 "$version",
-                AvmString::new(activation.context.gc_context, version_string).into(),
+                Avm1String::new(activation.context.gc_context, version_string).into(),
                 Attribute::empty(),
             );
 
@@ -661,7 +661,7 @@ impl Player {
         let params = vec![root_clip.object(), Value::Object(item)];
 
         let _ = callback.call(
-            "[Context Menu Callback]",
+            "[Context Menu Callback]".into(),
             &mut activation,
             undefined,
             None,
@@ -1338,7 +1338,7 @@ impl Player {
                         object,
                         context.swf.version(),
                         context,
-                        name,
+                        name.into(),
                         &args,
                     );
                 }
@@ -1355,8 +1355,8 @@ impl Player {
                         actions.clip,
                         context.swf.version(),
                         context,
-                        listener,
-                        method,
+                        listener.into(),
+                        method.into(),
                         &args,
                     );
                 }

@@ -7,7 +7,6 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, Value};
 use crate::xml::{XmlName, XmlNode};
 use gc_arena::{Collect, MutationContext};
-use std::borrow::Cow;
 use std::fmt;
 
 use crate::avm_warn;
@@ -58,18 +57,19 @@ impl fmt::Debug for XmlAttributesObject<'_> {
 impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
     fn get_local(
         &self,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
+        let name = name.into();
         self.node()
-            .attribute_value(&XmlName::from_str(name))
+            .attribute_value(&XmlName::from_str(&name))
             .map(|s| Ok(AvmString::new(activation.context.gc_context, s).into()))
     }
 
     fn set_local(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
@@ -77,14 +77,14 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         self.node().set_attribute_value(
             activation.context.gc_context,
-            &XmlName::from_str(name),
+            &XmlName::from_str(&name),
             &value.coerce_to_string(activation)?,
         );
         Ok(())
     }
     fn call(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -95,7 +95,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
 
     fn call_setter(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>> {
@@ -112,16 +112,16 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         Ok(Value::Undefined.coerce_to_object(activation))
     }
 
-    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.node()
-            .delete_attribute(activation.context.gc_context, &XmlName::from_str(name));
+            .delete_attribute(activation.context.gc_context, &XmlName::from_str(&name));
         self.base().delete(activation, name)
     }
 
     fn add_property(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -133,7 +133,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
     fn add_property_with_case(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -145,7 +145,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
     fn set_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: Cow<str>,
+        name: AvmString<'gc>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
@@ -153,14 +153,18 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
             .set_watcher(activation, name, callback, user_data);
     }
 
-    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+    fn remove_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.base().remove_watcher(activation, name)
     }
 
     fn define_value(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         attributes: Attribute,
     ) {
@@ -171,7 +175,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
     fn set_attributes(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: Option<&str>,
+        name: Option<AvmString<'gc>>,
         set_attributes: Attribute,
         clear_attributes: Attribute,
     ) {
@@ -187,27 +191,44 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         self.base().set_proto(gc_context, prototype);
     }
 
-    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.base().has_property(activation, name)
     }
 
-    fn has_own_property(&self, _activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(
+        &self,
+        _activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.node()
-            .attribute_value(&XmlName::from_str(name))
+            .attribute_value(&XmlName::from_str(&name))
             .is_some()
     }
 
-    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_virtual(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.base().has_own_virtual(activation, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn is_property_enumerable(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.base().is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
         let mut base = self.base().get_keys(activation);
-        base.extend(self.node().attribute_keys());
+        let attrs = self
+            .node()
+            .attribute_keys()
+            .into_iter()
+            .map(|a| AvmString::new(activation.context.gc_context, a));
+        base.extend(attrs);
         base
     }
 

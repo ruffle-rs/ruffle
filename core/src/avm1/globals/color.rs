@@ -30,7 +30,7 @@ pub fn constructor<'gc>(
     this.set("target", target, activation)?;
     this.set_attributes(
         activation.context.gc_context,
-        Some("target"),
+        Some("target".into()),
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
         Attribute::empty(),
     );
@@ -157,11 +157,11 @@ fn set_transform<'gc>(
     fn set_color_mult<'gc>(
         activation: &mut Activation<'_, 'gc, '_>,
         transform: Object<'gc>,
-        property: &str,
+        property: &'static str,
         out: &mut Fixed8,
     ) -> Result<(), Error<'gc>> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
-        if transform.has_own_property(activation, property) {
+        if transform.has_own_property(activation, property.into()) {
             let n = transform
                 .get(property, activation)?
                 .coerce_to_f64(activation)?;
@@ -175,11 +175,11 @@ fn set_transform<'gc>(
     fn set_color_add<'gc>(
         activation: &mut Activation<'_, 'gc, '_>,
         transform: Object<'gc>,
-        property: &str,
+        property: &'static str,
         out: &mut i16,
     ) -> Result<(), Error<'gc>> {
         // The parameters are set only if the property exists on the object itself (prototype excluded).
-        if transform.has_own_property(activation, property) {
+        if transform.has_own_property(activation, property.into()) {
             *out = transform
                 .get(property, activation)?
                 .coerce_to_i16(activation)?;

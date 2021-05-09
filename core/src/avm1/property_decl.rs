@@ -85,7 +85,7 @@ impl Declaration {
                         fn_proto,
                     )
                 });
-                this.add_property(mc, self.name, getter, setter, attributes);
+                this.add_property(mc, self.name.into(), getter, setter, attributes);
                 return Value::Undefined;
             }
             DeclKind::Method(func) => FunctionObject::bare_function(

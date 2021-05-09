@@ -1,5 +1,5 @@
 use crate::avm1::activation::Activation;
-use crate::avm1::{Object, ObjectPtr, TObject, Value};
+use crate::avm1::{AvmString, Object, ObjectPtr, TObject, Value};
 
 #[allow(dead_code)]
 pub struct VariableDumper<'a> {
@@ -98,7 +98,7 @@ impl<'a> VariableDumper<'a> {
     pub fn print_property<'gc>(
         &mut self,
         object: &Object<'gc>,
-        key: &str,
+        key: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) {
         match object.get(key, activation) {
@@ -129,7 +129,7 @@ impl<'a> VariableDumper<'a> {
                 self.indent();
                 self.output.push_str(&key);
                 self.output.push_str(": ");
-                self.print_property(object, &key, activation);
+                self.print_property(object, key, activation);
                 self.output.push('\n');
             }
 
@@ -177,7 +177,7 @@ impl<'a> VariableDumper<'a> {
         for key in keys.into_iter() {
             self.output.push_str(&format!("{}.{}", name, key));
             self.output.push_str(" = ");
-            self.print_property(object, &key, activation);
+            self.print_property(object, key, activation);
             self.output.push('\n');
         }
 
