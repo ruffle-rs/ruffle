@@ -4,7 +4,7 @@
 //! the insertion order of properties, which is necessary for accurate
 //! enumeration order.
 
-use crate::string::utils as string_utils;
+use crate::string::{utils as string_utils, AvmString};
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
 use indexmap::{Equivalent, IndexMap};
@@ -14,22 +14,23 @@ type FnvIndexMap<K, V> = IndexMap<K, V, FnvBuildHasher>;
 
 /// A map from property names to values.
 #[derive(Default, Clone, Debug)]
-pub struct PropertyMap<V>(FnvIndexMap<PropertyName, V>);
+pub struct PropertyMap<'gc, V>(FnvIndexMap<PropertyName<'gc>, V>);
 
-impl<V> PropertyMap<V> {
+impl<'gc, V> PropertyMap<'gc, V> {
     pub fn new() -> Self {
         Self(FnvIndexMap::default())
     }
 
-    pub fn contains_key(&self, key: &str, case_sensitive: bool) -> bool {
+    // TODO(moulins): &str -> AvmString
+    pub fn contains_key<T: AsRef<str>>(&self, key: T, case_sensitive: bool) -> bool {
         if case_sensitive {
-            self.0.contains_key(&CaseSensitiveStr(key))
+            self.0.contains_key(&CaseSensitiveStr(key.as_ref()))
         } else {
-            self.0.contains_key(&CaseInsensitiveStr(key))
+            self.0.contains_key(&CaseInsensitiveStr(key.as_ref()))
         }
     }
 
-    pub fn entry<'a>(&'a mut self, key: &'a str, case_sensitive: bool) -> Entry<'a, V> {
+    pub fn entry<'a>(&'a mut self, key: AvmString<'gc>, case_sensitive: bool) -> Entry<'gc, 'a, V> {
         if case_sensitive {
             match self.0.get_index_of(&CaseSensitiveStr(key)) {
                 Some(index) => Entry::Occupied(OccupiedEntry {
@@ -56,20 +57,22 @@ impl<V> PropertyMap<V> {
     }
 
     /// Gets the value for the specified property.
-    pub fn get(&self, key: &str, case_sensitive: bool) -> Option<&V> {
+    // TODO(moulins): &str -> AvmString
+    pub fn get<T: AsRef<str>>(&self, key: T, case_sensitive: bool) -> Option<&V> {
         if case_sensitive {
-            self.0.get(&CaseSensitiveStr(key))
+            self.0.get(&CaseSensitiveStr(key.as_ref()))
         } else {
-            self.0.get(&CaseInsensitiveStr(key))
+            self.0.get(&CaseInsensitiveStr(key.as_ref()))
         }
     }
 
     /// Gets a mutable reference to the value for the specified property.
-    pub fn get_mut(&mut self, key: &str, case_sensitive: bool) -> Option<&mut V> {
+    // TODO(moulins): &str -> AvmString
+    pub fn get_mut<T: AsRef<str>>(&mut self, key: T, case_sensitive: bool) -> Option<&mut V> {
         if case_sensitive {
-            self.0.get_mut(&CaseSensitiveStr(key))
+            self.0.get_mut(&CaseSensitiveStr(key.as_ref()))
         } else {
-            self.0.get_mut(&CaseInsensitiveStr(key))
+            self.0.get_mut(&CaseInsensitiveStr(key.as_ref()))
         }
     }
 
@@ -78,7 +81,7 @@ impl<V> PropertyMap<V> {
         self.0.get_index(index).map(|(_, v)| v)
     }
 
-    pub fn insert(&mut self, key: &str, value: V, case_sensitive: bool) -> Option<V> {
+    pub fn insert(&mut self, key: AvmString<'gc>, value: V, case_sensitive: bool) -> Option<V> {
         match self.entry(key, case_sensitive) {
             Entry::Occupied(entry) => Some(entry.insert(value)),
             Entry::Vacant(entry) => {
@@ -89,45 +92,48 @@ impl<V> PropertyMap<V> {
     }
 
     /// Returns the value tuples in Flash's iteration order (most recently added first).
-    pub fn iter(&self) -> impl Iterator<Item = (&String, &V)> {
-        self.0.iter().rev().map(|(k, v)| (&k.0, v))
+    // TODO(moulins): &str -> AvmString
+    pub fn iter(&self) -> impl Iterator<Item = (AvmString<'gc>, &V)> {
+        self.0.iter().rev().map(|(k, v)| (k.0, v))
     }
 
     /// Returns the key-value tuples in Flash's iteration order (most recently added first).
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&String, &mut V)> {
-        self.0.iter_mut().rev().map(|(k, v)| (&k.0, v))
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (AvmString<'gc>, &mut V)> {
+        self.0.iter_mut().rev().map(|(k, v)| (k.0, v))
     }
 
-    pub fn remove(&mut self, key: &str, case_sensitive: bool) -> Option<V> {
+    // TODO(moulins): &str -> AvmString
+    pub fn remove<T: AsRef<str>>(&mut self, key: T, case_sensitive: bool) -> Option<V> {
         // Note that we must use shift_remove to maintain order in case this object is enumerated.
         if case_sensitive {
-            self.0.shift_remove(&CaseSensitiveStr(key))
+            self.0.shift_remove(&CaseSensitiveStr(key.as_ref()))
         } else {
-            self.0.shift_remove(&CaseInsensitiveStr(key))
+            self.0.shift_remove(&CaseInsensitiveStr(key.as_ref()))
         }
     }
 }
 
-unsafe impl<V: Collect> Collect for PropertyMap<V> {
+unsafe impl<'gc, V: Collect> Collect for PropertyMap<'gc, V> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        for value in self.0.values() {
+        for (key, value) in &self.0 {
+            key.0.trace(cc);
             value.trace(cc);
         }
     }
 }
 
-pub enum Entry<'a, V> {
-    Occupied(OccupiedEntry<'a, V>),
-    Vacant(VacantEntry<'a, V>),
+pub enum Entry<'gc, 'a, V> {
+    Occupied(OccupiedEntry<'gc, 'a, V>),
+    Vacant(VacantEntry<'gc, 'a, V>),
 }
 
-pub struct OccupiedEntry<'a, V> {
-    map: &'a mut FnvIndexMap<PropertyName, V>,
+pub struct OccupiedEntry<'gc, 'a, V> {
+    map: &'a mut FnvIndexMap<PropertyName<'gc>, V>,
     index: usize,
 }
 
-impl<'a, V> OccupiedEntry<'a, V> {
-    pub fn remove_entry(&mut self) -> (String, V) {
+impl<'gc, 'a, V> OccupiedEntry<'gc, 'a, V> {
+    pub fn remove_entry(&mut self) -> (AvmString<'gc>, V) {
         let (k, v) = self.map.shift_remove_index(self.index).unwrap();
         (k.0, v)
     }
@@ -145,45 +151,47 @@ impl<'a, V> OccupiedEntry<'a, V> {
     }
 }
 
-pub struct VacantEntry<'a, V> {
-    map: &'a mut FnvIndexMap<PropertyName, V>,
-    key: &'a str,
+pub struct VacantEntry<'gc, 'a, V> {
+    map: &'a mut FnvIndexMap<PropertyName<'gc>, V>,
+    key: AvmString<'gc>,
 }
 
-impl<'a, V> VacantEntry<'a, V> {
+impl<'gc, 'a, V> VacantEntry<'gc, 'a, V> {
     pub fn insert(self, value: V) {
-        self.map.insert(PropertyName(self.key.to_string()), value);
+        self.map.insert(PropertyName(self.key), value);
     }
 }
 
-/// Wraps a str, causing the hash map to use a case insensitive hash and equality.
-struct CaseInsensitiveStr<'a>(&'a str);
+/// Wraps a str-like type, causing the hash map to use a case insensitive hash and equality.
+// TODO(moulins): force AvmString
+struct CaseInsensitiveStr<T>(T);
 
-impl<'a> Hash for CaseInsensitiveStr<'a> {
+impl<T: AsRef<str>> Hash for CaseInsensitiveStr<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        swf_hash_string_ignore_case(self.0, state);
+        swf_hash_string_ignore_case(self.0.as_ref(), state);
     }
 }
 
-impl<'a> Equivalent<PropertyName> for CaseInsensitiveStr<'a> {
-    fn equivalent(&self, key: &PropertyName) -> bool {
-        string_utils::swf_string_eq_ignore_case(&key.0, self.0)
+impl<'gc, T: AsRef<str>> Equivalent<PropertyName<'gc>> for CaseInsensitiveStr<T> {
+    fn equivalent(&self, key: &PropertyName<'gc>) -> bool {
+        string_utils::swf_string_eq_ignore_case(&key.0, self.0.as_ref())
     }
 }
 
-/// Wraps a str, causing the property map to use a case insensitive hash lookup,
+/// Wraps an str-like type, causing the property map to use a case insensitive hash lookup,
 /// but case sensitive equality.
-struct CaseSensitiveStr<'a>(&'a str);
+// TODO(moulins): force AvmString
+struct CaseSensitiveStr<T>(T);
 
-impl<'a> Hash for CaseSensitiveStr<'a> {
+impl<T: AsRef<str>> Hash for CaseSensitiveStr<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        swf_hash_string_ignore_case(self.0, state);
+        swf_hash_string_ignore_case(self.0.as_ref(), state);
     }
 }
 
-impl<'a> Equivalent<PropertyName> for CaseSensitiveStr<'a> {
-    fn equivalent(&self, key: &PropertyName) -> bool {
-        key.0 == self.0
+impl<'gc, T: AsRef<str>> Equivalent<PropertyName<'gc>> for CaseSensitiveStr<T> {
+    fn equivalent(&self, key: &PropertyName<'gc>) -> bool {
+        key.0 == self.0.as_ref()
     }
 }
 
@@ -194,10 +202,10 @@ impl<'a> Equivalent<PropertyName> for CaseSensitiveStr<'a> {
 /// Note that the property of if key1 == key2 -> hash(key1) == hash(key2) still holds.
 #[derive(Debug, Clone, PartialEq, Eq, Collect)]
 #[collect(require_static)]
-struct PropertyName(String);
+struct PropertyName<'gc>(AvmString<'gc>);
 
 #[allow(clippy::derive_hash_xor_eq)]
-impl Hash for PropertyName {
+impl<'gc> Hash for PropertyName<'gc> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         swf_hash_string_ignore_case(&self.0, state);
     }

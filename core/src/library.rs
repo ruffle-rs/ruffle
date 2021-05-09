@@ -6,6 +6,7 @@ use crate::character::Character;
 use crate::display_object::{Bitmap, Graphic, MorphShape, TDisplayObject, Text};
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
+use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::AvmType;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -19,7 +20,7 @@ use weak_table::{traits::WeakElement, PtrWeakKeyHashMap, WeakValueHashMap};
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct Avm1ConstructorRegistry<'gc> {
-    symbol_map: GcCell<'gc, Avm1PropertyMap<FunctionObject<'gc>>>,
+    symbol_map: GcCell<'gc, Avm1PropertyMap<'gc, FunctionObject<'gc>>>,
     is_case_sensitive: bool,
 }
 
@@ -40,7 +41,7 @@ impl<'gc> Avm1ConstructorRegistry<'gc> {
 
     pub fn set(
         &self,
-        symbol: &str,
+        symbol: AvmString<'gc>,
         constructor: Option<FunctionObject<'gc>>,
         gc_context: MutationContext<'gc, '_>,
     ) {
@@ -135,7 +136,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
 #[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
-    export_characters: Avm1PropertyMap<Character<'gc>>,
+    export_characters: Avm1PropertyMap<'gc, Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm_type: AvmType,
@@ -177,7 +178,7 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn register_export(
         &mut self,
         id: CharacterId,
-        export_name: &str,
+        export_name: AvmString<'gc>,
     ) -> Option<&Character<'gc>> {
         if let Some(character) = self.characters.get(&id) {
             self.export_characters
