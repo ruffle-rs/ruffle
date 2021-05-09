@@ -139,8 +139,8 @@ impl Value {
                     let keys = object.get_keys(activation);
                     let mut values = BTreeMap::new();
                     for key in keys {
-                        let value = object.get(&key, activation)?;
-                        values.insert(key, Value::from_avm1(activation, value)?);
+                        let value = object.get(key, activation)?;
+                        values.insert(key.to_string(), Value::from_avm1(activation, value)?);
                     }
                     Value::Object(values)
                 }
@@ -162,7 +162,8 @@ impl Value {
                     Some(activation.context.avm1.prototypes().object),
                 );
                 for (key, value) in values {
-                    let _ = object.set(&key, value.into_avm1(activation), activation);
+                    let key = AvmString::new(activation.context.gc_context, key);
+                    let _ = object.set(key, value.into_avm1(activation), activation);
                 }
                 object.into()
             }
@@ -211,6 +212,7 @@ impl<'gc> Callback<'gc> {
                     .into_iter()
                     .map(|v| v.into_avm1(&mut activation))
                     .collect();
+                let name = AvmString::new(activation.context.gc_context, name);
                 if let Ok(result) = method
                     .call(name, &mut activation, this, None, &args)
                     .and_then(|value| Value::from_avm1(&mut activation, value))

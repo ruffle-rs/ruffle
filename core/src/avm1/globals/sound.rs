@@ -309,17 +309,17 @@ fn set_transform<'gc>(
             activation.context.global_sound_transform().clone()
         };
 
-        if obj.has_own_property(activation, "ll") {
+        if obj.has_own_property(activation, "ll".into()) {
             transform.left_to_left = obj.get("ll", activation)?.coerce_to_i32(activation)?;
         }
         // Surprisngly `lr` means "right-to-left" and `rl` means "left-to-right".
-        if obj.has_own_property(activation, "rl") {
+        if obj.has_own_property(activation, "rl".into()) {
             transform.left_to_right = obj.get("rl", activation)?.coerce_to_i32(activation)?;
         }
-        if obj.has_own_property(activation, "lr") {
+        if obj.has_own_property(activation, "lr".into()) {
             transform.right_to_left = obj.get("lr", activation)?.coerce_to_i32(activation)?;
         }
-        if obj.has_own_property(activation, "rr") {
+        if obj.has_own_property(activation, "rr".into()) {
             transform.right_to_right = obj.get("rr", activation)?.coerce_to_i32(activation)?;
         }
 

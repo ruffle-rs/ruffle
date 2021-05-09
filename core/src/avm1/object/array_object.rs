@@ -1,8 +1,7 @@
 use crate::avm1::property::Attribute;
-use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::{Activation, AvmString, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::borrow::Cow;
 use std::fmt;
 
 #[derive(Clone, Copy, Collect)]
@@ -47,7 +46,8 @@ impl<'gc> ArrayObject<'gc> {
         let base = ScriptObject::object(gc_context, proto);
         let mut length: i32 = 0;
         for value in elements.into_iter() {
-            base.define_value(gc_context, &length.to_string(), value, Attribute::empty());
+            let length_str = AvmString::new(gc_context, length.to_string());
+            base.define_value(gc_context, length_str, value, Attribute::empty());
             length += 1;
         }
         base.define_value(
@@ -70,7 +70,7 @@ impl<'gc> ArrayObject<'gc> {
         }
     }
 
-    fn parse_index(name: &str) -> Option<i32> {
+    fn parse_index(name: AvmString<'gc>) -> Option<i32> {
         let mut chars = name
             .bytes()
             .skip_while(|c| c.is_ascii_whitespace())
@@ -95,7 +95,7 @@ impl<'gc> ArrayObject<'gc> {
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn get_local_stored(
         &self,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Value<'gc>> {
         self.0.read().get_local_stored(name, activation)
@@ -103,7 +103,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn set_local(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -126,7 +126,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn call(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -135,11 +135,19 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().call(name, activation, this, base_proto, args)
     }
 
-    fn getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+    fn getter(
+        &self,
+        name: AvmString<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Object<'gc>> {
         self.0.read().getter(name, activation)
     }
 
-    fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+    fn setter(
+        &self,
+        name: AvmString<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Object<'gc>> {
         self.0.read().setter(name, activation)
     }
 
@@ -151,14 +159,14 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Ok(Self::empty_with_proto(activation.context.gc_context, Some(this)).into())
     }
 
-    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.0.read().delete(activation, name)
     }
 
     fn add_property(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -171,7 +179,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn add_property_with_case(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -184,7 +192,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn call_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         value: &mut Value<'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
@@ -194,21 +202,21 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn watch(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: Cow<str>,
+        name: AvmString<'gc>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
         self.0.read().watch(activation, name, callback, user_data);
     }
 
-    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.0.read().unwatch(activation, name)
     }
 
     fn define_value(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         attributes: Attribute,
     ) {
@@ -220,7 +228,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn set_attributes(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: Option<&str>,
+        name: Option<AvmString<'gc>>,
         set_attributes: Attribute,
         clear_attributes: Attribute,
     ) {
@@ -233,23 +241,35 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().proto(activation)
     }
 
-    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.0.read().has_property(activation, name)
     }
 
-    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.0.read().has_own_property(activation, name)
     }
 
-    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_virtual(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.0.read().has_own_virtual(activation, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn is_property_enumerable(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.0.read().is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
         self.0.read().get_keys(activation)
     }
 

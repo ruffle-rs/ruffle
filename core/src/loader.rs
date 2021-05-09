@@ -469,7 +469,7 @@ impl<'gc> Loader<'gc> {
                             broadcaster,
                             NEWEST_PLAYER_VERSION,
                             uc,
-                            "broadcastMessage",
+                            "broadcastMessage".into(),
                             &["onLoadStart".into(), Value::Object(broadcaster)],
                         );
                     }
@@ -517,7 +517,7 @@ impl<'gc> Loader<'gc> {
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
                                 uc,
-                                "broadcastMessage",
+                                "broadcastMessage".into(),
                                 &[
                                     "onLoadProgress".into(),
                                     Value::Object(broadcaster),
@@ -554,7 +554,7 @@ impl<'gc> Loader<'gc> {
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
                                 uc,
-                                "broadcastMessage",
+                                "broadcastMessage".into(),
                                 &["onLoadComplete".into(), Value::Object(broadcaster)],
                             );
                         }
@@ -593,7 +593,7 @@ impl<'gc> Loader<'gc> {
                                 broadcaster,
                                 NEWEST_PLAYER_VERSION,
                                 uc,
-                                "broadcastMessage",
+                                "broadcastMessage".into(),
                                 &[
                                     "onLoadError".into(),
                                     Value::Object(broadcaster),
@@ -646,11 +646,9 @@ impl<'gc> Loader<'gc> {
                 );
 
                 for (k, v) in form_urlencoded::parse(&data) {
-                    that.set(
-                        &k,
-                        AvmString::new(activation.context.gc_context, v.into_owned()).into(),
-                        &mut activation,
-                    )?;
+                    let k = AvmString::new(activation.context.gc_context, k.into_owned());
+                    let v = AvmString::new(activation.context.gc_context, v.into_owned());
+                    that.set(k, v.into(), &mut activation)?;
                 }
 
                 Ok(())
@@ -697,16 +695,22 @@ impl<'gc> Loader<'gc> {
                         // Fire the onData method with the loaded string.
                         let string_data =
                             AvmString::new(activation.context.gc_context, UTF_8.decode(&data).0);
-                        let _ = that.call_method("onData", &[string_data.into()], &mut activation);
+                        let _ = that.call_method(
+                            "onData".into(),
+                            &[string_data.into()],
+                            &mut activation,
+                        );
                     }
                     Err(_) => {
                         // TODO: Log "Error opening URL" trace similar to the Flash Player?
                         // Simulate 404 HTTP status. This should probably be fired elsewhere
                         // because a failed local load doesn't fire a 404.
-                        let _ = that.call_method("onHTTPStatus", &[404.into()], &mut activation);
+                        let _ =
+                            that.call_method("onHTTPStatus".into(), &[404.into()], &mut activation);
 
                         // Fire the onData method with no data to indicate an unsuccessful load.
-                        let _ = that.call_method("onData", &[Value::Undefined], &mut activation);
+                        let _ =
+                            that.call_method("onData".into(), &[Value::Undefined], &mut activation);
                     }
                 }
 
@@ -801,7 +805,7 @@ impl<'gc> Loader<'gc> {
                             object,
                             NEWEST_PLAYER_VERSION,
                             uc,
-                            "onHTTPStatus",
+                            "onHTTPStatus".into(),
                             &[200.into()],
                         );
 
@@ -810,7 +814,7 @@ impl<'gc> Loader<'gc> {
                             object,
                             NEWEST_PLAYER_VERSION,
                             uc,
-                            "onData",
+                            "onData".into(),
                             &[AvmString::new(uc.gc_context, xmlstring).into()],
                         );
 
@@ -838,7 +842,7 @@ impl<'gc> Loader<'gc> {
                             object,
                             NEWEST_PLAYER_VERSION,
                             uc,
-                            "onHTTPStatus",
+                            "onHTTPStatus".into(),
                             &[404.into()],
                         );
 
@@ -847,7 +851,7 @@ impl<'gc> Loader<'gc> {
                             object,
                             NEWEST_PLAYER_VERSION,
                             uc,
-                            "onData",
+                            "onData".into(),
                             &[],
                         );
 

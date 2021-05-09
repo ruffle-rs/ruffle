@@ -12,7 +12,6 @@ use crate::string::utils::swf_string_eq;
 use crate::string::AvmString;
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::borrow::Cow;
 use std::fmt;
 
 /// The type string for MovieClip objects.
@@ -68,14 +67,14 @@ impl<'gc> StageObject<'gc> {
         self,
         gc_context: MutationContext<'gc, '_>,
         text_field: EditText<'gc>,
-        variable_name: &str,
+        variable_name: AvmString<'gc>,
     ) {
         self.0
             .write(gc_context)
             .text_field_bindings
             .push(TextFieldBinding {
                 text_field,
-                variable_name: variable_name.to_string(),
+                variable_name,
             })
     }
 
@@ -147,7 +146,7 @@ impl<'gc> StageObject<'gc> {
 #[collect(no_drop)]
 struct TextFieldBinding<'gc> {
     text_field: EditText<'gc>,
-    variable_name: String,
+    variable_name: AvmString<'gc>,
 }
 
 impl fmt::Debug for StageObject<'_> {
@@ -163,9 +162,10 @@ impl fmt::Debug for StageObject<'_> {
 impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn get_local_stored(
         &self,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Value<'gc>> {
+        let name = name.into();
         let obj = self.0.read();
         let props = activation.context.avm1.display_properties;
         let case_sensitive = activation.is_case_sensitive();
@@ -174,14 +174,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             // 1) Actual properties on the underlying object
             obj.base.get_local_stored(name, activation)
         } else if let Some(level) =
-            Self::get_level_by_path(name, &mut activation.context, case_sensitive)
+            Self::get_level_by_path(&name, &mut activation.context, case_sensitive)
         {
             // 2) _levelN
             Some(level)
         } else if let Some(child) = obj
             .display_object
             .as_container()
-            .and_then(|o| o.child_by_name(name, case_sensitive))
+            .and_then(|o| o.child_by_name(&name, case_sensitive))
         {
             // 3) Child display objects with the given instance name
             Some(child.object())
@@ -195,7 +195,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn set_local(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -209,7 +209,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         for binding in obj
             .text_field_bindings
             .iter()
-            .filter(|binding| swf_string_eq(&binding.variable_name, name, case_sensitive))
+            .filter(|binding| swf_string_eq(&binding.variable_name, &name, case_sensitive))
         {
             let _ = binding.text_field.set_html_text(
                 value.coerce_to_string(activation)?.to_string(),
@@ -236,7 +236,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn call(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -248,11 +248,19 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .call(name, activation, this, base_proto, args)
     }
 
-    fn getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+    fn getter(
+        &self,
+        name: AvmString<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Object<'gc>> {
         self.0.read().base.getter(name, activation)
     }
 
-    fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+    fn setter(
+        &self,
+        name: AvmString<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Object<'gc>> {
         self.0.read().base.setter(name, activation)
     }
 
@@ -265,7 +273,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.create_bare_object(activation, this)
     }
 
-    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.0.read().base.delete(activation, name)
     }
 
@@ -276,7 +284,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn define_value(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         attributes: Attribute,
     ) {
@@ -289,7 +297,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn set_attributes(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: Option<&str>,
+        name: Option<AvmString<'gc>>,
         set_attributes: Attribute,
         clear_attributes: Attribute,
     ) {
@@ -304,7 +312,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn add_property(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -318,7 +326,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn add_property_with_case(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -332,7 +340,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn call_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         value: &mut Value<'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
@@ -345,7 +353,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn watch(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: Cow<str>,
+        name: AvmString<'gc>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
@@ -355,11 +363,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .watch(activation, name, callback, user_data);
     }
 
-    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.0.read().base.unwatch(activation, name)
     }
 
-    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         let obj = self.0.read();
         if obj.base.has_property(activation, name) {
             return true;
@@ -370,7 +378,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .avm1
             .display_properties
             .read()
-            .get_by_name(name)
+            .get_by_name(&name)
             .is_some()
         {
             return true;
@@ -380,44 +388,52 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         if obj
             .display_object
             .as_container()
-            .and_then(|o| o.child_by_name(name, case_sensitive))
+            .and_then(|o| o.child_by_name(&name, case_sensitive))
             .is_some()
         {
             return true;
         }
 
-        if Self::get_level_by_path(name, &mut activation.context, case_sensitive).is_some() {
+        if Self::get_level_by_path(&name, &mut activation.context, case_sensitive).is_some() {
             return true;
         }
 
         false
     }
 
-    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         // Note that `hasOwnProperty` does NOT return true for child display objects.
         self.0.read().base.has_own_property(activation, name)
     }
 
-    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_virtual(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.0.read().base.has_own_virtual(activation, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn is_property_enumerable(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.0.read().base.is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
         // Keys from the underlying object are listed first, followed by
         // child display objects in order from highest depth to lowest depth.
         let obj = self.0.read();
         let mut keys = obj.base.get_keys(activation);
 
         if let Some(ctr) = obj.display_object.as_container() {
-            keys.extend(
-                ctr.iter_render_list()
-                    .rev()
-                    .map(|child| child.name().to_string()),
-            );
+            keys.extend(ctr.iter_render_list().rev().map(|child| child.name()));
         }
 
         keys
@@ -576,10 +592,10 @@ impl<'gc> DisplayPropertyMap<'gc> {
 
     /// Gets a property slot by name.
     /// Used by `GetMember`, `GetVariable`, `SetMember`, and `SetVariable`.
-    pub fn get_by_name(&self, name: &str) -> Option<&DisplayProperty<'gc>> {
+    pub fn get_by_name(&self, name: impl AsRef<str>) -> Option<&DisplayProperty<'gc>> {
         // Display object properties are case insensitive, regardless of SWF version!?
         // TODO: Another string alloc; optimize this eventually.
-        self.0.get(name, false)
+        self.0.get(name.as_ref(), false)
     }
 
     /// Gets a property slot by SWF4 index.
@@ -791,7 +807,7 @@ fn set_name<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let name = val.coerce_to_string(activation)?;
-    this.set_name(activation.context.gc_context, &name);
+    this.set_name(activation.context.gc_context, name);
     Ok(())
 }
 

@@ -805,11 +805,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             args.push(self.context.avm1.pop());
         }
 
-        let variable = self.get_variable(&fn_name)?;
+        let variable = self.get_variable(fn_name)?;
 
         let result = variable.call_with_default_this(
             self.target_clip_or_root()?.object().coerce_to_object(self),
-            &fn_name,
+            fn_name,
             self,
             None,
             &args,
@@ -849,10 +849,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // Undefined/empty method name; call `this` as a function.
             // TODO: Pass primitive value instead of boxing (#843).
             let this = Value::Undefined.coerce_to_object(self);
-            object.call("[Anonymous]", self, this, None, &args)?
+            object.call("[Anonymous]".into(), self, this, None, &args)?
         } else {
             // Call `this[method_name]`.
-            object.call_method(method_name.as_str(), &args, self)?
+            object.call_method(method_name, &args, self)?
         };
         self.context.avm1.push(result);
 
@@ -914,6 +914,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
         let constant_pool = self.constant_pool();
         let func = Avm1Function::from_df1(
+            self.context.gc_context,
             swf_version,
             actions,
             name,
@@ -922,6 +923,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             constant_pool,
             self.target_clip_or_root()?,
         );
+        let name = func.name();
         let prototype = ScriptObject::object(
             self.context.gc_context,
             Some(self.context.avm1.prototypes.object),
@@ -933,10 +935,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             Some(self.context.avm1.prototypes.function),
             prototype,
         );
-        if name.is_empty() {
-            self.context.avm1.push(func_obj.into());
-        } else {
+        if let Some(name) = name {
             self.define_local(name, func_obj.into())?;
+        } else {
+            self.context.avm1.push(func_obj.into());
         }
 
         Ok(FrameControl::Continue)
@@ -954,6 +956,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
         let constant_pool = self.constant_pool();
         let func = Avm1Function::from_df2(
+            self.context.gc_context,
             swf_version,
             func_data,
             action_func,
@@ -975,10 +978,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if action_func.name.is_empty() {
             self.context.avm1.push(func_obj.into());
         } else {
-            self.define_local(
-                &action_func.name.to_str_lossy(self.encoding()),
-                func_obj.into(),
-            )?;
+            let name = action_func.name.to_str_lossy(self.encoding());
+            let name = AvmString::new(self.context.gc_context, name);
+            self.define_local(name, func_obj.into())?;
         }
 
         Ok(FrameControl::Continue)
@@ -990,7 +992,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm1.pop();
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
-        self.define_local(&name, value)?;
+        self.define_local(name, value)?;
         Ok(FrameControl::Continue)
     }
 
@@ -1000,8 +1002,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
         let scope = self.scope_cell();
-        if !scope.read().locals().has_property(self, &name) {
-            self.define_local(&name, Value::Undefined)?;
+        if !scope.read().locals().has_property(self, name) {
+            self.define_local(name, Value::Undefined)?;
         }
         Ok(FrameControl::Continue)
     }
@@ -1012,7 +1014,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let object = self.context.avm1.pop();
 
         let success = if let Value::Object(object) = object {
-            object.delete(self, &name)
+            object.delete(self, name)
         } else {
             avm_warn!(self, "Cannot delete property {} from {:?}", name, object);
             false
@@ -1026,9 +1028,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
 
-        // Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
-        // a boolean based on if the delete actually deleted something.
-        let success = self.scope_cell().read().delete(self, &name);
+        //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
+        //a boolean based on if the delete actually deleted something.
+        let success = self.scope_cell().read().delete(self, name);
         self.context.avm1.push(success.into());
 
         Ok(FrameControl::Continue)
@@ -1057,14 +1059,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name_value = self.context.avm1.pop();
         let name = name_value.coerce_to_string(self)?;
         self.context.avm1.push(Value::Null); // Sentinel that indicates end of enumeration
-        let object: Value<'gc> = self.resolve(&name)?.into();
+        let object: Value<'gc> = self.resolve(name)?.into();
 
         match object {
             Value::Object(ob) => {
                 for k in ob.get_keys(self).into_iter().rev() {
-                    self.context
-                        .avm1
-                        .push(AvmString::new(self.context.gc_context, k).into());
+                    self.context.avm1.push(k.into());
                 }
             }
             _ => avm_error!(self, "Cannot enumerate properties of {}", name),
@@ -1080,9 +1080,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         if let Value::Object(object) = value {
             for k in object.get_keys(self).into_iter().rev() {
-                self.context
-                    .avm1
-                    .push(AvmString::new(self.context.gc_context, k).into());
+                self.context.avm1.push(k.into());
             }
         } else {
             avm_warn!(self, "Cannot enumerate {:?}", value);
@@ -1152,7 +1150,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let object_val = self.context.avm1.pop();
         let object = object_val.coerce_to_object(self);
 
-        let result = object.get(&name, self)?;
+        let result = object.get(name, self)?;
         self.context.avm1.push(result);
 
         Ok(FrameControl::Continue)
@@ -1200,8 +1198,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let var_path = self.context.avm1.pop();
         let path = var_path.coerce_to_string(self)?;
 
-        let result: Value<'gc> = self.get_variable(&path)?.into();
-        self.context.avm1.push(result);
+        let value: Value<'gc> = self.get_variable(path)?.into();
+        self.context.avm1.push(value);
 
         Ok(FrameControl::Continue)
     }
@@ -1489,7 +1487,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 let value = self.context.avm1.pop();
                 let name_val = self.context.avm1.pop();
                 let name = name_val.coerce_to_string(self)?;
-                object.set(&name, value, self)?;
+                object.set(name, value, self)?;
             }
             Value::Object(object.into())
         };
@@ -1717,7 +1715,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // Undefined/empty method name; construct `this` as a function.
             object.construct(self, &args)?
         } else {
-            let constructor = object.get(method_name.as_str(), self)?;
+            let constructor = object.get(method_name, self)?;
             if let Value::Object(constructor) = constructor {
                 // Construct `this[method_name]`.
                 constructor.construct(self, &args)?
@@ -1746,7 +1744,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             args.push(self.context.avm1.pop());
         }
 
-        let name_value: Value<'gc> = self.resolve(&fn_name)?.into();
+        let name_value: Value<'gc> = self.resolve(fn_name)?.into();
         let constructor = name_value.coerce_to_object(self);
         let result = constructor.construct(self, &args)?;
         self.context.avm1.push(result);
@@ -1878,7 +1876,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name = name_val.coerce_to_string(self)?;
 
         let object = self.context.avm1.pop().coerce_to_object(self);
-        object.set(&name, value, self)?;
+        object.set(name, value, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1908,7 +1906,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm1.pop();
         let var_path_val = self.context.avm1.pop();
         let var_path = var_path_val.coerce_to_string(self)?;
-        self.set_variable(&var_path, value)?;
+        self.set_variable(var_path, value)?;
         Ok(FrameControl::Continue)
     }
 
@@ -2331,10 +2329,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 );
 
                 match catch_vars {
-                    CatchVar::Var(name) => activation.set_variable(
-                        &name.to_str_lossy(activation.encoding()),
-                        value.to_owned(),
-                    )?,
+                    CatchVar::Var(name) => {
+                        let name = name.to_str_lossy(activation.encoding());
+                        let name = AvmString::new(activation.context.gc_context, name);
+                        activation.set_variable(name, value.to_owned())?
+                    }
                     CatchVar::Register(id) => {
                         activation.set_current_register(*id, value.to_owned())
                     }
@@ -2398,11 +2397,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let keys = object.get_keys(self);
 
         for k in keys {
-            let v = object.get(&k, self);
+            let v = object.get(k, self);
 
             //TODO: What happens if an error occurs inside a virtual property?
             form_values.insert(
-                k,
+                k.to_string(),
                 v.ok()
                     .unwrap_or(Value::Undefined)
                     .coerce_to_string(self)
@@ -2614,6 +2613,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     {
                         child.object()
                     } else {
+                        let name = AvmString::new(self.context.gc_context, name);
                         object.get(name, self).unwrap()
                     }
                 }
@@ -2707,7 +2707,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// Finally, if none of the above applies, it is a normal variable name resovled via the
     /// scope chain.
-    pub fn get_variable<'s>(&mut self, path: &'s str) -> Result<CallableValue<'gc>, Error<'gc>> {
+    pub fn get_variable(&mut self, path: AvmString<'gc>) -> Result<CallableValue<'gc>, Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root()?;
 
@@ -2738,6 +2738,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if let Some(object) =
                     self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
                 {
+                    let var_name = AvmString::new(self.context.gc_context, var_name);
                     if object.has_property(self, var_name) {
                         return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
                     }
@@ -2755,7 +2756,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             while let Some(scope) = current_scope {
                 let avm1_root = start.avm1_root(&self.context)?;
                 if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.read().locals(), path, false)?
+                    self.resolve_target_path(avm1_root, *scope.read().locals(), &path, false)?
                 {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
@@ -2790,7 +2791,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// If the string does not resolve as a path, the path is considered a normal variable
     /// name and is set on the scope chain as usual.
-    pub fn set_variable<'s>(&mut self, path: &'s str, value: Value<'gc>) -> Result<(), Error<'gc>> {
+    pub fn set_variable(
+        &mut self,
+        path: AvmString<'gc>,
+        value: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
         let start = self.target_clip_or_root()?;
 
@@ -2810,6 +2815,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // We resolve it directly on the targeted object.
             let path = unsafe { std::str::from_utf8_unchecked(path) };
             let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+            let var_name = AvmString::new(self.context.gc_context, var_name);
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
@@ -2887,7 +2893,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// Because scopes are object chains, the same rules for `Object::get`
     /// still apply here.
-    pub fn resolve(&mut self, name: &str) -> Result<CallableValue<'gc>, Error<'gc>> {
+    pub fn resolve(&mut self, name: AvmString<'gc>) -> Result<CallableValue<'gc>, Error<'gc>> {
         if name == "this" {
             return Ok(CallableValue::UnCallable(Value::Object(self.this_cell())));
         }
@@ -2904,7 +2910,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(&mut self, name: &str) -> bool {
+    pub fn is_defined(&mut self, name: AvmString<'gc>) -> bool {
         if name == "this" {
             return true;
         }
@@ -2975,7 +2981,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// If the property does not already exist on the local scope, it will created.
     /// Otherwise, the existing property will be set to `value`. This does not crawl the scope
     /// chain. Any properties deeper in the scope chain with the same name will be shadowed.
-    pub fn define_local(&mut self, name: &str, value: Value<'gc>) -> Result<(), Error<'gc>> {
+    pub fn define_local(
+        &mut self,
+        name: AvmString<'gc>,
+        value: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
         let scope = self.scope;
         let scope = scope.write(self.context.gc_context);
         scope.define_local(name, value, self)
@@ -2985,7 +2995,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// This inserts a value as a stored property on the local scope. If the property already
     /// exists, it will be forcefully overwritten. Used internally to initialize objects.
-    pub fn force_define_local(&mut self, name: &str, value: Value<'gc>) {
+    pub fn force_define_local(&mut self, name: AvmString<'gc>, value: Value<'gc>) {
         self.scope
             .read()
             .force_define_local(name, value, self.context.gc_context)

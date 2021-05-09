@@ -21,7 +21,6 @@ impl<'gc, V> PropertyMap<'gc, V> {
         Self(FnvIndexMap::default())
     }
 
-    // TODO(moulins): &str -> AvmString
     pub fn contains_key<T: AsRef<str>>(&self, key: T, case_sensitive: bool) -> bool {
         if case_sensitive {
             self.0.contains_key(&CaseSensitiveStr(key.as_ref()))
@@ -57,7 +56,6 @@ impl<'gc, V> PropertyMap<'gc, V> {
     }
 
     /// Gets the value for the specified property.
-    // TODO(moulins): &str -> AvmString
     pub fn get<T: AsRef<str>>(&self, key: T, case_sensitive: bool) -> Option<&V> {
         if case_sensitive {
             self.0.get(&CaseSensitiveStr(key.as_ref()))
@@ -67,7 +65,6 @@ impl<'gc, V> PropertyMap<'gc, V> {
     }
 
     /// Gets a mutable reference to the value for the specified property.
-    // TODO(moulins): &str -> AvmString
     pub fn get_mut<T: AsRef<str>>(&mut self, key: T, case_sensitive: bool) -> Option<&mut V> {
         if case_sensitive {
             self.0.get_mut(&CaseSensitiveStr(key.as_ref()))
@@ -92,7 +89,6 @@ impl<'gc, V> PropertyMap<'gc, V> {
     }
 
     /// Returns the value tuples in Flash's iteration order (most recently added first).
-    // TODO(moulins): &str -> AvmString
     pub fn iter(&self) -> impl Iterator<Item = (AvmString<'gc>, &V)> {
         self.0.iter().rev().map(|(k, v)| (k.0, v))
     }
@@ -102,7 +98,6 @@ impl<'gc, V> PropertyMap<'gc, V> {
         self.0.iter_mut().rev().map(|(k, v)| (k.0, v))
     }
 
-    // TODO(moulins): &str -> AvmString
     pub fn remove<T: AsRef<str>>(&mut self, key: T, case_sensitive: bool) -> Option<V> {
         // Note that we must use shift_remove to maintain order in case this object is enumerated.
         if case_sensitive {
@@ -163,7 +158,6 @@ impl<'gc, 'a, V> VacantEntry<'gc, 'a, V> {
 }
 
 /// Wraps a str-like type, causing the hash map to use a case insensitive hash and equality.
-// TODO(moulins): force AvmString
 struct CaseInsensitiveStr<T>(T);
 
 impl<T: AsRef<str>> Hash for CaseInsensitiveStr<T> {
@@ -180,7 +174,6 @@ impl<'gc, T: AsRef<str>> Equivalent<PropertyName<'gc>> for CaseInsensitiveStr<T>
 
 /// Wraps an str-like type, causing the property map to use a case insensitive hash lookup,
 /// but case sensitive equality.
-// TODO(moulins): force AvmString
 struct CaseSensitiveStr<T>(T);
 
 impl<T: AsRef<str>> Hash for CaseSensitiveStr<T> {

@@ -645,7 +645,7 @@ fn attach_movie<'gc>(
         .and_then(|l| l.instantiate_by_export_name(&export_name, activation.context.gc_context))
     {
         // Set name and attach to parent.
-        new_clip.set_name(activation.context.gc_context, &new_instance_name);
+        new_clip.set_name(activation.context.gc_context, new_instance_name);
         movie_clip.replace_at_depth(&mut activation.context, new_clip, depth);
         let init_object = if let Some(Value::Object(init_object)) = init_object {
             Some(init_object.to_owned())
@@ -696,7 +696,7 @@ fn create_empty_movie_clip<'gc>(
     let new_clip = MovieClip::new(SwfSlice::empty(swf_movie), activation.context.gc_context);
 
     // Set name and attach to parent.
-    new_clip.set_name(activation.context.gc_context, &new_instance_name);
+    new_clip.set_name(activation.context.gc_context, new_instance_name);
     movie_clip.replace_at_depth(&mut activation.context, new_clip.into(), depth);
     new_clip.post_instantiation(
         &mut activation.context,
@@ -746,7 +746,7 @@ fn create_text_field<'gc>(
         EditText::new(&mut activation.context, movie, x, y, width, height).into();
     text_field.set_name(
         activation.context.gc_context,
-        &instance_name.coerce_to_string(activation)?,
+        instance_name.coerce_to_string(activation)?,
     );
     movie_clip.replace_at_depth(
         &mut activation.context,
@@ -820,7 +820,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         .and_then(|l| l.instantiate_by_id(movie_clip.id(), activation.context.gc_context))
     {
         // Set name and attach to parent.
-        new_clip.set_name(activation.context.gc_context, &new_instance_name);
+        new_clip.set_name(activation.context.gc_context, new_instance_name);
         parent.replace_at_depth(&mut activation.context, new_clip, depth);
 
         // Copy display properties from previous clip to new clip.

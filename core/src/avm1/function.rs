@@ -6,7 +6,7 @@ use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
+use crate::avm1::{ArrayObject, AvmString, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
@@ -55,7 +55,7 @@ pub struct Avm1Function<'gc> {
     /// A reference to the underlying SWF data.
     data: SwfSlice,
     /// The name of the function, if not anonymous.
-    name: Option<String>,
+    name: Option<AvmString<'gc>>,
 
     /// The number of registers to allocate for this function's private register
     /// set. Any register beyond this ID will be served from the global one.
@@ -64,7 +64,7 @@ pub struct Avm1Function<'gc> {
     /// The names of the function parameters and their register mappings.
     /// r0 indicates that no register shall be written and the parameter stored
     /// as a Variable instead.
-    params: Vec<(Option<u8>, String)>,
+    params: Vec<(Option<u8>, AvmString<'gc>)>,
 
     /// The scope the function was born into.
     scope: GcCell<'gc, Scope<'gc>>,
@@ -86,7 +86,9 @@ impl<'gc> Avm1Function<'gc> {
     ///
     /// Parameters not specified in DefineFunction are filled with reasonable
     /// defaults.
+    #[allow(clippy::too_many_arguments)]
     pub fn from_df1(
+        gc_context: MutationContext<'gc, '_>,
         swf_version: u8,
         actions: SwfSlice,
         name: &str,
@@ -98,7 +100,7 @@ impl<'gc> Avm1Function<'gc> {
         let name = if name.is_empty() {
             None
         } else {
-            Some(name.to_string())
+            Some(AvmString::new(gc_context, name))
         };
 
         Avm1Function {
@@ -109,10 +111,8 @@ impl<'gc> Avm1Function<'gc> {
             params: params
                 .iter()
                 .map(|&s| {
-                    (
-                        None,
-                        s.to_string_lossy(SwfStr::encoding_for_version(swf_version)),
-                    )
+                    let name = s.to_string_lossy(SwfStr::encoding_for_version(swf_version));
+                    (None, AvmString::new(gc_context, name))
                 })
                 .collect(),
             scope,
@@ -124,6 +124,7 @@ impl<'gc> Avm1Function<'gc> {
 
     /// Construct a function from a DefineFunction2 action.
     pub fn from_df2(
+        gc_context: MutationContext<'gc, '_>,
         swf_version: u8,
         actions: SwfSlice,
         swf_function: &swf::avm1::types::Function,
@@ -134,22 +135,20 @@ impl<'gc> Avm1Function<'gc> {
         let name = if swf_function.name.is_empty() {
             None
         } else {
-            Some(
-                swf_function
-                    .name
-                    .to_string_lossy(SwfStr::encoding_for_version(swf_version)),
-            )
+            let name = swf_function
+                .name
+                .to_string_lossy(SwfStr::encoding_for_version(swf_version));
+            Some(AvmString::new(gc_context, name))
         };
 
         let params = swf_function
             .params
             .iter()
             .map(|p| {
-                (
-                    p.register_index,
-                    p.name
-                        .to_string_lossy(SwfStr::encoding_for_version(swf_version)),
-                )
+                let name = p
+                    .name
+                    .to_string_lossy(SwfStr::encoding_for_version(swf_version));
+                (p.register_index, AvmString::new(gc_context, name))
             })
             .collect();
 
@@ -172,6 +171,10 @@ impl<'gc> Avm1Function<'gc> {
 
     pub fn data(&self) -> SwfSlice {
         self.data.clone()
+    }
+
+    pub fn name(&self) -> Option<AvmString<'gc>> {
+        self.name
     }
 
     pub fn scope(&self) -> GcCell<'gc, Scope<'gc>> {
@@ -344,7 +347,7 @@ impl<'gc> Executable<'gc> {
                         //preload for super?
                         preload_r += 1;
                     } else {
-                        frame.force_define_local("super", super_object.into());
+                        frame.force_define_local("super".into(), super_object.into());
                     }
                 }
 
@@ -382,7 +385,7 @@ impl<'gc> Executable<'gc> {
                 for (param, value) in af.params.iter().zip(args_iter) {
                     match param {
                         (Some(argreg), _argname) => frame.set_local_register(*argreg, value),
-                        (None, argname) => frame.force_define_local(argname, value),
+                        (None, argname) => frame.force_define_local(*argname, value),
                     }
                 }
 
@@ -517,7 +520,7 @@ impl<'gc> FunctionObject<'gc> {
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn get_local_stored(
         &self,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Value<'gc>> {
         self.base.get_local_stored(name, activation)
@@ -525,7 +528,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn set_local(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -537,7 +540,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn call(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -545,7 +548,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(exec) = self.as_executable() {
             exec.exec(
-                name,
+                &name,
                 activation,
                 this,
                 base_proto,
@@ -589,7 +592,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 (*self).into(),
             )?;
         } else {
-            let _ = self.call("[ctor]", activation, this, None, args)?;
+            let _ = self.call("[ctor]".into(), activation, this, None, args)?;
         }
         Ok(())
     }
@@ -632,16 +635,24 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             )?;
             Ok(this)
         } else {
-            let _ = self.call("[ctor]", activation, this, None, args)?;
+            let _ = self.call("[ctor]".into(), activation, this, None, args)?;
             Ok(this.into())
         }
     }
 
-    fn getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+    fn getter(
+        &self,
+        name: AvmString<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Object<'gc>> {
         self.base.getter(name, activation)
     }
 
-    fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+    fn setter(
+        &self,
+        name: AvmString<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Object<'gc>> {
         self.base.setter(name, activation)
     }
 
@@ -666,7 +677,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         Ok(fn_object.into())
     }
 
-    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.base.delete(activation, name)
     }
 
@@ -677,7 +688,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn define_value(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         attributes: Attribute,
     ) {
@@ -687,7 +698,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn set_attributes(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: Option<&str>,
+        name: Option<AvmString<'gc>>,
         set_attributes: Attribute,
         clear_attributes: Attribute,
     ) {
@@ -698,7 +709,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn add_property(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -710,7 +721,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn add_property_with_case(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -722,7 +733,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn call_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         value: &mut Value<'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
@@ -732,34 +743,46 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn watch(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: Cow<str>,
+        name: AvmString<'gc>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
         self.base.watch(activation, name, callback, user_data);
     }
 
-    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.base.unwatch(activation, name)
     }
 
-    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.base.has_property(activation, name)
     }
 
-    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.base.has_own_property(activation, name)
     }
 
-    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_virtual(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.base.has_own_virtual(activation, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn is_property_enumerable(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.base.is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
         self.base.get_keys(activation)
     }
 

@@ -10,6 +10,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
+use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
@@ -58,7 +59,7 @@ pub struct DisplayObjectBase<'gc> {
     place_frame: u16,
     depth: Depth,
     transform: Transform,
-    name: String,
+    name: AvmString<'gc>,
     clip_depth: Depth,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
@@ -301,12 +302,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         matrix.d = (cos * value.into_unit()) as f32;
     }
 
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> AvmString<'gc> {
+        self.name
     }
 
-    fn set_name(&mut self, name: &str) {
-        self.name = name.to_string();
+    fn set_name(&mut self, name: AvmString<'gc>) {
+        self.name = name;
     }
 
     fn alpha(&self) -> f64 {
@@ -742,8 +743,8 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_alpha`/`alpha` ActionScript properties.
     fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64);
 
-    fn name(&self) -> Ref<str>;
-    fn set_name(&self, gc_context: MutationContext<'gc, '_>, name: &str);
+    fn name(&self) -> AvmString<'gc>;
+    fn set_name(&self, gc_context: MutationContext<'gc, '_>, name: AvmString<'gc>);
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
     fn path(&self) -> String {
@@ -1093,8 +1094,8 @@ pub trait TDisplayObject<'gc>:
             }
             if let Some(name) = &place_object.name {
                 let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
-                let name = name.to_str_lossy(encoding);
-                self.set_name(context.gc_context, &name);
+                let name = name.to_str_lossy(encoding).to_owned();
+                self.set_name(context.gc_context, AvmString::new(context.gc_context, name));
             }
             if let Some(clip_depth) = place_object.clip_depth {
                 self.set_clip_depth(context.gc_context, clip_depth.into());
@@ -1339,7 +1340,7 @@ pub trait TDisplayObject<'gc>:
     fn set_default_instance_name(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.name().is_empty() {
             let name = format!("instance{}", *context.instance_counter);
-            self.set_name(context.gc_context, &name);
+            self.set_name(context.gc_context, AvmString::new(context.gc_context, name));
             *context.instance_counter = context.instance_counter.wrapping_add(1);
         }
     }
@@ -1352,9 +1353,10 @@ pub trait TDisplayObject<'gc>:
         let vm_type = self.avm_type();
 
         if matches!(vm_type, AvmType::Avm2) {
-            self.set_name(context.gc_context, &format!("root{}", self.depth() + 1));
+            let name = AvmString::new(context.gc_context, format!("root{}", self.depth() + 1));
+            self.set_name(context.gc_context, name);
         } else if matches!(vm_type, AvmType::Avm1) {
-            self.set_name(context.gc_context, "");
+            self.set_name(context.gc_context, Default::default());
         }
     }
 
@@ -1449,10 +1451,14 @@ macro_rules! impl_display_object_sansbounds {
         fn set_alpha(&self, gc_context: gc_arena::MutationContext<'gc, '_>, value: f64) {
             self.0.write(gc_context).$field.set_alpha(value)
         }
-        fn name(&self) -> std::cell::Ref<str> {
-            std::cell::Ref::map(self.0.read(), |o| o.$field.name())
+        fn name(&self) -> crate::string::AvmString<'gc> {
+            self.0.read().$field.name()
         }
-        fn set_name(&self, context: gc_arena::MutationContext<'gc, '_>, name: &str) {
+        fn set_name(
+            &self,
+            context: gc_arena::MutationContext<'gc, '_>,
+            name: crate::string::AvmString<'gc>,
+        ) {
             self.0.write(context).$field.set_name(name)
         }
         fn clip_depth(&self) -> crate::prelude::Depth {

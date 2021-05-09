@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 
@@ -233,7 +233,7 @@ impl<'gc> Scope<'gc> {
     /// that the result will be calculated on the AVM stack.
     pub fn resolve(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<CallableValue<'gc>, Error<'gc>> {
@@ -252,7 +252,11 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    pub fn is_defined(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         if self.locals().has_property(activation, name) {
             return true;
         }
@@ -272,7 +276,7 @@ impl<'gc> Scope<'gc> {
     /// If the value is not found, it is defined on this Target scope.
     pub fn set(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -300,7 +304,7 @@ impl<'gc> Scope<'gc> {
     /// chain. Any proeprties with the same name deeper in the scope chain will be shadowed.
     pub fn define_local(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
@@ -311,13 +315,18 @@ impl<'gc> Scope<'gc> {
     ///
     /// This inserts a value as a stored property on the local scope. If the property already
     /// exists, it will be forcefully overwritten. Used internally to initialize objects.
-    pub fn force_define_local(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
+    pub fn force_define_local(
+        &self,
+        name: AvmString<'gc>,
+        value: Value<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) {
         self.locals()
             .define_value(mc, name, value, Attribute::empty());
     }
 
     /// Delete a value from scope
-    pub fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    pub fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         if self.locals().has_property(activation, name) {
             return self.locals().delete(activation, name);
         }

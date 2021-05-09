@@ -65,11 +65,9 @@ fn decode<'gc>(
     if let Some(data) = args.get(0) {
         let data = data.coerce_to_string(activation)?;
         for (k, v) in url::form_urlencoded::parse(data.as_bytes()) {
-            this.set(
-                &k,
-                crate::string::AvmString::new(activation.context.gc_context, v.into_owned()).into(),
-                activation,
-            )?;
+            let k = AvmString::new(activation.context.gc_context, k.into_owned());
+            let v = AvmString::new(activation.context.gc_context, v.into_owned());
+            this.set(k, v.into(), activation)?;
         }
     }
 
@@ -118,13 +116,13 @@ fn on_data<'gc>(
     let success = match args.get(0) {
         None | Some(Value::Undefined) | Some(Value::Null) => false,
         Some(val) => {
-            this.call_method("decode", &[*val], activation)?;
+            this.call_method("decode".into(), &[*val], activation)?;
             this.set("loaded", true.into(), activation)?;
             true
         }
     };
 
-    this.call_method("onLoad", &[success.into()], activation)?;
+    this.call_method("onLoad".into(), &[success.into()], activation)?;
 
     Ok(Value::Undefined)
 }
@@ -166,10 +164,10 @@ fn send<'gc>(
     let keys = this.get_keys(activation);
 
     for k in keys {
-        let v = this.get(&k, activation);
+        let v = this.get(k, activation);
 
         form_values.insert(
-            k,
+            k.to_string(),
             v.ok()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)
@@ -223,11 +221,11 @@ fn to_string<'gc>(
     let keys = this.get_keys(activation);
 
     for k in keys {
-        let v = this.get(&k, activation);
+        let v = this.get(k, activation);
 
         //TODO: What happens if an error occurs inside a virtual property?
         form_values.insert(
-            k,
+            k.to_string(),
             v.ok()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)
@@ -265,7 +263,7 @@ fn spawn_load_var_fetch<'gc>(
     );
 
     // Create hidden properties on object.
-    if !loader_object.has_property(activation, "_bytesLoaded") {
+    if !loader_object.has_property(activation, "_bytesLoaded".into()) {
         loader_object.define_value(
             activation.context.gc_context,
             "_bytesLoaded",
@@ -276,7 +274,7 @@ fn spawn_load_var_fetch<'gc>(
         loader_object.set("_bytesLoaded", 0.into(), activation)?;
     }
 
-    if !loader_object.has_property(activation, "loaded") {
+    if !loader_object.has_property(activation, "loaded".into()) {
         loader_object.define_value(
             activation.context.gc_context,
             "loaded",

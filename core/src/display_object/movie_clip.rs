@@ -1176,10 +1176,7 @@ impl<'gc> MovieClip<'gc> {
 
                 if let Avm2Value::Object(mut p) = self.object2() {
                     if let Avm2Value::Object(c) = child.object2() {
-                        let name = Avm2QName::new(
-                            Avm2Namespace::public(),
-                            AvmString::new(context.gc_context, child.name().to_owned()),
-                        );
+                        let name = Avm2QName::new(Avm2Namespace::public(), child.name());
                         let mut activation = Avm2Activation::from_nothing(context.reborrow());
                         if let Err(e) = p.init_property(p, &name.into(), c.into(), &mut activation)
                         {
@@ -1448,8 +1445,8 @@ impl<'gc> MovieClip<'gc> {
 
                     if let Some(init_object) = init_object {
                         for key in init_object.get_keys(&mut activation) {
-                            if let Ok(value) = init_object.get(&key, &mut activation) {
-                                let _ = object.set(&key, value, &mut activation);
+                            if let Ok(value) = init_object.get(key, &mut activation) {
+                                let _ = object.set(key, value, &mut activation);
                             }
                         }
                     }
@@ -1481,8 +1478,8 @@ impl<'gc> MovieClip<'gc> {
                 );
 
                 for key in init_object.get_keys(&mut activation) {
-                    if let Ok(value) = init_object.get(&key, &mut activation) {
-                        let _ = object.set(&key, value, &mut activation);
+                    if let Ok(value) = init_object.get(key, &mut activation) {
+                        let _ = object.set(key, value, &mut activation);
                     }
                 }
             }
@@ -1693,7 +1690,8 @@ impl<'gc> MovieClip<'gc> {
 
             ClipEvent::BUTTON_EVENT_METHODS
                 .iter()
-                .any(|handler| object.has_property(&mut activation, handler))
+                .copied()
+                .any(|handler| object.has_property(&mut activation, handler.into()))
         }
     }
 }
@@ -3049,7 +3047,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let exports = reader.read_export_assets()?;
         for export in exports {
             let name = export.name.to_str_lossy(reader.encoding());
-            // TODO(moulins): avoid extra alloc?
             let name = AvmString::new(context.gc_context, name);
             let character = context
                 .library
