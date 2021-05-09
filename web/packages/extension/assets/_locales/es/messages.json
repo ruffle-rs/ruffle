@@ -18,7 +18,7 @@
         "message": "Occurió un error buscando la pestaña actual."
     },
     "status_message_init": {
-        "message": "Verificando el estado de Ruffle en la pestaña actual…"
+        "message": "Comprobando el estado de Ruffle en la pestaña actual…"
     },
     "status_result_running": {
         "message": "Ruffle está cargado y ejecutando Flash en la pestaña actual."
