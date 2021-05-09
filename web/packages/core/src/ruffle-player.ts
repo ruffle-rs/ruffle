@@ -663,6 +663,7 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private contextMenuItems(): Array<ContextMenuItem | null> {
+        const CHECKMARK = String.fromCharCode(0x2713);
         const items = [];
 
         if (this.instance) {
@@ -671,7 +672,8 @@ export class RufflePlayer extends HTMLElement {
                 if (item.separatorBefore) items.push(null);
                 items.push({
                     // TODO: better checkboxes
-                    text: item.caption + (item.checked ? ` (\u2611)` : ``),
+                    text:
+                        item.caption + (item.checked ? ` (${CHECKMARK})` : ``),
                     onClick: () =>
                         this.instance?.run_context_menu_callback(index),
                     enabled: item.enabled,
