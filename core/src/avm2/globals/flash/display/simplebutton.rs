@@ -335,6 +335,44 @@ pub fn set_enabled<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `useHandCursor`'s getter
+pub fn use_hand_cursor<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(btn) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_avm2_button())
+    {
+        return Ok(btn.use_hand_cursor().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `useHandCursor`'s setter
+pub fn set_use_hand_cursor<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(btn) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_avm2_button())
+    {
+        btn.set_use_hand_cursor(
+            &mut activation.context,
+            args.get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_boolean(),
+        );
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `SimpleButton`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -396,6 +434,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "enabled"),
         Method::from_builtin(set_enabled),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "useHandCursor"),
+        Method::from_builtin(use_hand_cursor),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "useHandCursor"),
+        Method::from_builtin(set_use_hand_cursor),
     ));
 
     class
