@@ -297,6 +297,44 @@ pub fn set_track_as_menu<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `enabled`'s getter
+pub fn enabled<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(btn) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_avm2_button())
+    {
+        return Ok(btn.enabled().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `enabled`'s setter
+pub fn set_enabled<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(btn) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_avm2_button())
+    {
+        btn.set_enabled(
+            &mut activation.context,
+            args.get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_boolean(),
+        );
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `SimpleButton`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -350,6 +388,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "trackAsMenu"),
         Method::from_builtin(set_track_as_menu),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "enabled"),
+        Method::from_builtin(enabled),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "enabled"),
+        Method::from_builtin(set_enabled),
     ));
 
     class
