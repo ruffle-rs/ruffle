@@ -380,7 +380,7 @@ pub fn set_name<'gc>(
             .into());
         }
 
-        dobj.set_name(activation.context.gc_context, &new_name);
+        dobj.set_name(activation.context.gc_context, new_name);
     }
 
     Ok(Value::Undefined)

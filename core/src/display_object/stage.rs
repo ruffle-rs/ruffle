@@ -491,8 +491,8 @@ impl<'gc> Stage<'gc> {
                 self.root_clip(),
                 context.swf.version(),
                 context,
-                "Stage",
-                "onResize",
+                "Stage".into(),
+                "onResize".into(),
                 &[],
             );
         } else if let Avm2Value::Object(stage) = self.object2() {

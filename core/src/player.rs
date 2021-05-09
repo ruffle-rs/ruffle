@@ -415,7 +415,7 @@ impl Player {
                 for (key, value) in context.swf.parameters().iter() {
                     object.define_value(
                         context.gc_context,
-                        key,
+                        AvmString::new(context.gc_context, key),
                         AvmString::new(context.gc_context, value).into(),
                         Attribute::empty(),
                     );
@@ -673,7 +673,7 @@ impl Player {
         let params = vec![root_clip.object(), Value::Object(item)];
 
         let _ = callback.call(
-            "[Context Menu Callback]",
+            "[Context Menu Callback]".into(),
             &mut activation,
             undefined,
             None,
@@ -1389,7 +1389,7 @@ impl Player {
                         object,
                         context.swf.version(),
                         context,
-                        name,
+                        name.into(),
                         &args,
                     );
                 }
@@ -1406,8 +1406,8 @@ impl Player {
                         actions.clip,
                         context.swf.version(),
                         context,
-                        listener,
-                        method,
+                        listener.into(),
+                        method.into(),
                         &args,
                     );
                 }

@@ -7,7 +7,7 @@
 //! TODO: Could we use this for AVM2 timers as well?
 
 use crate::avm1::object::search_prototype;
-use crate::avm1::{Activation, ActivationIdentifier, Object, TObject, Value};
+use crate::avm1::{Activation, ActivationIdentifier, AvmString, Object, TObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
@@ -93,7 +93,7 @@ impl<'gc> Timers<'gc> {
                 TimerCallback::Method { this, method_name } => {
                     // Fetch the callback method from the object.
                     if let Ok((f, base_proto)) =
-                        search_prototype(Value::Object(this), &method_name, &mut activation, this)
+                        search_prototype(Value::Object(this), method_name, &mut activation, this)
                     {
                         let f = f.coerce_to_object(&mut activation);
                         Some((this, base_proto, f))
@@ -105,7 +105,7 @@ impl<'gc> Timers<'gc> {
 
             if let Some((this, base_proto, function)) = callback {
                 let _ = function.call(
-                    "[Timer Callback]",
+                    "[Timer Callback]".into(),
                     &mut activation,
                     this,
                     base_proto,
@@ -278,6 +278,6 @@ pub enum TimerCallback<'gc> {
     Function(Object<'gc>),
     Method {
         this: Object<'gc>,
-        method_name: String,
+        method_name: AvmString<'gc>,
     },
 }

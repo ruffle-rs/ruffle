@@ -1,9 +1,9 @@
 //! Function prototype
 
-use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::{activation::Activation, AvmString};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
 
@@ -86,7 +86,12 @@ pub fn apply<'gc>(
     let mut child_args = Vec::with_capacity(length);
     while child_args.len() < length {
         let args = args_object.coerce_to_object(activation);
-        let next_arg = args.get(&format!("{}", child_args.len()), activation)?;
+        // TODO: why don't this use args_object.array_element?
+        let next_arg = format!("{}", child_args.len());
+        let next_arg = args.get(
+            AvmString::new(activation.context.gc_context, next_arg),
+            activation,
+        )?;
 
         child_args.push(next_arg);
     }

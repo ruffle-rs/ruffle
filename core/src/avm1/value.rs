@@ -239,7 +239,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::Object(object) => object.call_method("valueOf", &[], activation)?,
+            Value::Object(object) => object.call_method("valueOf".into(), &[], activation)?,
             val => val.to_owned(),
         })
     }
@@ -420,10 +420,12 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::Object(object) => match object.call_method("toString", &[], activation)? {
-                Value::String(s) => s,
-                _ => "[type Object]".into(),
-            },
+            Value::Object(object) => {
+                match object.call_method("toString".into(), &[], activation)? {
+                    Value::String(s) => s,
+                    _ => "[type Object]".into(),
+                }
+            }
             Value::Undefined => {
                 if activation.swf_version() >= 7 {
                     "undefined".into()
@@ -476,7 +478,7 @@ impl<'gc> Value<'gc> {
 
     pub fn call(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,

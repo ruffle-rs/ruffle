@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::{Object, Value};
+use crate::avm1::{AvmString, Object, Value};
 use gc_arena::Collect;
 
 #[derive(Clone, Collect, Debug)]
@@ -23,7 +23,7 @@ impl<'gc> CallableValue<'gc> {
     pub fn call_with_default_this(
         self,
         default_this: Object<'gc>,
-        name: &str,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],

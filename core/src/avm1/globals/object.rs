@@ -1,14 +1,13 @@
 //! Object prototype
-use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::{activation::Activation, AvmString};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
 use gc_arena::MutationContext;
-use std::borrow::Cow;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "addProperty" => method(add_property; DONT_ENUM | DONT_DELETE);
@@ -71,7 +70,7 @@ pub fn add_property<'gc>(
             if let Value::Object(set) = setter {
                 this.add_property_with_case(
                     activation,
-                    &name,
+                    name,
                     get.to_owned(),
                     Some(set.to_owned()),
                     Attribute::empty(),
@@ -79,7 +78,7 @@ pub fn add_property<'gc>(
             } else if let Value::Null = setter {
                 this.add_property_with_case(
                     activation,
-                    &name,
+                    name,
                     get.to_owned(),
                     None,
                     Attribute::READ_ONLY,
@@ -102,7 +101,7 @@ pub fn has_own_property<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(value) = args.get(0) {
         let name = value.coerce_to_string(activation)?;
-        Ok(this.has_own_property(activation, &name).into())
+        Ok(this.has_own_property(activation, name).into())
     } else {
         Ok(false.into())
     }
@@ -126,7 +125,7 @@ fn is_property_enumerable<'gc>(
     match args.get(0) {
         Some(name) => {
             let name = name.coerce_to_string(activation)?;
-            Ok(this.is_property_enumerable(activation, &name).into())
+            Ok(this.is_property_enumerable(activation, name).into())
         }
         None => Ok(false.into()),
     }
@@ -213,7 +212,7 @@ fn watch<'gc>(
     }
     let user_data = args.get(2).cloned().unwrap_or(Value::Undefined);
 
-    this.watch(activation, Cow::Borrowed(&name), callback, user_data);
+    this.watch(activation, name, callback, user_data);
 
     Ok(true.into())
 }
@@ -230,7 +229,7 @@ fn unwatch<'gc>(
         return Ok(false.into());
     };
 
-    let result = this.unwatch(activation, Cow::Borrowed(&name));
+    let result = this.unwatch(activation, name);
 
     Ok(result.into())
 }
@@ -294,10 +293,20 @@ pub fn as_set_prop_flags<'gc>(
             clear_attributes,
         ),
         Some(v) => {
-            for prop_name in v.coerce_to_string(activation)?.split(',') {
+            let props = v.coerce_to_string(activation)?;
+            if props.contains(',') {
+                for prop_name in props.split(',') {
+                    object.set_attributes(
+                        activation.context.gc_context,
+                        Some(AvmString::new(activation.context.gc_context, prop_name)),
+                        set_attributes,
+                        clear_attributes,
+                    )
+                }
+            } else {
                 object.set_attributes(
                     activation.context.gc_context,
-                    Some(prop_name),
+                    Some(props),
                     set_attributes,
                     clear_attributes,
                 )

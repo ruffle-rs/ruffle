@@ -172,7 +172,7 @@ pub fn make_context_menu_state<'gc>(
         if let Some(menu) = menu {
             if let Ok(Value::Object(builtins)) = menu.get("builtInItems", activation) {
                 names.retain(|name| {
-                    !matches!(builtins.get(name, activation), Ok(Value::Bool(false)))
+                    !matches!(builtins.get(*name, activation), Ok(Value::Bool(false)))
                 });
             }
         }

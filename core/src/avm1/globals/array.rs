@@ -468,17 +468,16 @@ fn sort_on<'gc>(
             let length = array.length(activation)?;
             let field_names: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
-                    Ok(array
+                    array
                         .get_element(activation, i)
-                        .coerce_to_string(activation)?
-                        .to_string())
+                        .coerce_to_string(activation)
                 })
                 .collect();
             field_names?
         }
         Some(field_name) => {
             // Single field.
-            vec![field_name.coerce_to_string(activation)?.to_string()]
+            vec![field_name.coerce_to_string(activation)?]
         }
         None => return Ok(Value::Undefined),
     };
@@ -650,15 +649,15 @@ fn sort_compare_numeric<'gc>(
 }
 
 fn sort_compare_fields<'a, 'gc: 'a>(
-    field_names: Vec<String>,
+    field_names: Vec<AvmString<'gc>>,
     mut compare_fns: Vec<CompareFn<'a, 'gc>>,
 ) -> impl 'a + FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering {
     move |activation, a, b| {
         for (field_name, compare_fn) in field_names.iter().zip(compare_fns.iter_mut()) {
             let a_object = a.coerce_to_object(activation);
             let b_object = b.coerce_to_object(activation);
-            let a_prop = a_object.get(field_name, activation).unwrap();
-            let b_prop = b_object.get(field_name, activation).unwrap();
+            let a_prop = a_object.get(*field_name, activation).unwrap();
+            let b_prop = b_object.get(*field_name, activation).unwrap();
 
             let result = compare_fn(activation, &a_prop, &b_prop);
             if result != Ordering::Equal {
@@ -681,7 +680,7 @@ fn sort_compare_custom<'gc>(
     // TODO: Handle errors.
     let args = [*a, *b];
     let ret = compare_fn
-        .call("[Compare]", activation, this, None, &args)
+        .call("[Compare]".into(), activation, this, None, &args)
         .unwrap_or(Value::Undefined);
     match ret {
         Value::Number(n) if n > 0.0 => Ordering::Greater,

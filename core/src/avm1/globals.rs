@@ -331,8 +331,7 @@ pub fn create_timer<'gc>(
                 method_name: args
                     .get(1)
                     .unwrap_or(&Value::Undefined)
-                    .coerce_to_string(activation)?
-                    .to_string(),
+                    .coerce_to_string(activation)?,
             },
             2,
         ),
