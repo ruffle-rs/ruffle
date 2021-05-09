@@ -8,7 +8,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{Avm2Button, TDisplayObject};
+use crate::display_object::{Avm2Button, ButtonTracking, TDisplayObject};
 use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
 use swf::ButtonState;
@@ -257,6 +257,46 @@ pub fn set_up_state<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `trackAsMenu`'s getter
+pub fn track_as_menu<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(btn) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_avm2_button())
+    {
+        return Ok((btn.button_tracking() == ButtonTracking::Menu).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `trackAsMenu`'s setter
+pub fn set_track_as_menu<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(btn) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_avm2_button())
+    {
+        match args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_boolean()
+        {
+            true => btn.set_button_tracking(&mut activation.context, ButtonTracking::Menu),
+            false => btn.set_button_tracking(&mut activation.context, ButtonTracking::Push),
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `SimpleButton`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -302,6 +342,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_instance_trait(Trait::from_setter(
         QName::new(Namespace::public(), "upState"),
         Method::from_builtin(set_up_state),
+    ));
+    write.define_instance_trait(Trait::from_getter(
+        QName::new(Namespace::public(), "trackAsMenu"),
+        Method::from_builtin(track_as_menu),
+    ));
+    write.define_instance_trait(Trait::from_setter(
+        QName::new(Namespace::public(), "trackAsMenu"),
+        Method::from_builtin(set_track_as_menu),
     ));
 
     class

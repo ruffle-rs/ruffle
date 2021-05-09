@@ -39,7 +39,7 @@ pub use crate::display_object::container::{
 };
 use crate::events::{ClipEvent, ClipEventResult};
 pub use avm1_button::Avm1Button;
-pub use avm2_button::Avm2Button;
+pub use avm2_button::{Avm2Button, ButtonTracking};
 pub use bitmap::Bitmap;
 pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;

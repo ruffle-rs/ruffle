@@ -356,6 +356,18 @@ impl<'gc> Avm2Button<'gc> {
     ) {
         self.0.write(context.gc_context).use_hand_cursor = use_hand_cursor;
     }
+
+    pub fn button_tracking(self) -> ButtonTracking {
+        self.0.read().tracking
+    }
+
+    pub fn set_button_tracking(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        tracking: ButtonTracking,
+    ) {
+        self.0.write(context.gc_context).tracking = tracking;
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
@@ -847,7 +859,7 @@ struct ButtonAction {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
 #[collect(require_static)]
-enum ButtonTracking {
+pub enum ButtonTracking {
     Push,
     Menu,
 }
