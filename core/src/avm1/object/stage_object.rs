@@ -535,7 +535,7 @@ unsafe impl<'gc> Collect for DisplayProperty<'gc> {
 /// The map from key/index to function pointers for special display object properties.
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct DisplayPropertyMap<'gc>(PropertyMap<DisplayProperty<'gc>>);
+pub struct DisplayPropertyMap<'gc>(PropertyMap<'gc, DisplayProperty<'gc>>);
 
 impl<'gc> DisplayPropertyMap<'gc> {
     /// Creates the display property map.
@@ -544,28 +544,32 @@ impl<'gc> DisplayPropertyMap<'gc> {
 
         // Order is important:
         // should match the SWF specs for GetProperty/SetProperty.
-        property_map.add_property("_x", x, Some(set_x));
-        property_map.add_property("_y", y, Some(set_y));
-        property_map.add_property("_xscale", x_scale, Some(set_x_scale));
-        property_map.add_property("_yscale", y_scale, Some(set_y_scale));
-        property_map.add_property("_currentframe", current_frame, None);
-        property_map.add_property("_totalframes", total_frames, None);
-        property_map.add_property("_alpha", alpha, Some(set_alpha));
-        property_map.add_property("_visible", visible, Some(set_visible));
-        property_map.add_property("_width", width, Some(set_width));
-        property_map.add_property("_height", height, Some(set_height));
-        property_map.add_property("_rotation", rotation, Some(set_rotation));
-        property_map.add_property("_target", target, None);
-        property_map.add_property("_framesloaded", frames_loaded, None);
-        property_map.add_property("_name", name, Some(set_name));
-        property_map.add_property("_droptarget", drop_target, None);
-        property_map.add_property("_url", url, None);
-        property_map.add_property("_highquality", high_quality, Some(set_high_quality));
-        property_map.add_property("_focusrect", focus_rect, Some(set_focus_rect));
-        property_map.add_property("_soundbuftime", sound_buf_time, Some(set_sound_buf_time));
-        property_map.add_property("_quality", quality, Some(set_quality));
-        property_map.add_property("_xmouse", x_mouse, None);
-        property_map.add_property("_ymouse", y_mouse, None);
+        property_map.add_property("_x".into(), x, Some(set_x));
+        property_map.add_property("_y".into(), y, Some(set_y));
+        property_map.add_property("_xscale".into(), x_scale, Some(set_x_scale));
+        property_map.add_property("_yscale".into(), y_scale, Some(set_y_scale));
+        property_map.add_property("_currentframe".into(), current_frame, None);
+        property_map.add_property("_totalframes".into(), total_frames, None);
+        property_map.add_property("_alpha".into(), alpha, Some(set_alpha));
+        property_map.add_property("_visible".into(), visible, Some(set_visible));
+        property_map.add_property("_width".into(), width, Some(set_width));
+        property_map.add_property("_height".into(), height, Some(set_height));
+        property_map.add_property("_rotation".into(), rotation, Some(set_rotation));
+        property_map.add_property("_target".into(), target, None);
+        property_map.add_property("_framesloaded".into(), frames_loaded, None);
+        property_map.add_property("_name".into(), name, Some(set_name));
+        property_map.add_property("_droptarget".into(), drop_target, None);
+        property_map.add_property("_url".into(), url, None);
+        property_map.add_property("_highquality".into(), high_quality, Some(set_high_quality));
+        property_map.add_property("_focusrect".into(), focus_rect, Some(set_focus_rect));
+        property_map.add_property(
+            "_soundbuftime".into(),
+            sound_buf_time,
+            Some(set_sound_buf_time),
+        );
+        property_map.add_property("_quality".into(), quality, Some(set_quality));
+        property_map.add_property("_xmouse".into(), x_mouse, None);
+        property_map.add_property("_ymouse".into(), y_mouse, None);
 
         GcCell::allocate(gc_context, property_map)
     }
@@ -588,7 +592,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
 
     fn add_property(
         &mut self,
-        name: &str,
+        name: AvmString<'gc>,
         get: DisplayGetter<'gc>,
         set: Option<DisplaySetter<'gc>>,
     ) {

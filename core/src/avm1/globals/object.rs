@@ -183,7 +183,7 @@ pub fn register_class<'gc>(
 
     match registry {
         Some(registry) => {
-            registry.set(&class_name, constructor, activation.context.gc_context);
+            registry.set(class_name, constructor, activation.context.gc_context);
             Ok(true.into())
         }
         None => {

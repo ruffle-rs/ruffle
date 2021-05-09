@@ -3049,10 +3049,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let exports = reader.read_export_assets()?;
         for export in exports {
             let name = export.name.to_str_lossy(reader.encoding());
+            // TODO(moulins): avoid extra alloc?
+            let name = AvmString::new(context.gc_context, name);
             let character = context
                 .library
                 .library_for_movie_mut(self.movie())
-                .register_export(export.id, &name);
+                .register_export(export.id, name);
 
             // TODO: do other types of Character need to know their exported name?
             if let Some(Character::MovieClip(movie_clip)) = character {
