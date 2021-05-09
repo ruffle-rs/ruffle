@@ -67,10 +67,10 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 #[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
     prototype: Value<'gc>,
-    values: PropertyMap<Property<'gc>>,
+    values: PropertyMap<'gc, Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
     type_of: &'static str,
-    watchers: PropertyMap<Watcher<'gc>>,
+    watchers: PropertyMap<'gc, Watcher<'gc>>,
 }
 
 impl fmt::Debug for ScriptObjectData<'_> {
@@ -146,6 +146,8 @@ impl<'gc> ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         // TODO: Call watchers.
+        // TODO(moulins): remove extra alloc
+        let name = AvmString::new(activation.context.gc_context, name);
         match self
             .0
             .write(activation.context.gc_context)
@@ -237,12 +239,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             };
         }
 
-        let setter = match self
-            .0
-            .write(activation.context.gc_context)
-            .values
-            .entry(name, activation.is_case_sensitive())
-        {
+        let setter = match self.0.write(activation.context.gc_context).values.entry(
+            AvmString::new(activation.context.gc_context, name),
+            activation.is_case_sensitive(),
+        ) {
             Entry::Occupied(mut entry) => entry.get_mut().set(value),
             Entry::Vacant(entry) => {
                 entry.insert(Property::Stored {
@@ -317,6 +317,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     ///
     /// Returns false if the property cannot be deleted.
     fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+        // TODO(moulins): remove extra alloc
+        let name = AvmString::new(activation.context.gc_context, name);
         if let Entry::Occupied(mut entry) = self
             .0
             .write(activation.context.gc_context)
@@ -339,6 +341,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         set: Option<Object<'gc>>,
         attributes: Attribute,
     ) {
+        // TODO(moulins): remove extra alloc
+        let name = AvmString::new(gc_context, name);
         self.0.write(gc_context).values.insert(
             name,
             Property::Virtual {
@@ -358,6 +362,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         set: Option<Object<'gc>>,
         attributes: Attribute,
     ) {
+        // TODO(moulins): remove extra alloc
+        let name = AvmString::new(activation.context.gc_context, name);
         self.0.write(activation.context.gc_context).values.insert(
             name,
             Property::Virtual {
@@ -376,8 +382,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
+        // TODO(moulins): remove extra alloc
+        let name = AvmString::new(activation.context.gc_context, name);
         self.0.write(activation.context.gc_context).watchers.insert(
-            &name,
+            name,
             Watcher::new(callback, user_data),
             activation.is_case_sensitive(),
         );
@@ -399,6 +407,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         attributes: Attribute,
     ) {
+        // TODO(moulins): remove extra alloc
+        let name = AvmString::new(gc_context, name);
         self.0
             .write(gc_context)
             .values
