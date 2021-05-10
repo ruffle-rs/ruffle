@@ -1108,9 +1108,9 @@ dependencies = [
 
 [[package]]
 name = "enum-map"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88acdb627a242ba1bf36653fa200f72c037ca3324e0710d1ac4fee809a1539cd"
+checksum = "34c3f3c98ee954dbafd343b3e0d827bb167cdda151b3c88ae04b0e5fa7db1028"
 dependencies = [
  "enum-map-derive",
 ]
