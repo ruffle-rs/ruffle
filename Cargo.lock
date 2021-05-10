@@ -4037,9 +4037,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f07667388164ad75066dcbab46e295abd8204fd9a6dc057704b8d703837d12a8"
+checksum = "215fd50e66f794bd16683e7e0e0b9b53be265eb10fdf02276caf5de3e5743fcf"
 dependencies = [
  "arrayvec",
  "js-sys",
@@ -4058,9 +4058,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu-core"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59abd59fe91fe502fe2dd8777bcac414069199af22dd2a92a1bb635f9f251425"
+checksum = "1d56c368fc0e6f3927c711d2b55a51ad4321218efc0239c4acf69e456ab70399"
 dependencies = [
  "arrayvec",
  "bitflags",
