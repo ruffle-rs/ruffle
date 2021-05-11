@@ -5,7 +5,7 @@ use crate::avm2::class::Class;
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::object::{ClassObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -123,13 +123,9 @@ pub fn create_class<'gc>(
         FunctionObject::from_builtin(activation.context.gc_context, apply, function_proto),
     );
 
-    let constr = FunctionObject::from_builtin_constr(
-        activation.context.gc_context,
-        instance_init,
-        proto,
-        function_proto,
-    )
-    .unwrap();
+    let constr =
+        ClassObject::from_builtin_constr(activation.context.gc_context, proto, function_proto)
+            .unwrap();
 
     (constr, function_proto, function_class)
 }

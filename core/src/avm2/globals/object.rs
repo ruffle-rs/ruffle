@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::object::{ClassObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
@@ -240,7 +240,6 @@ pub fn fill_proto<'gc>(
         FunctionObject::from_builtin(gc_context, value_of, fn_proto).into(),
     )?;
 
-    let object_constr =
-        FunctionObject::from_builtin_constr(gc_context, instance_init, object_proto, fn_proto)?;
+    let object_constr = ClassObject::from_builtin_constr(gc_context, object_proto, fn_proto)?;
     Ok(object_constr)
 }

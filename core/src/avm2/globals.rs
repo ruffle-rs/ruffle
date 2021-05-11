@@ -6,8 +6,8 @@ use crate::avm2::domain::Domain;
 use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
-    implicit_deriver, ArrayObject, ByteArrayObject, DomainObject, FunctionObject, NamespaceObject,
-    Object, PrimitiveObject, ScriptObject, StageObject, TObject, XmlObject,
+    implicit_deriver, ArrayObject, ByteArrayObject, ClassObject, DomainObject, FunctionObject,
+    NamespaceObject, Object, PrimitiveObject, ScriptObject, StageObject, TObject, XmlObject,
 };
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
@@ -248,7 +248,7 @@ where
         None
     };
 
-    let (mut constr, _cinit) = FunctionObject::from_class_with_deriver(
+    let (mut constr, _cinit) = ClassObject::from_class_with_deriver(
         activation,
         class_def,
         super_class,

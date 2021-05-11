@@ -6,7 +6,7 @@ use crate::avm2::method::BytecodeMethod;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{
-    ArrayObject, ByteArrayObject, FunctionObject, NamespaceObject, ScriptObject,
+    ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
 };
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::Scope;
@@ -1571,7 +1571,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let scope = self.scope();
 
         let (new_class, class_init) =
-            FunctionObject::from_class(self, class_entry, base_class, scope)?;
+            ClassObject::from_class(self, class_entry, base_class, scope)?;
 
         class_init.call(Some(new_class), &[], self, None)?;
 

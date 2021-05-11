@@ -23,6 +23,7 @@ use std::hash::{Hash, Hasher};
 
 mod array_object;
 mod bytearray_object;
+mod class_object;
 mod custom_object;
 mod dispatch_object;
 mod domain_object;
@@ -38,6 +39,7 @@ mod xml_object;
 
 pub use crate::avm2::object::array_object::ArrayObject;
 pub use crate::avm2::object::bytearray_object::ByteArrayObject;
+pub use crate::avm2::object::class_object::ClassObject;
 pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::DomainObject;
 pub use crate::avm2::object::event_object::EventObject;
@@ -70,6 +72,7 @@ pub use crate::avm2::object::xml_object::XmlObject;
         RegExpObject(RegExpObject<'gc>),
         ByteArrayObject(ByteArrayObject<'gc>),
         LoaderInfoObject(LoaderInfoObject<'gc>),
+        ClassObject(ClassObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -663,7 +666,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 };
 
                 let (class_object, _cinit) =
-                    FunctionObject::from_class(activation, *class, super_class, scope)?;
+                    ClassObject::from_class(activation, *class, super_class, scope)?;
                 self.install_const(
                     activation.context.gc_context,
                     class_read.name().clone(),

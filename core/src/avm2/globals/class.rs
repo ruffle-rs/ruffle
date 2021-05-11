@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::object::{ClassObject, Object, ScriptObject, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -54,13 +54,8 @@ pub fn create_class<'gc>(
         Some(scope),
     );
 
-    let constr = FunctionObject::from_builtin_constr(
-        activation.context.gc_context,
-        instance_init,
-        proto,
-        fn_proto,
-    )
-    .unwrap();
+    let constr =
+        ClassObject::from_builtin_constr(activation.context.gc_context, proto, fn_proto).unwrap();
 
     (constr, proto, class_class)
 }
