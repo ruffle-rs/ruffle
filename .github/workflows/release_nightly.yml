@@ -261,6 +261,9 @@ jobs:
         shell: bash -l {0}
         run: echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
 
+      - name: Setup Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Build web
         env:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
