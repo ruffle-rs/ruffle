@@ -3875,7 +3875,7 @@ checksum = "b5a972e5669d67ba988ce3dc826706fb0a8b01471c088cb0b6110b805cc36aed"
 [[package]]
 name = "vp6-dec-rs"
 version = "0.1.0"
-source = "git+https://github.com/torokati44/vp6-dec-rs?branch=main#abfef8bd236e5024f46a29f8ac82fa51b994262f"
+source = "git+https://github.com/torokati44/vp6-dec-rs?branch=main#6cd8aaf09f38caf22ae42c813b72e8117e9cba2d"
 dependencies = [
  "cc",
  "pkg-config",
