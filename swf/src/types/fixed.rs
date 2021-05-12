@@ -424,7 +424,7 @@ pub mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[cfg_attr(debug_assertions, should_panic)]
     fn neg_overflow() {
         let _ = -Fixed8::from(-128);
     }
@@ -466,7 +466,7 @@ pub mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[cfg_attr(debug_assertions, should_panic)]
     fn add_overflow() {
         let _ = Fixed8::from(-128) + Fixed8::from(-1);
     }
@@ -508,7 +508,7 @@ pub mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[cfg_attr(debug_assertions, should_panic)]
     fn sub_overflow() {
         let _ = Fixed8::from(-128) - Fixed8::from(1);
     }
@@ -556,7 +556,7 @@ pub mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[cfg_attr(debug_assertions, should_panic)]
     fn mul_overflow() {
         let _ = Fixed8::from(64) * Fixed8::from(64);
     }
@@ -583,7 +583,7 @@ pub mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[cfg_attr(debug_assertions, should_panic)]
     fn mul_int_overflow() {
         let _ = Fixed8::from_f64(127.5).mul_int(30001);
     }
@@ -630,7 +630,7 @@ pub mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[cfg_attr(debug_assertions, should_panic)]
     fn div_overflow() {
         let _ = Fixed8::from(-128) / Fixed8::from(-1);
     }
