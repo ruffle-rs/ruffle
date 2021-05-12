@@ -4,9 +4,24 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use gc_arena::MutationContext;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "toString" => method(to_string);
+    "valueOf" => method(value_of);
+};
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "MAX_VALUE" => float(f64::MAX; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    // Note this is actually the smallest positive denormalized f64.
+    // Rust doesn't provide a constant for this (`MIN_POSITIVE` is a normal f64).
+    "MIN_VALUE" => float(5e-324; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "NaN" => float(f64::NAN; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "NEGATIVE_INFINITY" => float(f64::NEG_INFINITY; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "POSITIVE_INFINITY" => float(f64::INFINITY; DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
 
 /// `Number` constructor
 pub fn number<'gc>(
@@ -47,54 +62,17 @@ pub fn number_function<'gc>(
 pub fn create_number_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     number_proto: Object<'gc>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let number = FunctionObject::constructor(
         gc_context,
         Executable::Native(number),
         Executable::Native(number_function),
-        fn_proto,
+        Some(fn_proto),
         number_proto,
     );
     let object = number.as_script_object().unwrap();
-
-    object.define_value(
-        gc_context,
-        "MAX_VALUE",
-        f64::MAX.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    object.define_value(
-        gc_context,
-        "MIN_VALUE",
-        // Note this is actually the smallest positive denormalized f64.
-        // Rust doesn't provide a constant for this (`MIN_POSITIVE` is a normal f64).
-        Value::Number(f64::from_bits(1)),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    object.define_value(
-        gc_context,
-        "NaN",
-        f64::NAN.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    object.define_value(
-        gc_context,
-        "NEGATIVE_INFINITY",
-        f64::NEG_INFINITY.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    object.define_value(
-        gc_context,
-        "POSITIVE_INFINITY",
-        f64::INFINITY.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     number
 }
 
@@ -105,23 +83,8 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let number_proto = ValueObject::empty_box(gc_context, Some(proto));
-    let mut object = number_proto.as_script_object().unwrap();
-
-    object.force_set_function(
-        "toString",
-        to_string,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "valueOf",
-        value_of,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
+    let object = number_proto.as_script_object().unwrap();
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     number_proto
 }
 

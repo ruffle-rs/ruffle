@@ -2,11 +2,22 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use gc_arena::MutationContext;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "alpha" => property(alpha, set_alpha);
+    "color" => property(color, set_color);
+    "componentX" => property(component_x, set_component_x);
+    "componentY" => property(component_y, set_component_y);
+    "mapBitmap" => property(map_bitmap, set_map_bitmap);
+    "mapPoint" => property(map_point, set_map_point);
+    "mode" => property(mode, set_mode);
+    "scaleX" => property(scale_x, set_scale_x);
+    "scaleY" => property(scale_y, set_scale_y);
+};
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -312,168 +323,6 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let filter = DisplacementMapFilterObject::empty_object(gc_context, Some(proto));
     let object = filter.as_script_object().unwrap();
-
-    object.add_property(
-        gc_context,
-        "alpha",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(alpha),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_alpha),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "color",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(color),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_color),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "componentX",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(component_x),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_component_x),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "componentY",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(component_y),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_component_y),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "mapBitmap",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(map_bitmap),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_map_bitmap),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "mapPoint",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(map_point),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_map_point),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "mode",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(mode),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_mode),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "scaleX",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(scale_x),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_scale_x),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "scaleY",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(scale_y),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_scale_y),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     filter.into()
 }

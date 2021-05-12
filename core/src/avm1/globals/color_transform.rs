@@ -2,8 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use gc_arena::MutationContext;
 
@@ -12,19 +11,19 @@ use crate::color_transform::ColorTransform;
 use std::convert::Into;
 use swf::Fixed8;
 
-macro_rules! with_color_transform {
-    ($obj: ident, $gc: ident, $fn_proto: ident, $($name: expr => [$get: ident, $set: ident],)*) => {
-        $(
-            $obj.add_property(
-                $gc,
-                $name,
-                FunctionObject::function($gc, Executable::Native($get), Some($fn_proto), $fn_proto),
-                Some(FunctionObject::function($gc, Executable::Native($set), Some($fn_proto), $fn_proto)),
-                Attribute::empty(),
-            );
-        )*
-    }
-}
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "alphaMultiplier" => property(get_alpha_multiplier, set_alpha_multiplier);
+    "redMultiplier" => property(get_red_multiplier, set_red_multiplier);
+    "greenMultiplier" => property(get_green_multiplier, set_green_multiplier);
+    "blueMultiplier" => property(get_blue_multiplier, set_blue_multiplier);
+    "alphaOffset" => property(get_alpha_offset, set_alpha_offset);
+    "redOffset" => property(get_red_offset, set_red_offset);
+    "greenOffset" => property(get_green_offset, set_green_offset);
+    "blueOffset" => property(get_blue_offset, set_blue_offset);
+    "rgb" => property(get_rgb, set_rgb);
+    "concat" => method(concat);
+    "toString" => method(to_string);
+};
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -235,36 +234,8 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let color_transform_object =
         ColorTransformObject::empty_color_transform_object(gc_context, Some(proto));
-    let mut object = color_transform_object.as_script_object().unwrap();
-
-    with_color_transform!(object, gc_context, fn_proto,
-        "alphaMultiplier" => [get_alpha_multiplier, set_alpha_multiplier],
-        "redMultiplier" => [get_red_multiplier, set_red_multiplier],
-        "greenMultiplier" => [get_green_multiplier, set_green_multiplier],
-        "blueMultiplier" => [get_blue_multiplier, set_blue_multiplier],
-        "alphaOffset" => [get_alpha_offset, set_alpha_offset],
-        "redOffset" => [get_red_offset, set_red_offset],
-        "greenOffset" => [get_green_offset, set_green_offset],
-        "blueOffset" => [get_blue_offset, set_blue_offset],
-        "rgb" => [get_rgb, set_rgb],
-    );
-
-    object.force_set_function(
-        "concat",
-        concat,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "toString",
-        to_string,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
+    let object = color_transform_object.as_script_object().unwrap();
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     color_transform_object.into()
 }
 

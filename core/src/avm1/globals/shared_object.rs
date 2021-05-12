@@ -3,6 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
@@ -10,6 +11,28 @@ use flash_lso::types::Value as AmfValue;
 use flash_lso::types::{AMFVersion, Element, Lso};
 use gc_arena::MutationContext;
 use json::JsonValue;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "clear" => method(clear);
+    "close" => method(close);
+    "connect" => method(connect);
+    "flush" => method(flush);
+    "getSize" => method(get_size);
+    "send" => method(send);
+    "setFps" => method(set_fps);
+    "onStatus" => method(on_status);
+    "onSync" => method(on_sync);
+};
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "deleteAll" => method(delete_all);
+    "getDiskUsage" => method(get_disk_usage);
+    "getLocal" => method(get_local);
+    "getRemote" => method(get_remote);
+    "getMaxSize" => method(get_max_size);
+    "addListener" => method(add_listener);
+    "removeListener" => method(remove_listener);
+};
 
 pub fn delete_all<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -479,73 +502,17 @@ pub fn remove_listener<'gc>(
 pub fn create_shared_object_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     shared_object_proto: Object<'gc>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let shared_obj = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
-        fn_proto,
+        Some(fn_proto),
         shared_object_proto,
     );
-    let mut object = shared_obj.as_script_object().unwrap();
-
-    object.force_set_function(
-        "deleteAll",
-        delete_all,
-        gc_context,
-        Attribute::empty(),
-        fn_proto,
-    );
-
-    object.force_set_function(
-        "getDiskUsage",
-        get_disk_usage,
-        gc_context,
-        Attribute::empty(),
-        fn_proto,
-    );
-
-    object.force_set_function(
-        "getLocal",
-        get_local,
-        gc_context,
-        Attribute::empty(),
-        fn_proto,
-    );
-
-    object.force_set_function(
-        "getRemote",
-        get_remote,
-        gc_context,
-        Attribute::empty(),
-        fn_proto,
-    );
-
-    object.force_set_function(
-        "getMaxSize",
-        get_max_size,
-        gc_context,
-        Attribute::empty(),
-        fn_proto,
-    );
-
-    object.force_set_function(
-        "addListener",
-        add_listener,
-        gc_context,
-        Attribute::empty(),
-        fn_proto,
-    );
-
-    object.force_set_function(
-        "removeListener",
-        remove_listener,
-        gc_context,
-        Attribute::empty(),
-        fn_proto,
-    );
-
+    let object = shared_obj.as_script_object().unwrap();
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     shared_obj
 }
 
@@ -664,74 +631,8 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let shared_obj = SharedObject::empty_shared_obj(gc_context, Some(proto));
-    let mut object = shared_obj.as_script_object().unwrap();
-
-    object.force_set_function(
-        "clear",
-        clear,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "close",
-        close,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "connect",
-        connect,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "flush",
-        flush,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "getSize",
-        get_size,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function("send", send, gc_context, Attribute::empty(), Some(fn_proto));
-
-    object.force_set_function(
-        "setFps",
-        set_fps,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "onStatus",
-        on_status,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "onSync",
-        on_sync,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
+    let object = shared_obj.as_script_object().unwrap();
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     shared_obj.into()
 }
 

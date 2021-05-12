@@ -6,10 +6,17 @@ use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, Value};
 use crate::backend::navigator::RequestOptions;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use gc_arena::MutationContext;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "loadClip" => method(load_clip);
+    "unloadClip" => method(unload_clip);
+    "getProgress" => method(get_progress);
+};
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -136,30 +143,7 @@ pub fn create_proto<'gc>(
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
     let mcl_proto = ScriptObject::object(gc_context, Some(proto));
-
     broadcaster_functions.initialize(gc_context, mcl_proto.into(), array_proto);
-
-    mcl_proto.as_script_object().unwrap().force_set_function(
-        "loadClip",
-        load_clip,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    mcl_proto.as_script_object().unwrap().force_set_function(
-        "unloadClip",
-        unload_clip,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    mcl_proto.as_script_object().unwrap().force_set_function(
-        "getProgress",
-        get_progress,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
+    define_properties_on(PROTO_DECLS, gc_context, mcl_proto, fn_proto);
     mcl_proto.into()
 }

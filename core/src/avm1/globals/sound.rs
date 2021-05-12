@@ -3,13 +3,32 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, SoundObject, TObject, Value};
 use crate::avm_warn;
 use crate::character::Character;
 use crate::display_object::{SoundTransform, TDisplayObject};
 use gc_arena::MutationContext;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "attachSound" => method(attach_sound; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "duration" => property(duration; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getDuration" => method(duration; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setDuration" => method(set_duration; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "id3" => method(id3; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getBytesLoaded" => method(get_bytes_loaded; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getBytesTotal" => method(get_bytes_total; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getPan" => method(get_pan; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getTransform" => method(get_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getVolume" => method(get_volume; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "loadSound" => method(load_sound; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "position" => property(position; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setPan" => method(set_pan; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setTransform" => method(set_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setVolume" => method(set_volume; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "start" => method(start; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "stop" => method(stop; DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
 
 /// Implements `Sound`
 pub fn constructor<'gc>(
@@ -38,160 +57,10 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = SoundObject::empty_sound(gc_context, Some(proto));
-
-    object.as_script_object().unwrap().force_set_function(
-        "attachSound",
-        attach_sound,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.add_property(
-        gc_context,
-        "duration",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(duration),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "getDuration",
-        duration,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "setDuration",
-        |_, _, _| Ok(Value::Undefined),
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.add_property(
-        gc_context,
-        "id3",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(id3),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "getBytesLoaded",
-        get_bytes_loaded,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "getBytesTotal",
-        get_bytes_total,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "getPan",
-        get_pan,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "getTransform",
-        get_transform,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "getVolume",
-        get_volume,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "loadSound",
-        load_sound,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.add_property(
-        gc_context,
-        "position",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(position),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "setPan",
-        set_pan,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "setTransform",
-        set_transform,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "setVolume",
-        set_volume,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "start",
-        start,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.as_script_object().unwrap().force_set_function(
-        "stop",
-        stop,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.into()
+    let sound = SoundObject::empty_sound(gc_context, Some(proto));
+    let object = sound.as_script_object().unwrap();
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    sound.into()
 }
 
 fn attach_sound<'gc>(
@@ -250,6 +119,14 @@ fn duration<'gc>(
         }
     }
 
+    Ok(Value::Undefined)
+}
+
+fn set_duration<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 

@@ -1,7 +1,6 @@
 //! User-defined properties
 
-use crate::avm1::object::Object;
-use crate::avm1::Value;
+use crate::avm1::{Object, Value};
 use bitflags::bitflags;
 use core::fmt;
 use gc_arena::Collect;

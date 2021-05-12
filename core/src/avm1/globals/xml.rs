@@ -2,10 +2,9 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::xml_object::XmlObject;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
@@ -28,6 +27,45 @@ pub const XML_ATTRIBUTE_NOT_TERMINATED: f64 = -8.0;
 #[allow(dead_code)]
 pub const XML_MISMATCHED_START: f64 = -9.0;
 pub const XML_MISMATCHED_END: f64 = -10.0;
+
+const XMLNODE_PROTO_DECLS: &[Declaration] = declare_properties! {
+    "localName" => property(xmlnode_local_name; READ_ONLY);
+    "nodeName" => property(xmlnode_node_name; READ_ONLY);
+    "nodeType" => property(xmlnode_node_type; READ_ONLY);
+    "nodeValue" => property(xmlnode_node_value; READ_ONLY);
+    "prefix" => property(xmlnode_prefix; READ_ONLY);
+    "childNodes" => property(xmlnode_child_nodes; READ_ONLY);
+    "firstChild" => property(xmlnode_first_child; READ_ONLY);
+    "lastChild" => property(xmlnode_last_child; READ_ONLY);
+    "parentNode" => property(xmlnode_parent_node; READ_ONLY);
+    "previousSibling" => property(xmlnode_previous_sibling; READ_ONLY);
+    "nextSibling" => property(xmlnode_next_sibling; READ_ONLY);
+    "attributes" => property(xmlnode_attributes; READ_ONLY);
+    "namespaceURI" => property(xmlnode_namespace_uri; READ_ONLY);
+    "appendChild" => method(xmlnode_append_child);
+    "insertBefore" => method(xmlnode_insert_before);
+    "cloneNode" => method(xmlnode_clone_node);
+    "getNamespaceForPrefix" => method(xmlnode_get_namespace_for_prefix);
+    "getPrefixForNamespace" => method(xmlnode_get_prefix_for_namespace);
+    "hasChildNodes" => method(xmlnode_has_child_nodes);
+    "removeNode" => method(xmlnode_remove_node);
+    "toString" => method(xmlnode_to_string);
+};
+
+const XML_PROTO_DECLS: &[Declaration] = declare_properties! {
+    "docTypeDecl" => property(xml_doc_type_decl; READ_ONLY);
+    "ignoreWhite" => bool(false);
+    "contentType" => string("application/x-www-form-urlencoded"; READ_ONLY);
+    "xmlDecl" => property(xml_xml_decl; READ_ONLY);
+    "idMap" => property(xml_id_map; READ_ONLY);
+    "status" => property(xml_status; READ_ONLY);
+    "createElement" => method(xml_create_element);
+    "createTextNode" => method(xml_create_text_node);
+    "parseXML" => method(xml_parse_xml);
+    "load" => method(xml_load);
+    "sendAndLoad" => method(xml_send_and_load);
+    "onData" => method(xml_on_data);
+};
 
 /// Returns true if a particular node can or cannot be exposed to AVM1.
 ///
@@ -534,244 +572,8 @@ pub fn create_xmlnode_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let xmlnode_proto = XmlObject::empty_node(gc_context, Some(proto));
-
-    xmlnode_proto.add_property(
-        gc_context,
-        "localName",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_local_name),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "nodeName",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_node_name),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "nodeType",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_node_type),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "nodeValue",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_node_value),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "prefix",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_prefix),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "childNodes",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_child_nodes),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "firstChild",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_first_child),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "lastChild",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_last_child),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "parentNode",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_parent_node),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "previousSibling",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_previous_sibling),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "nextSibling",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_next_sibling),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "attributes",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_attributes),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto.add_property(
-        gc_context,
-        "namespaceURI",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xmlnode_namespace_uri),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xmlnode_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function(
-            "appendChild",
-            xmlnode_append_child,
-            gc_context,
-            Attribute::empty(),
-            Some(fn_proto),
-        );
-    xmlnode_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function(
-            "insertBefore",
-            xmlnode_insert_before,
-            gc_context,
-            Attribute::empty(),
-            Some(fn_proto),
-        );
-    xmlnode_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function(
-            "cloneNode",
-            xmlnode_clone_node,
-            gc_context,
-            Attribute::empty(),
-            Some(fn_proto),
-        );
-    xmlnode_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function(
-            "getNamespaceForPrefix",
-            xmlnode_get_namespace_for_prefix,
-            gc_context,
-            Attribute::empty(),
-            Some(fn_proto),
-        );
-    xmlnode_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function(
-            "getPrefixForNamespace",
-            xmlnode_get_prefix_for_namespace,
-            gc_context,
-            Attribute::empty(),
-            Some(fn_proto),
-        );
-    xmlnode_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function(
-            "hasChildNodes",
-            xmlnode_has_child_nodes,
-            gc_context,
-            Attribute::empty(),
-            Some(fn_proto),
-        );
-    xmlnode_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function(
-            "removeNode",
-            xmlnode_remove_node,
-            gc_context,
-            Attribute::empty(),
-            Some(fn_proto),
-        );
-    xmlnode_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function(
-            "toString",
-            xmlnode_to_string,
-            gc_context,
-            Attribute::empty(),
-            Some(fn_proto),
-        );
-
+    let object = xmlnode_proto.as_script_object().unwrap();
+    define_properties_on(XMLNODE_PROTO_DECLS, gc_context, object, fn_proto);
     xmlnode_proto
 }
 
@@ -1126,104 +928,7 @@ pub fn create_xml_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let xml_proto = XmlObject::empty_node(gc_context, Some(proto));
-
-    xml_proto.add_property(
-        gc_context,
-        "docTypeDecl",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xml_doc_type_decl),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xml_proto.define_value(gc_context, "ignoreWhite", false.into(), Attribute::empty());
-    xml_proto.define_value(
-        gc_context,
-        "contentType",
-        "application/x-www-form-urlencoded".into(),
-        Attribute::empty(),
-    );
-    xml_proto.add_property(
-        gc_context,
-        "xmlDecl",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xml_xml_decl),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xml_proto.add_property(
-        gc_context,
-        "idMap",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xml_id_map),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xml_proto.add_property(
-        gc_context,
-        "status",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(xml_status),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-    xml_proto.as_script_object().unwrap().force_set_function(
-        "createElement",
-        xml_create_element,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    xml_proto.as_script_object().unwrap().force_set_function(
-        "createTextNode",
-        xml_create_text_node,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    xml_proto.as_script_object().unwrap().force_set_function(
-        "parseXML",
-        xml_parse_xml,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    xml_proto.as_script_object().unwrap().force_set_function(
-        "load",
-        xml_load,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    xml_proto.as_script_object().unwrap().force_set_function(
-        "sendAndLoad",
-        xml_send_and_load,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    xml_proto.as_script_object().unwrap().force_set_function(
-        "onData",
-        xml_on_data,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
+    let object = xml_proto.as_script_object().unwrap();
+    define_properties_on(XML_PROTO_DECLS, gc_context, object, fn_proto);
     xml_proto
 }

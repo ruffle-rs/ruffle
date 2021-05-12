@@ -1,30 +1,52 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::Object;
-use crate::avm1::property::Attribute;
-use crate::avm1::{ScriptObject, TObject, Value};
+use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::{ScriptObject, Value};
 use gc_arena::MutationContext;
 use rand::Rng;
+use std::f64::consts;
 
 macro_rules! wrap_std {
-    ( $object: ident, $gc_context: ident, $proto: ident, $($name:expr => $std:path),* ) => {{
-        $(
-            $object.force_set_function(
-                $name,
-                |activation, _this, args| -> Result<Value<'gc>, Error<'gc>> {
-                    if let Some(input) = args.get(0) {
-                        Ok($std(input.coerce_to_f64(activation)?).into())
-                    } else {
-                        Ok(f64::NAN.into())
-                    }
-                },
-                $gc_context,
-                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-                $proto
-            );
-        )*
-    }};
+    ($std:path) => {
+        |activation, _this, args| {
+            if let Some(input) = args.get(0) {
+                Ok($std(input.coerce_to_f64(activation)?).into())
+            } else {
+                Ok(f64::NAN.into())
+            }
+        }
+    };
 }
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "E" => float(consts::E; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LN10" => float(consts::LN_10; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LN2" => float(consts::LN_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LOG10E" => float(consts::LOG10_E; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LOG2E" => float(consts::LOG2_E; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "PI" => float(consts::PI; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "SQRT1_2" => float(consts::FRAC_1_SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "SQRT2" => float(consts::SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "abs" => method(wrap_std!(f64::abs); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "acos" => method(wrap_std!(f64::acos); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "asin" => method(wrap_std!(f64::asin); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "atan" => method(wrap_std!(f64::atan); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "ceil" => method(wrap_std!(f64::ceil); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "cos" => method(wrap_std!(f64::cos); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "exp" => method(wrap_std!(f64::exp); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "floor" => method(wrap_std!(f64::floor); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "sin" => method(wrap_std!(f64::sin); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "sqrt" => method(wrap_std!(f64::sqrt); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "tan" => method(wrap_std!(f64::tan); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "log" => method(wrap_std!(f64::ln); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "atan2" => method(atan2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "pow" => method(pow; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "max" => method(max; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "min" => method(min; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "random" => method(random; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "round" => method(round; DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
 
 fn atan2<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -135,117 +157,10 @@ pub fn random<'gc>(
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let mut math = ScriptObject::object(gc_context, proto);
-
-    math.define_value(
-        gc_context,
-        "E",
-        std::f64::consts::E.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-    math.define_value(
-        gc_context,
-        "LN10",
-        std::f64::consts::LN_10.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-    math.define_value(
-        gc_context,
-        "LN2",
-        std::f64::consts::LN_2.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-    math.define_value(
-        gc_context,
-        "LOG10E",
-        std::f64::consts::LOG10_E.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-    math.define_value(
-        gc_context,
-        "LOG2E",
-        std::f64::consts::LOG2_E.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-    math.define_value(
-        gc_context,
-        "PI",
-        std::f64::consts::PI.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-    math.define_value(
-        gc_context,
-        "SQRT1_2",
-        std::f64::consts::FRAC_1_SQRT_2.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-    math.define_value(
-        gc_context,
-        "SQRT2",
-        std::f64::consts::SQRT_2.into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    wrap_std!(math, gc_context, fn_proto,
-        "abs" => f64::abs,
-        "acos" => f64::acos,
-        "asin" => f64::asin,
-        "atan" => f64::atan,
-        "ceil" => f64::ceil,
-        "cos" => f64::cos,
-        "exp" => f64::exp,
-        "floor" => f64::floor,
-        "sin" => f64::sin,
-        "sqrt" => f64::sqrt,
-        "tan" => f64::tan,
-        "log" => f64::ln
-    );
-
-    math.force_set_function(
-        "atan2",
-        atan2,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        fn_proto,
-    );
-    math.force_set_function(
-        "pow",
-        pow,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        fn_proto,
-    );
-    math.force_set_function(
-        "max",
-        max,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        fn_proto,
-    );
-    math.force_set_function(
-        "min",
-        min,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        fn_proto,
-    );
-    math.force_set_function(
-        "random",
-        random,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        fn_proto,
-    );
-    math.force_set_function(
-        "round",
-        round,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        fn_proto,
-    );
-
+    let math = ScriptObject::object(gc_context, proto);
+    define_properties_on(OBJECT_DECLS, gc_context, math, fn_proto);
     math.into()
 }
 
@@ -258,7 +173,7 @@ mod tests {
         create(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes().object),
-            Some(activation.context.avm1.prototypes().function),
+            activation.context.avm1.prototypes().function,
         )
     }
 
@@ -476,7 +391,7 @@ mod tests {
             let math = create(
                 activation.context.gc_context,
                 Some(activation.context.avm1.prototypes().object),
-                Some(activation.context.avm1.prototypes().function),
+                activation.context.avm1.prototypes().function,
             );
 
             assert_eq!(atan2(activation, math, &[]).unwrap(), f64::NAN.into());
@@ -502,7 +417,7 @@ mod tests {
             let math = create(
                 activation.context.gc_context,
                 Some(activation.context.avm1.prototypes().object),
-                Some(activation.context.avm1.prototypes().function),
+                activation.context.avm1.prototypes().function,
             );
 
             assert_eq!(

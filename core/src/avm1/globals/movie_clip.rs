@@ -2,10 +2,9 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
@@ -25,6 +24,91 @@ use swf::{
     LineJoinStyle, LineStyle, Twips,
 };
 
+macro_rules! mc_method {
+    ( $fn:expr ) => {
+        |activation, this, args| {
+            if let Some(display_object) = this.as_display_object() {
+                if let Some(movie_clip) = display_object.as_movie_clip() {
+                    return $fn(movie_clip, activation, args);
+                }
+            }
+            Ok(Value::Undefined)
+        }
+    };
+}
+
+macro_rules! mc_getter {
+    ( $get:expr ) => {
+        |activation, this, _args| {
+            if let Some(display_object) = this.as_display_object() {
+                if let Some(movie_clip) = display_object.as_movie_clip() {
+                    return $get(movie_clip, activation);
+                }
+            }
+            Ok(Value::Undefined)
+        }
+    };
+}
+
+macro_rules! mc_setter {
+    ( $set:expr ) => {
+        |activation, this, args| {
+            if let Some(display_object) = this.as_display_object() {
+                if let Some(movie_clip) = display_object.as_movie_clip() {
+                    let value = args.get(0).unwrap_or(&Value::Undefined).clone();
+                    $set(movie_clip, activation, value)?;
+                }
+            }
+            Ok(Value::Undefined)
+        }
+    };
+}
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "attachMovie" => method(mc_method!(attach_movie); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "createEmptyMovieClip" => method(mc_method!(create_empty_movie_clip); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "createTextField" => method(mc_method!(create_text_field); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "duplicateMovieClip" => method(mc_method!(duplicate_movie_clip); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getBounds" => method(mc_method!(get_bounds); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getBytesLoaded" => method(mc_method!(get_bytes_loaded); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getBytesTotal" => method(mc_method!(get_bytes_total); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getInstanceAtDepth" => method(mc_method!(get_instance_at_depth); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getNextHighestDepth" => method(mc_method!(get_next_highest_depth); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getRect" => method(mc_method!(get_rect); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getURL" => method(mc_method!(get_url); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "globalToLocal" => method(mc_method!(global_to_local); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "gotoAndPlay" => method(mc_method!(goto_and_play); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "gotoAndStop" => method(mc_method!(goto_and_stop); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "hitTest" => method(mc_method!(hit_test); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "loadMovie" => method(mc_method!(load_movie); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "loadVariables" => method(mc_method!(load_variables); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "localToGlobal" => method(mc_method!(local_to_global); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "nextFrame" => method(mc_method!(next_frame); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "play" => method(mc_method!(play); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "prevFrame" => method(mc_method!(prev_frame); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setMask" => method(mc_method!(set_mask); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "startDrag" => method(mc_method!(start_drag); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "stop" => method(mc_method!(stop); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "stopDrag" => method(mc_method!(stop_drag); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "swapDepths" => method(mc_method!(swap_depths); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "unloadMovie" => method(mc_method!(unload_movie); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "beginFill" => method(mc_method!(begin_fill); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "beginGradientFill" => method(mc_method!(begin_gradient_fill); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "moveTo" => method(mc_method!(move_to); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "lineTo" => method(mc_method!(line_to); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "curveTo" => method(mc_method!(curve_to); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "endFill" => method(mc_method!(end_fill); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "lineStyle" => method(mc_method!(line_style); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "clear" => method(mc_method!(clear); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "attachBitmap" => method(mc_method!(attach_bitmap); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "removeMovieClip" => method(remove_movie_clip; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_DELETE | DONT_ENUM);
+    "enabled" => property(mc_getter!(enabled), mc_setter!(set_enabled); DONT_DELETE | DONT_ENUM);
+    "focusEnabled" => property(mc_getter!(focus_enabled), mc_setter!(set_focus_enabled); DONT_DELETE | DONT_ENUM);
+    "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
+    "useHandCursor" => property(mc_getter!(use_hand_cursor), mc_setter!(set_use_hand_cursor); DONT_DELETE | DONT_ENUM);
+};
+
 /// Implements `MovieClip`
 pub fn constructor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -32,85 +116,6 @@ pub fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.into())
-}
-
-macro_rules! with_movie_clip {
-    ( $gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),* ) => {{
-        $(
-            $object.force_set_function(
-                $name,
-                |activation: &mut Activation<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
-                    if let Some(display_object) = this.as_display_object() {
-                        if let Some(movie_clip) = display_object.as_movie_clip() {
-                            return $fn(movie_clip, activation, args);
-                        }
-                    }
-                    Ok(Value::Undefined)
-                } as crate::avm1::function::NativeFunction<'gc>,
-                $gc_context,
-                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-                $fn_proto
-            );
-        )*
-    }};
-}
-
-macro_rules! with_movie_clip_props {
-    ($obj:ident, $gc:ident, $fn_proto:ident, $($name:literal => [$get:ident $(, $set:ident)*],)*) => {
-        $(
-            $obj.add_property(
-                $gc,
-                $name,
-                with_movie_clip_props!(getter $gc, $fn_proto, $get),
-                with_movie_clip_props!(setter $gc, $fn_proto, $($set),*),
-                Attribute::DONT_DELETE | Attribute::DONT_ENUM,
-            );
-        )*
-    };
-
-    (getter $gc:ident, $fn_proto:ident, $get:ident) => {
-        FunctionObject::function(
-            $gc,
-            Executable::Native(
-                |activation: &mut Activation<'_, 'gc, '_>, this, _args| -> Result<Value<'gc>, Error<'gc>> {
-                    if let Some(display_object) = this.as_display_object() {
-                        if let Some(movie_clip) = display_object.as_movie_clip() {
-                            return $get(movie_clip, activation);
-                        }
-                    }
-                    Ok(Value::Undefined)
-                } as crate::avm1::function::NativeFunction<'gc>
-            ),
-            Some($fn_proto),
-            $fn_proto
-        )
-    };
-
-    (setter $gc:ident, $fn_proto:ident, $set:ident) => {
-        Some(FunctionObject::function(
-            $gc,
-            Executable::Native(
-                |activation: &mut Activation<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
-                    if let Some(display_object) = this.as_display_object() {
-                        if let Some(movie_clip) = display_object.as_movie_clip() {
-                            let value = args
-                                .get(0)
-                                .unwrap_or(&Value::Undefined)
-                                .clone();
-                            $set(movie_clip, activation, value)?;
-                        }
-                    }
-                    Ok(Value::Undefined)
-                } as crate::avm1::function::NativeFunction<'gc>
-            ),
-            Some($fn_proto),
-            $fn_proto)
-        )
-    };
-
-    (setter $gc:ident, $fn_proto:ident,) => {
-        None
-    };
 }
 
 #[allow(clippy::comparison_chain)]
@@ -162,69 +167,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let mut object = ScriptObject::object(gc_context, Some(proto));
-
+    let object = ScriptObject::object(gc_context, Some(proto));
     display_object::define_display_object_proto(gc_context, object, fn_proto);
-
-    with_movie_clip!(
-        gc_context,
-        object,
-        Some(fn_proto),
-        "attachMovie" => attach_movie,
-        "createEmptyMovieClip" => create_empty_movie_clip,
-        "createTextField" => create_text_field,
-        "duplicateMovieClip" => duplicate_movie_clip,
-        "getBounds" => get_bounds,
-        "getBytesLoaded" => get_bytes_loaded,
-        "getBytesTotal" => get_bytes_total,
-        "getInstanceAtDepth" => get_instance_at_depth,
-        "getNextHighestDepth" => get_next_highest_depth,
-        "getRect" => get_rect,
-        "getURL" => get_url,
-        "globalToLocal" => global_to_local,
-        "gotoAndPlay" => goto_and_play,
-        "gotoAndStop" => goto_and_stop,
-        "hitTest" => hit_test,
-        "loadMovie" => load_movie,
-        "loadVariables" => load_variables,
-        "localToGlobal" => local_to_global,
-        "nextFrame" => next_frame,
-        "play" => play,
-        "prevFrame" => prev_frame,
-        "setMask" => set_mask,
-        "startDrag" => start_drag,
-        "stop" => stop,
-        "stopDrag" => stop_drag,
-        "swapDepths" => swap_depths,
-        "unloadMovie" => unload_movie,
-        "beginFill" => begin_fill,
-        "beginGradientFill" => begin_gradient_fill,
-        "moveTo" => move_to,
-        "lineTo" => line_to,
-        "curveTo" => curve_to,
-        "endFill" => end_fill,
-        "lineStyle" => line_style,
-        "clear" => clear,
-        "attachBitmap" => attach_bitmap
-    );
-
-    object.force_set_function(
-        "removeMovieClip",
-        remove_movie_clip,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    with_movie_clip_props!(
-        object, gc_context, fn_proto,
-        "transform" => [transform, set_transform],
-        "enabled" => [enabled, set_enabled],
-        "focusEnabled" => [focus_enabled, set_focus_enabled],
-        "_lockroot" => [lock_root, set_lock_root],
-        "useHandCursor" => [use_hand_cursor, set_use_hand_cursor],
-    );
-
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     object.into()
 }
 

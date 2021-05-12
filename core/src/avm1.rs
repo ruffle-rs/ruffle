@@ -13,13 +13,16 @@ use crate::tag_utils::SwfSlice;
 #[macro_use]
 mod test_utils;
 
+#[macro_use]
+pub mod function;
+#[macro_use]
+pub mod property_decl;
+
 pub mod activation;
 mod callable_value;
 pub mod debug;
 pub mod error;
 mod fscommand;
-#[macro_use]
-pub mod function;
 pub mod globals;
 pub mod object;
 pub mod property;

@@ -3,11 +3,18 @@
 //! TODO: This is a very rough stub with not much implementation.
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property::Attribute;
-use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
+use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::{AvmString, Object, ScriptObject, Value};
 use gc_arena::MutationContext;
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "align" => property(align, set_align; DONT_ENUM | DONT_DELETE);
+    "height" => property(height; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "scaleMode" => property(scale_mode, set_scale_mode; DONT_ENUM | DONT_DELETE);
+    "showMenu" => property(show_menu, set_show_menu; DONT_ENUM | DONT_DELETE);
+    "width" => property(width; DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
 
 pub fn create_stage_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
@@ -17,89 +24,8 @@ pub fn create_stage_object<'gc>(
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
     let stage = ScriptObject::object(gc_context, proto);
-
     broadcaster_functions.initialize(gc_context, stage.into(), array_proto.unwrap());
-
-    stage.add_property(
-        gc_context,
-        "align",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(align),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_align),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-    );
-
-    stage.add_property(
-        gc_context,
-        "height",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(height),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    stage.add_property(
-        gc_context,
-        "scaleMode",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(scale_mode),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_scale_mode),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-    );
-
-    stage.add_property(
-        gc_context,
-        "showMenu",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(show_menu),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_show_menu),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-    );
-
-    stage.add_property(
-        gc_context,
-        "width",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(width),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
+    define_properties_on(OBJECT_DECLS, gc_context, stage, fn_proto);
     stage.into()
 }
 

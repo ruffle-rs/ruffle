@@ -2,79 +2,112 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::date_object::DateObject;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, TObject, Value};
-use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
+use chrono::{DateTime, Datelike, Duration, LocalResult, TimeZone, Timelike, Utc};
 use gc_arena::{Collect, MutationContext};
 use num_traits::ToPrimitive;
 
-macro_rules! implement_local_getters {
-    ($gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),*) => {
-        $(
-            $object.force_set_function(
-                $name,
-                |activation: &mut Activation<'_, 'gc, '_>, this, _args| -> Result<Value<'gc>, Error<'gc>> {
-                    if let Some(this) = this.as_date_object() {
-                        if let Some(date) = this.date_time() {
-                            let local = date.with_timezone(&activation.context.locale.get_timezone());
-                            Ok($fn(&local).into())
-                        } else {
-                            Ok(f64::NAN.into())
-                        }
-                    } else {
-                        Ok(Value::Undefined)
-                    }
-                } as crate::avm1::function::NativeFunction<'gc>,
-                $gc_context,
-                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-                $fn_proto
-            );
-        )*
+macro_rules! local_getter {
+    ($fn:expr) => {
+        |activation, this, _args| {
+            if let Some(this) = this.as_date_object() {
+                if let Some(date) = this.date_time() {
+                    let local = date.with_timezone(&activation.context.locale.get_timezone());
+                    Ok($fn(&local).into())
+                } else {
+                    Ok(f64::NAN.into())
+                }
+            } else {
+                Ok(Value::Undefined)
+            }
+        }
     };
 }
 
-macro_rules! implement_methods {
-    ($gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),*) => {
-        $(
-            $object.force_set_function(
-                $name,
-                |activation: &mut Activation<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
-                    if let Some(this) = this.as_date_object() {
-                        $fn(activation, this, args)
-                    } else {
-                        Ok(Value::Undefined)
-                    }
-                } as crate::avm1::function::NativeFunction<'gc>,
-                $gc_context,
-                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-                $fn_proto
-            );
-        )*
+macro_rules! utc_getter {
+    ($fn:expr) => {
+        |_activation, this, _args| {
+            if let Some(this) = this.as_date_object() {
+                if let Some(date) = this.date_time() {
+                    Ok($fn(&date).into())
+                } else {
+                    Ok(f64::NAN.into())
+                }
+            } else {
+                Ok(Value::Undefined)
+            }
+        }
     };
 }
 
-macro_rules! implement_utc_getters {
-    ($gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),*) => {
-        $(
-            $object.force_set_function(
-                $name,
-                |_activation: &mut Activation<'_, 'gc, '_>, this, _args| -> Result<Value<'gc>, Error<'gc>> {
-                    if let Some(this) = this.as_date_object() {
-                        if let Some(date) = this.date_time() {
-                            Ok($fn(&date).into())
-                        } else {
-                            Ok(f64::NAN.into())
-                        }
-                    } else {
-                        Ok(Value::Undefined)
-                    }
-                } as crate::avm1::function::NativeFunction<'gc>,
-                $gc_context,
-                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-                $fn_proto
-            );
-        )*
+macro_rules! setter {
+    ($fn:expr) => {
+        |activation, this, args| {
+            if let Some(this) = this.as_date_object() {
+                $fn(activation, this, args)
+            } else {
+                Ok(Value::Undefined)
+            }
+        }
     };
+}
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "getDay" => method(local_getter!(days_from_sunday); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getFullYear" => method(local_getter!(Datelike::year); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getDate" => method(local_getter!(Datelike::day); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getHours" => method(local_getter!(Timelike::hour); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getMilliseconds" => method(local_getter!(DateTime::timestamp_subsec_millis); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getMinutes" => method(local_getter!(Timelike::minute); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getMonth" => method(local_getter!(Datelike::month0); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getSeconds" => method(local_getter!(Timelike::second); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getYear" => method(local_getter!(year_1900_based); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "valueOf" => method(utc_getter!(timestamp_millis_f64); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getTime" => method(utc_getter!(timestamp_millis_f64); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getUTCDate" => method(utc_getter!(Datelike::day); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getUTCDay" => method(utc_getter!(days_from_sunday); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getUTCFullYear" => method(utc_getter!(Datelike::year); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getUTCHours" => method(utc_getter!(Timelike::hour); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getUTCMilliseconds" => method(utc_getter!(DateTime::timestamp_subsec_millis); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getUTCMinutes" => method(utc_getter!(Timelike::minute); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getUTCMonth" => method(utc_getter!(Datelike::month0); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getUTCSeconds" => method(utc_getter!(Timelike::second); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getUTCYear" => method(utc_getter!(year_1900_based); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "toString" => method(setter!(to_string); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getTimezoneOffset" => method(setter!(get_timezone_offset); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setDate" => method(setter!(set_date); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setUTCDate" => method(setter!(set_utc_date); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setYear" => method(setter!(set_year); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setFullYear" => method(setter!(set_full_year); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setUTCFullYear" => method(setter!(set_utc_full_year); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setHours" => method(setter!(set_hours); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setUTCHours" => method(setter!(set_utc_hours); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setMilliseconds" => method(setter!(set_milliseconds); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setUTCMilliseconds" => method(setter!(set_utc_milliseconds); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setMinutes" => method(setter!(set_minutes); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setUTCMinutes" => method(setter!(set_utc_minutes); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setMonth" => method(setter!(set_month); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setUTCMonth" => method(setter!(set_utc_month); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setSeconds" => method(setter!(set_seconds); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setUTCSeconds" => method(setter!(set_utc_seconds); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setTime" => method(setter!(set_time); DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "UTC" => method(create_utc);
+};
+
+fn days_from_sunday<T: Datelike>(date: &T) -> u32 {
+    date.weekday().num_days_from_sunday()
+}
+
+fn year_1900_based<T: Datelike>(date: &T) -> i32 {
+    date.year() - 1900
+}
+
+fn timestamp_millis_f64<T: TimeZone>(date: &DateTime<T>) -> f64 {
+    date.timestamp_millis() as f64
 }
 
 #[derive(Collect)]
@@ -889,18 +922,16 @@ fn set_utc_full_year<'gc>(
 pub fn create_date_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     date_proto: Object<'gc>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let date = FunctionObject::function(
         gc_context,
         Executable::Native(constructor),
-        fn_proto,
+        Some(fn_proto),
         date_proto,
     );
-    let mut object = date.as_script_object().unwrap();
-
-    object.force_set_function("UTC", create_utc, gc_context, Attribute::empty(), fn_proto);
-
+    let object = date.as_script_object().unwrap();
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     date
 }
 
@@ -910,63 +941,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let date = DateObject::with_date_time(gc_context, Some(proto), None);
-    let mut object = date.as_script_object().unwrap();
-
-    implement_local_getters!(
-        gc_context,
-        object,
-        Some(fn_proto),
-        "getDate" => Datelike::day,
-        "getDay" => |date: &DateTime<FixedOffset>| date.weekday().num_days_from_sunday(),
-        "getFullYear" => Datelike::year,
-        "getHours" => Timelike::hour,
-        "getMilliseconds" => DateTime::timestamp_subsec_millis,
-        "getMinutes" => Timelike::minute,
-        "getMonth" => Datelike::month0,
-        "getSeconds" => Timelike::second,
-        "getYear" => |date: &DateTime<FixedOffset>| date.year() - 1900
-    );
-
-    implement_utc_getters!(
-        gc_context,
-        object,
-        Some(fn_proto),
-        "valueOf" => |date: &DateTime<Utc>| date.timestamp_millis() as f64,
-        "getTime" => |date: &DateTime<Utc>| date.timestamp_millis() as f64,
-        "getUTCDate" => Datelike::day,
-        "getUTCDay" => |date: &DateTime<Utc>| date.weekday().num_days_from_sunday(),
-        "getUTCFullYear" => Datelike::year,
-        "getUTCHours" => Timelike::hour,
-        "getUTCMilliseconds" => DateTime::timestamp_subsec_millis,
-        "getUTCMinutes" => Timelike::minute,
-        "getUTCMonth" => Datelike::month0,
-        "getUTCSeconds" => Timelike::second,
-        "getUTCYear" => |date: &DateTime<Utc>| date.year() - 1900
-    );
-
-    implement_methods!(
-        gc_context,
-        object,
-        Some(fn_proto),
-        "toString" => to_string,
-        "getTimezoneOffset" => get_timezone_offset,
-        "setDate" => set_date,
-        "setUTCDate" => set_utc_date,
-        "setYear" => set_year,
-        "setFullYear" => set_full_year,
-        "setUTCFullYear" => set_utc_full_year,
-        "setHours" => set_hours,
-        "setUTCHours" => set_utc_hours,
-        "setMilliseconds" => set_milliseconds,
-        "setUTCMilliseconds" => set_utc_milliseconds,
-        "setMinutes" => set_minutes,
-        "setUTCMinutes" => set_utc_minutes,
-        "setMonth" => set_month,
-        "setUTCMonth" => set_utc_month,
-        "setSeconds" => set_seconds,
-        "setUTCSeconds" => set_utc_seconds,
-        "setTime" => set_time
-    );
-
+    let object = date.as_script_object().unwrap();
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     date.into()
 }

@@ -28,8 +28,11 @@ use swf::{avm1::types::FunctionParam, SwfStr};
 /// resolve on the AVM stack, as if you had called a non-native function. If
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
-pub type NativeFunction<'gc> =
-    fn(&mut Activation<'_, 'gc, '_>, Object<'gc>, &[Value<'gc>]) -> Result<Value<'gc>, Error<'gc>>;
+pub type NativeFunction = for<'gc> fn(
+    &mut Activation<'_, 'gc, '_>,
+    Object<'gc>,
+    &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>>;
 
 /// Indicates the reason for an execution
 #[derive(Debug, Clone)]
@@ -207,7 +210,7 @@ impl<'gc> Avm1Function<'gc> {
 #[derive(Clone)]
 pub enum Executable<'gc> {
     /// A function provided by the Ruffle runtime and implemented in Rust.
-    Native(NativeFunction<'gc>),
+    Native(NativeFunction),
 
     /// ActionScript data defined by a previous `DefineFunction` or
     /// `DefineFunction2` action.
@@ -422,8 +425,8 @@ impl<'gc> Executable<'gc> {
     }
 }
 
-impl<'gc> From<NativeFunction<'gc>> for Executable<'gc> {
-    fn from(nf: NativeFunction<'gc>) -> Self {
+impl<'gc> From<NativeFunction> for Executable<'gc> {
+    fn from(nf: NativeFunction) -> Self {
         Executable::Native(nf)
     }
 }
@@ -464,23 +467,20 @@ impl<'gc> FunctionObject<'gc> {
     /// Construct a function sans prototype.
     pub fn bare_function(
         gc_context: MutationContext<'gc, '_>,
-        function: Option<impl Into<Executable<'gc>>>,
-        constructor: Option<impl Into<Executable<'gc>>>,
+        function: Option<Executable<'gc>>,
+        constructor: Option<Executable<'gc>>,
         fn_proto: Option<Object<'gc>>,
     ) -> Self {
         let base = ScriptObject::object(gc_context, fn_proto);
-
-        let func = function.map(|x| x.into());
-        let cons = constructor.map(|x| x.into());
 
         FunctionObject {
             base,
             data: GcCell::allocate(
                 gc_context,
                 FunctionObjectData {
-                    function: func,
+                    function,
                     primitive: "[type Function]".into(),
-                    constructor: cons,
+                    constructor,
                 },
             ),
         }
@@ -496,8 +496,8 @@ impl<'gc> FunctionObject<'gc> {
     /// The function and its prototype will be linked to each other.
     fn allocate_function(
         gc_context: MutationContext<'gc, '_>,
-        function: Option<impl Into<Executable<'gc>>>,
-        constructor: Option<impl Into<Executable<'gc>>>,
+        function: Option<Executable<'gc>>,
+        constructor: Option<Executable<'gc>>,
         fn_proto: Option<Object<'gc>>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
@@ -526,9 +526,7 @@ impl<'gc> FunctionObject<'gc> {
         fn_proto: Option<Object<'gc>>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
-        // Avoid type inference issues
-        let none: Option<Executable> = None;
-        Self::allocate_function(gc_context, Some(function), none, fn_proto, prototype)
+        Self::allocate_function(gc_context, Some(function.into()), None, fn_proto, prototype)
     }
 
     /// Construct a regular and constructor function from an executable and associated protos.
@@ -541,8 +539,8 @@ impl<'gc> FunctionObject<'gc> {
     ) -> Object<'gc> {
         Self::allocate_function(
             gc_context,
-            Some(function),
-            Some(constructor),
+            Some(function.into()),
+            Some(constructor.into()),
             fn_proto,
             prototype,
         )

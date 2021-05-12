@@ -126,7 +126,7 @@ macro_rules! test_method {
                 for version in &$versions {
                     with_avm(*version, |activation, _root| -> Result<(), Error> {
                         let object = $object(activation);
-                        let function = object.get($name, activation)?;
+                        let function = crate::avm1::object::TObject::get(&object, $name, activation)?;
 
                         $(
                             let args: Vec<Value> = vec![$($arg.into()),*];

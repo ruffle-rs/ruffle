@@ -1,11 +1,46 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
-use crate::avm1::property::Attribute;
-use crate::avm1::{AvmString, ScriptObject, TObject, Value};
+use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::{AvmString, ScriptObject, Value};
 use gc_arena::MutationContext;
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "supports64BitProcesses" => property(get_has_64_bit_support);
+    "supports32BitProcesses" => property(get_has_32_bit_support);
+    "isEmbeddedInAcrobat" => property(get_is_acrobat_embedded);
+    "hasTLS" => property(get_has_tls);
+    "cpuArchitecture" => property(get_cpu_architecture);
+    "hasAccessibility" => property(get_has_accessibility);
+    "hasAudio" => property(get_has_audio);
+    "hasAudioEncoder" => property(get_has_audio_encoder);
+    "hasEmbeddedVideo" => property(get_has_embedded_video);
+    "hasIME" => property(get_has_ime);
+    "hasMP3" => property(get_has_mp3);
+    "hasPrinting" => property(get_has_printing);
+    "hasScreenBroadcast" => property(get_has_screen_broadcast);
+    "hasScreenPlayback" => property(get_has_screen_playback);
+    "hasStreamingAudio" => property(get_has_streaming_audio);
+    "hasStreamingVideo" => property(get_has_streaming_video);
+    "hasVideoEncoder" => property(get_has_video_encoder);
+    "isDebugger" => property(get_is_debugger);
+    "avHardwareDisable" => property(get_is_av_hardware_disabled);
+    "localFileReadDisable" => property(get_is_local_file_read_disabled);
+    "windowlessDisable" => property(get_is_windowless_disabled);
+    "language" => property(get_language);
+    "manufacturer" => property(get_manufacturer);
+    "os" => property(get_os_name);
+    "pixelAspectRatio" => property(get_pixel_aspect_ratio);
+    "playerType" => property(get_player_type);
+    "screenColor" => property(get_screen_color);
+    "screenDPI" => property(get_screen_dpi);
+    "screenResolutionX" => property(get_screen_resolution_x);
+    "screenResolutionY" => property(get_screen_resolution_y);
+    "serverString" => property(get_server_string);
+    "version" => property(get_version);
+    "maxLevelIDC" => property(get_max_idc_level);
+};
 
 macro_rules! capabilities_func {
     ($func_name: ident, $capability: expr) => {
@@ -29,20 +64,6 @@ macro_rules! inverse_capabilities_func {
             Ok((!activation.context.system.has_capability($capability)).into())
         }
     };
-}
-
-macro_rules! capabilities_prop {
-    ($gc_ctx: expr, $capabilities: expr, $fn_proto: ident, $($name:expr => $func:expr),* ) => {{
-        $(
-            $capabilities.add_property(
-                $gc_ctx,
-                $name,
-                FunctionObject::function($gc_ctx, Executable::Native($func), Some($fn_proto), $fn_proto),
-                None,
-                Attribute::empty()
-            );
-        )*
-    }};
 }
 
 capabilities_func!(get_has_64_bit_support, SystemCapabilities::PROCESS_64_BIT);
@@ -234,42 +255,6 @@ pub fn create<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let capabilities = ScriptObject::object(gc_context, proto);
-
-    capabilities_prop!(gc_context, capabilities, fn_proto,
-        "supports64BitProcesses" => get_has_64_bit_support,
-        "supports32BitProcesses" => get_has_32_bit_support,
-        "isEmbeddedInAcrobat" => get_is_acrobat_embedded,
-        "hasTLS" => get_has_tls,
-        "cpuArchitecture" => get_cpu_architecture,
-        "hasAccessibility" => get_has_accessibility,
-        "hasAudio" => get_has_audio,
-        "hasAudioEncoder" => get_has_audio_encoder,
-        "hasEmbeddedVideo" => get_has_embedded_video,
-        "hasIME" => get_has_ime,
-        "hasMP3" => get_has_mp3,
-        "hasPrinting" => get_has_printing,
-        "hasScreenBroadcast" => get_has_screen_broadcast,
-        "hasScreenPlayback" => get_has_screen_playback,
-        "hasStreamingAudio" => get_has_streaming_audio,
-        "hasStreamingVideo" => get_has_streaming_video,
-        "hasVideoEncoder" => get_has_video_encoder,
-        "isDebugger" => get_is_debugger,
-        "avHardwareDisable" => get_is_av_hardware_disabled,
-        "localFileReadDisable" => get_is_local_file_read_disabled,
-        "windowlessDisable" => get_is_windowless_disabled,
-        "language" => get_language,
-        "manufacturer" => get_manufacturer,
-        "os" => get_os_name,
-        "pixelAspectRatio" => get_pixel_aspect_ratio,
-        "playerType"=>get_player_type,
-        "screenColor" => get_screen_color,
-        "screenDPI" => get_screen_dpi,
-        "screenResolutionX" => get_screen_resolution_x,
-        "screenResolutionY" => get_screen_resolution_y,
-        "serverString" => get_server_string,
-        "version" => get_version,
-        "maxLevelIDC" => get_max_idc_level
-    );
-
+    define_properties_on(OBJECT_DECLS, gc_context, capabilities, fn_proto);
     capabilities.into()
 }

@@ -1,10 +1,19 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TDisplayObject, TObject, Value};
 use crate::display_object::{EditText, TextSelection};
 use gc_arena::MutationContext;
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "getBeginIndex" => method(get_begin_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getEndIndex" => method(get_end_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getCaretIndex" => method(get_caret_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setSelection" => method(set_selection; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setFocus" => method(set_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getFocus" => method(get_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
 
 pub fn get_begin_index<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -139,58 +148,9 @@ pub fn create_selection_object<'gc>(
     broadcaster_functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let mut object = ScriptObject::object(gc_context, Some(proto));
-
+    let object = ScriptObject::object(gc_context, Some(proto));
     broadcaster_functions.initialize(gc_context, object.into(), array_proto);
-
-    object.force_set_function(
-        "getBeginIndex",
-        get_begin_index,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "getEndIndex",
-        get_end_index,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "getCaretIndex",
-        get_caret_index,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "setSelection",
-        set_selection,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "setFocus",
-        set_focus,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "getFocus",
-        get_focus,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     object.into()
 }
 

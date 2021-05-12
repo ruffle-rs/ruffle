@@ -2,71 +2,47 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::{color_transform, matrix};
 use crate::avm1::object::transform_object::TransformObject;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use gc_arena::MutationContext;
 
-macro_rules! with_transform_props {
-    ($obj:ident, $gc:ident, $fn_proto:ident, $($name:literal => [$get:ident $(, $set:ident)*],)*) => {
-        $(
-            $obj.add_property(
-                $gc,
-                $name,
-                with_transform_props!(getter $gc, $fn_proto, $get),
-                with_transform_props!(setter $gc, $fn_proto, $($set),*),
-                Attribute::empty(),
-            );
-        )*
-    };
-
-    (getter $gc:ident, $fn_proto:ident, $get:ident) => {
-        FunctionObject::function(
-            $gc,
-            Executable::Native(
-                |activation: &mut Activation<'_, 'gc, '_>, this, _args| -> Result<Value<'gc>, Error<'gc>> {
-                    if let Some(transform) = this.as_transform_object() {
-                        if let Some(clip) = transform.clip() {
-                            return $get(activation, clip);
-                        }
-                    }
-                    Ok(Value::Undefined)
-                } as crate::avm1::function::NativeFunction<'gc>
-            ),
-            Some($fn_proto),
-            $fn_proto
-        )
-    };
-
-    (setter $gc:ident, $fn_proto:ident, $set:ident) => {
-        Some(FunctionObject::function(
-            $gc,
-            Executable::Native(
-                |activation: &mut Activation<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
-                    if let Some(transform) = this.as_transform_object() {
-                        if let Some(clip) = transform.clip() {
-                            let value = args
-                                .get(0)
-                                .unwrap_or(&Value::Undefined)
-                                .clone();
-                            $set(activation, clip, value)?;
-                        }
-                    }
-                    Ok(Value::Undefined)
-                } as crate::avm1::function::NativeFunction<'gc>
-            ),
-            Some($fn_proto),
-            $fn_proto)
-        )
-    };
-
-    (setter $gc:ident, $fn_proto:ident,) => {
-        None
+macro_rules! tx_getter {
+    ( $get:ident ) => {
+        |activation, this, _args| {
+            if let Some(transform) = this.as_transform_object() {
+                if let Some(clip) = transform.clip() {
+                    return $get(activation, clip);
+                }
+            }
+            Ok(Value::Undefined)
+        }
     };
 }
+
+macro_rules! tx_setter {
+    ( $set:ident ) => {
+        |activation, this, args| {
+            if let Some(transform) = this.as_transform_object() {
+                if let Some(clip) = transform.clip() {
+                    let value = args.get(0).unwrap_or(&Value::Undefined).clone();
+                    $set(activation, clip, value)?;
+                }
+            }
+            Ok(Value::Undefined)
+        }
+    };
+}
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "concatenatedColorTransform" => property(tx_getter!(concatenated_color_transform));
+    "concatenatedMatrix" => property(tx_getter!(concatenated_matrix));
+    "colorTransform" => property(tx_getter!(color_transform), tx_setter!(set_color_transform));
+    "matrix" => property(tx_getter!(matrix), tx_setter!(set_matrix));
+    "pixelBounds" => property(tx_getter!(pixel_bounds));
+};
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -93,16 +69,8 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let transform_object = TransformObject::empty(gc_context, Some(proto));
-    let proto = transform_object.as_script_object().unwrap();
-
-    with_transform_props!(proto, gc_context, fn_proto,
-        "concatenatedColorTransform" => [concatenated_color_transform],
-        "concatenatedMatrix" => [concatenated_matrix],
-        "colorTransform" => [color_transform, set_color_transform],
-        "matrix" => [matrix, set_matrix],
-        "pixelBounds" => [pixel_bounds],
-    );
-
+    let object = transform_object.as_script_object().unwrap();
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     transform_object.into()
 }
 
