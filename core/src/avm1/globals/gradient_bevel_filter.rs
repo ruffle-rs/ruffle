@@ -2,12 +2,25 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::bevel_filter::BevelFilterType;
 use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "distance" => property(distance, set_distance);
+    "angle" => property(angle, set_angle);
+    "colors" => property(colors, set_colors);
+    "alphas" => property(alphas, set_alphas);
+    "ratios" => property(ratios, set_ratios);
+    "blurX" => property(blur_x, set_blur_x);
+    "blurY" => property(blur_y, set_blur_y);
+    "strength" => property(strength, set_strength);
+    "quality" => property(quality, set_quality);
+    "type" => property(get_type, set_type);
+    "knockout" => property(knockout, set_knockout);
+};
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -461,204 +474,6 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let color_matrix_filter = GradientBevelFilterObject::empty_object(gc_context, Some(proto));
     let object = color_matrix_filter.as_script_object().unwrap();
-
-    object.add_property(
-        gc_context,
-        "distance",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(distance),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_distance),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "angle",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(angle),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_angle),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "colors",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(colors),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_colors),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "alphas",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(alphas),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_alphas),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "ratios",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(ratios),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_ratios),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "blurX",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(blur_x),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_blur_x),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "blurY",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(blur_y),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_blur_y),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "strength",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(strength),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_strength),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "quality",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(quality),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_quality),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "type",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_type),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_type),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "knockout",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(knockout),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_knockout),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     color_matrix_filter.into()
 }

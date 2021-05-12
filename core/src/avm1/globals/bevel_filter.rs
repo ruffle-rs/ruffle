@@ -2,11 +2,25 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::bevel_filter::{BevelFilterObject, BevelFilterType};
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, TObject, Value};
 use gc_arena::MutationContext;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "distance" => property(distance, set_distance);
+    "angle" => property(angle, set_angle);
+    "highlightColor" => property(highlight_color, set_highlight_color);
+    "highlightAlpha" => property(highlight_alpha, set_highlight_alpha);
+    "shadowColor" => property(shadow_color, set_shadow_color);
+    "shadowAlpha" => property(shadow_alpha, set_shadow_alpha);
+    "quality" => property(quality, set_quality);
+    "strength" => property(strength, set_strength);
+    "knockout" => property(knockout, set_knockout);
+    "blurX" => property(blur_x, set_blur_x);
+    "blurY" => property(blur_y, set_blur_y);
+    "type" => property(get_type, set_type);
+};
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -401,210 +415,6 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let object = BevelFilterObject::empty_object(gc_context, Some(proto));
     let script_object = object.as_script_object().unwrap();
-
-    script_object.add_property(
-        gc_context,
-        "distance",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(distance),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_distance),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "angle",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(angle),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_angle),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "highlightColor",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(highlight_color),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_highlight_color),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "highlightAlpha",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(highlight_alpha),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_highlight_alpha),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "shadowColor",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(shadow_color),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_shadow_color),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "shadowAlpha",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(shadow_alpha),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_shadow_alpha),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "quality",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(quality),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_quality),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "strength",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(strength),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_strength),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "knockout",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(knockout),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_knockout),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "blurX",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(blur_x),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_blur_x),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "blurY",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(blur_y),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_blur_y),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-    script_object.add_property(
-        gc_context,
-        "type",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_type),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_type),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
+    define_properties_on(PROTO_DECLS, gc_context, script_object, fn_proto);
     object.into()
 }

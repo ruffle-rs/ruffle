@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, ExecutionReason, FunctionObject, NativeFunction};
+use crate::avm1::function::ExecutionReason;
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{AvmString, Object, ObjectPtr, TObject, Value};
@@ -166,35 +166,6 @@ impl<'gc> ScriptObject<'gc> {
                 watchers: PropertyMap::new(),
             },
         ))
-    }
-
-    /// Declare a native function on the current object.
-    ///
-    /// This is intended for use with defining host object prototypes. Notably,
-    /// this creates a function object without an explicit `prototype`, which
-    /// is only possible when defining host functions. User-defined functions
-    /// always get a fresh explicit prototype, so you should never force set a
-    /// user-defined function.
-    pub fn force_set_function(
-        &mut self,
-        name: &str,
-        function: NativeFunction<'gc>,
-        gc_context: MutationContext<'gc, '_>,
-        attributes: Attribute,
-        fn_proto: Option<Object<'gc>>,
-    ) {
-        self.define_value(
-            gc_context,
-            name,
-            FunctionObject::bare_function(
-                gc_context,
-                Some(function),
-                Option::<Executable>::None,
-                fn_proto,
-            )
-            .into(),
-            attributes,
-        )
     }
 
     pub fn set_type_of(&mut self, gc_context: MutationContext<'gc, '_>, type_of: &'static str) {
@@ -821,10 +792,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 mod tests {
     use super::*;
 
-    use crate::avm1::activation::ActivationIdentifier;
     use crate::avm1::function::Executable;
     use crate::avm1::globals::system::SystemProperties;
     use crate::avm1::property::Attribute;
+    use crate::avm1::{activation::ActivationIdentifier, function::FunctionObject};
     use crate::avm1::{Avm1, Timers};
     use crate::avm2::Avm2;
     use crate::backend::audio::{AudioManager, NullAudioBackend};

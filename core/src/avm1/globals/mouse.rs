@@ -1,9 +1,14 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
 use gc_arena::MutationContext;
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "show" => method(show_mouse; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "hide" => method(hide_mouse; DONT_DELETE | DONT_ENUM | READ_ONLY);
+};
 
 pub fn show_mouse<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -28,29 +33,12 @@ pub fn hide_mouse<'gc>(
 pub fn create_mouse_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Option<Object<'gc>>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let mut mouse = ScriptObject::object(gc_context, proto);
-
+    let mouse = ScriptObject::object(gc_context, proto);
     broadcaster_functions.initialize(gc_context, mouse.into(), array_proto);
-
-    mouse.force_set_function(
-        "show",
-        show_mouse,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        fn_proto,
-    );
-
-    mouse.force_set_function(
-        "hide",
-        hide_mouse,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        fn_proto,
-    );
-
+    define_properties_on(OBJECT_DECLS, gc_context, mouse, fn_proto);
     mouse.into()
 }

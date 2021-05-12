@@ -3,7 +3,7 @@
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::bitmap_data::{BitmapDataObject, ChannelOptions, Color};
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{activation::Activation, object::bitmap_data::BitmapData};
 use crate::avm1::{Object, TObject, Value};
 use crate::character::Character;
@@ -40,6 +40,40 @@ fn is_size_valid(swf_version: u8, width: u32, height: u32) -> bool {
     }
     true
 }
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "height" => property(height);
+    "width" => property(width);
+    "transparent" => property(get_transparent);
+    "rectangle" => property(get_rectangle);
+    "getPixel" => method(get_pixel);
+    "getPixel32" => method(get_pixel32);
+    "setPixel" => method(set_pixel);
+    "setPixel32" => method(set_pixel32);
+    "copyChannel" => method(copy_channel);
+    "fillRect" => method(fill_rect);
+    "clone" => method(clone);
+    "dispose" => method(dispose);
+    "floodFill" => method(flood_fill);
+    "noise" => method(noise);
+    "colorTransform" => method(color_transform);
+    "getColorBoundsRect" => method(get_color_bounds_rect);
+    "perlinNoise" => method(perlin_noise);
+    "applyFilter" => method(apply_filter);
+    "draw" => method(draw);
+    "hitTest" => method(hit_test);
+    "generateFilterRect" => method(generate_filter_rect);
+    "copyPixels" => method(copy_pixels);
+    "merge" => method(merge);
+    "paletteMap" => method(palette_map);
+    "pixelDissolve" => method(pixel_dissolve);
+    "scroll" => method(scroll);
+    "threshold" => method(threshold);
+};
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "loadBitmap" => method(load_bitmap);
+};
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -1071,216 +1105,8 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let bitmap_data_object = BitmapDataObject::empty_object(gc_context, Some(proto));
-    let mut object = bitmap_data_object.as_script_object().unwrap();
-
-    object.add_property(
-        gc_context,
-        "height",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(height),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "width",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(width),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "transparent",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_transparent),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::empty(),
-    );
-
-    object.add_property(
-        gc_context,
-        "rectangle",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_rectangle),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::empty(),
-    );
-
-    object.force_set_function(
-        "getPixel",
-        get_pixel,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "getPixel32",
-        get_pixel32,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "setPixel",
-        set_pixel,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "setPixel32",
-        set_pixel32,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "copyChannel",
-        copy_channel,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "fillRect",
-        fill_rect,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "clone",
-        clone,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "dispose",
-        dispose,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "floodFill",
-        flood_fill,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "noise",
-        noise,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "colorTransform",
-        color_transform,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "getColorBoundsRect",
-        get_color_bounds_rect,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "perlinNoise",
-        perlin_noise,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "applyFilter",
-        apply_filter,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function("draw", draw, gc_context, Attribute::empty(), Some(fn_proto));
-    object.force_set_function(
-        "hitTest",
-        hit_test,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "generateFilterRect",
-        generate_filter_rect,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "copyPixels",
-        copy_pixels,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "merge",
-        merge,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "paletteMap",
-        palette_map,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "pixelDissolve",
-        pixel_dissolve,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "scroll",
-        scroll,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "threshold",
-        threshold,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
+    let object = bitmap_data_object.as_script_object().unwrap();
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     bitmap_data_object.into()
 }
 
@@ -1332,24 +1158,16 @@ pub fn load_bitmap<'gc>(
 pub fn create_bitmap_data_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     bitmap_data_proto: Object<'gc>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = FunctionObject::constructor(
+    let bitmap_data = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
-        fn_proto,
+        Some(fn_proto),
         bitmap_data_proto,
     );
-    let mut script_object = object.as_script_object().unwrap();
-
-    script_object.force_set_function(
-        "loadBitmap",
-        load_bitmap,
-        gc_context,
-        Attribute::empty(),
-        fn_proto,
-    );
-
-    object
+    let object = bitmap_data.as_script_object().unwrap();
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+    bitmap_data
 }

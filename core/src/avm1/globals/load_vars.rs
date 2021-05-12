@@ -4,11 +4,26 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use gc_arena::MutationContext;
 use std::borrow::Cow;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "load" => method(load; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "send" => method(send; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "sendAndLoad" => method(send_and_load; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "decode" => method(decode; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getBytesLoaded" => method(get_bytes_loaded; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getBytesTotal" => method(get_bytes_total; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "toString" => method(to_string; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "contentType" => string("application/x-www-form-urlencoded"; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "onLoad" => method(on_load; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "onData" => method(on_data; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "addRequestHeader" => method(add_request_header; DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
 
 /// Implements `LoadVars`
 pub fn constructor<'gc>(
@@ -25,95 +40,8 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let mut object = ScriptObject::object(gc_context, Some(proto));
-
-    object.force_set_function(
-        "load",
-        load,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "send",
-        send,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "sendAndLoad",
-        send_and_load,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "decode",
-        decode,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "getBytesLoaded",
-        get_bytes_loaded,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "getBytesTotal",
-        get_bytes_total,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "toString",
-        to_string,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.define_value(
-        gc_context,
-        "contentType",
-        "application/x-www-form-urlencoded".into(),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    object.force_set_function(
-        "onLoad",
-        on_load,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "onData",
-        on_data,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "addRequestHeader",
-        add_request_header,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
+    let object = ScriptObject::object(gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     object.into()
 }
 

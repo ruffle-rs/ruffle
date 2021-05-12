@@ -3,9 +3,15 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "call" => method(call);
+    "apply" => method(apply);
+    "toString" => method(to_string);
+};
 
 /// Implements `new Function()`
 pub fn constructor<'gc>(
@@ -117,19 +123,7 @@ fn to_string<'gc>(
 /// the prototype of `Object`.
 pub fn create_proto<'gc>(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
     let function_proto = ScriptObject::object_cell(gc_context, Some(proto));
-    let this = Some(function_proto);
-    function_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function("call", call, gc_context, Attribute::empty(), this);
-    function_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function("apply", apply, gc_context, Attribute::empty(), this);
-    function_proto
-        .as_script_object()
-        .unwrap()
-        .force_set_function("toString", to_string, gc_context, Attribute::empty(), this);
-
+    let object = function_proto.as_script_object().unwrap();
+    define_properties_on(PROTO_DECLS, gc_context, object, function_proto);
     function_proto
 }

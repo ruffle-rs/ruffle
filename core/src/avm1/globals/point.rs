@@ -3,9 +3,26 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "toString" => method(to_string);
+    "clone" => method(clone);
+    "equals" => method(equals);
+    "add" => method(add);
+    "subtract" => method(subtract);
+    "normalize" => method(normalize);
+    "offset" => method(offset);
+    "length" => property(length; READ_ONLY);
+};
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "distance" => method(distance);
+    "polar" => method(polar);
+    "interpolate" => method(interpolate);
+};
 
 pub fn point_to_object<'gc>(
     point: (f64, f64),
@@ -263,33 +280,17 @@ fn offset<'gc>(
 pub fn create_point_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     point_proto: Object<'gc>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let point = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
-        fn_proto,
+        Some(fn_proto),
         point_proto,
     );
-    let mut object = point.as_script_object().unwrap();
-
-    object.force_set_function(
-        "distance",
-        distance,
-        gc_context,
-        Attribute::empty(),
-        fn_proto,
-    );
-    object.force_set_function("polar", polar, gc_context, Attribute::empty(), fn_proto);
-    object.force_set_function(
-        "interpolate",
-        interpolate,
-        gc_context,
-        Attribute::empty(),
-        fn_proto,
-    );
-
+    let object = point.as_script_object().unwrap();
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     point
 }
 
@@ -298,70 +299,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let mut object = ScriptObject::object(gc_context, Some(proto));
-
-    object.force_set_function(
-        "toString",
-        to_string,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "clone",
-        clone,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "equals",
-        equals,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function("add", add, gc_context, Attribute::empty(), Some(fn_proto));
-
-    object.force_set_function(
-        "subtract",
-        subtract,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "normalize",
-        normalize,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "offset",
-        offset,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    object.add_property(
-        gc_context,
-        "length",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(length),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::READ_ONLY,
-    );
-
+    let object = ScriptObject::object(gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     object.into()
 }

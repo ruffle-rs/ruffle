@@ -4,10 +4,30 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::string_utils;
 use gc_arena::MutationContext;
+
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "toString" => method(to_string_value_of);
+    "valueOf" => method(to_string_value_of);
+    "charAt" => method(char_at; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "charCodeAt" => method(char_code_at; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "concat" => method(concat; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "indexOf" => method(index_of; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "lastIndexOf" => method(last_index_of; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "slice" => method(slice; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "split" => method(split; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "substr" => method(substr; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "substring" => method(substring; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "toLowerCase" => method(to_lower_case; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "toUpperCase" => method(to_upper_case; DONT_DELETE | DONT_ENUM | READ_ONLY);
+};
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "fromCharCode" => method(from_char_code; DONT_DELETE | DONT_ENUM | READ_ONLY);
+};
 
 /// `String` constructor
 pub fn string<'gc>(
@@ -48,25 +68,17 @@ pub fn string_function<'gc>(
 pub fn create_string_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     string_proto: Object<'gc>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let string = FunctionObject::constructor(
         gc_context,
         Executable::Native(string),
         Executable::Native(string_function),
-        fn_proto,
+        Some(fn_proto),
         string_proto,
     );
-    let mut object = string.as_script_object().unwrap();
-
-    object.force_set_function(
-        "fromCharCode",
-        from_char_code,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        fn_proto,
-    );
-
+    let object = string.as_script_object().unwrap();
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     string
 }
 
@@ -77,109 +89,8 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let string_proto = ValueObject::empty_box(gc_context, Some(proto));
-    let mut object = string_proto.as_script_object().unwrap();
-
-    object.force_set_function(
-        "toString",
-        to_string_value_of,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "valueOf",
-        to_string_value_of,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "charAt",
-        char_at,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "charCodeAt",
-        char_code_at,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "concat",
-        concat,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "indexOf",
-        index_of,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "lastIndexOf",
-        last_index_of,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "slice",
-        slice,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "split",
-        split,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "substr",
-        substr,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "substring",
-        substring,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "toLowerCase",
-        to_lower_case,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "toUpperCase",
-        to_upper_case,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
+    let object = string_proto.as_script_object().unwrap();
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     string_proto
 }
 

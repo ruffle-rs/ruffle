@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use bitflags::bitflags;
 use gc_arena::MutationContext;
@@ -29,16 +29,39 @@ const DEFAULT_ORDERING: Ordering = Ordering::Equal;
 type CompareFn<'a, 'gc> =
     Box<dyn 'a + FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering>;
 
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "push" => method(push; DONT_ENUM);
+    "unshift" => method(unshift; DONT_ENUM);
+    "shift" => method(shift; DONT_ENUM);
+    "pop" => method(pop; DONT_ENUM);
+    "reverse" => method(reverse; DONT_ENUM);
+    "join" => method(join; DONT_ENUM);
+    "slice" => method(slice; DONT_ENUM);
+    "splice" => method(splice; DONT_ENUM);
+    "concat" => method(concat; DONT_ENUM);
+    "toString" => method(to_string; DONT_ENUM);
+    "sort" => method(sort; DONT_ENUM);
+    "sortOn" => method(sort_on; DONT_ENUM);
+};
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "CASEINSENSITIVE" => int(SortFlags::CASE_INSENSITIVE.bits(); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "DESCENDING" => int(SortFlags::DESCENDING.bits(); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "UNIQUESORT" => int(SortFlags::UNIQUE_SORT.bits(); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "RETURNINDEXEDARRAY" => int(SortFlags::RETURN_INDEXED_ARRAY.bits(); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "NUMERIC" => int(SortFlags::NUMERIC.bits(); DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
+
 pub fn create_array_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
     array_proto: Object<'gc>,
-    fn_proto: Option<Object<'gc>>,
+    fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let array = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
         Executable::Native(array_function),
-        fn_proto,
+        Some(fn_proto),
         array_proto,
     );
     let object = array.as_script_object().unwrap();
@@ -46,41 +69,7 @@ pub fn create_array_object<'gc>(
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
     // when run in Flash Player 7. Make these conditional if we add a parameter to control
     // target Flash Player version.
-    object.define_value(
-        gc_context,
-        "CASEINSENSITIVE",
-        SortFlags::CASE_INSENSITIVE.bits().into(),
-        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
-    );
-
-    object.define_value(
-        gc_context,
-        "DESCENDING",
-        SortFlags::DESCENDING.bits().into(),
-        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
-    );
-
-    object.define_value(
-        gc_context,
-        "UNIQUESORT",
-        SortFlags::UNIQUE_SORT.bits().into(),
-        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
-    );
-
-    object.define_value(
-        gc_context,
-        "RETURNINDEXEDARRAY",
-        SortFlags::RETURN_INDEXED_ARRAY.bits().into(),
-        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
-    );
-
-    object.define_value(
-        gc_context,
-        "NUMERIC",
-        SortFlags::NUMERIC.bits().into(),
-        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::READ_ONLY,
-    );
-
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     array
 }
 
@@ -659,87 +648,8 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let array = ScriptObject::array(gc_context, Some(proto));
-    let mut object = array.as_script_object().unwrap();
-
-    object.force_set_function(
-        "push",
-        push,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "unshift",
-        unshift,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "shift",
-        shift,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function("pop", pop, gc_context, Attribute::DONT_ENUM, Some(fn_proto));
-    object.force_set_function(
-        "reverse",
-        reverse,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "join",
-        join,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "slice",
-        slice,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "splice",
-        splice,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "concat",
-        concat,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "toString",
-        to_string,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "sort",
-        sort,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-    object.force_set_function(
-        "sortOn",
-        sort_on,
-        gc_context,
-        Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
+    let object = array.as_script_object().unwrap();
+    define_properties_on(&PROTO_DECLS, gc_context, object, fn_proto);
     array.into()
 }
 

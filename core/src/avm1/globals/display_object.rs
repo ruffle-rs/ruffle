@@ -2,8 +2,8 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, Lists, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::MutationContext;
@@ -22,94 +22,37 @@ pub const AVM_MAX_DEPTH: i32 = 2_130_706_428;
 /// What is the derivation of this number...?
 pub const AVM_MAX_REMOVE_DEPTH: i32 = 2_130_706_416;
 
-macro_rules! with_display_object {
-    ( $gc_context: ident, $object:ident, $fn_proto: expr, $($name:expr => $fn:expr),* ) => {{
-        $(
-            $object.force_set_function(
-                $name,
-                |activation: &mut Activation<'_, 'gc, '_>, this, args| -> Result<Value<'gc>, Error<'gc>> {
-                    if let Some(display_object) = this.as_display_object() {
-                        return $fn(display_object, activation, args);
-                    }
-                    Ok(Value::Undefined)
-                } as crate::avm1::function::NativeFunction<'gc>,
-                $gc_context,
-                Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-                $fn_proto
-            );
-        )*
-    }};
-}
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "getDepth" => method(get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "toString" => method(to_string; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "_global" => property(get_global, overwrite_global; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "_root" => property(get_root, overwrite_root; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "_parent" => property(get_parent, overwrite_parent; DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
 
 /// Add common display object prototype methods to the given prototype.
 pub fn define_display_object_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    mut object: ScriptObject<'gc>,
+    object: ScriptObject<'gc>,
     fn_proto: Object<'gc>,
 ) {
-    with_display_object!(
-        gc_context,
-        object,
-        Some(fn_proto),
-        "getDepth" => get_depth,
-        "toString" => to_string
-    );
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+}
 
-    object.add_property(
-        gc_context,
-        "_global",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(|activation, _this, _args| {
-                Ok(activation.context.avm1.global_object())
-            }),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(overwrite_global),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
+pub fn get_global<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation.context.avm1.global_object())
+}
 
-    object.add_property(
-        gc_context,
-        "_root",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(|activation, _this, _args| activation.root_object()),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(overwrite_root),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    object.add_property(
-        gc_context,
-        "_parent",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_parent),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(overwrite_parent),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
+pub fn get_root<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.root_object()
 }
 
 pub fn get_parent<'gc>(
@@ -126,24 +69,29 @@ pub fn get_parent<'gc>(
 }
 
 pub fn get_depth<'gc>(
-    display_object: DisplayObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 6 {
-        let depth = display_object.depth().wrapping_sub(AVM_DEPTH_BIAS);
-        Ok(depth.into())
-    } else {
-        Ok(Value::Undefined)
+    if let Some(display_object) = this.as_display_object() {
+        if activation.swf_version() >= 6 {
+            let depth = display_object.depth().wrapping_sub(AVM_DEPTH_BIAS);
+            return Ok(depth.into());
+        }
     }
+    Ok(Value::Undefined)
 }
 
 pub fn to_string<'gc>(
-    display_object: DisplayObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(activation.context.gc_context, display_object.path()).into())
+    if let Some(display_object) = this.as_display_object() {
+        Ok(AvmString::new(activation.context.gc_context, display_object.path()).into())
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 pub fn overwrite_root<'gc>(

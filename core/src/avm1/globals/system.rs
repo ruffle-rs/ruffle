@@ -1,8 +1,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
+use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Avm1, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use bitflags::bitflags;
@@ -10,6 +10,15 @@ use core::fmt;
 use gc_arena::MutationContext;
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "exactSettings" => property(get_exact_settings, set_exact_settings);
+    "useCodepage" => property(get_use_code_page, set_use_code_page);
+    "setClipboard" => method(set_clipboard);
+    "showSettings" => method(show_settings);
+    // Pretty sure this is a variable
+    "onStatus" => method(on_status);
+};
 
 /// Available cpu architectures
 pub enum CpuArchitecture {
@@ -504,79 +513,15 @@ pub fn create<'gc>(
     capabilities: Object<'gc>,
     ime: Object<'gc>,
 ) -> Object<'gc> {
-    let mut system = ScriptObject::object(gc_context, proto);
-
-    system.add_property(
-        gc_context,
-        "exactSettings",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_exact_settings),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_exact_settings),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
-    system.add_property(
-        gc_context,
-        "useCodepage",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_use_code_page),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        Some(FunctionObject::function(
-            gc_context,
-            Executable::Native(set_use_code_page),
-            Some(fn_proto),
-            fn_proto,
-        )),
-        Attribute::empty(),
-    );
-
+    let system = ScriptObject::object(gc_context, proto);
+    define_properties_on(OBJECT_DECLS, gc_context, system, fn_proto);
+    system.define_value(gc_context, "IME", ime.into(), Attribute::empty());
     system.define_value(gc_context, "security", security.into(), Attribute::empty());
-
     system.define_value(
         gc_context,
         "capabilities",
         capabilities.into(),
         Attribute::empty(),
     );
-
-    system.define_value(gc_context, "IME", ime.into(), Attribute::empty());
-
-    system.force_set_function(
-        "setClipboard",
-        set_clipboard,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    system.force_set_function(
-        "showSettings",
-        show_settings,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
-    // Pretty sure this is a variable
-    system.force_set_function(
-        "onStatus",
-        on_status,
-        gc_context,
-        Attribute::empty(),
-        Some(fn_proto),
-    );
-
     system.into()
 }

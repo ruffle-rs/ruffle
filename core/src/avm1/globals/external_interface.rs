@@ -1,10 +1,15 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::{Object, ScriptObject, Value};
 use crate::external::{Callback, Value as ExternalValue};
 use gc_arena::MutationContext;
+
+const OBJECT_DECLS: &[Declaration] = declare_properties! {
+    "available" => property(get_available; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "addCallback" => method(add_callback; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "call" => method(call; DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
 
 pub fn get_available<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -69,37 +74,8 @@ pub fn create_external_interface_object<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let mut object = ScriptObject::object(gc_context, Some(proto));
-
-    object.add_property(
-        gc_context,
-        "available",
-        FunctionObject::function(
-            gc_context,
-            Executable::Native(get_available),
-            Some(fn_proto),
-            fn_proto,
-        ),
-        None,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
-
-    object.force_set_function(
-        "addCallback",
-        add_callback,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
-    object.force_set_function(
-        "call",
-        call,
-        gc_context,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Some(fn_proto),
-    );
-
+    let object = ScriptObject::object(gc_context, Some(proto));
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     object.into()
 }
 
