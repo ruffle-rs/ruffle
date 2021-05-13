@@ -1589,15 +1589,22 @@ bitflags! {
     }
 }
 
-/// Defines how hit testing should be performed.
-/// Used for mouse picking and ActionScript's hitTestClip functions.
-#[derive(Debug, Copy, Clone)]
-pub struct HitTestOptions {
-    /// Ignore objects used as masks (setMask / clipDepth).
-    pub skip_mask: bool,
+bitflags! {
+    /// Defines how hit testing should be performed.
+    /// Used for mouse picking and ActionScript's hitTestClip functions.
+    pub struct HitTestOptions: u8 {
+        /// Ignore objects used as masks (setMask / clipDepth).
+        const SKIP_MASK = 1 << 0;
 
-    /// Ignore objects with the ActionScript's visibility flag turned off.
-    pub skip_invisible: bool,
+        /// Ignore objects with the ActionScript's visibility flag turned off.
+        const SKIP_INVISIBLE = 1 << 1;
+
+        /// The options used for `hitTest` calls in ActionScript.
+        const AVM_HIT_TEST = Self::SKIP_MASK.bits;
+
+        /// The options used for mouse picking, such as clicking on buttons.
+        const MOUSE_PICK = Self::SKIP_MASK.bits | Self::SKIP_INVISIBLE.bits;
+    }
 }
 
 /// Represents the sound transfomr of sounds played inside a Flash MovieClip.

@@ -512,10 +512,7 @@ pub fn hit_test_point<'gc>(
                 .hit_test_shape(
                     &mut activation.context,
                     (x, y),
-                    HitTestOptions {
-                        skip_mask: true,
-                        skip_invisible: false,
-                    },
+                    HitTestOptions::AVM_HIT_TEST,
                 )
                 .into());
         } else {

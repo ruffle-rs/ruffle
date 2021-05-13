@@ -1847,24 +1847,20 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         point: (Twips, Twips),
         options: HitTestOptions,
     ) -> bool {
-        if options.skip_invisible && !self.visible() && self.maskee().is_none() {
+        if options.contains(HitTestOptions::SKIP_INVISIBLE)
+            && !self.visible()
+            && self.maskee().is_none()
+        {
             return false;
         }
 
-        if options.skip_mask && self.maskee().is_some() {
+        if options.contains(HitTestOptions::SKIP_MASK) && self.maskee().is_some() {
             return false;
         }
 
         if self.world_bounds().contains(point) {
             if let Some(masker) = self.masker() {
-                if !masker.hit_test_shape(
-                    context,
-                    point,
-                    HitTestOptions {
-                        skip_mask: false,
-                        skip_invisible: true,
-                    },
-                ) {
+                if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
                     return false;
                 }
             }
@@ -1876,10 +1872,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     if child.hit_test_shape(
                         context,
                         point,
-                        HitTestOptions {
-                            skip_mask: true,
-                            skip_invisible: true,
-                        },
+                        HitTestOptions::SKIP_MASK | HitTestOptions::SKIP_INVISIBLE,
                     ) {
                         clip_depth = 0;
                     } else {
@@ -1910,14 +1903,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) -> Option<DisplayObject<'gc>> {
         if self.visible() {
             if let Some(masker) = self.masker() {
-                if !masker.hit_test_shape(
-                    context,
-                    point,
-                    HitTestOptions {
-                        skip_mask: false,
-                        skip_invisible: true,
-                    },
-                ) {
+                if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
                     return None;
                 }
             }
@@ -1941,17 +1927,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     }
                 };
 
-                if is_button_mode
-                    && self.hit_test_shape(
-                        context,
-                        point,
-                        HitTestOptions {
-                            skip_mask: self.maskee().is_none(),
-                            skip_invisible: true,
-                        },
-                    )
-                {
-                    return Some(self_node);
+                if is_button_mode {
+                    let mut options = HitTestOptions::SKIP_INVISIBLE;
+                    options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+                    if self.hit_test_shape(context, point, options) {
+                        return Some(self_node);
+                    }
                 }
             }
 
@@ -1963,14 +1944,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             for child in self.iter_render_list().rev() {
                 if child.clip_depth() > 0 {
                     if result.is_some() && child.clip_depth() >= hit_depth {
-                        if child.hit_test_shape(
-                            context,
-                            point,
-                            HitTestOptions {
-                                skip_mask: true,
-                                skip_invisible: true,
-                            },
-                        ) {
+                        if child.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
                             return result;
                         } else {
                             result = None;

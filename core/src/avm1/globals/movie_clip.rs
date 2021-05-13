@@ -136,10 +136,7 @@ pub fn hit_test<'gc>(
                 movie_clip.hit_test_shape(
                     &mut activation.context,
                     point,
-                    HitTestOptions {
-                        skip_mask: true,
-                        skip_invisible: false,
-                    },
+                    HitTestOptions::AVM_HIT_TEST,
                 )
             } else {
                 movie_clip.hit_test_bounds(point)
