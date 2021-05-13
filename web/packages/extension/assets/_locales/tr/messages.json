@@ -6,7 +6,7 @@
         "message": "Ruffle'a engel olan sitelerde dahi Flash içeriğini oynatmaya çalış"
     },
     "settings_ignore_optout": {
-        "message": "Ignore website compatibility warnings"
+        "message": "Sitelerin uyumsuzluk uyarılarını yoksay"
     },
     "status_init": {
         "message": "Mevcut sekme okunuyor…"
