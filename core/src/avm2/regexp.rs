@@ -1,7 +1,6 @@
 //! RegExp Structure
 
 use crate::avm2::string::AvmString;
-use crate::collect::CollectWrapper;
 use bitflags::bitflags;
 use gc_arena::Collect;
 use regress::Regex;
@@ -10,11 +9,13 @@ use regress::Regex;
 #[collect(no_drop)]
 pub struct RegExp<'gc> {
     source: AvmString<'gc>,
-    flags: CollectWrapper<RegExpFlags>,
+    flags: RegExpFlags,
     last_index: usize,
 }
 
 bitflags! {
+    #[derive(Collect)]
+    #[collect(require_static)]
     struct RegExpFlags: u8 {
         const GLOBAL       = 1 << 0;
         const IGNORE_CASE  = 1 << 1;
@@ -31,7 +32,7 @@ impl<'gc> RegExp<'gc> {
     {
         Self {
             source: source.into(),
-            flags: CollectWrapper(RegExpFlags::empty()),
+            flags: RegExpFlags::empty(),
             last_index: 0,
         }
     }
@@ -56,43 +57,43 @@ impl<'gc> RegExp<'gc> {
     }
 
     pub fn dotall(&self) -> bool {
-        self.flags.0.contains(RegExpFlags::DOTALL)
+        self.flags.contains(RegExpFlags::DOTALL)
     }
 
     pub fn set_dotall(&mut self, value: bool) {
-        self.flags.0.set(RegExpFlags::DOTALL, value);
+        self.flags.set(RegExpFlags::DOTALL, value);
     }
 
     pub fn extended(&self) -> bool {
-        self.flags.0.contains(RegExpFlags::EXTENDED)
+        self.flags.contains(RegExpFlags::EXTENDED)
     }
 
     pub fn set_extended(&mut self, value: bool) {
-        self.flags.0.set(RegExpFlags::EXTENDED, value);
+        self.flags.set(RegExpFlags::EXTENDED, value);
     }
 
     pub fn global(&self) -> bool {
-        self.flags.0.contains(RegExpFlags::GLOBAL)
+        self.flags.contains(RegExpFlags::GLOBAL)
     }
 
     pub fn set_global(&mut self, value: bool) {
-        self.flags.0.set(RegExpFlags::GLOBAL, value);
+        self.flags.set(RegExpFlags::GLOBAL, value);
     }
 
     pub fn ignore_case(&self) -> bool {
-        self.flags.0.contains(RegExpFlags::IGNORE_CASE)
+        self.flags.contains(RegExpFlags::IGNORE_CASE)
     }
 
     pub fn set_ignore_case(&mut self, value: bool) {
-        self.flags.0.set(RegExpFlags::IGNORE_CASE, value);
+        self.flags.set(RegExpFlags::IGNORE_CASE, value);
     }
 
     pub fn multiline(&self) -> bool {
-        self.flags.0.contains(RegExpFlags::MULTILINE)
+        self.flags.contains(RegExpFlags::MULTILINE)
     }
 
     pub fn set_multiline(&mut self, value: bool) {
-        self.flags.0.set(RegExpFlags::MULTILINE, value);
+        self.flags.set(RegExpFlags::MULTILINE, value);
     }
 
     pub fn test(&mut self, text: &str) -> bool {

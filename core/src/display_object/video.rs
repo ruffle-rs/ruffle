@@ -5,7 +5,6 @@ use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
 use crate::backend::render::BitmapInfo;
 use crate::backend::video::{EncodedFrame, VideoStreamHandle};
 use crate::bounding_box::BoundingBox;
-use crate::collect::CollectWrapper;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
@@ -40,7 +39,8 @@ pub struct VideoData<'gc> {
     stream: VideoStream,
 
     /// The last decoded frame in the video stream.
-    decoded_frame: Option<(u32, CollectWrapper<BitmapInfo>)>,
+    #[collect(require_static)]
+    decoded_frame: Option<(u32, BitmapInfo)>,
 
     /// AVM representation of this video player.
     object: Option<AvmObject<'gc>>,
@@ -250,8 +250,8 @@ impl<'gc> Video<'gc> {
                         .decode_video_stream_frame(*stream, encframe, context.renderer)
                 }
                 None => {
-                    if let Some((_old_id, old_frame)) = &read.decoded_frame {
-                        Ok(old_frame.0)
+                    if let Some((_old_id, old_frame)) = read.decoded_frame {
+                        Ok(old_frame)
                     } else {
                         Err(Box::from(format!(
                             "Attempted to seek to omitted frame {} without prior decoded frame",
@@ -266,8 +266,7 @@ impl<'gc> Video<'gc> {
 
         match res {
             Ok(bitmap) => {
-                self.0.write(context.gc_context).decoded_frame =
-                    Some((frame_id, CollectWrapper(bitmap)));
+                self.0.write(context.gc_context).decoded_frame = Some((frame_id, bitmap));
             }
             Err(e) => log::error!("Got error when seeking to video frame {}: {}", frame_id, e),
         }
@@ -420,13 +419,13 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             // The actual decoded frames might be different in size than the declared
             // bounds of the VideoStream tag, so a final scale adjustment has to be done.
             transform.matrix *= Matrix::scale(
-                bounds.width().to_pixels() as f32 / bitmap.0.width as f32,
-                bounds.height().to_pixels() as f32 / bitmap.0.height as f32,
+                bounds.width().to_pixels() as f32 / bitmap.width as f32,
+                bounds.height().to_pixels() as f32 / bitmap.height as f32,
             );
 
             context
                 .renderer
-                .render_bitmap(bitmap.0.handle, &transform, false);
+                .render_bitmap(bitmap.handle, &transform, false);
         } else {
             log::warn!("Video has no decoded frame to render.");
         }

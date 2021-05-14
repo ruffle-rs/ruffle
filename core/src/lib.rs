@@ -24,7 +24,6 @@ mod avm2;
 pub mod bitmap;
 mod bounding_box;
 mod character;
-mod collect;
 pub mod color_transform;
 pub mod context;
 pub mod context_menu;

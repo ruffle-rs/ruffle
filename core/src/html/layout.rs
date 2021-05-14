@@ -1,6 +1,5 @@
 //! Layout box structure
 
-use crate::collect::CollectWrapper;
 use crate::context::UpdateContext;
 use crate::drawing::Drawing;
 use crate::font::{EvalParameters, Font};
@@ -582,7 +581,8 @@ pub enum LayoutContent<'gc> {
         params: EvalParameters,
 
         /// The color to render the font with.
-        color: CollectWrapper<swf::Color>,
+        #[collect(require_static)]
+        color: swf::Color,
     },
 
     /// A layout box containing a bullet.
@@ -601,7 +601,8 @@ pub enum LayoutContent<'gc> {
         params: EvalParameters,
 
         /// The color to render the font with.
-        color: CollectWrapper<swf::Color>,
+        #[collect(require_static)]
+        color: swf::Color,
     },
 
     /// A layout box containing a drawing.
@@ -625,7 +626,7 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font,
                 params,
-                color: CollectWrapper(span.color.clone()),
+                color: span.color.clone(),
             },
         }
     }
@@ -640,7 +641,7 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font,
                 params,
-                color: CollectWrapper(span.color.clone()),
+                color: span.color.clone(),
             },
         }
     }
@@ -790,14 +791,14 @@ impl<'gc> LayoutBox<'gc> {
                 &text_format,
                 *font,
                 *params,
-                color.0.clone(),
+                color.clone(),
             )),
             LayoutContent::Bullet {
                 text_format,
                 font,
                 params,
                 color,
-            } => Some(("\u{2022}", &text_format, *font, *params, color.0.clone())),
+            } => Some(("\u{2022}", &text_format, *font, *params, color.clone())),
             LayoutContent::Drawing(..) => None,
         }
     }
