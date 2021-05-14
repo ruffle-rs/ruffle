@@ -10,7 +10,6 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
-use crate::collect::CollectWrapper;
 use crate::context::UpdateContext;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -42,7 +41,8 @@ pub struct TranslationUnitData<'gc> {
     domain: Domain<'gc>,
 
     /// The ABC file that all of the following loaded data comes from.
-    abc: CollectWrapper<Rc<AbcFile>>,
+    #[collect(require_static)]
+    abc: Rc<AbcFile>,
 
     /// All classes loaded from the ABC's class list.
     classes: FnvHashMap<u32, GcCell<'gc, Class<'gc>>>,
@@ -65,7 +65,7 @@ impl<'gc> TranslationUnit<'gc> {
             mc,
             TranslationUnitData {
                 domain,
-                abc: CollectWrapper(abc),
+                abc,
                 classes: FnvHashMap::default(),
                 methods: FnvHashMap::default(),
                 scripts: FnvHashMap::default(),
@@ -76,7 +76,7 @@ impl<'gc> TranslationUnit<'gc> {
 
     /// Retrieve the underlying `AbcFile` for this translation unit.
     pub fn abc(self) -> Rc<AbcFile> {
-        self.0.read().abc.0.clone()
+        self.0.read().abc.clone()
     }
 
     /// Load a method from the ABC file and return its method definition.
@@ -181,7 +181,6 @@ impl<'gc> TranslationUnit<'gc> {
             mc,
             write
                 .abc
-                .0
                 .constant_pool
                 .strings
                 .get(string_index as usize - 1)

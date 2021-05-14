@@ -6,7 +6,6 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::{Avm2, Error};
-use crate::collect::CollectWrapper;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::types::{
@@ -40,7 +39,8 @@ pub struct Class<'gc> {
     super_class: Option<Multiname<'gc>>,
 
     /// Attributes of the given class.
-    attributes: CollectWrapper<ClassAttributes>,
+    #[collect(require_static)]
+    attributes: ClassAttributes,
 
     /// The namespace that protected traits of this class are stored into.
     protected_namespace: Option<Namespace<'gc>>,
@@ -153,7 +153,7 @@ impl<'gc> Class<'gc> {
             Self {
                 name,
                 super_class,
-                attributes: CollectWrapper(ClassAttributes::empty()),
+                attributes: ClassAttributes::empty(),
                 protected_namespace: None,
                 interfaces: Vec::new(),
                 instance_init,
@@ -167,7 +167,7 @@ impl<'gc> Class<'gc> {
 
     /// Set the attributes of the class (sealed/final/interface status).
     pub fn set_attributes(&mut self, attributes: ClassAttributes) {
-        self.attributes = CollectWrapper(attributes);
+        self.attributes = attributes;
     }
 
     /// Add a protected namespace to this class.
@@ -237,7 +237,7 @@ impl<'gc> Class<'gc> {
             Self {
                 name,
                 super_class,
-                attributes: CollectWrapper(attributes),
+                attributes,
                 protected_namespace,
                 interfaces,
                 instance_init,
@@ -318,7 +318,7 @@ impl<'gc> Class<'gc> {
             Self {
                 name: QName::dynamic_name(name),
                 super_class: None,
-                attributes: CollectWrapper(ClassAttributes::empty()),
+                attributes: ClassAttributes::empty(),
                 protected_namespace: None,
                 interfaces: Vec::new(),
                 instance_init: Method::from_builtin(|_, _, _| {
@@ -579,6 +579,6 @@ impl<'gc> Class<'gc> {
 
     /// Determine if this class is sealed (no dynamic properties)
     pub fn is_sealed(&self) -> bool {
-        self.attributes.0.contains(ClassAttributes::SEALED)
+        self.attributes.contains(ClassAttributes::SEALED)
     }
 }

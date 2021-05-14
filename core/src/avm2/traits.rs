@@ -6,7 +6,6 @@ use crate::avm2::names::{Multiname, QName};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::{Avm2, Error};
-use crate::collect::CollectWrapper;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::types::{Trait as AbcTrait, TraitKind as AbcTraitKind};
@@ -41,17 +40,18 @@ pub struct Trait<'gc> {
     name: QName<'gc>,
 
     /// The attributes set on this trait.
-    attributes: CollectWrapper<TraitAttributes>,
+    #[collect(require_static)]
+    attributes: TraitAttributes,
 
     /// The kind of trait in use.
     kind: TraitKind<'gc>,
 }
 
-fn trait_attribs_from_abc_traits(abc_trait: &AbcTrait) -> CollectWrapper<TraitAttributes> {
+fn trait_attribs_from_abc_traits(abc_trait: &AbcTrait) -> TraitAttributes {
     let mut attributes = TraitAttributes::empty();
     attributes.set(TraitAttributes::FINAL, abc_trait.is_final);
     attributes.set(TraitAttributes::OVERRIDE, abc_trait.is_override);
-    CollectWrapper(attributes)
+    attributes
 }
 
 /// The fields for a particular kind of trait.
@@ -103,7 +103,7 @@ impl<'gc> Trait<'gc> {
 
         Trait {
             name,
-            attributes: CollectWrapper(TraitAttributes::empty()),
+            attributes: TraitAttributes::empty(),
             kind: TraitKind::Class { slot_id: 0, class },
         }
     }
@@ -111,7 +111,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_method(name: QName<'gc>, method: Method<'gc>) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(TraitAttributes::empty()),
+            attributes: TraitAttributes::empty(),
             kind: TraitKind::Method { disp_id: 0, method },
         }
     }
@@ -119,7 +119,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_getter(name: QName<'gc>, method: Method<'gc>) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(TraitAttributes::empty()),
+            attributes: TraitAttributes::empty(),
             kind: TraitKind::Getter { disp_id: 0, method },
         }
     }
@@ -127,7 +127,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_setter(name: QName<'gc>, method: Method<'gc>) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(TraitAttributes::empty()),
+            attributes: TraitAttributes::empty(),
             kind: TraitKind::Setter { disp_id: 0, method },
         }
     }
@@ -135,7 +135,7 @@ impl<'gc> Trait<'gc> {
     pub fn from_function(name: QName<'gc>, function: Method<'gc>) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(TraitAttributes::empty()),
+            attributes: TraitAttributes::empty(),
             kind: TraitKind::Function {
                 slot_id: 0,
                 function,
@@ -150,7 +150,7 @@ impl<'gc> Trait<'gc> {
     ) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(TraitAttributes::empty()),
+            attributes: TraitAttributes::empty(),
             kind: TraitKind::Slot {
                 slot_id: 0,
                 type_name,
@@ -166,7 +166,7 @@ impl<'gc> Trait<'gc> {
     ) -> Self {
         Trait {
             name,
-            attributes: CollectWrapper(TraitAttributes::empty()),
+            attributes: TraitAttributes::empty(),
             kind: TraitKind::Slot {
                 slot_id: 0,
                 type_name,
@@ -279,20 +279,20 @@ impl<'gc> Trait<'gc> {
     }
 
     pub fn is_final(&self) -> bool {
-        self.attributes.0.contains(TraitAttributes::FINAL)
+        self.attributes.contains(TraitAttributes::FINAL)
     }
 
     pub fn is_override(&self) -> bool {
-        self.attributes.0.contains(TraitAttributes::OVERRIDE)
+        self.attributes.contains(TraitAttributes::OVERRIDE)
     }
 
     pub fn set_attributes(&mut self, attribs: TraitAttributes) {
-        self.attributes.0 = attribs;
+        self.attributes = attribs;
     }
 
     /// Convenience chaining method that adds the override flag to a trait.
     pub fn with_override(mut self) -> Self {
-        self.attributes.0 |= TraitAttributes::OVERRIDE;
+        self.attributes |= TraitAttributes::OVERRIDE;
 
         self
     }
