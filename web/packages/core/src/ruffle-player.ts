@@ -438,7 +438,10 @@ export class RufflePlayer extends HTMLElement {
         ) {
             this.play();
 
-            if (this.audioState() !== "running") {
+            if (
+                this.audioState() !== "running" &&
+                unmuteVisibility !== UnmuteOverlay.None
+            ) {
                 this.unmuteOverlay.style.display = "block";
 
                 // We need to mark each child as hidden or visible, as we want an overlay even if it's "hidden".
