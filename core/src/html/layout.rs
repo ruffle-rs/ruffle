@@ -705,7 +705,14 @@ impl<'gc> LayoutBox<'gc> {
                             offset,
                             layout_context.is_start_of_line(),
                         ) {
-                            if breakpoint == 0 {
+                            // If text doesn't fit at the start of a line, it
+                            // won't fit on the next either, abort and put the
+                            // whole text on the line (will be cut-off). This
+                            // can happen for small text fields with single
+                            // characters.
+                            if breakpoint == 0 && layout_context.is_start_of_line() {
+                                break;
+                            } else if breakpoint == 0 {
                                 layout_context.newline(context);
 
                                 let next_dim = layout_context.wrap_dimensions(&span);
