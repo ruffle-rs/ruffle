@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{stage_deriver, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
@@ -364,6 +364,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.set_attributes(ClassAttributes::SEALED);
+    write.set_instance_deriver(stage_deriver);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("beginFill", begin_fill),

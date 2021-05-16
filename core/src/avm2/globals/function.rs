@@ -88,12 +88,14 @@ fn apply<'gc>(
     }
 }
 
-/// Construct `Function` and `Function.prototype`, respectively.
-pub fn create_class<'gc>(
+/// Create Function prototype.
+///
+/// This function creates a suitable class and object prototype attached to it.
+pub fn create_proto<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     globals: Object<'gc>,
-    proto: Object<'gc>,
-) -> (Object<'gc>, Object<'gc>, GcCell<'gc, Class<'gc>>) {
+    super_proto: Object<'gc>,
+) -> (Object<'gc>, GcCell<'gc, Class<'gc>>) {
     let function_class = Class::new(
         QName::new(Namespace::public(), "Function"),
         Some(QName::new(Namespace::public(), "Object").into()),
@@ -101,15 +103,23 @@ pub fn create_class<'gc>(
         Method::from_builtin(class_init),
         activation.context.gc_context,
     );
-
     let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
-    let mut function_proto = ScriptObject::prototype(
+    let function_proto = ScriptObject::prototype(
         activation.context.gc_context,
-        proto,
+        super_proto,
         function_class,
         Some(scope),
     );
 
+    (function_proto, function_class)
+}
+
+/// Fill `Function.prototype` and allocate it's constructor.
+pub fn fill_proto<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    mut function_proto: Object<'gc>,
+    super_class: Object<'gc>,
+) -> Object<'gc> {
     function_proto.install_method(
         activation.context.gc_context,
         QName::new(Namespace::as3_namespace(), "call"),
@@ -123,9 +133,11 @@ pub fn create_class<'gc>(
         FunctionObject::from_builtin(activation.context.gc_context, apply, function_proto),
     );
 
-    let constr =
-        ClassObject::from_builtin_constr(activation.context.gc_context, proto, function_proto)
-            .unwrap();
-
-    (constr, function_proto, function_class)
+    ClassObject::from_builtin_constr(
+        activation.context.gc_context,
+        Some(super_class),
+        function_proto,
+        function_proto,
+    )
+    .unwrap()
 }

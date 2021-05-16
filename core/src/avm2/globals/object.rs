@@ -240,6 +240,6 @@ pub fn fill_proto<'gc>(
         FunctionObject::from_builtin(gc_context, value_of, fn_proto).into(),
     )?;
 
-    let object_constr = ClassObject::from_builtin_constr(gc_context, object_proto, fn_proto)?;
+    let object_constr = ClassObject::from_builtin_constr(gc_context, None, object_proto, fn_proto)?;
     Ok(object_constr)
 }

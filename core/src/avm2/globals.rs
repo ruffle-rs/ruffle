@@ -6,8 +6,7 @@ use crate::avm2::domain::Domain;
 use crate::avm2::method::NativeMethod;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
-    implicit_deriver, ArrayObject, ByteArrayObject, ClassObject, DomainObject, FunctionObject,
-    NamespaceObject, Object, PrimitiveObject, ScriptObject, StageObject, TObject, XmlObject,
+    ClassObject, DomainObject, FunctionObject, Object, ScriptObject, TObject,
 };
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
@@ -212,21 +211,12 @@ fn dynamic_class<'gc>(
 /// The `custom_derive` is used to select a particular `TObject` impl, or you
 /// can use `None` to indicate that this class does not change host object
 /// impls.
-fn class<'gc, Deriver>(
+fn class<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     class_def: GcCell<'gc, Class<'gc>>,
-    custom_derive: Deriver,
     mut domain: Domain<'gc>,
     script: Script<'gc>,
-) -> Result<Object<'gc>, Error>
-where
-    Deriver: FnOnce(
-        Object<'gc>,
-        &mut Activation<'_, 'gc, '_>,
-        GcCell<'gc, Class<'gc>>,
-        Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error>,
-{
+) -> Result<Object<'gc>, Error> {
     let mut global = script.init().1;
     let global_scope = Scope::push_scope(global.get_scope(), global, activation.context.gc_context);
 
@@ -248,13 +238,8 @@ where
         None
     };
 
-    let (mut constr, _cinit) = ClassObject::from_class_with_deriver(
-        activation,
-        class_def,
-        super_class,
-        Some(global_scope),
-        custom_derive,
-    )?;
+    let (mut constr, _cinit) =
+        ClassObject::from_class(activation, class_def, super_class, Some(global_scope))?;
     global.install_const(
         activation.context.gc_context,
         class_read.name().clone(),
@@ -274,82 +259,6 @@ where
             activation,
         )?
         .coerce_to_object(activation)
-}
-
-fn primitive_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    PrimitiveObject::derive(base_proto, activation.context.gc_context, class, scope)
-}
-
-fn namespace_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    NamespaceObject::derive(base_proto, activation.context.gc_context, class, scope)
-}
-
-fn array_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    ArrayObject::derive(base_proto, activation.context.gc_context, class, scope)
-}
-
-fn xml_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    XmlObject::derive(base_proto, activation.context.gc_context, class, scope)
-}
-
-fn bytearray_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    ByteArrayObject::derive(base_proto, activation.context.gc_context, class, scope)
-}
-
-fn stage_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    StageObject::derive(base_proto, activation.context.gc_context, class, scope)
-}
-
-fn appdomain_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    let domain = scope
-        .unwrap()
-        .read()
-        .globals()
-        .as_application_domain()
-        .unwrap();
-
-    DomainObject::derive(
-        activation.context.gc_context,
-        base_proto,
-        domain,
-        class,
-        scope,
-    )
 }
 
 /// Add a builtin constant to the global scope.
@@ -383,13 +292,18 @@ pub fn load_player_globals<'gc>(
     let script = Script::empty_script(mc, gs);
 
     // public / root package
+    //
+    // We have to do this particular dance so that we have Object methods whose
+    // functions have call/apply in their prototypes, and that Function is also
+    // a subclass of Object.
     let (object_proto, object_class) = object::create_proto(activation, gs);
-    let (function_constr, fn_proto, fn_class) =
-        function::create_class(activation, gs, object_proto);
-    let (class_constr, class_proto, class_class) =
-        class::create_class(activation, gs, object_proto, fn_proto);
+    let (fn_proto, fn_class) = function::create_proto(activation, gs, object_proto);
 
     let object_constr = object::fill_proto(activation, object_proto, fn_proto)?;
+    let function_constr = function::fill_proto(activation, fn_proto, object_constr);
+
+    let (class_constr, class_proto, class_class) =
+        class::create_class(activation, gs, object_constr, object_proto, fn_proto);
 
     dynamic_class(mc, object_constr, object_class, domain, script)?;
     dynamic_class(mc, function_constr, fn_class, domain, script)?;
@@ -411,62 +325,14 @@ pub fn load_player_globals<'gc>(
     // other from the activation they're handed.
     let mut sp = activation.context.avm2.system_prototypes.clone().unwrap();
 
-    sp.global = class(
-        activation,
-        global_scope::create_class(mc),
-        implicit_deriver,
-        domain,
-        script,
-    )?;
-    sp.string = class(
-        activation,
-        string::create_class(mc),
-        primitive_deriver,
-        domain,
-        script,
-    )?;
-    sp.boolean = class(
-        activation,
-        boolean::create_class(mc),
-        primitive_deriver,
-        domain,
-        script,
-    )?;
-    sp.number = class(
-        activation,
-        number::create_class(mc),
-        primitive_deriver,
-        domain,
-        script,
-    )?;
-    sp.int = class(
-        activation,
-        int::create_class(mc),
-        primitive_deriver,
-        domain,
-        script,
-    )?;
-    sp.uint = class(
-        activation,
-        uint::create_class(mc),
-        primitive_deriver,
-        domain,
-        script,
-    )?;
-    sp.namespace = class(
-        activation,
-        namespace::create_class(mc),
-        namespace_deriver,
-        domain,
-        script,
-    )?;
-    sp.array = class(
-        activation,
-        array::create_class(mc),
-        array_deriver,
-        domain,
-        script,
-    )?;
+    sp.global = class(activation, global_scope::create_class(mc), domain, script)?;
+    sp.string = class(activation, string::create_class(mc), domain, script)?;
+    sp.boolean = class(activation, boolean::create_class(mc), domain, script)?;
+    sp.number = class(activation, number::create_class(mc), domain, script)?;
+    sp.int = class(activation, int::create_class(mc), domain, script)?;
+    sp.uint = class(activation, uint::create_class(mc), domain, script)?;
+    sp.namespace = class(activation, namespace::create_class(mc), domain, script)?;
+    sp.array = class(activation, array::create_class(mc), domain, script)?;
 
     // At this point we have to hide the fact that we had to create the player
     // globals scope *before* the `Object` class
@@ -482,20 +348,8 @@ pub fn load_player_globals<'gc>(
     constant(mc, "", "NaN", f64::NAN.into(), domain, script)?;
     constant(mc, "", "Infinity", f64::INFINITY.into(), domain, script)?;
 
-    class(
-        activation,
-        math::create_class(mc),
-        implicit_deriver,
-        domain,
-        script,
-    )?;
-    class(
-        activation,
-        regexp::create_class(mc),
-        regexp::regexp_deriver,
-        domain,
-        script,
-    )?;
+    class(activation, math::create_class(mc), domain, script)?;
+    class(activation, regexp::create_class(mc), domain, script)?;
 
     activation
         .context
@@ -503,13 +357,7 @@ pub fn load_player_globals<'gc>(
         .system_prototypes
         .as_mut()
         .unwrap()
-        .xml = class(
-        activation,
-        xml::create_class(mc),
-        xml_deriver,
-        domain,
-        script,
-    )?;
+        .xml = class(activation, xml::create_class(mc), domain, script)?;
 
     activation
         .context
@@ -517,13 +365,7 @@ pub fn load_player_globals<'gc>(
         .system_prototypes
         .as_mut()
         .unwrap()
-        .xml_list = class(
-        activation,
-        xml_list::create_class(mc),
-        xml_deriver,
-        domain,
-        script,
-    )?;
+        .xml_list = class(activation, xml_list::create_class(mc), domain, script)?;
 
     // package `flash.system`
     activation
@@ -535,14 +377,12 @@ pub fn load_player_globals<'gc>(
         .application_domain = class(
         activation,
         flash::system::application_domain::create_class(mc),
-        appdomain_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::system::system::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -557,21 +397,18 @@ pub fn load_player_globals<'gc>(
         .event = class(
         activation,
         flash::events::event::create_class(mc),
-        flash::events::event::event_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::events::ieventdispatcher::create_interface(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::events::eventdispatcher::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -585,7 +422,6 @@ pub fn load_player_globals<'gc>(
         .bytearray = class(
         activation,
         flash::utils::bytearray::create_class(mc),
-        bytearray_deriver,
         domain,
         script,
     )?;
@@ -593,7 +429,6 @@ pub fn load_player_globals<'gc>(
     class(
         activation,
         flash::utils::endian::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -626,7 +461,6 @@ pub fn load_player_globals<'gc>(
         .display_object = class(
         activation,
         flash::display::displayobject::create_class(mc),
-        stage_deriver,
         domain,
         script,
     )?;
@@ -639,14 +473,12 @@ pub fn load_player_globals<'gc>(
         .shape = class(
         activation,
         flash::display::shape::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::interactiveobject::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -659,14 +491,12 @@ pub fn load_player_globals<'gc>(
         .simplebutton = class(
         activation,
         flash::display::simplebutton::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::displayobjectcontainer::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -679,7 +509,6 @@ pub fn load_player_globals<'gc>(
         .sprite = class(
         activation,
         flash::display::sprite::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -692,7 +521,6 @@ pub fn load_player_globals<'gc>(
         .movieclip = class(
         activation,
         flash::display::movieclip::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -705,7 +533,6 @@ pub fn load_player_globals<'gc>(
         .framelabel = class(
         activation,
         flash::display::framelabel::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -718,7 +545,6 @@ pub fn load_player_globals<'gc>(
         .scene = class(
         activation,
         flash::display::scene::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -731,28 +557,24 @@ pub fn load_player_globals<'gc>(
         .graphics = class(
         activation,
         flash::display::graphics::create_class(mc),
-        stage_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::jointstyle::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::linescalemode::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::capsstyle::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -765,21 +587,18 @@ pub fn load_player_globals<'gc>(
         .loaderinfo = class(
         activation,
         flash::display::loaderinfo::create_class(mc),
-        flash::display::loaderinfo::loaderinfo_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::actionscriptversion::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::swfversion::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -792,35 +611,30 @@ pub fn load_player_globals<'gc>(
         .stage = class(
         activation,
         flash::display::stage::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::stagescalemode::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::stagealign::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::stagedisplaystate::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::display::stagequality::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -835,7 +649,6 @@ pub fn load_player_globals<'gc>(
         .point = class(
         activation,
         flash::geom::point::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -850,7 +663,6 @@ pub fn load_player_globals<'gc>(
         .video = class(
         activation,
         flash::media::video::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -865,7 +677,6 @@ pub fn load_player_globals<'gc>(
         .textfield = class(
         activation,
         flash::text::textfield::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
@@ -878,28 +689,24 @@ pub fn load_player_globals<'gc>(
         .textformat = class(
         activation,
         flash::text::textformat::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::text::textfieldautosize::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::text::textformatalign::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;
     class(
         activation,
         flash::text::textfieldtype::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;

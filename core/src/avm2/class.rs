@@ -1,13 +1,17 @@
 //! AVM2 classes
 
+use crate::avm2::activation::Activation;
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::object::{Object, ScriptObject, TObject};
+use crate::avm2::scope::Scope;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::{Avm2, Error};
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::fmt;
 use swf::avm2::types::{
     Class as AbcClass, Instance as AbcInstance, Method as AbcMethod, MethodBody as AbcMethodBody,
 };
@@ -25,6 +29,87 @@ bitflags! {
 
         /// Class is an interface.
         const INTERFACE = 1 << 2;
+    }
+}
+
+/// A function that can be used to allocate instances of a class.
+///
+/// By default, the `implicit_deriver` is used, which attempts to use the base
+/// class's deriver, and defaults to `ScriptObject` otherwise. Custom derivers
+/// anywhere in the class inheritance chain can change the representation of
+/// all subtypes that use the implicit deriver.
+///
+/// Parameters for the deriver are:
+///
+///  * `constr` - The class constructor that was called (or will be called) to
+///  construct this object. This may either be a base class (if we're creating
+///  a derived class prototype object) or the current class (if we're creating
+///  an instance of the new class)
+///  * `activation` - This is the current AVM2 activation.
+///  * `class` - The class we are attempting to derive.
+///  * `scope` - The scope the class was declared in.
+pub type DeriverFn = for<'gc> fn(
+    Object<'gc>,
+    &mut Activation<'_, 'gc, '_>,
+    GcCell<'gc, Class<'gc>>,
+    Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error>;
+
+#[derive(Clone, Collect)]
+#[collect(require_static)]
+pub struct Deriver(pub DeriverFn);
+
+impl fmt::Debug for Deriver {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("Deriver")
+            .field(&"<native code>".to_string())
+            .finish()
+    }
+}
+
+/// The implicit deriver for new classes.
+///
+/// This attempts to use the parent type's deriver, and if such a deriver does
+/// not exist, we default to `ScriptObject`.
+pub fn implicit_deriver<'gc>(
+    mut constr: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    let mut base_constr = Some(constr);
+    let mut base_class = constr.as_class();
+    let mut instance_deriver = None;
+
+    while let (Some(b_constr), Some(b_class)) = (base_constr, base_class) {
+        let base_deriver = b_class.read().instance_deriver();
+
+        if base_deriver as usize != implicit_deriver as usize {
+            instance_deriver = Some(base_deriver);
+            break;
+        }
+
+        base_constr = b_constr.base_class_constr();
+        base_class = base_constr.and_then(|c| c.as_class());
+    }
+
+    if let Some(base_deriver) = instance_deriver {
+        base_deriver(constr, activation, class, scope)
+    } else {
+        let base_proto = constr
+            .get_property(
+                constr,
+                &QName::new(Namespace::public(), "prototype"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+
+        Ok(ScriptObject::prototype(
+            activation.context.gc_context,
+            base_proto,
+            class,
+            scope,
+        ))
     }
 }
 
@@ -47,6 +132,9 @@ pub struct Class<'gc> {
 
     /// The list of interfaces this class implements.
     interfaces: Vec<Multiname<'gc>>,
+
+    /// The instance deriver for this class.
+    instance_deriver: Deriver,
 
     /// The instance initializer for this class.
     ///
@@ -156,6 +244,7 @@ impl<'gc> Class<'gc> {
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
                 interfaces: Vec::new(),
+                instance_deriver: Deriver(implicit_deriver),
                 instance_init,
                 instance_traits: Vec::new(),
                 class_init,
@@ -240,6 +329,7 @@ impl<'gc> Class<'gc> {
                 attributes,
                 protected_namespace,
                 interfaces,
+                instance_deriver: Deriver(implicit_deriver),
                 instance_init,
                 instance_traits: Vec::new(),
                 class_init,
@@ -321,6 +411,7 @@ impl<'gc> Class<'gc> {
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
                 interfaces: Vec::new(),
+                instance_deriver: Deriver(implicit_deriver),
                 instance_init: Method::from_builtin(|_, _, _| {
                     Err("Do not call activation initializers!".into())
                 }),
@@ -557,6 +648,16 @@ impl<'gc> Class<'gc> {
         }
 
         None
+    }
+
+    /// Get this class's instance deriver.
+    pub fn instance_deriver(&self) -> DeriverFn {
+        self.instance_deriver.0
+    }
+
+    /// Set this class's instance deriver.
+    pub fn set_instance_deriver(&mut self, deriver: DeriverFn) {
+        self.instance_deriver.0 = deriver;
     }
 
     /// Get this class's instance initializer.

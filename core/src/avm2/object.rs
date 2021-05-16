@@ -37,20 +37,22 @@ mod script_object;
 mod stage_object;
 mod xml_object;
 
-pub use crate::avm2::object::array_object::ArrayObject;
-pub use crate::avm2::object::bytearray_object::ByteArrayObject;
+pub use crate::avm2::object::array_object::{array_deriver, ArrayObject};
+pub use crate::avm2::object::bytearray_object::{bytearray_deriver, ByteArrayObject};
 pub use crate::avm2::object::class_object::ClassObject;
 pub use crate::avm2::object::dispatch_object::DispatchObject;
-pub use crate::avm2::object::domain_object::DomainObject;
-pub use crate::avm2::object::event_object::EventObject;
-pub use crate::avm2::object::function_object::{implicit_deriver, FunctionObject};
-pub use crate::avm2::object::loaderinfo_object::{LoaderInfoObject, LoaderStream};
-pub use crate::avm2::object::namespace_object::NamespaceObject;
-pub use crate::avm2::object::primitive_object::PrimitiveObject;
-pub use crate::avm2::object::regexp_object::RegExpObject;
+pub use crate::avm2::object::domain_object::{appdomain_deriver, DomainObject};
+pub use crate::avm2::object::event_object::{event_deriver, EventObject};
+pub use crate::avm2::object::function_object::FunctionObject;
+pub use crate::avm2::object::loaderinfo_object::{
+    loaderinfo_deriver, LoaderInfoObject, LoaderStream,
+};
+pub use crate::avm2::object::namespace_object::{namespace_deriver, NamespaceObject};
+pub use crate::avm2::object::primitive_object::{primitive_deriver, PrimitiveObject};
+pub use crate::avm2::object::regexp_object::{regexp_deriver, RegExpObject};
 pub use crate::avm2::object::script_object::ScriptObject;
-pub use crate::avm2::object::stage_object::StageObject;
-pub use crate::avm2::object::xml_object::XmlObject;
+pub use crate::avm2::object::stage_object::{stage_deriver, StageObject};
+pub use crate::avm2::object::xml_object::{xml_deriver, XmlObject};
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -889,6 +891,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get this object's `Class`, if it has one.
     fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>>;
+
+    /// Get the base class constructor of this object.
+    fn base_class_constr(self) -> Option<Object<'gc>> {
+        None
+    }
 
     /// Get this object's `Class`, or any `Class` on its prototype chain.
     ///

@@ -15,6 +15,24 @@ use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
 
+/// A class instance deriver that constructs primitive objects.
+pub fn primitive_deriver<'gc>(
+    mut constr: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    let base_proto = constr
+        .get_property(
+            constr,
+            &QName::new(Namespace::public(), "prototype"),
+            activation,
+        )?
+        .coerce_to_object(activation)?;
+
+    PrimitiveObject::derive(base_proto, activation.context.gc_context, class, scope)
+}
+
 /// An Object which represents a primitive value of some other kind.
 #[derive(Collect, Debug, Clone, Copy)]
 #[collect(no_drop)]

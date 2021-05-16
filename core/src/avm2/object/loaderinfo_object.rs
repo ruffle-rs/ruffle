@@ -17,6 +17,24 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 use std::sync::Arc;
 
+/// A class instance deriver that constructs LoaderInfo objects.
+pub fn loaderinfo_deriver<'gc>(
+    mut constr: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    let base_proto = constr
+        .get_property(
+            constr,
+            &QName::new(Namespace::public(), "prototype"),
+            activation,
+        )?
+        .coerce_to_object(activation)?;
+
+    LoaderInfoObject::derive(base_proto, activation.context.gc_context, class, scope)
+}
+
 /// Represents a thing which can be loaded by a loader.
 #[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]

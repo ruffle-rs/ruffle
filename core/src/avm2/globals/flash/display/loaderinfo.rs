@@ -6,9 +6,8 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
-    ByteArrayObject, DomainObject, LoaderInfoObject, LoaderStream, Object, ScriptObject, TObject,
+    loaderinfo_deriver, ByteArrayObject, DomainObject, LoaderStream, Object, ScriptObject, TObject,
 };
-use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
 use crate::display_object::TDisplayObject;
@@ -396,16 +395,6 @@ pub fn parameters<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Derive `LoaderInfoObject` impls.
-pub fn loaderinfo_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    LoaderInfoObject::derive(base_proto, activation.context.gc_context, class, scope)
-}
-
 /// Construct `LoaderInfo`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -419,6 +408,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.set_attributes(ClassAttributes::SEALED);
+    write.set_instance_deriver(loaderinfo_deriver);
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("actionScriptVersion", Some(action_script_version), None),

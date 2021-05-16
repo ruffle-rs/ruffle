@@ -14,6 +14,36 @@ use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
 
+/// A class instance deriver that constructs AppDomain objects.
+pub fn appdomain_deriver<'gc>(
+    mut constr: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    let domain = scope
+        .unwrap()
+        .read()
+        .globals()
+        .as_application_domain()
+        .unwrap();
+    let base_proto = constr
+        .get_property(
+            constr,
+            &QName::new(Namespace::public(), "prototype"),
+            activation,
+        )?
+        .coerce_to_object(activation)?;
+
+    DomainObject::derive(
+        activation.context.gc_context,
+        base_proto,
+        domain,
+        class,
+        scope,
+    )
+}
+
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
 pub struct DomainObject<'gc>(GcCell<'gc, DomainObjectData<'gc>>);

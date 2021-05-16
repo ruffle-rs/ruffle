@@ -14,6 +14,24 @@ use crate::avm2::Error;
 use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
 
+/// A class instance deriver that constructs Stage objects.
+pub fn stage_deriver<'gc>(
+    mut constr: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: GcCell<'gc, Class<'gc>>,
+    scope: Option<GcCell<'gc, Scope<'gc>>>,
+) -> Result<Object<'gc>, Error> {
+    let base_proto = constr
+        .get_property(
+            constr,
+            &QName::new(Namespace::public(), "prototype"),
+            activation,
+        )?
+        .coerce_to_object(activation)?;
+
+    StageObject::derive(base_proto, activation.context.gc_context, class, scope)
+}
+
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
 pub struct StageObject<'gc>(GcCell<'gc, StageObjectData<'gc>>);

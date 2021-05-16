@@ -30,15 +30,6 @@ pub struct FunctionObjectData<'gc> {
     exec: Option<Executable<'gc>>,
 }
 
-pub fn implicit_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    base_proto.derive(activation, class, scope)
-}
-
 impl<'gc> FunctionObject<'gc> {
     /// Construct a function from an ABC method and the current closure scope.
     ///

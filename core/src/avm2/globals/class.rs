@@ -35,6 +35,7 @@ pub fn class_init<'gc>(
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     globals: Object<'gc>,
+    super_constr: Object<'gc>,
     super_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> (Object<'gc>, Object<'gc>, GcCell<'gc, Class<'gc>>) {
@@ -54,8 +55,13 @@ pub fn create_class<'gc>(
         Some(scope),
     );
 
-    let constr =
-        ClassObject::from_builtin_constr(activation.context.gc_context, proto, fn_proto).unwrap();
+    let constr = ClassObject::from_builtin_constr(
+        activation.context.gc_context,
+        Some(super_constr),
+        proto,
+        fn_proto,
+    )
+    .unwrap();
 
     (constr, proto, class_class)
 }

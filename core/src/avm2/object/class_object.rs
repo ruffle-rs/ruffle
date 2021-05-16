@@ -29,20 +29,17 @@ pub struct ClassObjectData<'gc> {
     /// The class associated with this class object.
     class: GcCell<'gc, Class<'gc>>,
 
-    /// The scope this class was defined in
+    /// The scope this class was defined in.
     scope: Option<GcCell<'gc, Scope<'gc>>>,
+
+    /// The base class of this one.
+    ///
+    /// If `None`, this class has no parent. In practice, this is only used for
+    /// interfaces (at least by the AS3 compiler in Animate CC 2020.)
+    base_class_constr: Option<Object<'gc>>,
 
     /// The instance constructor function
     instance_constr: Executable<'gc>,
-}
-
-pub fn implicit_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    base_proto.derive(activation, class, scope)
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -54,73 +51,28 @@ impl<'gc> ClassObject<'gc> {
     ///
     /// `base_class` is allowed to be `None`, corresponding to a `null` value
     /// in the VM. This corresponds to no base class, and in practice appears
-    /// to be limited to interfaces (at least by the AS3 compiler in Animate
-    /// CC 2020.)
+    /// to be limited to interfaces
     pub fn from_class(
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
-        base_class: Option<Object<'gc>>,
+        base_class_constr: Option<Object<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
-        ClassObject::from_class_with_deriver(activation, class, base_class, scope, implicit_deriver)
-    }
-
-    /// Construct a class with a different `TObject` implementation than its
-    /// base class.
-    ///
-    /// This is identical to `from_class`, save for the fact that you must also
-    /// provide a deriver function to create the subclass prototype with. This
-    /// accepts the superclass's prototype, the activation, class definition,
-    /// and scope. It must return the prototype object that should be used to
-    /// create the class.
-    pub fn from_class_with_deriver<DERIVE>(
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        base_class: Option<Object<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-        derive: DERIVE,
-    ) -> Result<(Object<'gc>, Object<'gc>), Error>
-    where
-        DERIVE: FnOnce(
-            Object<'gc>,
-            &mut Activation<'_, 'gc, '_>,
-            GcCell<'gc, Class<'gc>>,
-            Option<GcCell<'gc, Scope<'gc>>>,
-        ) -> Result<Object<'gc>, Error>,
-    {
-        let class_read = class.read();
-        let class_proto = if let Some(mut base_class) = base_class {
-            let super_proto: Result<_, Error> = base_class
-                .get_property(
-                    base_class,
-                    &QName::new(Namespace::public(), "prototype"),
-                    activation,
-                )?
-                .coerce_to_object(activation)
-                .map_err(|_| {
-                    format!(
-                        "Could not resolve superclass prototype {:?}",
-                        class_read
-                            .super_class_name()
-                            .as_ref()
-                            .map(|p| p.local_name())
-                            .unwrap_or_else(|| Some("Object".into()))
-                    )
-                    .into()
-                });
-
-            derive(super_proto?, activation, class, scope)?
+        let class_proto = if let Some(base_class_constr) = base_class_constr {
+            let derive = class.read().instance_deriver();
+            derive(base_class_constr, activation, class, scope)?
         } else {
-            ScriptObject::bare_object(activation.context.gc_context)
+            ScriptObject::bare_prototype(activation.context.gc_context, class, scope)
         };
 
-        ClassObject::from_class_and_proto(activation, class, class_proto, scope)
+        ClassObject::from_class_and_proto(activation, class, base_class_constr, class_proto, scope)
     }
 
     /// Construct a class with a custom object type as its prototype.
     fn from_class_and_proto(
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
+        base_class_constr: Option<Object<'gc>>,
         mut class_proto: Object<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
@@ -175,6 +127,7 @@ impl<'gc> ClassObject<'gc> {
                 ),
                 class,
                 scope,
+                base_class_constr,
                 instance_constr,
             },
         ))
@@ -206,6 +159,7 @@ impl<'gc> ClassObject<'gc> {
     /// Construct a builtin type from a Rust constructor and prototype.
     pub fn from_builtin_constr(
         mc: MutationContext<'gc, '_>,
+        base_class_constr: Option<Object<'gc>>,
         mut prototype: Object<'gc>,
         fn_proto: Object<'gc>,
     ) -> Result<Object<'gc>, Error> {
@@ -225,6 +179,7 @@ impl<'gc> ClassObject<'gc> {
                 ),
                 class,
                 scope,
+                base_class_constr,
                 instance_constr,
             },
         ))
@@ -300,5 +255,10 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             self.0.read().clone(),
         ))
         .into())
+    }
+
+    /// Get the base class constructor of this object.
+    fn base_class_constr(self) -> Option<Object<'gc>> {
+        self.0.read().base_class_constr
     }
 }

@@ -4,8 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{EventObject, Object, TObject};
-use crate::avm2::scope::Scope;
+use crate::avm2::object::{event_deriver, EventObject, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -280,6 +279,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.set_attributes(ClassAttributes::SEALED);
+    write.set_instance_deriver(event_deriver);
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("bubbles", Some(bubbles), None),
@@ -364,19 +364,4 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_public_constant_string_class_traits(CONSTANTS);
 
     class
-}
-
-/// Object deriver for `Event`
-pub fn event_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    Ok(EventObject::derive(
-        base_proto,
-        activation.context.gc_context,
-        class,
-        scope,
-    ))
 }
