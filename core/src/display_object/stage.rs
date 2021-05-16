@@ -85,7 +85,7 @@ pub struct StageData<'gc> {
 
 impl<'gc> Stage<'gc> {
     pub fn empty(gc_context: MutationContext<'gc, '_>, width: u32, height: u32) -> Stage<'gc> {
-        Self(GcCell::allocate(
+        let stage = Self(GcCell::allocate(
             gc_context,
             StageData {
                 base: Default::default(),
@@ -102,7 +102,9 @@ impl<'gc> Stage<'gc> {
                 show_menu: true,
                 avm2_object: Avm2ScriptObject::bare_object(gc_context),
             },
-        ))
+        ));
+        stage.set_is_root(gc_context, true);
+        stage
     }
 
     pub fn background_color(self) -> Option<Color> {

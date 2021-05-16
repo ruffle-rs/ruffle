@@ -503,7 +503,6 @@ impl<'gc> Loader<'gc> {
                         let library = uc.library.library_for_movie_mut(movie.clone());
 
                         library.set_avm2_domain(domain);
-                        library.set_root(clip);
 
                         if let Some(broadcaster) = broadcaster {
                             Avm1::run_stack_frame_for_method(

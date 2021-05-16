@@ -392,7 +392,6 @@ impl Player {
             let library = context.library.library_for_movie_mut(context.swf.clone());
 
             library.set_avm2_domain(domain);
-            library.set_root(root);
 
             root.set_depth(context.gc_context, 0);
             let flashvars = if !context.swf.parameters().is_empty() {

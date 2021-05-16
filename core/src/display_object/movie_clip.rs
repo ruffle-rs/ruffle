@@ -186,7 +186,7 @@ impl<'gc> MovieClip<'gc> {
     /// Construct a movie clip that represents an entire movie.
     pub fn from_movie(gc_context: MutationContext<'gc, '_>, movie: Arc<SwfMovie>) -> Self {
         let num_frames = movie.header().num_frames;
-        MovieClip(GcCell::allocate(
+        let mc = MovieClip(GcCell::allocate(
             gc_context,
             MovieClipData {
                 base: Default::default(),
@@ -202,7 +202,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_actions: Vec::new(),
                 frame_scripts: Vec::new(),
                 has_button_clip_event: false,
-                flags: MovieClipFlags::PLAYING | MovieClipFlags::IS_SWF,
+                flags: MovieClipFlags::PLAYING,
                 avm2_constructor: None,
                 drawing: Drawing::new(),
                 is_focusable: false,
@@ -212,7 +212,9 @@ impl<'gc> MovieClip<'gc> {
                 last_queued_script_frame: None,
                 queued_script_frame: None,
             },
-        ))
+        ));
+        mc.set_is_root(gc_context, true);
+        mc
     }
 
     /// Replace the current MovieClip with a completely new SwfMovie.
@@ -696,10 +698,6 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_programmatically_played(self, mc: MutationContext<'gc, '_>) {
         self.0.write(mc).set_programmatically_played()
-    }
-
-    pub fn is_swf(&self) -> bool {
-        self.0.read().flags.contains(MovieClipFlags::IS_SWF)
     }
 
     pub fn next_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -2139,9 +2137,7 @@ impl<'gc> MovieClipData<'gc> {
         );
         self.tag_stream_pos = 0;
         self.flags = MovieClipFlags::PLAYING;
-        if is_swf {
-            self.flags |= MovieClipFlags::IS_SWF;
-        }
+        self.base.set_is_root(is_swf);
         self.current_frame = 0;
         self.audio_stream = None;
         self.container = ChildContainer::new();
@@ -3489,9 +3485,6 @@ bitflags! {
         /// The AS3 `isPlaying` property is broken and yields false until you first
         /// call `play` to unbreak it. This flag tracks that bug.
         const PROGRAMMATICALLY_PLAYED = 1 << 2;
-
-        /// Whether this `MovieClip` is a loaded SWF.
-        const IS_SWF = 1 << 3;
     }
 }
 

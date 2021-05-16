@@ -233,23 +233,28 @@ impl<'gc> Avm2Button<'gc> {
         if children.len() == 1 {
             let child = children.first().cloned().unwrap().0;
 
+            child.set_parent(context.gc_context, Some(self.into()));
             child.post_instantiation(context, child, None, Instantiator::Movie, false);
             child.construct_frame(context);
-            child.set_parent(context.gc_context, Some(self.into()));
 
             (child, false)
         } else {
             let state_sprite = MovieClip::new(empty_slice, context.gc_context);
 
             state_sprite.set_avm2_constructor(context.gc_context, Some(sprite_constr));
-            state_sprite.construct_frame(context);
             state_sprite.set_parent(context.gc_context, Some(self.into()));
+            state_sprite.construct_frame(context);
 
             for (child, depth) in children {
+                // `parent` returns `null` for these grandchildren during construction time, even though
+                // `stage` and `root` will be defined. Set the parent temporarily to the button itself so
+                // that `parent` is `null` (`DisplayObject::avm2_parent` checks that the parent is a container),
+                // and then properly set the parent to the state Sprite afterwards.
+                state_sprite.replace_at_depth(context, child, depth.into());
+                child.set_parent(context.gc_context, Some(self.into()));
                 child.post_instantiation(context, child, None, Instantiator::Movie, false);
                 child.construct_frame(context);
-
-                state_sprite.replace_at_depth(context, child, depth.into());
+                child.set_parent(context.gc_context, Some(state_sprite.into()));
             }
 
             (state_sprite.into(), true)
@@ -264,6 +269,22 @@ impl<'gc> Avm2Button<'gc> {
     /// Change the rendered state of the button.
     pub fn set_state(self, context: &mut UpdateContext<'_, 'gc, '_>, state: ButtonState) {
         self.0.write(context.gc_context).state = state;
+        let button = self.0.read();
+        if let Some(state) = button.up_state {
+            state.set_parent(context.gc_context, None);
+        }
+        if let Some(state) = button.over_state {
+            state.set_parent(context.gc_context, None);
+        }
+        if let Some(state) = button.down_state {
+            state.set_parent(context.gc_context, None);
+        }
+        if let Some(state) = button.hit_area {
+            state.set_parent(context.gc_context, None);
+        }
+        if let Some(state) = self.get_state_child(state.into()) {
+            state.set_parent(context.gc_context, Some(self.into()));
+        }
     }
 
     /// Get the display object that represents a particular button state.
@@ -286,6 +307,7 @@ impl<'gc> Avm2Button<'gc> {
     ) {
         let child_was_on_stage = child.map(|c| c.is_on_stage(context)).unwrap_or(false);
         let old_state_child = self.get_state_child(state);
+        let is_cur_state = swf::ButtonState::from(self.0.read().state) == state;
 
         match state {
             swf::ButtonState::UP => self.0.write(context.gc_context).up_state = child,
@@ -300,7 +322,9 @@ impl<'gc> Avm2Button<'gc> {
                 parent.remove_child(context, child, Lists::all());
             }
 
-            child.set_parent(context.gc_context, Some(self.into()));
+            if is_cur_state {
+                child.set_parent(context.gc_context, Some(self.into()));
+            }
         }
 
         if let Some(old_state_child) = old_state_child {
@@ -308,7 +332,7 @@ impl<'gc> Avm2Button<'gc> {
             old_state_child.set_parent(context.gc_context, None);
         }
 
-        if swf::ButtonState::from(self.0.read().state) == state {
+        if is_cur_state {
             if let Some(child) = child {
                 dispatch_added_event(self.into(), child, child_was_on_stage, context);
             }
@@ -326,7 +350,7 @@ impl<'gc> Avm2Button<'gc> {
             child.run_frame(context);
         }
 
-        if swf::ButtonState::from(self.0.read().state) == state {
+        if is_cur_state {
             if let Some(child) = child {
                 child.run_frame_scripts(context);
                 child.exit_frame(context);
@@ -495,6 +519,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             }
 
             self.frame_constructed(context);
+
+            self.set_state(context, ButtonState::Over);
 
             //NOTE: Yes, we do have to run these in a different order from the
             //regular run_frame method.
