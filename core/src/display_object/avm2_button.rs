@@ -607,13 +607,18 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         point: (Twips, Twips),
         options: HitTestOptions,
     ) -> bool {
-        let hit_area = self.0.read().hit_area;
-
-        if let Some(hit_area) = hit_area {
-            hit_area.hit_test_shape(context, point, options)
-        } else {
-            false
+        if !options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible() {
+            let state = self.0.read().state;
+            if let Some(child) = self.get_state_child(state.into()) {
+                // hit_area is not actually a child, so transform point into local space before passing it down.
+                let point = self.global_to_local(point);
+                if child.hit_test_shape(context, point, options) {
+                    return true;
+                }
+            }
         }
+
+        false
     }
 
     fn mouse_pick(
@@ -636,6 +641,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
             let hit_area = self.0.read().hit_area;
             if let Some(hit_area) = hit_area {
+                // hit_area is not actually a child, so transform point into local space before passing it down.
+                let point = self.global_to_local(point);
                 if hit_area.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
                     return Some(self_node);
                 }
