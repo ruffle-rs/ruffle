@@ -60,14 +60,9 @@ export enum UnmuteOverlay {
     Visible = "visible",
 
     /**
-     * Don't show an overlay but still make it clickable.
-     */
-    Hidden = "hidden",
-
-    /**
      * Don't show an overlay and pretend that everything is fine.
      */
-    None = "none",
+    Hidden = "hidden",
 }
 
 /**

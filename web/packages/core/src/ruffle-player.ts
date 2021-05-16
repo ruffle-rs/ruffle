@@ -201,10 +201,6 @@ export class RufflePlayer extends HTMLElement {
         }
 
         this.unmuteOverlay = this.shadow.getElementById("unmute_overlay")!;
-        this.unmuteOverlay.addEventListener(
-            "click",
-            this.unmuteOverlayClicked.bind(this)
-        );
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
@@ -438,23 +434,18 @@ export class RufflePlayer extends HTMLElement {
         ) {
             this.play();
 
-            if (
-                this.audioState() !== "running" &&
-                unmuteVisibility !== UnmuteOverlay.None
-            ) {
-                this.unmuteOverlay.style.display = "block";
+            if (this.audioState() !== "running") {
+                if (unmuteVisibility === UnmuteOverlay.Visible) {
+                    this.unmuteOverlay.style.display = "block";
+                }
 
-                // We need to mark each child as hidden or visible, as we want an overlay even if it's "hidden".
-                // We need to undo this later if the config changed back to visible, but we already hid them.
-                this.unmuteOverlay.childNodes.forEach((node) => {
-                    if ("style" in node) {
-                        const style = (<ElementCSSInlineStyle>node).style;
-                        style.visibility =
-                            unmuteVisibility == UnmuteOverlay.Visible
-                                ? ""
-                                : "hidden";
+                this.container.addEventListener(
+                    "click",
+                    this.unmuteOverlayClicked.bind(this),
+                    {
+                        once: true,
                     }
-                });
+                );
 
                 const audioContext = this.instance?.audio_context();
                 if (audioContext) {
