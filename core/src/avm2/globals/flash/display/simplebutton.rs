@@ -2,10 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{Avm2Button, ButtonTracking, TDisplayObject};
@@ -387,62 +386,24 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "downState"),
-        Method::from_builtin(down_state),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "downState"),
-        Method::from_builtin(set_down_state),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "overState"),
-        Method::from_builtin(over_state),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "overState"),
-        Method::from_builtin(set_over_state),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "hitTestState"),
-        Method::from_builtin(hit_test_state),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "hitTestState"),
-        Method::from_builtin(set_hit_test_state),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "upState"),
-        Method::from_builtin(up_state),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "upState"),
-        Method::from_builtin(set_up_state),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "trackAsMenu"),
-        Method::from_builtin(track_as_menu),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "trackAsMenu"),
-        Method::from_builtin(set_track_as_menu),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "enabled"),
-        Method::from_builtin(enabled),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "enabled"),
-        Method::from_builtin(set_enabled),
-    ));
-    write.define_instance_trait(Trait::from_getter(
-        QName::new(Namespace::public(), "useHandCursor"),
-        Method::from_builtin(use_hand_cursor),
-    ));
-    write.define_instance_trait(Trait::from_setter(
-        QName::new(Namespace::public(), "useHandCursor"),
-        Method::from_builtin(set_use_hand_cursor),
-    ));
+    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
+        ("downState", Some(down_state), Some(set_down_state)),
+        ("enabled", Some(enabled), Some(set_enabled)),
+        (
+            "hitTestState",
+            Some(hit_test_state),
+            Some(set_hit_test_state),
+        ),
+        ("overState", Some(over_state), Some(set_over_state)),
+        ("trackAsMenu", Some(track_as_menu), Some(set_track_as_menu)),
+        ("upState", Some(up_state), Some(set_up_state)),
+        (
+            "useHandCursor",
+            Some(use_hand_cursor),
+            Some(set_use_hand_cursor),
+        ),
+    ];
+    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }
