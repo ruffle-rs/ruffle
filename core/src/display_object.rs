@@ -554,6 +554,13 @@ pub trait TDisplayObject<'gc>:
         let mut node = self.parent();
         let mut matrix = *self.matrix();
         while let Some(display_object) = node {
+            // TODO: We don't want to include the stage transform because it includes the scale
+            // mode and alignemnt transform, but the AS APIs expect "global" to be relative to the
+            // Stage, not final view coordinates.
+            // I suspect we want this to include the stage transform eventually.
+            if display_object.as_stage().is_some() {
+                break;
+            }
             matrix = *display_object.matrix() * matrix;
             node = display_object.parent();
         }
