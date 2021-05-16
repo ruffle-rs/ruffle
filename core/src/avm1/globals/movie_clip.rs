@@ -821,7 +821,7 @@ fn get_bytes_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let bytes_loaded = if movie_clip.is_swf() {
+    let bytes_loaded = if movie_clip.is_root() {
         movie_clip
             .movie()
             .map(|mv| mv.header().uncompressed_length)
@@ -839,7 +839,7 @@ fn get_bytes_total<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // For a loaded SWF, returns the uncompressed size of the SWF.
     // Otherwise, returns the size of the tag list in the clip's DefineSprite tag.
-    let bytes_total = if movie_clip.is_swf() {
+    let bytes_total = if movie_clip.is_root() {
         movie_clip
             .movie()
             .map(|mv| mv.header().uncompressed_length)

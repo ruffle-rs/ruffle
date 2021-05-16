@@ -143,9 +143,6 @@ pub struct MovieLibrary<'gc> {
     /// Shared reference to the constructor registry used for this movie.
     /// Should be `None` if this is an AVM2 movie.
     avm1_constructor_registry: Option<Gc<'gc, Avm1ConstructorRegistry<'gc>>>,
-
-    /// The root display object for this movie.
-    root: Option<DisplayObject<'gc>>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
@@ -158,7 +155,6 @@ impl<'gc> MovieLibrary<'gc> {
             avm_type,
             avm2_domain: None,
             avm1_constructor_registry: None,
-            root: None,
         }
     }
 
@@ -364,18 +360,6 @@ impl<'gc> MovieLibrary<'gc> {
     /// an AVM1 movie, and thus this domain is unused.
     pub fn avm2_domain(&self) -> Avm2Domain<'gc> {
         self.avm2_domain.unwrap()
-    }
-
-    /// Retrieve the root display object that was created to represent the
-    /// movie being loaded.
-    pub fn root(&self) -> Option<DisplayObject<'gc>> {
-        self.root
-    }
-
-    /// Set the root display object that was created to represent the
-    /// movie being loaded.
-    pub fn set_root(&mut self, root: DisplayObject<'gc>) {
-        self.root = Some(root);
     }
 }
 

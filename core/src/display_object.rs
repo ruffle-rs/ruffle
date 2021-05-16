@@ -368,6 +368,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags.set(DisplayObjectFlags::VISIBLE, value);
     }
 
+    fn is_root(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::IS_ROOT)
+    }
+
+    fn set_is_root(&mut self, value: bool) {
+        self.flags.set(DisplayObjectFlags::IS_ROOT, value);
+    }
+
     fn lock_root(&self) -> bool {
         self.flags.contains(DisplayObjectFlags::LOCK_ROOT)
     }
@@ -834,6 +842,12 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_visible`/`visible` ActionScript properties.
     fn set_visible(&self, gc_context: MutationContext<'gc, '_>, value: bool);
 
+    /// Whether this display object represents the root of loaded content.
+    fn is_root(&self) -> bool;
+
+    /// Sets whether this display object represents the root of loaded content.
+    fn set_is_root(&self, gc_context: MutationContext<'gc, '_>, value: bool);
+
     /// The sound transform for sounds played inside this display object.
     fn sound_transform(&self) -> Ref<SoundTransform>;
 
@@ -1254,44 +1268,15 @@ pub trait TDisplayObject<'gc>:
     ///
     /// This function implements the AVM2 concept of root clips. For the AVM1
     /// version, see `avm1_root`.
-    fn avm2_root(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
+    fn avm2_root(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
         let mut parent = Some((*self).into());
-        if self.as_stage().is_some() {
-            return parent;
-        }
-
         while let Some(p) = parent {
-            let grandparent = p.parent();
-
-            if grandparent.is_none() {
-                break;
+            if p.is_root() {
+                return parent;
             }
-
-            if let Some(gp_btn) = grandparent.and_then(|gp| gp.as_avm2_button()) {
-                let active_state = gp_btn.get_state_child(gp_btn.state().into());
-                if active_state
-                    .map(|state| !DisplayObject::ptr_eq(state, p))
-                    .unwrap_or(true)
-                {
-                    return None;
-                }
-            }
-
-            if let Some(gp) = grandparent {
-                if gp.as_stage().is_some() {
-                    break;
-                }
-            }
-
-            parent = grandparent;
+            parent = p.parent();
         }
-
-        let movie = self.movie()?;
-        context
-            .library
-            .library_for_movie_mut(movie)
-            .root()
-            .or_else(|| parent.filter(|p| p.is_on_stage(context)))
+        None
     }
 
     /// Obtain the root of the display tree hierarchy, if a suitable object
@@ -1301,34 +1286,15 @@ pub trait TDisplayObject<'gc>:
     /// will fail to locate the current player's stage for objects that are not
     /// rooted to the DisplayObject hierarchy correctly. If you just want to
     /// access the current player's stage, grab it from the context.
-    fn avm2_stage(&self, context: &UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
+    fn avm2_stage(&self, _context: &UpdateContext<'_, 'gc, '_>) -> Option<DisplayObject<'gc>> {
         let mut parent = Some((*self).into());
-
         while let Some(p) = parent {
-            let grandparent = p.parent();
-
-            if grandparent.is_none() {
-                break;
+            if p.as_stage().is_some() {
+                return parent;
             }
-
-            if let Some(gp_btn) = grandparent.and_then(|gp| gp.as_avm2_button()) {
-                let active_state = gp_btn.get_state_child(gp_btn.state().into());
-                if active_state
-                    .map(|state| !DisplayObject::ptr_eq(state, p))
-                    .unwrap_or(true)
-                {
-                    return None;
-                }
-            }
-
-            parent = grandparent;
+            parent = p.parent();
         }
-
-        Some(
-            parent
-                .filter(|p| p.as_stage().is_some())
-                .unwrap_or_else(|| context.stage.into()),
-        )
+        None
     }
 
     /// Determine if this display object is currently on the stage.
@@ -1567,6 +1533,12 @@ macro_rules! impl_display_object_sansbounds {
         fn set_visible(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
             self.0.write(context).$field.set_visible(value);
         }
+        fn is_root(&self) -> bool {
+            self.0.read().$field.is_root()
+        }
+        fn set_is_root(&self, context: gc_arena::MutationContext<'gc, '_>, value: bool) {
+            self.0.write(context).$field.set_is_root(value);
+        }
         fn lock_root(&self) -> bool {
             self.0.read().$field.lock_root()
         }
@@ -1678,9 +1650,13 @@ bitflags! {
         /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
         const INSTANTIATED_BY_TIMELINE = 1 << 5;
 
+        /// Whether this object is a "root", the top-most display object of a loaded SWF or Bitmap.
+        /// Used by `MovieClip.getBytesLoaded` in AVM1 and `DisplayObject.root` in AVM2.
+        const IS_ROOT                  = 1 << 6;
+
         /// Whether this object has `_lockroot` set to true, in which case
         /// it becomes the _root of itself and of any children
-        const LOCK_ROOT                = 1 << 6;
+        const LOCK_ROOT                = 1 << 7;
     }
 }
 
