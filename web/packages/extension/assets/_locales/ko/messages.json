@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Ruffle에서 플래시 콘텐츠 재생하기"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Ruffle을 비활성화한 사이트에서도 플래시 콘텐츠 재생하기"
+    },
+    "settings_ignore_optout": {
+        "message": "웹 사이트 호환성 경고를 무시하기"
+    },
+    "status_init": {
+        "message": "현재 탭을 읽는 중…"
+    },
+    "status_no_tabs": {
+        "message": "현재 활성화된 탭이 없습니다."
+    },
+    "status_tabs_error": {
+        "message": "현재 탭을 조회하는 도중 에러가 발생했습니다."
+    },
+    "status_message_init": {
+        "message": "현재 탭에서 Ruffle의 상태를 확인하는 중…"
+    },
+    "status_result_running": {
+        "message": "Ruffle이 로드되었으며 현재 탭에서 플래시 콘텐츠를 실행합니다."
+    },
+    "status_result_optout": {
+        "message": "현재 페이지가 호환되지 않는 것으로 표시되었으므로 Ruffle이 로드되지 않았습니다."
+    },
+    "status_result_disabled": {
+        "message": "사용자에 의해 비활성화되었기 때문에 Ruffle이 로드되지 않았습니다."
+    },
+    "status_result_error": {
+        "message": "현재 탭의 Ruffle 인스턴스를 쿼리하는 도중 오류가 발생했습니다."
+    },
+    "status_result_protected": {
+        "message": "보호된 브라우저 페이지에서 Ruffle을 로드할 수 없습니다."
+    },
+    "action_reload": {
+        "message": "탭을 새로고침하여 변경사항을 적용하세요."
+    },
+    "open_settings_page": {
+        "message": "설정 페이지 열기"
+    },
+    "settings_page": {
+        "message": "설정 페이지"
+    },
+    "description": {
+        "message": "플래시가 포함된 웹사이트에 표시합니다."
+    },
+    "save_settings": {
+        "message": "설정 저장"
+    },
+    "settings_saved": {
+        "message": "설정이 저장되었습니다."
+    }
+}
