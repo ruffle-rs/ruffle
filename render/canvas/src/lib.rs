@@ -331,7 +331,7 @@ impl WebCanvasRenderBackend {
             && color_transform.a_add == 0
         {
             self.context
-                .set_global_alpha(f64::from(color_transform.a_mult) / 255.0);
+                .set_global_alpha(f64::from(color_transform.a_mult));
         } else {
             let mult = color_transform.mult_rgba_normalized();
             let add = color_transform.add_rgba_normalized();
