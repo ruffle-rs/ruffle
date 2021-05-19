@@ -1,0 +1,56 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Redă conținut Flash în Ruffle"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Redă conținut Flash chiar și pe site-uri care dezactivează Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Ignoră avertismentele privind compatibilitatea site-urilor web"
+    },
+    "status_init": {
+        "message": "Se citește fila actuală…"
+    },
+    "status_no_tabs": {
+        "message": "Nu există nicio filă activă."
+    },
+    "status_tabs_error": {
+        "message": "A apărut o eroare la găsirea filei actuale."
+    },
+    "status_message_init": {
+        "message": "Se verifică starea Ruffle în fila actuală…"
+    },
+    "status_result_running": {
+        "message": "Ruffle este încărcat și rulează conținut Flash în fila actuală."
+    },
+    "status_result_optout": {
+        "message": "Ruffle nu este încărcat, deoarece pagina actuală s-a marcat ca fiind incompatibilă."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle nu este încărcat, deoarece a fost dezactivat de utilizator."
+    },
+    "status_result_error": {
+        "message": "A apărut o eroare la interogarea instanței Ruffle în fila actuală."
+    },
+    "status_result_protected": {
+        "message": "Ruffle nu se poate încărca pe paginile protejate ale browserului."
+    },
+    "action_reload": {
+        "message": "Reîncarcă fila pentru a aplica modificările"
+    },
+    "open_settings_page": {
+        "message": "Deschide pagina cu setări"
+    },
+    "settings_page": {
+        "message": "Pagina cu setări"
+    },
+    "description": {
+        "message": "Pune Flash înapoi pe web unde îi este locul."
+    },
+    "save_settings": {
+        "message": "Salvează setările"
+    },
+    "settings_saved": {
+        "message": "Setări salvate"
+    }
+}
