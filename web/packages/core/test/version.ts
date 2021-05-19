@@ -1,4 +1,4 @@
-import { assert } from "chai";
+import { strict as assert } from "assert";
 import { Version } from "../src/version";
 
 // Each row should be a list of compatible versions.
@@ -71,7 +71,7 @@ describe("Version", function () {
             for (const test of testMatrix) {
                 for (const a of test) {
                     for (const b of test) {
-                        assert.isOk(
+                        assert(
                             Version.fromSemver(a).isCompatibleWith(
                                 Version.fromSemver(b)
                             ),
@@ -87,8 +87,8 @@ describe("Version", function () {
                     for (const otherTest of testMatrix) {
                         if (test === otherTest) continue;
                         for (const b of otherTest) {
-                            assert.isNotOk(
-                                Version.fromSemver(a).isCompatibleWith(
+                            assert(
+                                !Version.fromSemver(a).isCompatibleWith(
                                     Version.fromSemver(b)
                                 ),
                                 `${a} is not compatible with ${b}`
@@ -112,7 +112,7 @@ describe("Version", function () {
                         // Skip "builds" for purposes of this test.
                         continue;
                     }
-                    assert.isOk(
+                    assert(
                         Version.fromSemver(tests[a]).hasPrecedenceOver(
                             Version.fromSemver(tests[b])
                         ),
@@ -132,8 +132,8 @@ describe("Version", function () {
                         // Skip "builds" for purposes of this test.
                         continue;
                     }
-                    assert.isNotOk(
-                        Version.fromSemver(tests[a]).hasPrecedenceOver(
+                    assert(
+                        !Version.fromSemver(tests[a]).hasPrecedenceOver(
                             Version.fromSemver(tests[b])
                         ),
                         `${tests[a]} doesn't have precedence over ${tests[b]}`
@@ -147,7 +147,7 @@ describe("Version", function () {
         it("returns true when it should", function () {
             const tests = flatten(testMatrix);
             for (const version of tests) {
-                assert.isOk(
+                assert(
                     Version.fromSemver(version).isEqual(
                         Version.fromSemver(version)
                     ),
@@ -168,8 +168,8 @@ describe("Version", function () {
                         // Skip "builds" and "identifiers" for purposes of this test.
                         continue;
                     }
-                    assert.isNotOk(
-                        Version.fromSemver(tests[a]).isEqual(
+                    assert(
+                        !Version.fromSemver(tests[a]).isEqual(
                             Version.fromSemver(tests[b])
                         ),
                         `${tests[a]} does not equal ${tests[b]}`
@@ -183,7 +183,7 @@ describe("Version", function () {
         it("returns true for own versions", function () {
             const tests = flatten(testMatrix);
             for (const version of tests) {
-                assert.isOk(
+                assert(
                     Version.fromSemver(version).isStableOrCompatiblePrerelease(
                         Version.fromSemver(version)
                     ),
@@ -195,7 +195,7 @@ describe("Version", function () {
             const tests = ["1.2.3", "1.2.3-alpha", "1.2.3-beta1.build2"];
             for (const a of tests) {
                 for (const b of tests) {
-                    assert.isOk(
+                    assert(
                         Version.fromSemver(a).isStableOrCompatiblePrerelease(
                             Version.fromSemver(b)
                         ),
@@ -209,8 +209,8 @@ describe("Version", function () {
             for (const a of tests) {
                 for (const b of tests) {
                     if (a === b) continue;
-                    assert.isNotOk(
-                        Version.fromSemver(a).isStableOrCompatiblePrerelease(
+                    assert(
+                        !Version.fromSemver(a).isStableOrCompatiblePrerelease(
                             Version.fromSemver(b)
                         ),
                         `${a} is not compatible with ${b}`

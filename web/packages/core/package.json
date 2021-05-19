@@ -19,11 +19,9 @@
         "test": "mocha -r esm -r ts-node/register test/**.ts"
     },
     "devDependencies": {
-        "@types/chai": "^4.2.19",
         "@types/mocha": "^8.2.2",
         "@typescript-eslint/eslint-plugin": "^4.28.1",
         "@typescript-eslint/parser": "^4.28.1",
-        "chai": "^4.3.4",
         "eslint": "^7.29.0",
         "eslint-plugin-jsdoc": "^35.4.1",
         "esm": "^3.2.25",
