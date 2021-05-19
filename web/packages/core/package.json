@@ -16,7 +16,7 @@
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && [[ $GITHUB_ACTIONS != true ]]",
         "build:ts": "tsc -d && node tools/set_version.js",
         "docs": "typedoc",
-        "test": "mocha -r esm -r ts-node/register test/**.ts"
+        "test": "mocha"
     },
     "devDependencies": {
         "@types/mocha": "^8.2.2",
