@@ -1,4 +1,4 @@
-import { assert } from "chai";
+import { strict as assert } from "assert";
 import { VersionRange } from "../src/version-range";
 import { Version } from "../src/version";
 
