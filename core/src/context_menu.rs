@@ -6,6 +6,7 @@
 
 use crate::avm1;
 use gc_arena::Collect;
+#[cfg(feature = "serde")]
 use serde::Serialize;
 
 #[derive(Collect, Default)]
@@ -31,11 +32,12 @@ impl<'gc> ContextMenuState<'gc> {
     }
 }
 
-#[derive(Serialize, Collect, Clone)]
+#[derive(Collect, Clone)]
 #[collect(require_static)]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct ContextMenuItem {
     pub enabled: bool,
-    #[serde(rename = "separatorBefore")]
+    #[cfg_attr(feature = "serde", serde(rename = "separatorBefore"))]
     pub separator_before: bool,
     pub checked: bool,
     pub caption: String,
