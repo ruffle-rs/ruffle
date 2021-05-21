@@ -173,7 +173,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         // Property search order for DisplayObjects:
         if self.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
-            self.get_local(name, activation, (*self).into())
+            self.get_own(name, activation, (*self).into())
         } else if let Some(level) =
             Self::get_level_by_path(name, &mut activation.context, case_sensitive)
         {
@@ -197,13 +197,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         // 6) TODO: __resolve?
     }
 
-    fn get_local(
+    fn get_own(
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0.read().base.get_local(name, activation, this)
+        self.0.read().base.get_own(name, activation, this)
     }
 
     fn set(

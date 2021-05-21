@@ -56,7 +56,7 @@ impl fmt::Debug for XmlIdMapObject<'_> {
 }
 
 impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
-    fn get_local(
+    fn get_own(
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -70,7 +70,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
                 )
                 .into())
         } else {
-            self.base().get_local(name, activation, this)
+            self.base().get_own(name, activation, this)
         }
     }
 

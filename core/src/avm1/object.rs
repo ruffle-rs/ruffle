@@ -97,7 +97,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// This function should not inspect prototype chains. Instead, use `get`
     /// to do ordinary property look-up and resolution.
-    fn get_local(
+    fn get_own(
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -111,7 +111,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if self.has_own_property(activation, name) {
-            self.get_local(name, activation, (*self).into())
+            self.get_own(name, activation, (*self).into())
         } else {
             Ok(search_prototype(self.proto(), name, activation, (*self).into())?.0)
         }
@@ -597,7 +597,7 @@ pub fn search_prototype<'gc>(
         }
 
         if p.has_own_property(activation, name) {
-            return Ok((p.get_local(name, activation, this)?, Some(p)));
+            return Ok((p.get_own(name, activation, this)?, Some(p)));
         }
 
         proto = p.proto();

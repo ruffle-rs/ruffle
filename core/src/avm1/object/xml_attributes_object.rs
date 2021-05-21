@@ -56,7 +56,7 @@ impl fmt::Debug for XmlAttributesObject<'_> {
 }
 
 impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
-    fn get_local(
+    fn get_own(
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
