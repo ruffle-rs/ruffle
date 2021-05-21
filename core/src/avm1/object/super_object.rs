@@ -253,10 +253,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         vec![]
     }
 
-    fn as_string(&self) -> Cow<str> {
-        Cow::Owned(self.0.read().child.as_string().into_owned())
-    }
-
     fn type_of(&self) -> &'static str {
         TYPE_OF_OBJECT
     }

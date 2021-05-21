@@ -347,9 +347,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Enumerate the object.
     fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String>;
 
-    /// Coerce the object into a string.
-    fn as_string(&self) -> Cow<str>;
-
     /// Get the object's type string.
     fn type_of(&self) -> &'static str;
 

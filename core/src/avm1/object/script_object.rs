@@ -665,10 +665,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         out_keys
     }
 
-    fn as_string(&self) -> Cow<str> {
-        Cow::Borrowed("[object Object]")
-    }
-
     fn type_of(&self) -> &'static str {
         self.0.read().type_of
     }
