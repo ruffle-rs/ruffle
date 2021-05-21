@@ -408,8 +408,10 @@ pub fn clone<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            let prototype = activation.context.avm1.prototypes.bitmap_data;
-            let new_bitmap_data = prototype.create_bare_object(activation, prototype)?;
+            let new_bitmap_data = BitmapDataObject::empty_object(
+                activation.context.gc_context,
+                Some(activation.context.avm1.prototypes.bitmap_data),
+            );
 
             new_bitmap_data
                 .as_bitmap_data_object()
@@ -1132,8 +1134,10 @@ pub fn load_bitmap<'gc>(
 
     if let Some(Character::Bitmap(bitmap_object)) = character {
         if let Some(bitmap) = renderer.get_bitmap_pixels(bitmap_object.bitmap_handle()) {
-            let prototype = activation.context.avm1.prototypes.bitmap_data;
-            let new_bitmap_data = prototype.create_bare_object(activation, prototype)?;
+            let new_bitmap_data = BitmapDataObject::empty_object(
+                activation.context.gc_context,
+                Some(activation.context.avm1.prototypes.bitmap_data),
+            );
 
             let pixels: Vec<i32> = bitmap.data.into();
             new_bitmap_data
