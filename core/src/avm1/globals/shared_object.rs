@@ -4,7 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, Object, TObject, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
 use flash_lso::types::Value as AmfValue;
@@ -158,21 +158,20 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
         }
         AmfValue::Object(elements, _) => {
             // Deserialize Object
-            let obj_proto = activation.context.avm1.prototypes.object;
-            if let Ok(obj) = obj_proto.create_bare_object(activation, obj_proto) {
-                for entry in elements {
-                    let value = deserialize_value(activation, entry.value());
-                    obj.define_value(
-                        activation.context.gc_context,
-                        &entry.name,
-                        value,
-                        Attribute::empty(),
-                    );
-                }
-                obj.into()
-            } else {
-                Value::Undefined
+            let obj = ScriptObject::object(
+                activation.context.gc_context,
+                Some(activation.context.avm1.prototypes.object),
+            );
+            for entry in elements {
+                let value = deserialize_value(activation, entry.value());
+                obj.define_value(
+                    activation.context.gc_context,
+                    &entry.name,
+                    value,
+                    Attribute::empty(),
+                );
             }
+            obj.into()
         }
         AmfValue::Date(time, _) => {
             let date_proto = activation.context.avm1.prototypes.date_constructor;
@@ -210,8 +209,10 @@ fn deserialize_lso<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     lso: &Lso,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let obj_proto = activation.context.avm1.prototypes.object;
-    let obj = obj_proto.create_bare_object(activation, obj_proto)?;
+    let obj = ScriptObject::object(
+        activation.context.gc_context,
+        Some(activation.context.avm1.prototypes.object),
+    );
 
     for child in &lso.body {
         obj.define_value(
@@ -222,7 +223,7 @@ fn deserialize_lso<'gc>(
         );
     }
 
-    Ok(obj)
+    Ok(obj.into())
 }
 
 /// Deserialize a Json shared object element into a Value
@@ -255,21 +256,20 @@ fn deserialize_object_json<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Value<'gc> {
     // Deserialize Object
-    let obj_proto = activation.context.avm1.prototypes.object;
-    if let Ok(obj) = obj_proto.create_bare_object(activation, obj_proto) {
-        for entry in json_obj.iter() {
-            let value = recursive_deserialize_json(entry.1.clone(), activation);
-            obj.define_value(
-                activation.context.gc_context,
-                entry.0,
-                value,
-                Attribute::empty(),
-            );
-        }
-        obj.into()
-    } else {
-        Value::Undefined
+    let obj = ScriptObject::object(
+        activation.context.gc_context,
+        Some(activation.context.avm1.prototypes.object),
+    );
+    for entry in json_obj.iter() {
+        let value = recursive_deserialize_json(entry.1.clone(), activation);
+        obj.define_value(
+            activation.context.gc_context,
+            entry.0,
+            value,
+            Attribute::empty(),
+        );
     }
+    obj.into()
 }
 
 /// Deserialize an Array and any children from a JSON object
@@ -447,8 +447,11 @@ pub fn get_local<'gc>(
 
     if data == Value::Undefined {
         // No data; create a fresh data object.
-        let prototype = activation.context.avm1.prototypes.object;
-        data = prototype.create_bare_object(activation, prototype)?.into();
+        data = ScriptObject::object(
+            activation.context.gc_context,
+            Some(activation.context.avm1.prototypes.object),
+        )
+        .into();
     }
 
     this.define_value(
