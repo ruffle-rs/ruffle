@@ -744,7 +744,7 @@ impl<'gc> MovieClip<'gc> {
         }
 
         if frame != self.current_frame() {
-            self.run_goto(self.into(), context, frame, false);
+            self.run_goto(context, frame, false);
         }
     }
 
@@ -1063,13 +1063,12 @@ impl<'gc> MovieClip<'gc> {
 
     fn run_frame_internal(
         self,
-        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         run_display_actions: bool,
     ) {
         match self.determine_next_frame() {
             NextFrame::Next => self.0.write(context.gc_context).current_frame += 1,
-            NextFrame::First => return self.run_goto(self_display_object, context, 1, true),
+            NextFrame::First => return self.run_goto(context, 1, true),
             NextFrame::Same => self.stop(context),
         }
 
@@ -1084,18 +1083,18 @@ impl<'gc> MovieClip<'gc> {
 
         use swf::TagCode;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
-            TagCode::DoAction => self.do_action(self_display_object, context, reader, tag_len),
+            TagCode::DoAction => self.do_action(context, reader, tag_len),
             TagCode::PlaceObject if run_display_actions && vm_type == AvmType::Avm1 => {
-                self.place_object(self_display_object, context, reader, tag_len, 1)
+                self.place_object(context, reader, tag_len, 1)
             }
             TagCode::PlaceObject2 if run_display_actions && vm_type == AvmType::Avm1 => {
-                self.place_object(self_display_object, context, reader, tag_len, 2)
+                self.place_object(context, reader, tag_len, 2)
             }
             TagCode::PlaceObject3 if run_display_actions && vm_type == AvmType::Avm1 => {
-                self.place_object(self_display_object, context, reader, tag_len, 3)
+                self.place_object(context, reader, tag_len, 3)
             }
             TagCode::PlaceObject4 if run_display_actions && vm_type == AvmType::Avm1 => {
-                self.place_object(self_display_object, context, reader, tag_len, 4)
+                self.place_object(context, reader, tag_len, 4)
             }
             TagCode::RemoveObject if run_display_actions => self.remove_object(context, reader, 1),
             TagCode::RemoveObject2 if run_display_actions => self.remove_object(context, reader, 2),
@@ -1125,7 +1124,6 @@ impl<'gc> MovieClip<'gc> {
     #[allow(clippy::too_many_arguments)]
     fn instantiate_child(
         self,
-        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
         depth: Depth,
@@ -1145,7 +1143,7 @@ impl<'gc> MovieClip<'gc> {
                     // Set initial properties for child.
                     child.set_instantiated_by_timeline(context.gc_context, true);
                     child.set_depth(context.gc_context, depth);
-                    child.set_parent(context.gc_context, Some(self_display_object));
+                    child.set_parent(context.gc_context, Some(self.into()));
                     if child.vm_type(context) == AvmType::Avm2 {
                         // In AVM2 instantiation happens before frame advance so we
                         // have to special-case that
@@ -1208,7 +1206,6 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn run_goto(
         mut self,
-        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: FrameNumber,
         is_implicit: bool,
@@ -1345,7 +1342,6 @@ impl<'gc> MovieClip<'gc> {
                 }
                 _ => {
                     if let Some(child) = clip.instantiate_child(
-                        self_display_object,
                         context,
                         params.id(),
                         params.depth(),
@@ -1384,7 +1380,7 @@ impl<'gc> MovieClip<'gc> {
         if hit_target_frame {
             self.0.write(context.gc_context).current_frame -= 1;
             self.0.write(context.gc_context).tag_stream_pos = frame_pos;
-            self.run_frame_internal(self_display_object, context, false);
+            self.run_frame_internal(context, false);
         } else {
             self.0.write(context.gc_context).current_frame = clamped_frame;
         }
@@ -1733,22 +1729,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 let mut reader = data.read_from(mc.tag_stream_pos);
                 drop(mc);
 
-                let self_display_object: DisplayObject<'gc> = (*self).into();
-
                 use swf::TagCode;
                 let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
-                    TagCode::PlaceObject => {
-                        self.place_object(self_display_object, context, reader, tag_len, 1)
-                    }
-                    TagCode::PlaceObject2 => {
-                        self.place_object(self_display_object, context, reader, tag_len, 2)
-                    }
-                    TagCode::PlaceObject3 => {
-                        self.place_object(self_display_object, context, reader, tag_len, 3)
-                    }
-                    TagCode::PlaceObject4 => {
-                        self.place_object(self_display_object, context, reader, tag_len, 4)
-                    }
+                    TagCode::PlaceObject => self.place_object(context, reader, tag_len, 1),
+                    TagCode::PlaceObject2 => self.place_object(context, reader, tag_len, 2),
+                    TagCode::PlaceObject3 => self.place_object(context, reader, tag_len, 3),
+                    TagCode::PlaceObject4 => self.place_object(context, reader, tag_len, 4),
                     _ => Ok(()),
                 };
                 let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
@@ -1779,7 +1765,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         // Run my SWF tags.
         if self.playing() {
-            self.run_frame_internal((*self).into(), context, true);
+            self.run_frame_internal(context, true);
         }
 
         if is_load_frame {
@@ -3109,7 +3095,6 @@ impl<'gc, 'a> MovieClip<'gc> {
     #[inline]
     fn do_action(
         self,
-        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
         tag_len: usize,
@@ -3136,7 +3121,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 )
             })?;
         context.action_queue.queue_actions(
-            self_display_object,
+            self.into(),
             ActionType::Normal { bytecode: slice },
             false,
         );
@@ -3145,7 +3130,6 @@ impl<'gc, 'a> MovieClip<'gc> {
 
     fn place_object(
         self,
-        self_display_object: DisplayObject<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
         tag_len: usize,
@@ -3160,7 +3144,6 @@ impl<'gc, 'a> MovieClip<'gc> {
         match place_object.action {
             PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id) => {
                 if let Some(child) = self.instantiate_child(
-                    self_display_object,
                     context,
                     id,
                     place_object.depth.into(),
