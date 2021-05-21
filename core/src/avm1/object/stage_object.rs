@@ -489,10 +489,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .set_interfaces(gc_context, iface_list)
     }
 
-    fn as_string(&self) -> Cow<str> {
-        Cow::Owned(self.0.read().display_object.path())
-    }
-
     fn type_of(&self) -> &'static str {
         self.0.read().base.type_of()
     }

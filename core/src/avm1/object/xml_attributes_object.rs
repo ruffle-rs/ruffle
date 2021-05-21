@@ -218,10 +218,6 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         base
     }
 
-    fn as_string(&self) -> Cow<str> {
-        Cow::Owned(self.base().as_string().into_owned())
-    }
-
     fn type_of(&self) -> &'static str {
         self.base().type_of()
     }

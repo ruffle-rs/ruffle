@@ -149,10 +149,6 @@ macro_rules! impl_custom_object_without_set {
             self.0.read().$field.get_keys(activation)
         }
 
-        fn as_string(&self) -> std::borrow::Cow<str> {
-            std::borrow::Cow::Owned(self.0.read().$field.as_string().into_owned())
-        }
-
         fn type_of(&self) -> &'static str {
             self.0.read().$field.type_of()
         }

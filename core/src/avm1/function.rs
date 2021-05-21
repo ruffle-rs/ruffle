@@ -801,10 +801,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.base.get_keys(activation)
     }
 
-    fn as_string(&self) -> Cow<str> {
-        Cow::Borrowed("[type Function]")
-    }
-
     fn type_of(&self) -> &'static str {
         TYPE_OF_FUNCTION
     }
