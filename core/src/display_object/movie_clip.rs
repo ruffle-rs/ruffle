@@ -1529,7 +1529,7 @@ impl<'gc> MovieClip<'gc> {
 
         let mut constr_thing = || {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let proto = constructor
+            let mc_proto = constructor
                 .get_property(
                     constructor,
                     &Avm2QName::new(Avm2Namespace::public(), "prototype"),
@@ -1539,7 +1539,8 @@ impl<'gc> MovieClip<'gc> {
             let object = Avm2StageObject::for_display_object(
                 activation.context.gc_context,
                 display_object,
-                proto,
+                constructor,
+                mc_proto,
             )
             .into();
 
@@ -1560,7 +1561,7 @@ impl<'gc> MovieClip<'gc> {
     /// will allocate the object first before doing so. This function is
     /// intended to be called from `post_instantiate`.
     fn construct_as_avm2_object(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut constructor = self.0.read().avm2_constructor.unwrap_or_else(|| {
+        let constructor = self.0.read().avm2_constructor.unwrap_or_else(|| {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             let mut mc_proto = activation.context.avm2.prototypes().movieclip;
             mc_proto
@@ -1577,14 +1578,7 @@ impl<'gc> MovieClip<'gc> {
         if let Avm2Value::Object(object) = self.object2() {
             let mut constr_thing = || {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                let proto = constructor
-                    .get_property(
-                        constructor,
-                        &Avm2QName::new(Avm2Namespace::public(), "prototype"),
-                        &mut activation,
-                    )?
-                    .coerce_to_object(&mut activation)?;
-                constructor.call(Some(object), &[], &mut activation, Some(proto))?;
+                constructor.call(Some(object), &[], &mut activation, Some(constructor))?;
 
                 Ok(())
             };

@@ -144,8 +144,20 @@ impl<'gc> Avm2<'gc> {
         target: Object<'gc>,
     ) -> Result<bool, Error> {
         use crate::avm2::events::dispatch_event;
-        let event_proto = context.avm2.system_prototypes.as_ref().unwrap().event;
-        let event_object = EventObject::from_event(context.gc_context, Some(event_proto), event);
+
+        let mut activation = Activation::from_nothing(context.reborrow());
+        let mut event_proto = activation.avm2().prototypes().event;
+        let event_constr = event_proto
+            .get_property(
+                event_proto,
+                &QName::new(Namespace::public(), "constructor"),
+                &mut activation,
+            )?
+            .coerce_to_object(&mut activation)?;
+        drop(activation);
+
+        let event_object =
+            EventObject::from_event(context.gc_context, event_constr, Some(event_proto), event);
         let mut activation = Activation::from_nothing(context.reborrow());
 
         dispatch_event(&mut activation, target, event_object)
@@ -255,7 +267,7 @@ impl<'gc> Avm2<'gc> {
         let tunit = TranslationUnit::from_abc(abc_file.clone(), domain, context.gc_context);
 
         for i in (0..abc_file.scripts.len()).rev() {
-            let mut script = tunit.load_script(i as u32, context.avm2, context.gc_context)?;
+            let mut script = tunit.load_script(i as u32, context)?;
 
             if !lazy_init {
                 script.globals(context)?;

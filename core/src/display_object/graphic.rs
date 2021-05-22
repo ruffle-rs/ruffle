@@ -118,10 +118,10 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         if self.avm_type() == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
             let mut allocator = || {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                let mut proto = activation.context.avm2.prototypes().shape;
-                let constr = proto
+                let mut shape_proto = activation.context.avm2.prototypes().shape;
+                let shape_constr = shape_proto
                     .get_property(
-                        proto,
+                        shape_proto,
                         &Avm2QName::new(Avm2Namespace::public(), "constructor"),
                         &mut activation,
                     )?
@@ -130,10 +130,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 let object = Avm2StageObject::for_display_object(
                     activation.context.gc_context,
                     (*self).into(),
-                    proto,
+                    shape_constr,
+                    shape_proto,
                 )
                 .into();
-                constr.call(Some(object), &[], &mut activation, Some(proto))?;
+                shape_constr.call(Some(object), &[], &mut activation, Some(shape_proto))?;
 
                 Ok(object)
             };

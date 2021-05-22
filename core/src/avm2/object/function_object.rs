@@ -100,41 +100,39 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_proto: Option<Object<'gc>>,
+        base_constr: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
-            exec.exec(receiver, arguments, activation, base_proto, self.into())
+            exec.exec(receiver, arguments, activation, base_constr, self.into())
         } else {
             Err("Not a callable function!".into())
         }
     }
 
     fn construct(
-        &self,
+        mut self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
+        arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::FunctionObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
+        let constr: Object<'gc> = self.into();
+        let prototype = self
+            .get_property(
+                constr,
+                &QName::new(Namespace::public(), "prototype"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
 
-        Ok(FunctionObject(GcCell::allocate(
-            activation.context.gc_context,
-            FunctionObjectData { base, exec: None },
-        ))
-        .into())
+        let instance = prototype.derive(activation)?;
+
+        self.call(Some(instance), arguments, activation, None)?;
+
+        Ok(instance)
     }
 
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::FunctionObject(*self);
-        let base = ScriptObjectData::base_new(
-            Some(this),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
 
         Ok(FunctionObject(GcCell::allocate(
             activation.context.gc_context,

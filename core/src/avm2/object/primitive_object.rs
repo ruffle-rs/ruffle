@@ -17,20 +17,11 @@ use gc_arena::{Collect, GcCell, MutationContext};
 
 /// A class instance deriver that constructs primitive objects.
 pub fn primitive_deriver<'gc>(
-    mut constr: Object<'gc>,
+    constr: Object<'gc>,
+    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
 ) -> Result<Object<'gc>, Error> {
-    let base_proto = constr
-        .get_property(
-            constr,
-            &QName::new(Namespace::public(), "prototype"),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
-
-    PrimitiveObject::derive(base_proto, activation.context.gc_context, class, scope)
+    PrimitiveObject::derive(constr, proto, activation.context.gc_context)
 }
 
 /// An Object which represents a primitive value of some other kind.
@@ -52,6 +43,7 @@ impl<'gc> PrimitiveObject<'gc> {
     /// Box a primitive into an object.
     pub fn from_primitive(
         primitive: Value<'gc>,
+        constr: Object<'gc>,
         base_proto: Object<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
@@ -59,7 +51,8 @@ impl<'gc> PrimitiveObject<'gc> {
             return Err("Attempted to box an object as a primitive".into());
         }
 
-        let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
+        let base =
+            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
 
         Ok(PrimitiveObject(GcCell::allocate(
             mc,
@@ -70,15 +63,12 @@ impl<'gc> PrimitiveObject<'gc> {
 
     /// Construct a primitive subclass.
     pub fn derive(
+        constr: Object<'gc>,
         base_proto: Object<'gc>,
         mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base =
+            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
 
         Ok(PrimitiveObject(GcCell::allocate(
             mc,
@@ -104,7 +94,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
             val @ Value::Integer(_) | val @ Value::Unsigned(_) => Ok(val),
             _ => {
                 let class_name = self
-                    .as_proto_class()
+                    .as_class()
                     .map(|c| c.read().name().local_name())
                     .unwrap_or_else(|| "Object".into());
 
@@ -117,35 +107,9 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
         Ok(self.0.read().primitive.clone())
     }
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::PrimitiveObject(*self);
         let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
-
-        Ok(PrimitiveObject(GcCell::allocate(
-            activation.context.gc_context,
-            PrimitiveObjectData {
-                base,
-                primitive: Value::Undefined,
-            },
-        ))
-        .into())
-    }
-
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::PrimitiveObject(*self);
-        let base = ScriptObjectData::base_new(
-            Some(this),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
 
         Ok(PrimitiveObject(GcCell::allocate(
             activation.context.gc_context,

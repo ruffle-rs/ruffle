@@ -105,20 +105,20 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// A `scope` of `None` indicates that the scope stack is empty.
     scope: Option<GcCell<'gc, Scope<'gc>>>,
 
-    /// The base prototype of `this`.
+    /// The base class constructor that yielded the currently executing method.
     ///
     /// This will not be available if this is not a method call.
-    base_proto: Option<Object<'gc>>,
+    base_constr: Option<Object<'gc>>,
 
-    /// The proto of all objects returned from `newactivation`.
+    /// The constructor of all objects returned from `newactivation`.
     ///
     /// In method calls that call for an activation object, this will be
     /// configured as the anonymous class whose traits match the method's
     /// declared traits.
     ///
     /// If this is `None`, then the method did not ask for an activation object
-    /// and we will not construct a prototype for one.
-    activation_proto: Option<Object<'gc>>,
+    /// and we will not allocate a constructor for one.
+    activation_constr: Option<Object<'gc>>,
 
     pub context: UpdateContext<'a, 'gc, 'gc_context>,
 }
@@ -144,8 +144,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope: None,
-            base_proto: None,
-            activation_proto: None,
+            base_constr: None,
+            activation_constr: None,
             context,
         }
     }
@@ -185,8 +185,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
-            base_proto: None,
-            activation_proto: None,
+            base_constr: None,
+            activation_constr: None,
             context,
         })
     }
@@ -194,12 +194,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Construct an activation for the execution of a particular bytecode
     /// method.
     pub fn from_method(
-        context: UpdateContext<'a, 'gc, 'gc_context>,
+        mut context: UpdateContext<'a, 'gc, 'gc_context>,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
-        base_proto: Option<Object<'gc>>,
+        base_constr: Option<Object<'gc>>,
         callee: Object<'gc>,
     ) -> Result<Self, Error> {
         let body: Result<_, Error> = method
@@ -227,22 +227,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
         }
 
-        let activation_proto = if method.method().needs_activation {
+        let activation_constr = if method.method().needs_activation {
             let translation_unit = method.translation_unit();
             let abc_method = method.method();
-            let activation_class = Class::from_method_body(
-                context.avm2,
-                context.gc_context,
-                translation_unit,
-                abc_method,
-                body,
-            )?;
+            let activation_class =
+                Class::from_method_body(&mut context, translation_unit, abc_method, body)?;
+            let mut dummy_activation = Activation::from_nothing(context.reborrow());
+            let (constr, _cinit) =
+                ClassObject::from_class(&mut dummy_activation, activation_class, None, scope)?;
 
-            Some(ScriptObject::bare_prototype(
-                context.gc_context,
-                activation_class,
-                scope,
-            ))
+            drop(dummy_activation);
+
+            Some(constr)
         } else {
             None
         };
@@ -256,8 +252,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
-            base_proto,
-            activation_proto,
+            base_constr,
+            activation_constr,
             context,
         };
 
@@ -274,15 +270,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 unreachable!();
             };
 
+            let mut array_proto = activation.avm2().prototypes().array;
+            let array_constr = array_proto
+                .get_property(
+                    array_proto,
+                    &QName::new(Namespace::public(), "constructor"),
+                    &mut activation,
+                )?
+                .coerce_to_object(&mut activation)?;
             let mut args_object = ArrayObject::from_array(
                 args_array,
-                activation
-                    .context
-                    .avm2
-                    .system_prototypes
-                    .as_ref()
-                    .unwrap()
-                    .array,
+                array_constr,
+                array_proto,
                 activation.context.gc_context,
             );
 
@@ -318,7 +317,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         context: UpdateContext<'a, 'gc, 'gc_context>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
-        base_proto: Option<Object<'gc>>,
+        base_constr: Option<Object<'gc>>,
     ) -> Result<Self, Error> {
         let local_registers = GcCell::allocate(context.gc_context, RegisterSet::new(0));
 
@@ -331,8 +330,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
-            base_proto,
-            activation_proto: None,
+            base_constr,
+            activation_constr: None,
             context,
         })
     }
@@ -369,20 +368,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         receiver: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error> {
-        let name = QName::new(Namespace::public(), "constructor");
-        let base_proto: Result<Object<'gc>, Error> =
-            self.base_proto().and_then(|p| p.proto()).ok_or_else(|| {
+        let base_constr: Result<Object<'gc>, Error> = self
+            .base_constr()
+            .and_then(|c| c.base_class_constr())
+            .ok_or_else(|| {
                 "Attempted to call super constructor without a superclass."
                     .to_string()
                     .into()
             });
-        let mut base_proto = base_proto?;
+        let base_constr = base_constr?;
 
-        let function = base_proto
-            .get_property(receiver, &name, self)?
-            .coerce_to_object(self)?;
-
-        function.call(Some(receiver), args, self, Some(base_proto))
+        base_constr.call(Some(receiver), args, self, Some(base_constr))
     }
 
     /// Attempts to lock the activation frame for execution.
@@ -452,8 +448,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Get the base prototype of the object that the currently executing
     /// method was retrieved from, if one exists.
-    pub fn base_proto(&self) -> Option<Object<'gc>> {
-        self.base_proto
+    pub fn base_constr(&self) -> Option<Object<'gc>> {
+        self.base_constr
     }
 
     /// Retrieve a int from the current constant pool.
@@ -542,7 +538,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
         method
             .translation_unit()
-            .load_class(index.0, self.context.avm2, self.context.gc_context)
+            .load_class(index.0, &mut self.context)
     }
 
     pub fn run_actions(
@@ -817,10 +813,19 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         value: Index<AbcNamespace>,
     ) -> Result<FrameControl<'gc>, Error> {
         let ns = self.pool_namespace(method, value, self.context.gc_context)?;
+        let mut ns_proto = self.context.avm2.prototypes().namespace;
+        let ns_constr = ns_proto
+            .get_property(
+                ns_proto,
+                &QName::new(Namespace::public(), "constructor"),
+                self,
+            )?
+            .coerce_to_object(self)?;
 
         self.context.avm2.push(NamespaceObject::from_namespace(
             ns,
-            self.context.avm2.prototypes().namespace,
+            ns_constr,
+            ns_proto,
             self.context.gc_context,
         )?);
         Ok(FrameControl::Continue)
@@ -952,11 +957,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
-        let base_proto = receiver.get_base_proto(&name)?;
+        let base_constr = if let Some(c) = receiver.as_constr() {
+            c.find_base_constr_for_trait(&name)?
+        } else {
+            None
+        };
         let function = receiver
             .get_property(receiver, &name, self)?
             .coerce_to_object(self)?;
-        let value = function.call(Some(receiver), &args, self, base_proto)?;
+        let value = function.call(Some(receiver), &args, self, base_constr)?;
 
         self.context.avm2.push(value);
 
@@ -998,12 +1007,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
-        let base_proto = receiver.get_base_proto(&name)?;
+        let base_constr = if let Some(c) = receiver.as_constr() {
+            c.find_base_constr_for_trait(&name)?
+        } else {
+            None
+        };
         let function = receiver
             .get_property(receiver, &name, self)?
             .coerce_to_object(self)?;
 
-        function.call(Some(receiver), &args, self, base_proto)?;
+        function.call(Some(receiver), &args, self, base_constr)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1025,7 +1038,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             self.context.avm2.prototypes().function,
             None,
         );
-        let value = function.call(Some(receiver), &args, self, receiver.proto())?;
+        let value = function.call(Some(receiver), &args, self, receiver.as_constr())?;
 
         self.context.avm2.push(value);
 
@@ -1041,23 +1054,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let args = self.context.avm2.pop_args(arg_count);
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
+
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let base_proto: Result<Object<'gc>, Error> =
-            self.base_proto().and_then(|bp| bp.proto()).ok_or_else(|| {
+        let name = name?;
+
+        let base_constr: Result<Object<'gc>, Error> = self
+            .base_constr()
+            .and_then(|bc| bc.base_class_constr())
+            .ok_or_else(|| {
                 "Attempted to call super method without a superclass."
                     .to_string()
                     .into()
             });
-        let base_proto = base_proto?;
-        let mut base = base_proto.construct(self, &[])?; //TODO: very hacky workaround
+        let base_constr = base_constr?;
 
-        let function = base
-            .get_property(receiver, &name?, self)?
-            .coerce_to_object(self)?;
-
-        let value = function.call(Some(receiver), &args, self, Some(base_proto))?;
+        let value = base_constr.call_instance_method(&name, Some(receiver), &args, self)?;
 
         self.context.avm2.push(value);
 
@@ -1073,23 +1086,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let args = self.context.avm2.pop_args(arg_count);
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
+
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let base_proto: Result<Object<'gc>, Error> =
-            self.base_proto().and_then(|bp| bp.proto()).ok_or_else(|| {
+        let name = name?;
+
+        let base_constr: Result<Object<'gc>, Error> = self
+            .base_constr()
+            .and_then(|bc| bc.base_class_constr())
+            .ok_or_else(|| {
                 "Attempted to call super method without a superclass."
                     .to_string()
                     .into()
             });
-        let base_proto = base_proto?;
-        let mut base = base_proto.construct(self, &[])?; //TODO: very hacky workaround
+        let base_constr = base_constr?;
 
-        let function = base
-            .get_property(receiver, &name?, self)?
-            .coerce_to_object(self)?;
-
-        function.call(Some(receiver), &args, self, Some(base_proto))?;
+        base_constr.call_instance_method(&name, Some(receiver), &args, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1120,7 +1133,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // dynamic properties not yet set
         if name.is_err()
             && !object
-                .as_proto_class()
+                .as_class()
                 .map(|c| c.read().is_sealed())
                 .unwrap_or(false)
         {
@@ -1198,7 +1211,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // Unknown properties on a dynamic class delete successfully.
             self.context.avm2.push(
                 !object
-                    .as_proto_class()
+                    .as_class()
                     .map(|c| c.read().is_sealed())
                     .unwrap_or(false),
             )
@@ -1214,22 +1227,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let multiname = self.pool_multiname(method, index)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
-        let base_proto: Result<Object<'gc>, Error> = self
-            .base_proto()
-            .and_then(|p| p.proto())
-            .ok_or_else(|| "Attempted to get property on non-existent super object".into());
-        let base_proto = base_proto?;
-        let mut base = base_proto.construct(self, &[])?; //TODO: very hacky workaround
 
-        let name: Result<QName, Error> = base.resolve_multiname(&multiname)?.ok_or_else(|| {
-            format!(
-                "Could not resolve {:?} as super property",
-                multiname.local_name()
-            )
-            .into()
-        });
+        let name: Result<QName, Error> = object
+            .resolve_multiname(&multiname)?
+            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
+        let name = name?;
 
-        let value = base.get_property(object, &name?, self)?;
+        let base_constr: Result<Object<'gc>, Error> = self
+            .base_constr()
+            .and_then(|bc| bc.base_class_constr())
+            .ok_or_else(|| {
+                "Attempted to call super method without a superclass."
+                    .to_string()
+                    .into()
+            });
+        let base_constr = base_constr?;
+
+        let value = base_constr.call_instance_getter(&name, Some(object), self)?;
 
         self.context.avm2.push(value);
 
@@ -1244,22 +1258,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm2.pop();
         let multiname = self.pool_multiname(method, index)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
-        let base_proto: Result<Object<'gc>, Error> = self
-            .base_proto()
-            .and_then(|p| p.proto())
-            .ok_or_else(|| "Attempted to get property on non-existent super object".into());
-        let base_proto = base_proto?;
-        let mut base = base_proto.construct(self, &[])?; //TODO: very hacky workaround
 
-        let name: Result<QName, Error> = base.resolve_multiname(&multiname)?.ok_or_else(|| {
-            format!(
-                "Could not resolve {:?} as super property",
-                multiname.local_name()
-            )
-            .into()
-        });
+        let name: Result<QName, Error> = object
+            .resolve_multiname(&multiname)?
+            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
+        let name = name?;
 
-        base.set_property(object, &name?, value, self)?;
+        let base_constr: Result<Object<'gc>, Error> = self
+            .base_constr()
+            .and_then(|bc| bc.base_class_constr())
+            .ok_or_else(|| {
+                "Attempted to call super method without a superclass."
+                    .to_string()
+                    .into()
+            });
+        let base_constr = base_constr?;
+
+        base_constr.call_instance_setter(&name, value, Some(object), self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1433,14 +1448,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_construct(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
-        let mut ctor = self.context.avm2.pop().coerce_to_object(self)?;
+        let ctor = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let proto = ctor
-            .get_property(ctor, &QName::new(Namespace::public(), "prototype"), self)?
-            .coerce_to_object(self)?;
-
-        let object = proto.construct(self, &args)?;
-        ctor.call(Some(object), &args, self, object.proto())?;
+        let object = ctor.construct(self, &args)?;
 
         self.context.avm2.push(object);
 
@@ -1461,15 +1471,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             source.resolve_multiname(&multiname)?.ok_or_else(|| {
                 format!("Could not resolve property {:?}", multiname.local_name()).into()
             });
-        let mut ctor = source
-            .get_property(source, &ctor_name?, self)?
-            .coerce_to_object(self)?;
-        let proto = ctor
-            .get_property(ctor, &QName::new(Namespace::public(), "prototype"), self)?
+        let ctor_name = ctor_name?;
+        let ctor = source
+            .get_property(source, &ctor_name, self)?
             .coerce_to_object(self)?;
 
-        let object = proto.construct(self, &args)?;
-        ctor.call(Some(object), &args, self, Some(proto))?;
+        let object = ctor.construct(self, &args)?;
 
         self.context.avm2.push(object);
 
@@ -1486,16 +1493,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_new_activation(&mut self) -> Result<FrameControl<'gc>, Error> {
-        if let Some(activation_proto) = self.activation_proto {
-            self.context.avm2.push(ScriptObject::object(
-                self.context.gc_context,
-                activation_proto,
-            ));
+        let instance = if let Some(activation_constr) = self.activation_constr {
+            activation_constr.construct(self, &[])?
         } else {
-            self.context
-                .avm2
-                .push(ScriptObject::bare_object(self.context.gc_context));
-        }
+            ScriptObject::bare_object(self.context.gc_context)
+        };
+
+        self.context.avm2.push(instance);
 
         Ok(FrameControl::Continue)
     }
@@ -1583,11 +1587,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_new_array(&mut self, num_args: u32) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(num_args);
         let array = ArrayStorage::from_args(&args[..]);
-        let array_obj = ArrayObject::from_array(
-            array,
-            self.context.avm2.system_prototypes.clone().unwrap().array,
-            self.context.gc_context,
-        );
+        let mut array_proto = self.context.avm2.prototypes().array;
+        let array_constr = array_proto
+            .get_property(
+                array_proto,
+                &QName::new(Namespace::public(), "constructor"),
+                self,
+            )?
+            .coerce_to_object(self)?;
+
+        let array_obj =
+            ArrayObject::from_array(array, array_constr, array_proto, self.context.gc_context);
 
         self.context.avm2.push(array_obj);
 

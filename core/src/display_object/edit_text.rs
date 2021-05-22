@@ -1509,22 +1509,28 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
-        let mut proto = context.avm2.prototypes().textfield;
-        let object: Avm2Object<'gc> =
-            Avm2StageObject::for_display_object(context.gc_context, display_object, proto).into();
-
+        let mut textfield_proto = context.avm2.prototypes().textfield;
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
-        let constr = proto
+        let textfield_constr = textfield_proto
             .get_property(
-                proto,
+                textfield_proto,
                 &Avm2QName::new(Avm2Namespace::public(), "constructor"),
                 &mut activation,
             )
-            .unwrap()
-            .coerce_to_object(&mut activation)
-            .unwrap();
+            .and_then(|v| v.coerce_to_object(&mut activation))
+            .expect("Textfield proto needs constr");
 
-        if let Err(e) = constr.call(Some(object), &[], &mut activation, Some(proto)) {
+        let object: Avm2Object<'gc> = Avm2StageObject::for_display_object(
+            activation.context.gc_context,
+            display_object,
+            textfield_constr,
+            textfield_proto,
+        )
+        .into();
+
+        if let Err(e) =
+            textfield_constr.call(Some(object), &[], &mut activation, Some(textfield_constr))
+        {
             log::error!(
                 "Got {} when constructing AVM2 side of dynamic text field",
                 e

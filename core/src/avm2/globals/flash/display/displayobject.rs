@@ -560,6 +560,15 @@ pub fn loader_info<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let mut loaderinfo_proto = activation.avm2().prototypes().loaderinfo;
+        let loaderinfo_constr = loaderinfo_proto
+            .get_property(
+                loaderinfo_proto,
+                &QName::new(Namespace::public(), "constructor"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+
         if let Some(root) = dobj.avm2_root(&mut activation.context) {
             if DisplayObject::ptr_eq(root, dobj) {
                 let movie = dobj.movie();
@@ -568,7 +577,8 @@ pub fn loader_info<'gc>(
                     let obj = LoaderInfoObject::from_movie(
                         movie,
                         root,
-                        activation.context.avm2.prototypes().loaderinfo,
+                        loaderinfo_constr,
+                        loaderinfo_proto,
                         activation.context.gc_context,
                     )?;
 
@@ -581,7 +591,8 @@ pub fn loader_info<'gc>(
 
         if DisplayObject::ptr_eq(dobj, activation.context.stage.into()) {
             return Ok(LoaderInfoObject::from_stage(
-                activation.context.avm2.prototypes().loaderinfo,
+                loaderinfo_constr,
+                loaderinfo_proto,
                 activation.context.gc_context,
             )
             .into());

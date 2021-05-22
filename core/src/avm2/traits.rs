@@ -5,9 +5,10 @@ use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, QName};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
+use crate::context::UpdateContext;
 use bitflags::bitflags;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell};
 use swf::avm2::types::{Trait as AbcTrait, TraitKind as AbcTraitKind};
 
 bitflags! {
@@ -179,10 +180,9 @@ impl<'gc> Trait<'gc> {
     pub fn from_abc_trait(
         unit: TranslationUnit<'gc>,
         abc_trait: &AbcTrait,
-        avm2: &mut Avm2<'gc>,
-        mc: MutationContext<'gc, '_>,
+        uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Self, Error> {
-        let name = QName::from_abc_multiname(unit, abc_trait.name.clone(), mc)?;
+        let name = QName::from_abc_multiname(unit, abc_trait.name.clone(), uc.gc_context)?;
 
         Ok(match &abc_trait.kind {
             AbcTraitKind::Slot {
@@ -197,10 +197,14 @@ impl<'gc> Trait<'gc> {
                     type_name: if type_name.0 == 0 {
                         Multiname::any()
                     } else {
-                        Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
+                        Multiname::from_abc_multiname_static(
+                            unit,
+                            type_name.clone(),
+                            uc.gc_context,
+                        )?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(unit, dv, avm2, mc)?)
+                        Some(abc_default_value(unit, dv, uc)?)
                     } else {
                         None
                     },
@@ -211,7 +215,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Method {
                     disp_id: *disp_id,
-                    method: unit.load_method(method.0, mc)?,
+                    method: unit.load_method(method.0, uc.gc_context)?,
                 },
             },
             AbcTraitKind::Getter { disp_id, method } => Trait {
@@ -219,7 +223,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Getter {
                     disp_id: *disp_id,
-                    method: unit.load_method(method.0, mc)?,
+                    method: unit.load_method(method.0, uc.gc_context)?,
                 },
             },
             AbcTraitKind::Setter { disp_id, method } => Trait {
@@ -227,7 +231,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Setter {
                     disp_id: *disp_id,
-                    method: unit.load_method(method.0, mc)?,
+                    method: unit.load_method(method.0, uc.gc_context)?,
                 },
             },
             AbcTraitKind::Class { slot_id, class } => Trait {
@@ -235,7 +239,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Class {
                     slot_id: *slot_id,
-                    class: unit.load_class(class.0, avm2, mc)?,
+                    class: unit.load_class(class.0, uc)?,
                 },
             },
             AbcTraitKind::Function { slot_id, function } => Trait {
@@ -243,7 +247,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Function {
                     slot_id: *slot_id,
-                    function: unit.load_method(function.0, mc)?,
+                    function: unit.load_method(function.0, uc.gc_context)?,
                 },
             },
             AbcTraitKind::Const {
@@ -258,10 +262,14 @@ impl<'gc> Trait<'gc> {
                     type_name: if type_name.0 == 0 {
                         Multiname::any()
                     } else {
-                        Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
+                        Multiname::from_abc_multiname_static(
+                            unit,
+                            type_name.clone(),
+                            uc.gc_context,
+                        )?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(unit, dv, avm2, mc)?)
+                        Some(abc_default_value(unit, dv, uc)?)
                     } else {
                         None
                     },

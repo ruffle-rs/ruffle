@@ -37,7 +37,7 @@ pub enum ReturnValue<'gc> {
         callee: Object<'gc>,
         unbound_reciever: Option<Object<'gc>>,
         arguments: Vec<Value<'gc>>,
-        base_proto: Option<Object<'gc>>,
+        base_constr: Option<Object<'gc>>,
     },
 }
 
@@ -49,13 +49,13 @@ impl fmt::Debug for ReturnValue<'_> {
                 callee,
                 unbound_reciever,
                 arguments,
-                base_proto,
+                base_constr,
             } => f
                 .debug_struct("ReturnValue")
                 .field("callee", callee)
                 .field("unbound_reciever", unbound_reciever)
                 .field("arguments", arguments)
-                .field("base_proto", base_proto)
+                .field("base_constr", base_constr)
                 .finish(),
         }
     }
@@ -67,13 +67,13 @@ impl<'gc> ReturnValue<'gc> {
         callee: Object<'gc>,
         unbound_reciever: Option<Object<'gc>>,
         arguments: Vec<Value<'gc>>,
-        base_proto: Option<Object<'gc>>,
+        base_constr: Option<Object<'gc>>,
     ) -> Self {
         Self::ResultOf {
             callee,
             unbound_reciever,
             arguments,
-            base_proto,
+            base_constr,
         }
     }
 
@@ -88,12 +88,12 @@ impl<'gc> ReturnValue<'gc> {
                 callee,
                 unbound_reciever,
                 arguments,
-                base_proto,
+                base_constr,
             } => callee.as_executable().unwrap().exec(
                 unbound_reciever,
                 &arguments,
                 activation,
-                base_proto,
+                base_constr,
                 callee,
             ),
         }

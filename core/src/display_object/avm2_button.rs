@@ -441,10 +441,22 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
 
         if self.0.read().object.is_none() {
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut simplebutton_proto = activation.avm2().prototypes().simplebutton;
+            let simplebutton_constr = simplebutton_proto
+                .get_property(
+                    simplebutton_proto,
+                    &Avm2QName::new(Avm2Namespace::public(), "constructor"),
+                    &mut activation,
+                )
+                .unwrap()
+                .coerce_to_object(&mut activation)
+                .unwrap();
             let object = Avm2StageObject::for_display_object(
                 context.gc_context,
                 (*self).into(),
-                context.avm2.prototypes().simplebutton,
+                simplebutton_constr,
+                simplebutton_proto,
             );
             self.0.write(context.gc_context).object = Some(object.into());
 

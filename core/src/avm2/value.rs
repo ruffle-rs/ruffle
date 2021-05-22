@@ -6,7 +6,8 @@ use crate::avm2::names::QName;
 use crate::avm2::object::{NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
+use crate::context::UpdateContext;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use gc_arena::{Collect, MutationContext};
 use std::cell::Ref;
@@ -184,14 +185,15 @@ pub fn abc_double(translation_unit: TranslationUnit<'_>, index: Index<f64>) -> R
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
     default: &AbcDefaultValue,
-    avm2: &mut Avm2<'gc>,
-    mc: MutationContext<'gc, '_>,
+    uc: &mut UpdateContext<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error> {
     match default {
         AbcDefaultValue::Int(i) => abc_int(translation_unit, *i).map(|v| v.into()),
         AbcDefaultValue::Uint(u) => abc_uint(translation_unit, *u).map(|v| v.into()),
         AbcDefaultValue::Double(d) => abc_double(translation_unit, *d).map(|v| v.into()),
-        AbcDefaultValue::String(s) => translation_unit.pool_string(s.0, mc).map(|v| v.into()),
+        AbcDefaultValue::String(s) => translation_unit
+            .pool_string(s.0, uc.gc_context)
+            .map(|v| v.into()),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
         AbcDefaultValue::Null => Ok(Value::Null),
@@ -202,12 +204,28 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Protected(ns)
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
-        | AbcDefaultValue::Private(ns) => Ok(NamespaceObject::from_namespace(
-            Namespace::from_abc_namespace(translation_unit, ns.clone(), mc)?,
-            avm2.prototypes().namespace,
-            mc,
-        )?
-        .into()),
+        | AbcDefaultValue::Private(ns) => {
+            let mut activation = Activation::from_nothing(uc.reborrow());
+
+            let mut ns_proto = activation.avm2().prototypes().namespace;
+            let ns_constr = ns_proto
+                .get_property(
+                    ns_proto,
+                    &QName::new(Namespace::public(), "constructor"),
+                    &mut activation,
+                )?
+                .coerce_to_object(&mut activation)?;
+
+            drop(activation);
+
+            Ok(NamespaceObject::from_namespace(
+                Namespace::from_abc_namespace(translation_unit, ns.clone(), uc.gc_context)?,
+                ns_constr,
+                ns_proto,
+                uc.gc_context,
+            )?
+            .into())
+        }
     }
 }
 
@@ -561,7 +579,7 @@ impl<'gc> Value<'gc> {
             _ => {}
         };
 
-        let proto = match self {
+        let mut proto = match self {
             Value::Bool(_) => activation.avm2().prototypes().boolean,
             Value::Number(_) => activation.avm2().prototypes().number,
             Value::Unsigned(_) => activation.avm2().prototypes().uint,
@@ -569,8 +587,15 @@ impl<'gc> Value<'gc> {
             Value::String(_) => activation.avm2().prototypes().string,
             _ => unreachable!(),
         };
+        let constr = proto
+            .get_property(
+                proto,
+                &QName::new(Namespace::public(), "constructor"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
 
-        PrimitiveObject::from_primitive(self.clone(), proto, activation.context.gc_context)
+        PrimitiveObject::from_primitive(self.clone(), constr, proto, activation.context.gc_context)
     }
 
     /// Determine if two values are abstractly equal to each other.

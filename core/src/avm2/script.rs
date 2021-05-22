@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
+use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{DomainObject, Object, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
@@ -109,8 +110,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_class(
         self,
         class_index: u32,
-        avm2: &mut Avm2<'gc>,
-        mc: MutationContext<'gc, '_>,
+        uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
         let read = self.0.read();
         if let Some(class) = read.classes.get(&class_index) {
@@ -119,10 +119,15 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let class = Class::from_abc_index(self, class_index, mc)?;
-        self.0.write(mc).classes.insert(class_index, class);
+        let class = Class::from_abc_index(self, class_index, uc.gc_context)?;
+        self.0
+            .write(uc.gc_context)
+            .classes
+            .insert(class_index, class);
 
-        class.write(mc).load_traits(self, class_index, avm2, mc)?;
+        class
+            .write(uc.gc_context)
+            .load_traits(self, class_index, uc)?;
 
         Ok(class)
     }
@@ -131,8 +136,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_script(
         self,
         script_index: u32,
-        avm2: &mut Avm2<'gc>,
-        mc: MutationContext<'gc, '_>,
+        uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Script<'gc>, Error> {
         let read = self.0.read();
         if let Some(scripts) = read.scripts.get(&script_index) {
@@ -143,15 +147,32 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let global = DomainObject::from_domain(mc, Some(avm2.prototypes().global), domain);
+        let mut activation = Activation::from_nothing(uc.reborrow());
 
-        let mut script = Script::from_abc_index(self, script_index, global, mc)?;
-        self.0.write(mc).scripts.insert(script_index, script);
+        let mut global_proto = activation.context.avm2.prototypes().global;
+        let global_constr = global_proto
+            .get_property(
+                global_proto,
+                &QName::new(Namespace::public(), "constructor"),
+                &mut activation,
+            )?
+            .coerce_to_object(&mut activation)?;
 
-        script.load_traits(self, script_index, avm2, mc)?;
+        drop(activation);
+
+        let global =
+            DomainObject::from_domain(uc.gc_context, global_constr, Some(global_proto), domain);
+
+        let mut script = Script::from_abc_index(self, script_index, global, uc.gc_context)?;
+        self.0
+            .write(uc.gc_context)
+            .scripts
+            .insert(script_index, script);
+
+        script.load_traits(self, script_index, uc)?;
 
         for traitdef in script.traits()?.iter() {
-            domain.export_definition(traitdef.name().clone(), script, mc)?;
+            domain.export_definition(traitdef.name().clone(), script, uc.gc_context)?;
         }
 
         Ok(script)
@@ -302,10 +323,9 @@ impl<'gc> Script<'gc> {
         &mut self,
         unit: TranslationUnit<'gc>,
         script_index: u32,
-        avm2: &mut Avm2<'gc>,
-        mc: MutationContext<'gc, '_>,
+        uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut write = self.0.write(mc);
+        let mut write = self.0.write(uc.gc_context);
 
         if write.traits_loaded {
             return Ok(());
@@ -323,9 +343,9 @@ impl<'gc> Script<'gc> {
         for abc_trait in script.traits.iter() {
             drop(write);
 
-            let newtrait = Trait::from_abc_trait(unit, abc_trait, avm2, mc)?;
+            let newtrait = Trait::from_abc_trait(unit, abc_trait, uc)?;
 
-            write = self.0.write(mc);
+            write = self.0.write(uc.gc_context);
             write.traits.push(newtrait);
         }
 

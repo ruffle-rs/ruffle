@@ -1,7 +1,7 @@
 //! Application Domains
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Multiname, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
@@ -25,7 +25,12 @@ struct DomainData<'gc> {
     parent: Option<Domain<'gc>>,
 
     /// The bytearray used for storing domain memory
-    pub domain_memory: ByteArrayObject<'gc>,
+    ///
+    /// Note: While this property is optional, it is not recommended to set it
+    /// to `None`. It is only optional to avoid an order-of-events problem in
+    /// player globals setup (we need a global domain to put globals into, but
+    /// that domain needs the bytearray global)
+    pub domain_memory: Option<ByteArrayObject<'gc>>,
 }
 
 impl<'gc> Domain<'gc> {
@@ -33,33 +38,41 @@ impl<'gc> Domain<'gc> {
     ///
     /// This is intended exclusively for creating the player globals domain,
     /// hence the name.
+    ///
+    /// Note: the global domain will be created without valid domain memory.
+    /// You must initialize domain memory later on after the ByteArray class is
+    /// instantiated but before user code runs.
     pub fn global_domain(mc: MutationContext<'gc, '_>) -> Domain<'gc> {
-        let domain_memory = ByteArrayObject::new(mc, None);
-        domain_memory.as_bytearray_mut(mc).unwrap().set_length(1024);
-
         Self(GcCell::allocate(
             mc,
             DomainData {
                 defs: HashMap::new(),
                 parent: None,
-                domain_memory,
+                domain_memory: None,
             },
         ))
     }
 
     /// Create a new domain with a given parent.
-    pub fn movie_domain(mc: MutationContext<'gc, '_>, parent: Domain<'gc>) -> Domain<'gc> {
-        let domain_memory = ByteArrayObject::new(mc, None);
-        domain_memory.as_bytearray_mut(mc).unwrap().set_length(1024);
-
-        Self(GcCell::allocate(
-            mc,
+    ///
+    /// This function must not be called before the player globals have been
+    /// fully allocated.
+    pub fn movie_domain(
+        activation: &mut Activation<'_, 'gc, '_>,
+        parent: Domain<'gc>,
+    ) -> Domain<'gc> {
+        let this = Self(GcCell::allocate(
+            activation.context.gc_context,
             DomainData {
                 defs: HashMap::new(),
                 parent: Some(parent),
-                domain_memory,
+                domain_memory: None,
             },
-        ))
+        ));
+
+        this.init_default_domain_memory(activation).unwrap();
+
+        this
     }
 
     /// Get the parent of this domain
@@ -159,7 +172,10 @@ impl<'gc> Domain<'gc> {
     }
 
     pub fn domain_memory(&self) -> ByteArrayObject<'gc> {
-        self.0.read().domain_memory
+        self.0
+            .read()
+            .domain_memory
+            .expect("Domain must have valid memory at all times")
     }
 
     pub fn set_domain_memory(
@@ -167,6 +183,41 @@ impl<'gc> Domain<'gc> {
         mc: MutationContext<'gc, '_>,
         domain_memory: ByteArrayObject<'gc>,
     ) {
-        self.0.write(mc).domain_memory = domain_memory
+        self.0.write(mc).domain_memory = Some(domain_memory)
+    }
+
+    /// Allocate the default domain memory for this domain, if it does not
+    /// already exist.
+    ///
+    /// This function is only necessary to be called for domains created via
+    /// `global_domain`. It will do nothing on already fully-initialized
+    /// domains.
+    pub fn init_default_domain_memory(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let mut bytearray_proto = activation.avm2().prototypes().bytearray;
+        let bytearray_constr = bytearray_proto
+            .get_property(
+                bytearray_proto,
+                &QName::new(Namespace::public(), "constructor"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+
+        let domain_memory = ByteArrayObject::new(
+            activation.context.gc_context,
+            bytearray_constr,
+            Some(bytearray_proto),
+        );
+        domain_memory
+            .as_bytearray_mut(activation.context.gc_context)
+            .unwrap()
+            .set_length(1024);
+
+        let mut write = self.0.write(activation.context.gc_context);
+        write.domain_memory.get_or_insert(domain_memory);
+
+        Ok(())
     }
 }

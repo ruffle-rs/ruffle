@@ -9,7 +9,6 @@ use crate::avm2::object::{ClassObject, FunctionObject, Object, ScriptObject, TOb
 use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::GcCell;
 
 /// Implements `Function`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -90,12 +89,21 @@ fn apply<'gc>(
 
 /// Create Function prototype.
 ///
-/// This function creates a suitable class and object prototype attached to it.
+/// This function creates a suitable prototype and returns it.
 pub fn create_proto<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    globals: Object<'gc>,
     super_proto: Object<'gc>,
-) -> (Object<'gc>, GcCell<'gc, Class<'gc>>) {
+) -> Object<'gc> {
+    ScriptObject::object(activation.context.gc_context, super_proto)
+}
+
+/// Fill `Function.prototype` and allocate it's constructor.
+pub fn fill_proto<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    globals: Object<'gc>,
+    mut function_proto: Object<'gc>,
+    super_constr: Object<'gc>,
+) -> Object<'gc> {
     let function_class = Class::new(
         QName::new(Namespace::public(), "Function"),
         Some(QName::new(Namespace::public(), "Object").into()),
@@ -104,22 +112,7 @@ pub fn create_proto<'gc>(
         activation.context.gc_context,
     );
     let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
-    let function_proto = ScriptObject::prototype(
-        activation.context.gc_context,
-        super_proto,
-        function_class,
-        Some(scope),
-    );
 
-    (function_proto, function_class)
-}
-
-/// Fill `Function.prototype` and allocate it's constructor.
-pub fn fill_proto<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    mut function_proto: Object<'gc>,
-    super_class: Object<'gc>,
-) -> Object<'gc> {
     function_proto.install_method(
         activation.context.gc_context,
         QName::new(Namespace::as3_namespace(), "call"),
@@ -135,7 +128,9 @@ pub fn fill_proto<'gc>(
 
     ClassObject::from_builtin_constr(
         activation.context.gc_context,
-        Some(super_class),
+        Some(super_constr),
+        function_class,
+        Some(scope),
         function_proto,
         function_proto,
     )

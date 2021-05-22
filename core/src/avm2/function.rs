@@ -82,7 +82,7 @@ impl<'gc> Executable<'gc> {
         unbound_reciever: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_proto: Option<Object<'gc>>,
+        base_constr: Option<Object<'gc>>,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
         match self {
@@ -93,7 +93,7 @@ impl<'gc> Executable<'gc> {
                     activation.context.reborrow(),
                     scope,
                     receiver,
-                    base_proto,
+                    base_constr,
                 )?;
 
                 nf(&mut activation, receiver, arguments)
@@ -106,7 +106,7 @@ impl<'gc> Executable<'gc> {
                     bm.scope,
                     receiver,
                     arguments,
-                    base_proto,
+                    base_constr,
                     callee,
                 )?;
 

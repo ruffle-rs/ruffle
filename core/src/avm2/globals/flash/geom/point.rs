@@ -10,9 +10,17 @@ fn create_point<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     coords: (f64, f64),
 ) -> Result<Value<'gc>, Error> {
-    let proto = activation.context.avm2.prototypes().point;
+    let mut point_proto = activation.context.avm2.prototypes().point;
+    let point_constr = point_proto
+        .get_property(
+            point_proto,
+            &QName::new(Namespace::public(), "constructor"),
+            activation,
+        )?
+        .coerce_to_object(activation)?;
+
     let args = [Value::Number(coords.0), Value::Number(coords.1)];
-    let new_point = proto.construct(activation, &args)?;
+    let new_point = point_constr.construct(activation, &args)?;
     instance_init(activation, Some(new_point), &args)?;
 
     Ok(new_point.into())

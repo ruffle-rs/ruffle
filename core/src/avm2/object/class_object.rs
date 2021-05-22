@@ -58,11 +58,20 @@ impl<'gc> ClassObject<'gc> {
         base_class_constr: Option<Object<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
-        let class_proto = if let Some(base_class_constr) = base_class_constr {
+        //TODO: Class prototypes are *not* instances of their class and should
+        //not be allocated by a deriver, but instead should be regular objects
+        let class_proto = if let Some(mut base_class_constr) = base_class_constr {
+            let base_proto = base_class_constr
+                .get_property(
+                    base_class_constr,
+                    &QName::new(Namespace::public(), "prototype"),
+                    activation,
+                )?
+                .coerce_to_object(activation)?;
             let derive = class.read().instance_deriver();
-            derive(base_class_constr, activation, class, scope)?
+            derive(base_class_constr, base_proto, activation)?
         } else {
-            ScriptObject::bare_prototype(activation.context.gc_context, class, scope)
+            ScriptObject::bare_object(activation.context.gc_context)
         };
 
         ClassObject::from_class_and_proto(activation, class, base_class_constr, class_proto, scope)
@@ -160,14 +169,11 @@ impl<'gc> ClassObject<'gc> {
     pub fn from_builtin_constr(
         mc: MutationContext<'gc, '_>,
         base_class_constr: Option<Object<'gc>>,
+        class: GcCell<'gc, Class<'gc>>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
         mut prototype: Object<'gc>,
         fn_proto: Object<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let scope = prototype.get_scope();
-        let class: Result<_, Error> = prototype
-            .as_class()
-            .ok_or_else(|| "Cannot construct builtin type without a class".into());
-        let class = class?;
         let instance_constr =
             Executable::from_method(class.read().instance_init(), scope, None, mc);
         let mut base: Object<'gc> = ClassObject(GcCell::allocate(
@@ -225,31 +231,38 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_proto: Option<Object<'gc>>,
+        base_constr: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         let instance_constr = self.0.read().instance_constr;
 
-        instance_constr.exec(receiver, arguments, activation, base_proto, self.into())
+        instance_constr.exec(receiver, arguments, activation, base_constr, self.into())
     }
 
     fn construct(
-        &self,
+        mut self,
         activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
+        arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        Ok(ClassObject(GcCell::allocate(
-            activation.context.gc_context,
-            self.0.read().clone(),
-        ))
-        .into())
+        let class = self.as_class().ok_or("Cannot construct classless class!")?;
+        let deriver = class.read().instance_deriver();
+        let constr: Object<'gc> = self.into();
+        let prototype = self
+            .get_property(
+                constr,
+                &QName::new(Namespace::public(), "prototype"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+
+        let instance = deriver(constr, prototype, activation)?;
+        let instance_constr = self.0.read().instance_constr;
+
+        instance_constr.exec(Some(instance), arguments, activation, Some(constr), constr)?;
+
+        Ok(instance)
     }
 
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _class: GcCell<'gc, Class<'gc>>,
-        _scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         Ok(ClassObject(GcCell::allocate(
             activation.context.gc_context,
             self.0.read().clone(),

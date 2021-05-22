@@ -142,10 +142,18 @@ pub fn clone<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(evt) = this.unwrap().as_event() {
-        let evt_proto = activation.avm2().system_prototypes.as_ref().unwrap().event;
+        let mut evt_proto = activation.avm2().prototypes().event;
+        let evt_constr = evt_proto
+            .get_property(
+                evt_proto,
+                &QName::new(Namespace::public(), "constructor"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
 
         return Ok(EventObject::from_event(
             activation.context.gc_context,
+            evt_constr,
             Some(evt_proto),
             evt.clone(),
         )

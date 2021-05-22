@@ -132,28 +132,12 @@ macro_rules! impl_avm2_custom_object {
             self.0.read().$field.get_trait_slot(id)
         }
 
-        fn get_provided_trait(
-            &self,
-            name: &QName<'gc>,
-            known_traits: &mut Vec<Trait<'gc>>,
-        ) -> Result<(), Error> {
-            self.0.read().$field.get_provided_trait(name, known_traits)
-        }
-
-        fn get_provided_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-            self.0.read().$field.get_provided_trait_slot(id)
-        }
-
         fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
             self.0.read().$field.get_scope()
         }
 
         fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
             self.0.read().$field.has_trait(name)
-        }
-
-        fn provides_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
-            self.0.read().$field.provides_trait(name)
         }
 
         fn has_instantiated_property(self, name: &QName<'gc>) -> bool {
@@ -202,6 +186,14 @@ macro_rules! impl_avm2_custom_object {
 
         fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
             self.0.read().base.as_class()
+        }
+
+        fn as_constr(&self) -> Option<Object<'gc>> {
+            self.0.read().base.as_constr()
+        }
+
+        fn set_constr(self, mc: MutationContext<'gc, '_>, constr: Object<'gc>) {
+            self.0.write(mc).base.set_constr(constr);
         }
 
         fn install_method(

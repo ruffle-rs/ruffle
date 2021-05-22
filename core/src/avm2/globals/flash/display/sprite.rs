@@ -48,10 +48,20 @@ pub fn graphics<'gc>(
                 activation,
             )? {
                 Value::Undefined | Value::Null => {
-                    let graphics_proto = activation.context.avm2.prototypes().graphics;
+                    let mut graphics_proto = activation.context.avm2.prototypes().graphics;
+                    let graphics_constr = graphics_proto
+                        .get_property(
+                            graphics_proto,
+                            &QName::new(Namespace::public(), "constructor"),
+                            activation,
+                        )
+                        .and_then(|v| v.coerce_to_object(activation))
+                        .expect("Video proto needs constr");
+
                     let graphics = Value::from(StageObject::for_display_object(
                         activation.context.gc_context,
                         dobj,
+                        graphics_constr,
                         graphics_proto,
                     ));
                     this.set_property(

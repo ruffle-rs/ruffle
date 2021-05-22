@@ -192,10 +192,12 @@ fn function<'gc>(
 fn dynamic_class<'gc>(
     mc: MutationContext<'gc, '_>,
     constr: Object<'gc>,
-    class: GcCell<'gc, Class<'gc>>,
     mut domain: Domain<'gc>,
     script: Script<'gc>,
 ) -> Result<(), Error> {
+    let class = constr
+        .as_class()
+        .ok_or("Attempted to create builtin dynamic class without class on it's constructor!")?;
     let name = class.read().name().clone();
 
     script
@@ -288,7 +290,7 @@ pub fn load_player_globals<'gc>(
     domain: Domain<'gc>,
 ) -> Result<(), Error> {
     let mc = activation.context.gc_context;
-    let gs = DomainObject::from_domain(mc, None, domain);
+    let gs = DomainObject::from_early_domain(mc, domain);
     let script = Script::empty_script(mc, gs);
 
     // public / root package
@@ -296,18 +298,18 @@ pub fn load_player_globals<'gc>(
     // We have to do this particular dance so that we have Object methods whose
     // functions have call/apply in their prototypes, and that Function is also
     // a subclass of Object.
-    let (object_proto, object_class) = object::create_proto(activation, gs);
-    let (fn_proto, fn_class) = function::create_proto(activation, gs, object_proto);
+    let object_proto = object::create_proto(activation);
+    let fn_proto = function::create_proto(activation, object_proto);
 
-    let object_constr = object::fill_proto(activation, object_proto, fn_proto)?;
-    let function_constr = function::fill_proto(activation, fn_proto, object_constr);
+    let object_constr = object::fill_proto(activation, gs, object_proto, fn_proto)?;
+    let function_constr = function::fill_proto(activation, gs, fn_proto, object_constr);
 
-    let (class_constr, class_proto, class_class) =
+    let (class_constr, class_proto) =
         class::create_class(activation, gs, object_constr, object_proto, fn_proto);
 
-    dynamic_class(mc, object_constr, object_class, domain, script)?;
-    dynamic_class(mc, function_constr, fn_class, domain, script)?;
-    dynamic_class(mc, class_constr, class_class, domain, script)?;
+    dynamic_class(mc, object_constr, domain, script)?;
+    dynamic_class(mc, function_constr, domain, script)?;
+    dynamic_class(mc, class_constr, domain, script)?;
 
     // At this point, we need at least a partial set of system prototypes in
     // order to continue initializing the player. The rest of the prototypes
@@ -425,6 +427,9 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
+    gs.as_application_domain()
+        .unwrap()
+        .init_default_domain_memory(activation)?;
 
     class(
         activation,
@@ -436,7 +441,6 @@ pub fn load_player_globals<'gc>(
     class(
         activation,
         flash::utils::compression_algorithm::create_class(mc),
-        implicit_deriver,
         domain,
         script,
     )?;

@@ -16,20 +16,11 @@ use gc_arena::{Collect, GcCell, MutationContext};
 
 /// A class instance deriver that constructs Stage objects.
 pub fn stage_deriver<'gc>(
-    mut constr: Object<'gc>,
+    constr: Object<'gc>,
+    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
 ) -> Result<Object<'gc>, Error> {
-    let base_proto = constr
-        .get_property(
-            constr,
-            &QName::new(Namespace::public(), "prototype"),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
-
-    StageObject::derive(base_proto, activation.context.gc_context, class, scope)
+    StageObject::derive(constr, proto, activation.context.gc_context)
 }
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -50,12 +41,16 @@ impl<'gc> StageObject<'gc> {
     pub fn for_display_object(
         mc: MutationContext<'gc, '_>,
         display_object: DisplayObject<'gc>,
+        constr: Object<'gc>,
         proto: Object<'gc>,
     ) -> Self {
         Self(GcCell::allocate(
             mc,
             StageObjectData {
-                base: ScriptObjectData::base_new(Some(proto), ScriptObjectClass::NoClass),
+                base: ScriptObjectData::base_new(
+                    Some(proto),
+                    ScriptObjectClass::ClassInstance(constr),
+                ),
                 display_object: Some(display_object),
             },
         ))
@@ -63,15 +58,12 @@ impl<'gc> StageObject<'gc> {
 
     /// Construct a stage object subclass.
     pub fn derive(
-        base_proto: Object<'gc>,
+        constr: Object<'gc>,
+        proto: Object<'gc>,
         mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base =
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
         Ok(StageObject(GcCell::allocate(
             mc,
@@ -191,18 +183,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.get_trait_slot(id)
     }
 
-    fn get_provided_trait(
-        &self,
-        name: &QName<'gc>,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error> {
-        self.0.read().base.get_provided_trait(name, known_traits)
-    }
-
-    fn get_provided_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        self.0.read().base.get_provided_trait_slot(id)
-    }
-
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
         self.0.read().base.get_scope()
     }
@@ -224,10 +204,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
         self.0.read().base.has_trait(name)
-    }
-
-    fn provides_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
-        self.0.read().base.provides_trait(name)
     }
 
     fn has_instantiated_property(self, name: &QName<'gc>) -> bool {
@@ -282,6 +258,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.as_class()
     }
 
+    fn as_constr(&self) -> Option<Object<'gc>> {
+        self.0.read().base.as_constr()
+    }
+
+    fn set_constr(self, mc: MutationContext<'gc, '_>, constr: Object<'gc>) {
+        self.0.write(mc).base.set_constr(constr);
+    }
+
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         self.0.read().display_object
     }
@@ -300,35 +284,9 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         Err("Not a callable function!".into())
     }
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::StageObject(*self);
         let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
-
-        Ok(StageObject(GcCell::allocate(
-            activation.context.gc_context,
-            StageObjectData {
-                base,
-                display_object: None,
-            },
-        ))
-        .into())
-    }
-
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::StageObject(*self);
-        let base = ScriptObjectData::base_new(
-            Some(this),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
 
         Ok(StageObject(GcCell::allocate(
             activation.context.gc_context,

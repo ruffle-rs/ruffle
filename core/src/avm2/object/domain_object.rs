@@ -16,32 +16,20 @@ use gc_arena::{Collect, GcCell, MutationContext};
 
 /// A class instance deriver that constructs AppDomain objects.
 pub fn appdomain_deriver<'gc>(
-    mut constr: Object<'gc>,
+    constr: Object<'gc>,
+    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
 ) -> Result<Object<'gc>, Error> {
+    let scope = constr
+        .get_scope()
+        .ok_or("Constructor has an empty scope stack")?;
     let domain = scope
-        .unwrap()
         .read()
         .globals()
         .as_application_domain()
-        .unwrap();
-    let base_proto = constr
-        .get_property(
-            constr,
-            &QName::new(Namespace::public(), "prototype"),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
+        .ok_or("Constructor scope must have an appdomain at the bottom of it's scope stack")?;
 
-    DomainObject::derive(
-        activation.context.gc_context,
-        base_proto,
-        domain,
-        class,
-        scope,
-    )
+    DomainObject::derive(constr, proto, domain, activation.context.gc_context)
 }
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -59,28 +47,37 @@ pub struct DomainObjectData<'gc> {
 }
 
 impl<'gc> DomainObject<'gc> {
+    /// Create a new domain without association with any class or prototype.
+    ///
+    /// This should only be called during early player runtime initialization.
+    /// It will return a `Domain` with no proto or instance constructor link,
+    /// meaning that you will have to set those yourself.
+    pub fn from_early_domain(mc: MutationContext<'gc, '_>, domain: Domain<'gc>) -> Object<'gc> {
+        let base = ScriptObjectData::base_new(None, ScriptObjectClass::NoClass);
+
+        DomainObject(GcCell::allocate(mc, DomainObjectData { base, domain })).into()
+    }
+
     pub fn from_domain(
         mc: MutationContext<'gc, '_>,
+        constr: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         domain: Domain<'gc>,
     ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::NoClass);
+        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::ClassInstance(constr));
 
         DomainObject(GcCell::allocate(mc, DomainObjectData { base, domain })).into()
     }
 
     /// Construct a primitive subclass.
     pub fn derive(
-        mc: MutationContext<'gc, '_>,
+        constr: Object<'gc>,
         base_proto: Object<'gc>,
         domain: Domain<'gc>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        mc: MutationContext<'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base =
+            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
 
         Ok(DomainObject(GcCell::allocate(mc, DomainObjectData { base, domain })).into())
     }
@@ -100,40 +97,19 @@ impl<'gc> TObject<'gc> for DomainObject<'gc> {
         Ok(this.into())
     }
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::DomainObject(*self);
-        let parent_domain = if let Some(parent_domain) = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?
-            .as_application_domain()
-        {
-            parent_domain
-        } else {
-            activation.context.avm2.global_domain()
-        };
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
+        let mut this: Object<'gc> = Object::DomainObject(*self);
+        let constr = this
+            .get_property(
+                this,
+                &QName::new(Namespace::public(), "constructor"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
 
         Ok(DomainObject::from_domain(
             activation.context.gc_context,
-            Some(this),
-            Domain::movie_domain(activation.context.gc_context, parent_domain),
-        ))
-    }
-
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _class: GcCell<'gc, Class<'gc>>,
-        _scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::DomainObject(*self);
-        Ok(DomainObject::from_domain(
-            activation.context.gc_context,
+            constr,
             Some(this),
             activation.context.avm2.global_domain(),
         ))

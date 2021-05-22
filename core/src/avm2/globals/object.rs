@@ -9,7 +9,6 @@ use crate::avm2::scope::Scope;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::GcCell;
 
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -155,38 +154,8 @@ pub fn set_property_is_enumerable<'gc>(
 /// This function creates a suitable class and object prototype attached to it,
 /// but does not actually fill it with methods. That requires a valid function
 /// prototype, and is thus done by `fill_proto` below.
-pub fn create_proto<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    globals: Object<'gc>,
-) -> (Object<'gc>, GcCell<'gc, Class<'gc>>) {
-    let object_class = Class::new(
-        QName::new(Namespace::public(), "Object"),
-        None,
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
-        activation.context.gc_context,
-    );
-    let mut write = object_class.write(activation.context.gc_context);
-
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "length"),
-        QName::new(Namespace::public(), "int").into(),
-        None,
-    ));
-
-    // Fixed traits (in AS3 namespace)
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
-        ("hasOwnProperty", has_own_property),
-        ("isPrototypeOf", is_prototype_of),
-        ("propertyIsEnumerable", property_is_enumerable),
-    ];
-    write.define_as3_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
-
-    let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
-    let proto =
-        ScriptObject::bare_prototype(activation.context.gc_context, object_class, Some(scope));
-
-    (proto, object_class)
+pub fn create_proto<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+    ScriptObject::bare_object(activation.context.gc_context)
 }
 
 /// Finish constructing `Object.prototype`, and also construct `Object`.
@@ -200,10 +169,12 @@ pub fn create_proto<'gc>(
 /// bare objects for both and let this function fill Object for you.
 pub fn fill_proto<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
+    globals: Object<'gc>,
     mut object_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Result<Object<'gc>, Error> {
     let gc_context = activation.context.gc_context;
+
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "hasOwnProperty"),
@@ -240,6 +211,39 @@ pub fn fill_proto<'gc>(
         FunctionObject::from_builtin(gc_context, value_of, fn_proto).into(),
     )?;
 
-    let object_constr = ClassObject::from_builtin_constr(gc_context, None, object_proto, fn_proto)?;
-    Ok(object_constr)
+    let object_class = Class::new(
+        QName::new(Namespace::public(), "Object"),
+        None,
+        Method::from_builtin(instance_init),
+        Method::from_builtin(class_init),
+        gc_context,
+    );
+    let mut write = object_class.write(gc_context);
+
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public(), "length"),
+        QName::new(Namespace::public(), "int").into(),
+        None,
+    ));
+
+    // Fixed traits (in AS3 namespace)
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+        ("hasOwnProperty", has_own_property),
+        ("isPrototypeOf", is_prototype_of),
+        ("propertyIsEnumerable", property_is_enumerable),
+    ];
+    write.define_as3_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+
+    drop(write);
+
+    let scope = Scope::push_scope(globals.get_scope(), globals, gc_context);
+
+    ClassObject::from_builtin_constr(
+        gc_context,
+        None,
+        object_class,
+        Some(scope),
+        object_proto,
+        fn_proto,
+    )
 }

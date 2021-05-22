@@ -17,20 +17,11 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance deriver that constructs array objects.
 pub fn array_deriver<'gc>(
-    mut constr: Object<'gc>,
+    constr: Object<'gc>,
+    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
 ) -> Result<Object<'gc>, Error> {
-    let base_proto = constr
-        .get_property(
-            constr,
-            &QName::new(Namespace::public(), "prototype"),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
-
-    ArrayObject::derive(base_proto, activation.context.gc_context, class, scope)
+    ArrayObject::derive(constr, proto, activation.context.gc_context)
 }
 
 /// An Object which stores numerical properties in an array.
@@ -50,8 +41,13 @@ pub struct ArrayObjectData<'gc> {
 
 impl<'gc> ArrayObject<'gc> {
     /// Construct a fresh array.
-    pub fn construct(base_proto: Object<'gc>, mc: MutationContext<'gc, '_>) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
+    pub fn construct(
+        constr: Object<'gc>,
+        proto: Object<'gc>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Object<'gc> {
+        let base =
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
         ArrayObject(GcCell::allocate(
             mc,
@@ -65,15 +61,12 @@ impl<'gc> ArrayObject<'gc> {
 
     /// Construct a primitive subclass.
     pub fn derive(
+        constr: Object<'gc>,
         base_proto: Object<'gc>,
         mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base =
+            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
 
         Ok(ArrayObject(GcCell::allocate(
             mc,
@@ -88,10 +81,12 @@ impl<'gc> ArrayObject<'gc> {
     /// Wrap an existing array in an object.
     pub fn from_array(
         array: ArrayStorage<'gc>,
-        base_proto: Object<'gc>,
+        constr: Object<'gc>,
+        proto: Object<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
+        let base =
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
         ArrayObject(GcCell::allocate(mc, ArrayObjectData { base, array })).into()
     }
@@ -242,35 +237,9 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Some(RefMut::map(self.0.write(mc), |aod| &mut aod.array))
     }
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ArrayObject(*self);
         let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
-
-        Ok(ArrayObject(GcCell::allocate(
-            activation.context.gc_context,
-            ArrayObjectData {
-                base,
-                array: ArrayStorage::new(0),
-            },
-        ))
-        .into())
-    }
-
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::ArrayObject(*self);
-        let base = ScriptObjectData::base_new(
-            Some(this),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
 
         Ok(ArrayObject(GcCell::allocate(
             activation.context.gc_context,

@@ -17,24 +17,14 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance deriver that constructs Event objects.
 pub fn event_deriver<'gc>(
-    mut constr: Object<'gc>,
+    constr: Object<'gc>,
+    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
 ) -> Result<Object<'gc>, Error> {
-    let base_proto = constr
-        .get_property(
-            constr,
-            &QName::new(Namespace::public(), "prototype"),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
-
     Ok(EventObject::derive(
-        base_proto,
+        constr,
+        proto,
         activation.context.gc_context,
-        class,
-        scope,
     ))
 }
 
@@ -56,25 +46,23 @@ impl<'gc> EventObject<'gc> {
     /// Convert a bare event into it's object representation.
     pub fn from_event(
         mc: MutationContext<'gc, '_>,
+        constr: Object<'gc>,
         base_proto: Option<Object<'gc>>,
         event: Event<'gc>,
     ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::NoClass);
+        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::ClassInstance(constr));
 
         EventObject(GcCell::allocate(mc, EventObjectData { base, event })).into()
     }
 
     /// Instantiate an event subclass.
     pub fn derive(
+        constr: Object<'gc>,
         base_proto: Object<'gc>,
         mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base =
+            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
 
         EventObject(GcCell::allocate(
             mc,
@@ -91,33 +79,17 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
     impl_avm2_custom_object!(base);
     impl_avm2_custom_object_properties!(base);
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::EventObject(*self);
-        Ok(EventObject::from_event(
-            activation.context.gc_context,
-            Some(this),
-            Event::new(""),
-        ))
-    }
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
+        let base = ScriptObjectData::base_new(Some((*self).into()), ScriptObjectClass::NoClass);
 
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::EventObject(*self);
-
-        Ok(Self::derive(
-            this,
+        Ok(EventObject(GcCell::allocate(
             activation.context.gc_context,
-            class,
-            scope,
+            EventObjectData {
+                base,
+                event: Event::new(""),
+            },
         ))
+        .into())
     }
 
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {

@@ -15,20 +15,11 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance deriver that constructs ByteArray objects.
 pub fn bytearray_deriver<'gc>(
-    mut constr: Object<'gc>,
+    constr: Object<'gc>,
+    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
 ) -> Result<Object<'gc>, Error> {
-    let base_proto = constr
-        .get_property(
-            constr,
-            &QName::new(Namespace::public(), "prototype"),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
-
-    ByteArrayObject::derive(base_proto, activation.context.gc_context, class, scope)
+    ByteArrayObject::derive(constr, proto, activation.context.gc_context)
 }
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -47,9 +38,10 @@ pub struct ByteArrayObjectData<'gc> {
 impl<'gc> ByteArrayObject<'gc> {
     pub fn new(
         mc: MutationContext<'gc, '_>,
-        base_proto: Option<Object<'gc>>,
+        constr: Object<'gc>,
+        proto: Option<Object<'gc>>,
     ) -> ByteArrayObject<'gc> {
-        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::NoClass);
+        let base = ScriptObjectData::base_new(proto, ScriptObjectClass::ClassInstance(constr));
 
         ByteArrayObject(GcCell::allocate(
             mc,
@@ -60,20 +52,21 @@ impl<'gc> ByteArrayObject<'gc> {
         ))
     }
 
-    pub fn construct(mc: MutationContext<'gc, '_>, base_proto: Option<Object<'gc>>) -> Object<'gc> {
-        Self::new(mc, base_proto).into()
+    pub fn construct(
+        mc: MutationContext<'gc, '_>,
+        constr: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
+    ) -> Object<'gc> {
+        Self::new(mc, constr, base_proto).into()
     }
 
     pub fn derive(
+        constr: Object<'gc>,
         base_proto: Object<'gc>,
         mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base =
+            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
 
         Ok(ByteArrayObject(GcCell::allocate(
             mc,
@@ -219,29 +212,9 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self.0.read().base.resolve_any_trait(local_name)
     }
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ByteArrayObject(*self);
-        Ok(ByteArrayObject::construct(
-            activation.context.gc_context,
-            Some(this),
-        ))
-    }
-
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::ByteArrayObject(*self);
-        let base = ScriptObjectData::base_new(
-            Some(this),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
 
         Ok(ByteArrayObject(GcCell::allocate(
             activation.context.gc_context,

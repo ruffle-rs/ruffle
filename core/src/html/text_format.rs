@@ -708,7 +708,7 @@ impl TextFormat {
             .coerce_to_object(activation)?;
         let mut object = Avm2ScriptObject::object(activation.context.gc_context, proto);
 
-        constr.call(Some(object), &[], activation, Some(proto))?;
+        constr.call(Some(object), &[], activation, Some(constr))?;
 
         object.set_property(
             object,
@@ -849,9 +849,20 @@ impl TextFormat {
 
         if let Some(ts) = &self.tab_stops {
             let tab_stop_storage = ts.iter().copied().collect();
+
+            let mut array_proto = activation.avm2().prototypes().array;
+            let array_constr = array_proto
+                .get_property(
+                    array_proto,
+                    &Avm2QName::new(Avm2Namespace::public(), "constructor"),
+                    activation,
+                )?
+                .coerce_to_object(activation)?;
+
             let tab_stops = Avm2ArrayObject::from_array(
                 tab_stop_storage,
-                activation.context.avm2.prototypes().array,
+                array_constr,
+                array_proto,
                 activation.context.gc_context,
             );
 

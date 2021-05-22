@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::globals::flash::display::{framelabel, scene};
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ArrayObject, Object, TObject};
@@ -163,26 +162,42 @@ fn labels_for_scene<'gc>(
         start: scene_start,
         length: scene_length,
     } = scene;
-    let frame_label_proto = activation.context.avm2.prototypes().framelabel;
+    let mut frame_label_proto = activation.context.avm2.prototypes().framelabel;
     let labels = mc.labels_in_range(*scene_start, scene_start + scene_length);
     let mut frame_labels = Vec::with_capacity(labels.len());
+    let frame_label_constr = frame_label_proto
+        .get_property(
+            frame_label_proto,
+            &QName::new(Namespace::public(), "constructor"),
+            activation,
+        )?
+        .coerce_to_object(activation)?;
+
     for (name, frame) in labels {
         let name: Value<'gc> = AvmString::new(activation.context.gc_context, name).into();
         let local_frame = frame - scene_start + 1;
         let args = [name, local_frame.into()];
-        let frame_label = frame_label_proto.construct(activation, &args)?;
-
-        framelabel::instance_init(activation, Some(frame_label), &args)?;
+        let frame_label = frame_label_constr.construct(activation, &args)?;
 
         frame_labels.push(Some(frame_label.into()));
     }
+
+    let mut array_proto = activation.avm2().prototypes().array;
+    let array_constr = array_proto
+        .get_property(
+            array_proto,
+            &QName::new(Namespace::public(), "constructor"),
+            activation,
+        )?
+        .coerce_to_object(activation)?;
 
     Ok((
         scene_name.to_string(),
         *scene_length,
         ArrayObject::from_array(
             ArrayStorage::from_storage(frame_labels),
-            activation.context.avm2.prototypes().array,
+            array_constr,
+            array_proto,
             activation.context.gc_context,
         ),
     ))
@@ -225,16 +240,21 @@ pub fn current_scene<'gc>(
             length: mc.total_frames(),
         });
         let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc, &scene)?;
-        let scene_proto = activation.context.avm2.prototypes().scene;
+        let mut scene_proto = activation.context.avm2.prototypes().scene;
+        let scene_constr = scene_proto
+            .get_property(
+                scene_proto,
+                &QName::new(Namespace::public(), "constructor"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
         let args = [
             AvmString::new(activation.context.gc_context, scene_name).into(),
             scene_labels.into(),
             scene_length.into(),
         ];
 
-        let scene = scene_proto.construct(activation, &args)?;
-
-        scene::instance_init(activation, Some(scene), &args)?;
+        let scene = scene_constr.construct(activation, &args)?;
 
         return Ok(scene.into());
     }
@@ -265,23 +285,38 @@ pub fn scenes<'gc>(
         for scene in mc_scenes {
             let (scene_name, scene_length, scene_labels) =
                 labels_for_scene(activation, mc, &scene)?;
-            let scene_proto = activation.context.avm2.prototypes().scene;
+            let mut scene_proto = activation.context.avm2.prototypes().scene;
+            let scene_constr = scene_proto
+                .get_property(
+                    scene_proto,
+                    &QName::new(Namespace::public(), "constructor"),
+                    activation,
+                )?
+                .coerce_to_object(activation)?;
             let args = [
                 AvmString::new(activation.context.gc_context, scene_name).into(),
                 scene_labels.into(),
                 scene_length.into(),
             ];
 
-            let scene = scene_proto.construct(activation, &args)?;
-
-            scene::instance_init(activation, Some(scene), &args)?;
+            let scene = scene_constr.construct(activation, &args)?;
 
             scene_objects.push(Some(scene.into()));
         }
 
+        let mut array_proto = activation.avm2().prototypes().array;
+        let array_constr = array_proto
+            .get_property(
+                array_proto,
+                &QName::new(Namespace::public(), "constructor"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+
         return Ok(ArrayObject::from_array(
             ArrayStorage::from_storage(scene_objects),
-            activation.context.avm2.prototypes().array,
+            array_constr,
+            array_proto,
             activation.context.gc_context,
         )
         .into());

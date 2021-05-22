@@ -33,11 +33,11 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub enum ScriptObjectClass<'gc> {
-    /// Instantiate instance traits, for prototypes.
-    InstancePrototype(GcCell<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
-
     /// Instantiate class traits, for class constructors.
     ClassConstructor(GcCell<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
+
+    /// Instantiate instance traits, for class instances.
+    ClassInstance(Object<'gc>),
 
     /// Do not instantiate any class or instance traits.
     NoClass,
@@ -172,18 +172,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_trait_slot(id)
     }
 
-    fn get_provided_trait(
-        &self,
-        name: &QName<'gc>,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error> {
-        self.0.read().get_provided_trait(name, known_traits)
-    }
-
-    fn get_provided_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        self.0.read().get_provided_trait_slot(id)
-    }
-
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
         self.0.read().get_scope()
     }
@@ -205,10 +193,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
         self.0.read().has_trait(name)
-    }
-
-    fn provides_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
-        self.0.read().provides_trait(name)
     }
 
     fn has_instantiated_property(self, name: &QName<'gc>) -> bool {
@@ -254,32 +238,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ScriptObject(*self);
         Ok(ScriptObject::object(activation.context.gc_context, this))
     }
 
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::ScriptObject(*self);
-        Ok(ScriptObject::prototype(
-            activation.context.gc_context,
-            this,
-            class,
-            scope,
-        ))
-    }
-
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        if let Some(class) = self.as_proto_class() {
+        if let Some(class) = self.as_class() {
             Ok(AvmString::new(mc, format!("[object {}]", class.read().name().local_name())).into())
         } else {
             Ok("[object Object]".into())
@@ -360,6 +325,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
         self.0.read().as_class()
     }
+
+    fn as_constr(&self) -> Option<Object<'gc>> {
+        self.0.read().as_constr()
+    }
+
+    fn set_constr(self, mc: MutationContext<'gc, '_>, constr: Object<'gc>) {
+        self.0.write(mc).set_constr(constr);
+    }
 }
 
 impl<'gc> ScriptObject<'gc> {
@@ -375,26 +348,6 @@ impl<'gc> ScriptObject<'gc> {
         .into()
     }
 
-    /// Construct a bare class prototype with no base class.
-    ///
-    /// This is used in cases where a prototype needs to exist, but it does not
-    /// need to extend `Object`. This is the case for interfaces and activation
-    /// objects, both of which need to participate in the class mechanism but
-    /// are not `Object`s.
-    pub fn bare_prototype(
-        mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Object<'gc> {
-        let script_class = ScriptObjectClass::InstancePrototype(class, scope);
-
-        ScriptObject(GcCell::allocate(
-            mc,
-            ScriptObjectData::base_new(None, script_class),
-        ))
-        .into()
-    }
-
     /// Construct an object with a prototype.
     pub fn object(mc: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
@@ -404,18 +357,15 @@ impl<'gc> ScriptObject<'gc> {
         .into()
     }
 
-    /// Construct a prototype for an ES4 class.
-    pub fn prototype(
+    /// Construct an instance with a class and scope stack.
+    pub fn instance(
         mc: MutationContext<'gc, '_>,
+        constr: Object<'gc>,
         proto: Object<'gc>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Object<'gc> {
-        let script_class = ScriptObjectClass::InstancePrototype(class, scope);
-
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(Some(proto), script_class),
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr)),
         ))
         .into()
     }
@@ -443,7 +393,15 @@ impl<'gc> ScriptObjectData<'gc> {
         let prop = self.values.get(name);
 
         if let Some(prop) = prop {
-            prop.get(receiver, activation.base_proto().or(self.proto))
+            prop.get(
+                receiver,
+                Some(
+                    activation
+                        .base_constr()
+                        .or_else(|| self.as_constr())
+                        .unwrap_or(receiver),
+                ),
+            )
         } else {
             Ok(Value::Undefined.into())
         }
@@ -456,6 +414,7 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
+        let constr = self.as_constr();
         let slot_id = if let Some(prop) = self.values.get(name) {
             if let Some(slot_id) = prop.slot_id() {
                 Some(slot_id)
@@ -473,8 +432,11 @@ impl<'gc> ScriptObjectData<'gc> {
             Ok(Value::Undefined.into())
         } else if self.values.contains_key(name) {
             let prop = self.values.get_mut(name).unwrap();
-            let proto = self.proto;
-            prop.set(receiver, activation.base_proto().or(proto), value)
+            prop.set(
+                receiver,
+                Some(activation.base_constr().or(constr).unwrap_or(receiver)),
+                value,
+            )
         } else {
             //TODO: Not all classes are dynamic like this
             self.enumerants.push(name.clone());
@@ -492,6 +454,7 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
+        let constr = self.as_constr();
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
                 // This doesn't need the non-local version of this property
@@ -500,8 +463,11 @@ impl<'gc> ScriptObjectData<'gc> {
                 self.init_slot_local(slot_id, value, activation.context.gc_context)?;
                 Ok(Value::Undefined.into())
             } else {
-                let proto = self.proto;
-                prop.init(receiver, activation.base_proto().or(proto), value)
+                prop.init(
+                    receiver,
+                    Some(activation.base_constr().or(constr).unwrap_or(receiver)),
+                    value,
+                )
             }
         } else {
             //TODO: Not all classes are dynamic like this
@@ -584,89 +550,67 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn get_trait(&self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
         match &self.class {
             //Class constructors have local traits only.
-            ScriptObjectClass::ClassConstructor(..) => {
+            ScriptObjectClass::ClassConstructor(class, ..) => {
                 let mut known_traits = Vec::new();
-                self.get_provided_trait(name, &mut known_traits)?;
+                class.read().lookup_class_traits(name, &mut known_traits)?;
 
                 Ok(known_traits)
             }
 
-            //Prototypes do not have traits available locally, but they provide
-            //traits instead.
-            ScriptObjectClass::InstancePrototype(..) => Ok(Vec::new()),
+            //Class instances have all instance traits from all superclasses.
+            ScriptObjectClass::ClassInstance(constr) => {
+                let mut constr_list = Vec::new();
+                let mut cur_constr = Some(*constr);
+                while let Some(constr) = cur_constr {
+                    constr_list.push(constr);
 
-            //Instances walk the prototype chain to build a list of known
-            //traits provided by the classes attached to those prototypes.
-            ScriptObjectClass::NoClass => {
-                let mut known_traits = Vec::new();
-                let mut chain = Vec::new();
-                let mut proto = self.proto();
-
-                while let Some(p) = proto {
-                    chain.push(p);
-                    proto = p.proto();
+                    cur_constr = constr.base_class_constr();
                 }
 
-                for proto in chain.iter().rev() {
-                    proto.get_provided_trait(name, &mut known_traits)?;
+                let mut known_traits = Vec::new();
+                for constr in constr_list.iter().rev() {
+                    let cur_class = constr
+                        .as_class()
+                        .ok_or("Object is not a class constructor")?;
+                    cur_class
+                        .read()
+                        .lookup_instance_traits(name, &mut known_traits)?;
                 }
 
                 Ok(known_traits)
             }
+
+            // Bare objects, ES3 objects, and prototypes do not have traits.
+            ScriptObjectClass::NoClass => Ok(Vec::new()),
         }
     }
 
     pub fn get_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
         match &self.class {
             //Class constructors have local slot traits only.
-            ScriptObjectClass::ClassConstructor(..) => self.get_provided_trait_slot(id),
+            ScriptObjectClass::ClassConstructor(class, ..) => {
+                class.read().lookup_class_traits_by_slot(id)
+            }
 
-            //Prototypes do not have traits available locally, but they provide
-            //traits instead.
-            ScriptObjectClass::InstancePrototype(..) => Ok(None),
+            //Class instances have all instance slot traits from all superclasses.
+            ScriptObjectClass::ClassInstance(constr) => {
+                let mut cur_constr = Some(*constr);
 
-            //Instances walk the prototype chain to build a list of known
-            //traits provided by the classes attached to those prototypes.
-            ScriptObjectClass::NoClass => {
-                let mut proto = self.proto();
-
-                while let Some(p) = proto {
-                    if let Some(trait_val) = p.get_provided_trait_slot(id)? {
-                        return Ok(Some(trait_val));
+                while let Some(constr) = cur_constr {
+                    let cur_class = constr
+                        .as_class()
+                        .ok_or("Object is not a class constructor")?;
+                    if let Some(inst_trait) = cur_class.read().lookup_instance_traits_by_slot(id)? {
+                        return Ok(Some(inst_trait));
                     }
 
-                    proto = p.proto();
+                    cur_constr = constr.base_class_constr();
                 }
 
                 Ok(None)
             }
-        }
-    }
 
-    pub fn get_provided_trait(
-        &self,
-        name: &QName<'gc>,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error> {
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                class.read().lookup_class_traits(name, known_traits)
-            }
-            ScriptObjectClass::InstancePrototype(class, ..) => {
-                class.read().lookup_instance_traits(name, known_traits)
-            }
-            ScriptObjectClass::NoClass => Ok(()),
-        }
-    }
-
-    pub fn get_provided_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                class.read().lookup_class_traits_by_slot(id)
-            }
-            ScriptObjectClass::InstancePrototype(class, ..) => {
-                class.read().lookup_instance_traits_by_slot(id)
-            }
+            // Bare objects, ES3 objects, and prototypes do not have traits.
             ScriptObjectClass::NoClass => Ok(None),
         }
     }
@@ -674,38 +618,30 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn has_trait(&self, name: &QName<'gc>) -> Result<bool, Error> {
         match &self.class {
             //Class constructors have local traits only.
-            ScriptObjectClass::ClassConstructor(..) => self.provides_trait(name),
+            ScriptObjectClass::ClassConstructor(class, ..) => {
+                Ok(class.read().has_class_trait(name))
+            }
 
-            //Prototypes do not have traits available locally, but we walk
-            //through them to find traits (see `provides_trait`)
-            ScriptObjectClass::InstancePrototype(..) => Ok(false),
+            //Class instances have instance traits from any class in the base
+            //class chain.
+            ScriptObjectClass::ClassInstance(constr) => {
+                let mut cur_constr = Some(*constr);
 
-            //Instances walk the prototype chain to build a list of known
-            //traits provided by the classes attached to those prototypes.
-            ScriptObjectClass::NoClass => {
-                let mut proto = self.proto();
-
-                while let Some(p) = proto {
-                    if p.provides_trait(name)? {
+                while let Some(constr) = cur_constr {
+                    let cur_class = constr
+                        .as_class()
+                        .ok_or("Object is not a class constructor")?;
+                    if cur_class.read().has_instance_trait(name) {
                         return Ok(true);
                     }
 
-                    proto = p.proto();
+                    cur_constr = constr.base_class_constr();
                 }
 
                 Ok(false)
             }
-        }
-    }
 
-    pub fn provides_trait(&self, name: &QName<'gc>) -> Result<bool, Error> {
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                Ok(class.read().has_class_trait(name))
-            }
-            ScriptObjectClass::InstancePrototype(class, ..) => {
-                Ok(class.read().has_instance_trait(name))
-            }
+            // Bare objects, ES3 objects, and prototypes do not have traits.
             ScriptObjectClass::NoClass => Ok(false),
         }
     }
@@ -713,8 +649,8 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn get_scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
         match &self.class {
             ScriptObjectClass::ClassConstructor(_class, scope) => *scope,
-            ScriptObjectClass::InstancePrototype(_class, scope) => *scope,
-            ScriptObjectClass::NoClass => self.proto().and_then(|proto| proto.get_scope()),
+            ScriptObjectClass::ClassInstance(constr) => constr.get_scope(),
+            ScriptObjectClass::NoClass => None,
         }
     }
 
@@ -725,11 +661,7 @@ impl<'gc> ScriptObjectData<'gc> {
             }
         }
 
-        let trait_ns = match self.class {
-            ScriptObjectClass::ClassConstructor(..) => self.resolve_any_trait(local_name)?,
-            ScriptObjectClass::NoClass => self.resolve_any_trait(local_name)?,
-            _ => None,
-        };
+        let trait_ns = self.resolve_any_trait(local_name)?;
 
         if trait_ns.is_none() {
             if let Some(proto) = self.proto() {
@@ -757,8 +689,21 @@ impl<'gc> ScriptObjectData<'gc> {
             ScriptObjectClass::ClassConstructor(class, ..) => {
                 Ok(class.read().resolve_any_class_trait(local_name))
             }
-            ScriptObjectClass::InstancePrototype(class, ..) => {
-                Ok(class.read().resolve_any_instance_trait(local_name))
+            ScriptObjectClass::ClassInstance(constr) => {
+                let mut cur_constr = Some(*constr);
+
+                while let Some(constr) = cur_constr {
+                    let cur_class = constr
+                        .as_class()
+                        .ok_or("Object is not a class constructor")?;
+                    if let Some(ns) = cur_class.read().resolve_any_instance_trait(local_name) {
+                        return Ok(Some(ns));
+                    }
+
+                    cur_constr = constr.base_class_constr();
+                }
+
+                Ok(None)
             }
             ScriptObjectClass::NoClass => Ok(None),
         }
@@ -989,8 +934,26 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
         match self.class {
             ScriptObjectClass::ClassConstructor(class, _) => Some(class),
-            ScriptObjectClass::InstancePrototype(class, _) => Some(class),
+            ScriptObjectClass::ClassInstance(constr) => constr.as_class(),
             ScriptObjectClass::NoClass => None,
         }
+    }
+
+    /// Get the class constructor for this object, if it has one.
+    pub fn as_constr(&self) -> Option<Object<'gc>> {
+        match self.class {
+            ScriptObjectClass::ClassConstructor(..) => None,
+            ScriptObjectClass::ClassInstance(constr) => Some(constr),
+            ScriptObjectClass::NoClass => None,
+        }
+    }
+
+    /// Associate the object with a particular constructor.
+    ///
+    /// This turns the object into an instance of that class. It should only be
+    /// used in situations where the object cannot be made an instance of the
+    /// class at allocation time, such as during early runtime setup.
+    pub fn set_constr(&mut self, constr: Object<'gc>) {
+        self.class = ScriptObjectClass::ClassInstance(constr);
     }
 }

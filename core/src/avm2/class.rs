@@ -4,11 +4,11 @@ use crate::avm2::activation::Activation;
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, ScriptObject, TObject};
-use crate::avm2::scope::Scope;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
+use crate::context::UpdateContext;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
@@ -42,17 +42,14 @@ bitflags! {
 /// Parameters for the deriver are:
 ///
 ///  * `constr` - The class constructor that was called (or will be called) to
-///  construct this object. This may either be a base class (if we're creating
-///  a derived class prototype object) or the current class (if we're creating
-///  an instance of the new class)
+///  construct this object. This must be the current class (using a base class
+///  will cause the wrong class to be read for traits).
+///  * `proto` - The prototype attached to the class constructor.
 ///  * `activation` - This is the current AVM2 activation.
-///  * `class` - The class we are attempting to derive.
-///  * `scope` - The scope the class was declared in.
 pub type DeriverFn = for<'gc> fn(
     Object<'gc>,
+    Object<'gc>,
     &mut Activation<'_, 'gc, '_>,
-    GcCell<'gc, Class<'gc>>,
-    Option<GcCell<'gc, Scope<'gc>>>,
 ) -> Result<Object<'gc>, Error>;
 
 #[derive(Clone, Collect)]
@@ -73,9 +70,8 @@ impl fmt::Debug for Deriver {
 /// not exist, we default to `ScriptObject`.
 pub fn implicit_deriver<'gc>(
     mut constr: Object<'gc>,
+    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
 ) -> Result<Object<'gc>, Error> {
     let mut base_constr = Some(constr);
     let mut base_class = constr.as_class();
@@ -94,7 +90,7 @@ pub fn implicit_deriver<'gc>(
     }
 
     if let Some(base_deriver) = instance_deriver {
-        base_deriver(constr, activation, class, scope)
+        base_deriver(constr, proto, activation)
     } else {
         let base_proto = constr
             .get_property(
@@ -104,11 +100,10 @@ pub fn implicit_deriver<'gc>(
             )?
             .coerce_to_object(activation)?;
 
-        Ok(ScriptObject::prototype(
+        Ok(ScriptObject::instance(
             activation.context.gc_context,
+            constr,
             base_proto,
-            class,
-            scope,
         ))
     }
 }
@@ -349,8 +344,7 @@ impl<'gc> Class<'gc> {
         &mut self,
         unit: TranslationUnit<'gc>,
         class_index: u32,
-        avm2: &mut Avm2<'gc>,
-        mc: MutationContext<'gc, '_>,
+        uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if self.traits_loaded {
             return Ok(());
@@ -373,38 +367,32 @@ impl<'gc> Class<'gc> {
 
         for abc_trait in abc_instance.traits.iter() {
             self.instance_traits
-                .push(Trait::from_abc_trait(unit, abc_trait, avm2, mc)?);
+                .push(Trait::from_abc_trait(unit, abc_trait, uc)?);
         }
 
         for abc_trait in abc_class.traits.iter() {
             self.class_traits
-                .push(Trait::from_abc_trait(unit, abc_trait, avm2, mc)?);
+                .push(Trait::from_abc_trait(unit, abc_trait, uc)?);
         }
 
         Ok(())
     }
 
     pub fn from_method_body(
-        avm2: &mut Avm2<'gc>,
-        mc: MutationContext<'gc, '_>,
+        uc: &mut UpdateContext<'_, 'gc, '_>,
         translation_unit: TranslationUnit<'gc>,
         method: &AbcMethod,
         body: &AbcMethodBody,
     ) -> Result<GcCell<'gc, Self>, Error> {
-        let name = translation_unit.pool_string(method.name.as_u30(), mc)?;
-
+        let name = translation_unit.pool_string(method.name.as_u30(), uc.gc_context)?;
         let mut traits = Vec::with_capacity(body.traits.len());
-        for trait_entry in &body.traits {
-            traits.push(Trait::from_abc_trait(
-                translation_unit,
-                trait_entry,
-                avm2,
-                mc,
-            )?);
+
+        for trait_entry in body.traits.iter() {
+            traits.push(Trait::from_abc_trait(translation_unit, trait_entry, uc)?);
         }
 
         Ok(GcCell::allocate(
-            mc,
+            uc.gc_context,
             Self {
                 name: QName::dynamic_name(name),
                 super_class: None,

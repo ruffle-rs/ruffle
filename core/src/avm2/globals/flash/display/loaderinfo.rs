@@ -66,11 +66,21 @@ pub fn application_domain<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
+            let mut appdomain_proto = activation.avm2().prototypes().application_domain;
+            let appdomain_constr = appdomain_proto
+                .get_property(
+                    appdomain_proto,
+                    &QName::new(Namespace::public(), "constructor"),
+                    activation,
+                )?
+                .coerce_to_object(activation)?;
+
             match &*loader_stream {
                 LoaderStream::Stage => {
                     return Ok(DomainObject::from_domain(
                         activation.context.gc_context,
-                        Some(activation.context.avm2.prototypes().application_domain),
+                        appdomain_constr,
+                        Some(appdomain_proto),
                         activation.context.avm2.global_domain(),
                     )
                     .into());
@@ -82,7 +92,8 @@ pub fn application_domain<'gc>(
                         .library_for_movie_mut(movie.clone());
                     return Ok(DomainObject::from_domain(
                         activation.context.gc_context,
-                        Some(activation.context.avm2.prototypes().application_domain),
+                        appdomain_constr,
+                        Some(appdomain_proto),
                         library.avm2_domain(),
                     )
                     .into());
@@ -290,9 +301,20 @@ pub fn bytes<'gc>(
                     return Err("Error: The stage's loader info does not have a bytestream".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let ba_proto = activation.context.avm2.prototypes().bytearray;
-                    let ba =
-                        ByteArrayObject::construct(activation.context.gc_context, Some(ba_proto));
+                    let mut ba_proto = activation.context.avm2.prototypes().bytearray;
+                    let ba_constr = ba_proto
+                        .get_property(
+                            ba_proto,
+                            &QName::new(Namespace::public(), "constructor"),
+                            activation,
+                        )?
+                        .coerce_to_object(activation)?;
+
+                    let ba = ByteArrayObject::construct(
+                        activation.context.gc_context,
+                        ba_constr,
+                        Some(ba_proto),
+                    );
                     let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
 
                     // First, write a fake header corresponding to an

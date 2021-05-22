@@ -131,14 +131,14 @@ impl<'gc> Property<'gc> {
     pub fn get(
         &self,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        base_constr: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Property::Virtual { get: Some(get), .. } => Ok(ReturnValue::defer_execution(
                 *get,
                 Some(this),
                 vec![],
-                base_proto,
+                base_constr,
             )),
             Property::Virtual { get: None, .. } => Ok(Value::Undefined.into()),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
@@ -159,7 +159,7 @@ impl<'gc> Property<'gc> {
     pub fn set(
         &mut self,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        base_constr: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -169,7 +169,7 @@ impl<'gc> Property<'gc> {
                         *function,
                         Some(this),
                         vec![new_value.into()],
-                        base_proto,
+                        base_constr,
                     ));
                 }
 
@@ -203,7 +203,7 @@ impl<'gc> Property<'gc> {
     pub fn init(
         &mut self,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        base_constr: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -213,7 +213,7 @@ impl<'gc> Property<'gc> {
                         *function,
                         Some(this),
                         vec![new_value.into()],
-                        base_proto,
+                        base_constr,
                     ));
                 }
 
