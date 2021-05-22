@@ -203,7 +203,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn add_property_with_case(
         &self,
         _activation: &mut Activation<'_, 'gc, '_>,
-        _gc_context: MutationContext<'gc, '_>,
         _name: &str,
         _get: Object<'gc>,
         _set: Option<Object<'gc>>,
@@ -215,7 +214,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn set_watcher(
         &self,
         _activation: &mut Activation<'_, 'gc, '_>,
-        _gc_context: MutationContext<'gc, '_>,
         _name: Cow<str>,
         _callback: Object<'gc>,
         _user_data: Value<'gc>,
@@ -223,12 +221,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //`super` cannot have properties defined on it
     }
 
-    fn remove_watcher(
-        &self,
-        _activation: &mut Activation<'_, 'gc, '_>,
-        _gc_context: MutationContext<'gc, '_>,
-        _name: Cow<str>,
-    ) -> bool {
+    fn remove_watcher(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: Cow<str>) -> bool {
         //`super` cannot have properties defined on it
         false
     }

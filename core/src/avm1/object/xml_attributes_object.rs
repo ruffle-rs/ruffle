@@ -133,35 +133,28 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
     fn add_property_with_case(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
     ) {
         self.base()
-            .add_property_with_case(activation, gc_context, name, get, set, attributes)
+            .add_property_with_case(activation, name, get, set, attributes)
     }
 
     fn set_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
         self.base()
-            .set_watcher(activation, gc_context, name, callback, user_data);
+            .set_watcher(activation, name, callback, user_data);
     }
 
-    fn remove_watcher(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        gc_context: MutationContext<'gc, '_>,
-        name: Cow<str>,
-    ) -> bool {
-        self.base().remove_watcher(activation, gc_context, name)
+    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+        self.base().remove_watcher(activation, name)
     }
 
     fn define_value(
