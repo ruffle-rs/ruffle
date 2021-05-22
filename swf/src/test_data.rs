@@ -1974,13 +1974,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             8,
-            Tag::FileAttributes(FileAttributes {
-                use_direct_blit: false,
-                use_gpu: true,
-                has_metadata: false,
-                is_action_script_3: true,
-                use_network_sandbox: false,
-            }),
+            Tag::FileAttributes(FileAttributes::USE_GPU | FileAttributes::IS_ACTION_SCRIPT_3),
             vec![0b01_000100, 0b00010001, 0b00101000, 0, 0, 0],
         ),
         (

@@ -368,13 +368,29 @@ pub enum Language {
     TraditionalChinese,
 }
 
-#[derive(Debug, PartialEq)]
-pub struct FileAttributes {
-    pub use_direct_blit: bool,
-    pub use_gpu: bool,
-    pub has_metadata: bool,
-    pub is_action_script_3: bool,
-    pub use_network_sandbox: bool,
+bitflags! {
+    /// Flags that define various characteristic of an SWF file.
+    ///
+    /// [SWF19 pp.57-58 ClipEvent](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=47)
+    pub struct FileAttributes: u8 {
+        /// Whether this SWF requests hardware acceleration to blit to the screen.
+        const USE_DIRECT_BLIT = 1 << 6;
+
+        /// Whether this SWF requests hardware acceleration for compositing.
+        const USE_GPU = 1 << 5;
+
+        /// Whether this SWF contains XMP metadata in a Metadata tag.
+        const HAS_METADATA = 1 << 4;
+
+        /// Whether this SWF uses ActionScript 3 (AVM2).
+        const IS_ACTION_SCRIPT_3 = 1 << 3;
+
+        /// Whether this SWF should be placed in the network sandbox when run locally.
+        ///
+        /// SWFs in the network sandbox can only access network resources,  not local resources.
+        /// SWFs in the local sandbox can only access local resources, not network resources.
+        const USE_NETWORK_SANDBOX = 1 << 0;
+    }
 }
 
 #[derive(Debug, PartialEq)]

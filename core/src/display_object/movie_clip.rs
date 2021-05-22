@@ -249,7 +249,7 @@ impl<'gc> MovieClip<'gc> {
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
             TagCode::FileAttributes => {
                 let attributes = reader.read_file_attributes()?;
-                let avm_type = if attributes.is_action_script_3 {
+                let avm_type = if attributes.contains(swf::FileAttributes::IS_ACTION_SCRIPT_3) {
                     log::warn!("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
                     AvmType::Avm2
                 } else {
