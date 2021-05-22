@@ -496,13 +496,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn add_property_with_case(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        gc_context: MutationContext<'gc, '_>,
         name: &str,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
     ) {
-        self.0.write(gc_context).values.insert(
+        self.0.write(activation.context.gc_context).values.insert(
             name,
             Property::Virtual {
                 get,
@@ -516,27 +515,21 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn set_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        gc_context: MutationContext<'gc, '_>,
         name: Cow<str>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
-        self.0.write(gc_context).watchers.insert(
+        self.0.write(activation.context.gc_context).watchers.insert(
             &name,
             Watcher::new(callback, user_data),
             activation.is_case_sensitive(),
         );
     }
 
-    fn remove_watcher(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        gc_context: MutationContext<'gc, '_>,
-        name: Cow<str>,
-    ) -> bool {
+    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
         let old = self
             .0
-            .write(gc_context)
+            .write(activation.context.gc_context)
             .watchers
             .remove(name.as_ref(), activation.is_case_sensitive());
         old.is_some()

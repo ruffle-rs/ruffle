@@ -98,7 +98,6 @@ macro_rules! impl_custom_object_without_set {
         fn add_property_with_case(
             &self,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-            gc_context: gc_arena::MutationContext<'gc, '_>,
             name: &str,
             get: crate::avm1::object::Object<'gc>,
             set: Option<crate::avm1::object::Object<'gc>>,
@@ -107,7 +106,7 @@ macro_rules! impl_custom_object_without_set {
             self.0
                 .read()
                 .$field
-                .add_property_with_case(activation, gc_context, name, get, set, attributes)
+                .add_property_with_case(activation, name, get, set, attributes)
         }
 
         fn has_property(
@@ -215,7 +214,6 @@ macro_rules! impl_custom_object_without_set {
         fn set_watcher(
             &self,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-            gc_context: gc_arena::MutationContext<'gc, '_>,
             name: std::borrow::Cow<str>,
             callback: crate::avm1::object::Object<'gc>,
             user_data: crate::avm1::Value<'gc>,
@@ -223,19 +221,15 @@ macro_rules! impl_custom_object_without_set {
             self.0
                 .read()
                 .$field
-                .set_watcher(activation, gc_context, name, callback, user_data);
+                .set_watcher(activation, name, callback, user_data);
         }
 
         fn remove_watcher(
             &self,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-            gc_context: gc_arena::MutationContext<'gc, '_>,
             name: std::borrow::Cow<str>,
         ) -> bool {
-            self.0
-                .read()
-                .$field
-                .remove_watcher(activation, gc_context, name)
+            self.0.read().$field.remove_watcher(activation, name)
         }
     };
 }

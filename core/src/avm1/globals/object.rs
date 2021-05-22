@@ -71,7 +71,6 @@ pub fn add_property<'gc>(
             if let Value::Object(set) = setter {
                 this.add_property_with_case(
                     activation,
-                    activation.context.gc_context,
                     &name,
                     get.to_owned(),
                     Some(set.to_owned()),
@@ -80,7 +79,6 @@ pub fn add_property<'gc>(
             } else if let Value::Null = setter {
                 this.add_property_with_case(
                     activation,
-                    activation.context.gc_context,
                     &name,
                     get.to_owned(),
                     None,
@@ -212,13 +210,7 @@ fn watch<'gc>(
     }
     let user_data = args.get(2).cloned().unwrap_or(Value::Undefined);
 
-    this.set_watcher(
-        activation,
-        activation.context.gc_context,
-        Cow::Borrowed(&name),
-        callback,
-        user_data,
-    );
+    this.set_watcher(activation, Cow::Borrowed(&name), callback, user_data);
 
     Ok(true.into())
 }
@@ -235,11 +227,7 @@ fn unwatch<'gc>(
         return Ok(false.into());
     };
 
-    let result = this.remove_watcher(
-        activation,
-        activation.context.gc_context,
-        Cow::Borrowed(&name),
-    );
+    let result = this.remove_watcher(activation, Cow::Borrowed(&name));
 
     Ok(result.into())
 }
