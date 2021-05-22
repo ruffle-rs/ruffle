@@ -1848,13 +1848,7 @@ impl<'a> Reader<'a> {
 
     pub fn read_file_attributes(&mut self) -> Result<FileAttributes> {
         let flags = self.read_u32()?;
-        Ok(FileAttributes {
-            use_direct_blit: (flags & 0b01000000) != 0,
-            use_gpu: (flags & 0b00100000) != 0,
-            has_metadata: (flags & 0b00010000) != 0,
-            is_action_script_3: (flags & 0b00001000) != 0,
-            use_network_sandbox: (flags & 0b00000001) != 0,
-        })
+        Ok(FileAttributes::from_bits_truncate(flags as u8))
     }
 
     pub fn read_export_assets(&mut self) -> Result<ExportAssets<'a>> {

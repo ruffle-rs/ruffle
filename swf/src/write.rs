@@ -979,25 +979,9 @@ impl<W: Write> Writer<W> {
                 self.output.write_all(&frame.data)?;
             }
 
-            Tag::FileAttributes(ref attributes) => {
+            Tag::FileAttributes(attributes) => {
                 self.write_tag_header(TagCode::FileAttributes, 4)?;
-                let mut flags = 0u32;
-                if attributes.use_direct_blit {
-                    flags |= 0b01000000;
-                }
-                if attributes.use_gpu {
-                    flags |= 0b00100000;
-                }
-                if attributes.has_metadata {
-                    flags |= 0b00010000;
-                }
-                if attributes.is_action_script_3 {
-                    flags |= 0b00001000;
-                }
-                if attributes.use_network_sandbox {
-                    flags |= 0b00000001;
-                }
-                self.write_u32(flags)?;
+                self.write_u32(attributes.bits() as u32)?;
             }
 
             Tag::FrameLabel(FrameLabel { label, is_anchor }) => {

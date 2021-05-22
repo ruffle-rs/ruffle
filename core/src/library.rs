@@ -424,7 +424,11 @@ impl<'gc> Library<'gc> {
                         if TagCode::from_u16(tag_code) == Some(TagCode::FileAttributes) =>
                     {
                         match reader.read_file_attributes() {
-                            Ok(attributes) if attributes.is_action_script_3 => AvmType::Avm2,
+                            Ok(attributes)
+                                if attributes.contains(swf::FileAttributes::IS_ACTION_SCRIPT_3) =>
+                            {
+                                AvmType::Avm2
+                            }
                             Ok(_) => AvmType::Avm1,
                             Err(e) => {
                                 log::error!("Got {} when reading FileAttributes", e);
