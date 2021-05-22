@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: File a bug report
 title: ''
 labels: bug
 assignees: ''
@@ -9,7 +9,7 @@ assignees: ''
 
 <!--
 If you have a question about Ruffle, you can ask for help on our Discord chat:
-https://discord.gg/J8hgCQN
+https://discord.gg/ruffle
 
 Also consult the FAQ for common issues and questions:
 https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users
