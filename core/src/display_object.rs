@@ -1059,7 +1059,7 @@ pub trait TDisplayObject<'gc>:
         placing_movie: Option<Arc<SwfMovie>>,
         place_object: &swf::PlaceObject,
     ) {
-        // PlaceObject tags only apply if this onject has not been dynamically moved by AS code.
+        // PlaceObject tags only apply if this object has not been dynamically moved by AS code.
         if !self.transformed_by_script() {
             if let Some(matrix) = &place_object.matrix {
                 self.set_matrix(context.gc_context, &matrix);
@@ -1103,6 +1103,11 @@ pub trait TDisplayObject<'gc>:
                 } else {
                     // This probably shouldn't happen; we should always have a movie.
                     log::error!("No movie when trying to set clip event");
+                }
+            }
+            if self.swf_version() >= 11 {
+                if let Some(visible) = place_object.is_visible {
+                    self.set_visible(context.gc_context, visible);
                 }
             }
             // TODO: Others will go here eventually.
