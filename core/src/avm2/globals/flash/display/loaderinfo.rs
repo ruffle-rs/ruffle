@@ -195,9 +195,7 @@ pub fn height<'gc>(
                     return Err("Error: The stage's loader info does not have a height".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let y_min = root.header().stage_size().y_min;
-                    let y_max = root.header().stage_size().y_max;
-                    return Ok((y_max - y_min).to_pixels().into());
+                    return Ok(root.height().to_pixels().into());
                 }
             }
         }
@@ -273,9 +271,7 @@ pub fn width<'gc>(
                     return Err("Error: The stage's loader info does not have a width".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let x_min = root.header().stage_size().x_min;
-                    let x_max = root.header().stage_size().x_max;
-                    return Ok((x_max - x_min).to_pixels().into());
+                    return Ok(root.width().to_pixels().into());
                 }
             }
         }

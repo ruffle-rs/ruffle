@@ -23,7 +23,7 @@ use walkdir::{DirEntry, WalkDir};
 struct SizeOpt {
     /// The amount to scale the page size with
     #[clap(long = "scale", default_value = "1.0")]
-    scale: f32,
+    scale: f64,
 
     /// Optionally override the output width
     #[clap(long = "width")]
@@ -96,11 +96,17 @@ fn take_screenshot(
 ) -> Result<(Descriptors, Vec<RgbaImage>), Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&swf_path, None)?;
 
-    let width = size.width.unwrap_or_else(|| movie.width());
-    let width = (width as f32 * size.scale).round() as u32;
+    let width = size
+        .width
+        .map(f64::from)
+        .unwrap_or_else(|| movie.width().to_pixels());
+    let width = (width * size.scale).round() as u32;
 
-    let height = size.height.unwrap_or_else(|| movie.height());
-    let height = (height as f32 * size.scale).round() as u32;
+    let height = size
+        .height
+        .map(f64::from)
+        .unwrap_or_else(|| movie.height().to_pixels());
+    let height = (height * size.scale).round() as u32;
 
     let target = TextureTarget::new(&descriptors.device, (width, height));
     let player = Player::new(

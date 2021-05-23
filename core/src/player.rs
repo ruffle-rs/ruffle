@@ -371,8 +371,8 @@ impl Player {
         info!(
             "Loaded SWF version {}, with a resolution of {}x{}",
             movie.version(),
-            movie.header().stage_size().x_max,
-            movie.header().stage_size().y_max
+            movie.width(),
+            movie.height()
         );
 
         self.frame_rate = movie.header().frame_rate().into();
@@ -382,8 +382,8 @@ impl Player {
         self.mutate_with_update_context(|context| {
             context.stage.set_movie_size(
                 context.gc_context,
-                context.swf.width(),
-                context.swf.height(),
+                context.swf.width().to_pixels() as u32,
+                context.swf.height().to_pixels() as u32,
             );
             let domain = Avm2Domain::movie_domain(context.gc_context, context.avm2.global_domain());
             let root: DisplayObject =
