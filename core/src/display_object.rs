@@ -1105,8 +1105,10 @@ pub trait TDisplayObject<'gc>:
                     log::error!("No movie when trying to set clip event");
                 }
             }
-            if let Some(visible) = place_object.is_visible {
-                self.set_visible(context.gc_context, visible);
+            if self.swf_version() >= 11 {
+                if let Some(visible) = place_object.is_visible {
+                    self.set_visible(context.gc_context, visible);
+                }
             }
             // TODO: Others will go here eventually.
         }
