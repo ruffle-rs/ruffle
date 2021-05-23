@@ -13,7 +13,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
 use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
-use swf::{write_swf, Compression, Swf};
+use swf::{write_swf, Compression};
 
 /// Implements `flash.display.LoaderInfo`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -173,7 +173,7 @@ pub fn frame_rate<'gc>(
                     return Err("Error: The stage's loader info does not have a frame rate".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    return Ok(root.header().frame_rate.into());
+                    return Ok(root.header().frame_rate().into());
                 }
             }
         }
@@ -195,8 +195,8 @@ pub fn height<'gc>(
                     return Err("Error: The stage's loader info does not have a height".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let y_min = root.header().stage_size.y_min;
-                    let y_max = root.header().stage_size.y_max;
+                    let y_min = root.header().stage_size().y_min;
+                    let y_max = root.header().stage_size().y_max;
                     return Ok((y_max - y_min).to_pixels().into());
                 }
             }
@@ -228,7 +228,7 @@ pub fn swf_version<'gc>(
                     return Err("Error: The stage's loader info does not have a SWF version".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    return Ok(root.header().version.into());
+                    return Ok(root.version().into());
                 }
             }
         }
@@ -273,8 +273,8 @@ pub fn width<'gc>(
                     return Err("Error: The stage's loader info does not have a width".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let x_min = root.header().stage_size.x_min;
-                    let x_max = root.header().stage_size.x_max;
+                    let x_min = root.header().stage_size().x_min;
+                    let x_max = root.header().stage_size().x_max;
                     return Ok((x_max - x_min).to_pixels().into());
                 }
             }
@@ -304,18 +304,10 @@ pub fn bytes<'gc>(
 
                     // First, write a fake header corresponding to an
                     // uncompressed SWF
-                    let mut header = root.header().clone();
+                    let mut header = root.header().swf_header().clone();
                     header.compression = Compression::None;
-                    header.uncompressed_length = root.data().len() as u32;
 
-                    write_swf(
-                        &Swf {
-                            header,
-                            tags: vec![],
-                        },
-                        &mut *ba_write,
-                    )
-                    .unwrap();
+                    write_swf(&header, &[], &mut *ba_write).unwrap();
 
                     // `swf` always writes an implicit end tag, let's cut that
                     // off. We scroll back 2 bytes before writing the actual

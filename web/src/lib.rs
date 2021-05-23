@@ -207,7 +207,7 @@ impl Ruffle {
             let parameters_to_load = parse_movie_parameters(&parameters);
 
             let ruffle = *self;
-            let on_metadata = move |swf_header: &ruffle_core::swf::Header| {
+            let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
                 ruffle.on_metadata(swf_header);
             };
 
@@ -976,16 +976,16 @@ impl Ruffle {
         });
     }
 
-    fn on_metadata(&self, swf_header: &ruffle_core::swf::Header) {
+    fn on_metadata(&self, swf_header: &ruffle_core::swf::HeaderExt) {
         let _ = self.with_instance(|instance| {
-            let width = swf_header.stage_size.x_max - swf_header.stage_size.x_min;
-            let height = swf_header.stage_size.y_max - swf_header.stage_size.y_min;
+            let width = swf_header.stage_size().x_max - swf_header.stage_size().x_min;
+            let height = swf_header.stage_size().y_max - swf_header.stage_size().y_min;
             let metadata = MovieMetadata {
                 width: width.to_pixels(),
                 height: height.to_pixels(),
-                frame_rate: swf_header.frame_rate,
-                num_frames: swf_header.num_frames,
-                swf_version: swf_header.version,
+                frame_rate: swf_header.frame_rate(),
+                num_frames: swf_header.num_frames(),
+                swf_version: swf_header.version(),
             };
 
             if let Ok(value) = JsValue::from_serde(&metadata) {

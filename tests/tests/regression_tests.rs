@@ -880,7 +880,7 @@ fn run_swf(
     let base_path = Path::new(swf_path).parent().unwrap();
     let (mut executor, channel) = NullExecutor::new();
     let movie = SwfMovie::from_path(swf_path, None)?;
-    let frame_time = 1000.0 / movie.header().frame_rate as f64;
+    let frame_time = 1000.0 / movie.header().frame_rate() as f64;
     let trace_output = Rc::new(RefCell::new(Vec::new()));
 
     let player = Player::new(

@@ -18,7 +18,7 @@ pub fn echo_swf(filename: &str) {
     let swf_buf = decompress_swf(&in_data[..]).unwrap();
     let swf = parse_swf(&swf_buf).unwrap();
     let out_file = File::create(filename).unwrap();
-    write_swf(&swf, out_file).unwrap();
+    write_swf(&swf.header.swf_header(), &swf.tags, out_file).unwrap();
 }
 
 pub type TestData<T> = (u8, T, Vec<u8>);

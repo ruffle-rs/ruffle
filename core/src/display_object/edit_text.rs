@@ -964,7 +964,7 @@ impl<'gc> EditText<'gc> {
             activation.run_with_child_frame_for_display_object(
                 "[Text Field Binding]",
                 parent,
-                activation.context.swf.header().version,
+                activation.context.swf.version(),
                 |activation| {
                     if let Ok(Some((object, property))) =
                         activation.resolve_variable_path(parent, &variable)
@@ -1053,7 +1053,7 @@ impl<'gc> EditText<'gc> {
                     activation.run_with_child_frame_for_display_object(
                         "[Propagate Text Binding]",
                         self.avm1_parent().unwrap(),
-                        activation.context.swf.header().version,
+                        activation.context.swf.version(),
                         |activation| {
                             let _ = object.set(
                                 property,
@@ -1204,7 +1204,7 @@ impl<'gc> EditText<'gc> {
 
             if changed {
                 let globals = context.avm1.global_object_cell();
-                let swf_version = context.swf.header().version;
+                let swf_version = context.swf.version();
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Propagate Text Binding]"),
