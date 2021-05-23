@@ -2,7 +2,7 @@ use crate::backend::navigator::url_from_relative_path;
 use gc_arena::Collect;
 use std::path::Path;
 use std::sync::Arc;
-use swf::{Header, TagCode};
+use swf::{HeaderExt, TagCode};
 
 pub type Error = Box<dyn std::error::Error>;
 pub type DecodeResult = Result<(), Error>;
@@ -14,7 +14,7 @@ pub type SwfStream<'a> = swf::read::Reader<'a>;
 #[collect(require_static)]
 pub struct SwfMovie {
     /// The SWF header parsed from the data stream.
-    header: Header,
+    header: HeaderExt,
 
     /// Uncompressed SWF data.
     data: Vec<u8>,
@@ -40,14 +40,7 @@ impl SwfMovie {
     /// Construct an empty movie.
     pub fn empty(swf_version: u8) -> Self {
         Self {
-            header: Header {
-                compression: swf::Compression::None,
-                version: swf_version,
-                uncompressed_length: 0,
-                stage_size: swf::Rectangle::default(),
-                frame_rate: 1.0,
-                num_frames: 0,
-            },
+            header: HeaderExt::default_with_swf_version(swf_version),
             data: vec![],
             url: None,
             loader_url: None,
@@ -94,7 +87,7 @@ impl SwfMovie {
     ) -> Result<Self, Error> {
         let compressed_length = swf_data.len();
         let swf_buf = swf::read::decompress_swf(swf_data)?;
-        let encoding = swf::SwfStr::encoding_for_version(swf_buf.header.version);
+        let encoding = swf::SwfStr::encoding_for_version(swf_buf.header.version());
         Ok(Self {
             header: swf_buf.header,
             data: swf_buf.data,
@@ -106,13 +99,13 @@ impl SwfMovie {
         })
     }
 
-    pub fn header(&self) -> &Header {
+    pub fn header(&self) -> &HeaderExt {
         &self.header
     }
 
     /// Get the version of the SWF.
     pub fn version(&self) -> u8 {
-        self.header.version
+        self.header.version()
     }
 
     pub fn data(&self) -> &[u8] {
@@ -128,11 +121,11 @@ impl SwfMovie {
     }
 
     pub fn width(&self) -> u32 {
-        (self.header.stage_size.x_max - self.header.stage_size.x_min).to_pixels() as u32
+        (self.header.stage_size().x_max - self.header.stage_size().x_min).to_pixels() as u32
     }
 
     pub fn height(&self) -> u32 {
-        (self.header.stage_size.y_max - self.header.stage_size.y_min).to_pixels() as u32
+        (self.header.stage_size().y_max - self.header.stage_size().y_min).to_pixels() as u32
     }
 
     /// Get the URL this SWF was fetched from.
@@ -296,7 +289,7 @@ impl SwfSlice {
 
     /// Get the version of the SWF this data comes from.
     pub fn version(&self) -> u8 {
-        self.movie.header().version
+        self.movie.header().version()
     }
 
     /// Construct a reader for this slice.

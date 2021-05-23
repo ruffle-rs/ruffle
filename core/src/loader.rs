@@ -127,7 +127,7 @@ impl<'gc> LoadManager<'gc> {
         fetch: OwnedFuture<Vec<u8>, Error>,
         url: String,
         parameters: Vec<(String, String)>,
-        on_metadata: Box<dyn FnOnce(&swf::Header)>,
+        on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::RootMovie { self_handle: None };
         let handle = self.add_loader(loader);
@@ -366,7 +366,7 @@ impl<'gc> Loader<'gc> {
         fetch: OwnedFuture<Vec<u8>, Error>,
         mut url: String,
         parameters: Vec<(String, String)>,
-        on_metadata: Box<dyn FnOnce(&swf::Header)>,
+        on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
     ) -> OwnedFuture<(), Error> {
         let _handle = match self {
             Loader::RootMovie { self_handle, .. } => {

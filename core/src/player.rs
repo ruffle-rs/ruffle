@@ -346,7 +346,7 @@ impl Player {
         &mut self,
         movie_url: &str,
         parameters: Vec<(String, String)>,
-        on_metadata: Box<dyn FnOnce(&swf::Header)>,
+        on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
     ) {
         self.mutate_with_update_context(|context| {
             let fetch = context.navigator.fetch(movie_url, RequestOptions::get());
@@ -370,12 +370,12 @@ impl Player {
     pub fn set_root_movie(&mut self, movie: Arc<SwfMovie>) {
         info!(
             "Loaded SWF version {}, with a resolution of {}x{}",
-            movie.header().version,
-            movie.header().stage_size.x_max,
-            movie.header().stage_size.y_max
+            movie.version(),
+            movie.header().stage_size().x_max,
+            movie.header().stage_size().y_max
         );
 
-        self.frame_rate = movie.header().frame_rate.into();
+        self.frame_rate = movie.header().frame_rate().into();
         self.swf = movie;
         self.instance_counter = 0;
 
@@ -626,7 +626,7 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        let version = context.swf.header().version;
+        let version = context.swf.version();
         let globals = context.avm1.global_object_cell();
         let root_clip = context.stage.root_clip();
 
@@ -1167,7 +1167,7 @@ impl Player {
                     Avm1::run_stack_frame_for_action(
                         actions.clip,
                         "[Frame]",
-                        context.swf.header().version,
+                        context.swf.version(),
                         bytecode,
                         context,
                     );
@@ -1194,7 +1194,7 @@ impl Player {
                                 let _ = activation.run_child_frame_for_action(
                                     "[Actions]",
                                     actions.clip,
-                                    activation.context.swf.header().version,
+                                    activation.context.swf.version(),
                                     event,
                                 );
                             }
@@ -1212,7 +1212,7 @@ impl Player {
                         Avm1::run_stack_frame_for_action(
                             actions.clip,
                             "[Construct]",
-                            context.swf.header().version,
+                            context.swf.version(),
                             event,
                             context,
                         );
@@ -1223,7 +1223,7 @@ impl Player {
                     Avm1::run_stack_frame_for_method(
                         actions.clip,
                         object,
-                        context.swf.header().version,
+                        context.swf.version(),
                         context,
                         name,
                         &args,

@@ -185,7 +185,7 @@ impl<'gc> MovieClip<'gc> {
 
     /// Construct a movie clip that represents an entire movie.
     pub fn from_movie(gc_context: MutationContext<'gc, '_>, movie: Arc<SwfMovie>) -> Self {
-        let num_frames = movie.header().num_frames;
+        let num_frames = movie.header().num_frames();
         let mc = MovieClip(GcCell::allocate(
             gc_context,
             MovieClipData {
@@ -525,12 +525,7 @@ impl<'gc> MovieClip<'gc> {
                 )
             })?;
 
-        Avm1::run_stack_frame_for_init_action(
-            self.into(),
-            context.swf.header().version,
-            slice,
-            context,
-        );
+        Avm1::run_stack_frame_for_init_action(self.into(), context.swf.version(), slice, context);
 
         Ok(())
     }
@@ -2114,7 +2109,7 @@ impl<'gc> MovieClipData<'gc> {
     ) {
         let is_swf = movie.is_some();
         let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(self.movie().version())));
-        let total_frames = movie.header().num_frames;
+        let total_frames = movie.header().num_frames();
 
         self.base.reset_for_movie_load();
         self.static_data = Gc::allocate(

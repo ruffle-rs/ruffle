@@ -14,9 +14,9 @@ pub use matrix::Matrix;
 
 /// A complete header and tags in the SWF file.
 /// This is returned by the `swf::read_swf` convenience method.
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct Swf<'a> {
-    pub header: Header,
+    pub header: HeaderExt,
     pub tags: Vec<Tag<'a>>,
 }
 
@@ -24,7 +24,7 @@ pub struct Swf<'a> {
 /// Owns the decompressed SWF data, which will be referenced when parsed by `parse_swf`.
 pub struct SwfBuf {
     /// The parsed SWF header.
-    pub header: Header,
+    pub header: HeaderExt,
 
     /// The decompressed SWF tag stream.
     pub data: Vec<u8>,
@@ -39,17 +39,143 @@ pub struct SwfBuf {
 pub struct Header {
     pub compression: Compression,
     pub version: u8,
-    pub uncompressed_length: u32,
     pub stage_size: Rectangle,
     pub frame_rate: f32,
     pub num_frames: u16,
+}
+
+impl Header {
+    pub fn default_with_swf_version(version: u8) -> Self {
+        Self {
+            compression: Compression::None,
+            version,
+            stage_size: Default::default(),
+            frame_rate: 1.0,
+            num_frames: 0,
+        }
+    }
+}
+
+/// The extended metadata of an SWF file.
+///
+/// This includes the SWF header data as well as metdata from the FileAttributes and
+/// SetBackgroundColor tags.
+///
+/// This metadata may not reflect the actual data inside a malformed SWF; for example,
+/// the root timeline my actually contain fewer frames than `HeaderExt::num_frames` if it is
+/// corrupted.
+#[derive(Clone, Debug)]
+pub struct HeaderExt {
+    pub(crate) header: Header,
+    pub(crate) file_attributes: FileAttributes,
+    pub(crate) background_color: Option<SetBackgroundColor>,
+    pub(crate) uncompressed_len: u32,
+}
+
+impl HeaderExt {
+    #[inline]
+    /// Returns the header for a dummy SWF file with the given SWF version.
+    pub fn default_with_swf_version(version: u8) -> Self {
+        Self {
+            header: Header::default_with_swf_version(version),
+            file_attributes: Default::default(),
+            background_color: None,
+            uncompressed_len: 0,
+        }
+    }
+
+    /// The background color of the SWF from the SetBackgroundColor tag.
+    ///
+    /// `None` will be returned if the SetBackgroundColor tag was not found.
+    #[inline]
+    pub fn background_color(&self) -> Option<Color> {
+        self.background_color.clone()
+    }
+
+    /// The compression format used by the SWF.
+    #[inline]
+    pub fn compression(&self) -> Compression {
+        self.header.compression
+    }
+
+    /// The frame rate of the SWF, in frames per second.
+    #[inline]
+    pub fn frame_rate(&self) -> f32 {
+        self.header.frame_rate
+    }
+
+    /// Whether this SWF contains XMP metadata in a Metadata tag.
+    #[inline]
+    pub fn has_metdata(&self) -> bool {
+        self.file_attributes.contains(FileAttributes::HAS_METADATA)
+    }
+
+    /// Returns the basic SWF header.
+    #[inline]
+    pub fn swf_header(&self) -> &Header {
+        &self.header
+    }
+
+    /// Whether this SWF uses ActionScript 3.0 (AVM2).
+    #[inline]
+    pub fn is_action_script_3(&self) -> bool {
+        self.file_attributes
+            .contains(FileAttributes::IS_ACTION_SCRIPT_3)
+    }
+
+    /// The number of frames on the root timeline.
+    #[inline]
+    pub fn num_frames(&self) -> u16 {
+        self.header.num_frames
+    }
+
+    /// The stage dimensions of this SWF.
+    #[inline]
+    pub fn stage_size(&self) -> &Rectangle {
+        &self.header.stage_size
+    }
+
+    /// The SWF version.
+    #[inline]
+    pub fn version(&self) -> u8 {
+        self.header.version
+    }
+
+    /// The length of the SWF after decompression.
+    #[inline]
+    pub fn uncompressed_len(&self) -> u32 {
+        self.uncompressed_len
+    }
+
+    /// Whether this SWF requests hardware acceleration to blit to the screen.
+    #[inline]
+    pub fn use_direct_blit(&self) -> bool {
+        self.file_attributes
+            .contains(FileAttributes::USE_DIRECT_BLIT)
+    }
+
+    /// Whether this SWF requests hardware acceleration for compositing.
+    #[inline]
+    pub fn use_gpu(&self) -> bool {
+        self.file_attributes.contains(FileAttributes::USE_GPU)
+    }
+
+    /// Whether this SWF should be placed in the network sandbox when run locally.
+    ///
+    /// SWFs in the network sandbox can only access network resources,  not local resources.
+    /// SWFs in the local sandbox can only access local resources, not network resources.
+    #[inline]
+    pub fn use_network_sandbox(&self) -> bool {
+        self.file_attributes
+            .contains(FileAttributes::USE_NETWORK_SANDBOX)
+    }
 }
 
 /// The compression format used internally by the SWF file.
 ///
 /// The vast majority of SWFs will use zlib compression.
 /// [SWF19 p.27](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=27)
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Compression {
     None,
     Zlib,
@@ -390,6 +516,13 @@ bitflags! {
         /// SWFs in the network sandbox can only access network resources,  not local resources.
         /// SWFs in the local sandbox can only access local resources, not network resources.
         const USE_NETWORK_SANDBOX = 1 << 0;
+    }
+}
+
+impl Default for FileAttributes {
+    fn default() -> Self {
+        // The settings for SWF7 and earlier, which contain no FileAttributes tag.
+        Self::empty()
     }
 }
 

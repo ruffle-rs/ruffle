@@ -25,10 +25,10 @@ use std::io::{self, Read};
 /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
 /// let stream = swf::decompress_swf(&data[..]).unwrap();
 /// let swf = swf::parse_swf(&stream).unwrap();
-/// println!("Number of frames: {}", swf.header.num_frames);
+/// println!("Number of frames: {}", swf.header.num_frames());
 /// ```
 pub fn parse_swf(swf_buf: &SwfBuf) -> Result<Swf<'_>> {
-    let mut reader = Reader::new(&swf_buf.data[..], swf_buf.header.version);
+    let mut reader = Reader::new(&swf_buf.data[..], swf_buf.header.version());
 
     Ok(Swf {
         header: swf_buf.header.clone(),
@@ -41,18 +41,22 @@ pub fn parse_swf(swf_buf: &SwfBuf) -> Result<Swf<'_>> {
 ///
 /// Returns an `Error` if this is not a valid SWF file.
 ///
+/// This will also parse the first two tags of the SWF file searching
+/// for the FileAttributes and SetBackgroundColor tags; this info is
+/// returned as an extended header.
+///
 /// # Example
 /// ```
 /// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
 /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
 /// let swf_stream = swf::decompress_swf(&data[..]).unwrap();
-/// println!("FPS: {}", swf_stream.header.frame_rate);
+/// println!("FPS: {}", swf_stream.header.frame_rate());
 /// ```
 pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // Read SWF header.
     let compression = read_compression_type(&mut input)?;
     let version = input.read_u8()?;
-    let uncompressed_length = input.read_u32::<LittleEndian>()?;
+    let uncompressed_len = input.read_u32::<LittleEndian>()?;
 
     // Now the SWF switches to a compressed stream.
     let mut decompress_stream: Box<dyn Read> = match compression {
@@ -75,12 +79,12 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
             }
             // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
             // subtract it here.
-            make_lzma_reader(input, uncompressed_length - 8)?
+            make_lzma_reader(input, uncompressed_len - 8)?
         }
     };
 
     // Decompress the entire SWF.
-    let mut data = Vec::with_capacity(uncompressed_length as usize);
+    let mut data = Vec::with_capacity(uncompressed_len as usize);
     if let Err(e) = decompress_stream.read_to_end(&mut data) {
         log::error!("Error decompressing SWF: {}", e);
     }
@@ -91,7 +95,7 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // through the stream.
     // We'll still try to parse what we get if the full decompression fails.
     // (+ 8 for header size)
-    if data.len() as u64 + 8 != uncompressed_length as u64 {
+    if data.len() as u64 + 8 != uncompressed_len as u64 {
         log::warn!("SWF length doesn't match header, may be corrupt");
     }
 
@@ -102,13 +106,45 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     let header = Header {
         compression,
         version,
-        uncompressed_length,
         stage_size,
         frame_rate,
         num_frames,
     };
     let data = reader.get_ref().to_vec();
-    Ok(SwfBuf { header, data })
+
+    // Parse the first two tags, searching for the FileAttributes and SetBackgroundColor tags.
+    // This metadata is useful, so we want to return it along with the header.
+    // In SWF8+, FileAttributes should be the first tag in the SWF.
+    // FileAttributes anywhere else in the SWF are ignored.
+    let mut tag = reader.read_tag();
+    let file_attributes = if let Ok(Tag::FileAttributes(attributes)) = tag {
+        tag = reader.read_tag();
+        attributes
+    } else {
+        FileAttributes::default()
+    };
+
+    // In most SWFs, SetBackgroundColor will be the second or third tag after FileAttributes + Metadata.
+    // It's possible for the SetBackgroundColor tag to be missing or appear later in wacky SWFs, so let's
+    // return `None` in this case.
+    let mut background_color = None;
+    for _ in 0..2 {
+        if let Ok(Tag::SetBackgroundColor(color)) = tag {
+            background_color = Some(color);
+            break;
+        };
+        tag = reader.read_tag();
+    }
+
+    Ok(SwfBuf {
+        header: HeaderExt {
+            header,
+            file_attributes,
+            background_color,
+            uncompressed_len,
+        },
+        data,
+    })
 }
 
 #[cfg(feature = "flate2")]
@@ -304,7 +340,7 @@ impl<'a> Reader<'a> {
     /// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
     /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
     /// let mut swf_buf = swf::decompress_swf(&data[..]).unwrap();
-    /// let mut reader = swf::read::Reader::new(&swf_buf.data[..], swf_buf.header.version);
+    /// let mut reader = swf::read::Reader::new(&swf_buf.data[..], swf_buf.header.version());
     /// while let Ok(tag) = reader.read_tag() {
     ///     println!("Tag: {:?}", tag);
     /// }
@@ -2698,7 +2734,7 @@ pub mod tests {
         let mut tag_header_length;
         loop {
             let (swf_tag_code, length) = {
-                let mut tag_reader = Reader::new(&data[pos..], swf_buf.header.version);
+                let mut tag_reader = Reader::new(&data[pos..], swf_buf.header.version());
                 let ret = tag_reader.read_tag_code_and_length().unwrap();
                 tag_header_length =
                     tag_reader.get_ref().as_ptr() as usize - (pos + data.as_ptr() as usize);
@@ -2746,16 +2782,16 @@ pub mod tests {
         assert_eq!(
             read_from_file("tests/swfs/uncompressed.swf")
                 .header
-                .compression,
+                .compression(),
             Compression::None
         );
         assert_eq!(
-            read_from_file("tests/swfs/zlib.swf").header.compression,
+            read_from_file("tests/swfs/zlib.swf").header.compression(),
             Compression::Zlib
         );
         if cfg!(feature = "lzma") {
             assert_eq!(
-                read_from_file("tests/swfs/lzma.swf").header.compression,
+                read_from_file("tests/swfs/lzma.swf").header.compression(),
                 Compression::Lzma
             );
         }

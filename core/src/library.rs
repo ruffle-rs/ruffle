@@ -417,7 +417,7 @@ impl<'gc> Library<'gc> {
         if !self.movie_libraries.contains_key(&movie) {
             let slice = SwfSlice::from(movie.clone());
             let mut reader = slice.read_from(0);
-            let movie_version = movie.header().version;
+            let movie_version = movie.version();
             let vm_type = if movie_version > 8 {
                 match reader.read_tag_code_and_length() {
                     Ok((tag_code, _tag_len))
