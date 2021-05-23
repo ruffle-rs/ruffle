@@ -34,7 +34,7 @@ pub struct SwfMovie {
     encoding: &'static swf::Encoding,
 
     /// The compressed length of the entire datastream
-    compressed_length: usize,
+    compressed_len: usize,
 }
 
 impl SwfMovie {
@@ -47,7 +47,7 @@ impl SwfMovie {
             loader_url: None,
             parameters: Vec::new(),
             encoding: swf::UTF_8,
-            compressed_length: 0,
+            compressed_len: 0,
         }
     }
 
@@ -64,7 +64,7 @@ impl SwfMovie {
             loader_url: source.loader_url.clone(),
             parameters: source.parameters.clone(),
             encoding: source.encoding,
-            compressed_length: source.compressed_length,
+            compressed_len: source.compressed_len,
         }
     }
 
@@ -86,7 +86,7 @@ impl SwfMovie {
         url: Option<String>,
         loader_url: Option<String>,
     ) -> Result<Self, Error> {
-        let compressed_length = swf_data.len();
+        let compressed_len = swf_data.len();
         let swf_buf = swf::read::decompress_swf(swf_data)?;
         let encoding = swf::SwfStr::encoding_for_version(swf_buf.header.version());
         Ok(Self {
@@ -96,7 +96,7 @@ impl SwfMovie {
             loader_url,
             parameters: Vec::new(),
             encoding,
-            compressed_length,
+            compressed_len,
         })
     }
 
@@ -149,8 +149,12 @@ impl SwfMovie {
         self.parameters.extend(params);
     }
 
-    pub fn compressed_length(&self) -> usize {
-        self.compressed_length
+    pub fn compressed_len(&self) -> usize {
+        self.compressed_len
+    }
+
+    pub fn uncompressed_len(&self) -> u32 {
+        self.header.uncompressed_len()
     }
 
     pub fn avm_type(&self) -> AvmType {
