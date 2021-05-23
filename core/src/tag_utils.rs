@@ -168,6 +168,14 @@ impl SwfMovie {
     pub fn stage_size(&self) -> &Rectangle {
         self.header.stage_size()
     }
+
+    pub fn num_frames(&self) -> u16 {
+        self.header.num_frames()
+    }
+
+    pub fn frame_rate(&self) -> f32 {
+        self.header.frame_rate()
+    }
 }
 
 /// A shared-ownership reference to some portion of an SWF datastream.
