@@ -26,4 +26,15 @@ export interface MovieMetadata {
      * The SWF version of the movie.
      */
     readonly swfVersion: number;
+
+    /**
+     * The background color of the movie as a hex string, such as "#FFFFFF".
+     * May be `null` if the background color is unavailable.
+     */
+    readonly backgroundColor: string | null;
+
+    /**
+     * Whether this movie is an ActionScript 3.0 movie.
+     */
+    readonly isActionScript3: boolean;
 }
