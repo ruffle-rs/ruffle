@@ -769,7 +769,7 @@ fn get_bytes_loaded<'gc>(
     let bytes_loaded = if movie_clip.is_root() {
         movie_clip
             .movie()
-            .map(|mv| mv.header().uncompressed_len())
+            .map(|mv| mv.uncompressed_len())
             .unwrap_or_default()
     } else {
         movie_clip.tag_stream_len() as u32
@@ -787,7 +787,7 @@ fn get_bytes_total<'gc>(
     let bytes_total = if movie_clip.is_root() {
         movie_clip
             .movie()
-            .map(|mv| mv.header().uncompressed_len())
+            .map(|mv| mv.uncompressed_len())
             .unwrap_or_default()
     } else {
         movie_clip.tag_stream_len() as u32

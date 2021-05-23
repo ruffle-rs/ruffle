@@ -114,7 +114,7 @@ pub fn get_progress<'gc>(
                 "bytesLoaded",
                 movieclip
                     .movie()
-                    .map(|mv| (mv.header().uncompressed_len()).into())
+                    .map(|mv| (mv.uncompressed_len()).into())
                     .unwrap_or(Value::Undefined),
                 Attribute::empty(),
             );
@@ -123,7 +123,7 @@ pub fn get_progress<'gc>(
                 "bytesTotal",
                 movieclip
                     .movie()
-                    .map(|mv| (mv.header().uncompressed_len()).into())
+                    .map(|mv| (mv.uncompressed_len()).into())
                     .unwrap_or(Value::Undefined),
                 Attribute::empty(),
             );
