@@ -2305,6 +2305,9 @@ impl<'gc> MovieClipData<'gc> {
     fn stop_audio_stream(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if let Some(audio_stream) = self.audio_stream.take() {
             context.stop_sound(audio_stream);
+            if context.audio_manager.sounds_count() == 0 {
+                *context.frame_rate = Some(*context.root_frame_rate);
+            }
         }
     }
 
@@ -3231,6 +3234,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                             "Invalid slice generated when constructing sound stream block",
                         )
                     })?;
+                *context.frame_rate = Some(mc.static_data.swf.movie.header().frame_rate.into());
                 let audio_stream = context.start_stream(
                     mc.static_data.audio_stream_handle,
                     self,

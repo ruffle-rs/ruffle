@@ -865,7 +865,8 @@ mod tests {
                 focus_tracker: FocusTracker::new(gc_context),
                 times_get_time_called: 0,
                 time_offset: &mut 0,
-                frame_rate: &mut frame_rate,
+                frame_rate: &mut None,
+                root_frame_rate: &mut 1.0,
             };
             context.stage.replace_at_depth(&mut context, root, 0);
 

@@ -183,7 +183,9 @@ pub struct Player {
 
     gc_arena: GcArena,
 
+    /// Current frame rate.
     frame_rate: f64,
+    root_frame_rate: f64,
 
     /// A time budget for executing frames.
     /// Gained by passage of time between host frames, spent by executing SWF frames.
@@ -241,7 +243,8 @@ impl Player {
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
         let movie_width = 550;
         let movie_height = 400;
-        let frame_rate = 12.0;
+        let root_frame_rate = 12.0;
+        let frame_rate = root_frame_rate;
         // Disable script timeout in debug builds by default.
         let max_execution_duration = if cfg!(debug_assertions) { u64::MAX } else { 15 };
 
@@ -283,6 +286,7 @@ impl Player {
             }),
 
             frame_rate,
+            root_frame_rate,
             frame_accumulator: 0.0,
             recent_run_frame_timings: VecDeque::with_capacity(10),
             time_offset: 0,
@@ -338,6 +342,14 @@ impl Player {
         Ok(player_box)
     }
 
+    /// Set the current frame rate
+    pub fn set_frame_rate(&mut self, nframe_rate: f64) -> &mut Player {
+        info!("Setting frame rate to {}", nframe_rate);
+        self.frame_rate = nframe_rate;
+        self.audio.set_frame_rate(nframe_rate);
+        self
+    }
+
     /// Fetch the root movie.
     ///
     /// This should not be called if a root movie fetch has already been kicked
@@ -375,7 +387,10 @@ impl Player {
             movie.header().stage_size.y_max
         );
 
-        self.frame_rate = movie.header().frame_rate.into();
+        self.movie_width = movie.width();
+        self.movie_height = movie.height();
+        self.root_frame_rate = movie.header().frame_rate.into();
+        self.frame_rate = self.root_frame_rate;
         self.swf = movie;
         self.instance_counter = 0;
 
@@ -1121,6 +1136,11 @@ impl Player {
         self.frame_rate
     }
 
+    // The frame rate of the root movie in FPS.
+    pub fn root_frame_rate(&self) -> f64 {
+        self.root_frame_rate
+    }
+
     pub fn renderer(&self) -> &Renderer {
         &self.renderer
     }
@@ -1291,7 +1311,7 @@ impl Player {
             max_execution_duration,
             current_frame,
             time_offset,
-            frame_rate,
+            root_frame_rate,
         ) = (
             self.player_version,
             &self.swf,
@@ -1312,8 +1332,8 @@ impl Player {
             self.max_execution_duration,
             &mut self.current_frame,
             &mut self.time_offset,
-            &mut self.frame_rate,
-        );
+            &mut self.root_frame_rate,
+       );
 
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
@@ -1372,7 +1392,8 @@ impl Player {
                 times_get_time_called: 0,
                 time_offset,
                 audio_manager,
-                frame_rate,
+                frame_rate: &mut None,
+                root_frame_rate,
             };
 
             let old_frame_rate = *update_context.frame_rate;
@@ -1432,13 +1453,20 @@ impl Player {
     {
         self.update_drag();
 
-        let rval = self.mutate_with_update_context(|context| {
+        let (rval, cframe_rate) = self.mutate_with_update_context(|context| {
             let rval = func(context);
 
             Self::run_actions(context);
 
-            rval
+            (rval, *context.frame_rate)
         });
+
+        // Update frame rate if specified
+        if let Some(nframe_rate) = cframe_rate {
+            if (nframe_rate - self.frame_rate()).abs() > f64::EPSILON {
+                self.set_frame_rate(nframe_rate);
+            }
+        };
 
         // Update mouse state (check for new hovered button, etc.)
         self.update_roll_over();
