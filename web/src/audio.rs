@@ -615,13 +615,13 @@ impl WebAudioBackend {
                 for block in adpcm_block_offsets.windows(2) {
                     let start = block[0];
                     let end = block[1];
-                    let mut decoder = AdpcmDecoder::new(
+                    let decoder = AdpcmDecoder::new(
                         &audio_data[start..end],
                         format.is_stereo,
                         format.sample_rate,
                     );
                     if format.is_stereo {
-                        while let Some(frame) = decoder.next() {
+                        for frame in decoder {
                             let (l, r) = (frame[0], frame[1]);
                             self.left_samples.push(f32::from(l) / 32767.0);
                             self.right_samples.push(f32::from(r) / 32767.0);
