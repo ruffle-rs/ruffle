@@ -170,6 +170,10 @@ struct MovieMetadata {
     num_frames: u16,
     #[serde(rename = "swfVersion")]
     swf_version: u8,
+    #[serde(rename = "backgroundColor")]
+    background_color: Option<String>,
+    #[serde(rename = "isActionScript3")]
+    is_action_script_3: bool,
 }
 
 /// An opaque handle to a `RuffleInstance` inside the pool.
@@ -980,12 +984,18 @@ impl Ruffle {
         let _ = self.with_instance(|instance| {
             let width = swf_header.stage_size().x_max - swf_header.stage_size().x_min;
             let height = swf_header.stage_size().y_max - swf_header.stage_size().y_min;
+            // Convert the background color to an HTML hex color ("#FFFFFF").
+            let background_color = swf_header
+                .background_color()
+                .map(|color| format!("#{:06X}", color.to_rgb()));
             let metadata = MovieMetadata {
                 width: width.to_pixels(),
                 height: height.to_pixels(),
                 frame_rate: swf_header.frame_rate(),
                 num_frames: swf_header.num_frames(),
                 swf_version: swf_header.version(),
+                background_color,
+                is_action_script_3: swf_header.is_action_script_3(),
             };
 
             if let Ok(value) = JsValue::from_serde(&metadata) {

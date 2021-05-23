@@ -16,6 +16,8 @@ describe("RufflePlayer.metadata", () => {
             frameRate: 24,
             numFrames: 1,
             swfVersion: 15,
+            isActionScript3: false,
+            backgroundColor: "#FF0000",
         });
     });
 });
