@@ -3448,6 +3448,9 @@ impl<'a> GotoPlaceObject<'a> {
         if next_place.background_color.is_some() {
             cur_place.background_color = next_place.background_color.take();
         }
+        if next_place.is_visible.is_some() {
+            cur_place.is_visible = next_place.is_visible.take();
+        }
         // TODO: Other stuff.
     }
 }
