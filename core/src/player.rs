@@ -375,7 +375,7 @@ impl Player {
             movie.height()
         );
 
-        self.frame_rate = movie.header().frame_rate().into();
+        self.frame_rate = movie.frame_rate().into();
         self.swf = movie;
         self.instance_counter = 0;
 

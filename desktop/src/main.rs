@@ -526,7 +526,7 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         .as_ref()
         .ok_or("Input file necessary for timedemo")?;
     let (movie, _) = load_movie_from_path(&path, &opt)?;
-    let movie_frames = Some(movie.header().num_frames());
+    let movie_frames = Some(movie.num_frames());
 
     let viewport_width = 1920;
     let viewport_height = 1080;

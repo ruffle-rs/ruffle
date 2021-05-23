@@ -171,7 +171,7 @@ pub fn frame_rate<'gc>(
                     return Err("Error: The stage's loader info does not have a frame rate".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    return Ok(root.header().frame_rate().into());
+                    return Ok(root.frame_rate().into());
                 }
             }
         }
