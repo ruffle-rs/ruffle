@@ -247,23 +247,6 @@ impl<'gc> MovieClip<'gc> {
         let mut ids = fnv::FnvHashMap::default();
         let mut preload_stream_handle = None;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
-            TagCode::FileAttributes => {
-                let attributes = reader.read_file_attributes()?;
-                let avm_type = if attributes.contains(swf::FileAttributes::IS_ACTION_SCRIPT_3) {
-                    log::warn!("This SWF contains ActionScript 3 which is not yet supported by Ruffle. The movie may not work as intended.");
-                    AvmType::Avm2
-                } else {
-                    AvmType::Avm1
-                };
-
-                let movie = self.movie().unwrap();
-                let library = context.library.library_for_movie_mut(movie);
-                if let Err(e) = library.check_avm_type(avm_type) {
-                    log::warn!("{}", e);
-                }
-
-                Ok(())
-            }
             TagCode::CsmTextSettings => self
                 .0
                 .write(context.gc_context)
@@ -499,16 +482,12 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<'_>,
         tag_len: usize,
     ) -> DecodeResult {
-        let movie = self.movie().unwrap();
-        let library = context.library.library_for_movie_mut(movie);
-        if let Err(e) = library.check_avm_type(AvmType::Avm1) {
-            log::warn!("{}", e);
-
+        if self.avm_type() != AvmType::Avm1 {
+            log::warn!("DoInitAction tag in AVM2 movie");
             return Ok(());
         }
 
         // Queue the init actions.
-
         // TODO: Init actions are supposed to be executed once, and it gives a
         // sprite ID... how does that work?
         let _sprite_id = reader.read_u16()?;
@@ -538,10 +517,8 @@ impl<'gc> MovieClip<'gc> {
         tag_len: usize,
     ) -> DecodeResult {
         let movie = self.movie().unwrap();
-        let library = context.library.library_for_movie_mut(movie);
-        if let Err(e) = library.check_avm_type(AvmType::Avm2) {
-            log::warn!("{}", e);
-
+        if self.avm_type() != AvmType::Avm2 {
+            log::warn!("DoABC tag in AVM1 movie");
             return Ok(());
         }
 
@@ -552,7 +529,7 @@ impl<'gc> MovieClip<'gc> {
         let flags = reader.read_u32()?;
         let name = reader.read_str()?.to_string_lossy(reader.encoding());
         let is_lazy_initialize = flags & 1 != 0;
-        let domain = library.avm2_domain();
+        let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
         // The rest of the tag is an ABC file so we can take our SwfSlice now.
         let slice = self
@@ -1074,7 +1051,7 @@ impl<'gc> MovieClip<'gc> {
         let mut has_stream_block = false;
         drop(mc);
 
-        let vm_type = self.vm_type(context);
+        let vm_type = self.avm_type();
 
         use swf::TagCode;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
@@ -1139,7 +1116,7 @@ impl<'gc> MovieClip<'gc> {
                     child.set_instantiated_by_timeline(context.gc_context, true);
                     child.set_depth(context.gc_context, depth);
                     child.set_parent(context.gc_context, Some(self.into()));
-                    if child.vm_type(context) == AvmType::Avm2 {
+                    if child.avm_type() == AvmType::Avm2 {
                         // In AVM2 instantiation happens before frame advance so we
                         // have to special-case that
                         child.set_place_frame(context.gc_context, self.current_frame() + 1);
@@ -1158,7 +1135,7 @@ impl<'gc> MovieClip<'gc> {
                     // In AVM1, children are added in `run_frame` so this is necessary.
                     // In AVM2 we add them in `construct_frame` so calling this causes
                     // duplicate frames
-                    if child.vm_type(context) == AvmType::Avm1 {
+                    if child.avm_type() == AvmType::Avm1 {
                         child.run_frame(context);
                     }
                 }
@@ -1709,7 +1686,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
-        if self.vm_type(context) == AvmType::Avm2 {
+        if self.avm_type() == AvmType::Avm2 {
             let needs_construction = if matches!(self.object2(), Avm2Value::Undefined) {
                 self.allocate_as_avm2_object(context, (*self).into());
 
@@ -2010,7 +1987,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        let vm_type = self.vm_type(context);
+        let vm_type = self.avm_type();
         if vm_type == AvmType::Avm1 {
             self.construct_as_avm1_object(
                 context,
@@ -3094,11 +3071,8 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
     ) -> DecodeResult {
-        let movie = self.movie().unwrap();
-        let library = context.library.library_for_movie_mut(movie);
-        if let Err(e) = library.check_avm_type(AvmType::Avm1) {
-            log::warn!("{}", e);
-
+        if self.avm_type() != AvmType::Avm1 {
+            log::warn!("DoAction tag in AVM2 movie");
             return Ok(());
         }
 

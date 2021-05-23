@@ -115,7 +115,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.vm_type(context) == AvmType::Avm2 {
+        if self.avm_type() == AvmType::Avm2 {
             let mut allocator = || {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
                 let mut proto = activation.context.avm2.prototypes().shape;
@@ -196,7 +196,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        if self.vm_type(context) == AvmType::Avm2 {
+        if self.avm_type() == AvmType::Avm2 {
             self.set_default_instance_name(context);
         }
 
