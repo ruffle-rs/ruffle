@@ -1,4 +1,5 @@
 use crate::backend::navigator::url_from_relative_path;
+use crate::vminterface::AvmType;
 use gc_arena::Collect;
 use std::path::Path;
 use std::sync::Arc;
@@ -148,6 +149,14 @@ impl SwfMovie {
 
     pub fn compressed_length(&self) -> usize {
         self.compressed_length
+    }
+
+    pub fn avm_type(&self) -> AvmType {
+        if self.header.is_action_script_3() {
+            AvmType::Avm2
+        } else {
+            AvmType::Avm1
+        }
     }
 }
 
