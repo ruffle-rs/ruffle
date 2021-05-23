@@ -216,7 +216,7 @@ impl App {
 
             (
                 format!("Ruffle - {}", filename),
-                LogicalSize::new(movie.width(), movie.height()).cast::<f64>(),
+                LogicalSize::new(movie.width().to_pixels(), movie.height().to_pixels()),
             )
         } else {
             ("Ruffle".into(), Self::DEFAULT_WINDOW_SIZE)

@@ -3,7 +3,7 @@ use crate::vminterface::AvmType;
 use gc_arena::Collect;
 use std::path::Path;
 use std::sync::Arc;
-use swf::{HeaderExt, TagCode};
+use swf::{HeaderExt, Rectangle, TagCode, Twips};
 
 pub type Error = Box<dyn std::error::Error>;
 pub type DecodeResult = Result<(), Error>;
@@ -121,12 +121,14 @@ impl SwfMovie {
         self.encoding
     }
 
-    pub fn width(&self) -> u32 {
-        (self.header.stage_size().x_max - self.header.stage_size().x_min).to_pixels() as u32
+    /// The width of the movie in twips.
+    pub fn width(&self) -> Twips {
+        self.header.stage_size().x_max - self.header.stage_size().x_min
     }
 
-    pub fn height(&self) -> u32 {
-        (self.header.stage_size().y_max - self.header.stage_size().y_min).to_pixels() as u32
+    /// The height of the movie in twips.
+    pub fn height(&self) -> Twips {
+        self.header.stage_size().y_max - self.header.stage_size().y_min
     }
 
     /// Get the URL this SWF was fetched from.
@@ -157,6 +159,10 @@ impl SwfMovie {
         } else {
             AvmType::Avm1
         }
+    }
+
+    pub fn stage_size(&self) -> &Rectangle {
+        self.header.stage_size()
     }
 }
 
