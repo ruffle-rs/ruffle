@@ -359,6 +359,7 @@ swf_tests! {
     (as3_control_flow_bool, "avm2/control_flow_bool", 1),
     (as3_control_flow_stricteq, "avm2/control_flow_stricteq", 1),
     (as3_object_enumeration, "avm2/object_enumeration", 1),
+    (as3_object_prototype, "avm2/object_prototype", 1),
     (as3_class_enumeration, "avm2/class_enumeration", 1),
     (as3_is_prototype_of, "avm2/is_prototype_of", 1),
     (as3_has_own_property, "avm2/has_own_property", 1),

@@ -1,0 +1,4 @@
+Object.hasOwnProperty('toString'):  false
+Object.prototype.hasOwnProperty('toString'):  true
+[object Object]
+Custom toString
