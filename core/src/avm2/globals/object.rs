@@ -2,13 +2,14 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::scope::Scope;
+use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -165,6 +166,21 @@ pub fn create_proto<'gc>(
         Method::from_builtin(class_init),
         activation.context.gc_context,
     );
+    let mut write = object_class.write(activation.context.gc_context);
+
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public(), "length"),
+        QName::new(Namespace::public(), "int").into(),
+        None,
+    ));
+
+    // Fixed traits (in AS3 namespace)
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+        ("hasOwnProperty", has_own_property),
+        ("isPrototypeOf", is_prototype_of),
+        ("propertyIsEnumerable", property_is_enumerable),
+    ];
+    write.define_as3_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
 
     let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
     let proto =
@@ -183,52 +199,48 @@ pub fn create_proto<'gc>(
 /// not allocate an object to store either proto. Instead, you must allocate
 /// bare objects for both and let this function fill Object for you.
 pub fn fill_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     mut object_proto: Object<'gc>,
     fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    object_proto.install_method(
+) -> Result<Object<'gc>, Error> {
+    let gc_context = activation.context.gc_context;
+    object_proto.install_dynamic_property(
         gc_context,
-        QName::new(Namespace::public(), "toString"),
-        0,
-        FunctionObject::from_builtin(gc_context, to_string, fn_proto),
-    );
-    object_proto.install_method(
+        QName::new(Namespace::public(), "hasOwnProperty"),
+        FunctionObject::from_builtin(gc_context, has_own_property, fn_proto).into(),
+    )?;
+    object_proto.install_dynamic_property(
         gc_context,
-        QName::new(Namespace::public(), "toLocaleString"),
-        0,
-        FunctionObject::from_builtin(gc_context, to_locale_string, fn_proto),
-    );
-    object_proto.install_method(
-        gc_context,
-        QName::new(Namespace::public(), "valueOf"),
-        0,
-        FunctionObject::from_builtin(gc_context, value_of, fn_proto),
-    );
-    object_proto.install_method(
-        gc_context,
-        QName::new(Namespace::as3_namespace(), "hasOwnProperty"),
-        0,
-        FunctionObject::from_builtin(gc_context, has_own_property, fn_proto),
-    );
-    object_proto.install_method(
-        gc_context,
-        QName::new(Namespace::as3_namespace(), "isPrototypeOf"),
-        0,
-        FunctionObject::from_builtin(gc_context, is_prototype_of, fn_proto),
-    );
-    object_proto.install_method(
-        gc_context,
-        QName::new(Namespace::as3_namespace(), "propertyIsEnumerable"),
-        0,
-        FunctionObject::from_builtin(gc_context, property_is_enumerable, fn_proto),
-    );
-    object_proto.install_method(
+        QName::new(Namespace::public(), "propertyIsEnumerable"),
+        FunctionObject::from_builtin(gc_context, property_is_enumerable, fn_proto).into(),
+    )?;
+    object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "setPropertyIsEnumerable"),
-        0,
-        FunctionObject::from_builtin(gc_context, set_property_is_enumerable, fn_proto),
-    );
+        FunctionObject::from_builtin(gc_context, set_property_is_enumerable, fn_proto).into(),
+    )?;
+    object_proto.install_dynamic_property(
+        gc_context,
+        QName::new(Namespace::public(), "isPrototypeOf"),
+        FunctionObject::from_builtin(gc_context, is_prototype_of, fn_proto).into(),
+    )?;
+    object_proto.install_dynamic_property(
+        gc_context,
+        QName::new(Namespace::public(), "toString"),
+        FunctionObject::from_builtin(gc_context, to_string, fn_proto).into(),
+    )?;
+    object_proto.install_dynamic_property(
+        gc_context,
+        QName::new(Namespace::public(), "toLocaleString"),
+        FunctionObject::from_builtin(gc_context, to_locale_string, fn_proto).into(),
+    )?;
+    object_proto.install_dynamic_property(
+        gc_context,
+        QName::new(Namespace::public(), "valueOf"),
+        FunctionObject::from_builtin(gc_context, value_of, fn_proto).into(),
+    )?;
 
-    FunctionObject::from_builtin_constr(gc_context, instance_init, object_proto, fn_proto).unwrap()
+    let object_constr =
+        FunctionObject::from_builtin_constr(gc_context, instance_init, object_proto, fn_proto)?;
+    Ok(object_constr)
 }

@@ -389,7 +389,7 @@ pub fn load_player_globals<'gc>(
     let (class_constr, class_proto, class_class) =
         class::create_class(activation, gs, object_proto, fn_proto);
 
-    let object_constr = object::fill_proto(mc, object_proto, fn_proto);
+    let object_constr = object::fill_proto(activation, object_proto, fn_proto)?;
 
     dynamic_class(mc, object_constr, object_class, domain, script)?;
     dynamic_class(mc, function_constr, fn_class, domain, script)?;
