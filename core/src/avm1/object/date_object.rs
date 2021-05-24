@@ -1,5 +1,3 @@
-use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
 use chrono::{DateTime, Utc};
@@ -31,6 +29,13 @@ impl fmt::Debug for DateObject<'_> {
 }
 
 impl<'gc> DateObject<'gc> {
+    pub fn empty(
+        gc_context: MutationContext<'gc, '_>,
+        proto: Option<Object<'gc>>,
+    ) -> DateObject<'gc> {
+        Self::with_date_time(gc_context, proto, None)
+    }
+
     pub fn with_date_time(
         gc_context: MutationContext<'gc, '_>,
         proto: Option<Object<'gc>>,
@@ -59,17 +64,8 @@ impl<'gc> DateObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for DateObject<'gc> {
-    impl_custom_object!(base);
-
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(DateObject::with_date_time(activation.context.gc_context, Some(this), None).into())
-    }
-
-    fn as_date_object(&self) -> Option<DateObject<'gc>> {
-        Some(*self)
-    }
+    impl_custom_object!(base {
+        set(proto: self);
+        bare_object(as_date_object -> DateObject::empty);
+    });
 }

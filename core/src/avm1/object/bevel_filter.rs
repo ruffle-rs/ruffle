@@ -1,10 +1,8 @@
 use crate::add_field_accessors;
-use crate::avm1::error::Error;
-use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::impl_custom_object_without_set;
+use crate::avm1::{Object, ScriptObject, TObject};
+use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
 
-use crate::avm1::activation::Activation;
 use std::fmt;
 
 #[derive(Copy, Clone, Debug, Collect)]
@@ -119,33 +117,8 @@ impl<'gc> BevelFilterObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for BevelFilterObject<'gc> {
-    impl_custom_object_without_set!(base);
-
-    fn set(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
-        let base = self.0.read().base;
-        base.internal_set(
-            name,
-            value,
-            activation,
-            (*self).into(),
-            Some(activation.context.avm1.prototypes.bevel_filter),
-        )
-    }
-
-    fn as_bevel_filter_object(&self) -> Option<BevelFilterObject<'gc>> {
-        Some(*self)
-    }
-
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(BevelFilterObject::empty_object(activation.context.gc_context, Some(this)).into())
-    }
+    impl_custom_object!(base {
+        set(proto: bevel_filter);
+        bare_object(as_bevel_filter_object -> BevelFilterObject::empty_object);
+    });
 }

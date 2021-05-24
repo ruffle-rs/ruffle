@@ -1,6 +1,61 @@
 #[macro_export]
-macro_rules! impl_custom_object_without_set {
+macro_rules! impl_custom_object {
     ($field:ident) => {
+        crate::impl_custom_object!($field { set(proto: self); });
+    };
+
+    (@extra $field:ident set(proto: self)) => {
+        fn set(
+            &self,
+            name: &str,
+            value: crate::avm1::Value<'gc>,
+            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
+        ) -> Result<(), crate::avm1::Error<'gc>> {
+            self.0.read().$field.set(name, value, activation)
+        }
+    };
+
+    (@extra $field:ident set(proto: $proto:ident)) => {
+        fn set(
+            &self,
+            name: &str,
+            value: crate::avm1::Value<'gc>,
+            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
+        ) -> Result<(), crate::avm1::Error<'gc>> {
+            let base = self.0.read().$field;
+            base.internal_set(
+                name,
+                value,
+                activation,
+                (*self).into(),
+                Some(activation.context.avm1.prototypes.$proto),
+            )
+        }
+    };
+
+    (@extra $field:ident bare_object($as_obj:ident -> $obj_type:ident :: $new:ident)) => {
+        fn $as_obj(&self) -> Option<$obj_type<'gc>> {
+            Some(*self)
+        }
+
+        fn create_bare_object(
+            &self,
+            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
+            this: crate::avm1::Object<'gc>,
+        ) -> Result<crate::avm1::Object<'gc>, crate::avm1::Error<'gc>> {
+            Ok($obj_type::$new(activation.context.gc_context, Some(this)).into())
+        }
+    };
+
+    ($field:ident {
+        $(
+            $extra_name:ident($($extra:tt)*);
+        )*
+    }) => {
+        $(
+            crate::impl_custom_object!(@extra $field $extra_name($($extra)*));
+        )*
+
         fn get_local(
             &self,
             name: &str,
@@ -230,22 +285,6 @@ macro_rules! impl_custom_object_without_set {
             name: std::borrow::Cow<str>,
         ) -> bool {
             self.0.read().$field.remove_watcher(activation, name)
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! impl_custom_object {
-    ($field:ident) => {
-        crate::impl_custom_object_without_set!($field);
-
-        fn set(
-            &self,
-            name: &str,
-            value: crate::avm1::Value<'gc>,
-            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-        ) -> Result<(), crate::avm1::Error<'gc>> {
-            self.0.read().$field.set(name, value, activation)
         }
     };
 }

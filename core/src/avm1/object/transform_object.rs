@@ -1,7 +1,7 @@
 use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TDisplayObject, TObject, Value};
 use crate::display_object::MovieClip;
-use crate::impl_custom_object_without_set;
+use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 use crate::avm1::activation::Activation;
@@ -50,11 +50,10 @@ impl<'gc> TransformObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for TransformObject<'gc> {
-    impl_custom_object_without_set!(base);
-
-    fn as_transform_object(&self) -> Option<TransformObject<'gc>> {
-        Some(*self)
-    }
+    impl_custom_object!(base {
+        set(proto: color_transform);
+        bare_object(as_transform_object -> TransformObject::empty);
+    });
 
     fn construct(
         &self,
@@ -79,29 +78,5 @@ impl<'gc> TObject<'gc> for TransformObject<'gc> {
         let this = prototype.create_bare_object(activation, prototype)?;
         self.construct_on_existing(activation, this, args)?;
         Ok(this.into())
-    }
-
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(TransformObject::empty(activation.context.gc_context, Some(this)).into())
-    }
-
-    fn set(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
-        let base = self.0.read().base;
-        base.internal_set(
-            name,
-            value,
-            activation,
-            (*self).into(),
-            Some(activation.context.avm1.prototypes.color_transform),
-        )
     }
 }
