@@ -1,7 +1,6 @@
 //! Object impl for boxed values
 
 use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::impl_custom_object;
@@ -116,20 +115,8 @@ impl fmt::Debug for ValueObject<'_> {
 }
 
 impl<'gc> TObject<'gc> for ValueObject<'gc> {
-    impl_custom_object!(base);
-
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(ValueObject::empty_box(
-            activation.context.gc_context,
-            Some(this),
-        ))
-    }
-
-    fn as_value_object(&self) -> Option<ValueObject<'gc>> {
-        Some(*self)
-    }
+    impl_custom_object!(base {
+        set(proto: self);
+        bare_object(as_value_object -> ValueObject::empty_box);
+    });
 }

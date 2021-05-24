@@ -1,7 +1,5 @@
 //! AVM1 object type to represent Sound objects.
 
-use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::display_object::DisplayObject;
@@ -120,17 +118,8 @@ impl<'gc> SoundObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for SoundObject<'gc> {
-    impl_custom_object!(base);
-
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(SoundObject::empty_sound(activation.context.gc_context, Some(this)).into())
-    }
-
-    fn as_sound_object(&self) -> Option<SoundObject<'gc>> {
-        Some(*self)
-    }
+    impl_custom_object!(base {
+        set(proto: self);
+        bare_object(as_sound_object -> SoundObject::empty_sound);
+    });
 }

@@ -1,8 +1,6 @@
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
 
-use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject};
 use std::fmt;
 
@@ -60,17 +58,8 @@ impl<'gc> SharedObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for SharedObject<'gc> {
-    impl_custom_object!(base);
-
-    fn create_bare_object(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(SharedObject::empty_shared_obj(activation.context.gc_context, Some(this)).into())
-    }
-
-    fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
-        Some(*self)
-    }
+    impl_custom_object!(base {
+        set(proto: self);
+        bare_object(as_shared_object -> SharedObject::empty_shared_obj);
+    });
 }
