@@ -582,8 +582,6 @@ pub fn loader_info<'gc>(
                         activation.context.gc_context,
                     )?;
 
-                    activation.super_init(obj, &[])?;
-
                     return Ok(obj.into());
                 }
             }
