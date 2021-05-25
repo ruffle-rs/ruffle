@@ -7,6 +7,7 @@ use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
+use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
 use bitflags::bitflags;
@@ -400,13 +401,9 @@ impl<'gc> Class<'gc> {
                 protected_namespace: None,
                 interfaces: Vec::new(),
                 instance_deriver: Deriver(implicit_deriver),
-                instance_init: Method::from_builtin(|_, _, _| {
-                    Err("Do not call activation initializers!".into())
-                }),
+                instance_init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
                 instance_traits: traits,
-                class_init: Method::from_builtin(|_, _, _| {
-                    Err("Do not call activation class initializers!".into())
-                }),
+                class_init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
                 class_traits: Vec::new(),
                 traits_loaded: true,
             },
