@@ -1071,18 +1071,32 @@ impl Player {
     }
 
     pub fn run_frame(&mut self) {
-        self.update(|update_context| {
-            // TODO: In what order are levels run?
-            let stage = update_context.stage;
-
-            stage.exit_frame(update_context);
-            stage.enter_frame(update_context);
-            stage.construct_frame(update_context);
-            stage.frame_constructed(update_context);
-            stage.run_frame(update_context);
-            stage.run_frame_scripts(update_context);
-
-            update_context.update_sounds();
+        self.update(|context| {
+            let stage = context.stage;
+            match context.swf.avm_type() {
+                AvmType::Avm1 => {
+                    // AVM1 execution order is determined by the global execution list, based on instantiation order.
+                    for clip in context.avm1.clip_exec_iter() {
+                        if clip.removed() {
+                            // Clean up removed objects from this frame or a previous frame.
+                            // Can be safely removed while iterating here, because the iterator advances
+                            // to the next node before returning the current node.
+                            context.avm1.remove_from_exec_list(context.gc_context, clip);
+                        } else {
+                            clip.run_frame(context);
+                        }
+                    }
+                }
+                AvmType::Avm2 => {
+                    stage.exit_frame(context);
+                    stage.enter_frame(context);
+                    stage.construct_frame(context);
+                    stage.frame_constructed(context);
+                    stage.run_frame_avm2(context);
+                    stage.run_frame_scripts(context);
+                }
+            }
+            context.update_sounds();
         });
         self.needs_render = true;
     }

@@ -1707,7 +1707,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // New children will be constructed when they are instantiated and thus
         // if we construct before our children, they'll get double-constructed.
-        for child in self.iter_execution_list() {
+        for child in self.iter_render_list() {
             child.construct_frame(context);
         }
 
@@ -1746,11 +1746,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        // Children must run first.
-        for child in self.iter_execution_list() {
-            child.run_frame(context);
-        }
-
         // Run my load/enterFrame clip event.
         let mut mc = self.0.write(context.gc_context);
         let is_load_frame = !mc.initialized();
@@ -1966,7 +1961,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         if event.propagates() {
-            for child in self.iter_execution_list() {
+            for child in self.iter_render_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
                 }
@@ -2014,8 +2009,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        let vm_type = self.avm_type();
-        if vm_type == AvmType::Avm1 {
+        if self.avm_type() == AvmType::Avm1 {
+            context
+                .avm1
+                .add_to_exec_list(context.gc_context, (*self).into());
+
             self.construct_as_avm1_object(
                 context,
                 display_object,
@@ -2049,7 +2047,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        for child in self.iter_execution_list() {
+        for child in self.iter_render_list() {
             child.unload(context);
         }
 

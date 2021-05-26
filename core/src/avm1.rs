@@ -121,6 +121,9 @@ pub struct Avm1<'gc> {
     /// Used to prevent scrolling on web.
     has_mouse_listener: bool,
 
+    /// The list of all movie clips in execution order.
+    pub clip_exec_list: Option<DisplayObject<'gc>>,
+
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
 }
@@ -146,6 +149,7 @@ impl<'gc> Avm1<'gc> {
             halted: false,
             max_recursion_depth: 255,
             has_mouse_listener: false,
+            clip_exec_list: None,
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
@@ -430,6 +434,61 @@ impl<'gc> Avm1<'gc> {
         self.broadcaster_functions
     }
 
+    /// Returns an iterator over all movie clips in execution order.
+    pub fn clip_exec_iter(&self) -> DisplayObjectIter<'gc> {
+        DisplayObjectIter {
+            clip: self.clip_exec_list,
+        }
+    }
+
+    /// Adds a movie clip to the execution list.
+    ///
+    /// This should be called whenever a movie clip is created, and controls the order of
+    /// execution for AVM1 movies.
+    pub fn add_to_exec_list(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        clip: DisplayObject<'gc>,
+    ) {
+        // Adding while iterating is safe, as this does not modify any active nodes.
+        if clip.next_avm1_clip().is_none() && clip.prev_avm1_clip().is_none() {
+            if let Some(head) = self.clip_exec_list {
+                head.set_prev_avm1_clip(gc_context, Some(clip));
+                clip.set_next_avm1_clip(gc_context, self.clip_exec_list);
+            }
+            self.clip_exec_list = Some(clip);
+        }
+    }
+
+    /// Removes a display object from the execution list.
+    pub fn remove_from_exec_list(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        clip: DisplayObject<'gc>,
+    ) -> bool {
+        let prev = clip.prev_avm1_clip();
+        let next = clip.next_avm1_clip();
+        let present_on_execution_list = prev.is_some() || next.is_some();
+
+        if let Some(head) = self.clip_exec_list {
+            if DisplayObject::ptr_eq(head, clip) {
+                self.clip_exec_list = next;
+            }
+        }
+
+        if let Some(prev) = prev {
+            prev.set_next_avm1_clip(gc_context, next);
+        }
+        if let Some(next) = next {
+            next.set_prev_avm1_clip(gc_context, prev);
+        }
+
+        clip.set_prev_avm1_clip(gc_context, None);
+        clip.set_next_avm1_clip(gc_context, None);
+
+        present_on_execution_list
+    }
+
     #[cfg(feature = "avm_debug")]
     #[inline]
     pub fn show_debug_output(&self) -> bool {
@@ -555,4 +614,17 @@ pub fn start_drag<'gc>(
         constraint,
     };
     *activation.context.drag_object = Some(drag_object);
+}
+
+pub struct DisplayObjectIter<'gc> {
+    clip: Option<DisplayObject<'gc>>,
+}
+
+impl<'gc> Iterator for DisplayObjectIter<'gc> {
+    type Item = DisplayObject<'gc>;
+    fn next(&mut self) -> Option<Self::Item> {
+        let clip = self.clip;
+        self.clip = clip.and_then(|clip| clip.next_avm1_clip());
+        clip
+    }
 }

@@ -1357,6 +1357,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     ) {
         self.set_default_instance_name(context);
 
+        if self.avm_type() == AvmType::Avm1 {
+            context
+                .avm1
+                .add_to_exec_list(context.gc_context, (*self).into());
+        }
+
         let mut text = self.0.write(context.gc_context);
         text.document = text
             .document

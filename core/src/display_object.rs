@@ -71,11 +71,15 @@ pub struct DisplayObjectBase<'gc> {
     scale_y: Percent,
     skew: f64,
 
-    /// The previous sibling of this display object in order of execution.
-    prev_sibling: Option<DisplayObject<'gc>>,
+    /// The previous display object in order of AVM1 execution.
+    ///
+    /// `None` in an AVM2 movie.
+    prev_avm1_clip: Option<DisplayObject<'gc>>,
 
-    /// The next sibling of this display object in order of execution.
-    next_sibling: Option<DisplayObject<'gc>>,
+    /// The next display object in order of execution.
+    ///
+    /// `None` in an AVM2 movie.
+    next_avm1_clip: Option<DisplayObject<'gc>>,
 
     /// The sound transform of sounds playing via this display object.
     sound_transform: SoundTransform,
@@ -103,8 +107,8 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             scale_x: Percent::from_unit(1.0),
             scale_y: Percent::from_unit(1.0),
             skew: 0.0,
-            prev_sibling: None,
-            next_sibling: None,
+            prev_avm1_clip: None,
+            next_avm1_clip: None,
             masker: None,
             maskee: None,
             sound_transform: Default::default(),
@@ -328,20 +332,20 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.parent = parent;
     }
 
-    fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
-        self.prev_sibling
+    fn prev_avm1_clip(&self) -> Option<DisplayObject<'gc>> {
+        self.prev_avm1_clip
     }
 
-    fn set_prev_sibling(&mut self, node: Option<DisplayObject<'gc>>) {
-        self.prev_sibling = node;
+    fn set_prev_avm1_clip(&mut self, node: Option<DisplayObject<'gc>>) {
+        self.prev_avm1_clip = node;
     }
 
-    fn next_sibling(&self) -> Option<DisplayObject<'gc>> {
-        self.next_sibling
+    fn next_avm1_clip(&self) -> Option<DisplayObject<'gc>> {
+        self.next_avm1_clip
     }
 
-    fn set_next_sibling(&mut self, node: Option<DisplayObject<'gc>>) {
-        self.next_sibling = node;
+    fn set_next_avm1_clip(&mut self, node: Option<DisplayObject<'gc>>) {
+        self.next_avm1_clip = node;
     }
 
     fn removed(&self) -> bool {
@@ -525,7 +529,7 @@ pub trait TDisplayObject<'gc>:
         let mut bounds = self.self_bounds().transform(matrix);
 
         if let Some(ctr) = self.as_container() {
-            for child in ctr.iter_execution_list() {
+            for child in ctr.iter_render_list() {
                 let matrix = *matrix * *child.matrix();
                 bounds.union(&child.bounds_with_transform(&matrix));
             }
@@ -809,14 +813,14 @@ pub trait TDisplayObject<'gc>:
         self.parent().filter(|p| p.as_container().is_some())
     }
 
-    fn prev_sibling(&self) -> Option<DisplayObject<'gc>>;
-    fn set_prev_sibling(
+    fn prev_avm1_clip(&self) -> Option<DisplayObject<'gc>>;
+    fn set_prev_avm1_clip(
         &self,
         gc_context: MutationContext<'gc, '_>,
         node: Option<DisplayObject<'gc>>,
     );
-    fn next_sibling(&self) -> Option<DisplayObject<'gc>>;
-    fn set_next_sibling(
+    fn next_avm1_clip(&self) -> Option<DisplayObject<'gc>>;
+    fn set_next_avm1_clip(
         &self,
         gc_context: MutationContext<'gc, '_>,
         node: Option<DisplayObject<'gc>>,
@@ -950,8 +954,23 @@ pub trait TDisplayObject<'gc>:
     ///    as properties on the class
     fn construct_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
 
-    /// Execute all other timeline actions on this object and it's children.
+    /// Execute all other timeline actions on this object.
     fn run_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
+
+    /// Execute all other timeline actions on this object and it's children.
+    ///
+    /// AVM2 operates recursively through children, so this also instructs
+    /// children to run a frame.
+    fn run_frame_avm2(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // Children run first.
+        if let Some(container) = self.as_container() {
+            for child in container.iter_render_list() {
+                child.run_frame_avm2(context);
+            }
+        }
+
+        self.run_frame(context);
+    }
 
     /// Emit an `frameConstructed` event on this DisplayObject and any children it
     /// may have.
@@ -973,7 +992,7 @@ pub trait TDisplayObject<'gc>:
     /// Run any frame scripts (if they exist and this object needs to run them).
     fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if let Some(container) = self.as_container() {
-            for child in container.iter_execution_list() {
+            for child in container.iter_render_list() {
                 child.run_frame_scripts(context);
             }
         }
@@ -1004,7 +1023,7 @@ pub trait TDisplayObject<'gc>:
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Unload children.
         if let Some(ctr) = self.as_container() {
-            for child in ctr.iter_execution_list() {
+            for child in ctr.iter_render_list() {
                 child.unload(context);
             }
         }
@@ -1450,25 +1469,25 @@ macro_rules! impl_display_object_sansbounds {
         ) {
             self.0.write(context).$field.set_parent(parent)
         }
-        fn prev_sibling(&self) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.prev_sibling()
+        fn prev_avm1_clip(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
+            self.0.read().$field.prev_avm1_clip()
         }
-        fn set_prev_sibling(
+        fn set_prev_avm1_clip(
             &self,
             context: gc_arena::MutationContext<'gc, '_>,
-            node: Option<DisplayObject<'gc>>,
+            node: Option<crate::display_object::DisplayObject<'gc>>,
         ) {
-            self.0.write(context).$field.set_prev_sibling(node);
+            self.0.write(context).$field.set_prev_avm1_clip(node);
         }
-        fn next_sibling(&self) -> Option<DisplayObject<'gc>> {
-            self.0.read().$field.next_sibling()
+        fn next_avm1_clip(&self) -> Option<crate::display_object::DisplayObject<'gc>> {
+            self.0.read().$field.next_avm1_clip()
         }
-        fn set_next_sibling(
+        fn set_next_avm1_clip(
             &self,
             context: gc_arena::MutationContext<'gc, '_>,
-            node: Option<DisplayObject<'gc>>,
+            node: Option<crate::display_object::DisplayObject<'gc>>,
         ) {
-            self.0.write(context).$field.set_next_sibling(node);
+            self.0.write(context).$field.set_next_avm1_clip(node);
         }
         fn masker(&self) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.masker()

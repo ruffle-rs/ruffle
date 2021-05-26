@@ -344,7 +344,7 @@ impl<'gc> Avm2Button<'gc> {
         }
 
         if let Some(child) = child {
-            child.run_frame(context);
+            child.run_frame_avm2(context);
         }
 
         if is_cur_state {
@@ -413,7 +413,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         self.set_default_instance_name(context);
 
         if run_frame {
-            self.run_frame(context);
+            self.run_frame_avm2(context);
         }
 
         self.set_state(context, ButtonState::Up);
@@ -521,10 +521,10 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
             //NOTE: Yes, we do have to run these in a different order from the
             //regular run_frame method.
-            up_state.run_frame(context);
-            over_state.run_frame(context);
-            down_state.run_frame(context);
-            hit_area.run_frame(context);
+            up_state.run_frame_avm2(context);
+            over_state.run_frame_avm2(context);
+            down_state.run_frame_avm2(context);
+            hit_area.run_frame_avm2(context);
 
             up_state.run_frame_scripts(context);
             over_state.run_frame_scripts(context);
@@ -535,7 +535,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame_avm2(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.0.read().skip_current_frame {
             self.0.write(context.gc_context).skip_current_frame = false;
             return;
@@ -543,22 +543,22 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
         let hit_area = self.0.read().hit_area;
         if let Some(hit_area) = hit_area {
-            hit_area.run_frame(context);
+            hit_area.run_frame_avm2(context);
         }
 
         let up_state = self.0.read().up_state;
         if let Some(up_state) = up_state {
-            up_state.run_frame(context);
+            up_state.run_frame_avm2(context);
         }
 
         let down_state = self.0.read().down_state;
         if let Some(down_state) = down_state {
-            down_state.run_frame(context);
+            down_state.run_frame_avm2(context);
         }
 
         let over_state = self.0.read().over_state;
         if let Some(over_state) = over_state {
-            over_state.run_frame(context);
+            over_state.run_frame_avm2(context);
         }
     }
 

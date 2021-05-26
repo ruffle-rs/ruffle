@@ -97,6 +97,7 @@ swf_tests! {
     (execution_order1, "avm1/execution_order1", 3),
     (execution_order2, "avm1/execution_order2", 15),
     (execution_order3, "avm1/execution_order3", 5),
+    (execution_order4, "avm1/execution_order4", 4),
     (export_assets, "avm1/export_assets", 1),
     (single_frame, "avm1/single_frame", 2),
     (looping, "avm1/looping", 6),

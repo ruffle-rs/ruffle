@@ -210,7 +210,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        if self.avm_type() == AvmType::Avm2 {
+        if self.avm_type() == AvmType::Avm1 {
+            context
+                .avm1
+                .add_to_exec_list(context.gc_context, (*self).into());
+        } else {
             self.set_default_instance_name(context);
         }
 
