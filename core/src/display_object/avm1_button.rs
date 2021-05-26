@@ -9,7 +9,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::types::{Degrees, Percent};
-use crate::vminterface::Instantiator;
+use crate::vminterface::{AvmType, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -250,6 +250,12 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     ) {
         self.set_default_instance_name(context);
 
+        if self.avm_type() == AvmType::Avm1 {
+            context
+                .avm1
+                .add_to_exec_list(context.gc_context, (*self).into());
+        }
+
         let mut mc = self.0.write(context.gc_context);
         if mc.object.is_none() {
             let object = StageObject::for_display_object(
@@ -315,10 +321,6 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                     .insert(depth, child);
             }
         }
-
-        for child in self.iter_execution_list() {
-            child.run_frame(context);
-        }
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
@@ -336,7 +338,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         point: (Twips, Twips),
         options: HitTestOptions,
     ) -> bool {
-        for child in self.iter_execution_list() {
+        for child in self.iter_render_list() {
             if child.hit_test_shape(context, point, options) {
                 return true;
             }
@@ -414,7 +416,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         }
 
         if event.propagates() {
-            for child in self.iter_execution_list() {
+            for child in self.iter_render_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
                 }

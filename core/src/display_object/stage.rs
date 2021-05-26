@@ -532,14 +532,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        for child in self.iter_execution_list() {
+        for child in self.iter_render_list() {
             child.construct_frame(context);
-        }
-    }
-
-    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        for child in self.iter_execution_list() {
-            child.run_frame(context);
         }
     }
 

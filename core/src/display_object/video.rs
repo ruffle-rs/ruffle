@@ -288,6 +288,12 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
+        if self.avm_type() == AvmType::Avm1 {
+            context
+                .avm1
+                .add_to_exec_list(context.gc_context, (*self).into());
+        }
+
         let mut write = self.0.write(context.gc_context);
 
         let (stream, movie, keyframes) = match &*write.source.read() {

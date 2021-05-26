@@ -406,7 +406,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
         if let Some(ctr) = obj.display_object.as_container() {
             keys.extend(
-                ctr.iter_execution_list()
+                ctr.iter_render_list()
+                    .rev()
                     .map(|child| child.name().to_string()),
             );
         }
