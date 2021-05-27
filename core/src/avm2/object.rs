@@ -746,12 +746,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .unwrap()
             .read()
             .lookup_instance_traits(name, &mut class_traits)?;
-        let base_trait = class_traits.first().ok_or_else(|| {
-            format!(
-                "Attempted to supercall method {:?}, which does not exist",
-                name
-            )
-        })?;
+        let base_trait = class_traits
+            .iter()
+            .find(|t| matches!(t.kind(), TraitKind::Method { .. }))
+            .ok_or_else(|| {
+                format!(
+                    "Attempted to supercall method {:?}, which does not exist",
+                    name
+                )
+            })?;
         let scope = constr_with_trait.get_scope();
 
         if let TraitKind::Method { method, .. } = base_trait.kind() {
@@ -765,11 +768,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
             callee.call(reciever, arguments, activation, Some(constr_with_trait))
         } else {
-            Err(format!(
-                "Attempted to supercall method {:?}, which does not exist",
-                name
-            )
-            .into())
+            unreachable!();
         }
     }
 
@@ -788,7 +787,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error> {
         let constr_with_trait = self.find_base_constr_for_trait(&name)?.ok_or_else(|| {
             format!(
-                "Attempted to supercall method {:?}, which does not exist",
+                "Attempted to supercall getter {:?}, which does not exist",
                 name
             )
         })?;
@@ -798,12 +797,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .unwrap()
             .read()
             .lookup_instance_traits(name, &mut class_traits)?;
-        let base_trait = class_traits.first().ok_or_else(|| {
-            format!(
-                "Attempted to supercall method {:?}, which does not exist",
-                name
-            )
-        })?;
+        let base_trait = class_traits
+            .iter()
+            .find(|t| matches!(t.kind(), TraitKind::Getter { .. }))
+            .ok_or_else(|| {
+                format!(
+                    "Attempted to supercall getter {:?}, which does not exist",
+                    name
+                )
+            })?;
         let scope = constr_with_trait.get_scope();
 
         if let TraitKind::Getter { method, .. } = base_trait.kind() {
@@ -817,11 +819,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
             callee.call(reciever, &[], activation, Some(constr_with_trait))
         } else {
-            Err(format!(
-                "Attempted to supercall getter for {:?}, which does not exist",
-                name
-            )
-            .into())
+            unreachable!();
         }
     }
 
@@ -841,7 +839,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error> {
         let constr_with_trait = self.find_base_constr_for_trait(&name)?.ok_or_else(|| {
             format!(
-                "Attempted to supercall method {:?}, which does not exist",
+                "Attempted to supercall setter {:?}, which does not exist",
                 name
             )
         })?;
@@ -851,12 +849,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .unwrap()
             .read()
             .lookup_instance_traits(name, &mut class_traits)?;
-        let base_trait = class_traits.first().ok_or_else(|| {
-            format!(
-                "Attempted to supercall method {:?}, which does not exist",
-                name
-            )
-        })?;
+        let base_trait = class_traits
+            .iter()
+            .find(|t| matches!(t.kind(), TraitKind::Setter { .. }))
+            .ok_or_else(|| {
+                format!(
+                    "Attempted to supercall setter {:?}, which does not exist",
+                    name
+                )
+            })?;
         let scope = constr_with_trait.get_scope();
 
         if let TraitKind::Setter { method, .. } = base_trait.kind() {
@@ -872,11 +873,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
             Ok(())
         } else {
-            Err(format!(
-                "Attempted to supercall setter for {:?}, which does not exist",
-                name
-            )
-            .into())
+            unreachable!();
         }
     }
 
