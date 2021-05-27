@@ -134,7 +134,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                     shape_proto,
                 )
                 .into();
-                shape_constr.call(Some(object), &[], &mut activation, Some(shape_proto))?;
+                shape_constr.call(Some(object), &[], &mut activation, Some(shape_constr))?;
 
                 Ok(object)
             };
