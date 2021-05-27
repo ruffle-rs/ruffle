@@ -160,23 +160,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
-        if self.has_own_virtual_setter(name) {
-            return self.set_property_local(receiver, name, value, activation);
-        }
-
-        let mut proto = self.proto();
-        while let Some(mut my_proto) = proto {
-            //NOTE: This only works because we validate ahead-of-time that
-            //we're calling a virtual setter. If you call `set_property` on
-            //a non-virtual you will actually alter the prototype.
-            if my_proto.has_own_virtual_setter(name) {
-                return my_proto.set_property(receiver, name, value, activation);
-            }
-
-            proto = my_proto.proto();
-        }
-
-        receiver.set_property_local(receiver, name, value, activation)
+        self.set_property_local(receiver, name, value, activation)
     }
 
     /// Init a property on this specific object.
