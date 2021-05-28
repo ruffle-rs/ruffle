@@ -12,13 +12,6 @@ pub const TYPE_OF_OBJECT: &str = "object";
 
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
-pub enum ArrayStorage<'gc> {
-    Vector(Vec<Value<'gc>>),
-    Properties { length: usize },
-}
-
-#[derive(Debug, Clone, Collect)]
-#[collect(no_drop)]
 pub struct Watcher<'gc> {
     callback: Object<'gc>,
     user_data: Value<'gc>,
@@ -32,7 +25,6 @@ impl<'gc> Watcher<'gc> {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn call(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -78,7 +70,6 @@ pub struct ScriptObjectData<'gc> {
     values: PropertyMap<Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
     type_of: &'static str,
-    array: ArrayStorage<'gc>,
     watchers: PropertyMap<Watcher<'gc>>,
 }
 
@@ -87,7 +78,6 @@ impl fmt::Debug for ScriptObjectData<'_> {
         f.debug_struct("Object")
             .field("prototype", &self.prototype)
             .field("values", &self.values)
-            .field("array", &self.array)
             .field("watchers", &self.watchers)
             .finish()
     }
@@ -104,30 +94,10 @@ impl<'gc> ScriptObject<'gc> {
                 prototype: proto.map_or(Value::Undefined, Value::Object),
                 type_of: TYPE_OF_OBJECT,
                 values: PropertyMap::new(),
-                array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
                 watchers: PropertyMap::new(),
             },
         ))
-    }
-
-    pub fn array(
-        gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
-    ) -> ScriptObject<'gc> {
-        let object = ScriptObject(GcCell::allocate(
-            gc_context,
-            ScriptObjectData {
-                prototype: proto.map_or(Value::Undefined, Value::Object),
-                type_of: TYPE_OF_OBJECT,
-                values: PropertyMap::new(),
-                array: ArrayStorage::Vector(Vec::new()),
-                interfaces: vec![],
-                watchers: PropertyMap::new(),
-            },
-        ));
-        object.sync_native_property("length", gc_context, Some(0.into()), false);
-        object
     }
 
     /// Constructs and allocates an empty but normal object in one go.
@@ -141,7 +111,6 @@ impl<'gc> ScriptObject<'gc> {
                 prototype: proto.map_or(Value::Undefined, Value::Object),
                 type_of: TYPE_OF_OBJECT,
                 values: PropertyMap::new(),
-                array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
                 watchers: PropertyMap::new(),
             },
@@ -161,7 +130,6 @@ impl<'gc> ScriptObject<'gc> {
                 prototype: Value::Undefined,
                 type_of: TYPE_OF_OBJECT,
                 values: PropertyMap::new(),
-                array: ArrayStorage::Properties { length: 0 },
                 interfaces: vec![],
                 watchers: PropertyMap::new(),
             },
@@ -173,42 +141,6 @@ impl<'gc> ScriptObject<'gc> {
     }
 
     #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn sync_native_property(
-        &self,
-        name: &str,
-        gc_context: MutationContext<'gc, '_>,
-        native_value: Option<Value<'gc>>,
-        is_enumerable: bool,
-    ) {
-        match self.0.write(gc_context).values.entry(name, false) {
-            Entry::Occupied(mut entry) => {
-                if let Property::Stored { value, .. } = entry.get_mut() {
-                    match native_value {
-                        None => {
-                            entry.remove_entry();
-                        }
-                        Some(native_value) => {
-                            *value = native_value;
-                        }
-                    }
-                }
-            }
-            Entry::Vacant(entry) => {
-                if let Some(native_value) = native_value {
-                    entry.insert(Property::Stored {
-                        value: native_value,
-                        attributes: if is_enumerable {
-                            Attribute::empty()
-                        } else {
-                            Attribute::DONT_ENUM
-                        },
-                    });
-                }
-            }
-        }
-    }
-
-    #[allow(clippy::trivially_copy_pass_by_ref)]
     pub(crate) fn internal_set(
         &self,
         name: &str,
@@ -217,118 +149,108 @@ impl<'gc> ScriptObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
+        if name.is_empty() {
+            return Ok(());
+        }
+
         if name == "__proto__" {
             self.0.write(activation.context.gc_context).prototype = value;
-        } else if let Ok(index) = name.parse::<usize>() {
-            self.set_array_element(index, value.to_owned(), activation.context.gc_context);
-        } else if !name.is_empty() {
-            if name == "length" {
-                let length = value
-                    .coerce_to_f64(activation)
-                    .map(|v| v.abs() as i32)
-                    .unwrap_or(0);
-                if length > 0 {
-                    self.set_length(activation.context.gc_context, length as usize);
-                } else {
-                    self.set_length(activation.context.gc_context, 0);
+            return Ok(());
+        }
+
+        //Before actually inserting a new property, we need to crawl the
+        //prototype chain for virtual setters, which kind of break how
+        //ECMAScript `[[Set]]` is supposed to work...
+        let is_vacant = !self
+            .0
+            .read()
+            .values
+            .contains_key(name, activation.is_case_sensitive());
+        let mut worked = false;
+
+        if is_vacant {
+            let mut proto: Value<'gc> = (*self).into();
+            while let Value::Object(this_proto) = proto {
+                if this_proto.has_own_virtual(activation, name) {
+                    break;
                 }
+
+                proto = this_proto.proto();
             }
 
-            //Before actually inserting a new property, we need to crawl the
-            //prototype chain for virtual setters, which kind of break how
-            //ECMAScript `[[Set]]` is supposed to work...
-            let is_vacant = !self
-                .0
-                .read()
-                .values
-                .contains_key(name, activation.is_case_sensitive());
-            let mut worked = false;
-
-            if is_vacant {
-                let mut proto: Value<'gc> = (*self).into();
-                while let Value::Object(this_proto) = proto {
-                    if this_proto.has_own_virtual(activation, name) {
-                        break;
-                    }
-
-                    proto = this_proto.proto();
-                }
-
-                if let Value::Object(this_proto) = proto {
-                    worked = true;
-                    if let Some(rval) = this_proto.call_setter(name, value, activation) {
-                        if let Some(exec) = rval.as_executable() {
-                            let _ = exec.exec(
-                                "[Setter]",
-                                activation,
-                                this,
-                                Some(this_proto),
-                                &[value],
-                                ExecutionReason::Special,
-                                rval,
-                            );
-                        }
-                    }
-                }
-            }
-
-            //This signals we didn't call a virtual setter above. Normally,
-            //we'd resolve and return up there, but we have borrows that need
-            //to end before we can do so.
-            if !worked {
-                let watcher = self
-                    .0
-                    .read()
-                    .watchers
-                    .get(name, activation.is_case_sensitive())
-                    .cloned();
-                let mut return_value = Ok(());
-                if let Some(watcher) = watcher {
-                    let old_value = self.get(name, activation)?;
-                    value = match watcher.call(activation, name, old_value, value, this, base_proto)
-                    {
-                        Ok(value) => value,
-                        Err(Error::ThrownValue(error)) => {
-                            return_value = Err(Error::ThrownValue(error));
-                            Value::Undefined
-                        }
-                        Err(_) => Value::Undefined,
-                    };
-                }
-
-                let rval = match self
-                    .0
-                    .write(activation.context.gc_context)
-                    .values
-                    .entry(name, activation.is_case_sensitive())
-                {
-                    Entry::Occupied(mut entry) => entry.get_mut().set(value),
-                    Entry::Vacant(entry) => {
-                        entry.insert(Property::Stored {
-                            value,
-                            attributes: Attribute::empty(),
-                        });
-
-                        None
-                    }
-                };
-
-                if let Some(rval) = rval {
+            if let Value::Object(this_proto) = proto {
+                worked = true;
+                if let Some(rval) = this_proto.call_setter(name, value, activation) {
                     if let Some(exec) = rval.as_executable() {
                         let _ = exec.exec(
                             "[Setter]",
                             activation,
                             this,
-                            base_proto,
+                            Some(this_proto),
                             &[value],
                             ExecutionReason::Special,
                             rval,
                         );
                     }
                 }
-
-                return return_value;
             }
+        }
+
+        //This signals we didn't call a virtual setter above. Normally,
+        //we'd resolve and return up there, but we have borrows that need
+        //to end before we can do so.
+        if !worked {
+            let watcher = self
+                .0
+                .read()
+                .watchers
+                .get(name, activation.is_case_sensitive())
+                .cloned();
+            let mut return_value = Ok(());
+            if let Some(watcher) = watcher {
+                let old_value = self.get(name, activation)?;
+                value = match watcher.call(activation, name, old_value, value, this, base_proto) {
+                    Ok(value) => value,
+                    Err(Error::ThrownValue(error)) => {
+                        return_value = Err(Error::ThrownValue(error));
+                        Value::Undefined
+                    }
+                    Err(_) => Value::Undefined,
+                };
+            }
+
+            let rval = match self
+                .0
+                .write(activation.context.gc_context)
+                .values
+                .entry(name, activation.is_case_sensitive())
+            {
+                Entry::Occupied(mut entry) => entry.get_mut().set(value),
+                Entry::Vacant(entry) => {
+                    entry.insert(Property::Stored {
+                        value,
+                        attributes: Attribute::empty(),
+                    });
+
+                    None
+                }
+            };
+
+            if let Some(rval) = rval {
+                if let Some(exec) = rval.as_executable() {
+                    let _ = exec.exec(
+                        "[Setter]",
+                        activation,
+                        this,
+                        base_proto,
+                        &[value],
+                        ExecutionReason::Special,
+                        rval,
+                    );
+                }
+            }
+
+            return return_value;
         }
 
         Ok(())
@@ -449,14 +371,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        match self.0.read().array {
-            ArrayStorage::Vector(_) => {
-                Ok(ScriptObject::array(activation.context.gc_context, Some(this)).into())
-            }
-            ArrayStorage::Properties { .. } => {
-                Ok(ScriptObject::object(activation.context.gc_context, Some(this)).into())
-            }
-        }
+        Ok(ScriptObject::object(activation.context.gc_context, Some(this)).into())
     }
 
     /// Delete a named property from the object.
@@ -676,104 +591,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
-    }
-
-    fn length(&self) -> usize {
-        match &self.0.read().array {
-            ArrayStorage::Vector(vector) => vector.len(),
-            ArrayStorage::Properties { length } => *length,
-        }
-    }
-
-    fn set_length(&self, gc_context: MutationContext<'gc, '_>, new_length: usize) {
-        let mut to_remove = None;
-
-        match &mut self.0.write(gc_context).array {
-            ArrayStorage::Vector(vector) => {
-                let old_length = vector.len();
-                vector.resize(new_length, Value::Undefined);
-                if new_length < old_length {
-                    to_remove = Some(new_length..old_length);
-                }
-            }
-            ArrayStorage::Properties { length } => {
-                *length = new_length;
-            }
-        }
-        if let Some(to_remove) = to_remove {
-            for i in to_remove {
-                self.sync_native_property(&i.to_string(), gc_context, None, true);
-            }
-        }
-        self.sync_native_property("length", gc_context, Some(new_length.into()), false);
-    }
-
-    fn array(&self) -> Vec<Value<'gc>> {
-        match &self.0.read().array {
-            ArrayStorage::Vector(vector) => vector.to_owned(),
-            ArrayStorage::Properties { length } => {
-                let mut values = Vec::new();
-                for i in 0..*length {
-                    values.push(self.array_element(i));
-                }
-                values
-            }
-        }
-    }
-
-    fn array_element(&self, index: usize) -> Value<'gc> {
-        match &self.0.read().array {
-            ArrayStorage::Vector(vector) => {
-                if let Some(value) = vector.get(index) {
-                    value.to_owned()
-                } else {
-                    Value::Undefined
-                }
-            }
-            ArrayStorage::Properties { length } => {
-                if index < *length {
-                    if let Some(Property::Stored { value, .. }) =
-                        self.0.read().values.get(&index.to_string(), false)
-                    {
-                        return value.to_owned();
-                    }
-                }
-                Value::Undefined
-            }
-        }
-    }
-
-    fn set_array_element(
-        &self,
-        index: usize,
-        value: Value<'gc>,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> usize {
-        self.sync_native_property(&index.to_string(), gc_context, Some(value), true);
-        let mut adjust_length = false;
-        let length = match &mut self.0.write(gc_context).array {
-            ArrayStorage::Vector(vector) => {
-                if index >= vector.len() {
-                    vector.resize(index + 1, Value::Undefined);
-                }
-                vector[index] = value;
-                adjust_length = true;
-                vector.len()
-            }
-            ArrayStorage::Properties { length } => *length,
-        };
-        if adjust_length {
-            self.sync_native_property("length", gc_context, Some(length.into()), false);
-        }
-        length
-    }
-
-    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
-        if let ArrayStorage::Vector(vector) = &mut self.0.write(gc_context).array {
-            if index < vector.len() {
-                vector[index] = Value::Undefined;
-            }
-        }
     }
 }
 

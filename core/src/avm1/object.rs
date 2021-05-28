@@ -8,6 +8,7 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 
 use crate::avm1::activation::Activation;
+use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::bevel_filter::BevelFilterObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::blur_filter::BlurFilterObject;
@@ -33,6 +34,7 @@ use ruffle_macros::enum_trait_object;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
+pub mod array_object;
 pub mod bevel_filter;
 pub mod bitmap_data;
 pub mod blur_filter;
@@ -64,6 +66,7 @@ pub mod xml_object;
     #[collect(no_drop)]
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
+        ArrayObject(ArrayObject<'gc>),
         SoundObject(SoundObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
@@ -399,6 +402,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get the underlying script object, if it exists.
     fn as_script_object(&self) -> Option<ScriptObject<'gc>>;
 
+    /// Get the underlying array object, if it exists.
+    fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
+        None
+    }
+
     /// Get the underlying sound object, if it exists.
     fn as_sound_object(&self) -> Option<SoundObject<'gc>> {
         None
@@ -520,41 +528,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         false
     }
-
-    /// Get the length of this object, as if it were an array.
-    fn length(&self) -> usize;
-
-    /// Gets a copy of the array storage behind this object.
-    fn array(&self) -> Vec<Value<'gc>>;
-
-    /// Sets the length of this object, as if it were an array.
-    ///
-    /// Increasing this value will fill the gap with Value::Undefined.
-    /// Decreasing this value will remove affected items from both the array and properties storage.
-    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: usize);
-
-    /// Gets a property of this object as if it were an array.
-    ///
-    /// Array element lookups do not respect the prototype chain, and will ignore virtual properties.
-    fn array_element(&self, index: usize) -> Value<'gc>;
-
-    /// Sets a property of this object as if it were an array.
-    ///
-    /// This will increase the "length" of this object to encompass the index, and return the new length.
-    /// Any gap created by increasing the length will be filled with Value::Undefined, both in array
-    /// and property storage.
-    fn set_array_element(
-        &self,
-        index: usize,
-        value: Value<'gc>,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> usize;
-
-    /// Deletes a property of this object as if it were an array.
-    ///
-    /// This will not rearrange the array or adjust the length, nor will it affect the properties
-    /// storage.
-    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>);
 }
 
 pub enum ObjectPtr {}
@@ -562,6 +535,49 @@ pub enum ObjectPtr {}
 impl<'gc> Object<'gc> {
     pub fn ptr_eq(a: Object<'gc>, b: Object<'gc>) -> bool {
         a.as_ptr() == b.as_ptr()
+    }
+
+    /// Gets the length of this object, as if it were an array.
+    pub fn length(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
+        self.get("length", activation)?.coerce_to_i32(activation)
+    }
+
+    /// Sets the length of this object, as if it were an array.
+    pub fn set_length(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        length: i32,
+    ) -> Result<(), Error<'gc>> {
+        self.set("length", length.into(), activation)
+    }
+
+    /// Checks if this object has an element.
+    pub fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
+        self.has_property(activation, &index.to_string())
+    }
+
+    /// Gets a property of this object, as if it were an array.
+    pub fn get_element(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        index: i32,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.get(&index.to_string(), activation)
+    }
+
+    /// Sets a property of this object, as if it were an array.
+    pub fn set_element(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        index: i32,
+        value: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.set(&index.to_string(), value, activation)
+    }
+
+    /// Deletes a property of this object as if it were an array.
+    pub fn delete_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
+        self.delete(activation, &index.to_string())
     }
 }
 

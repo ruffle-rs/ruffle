@@ -250,31 +250,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         TYPE_OF_OBJECT
     }
 
-    fn length(&self) -> usize {
-        0
-    }
-
-    fn set_length(&self, _gc_context: MutationContext<'gc, '_>, _new_length: usize) {}
-
-    fn array(&self) -> Vec<Value<'gc>> {
-        vec![]
-    }
-
-    fn array_element(&self, _index: usize) -> Value<'gc> {
-        Value::Undefined
-    }
-
-    fn set_array_element(
-        &self,
-        _index: usize,
-        _value: Value<'gc>,
-        _gc_context: MutationContext<'gc, '_>,
-    ) -> usize {
-        0
-    }
-
-    fn delete_array_element(&self, _index: usize, _gc_context: MutationContext<'gc, '_>) {}
-
     fn interfaces(&self) -> Vec<Object<'gc>> {
         //`super` does not implement interfaces
         vec![]

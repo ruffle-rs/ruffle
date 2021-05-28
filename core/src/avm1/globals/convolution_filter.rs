@@ -1,10 +1,9 @@
 //! flash.filter.ConvolutionFilter object
 
 use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
 use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayObject, Error, Object, TObject, Value};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -189,15 +188,14 @@ pub fn matrix<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_convolution_filter_object() {
-        let array = ScriptObject::array(
+        let array: Object<'gc> = ArrayObject::empty(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes.array),
-        );
+        )
+        .into();
 
-        let arr = filter.matrix();
-
-        for (index, item) in arr.iter().copied().enumerate() {
-            array.set_array_element(index, item.into(), activation.context.gc_context);
+        for (i, item) in filter.matrix().iter().copied().enumerate() {
+            array.set_element(activation, i as i32, item.into())?;
         }
 
         return Ok(array.into());
@@ -216,16 +214,12 @@ pub fn set_matrix<'gc>(
     if let Some(filter) = this.as_convolution_filter_object() {
         if let Value::Object(obj) = matrix {
             let arr_len = obj
-                .length()
-                .max((filter.matrix_x() * filter.matrix_y()) as usize);
-
-            let mut new_matrix = (0..arr_len).map(|_| 0.0).collect::<Vec<_>>();
-
-            for (index, item) in new_matrix.iter_mut().enumerate().take(obj.length()) {
-                *item = obj.array_element(index).coerce_to_f64(activation)?;
-            }
-
-            filter.set_matrix(activation.context.gc_context, new_matrix);
+                .length(activation)?
+                .max(filter.matrix_x() as i32 * filter.matrix_y() as i32);
+            let new_matrix: Result<Vec<f64>, Error<'gc>> = (0..arr_len)
+                .map(|i| obj.get_element(activation, i)?.coerce_to_f64(activation))
+                .collect();
+            filter.set_matrix(activation.context.gc_context, new_matrix?);
         } else {
             let arr_len = filter.matrix_x() * filter.matrix_y();
             let new_matrix = (0..arr_len).map(|_| 0.0).collect::<Vec<_>>();

@@ -1,12 +1,10 @@
 //! Code relating to executable functions + calling conventions.
 
 use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
-use crate::avm1::value::Value;
-use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject};
+use crate::avm1::{ArrayObject, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
@@ -244,10 +242,11 @@ impl<'gc> Executable<'gc> {
                     activation.context.gc_context,
                     Scope::new_local_scope(af.scope(), activation.context.gc_context),
                 );
-                let arguments = ScriptObject::array(
+                let arguments: Object<'gc> = ArrayObject::empty(
                     activation.context.gc_context,
                     Some(activation.context.avm1.prototypes().array),
-                );
+                )
+                .into();
                 arguments.define_value(
                     activation.context.gc_context,
                     "callee",
@@ -263,16 +262,11 @@ impl<'gc> Executable<'gc> {
                 );
 
                 if !af.flags.contains(FunctionFlags::SUPPRESS_ARGUMENTS) {
-                    for i in 0..args.len() {
-                        arguments.set_array_element(
-                            i,
-                            *args.get(i).unwrap(),
-                            activation.context.gc_context,
-                        );
+                    for (i, arg) in args.iter().enumerate() {
+                        arguments.set_element(activation, i as i32, arg.to_owned())?;
                     }
                 }
 
-                let argcell = arguments.into();
                 let super_object: Option<Object<'gc>> =
                     if !af.flags.contains(FunctionFlags::SUPPRESS_SUPER) {
                         Some(
@@ -331,7 +325,7 @@ impl<'gc> Executable<'gc> {
                     base_clip,
                     this,
                     Some(callee),
-                    Some(argcell),
+                    Some(arguments),
                 );
 
                 frame.allocate_local_registers(af.register_count(), frame.context.gc_context);
@@ -348,7 +342,7 @@ impl<'gc> Executable<'gc> {
                 if af.flags.contains(FunctionFlags::PRELOAD_ARGUMENTS) {
                     //TODO: What happens if you specify both suppress and
                     //preload for arguments?
-                    frame.set_local_register(preload_r, argcell);
+                    frame.set_local_register(preload_r, arguments);
                     preload_r += 1;
                 }
 
@@ -798,35 +792,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         self.base.as_ptr()
-    }
-
-    fn length(&self) -> usize {
-        self.base.length()
-    }
-
-    fn set_length(&self, gc_context: MutationContext<'gc, '_>, new_length: usize) {
-        self.base.set_length(gc_context, new_length)
-    }
-
-    fn array(&self) -> Vec<Value<'gc>> {
-        self.base.array()
-    }
-
-    fn array_element(&self, index: usize) -> Value<'gc> {
-        self.base.array_element(index)
-    }
-
-    fn set_array_element(
-        &self,
-        index: usize,
-        value: Value<'gc>,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> usize {
-        self.base.set_array_element(index, value, gc_context)
-    }
-
-    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
-        self.base.delete_array_element(index, gc_context)
     }
 }
 

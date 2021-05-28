@@ -1,10 +1,9 @@
 use crate::avm1::activation::{
     Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier,
 };
-use crate::avm1::object::TObject;
-use crate::avm1::Value as Avm1Value;
 use crate::avm1::{
-    AvmString as Avm1String, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
+    ArrayObject as Avm1ArrayObject, AvmString as Avm1String, Error as Avm1Error,
+    Object as Avm1Object, ScriptObject as Avm1ScriptObject, TObject, Value as Avm1Value,
 };
 use crate::context::UpdateContext;
 use gc_arena::Collect;
@@ -117,7 +116,7 @@ impl Value {
     pub fn from_avm1<'gc>(
         activation: &mut Avm1Activation<'_, 'gc, '_>,
         value: Avm1Value<'gc>,
-    ) -> Result<Value, crate::avm1::error::Error<'gc>> {
+    ) -> Result<Value, Avm1Error<'gc>> {
         Ok(match value {
             Avm1Value::Undefined | Avm1Value::Null => Value::Null,
             Avm1Value::Bool(value) => Value::Bool(value),
@@ -131,11 +130,14 @@ impl Value {
                     .array
                     .is_prototype_of(object)
                 {
-                    let mut values = Vec::new();
-                    for value in object.array() {
-                        values.push(Value::from_avm1(activation, value)?);
-                    }
-                    Value::List(values)
+                    let length = object.length(activation)?;
+                    let values: Result<Vec<Value>, Avm1Error<'gc>> = (0..length)
+                        .map(|i| {
+                            let element = object.get_element(activation, i)?;
+                            Value::from_avm1(activation, element)
+                        })
+                        .collect();
+                    Value::List(values?)
                 } else {
                     let keys = object.get_keys(activation);
                     let mut values = BTreeMap::new();
@@ -168,16 +170,14 @@ impl Value {
                 object.into()
             }
             Value::List(values) => {
-                let array = Avm1ScriptObject::array(
+                let array: Avm1Object<'gc> = Avm1ArrayObject::empty(
                     activation.context.gc_context,
                     Some(activation.context.avm1.prototypes().array),
-                );
-                for value in values {
-                    array.set_array_element(
-                        array.length(),
-                        value.into_avm1(activation),
-                        activation.context.gc_context,
-                    );
+                )
+                .into();
+                for (i, value) in values.iter().enumerate() {
+                    let element = value.to_owned().into_avm1(activation);
+                    array.set_element(activation, i as i32, element).unwrap();
                 }
                 array.into()
             }

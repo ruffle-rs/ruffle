@@ -1,11 +1,9 @@
 //! ActionScript Broadcaster (AsBroadcaster)
 
 use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
-use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::Declaration;
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{ArrayObject, Error, Object, ScriptObject, TObject, Value};
 use gc_arena::{Collect, MutationContext};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -68,20 +66,20 @@ pub fn add_listener<'gc>(
     let listeners = this.get("_listeners", activation)?;
 
     if let Value::Object(listeners) = listeners {
-        let length = listeners.length();
-        let mut position = None;
+        let length = listeners.length(activation)?;
 
+        let mut position = None;
         for i in 0..length {
-            let other_listener = listeners.array_element(i);
+            let other_listener = listeners.get_element(activation, i)?;
             if new_listener == other_listener {
                 position = Some(i);
                 break;
             }
         }
 
-        if position == None {
-            listeners.set_length(activation.context.gc_context, length + 1);
-            listeners.set_array_element(length, new_listener, activation.context.gc_context);
+        if position.is_none() {
+            listeners.set_length(activation, length + 1)?;
+            listeners.set_element(activation, length, new_listener)?;
         }
     }
 
@@ -98,11 +96,11 @@ pub fn remove_listener<'gc>(
 
     let mut removed = false;
     if let Value::Object(listeners) = listeners {
-        let length = listeners.length();
-        let mut position = None;
+        let length = listeners.length(activation)?;
 
+        let mut position = None;
         for i in 0..length {
-            let other_listener = listeners.array_element(i);
+            let other_listener = listeners.get_element(activation, i)?;
             if old_listener == other_listener {
                 position = Some(i);
                 break;
@@ -113,17 +111,13 @@ pub fn remove_listener<'gc>(
             if length > 0 {
                 let new_length = length - 1;
                 for i in position..new_length {
-                    listeners.set_array_element(
-                        i,
-                        listeners.array_element(i + 1),
-                        activation.context.gc_context,
-                    );
+                    let element = listeners.get_element(activation, i + 1)?;
+                    listeners.set_element(activation, i, element)?;
                 }
 
-                listeners.delete_array_element(new_length, activation.context.gc_context);
-                listeners.delete(activation, &new_length.to_string());
+                listeners.delete_element(activation, new_length);
 
-                listeners.set_length(activation.context.gc_context, new_length);
+                listeners.set_length(activation, new_length)?;
 
                 removed = true;
             }
@@ -157,16 +151,16 @@ pub fn broadcast_internal<'gc>(
     let listeners = this.get("_listeners", activation)?;
 
     if let Value::Object(listeners) = listeners {
-        let len = listeners.length();
-        for i in 0..len {
-            let listener = listeners.array_element(i);
+        let length = listeners.length(activation)?;
+        for i in 0..length {
+            let listener = listeners.get_element(activation, i)?;
 
             if let Value::Object(listener) = listener {
                 listener.call_method(method_name, call_args, activation)?;
             }
         }
 
-        Ok(len > 0)
+        Ok(length > 0)
     } else {
         Ok(false)
     }
@@ -195,7 +189,7 @@ pub fn initialize_internal<'gc>(
     functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) {
-    let listeners = ScriptObject::array(gc_context, Some(array_proto));
+    let listeners = ArrayObject::empty(gc_context, Some(array_proto));
 
     broadcaster.define_value(
         gc_context,

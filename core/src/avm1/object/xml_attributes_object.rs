@@ -234,33 +234,4 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
     fn as_ptr(&self) -> *const ObjectPtr {
         self.base().as_ptr() as *const ObjectPtr
     }
-
-    fn length(&self) -> usize {
-        self.base().length()
-    }
-
-    fn array(&self) -> Vec<Value<'gc>> {
-        self.base().array()
-    }
-
-    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: usize) {
-        self.base().set_length(gc_context, length)
-    }
-
-    fn array_element(&self, index: usize) -> Value<'gc> {
-        self.base().array_element(index)
-    }
-
-    fn set_array_element(
-        &self,
-        index: usize,
-        value: Value<'gc>,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> usize {
-        self.base().set_array_element(index, value, gc_context)
-    }
-
-    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
-        self.base().delete_array_element(index, gc_context)
-    }
 }

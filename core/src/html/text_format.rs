@@ -2,8 +2,8 @@
 
 use crate::avm1::activation::Activation as Avm1Activation;
 use crate::avm1::{
-    AvmString, Object as Avm1Object, ScriptObject as Avm1ScriptObject, TObject as Avm1TObject,
-    Value as Avm1Value,
+    ArrayObject as Avm1ArrayObject, AvmString, Error as Avm1Error, Object as Avm1Object,
+    ScriptObject as Avm1ScriptObject, TObject as Avm1TObject, Value as Avm1Value,
 };
 use crate::avm2::{
     Activation as Avm2Activation, ArrayObject as Avm2ArrayObject, Error as Avm2Error,
@@ -138,7 +138,7 @@ fn getstr_from_avm1_object<'gc>(
     object: Avm1Object<'gc>,
     name: &str,
     activation: &mut Avm1Activation<'_, 'gc, '_>,
-) -> Result<Option<String>, crate::avm1::error::Error<'gc>> {
+) -> Result<Option<String>, Avm1Error<'gc>> {
     Ok(match object.get(name, activation)? {
         Avm1Value::Undefined => None,
         Avm1Value::Null => None,
@@ -150,7 +150,7 @@ fn getfloat_from_avm1_object<'gc>(
     object: Avm1Object<'gc>,
     name: &str,
     activation: &mut Avm1Activation<'_, 'gc, '_>,
-) -> Result<Option<f64>, crate::avm1::error::Error<'gc>> {
+) -> Result<Option<f64>, Avm1Error<'gc>> {
     Ok(match object.get(name, activation)? {
         Avm1Value::Undefined => None,
         Avm1Value::Null => None,
@@ -162,7 +162,7 @@ fn getbool_from_avm1_object<'gc>(
     object: Avm1Object<'gc>,
     name: &str,
     activation: &mut Avm1Activation<'_, 'gc, '_>,
-) -> Result<Option<bool>, crate::avm1::error::Error<'gc>> {
+) -> Result<Option<bool>, Avm1Error<'gc>> {
     Ok(match object.get(name, activation)? {
         Avm1Value::Undefined => None,
         Avm1Value::Null => None,
@@ -174,19 +174,17 @@ fn getfloatarray_from_avm1_object<'gc>(
     object: Avm1Object<'gc>,
     name: &str,
     activation: &mut Avm1Activation<'_, 'gc, '_>,
-) -> Result<Option<Vec<f64>>, crate::avm1::error::Error<'gc>> {
+) -> Result<Option<Vec<f64>>, Avm1Error<'gc>> {
     Ok(match object.get(name, activation)? {
         Avm1Value::Undefined => None,
         Avm1Value::Null => None,
         v => {
-            let mut output = Vec::new();
             let v = v.coerce_to_object(activation);
-
-            for i in 0..v.length() {
-                output.push(v.array_element(i).coerce_to_f64(activation)?);
-            }
-
-            Some(output)
+            let length = v.length(activation)?;
+            let output: Result<Vec<f64>, Avm1Error<'gc>> = (0..length)
+                .map(|i| v.get_element(activation, i)?.coerce_to_f64(activation))
+                .collect();
+            Some(output?)
         }
     })
 }
@@ -340,7 +338,7 @@ impl TextFormat {
     pub fn from_avm1_object<'gc>(
         object1: Avm1Object<'gc>,
         activation: &mut Avm1Activation<'_, 'gc, '_>,
-    ) -> Result<Self, crate::avm1::error::Error<'gc>> {
+    ) -> Result<Self, Avm1Error<'gc>> {
         Ok(Self {
             font: getstr_from_avm1_object(object1, "font", activation)?,
             size: getfloat_from_avm1_object(object1, "size", activation)?,
@@ -553,7 +551,7 @@ impl TextFormat {
     pub fn as_avm1_object<'gc>(
         &self,
         activation: &mut Avm1Activation<'_, 'gc, '_>,
-    ) -> Result<Avm1Object<'gc>, crate::avm1::error::Error<'gc>> {
+    ) -> Result<Avm1Object<'gc>, Avm1Error<'gc>> {
         let object = Avm1ScriptObject::object(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes().text_format),
@@ -680,15 +678,14 @@ impl TextFormat {
         )?;
 
         if let Some(ts) = &self.tab_stops {
-            let tab_stops = Avm1ScriptObject::array(
+            let tab_stops: Avm1Object<'gc> = Avm1ArrayObject::empty(
                 activation.context.gc_context,
                 Some(activation.context.avm1.prototypes().array),
-            );
+            )
+            .into();
 
-            tab_stops.set_length(activation.context.gc_context, ts.len());
-
-            for (index, tab) in ts.iter().enumerate() {
-                tab_stops.set_array_element(index, (*tab).into(), activation.context.gc_context);
+            for (i, &tab) in ts.iter().enumerate() {
+                tab_stops.set_element(activation, i as i32, tab.into())?;
             }
 
             object.set("tabStops", tab_stops.into(), activation)?;

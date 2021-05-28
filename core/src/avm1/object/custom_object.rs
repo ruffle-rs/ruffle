@@ -230,42 +230,6 @@ macro_rules! impl_custom_object {
             self.0.as_ptr() as *const crate::avm1::ObjectPtr
         }
 
-        fn length(&self) -> usize {
-            self.0.read().$field.length()
-        }
-
-        fn array(&self) -> Vec<crate::avm1::Value<'gc>> {
-            self.0.read().$field.array()
-        }
-
-        fn set_length(&self, gc_context: gc_arena::MutationContext<'gc, '_>, length: usize) {
-            self.0.read().$field.set_length(gc_context, length)
-        }
-
-        fn array_element(&self, index: usize) -> crate::avm1::Value<'gc> {
-            self.0.read().$field.array_element(index)
-        }
-
-        fn set_array_element(
-            &self,
-            index: usize,
-            value: crate::avm1::Value<'gc>,
-            gc_context: gc_arena::MutationContext<'gc, '_>,
-        ) -> usize {
-            self.0
-                .read()
-                .$field
-                .set_array_element(index, value, gc_context)
-        }
-
-        fn delete_array_element(
-            &self,
-            index: usize,
-            gc_context: gc_arena::MutationContext<'gc, '_>,
-        ) {
-            self.0.read().$field.delete_array_element(index, gc_context)
-        }
-
         fn set_watcher(
             &self,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,

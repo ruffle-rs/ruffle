@@ -1,11 +1,9 @@
 //! XML/XMLNode global classes
 
 use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
-use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, Object, TObject, Value};
+use crate::avm1::{ArrayObject, AvmString, Error, Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
 use crate::xml;
@@ -357,10 +355,11 @@ pub fn xmlnode_child_nodes<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let array = ScriptObject::array(
+        let array: Object<'gc> = ArrayObject::empty(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes.array),
-        );
+        )
+        .into();
 
         let mut compatible_nodes = 0;
         for mut child in node.children() {
@@ -368,16 +367,16 @@ pub fn xmlnode_child_nodes<'gc>(
                 continue;
             }
 
-            array.set_array_element(
-                compatible_nodes as usize,
+            array.set_element(
+                activation,
+                compatible_nodes,
                 child
                     .script_object(
                         activation.context.gc_context,
                         Some(activation.context.avm1.prototypes.xml_node),
                     )
                     .into(),
-                activation.context.gc_context,
-            );
+            )?;
 
             compatible_nodes += 1;
         }
