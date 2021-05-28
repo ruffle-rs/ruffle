@@ -1,8 +1,7 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, Error as Avm2Error, Namespace as Avm2Namespace,
-    Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject,
-    TObject as Avm2TObject,
+    Activation as Avm2Activation, Error as Avm2Error, Object as Avm2Object,
+    StageObject as Avm2StageObject, TObject as Avm2TObject,
 };
 use crate::backend::render::ShapeHandle;
 use crate::context::{RenderContext, UpdateContext};
@@ -117,23 +116,18 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.avm_type() == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
             let mut allocator = || {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                let mut shape_proto = activation.context.avm2.prototypes().shape;
-                let shape_constr = shape_proto
-                    .get_property(
-                        shape_proto,
-                        &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                        &mut activation,
-                    )?
-                    .coerce_to_object(&mut activation)?;
+                let shape_proto = context.avm2.prototypes().shape;
+                let shape_constr = context.avm2.constructors().shape;
 
                 let object = Avm2StageObject::for_display_object(
-                    activation.context.gc_context,
+                    context.gc_context,
                     (*self).into(),
                     shape_constr,
                     shape_proto,
                 )
                 .into();
+
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
                 shape_constr.call(Some(object), &[], &mut activation, Some(shape_constr))?;
 
                 Ok(object)

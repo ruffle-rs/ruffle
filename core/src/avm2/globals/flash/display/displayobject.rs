@@ -20,17 +20,13 @@ pub fn instance_init<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
             let constructor = this
-                .get_property(
-                    this,
-                    &QName::new(Namespace::public(), "constructor"),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
+                .as_constr()
+                .ok_or("Attempted to construct non-instance DisplayObject.")?;
 
             if let Some((movie, symbol)) = activation
                 .context
@@ -560,14 +556,8 @@ pub fn loader_info<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let mut loaderinfo_proto = activation.avm2().prototypes().loaderinfo;
-        let loaderinfo_constr = loaderinfo_proto
-            .get_property(
-                loaderinfo_proto,
-                &QName::new(Namespace::public(), "constructor"),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let loaderinfo_proto = activation.avm2().prototypes().loaderinfo;
+        let loaderinfo_constr = activation.avm2().constructors().loaderinfo;
 
         if let Some(root) = dobj.avm2_root(&mut activation.context) {
             if DisplayObject::ptr_eq(root, dobj) {

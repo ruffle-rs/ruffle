@@ -1,7 +1,7 @@
 //! Application Domains
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::names::{Multiname, QName};
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
@@ -196,14 +196,8 @@ impl<'gc> Domain<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut bytearray_proto = activation.avm2().prototypes().bytearray;
-        let bytearray_constr = bytearray_proto
-            .get_property(
-                bytearray_proto,
-                &QName::new(Namespace::public(), "constructor"),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let bytearray_proto = activation.avm2().prototypes().bytearray;
+        let bytearray_constr = activation.avm2().constructors().bytearray;
 
         let domain_memory = ByteArrayObject::new(
             activation.context.gc_context,

@@ -1513,19 +1513,11 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
-        let mut constructor = self.0.read().avm2_constructor.unwrap_or_else(|| {
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let mut mc_proto = activation.context.avm2.prototypes().movieclip;
-            mc_proto
-                .get_property(
-                    mc_proto,
-                    &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                    &mut activation,
-                )
-                .unwrap()
-                .coerce_to_object(&mut activation)
-                .unwrap()
-        });
+        let mut constructor = self
+            .0
+            .read()
+            .avm2_constructor
+            .unwrap_or_else(|| context.avm2.constructors().movieclip);
 
         let mut constr_thing = || {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
@@ -1561,19 +1553,11 @@ impl<'gc> MovieClip<'gc> {
     /// will allocate the object first before doing so. This function is
     /// intended to be called from `post_instantiate`.
     fn construct_as_avm2_object(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let constructor = self.0.read().avm2_constructor.unwrap_or_else(|| {
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let mut mc_proto = activation.context.avm2.prototypes().movieclip;
-            mc_proto
-                .get_property(
-                    mc_proto,
-                    &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                    &mut activation,
-                )
-                .unwrap()
-                .coerce_to_object(&mut activation)
-                .unwrap()
-        });
+        let constructor = self
+            .0
+            .read()
+            .avm2_constructor
+            .unwrap_or_else(|| context.avm2.constructors().movieclip);
 
         if let Avm2Value::Object(object) = self.object2() {
             let mut constr_thing = || {

@@ -2,9 +2,9 @@
 
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, Event as Avm2Event, Namespace as Avm2Namespace,
-    Object as Avm2Object, QName as Avm2QName, ScriptObject as Avm2ScriptObject,
-    StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
+    Activation as Avm2Activation, Event as Avm2Event, Object as Avm2Object,
+    ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject, TObject as Avm2TObject,
+    Value as Avm2Value,
 };
 use crate::backend::ui::UiBackend;
 use crate::config::Letterbox;
@@ -518,18 +518,10 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
-        let mut stage_proto = context.avm2.prototypes().stage;
-        let mut activation = Avm2Activation::from_nothing(context.reborrow());
-        let stage_constr = stage_proto
-            .get_property(
-                stage_proto,
-                &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                &mut activation,
-            )
-            .and_then(|v| v.coerce_to_object(&mut activation))
-            .expect("Stage proto needs constr");
+        let stage_proto = context.avm2.prototypes().stage;
+        let stage_constr = context.avm2.constructors().stage;
         let avm2_stage = Avm2StageObject::for_display_object(
-            activation.context.gc_context,
+            context.gc_context,
             (*self).into(),
             stage_constr,
             stage_proto,
@@ -538,6 +530,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         // TODO: Replace this when we have a convenience method for constructing AVM2 native objects.
         // TODO: We should only do this if the movie is actually an AVM2 movie.
         // This is necessary for EventDispatcher super-constructor to run.
+        let mut activation = Avm2Activation::from_nothing(context.reborrow());
         if let Err(e) = stage_constr.call(
             Some(avm2_stage.into()),
             &[],
@@ -547,7 +540,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             log::error!("Unable to construct AVM2 Stage: {}", e);
         }
 
-        self.0.write(context.gc_context).avm2_object = avm2_stage.into();
+        self.0.write(activation.context.gc_context).avm2_object = avm2_stage.into();
     }
 
     fn id(&self) -> CharacterId {

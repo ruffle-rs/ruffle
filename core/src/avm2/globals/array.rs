@@ -96,14 +96,8 @@ pub fn build_array<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     array: ArrayStorage<'gc>,
 ) -> Result<Value<'gc>, Error> {
-    let mut array_proto = activation.avm2().prototypes().array;
-    let array_constr = array_proto
-        .get_property(
-            array_proto,
-            &QName::new(Namespace::public(), "constructor"),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
+    let array_proto = activation.avm2().prototypes().array;
+    let array_constr = activation.avm2().constructors().array;
 
     Ok(ArrayObject::from_array(
         array,

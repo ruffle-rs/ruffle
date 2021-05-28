@@ -6,8 +6,8 @@ use crate::avm1::{
     Value as Avm1Value,
 };
 use crate::avm2::{
-    Activation as Avm2Activation, Namespace as Avm2Namespace, Object as Avm2Object,
-    QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject,
+    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+    TObject as Avm2TObject,
 };
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
@@ -1509,24 +1509,18 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
-        let mut textfield_proto = context.avm2.prototypes().textfield;
-        let mut activation = Avm2Activation::from_nothing(context.reborrow());
-        let textfield_constr = textfield_proto
-            .get_property(
-                textfield_proto,
-                &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                &mut activation,
-            )
-            .and_then(|v| v.coerce_to_object(&mut activation))
-            .expect("Textfield proto needs constr");
+        let textfield_proto = context.avm2.prototypes().textfield;
+        let textfield_constr = context.avm2.constructors().textfield;
 
         let object: Avm2Object<'gc> = Avm2StageObject::for_display_object(
-            activation.context.gc_context,
+            context.gc_context,
             display_object,
             textfield_constr,
             textfield_proto,
         )
         .into();
+
+        let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
         if let Err(e) =
             textfield_constr.call(Some(object), &[], &mut activation, Some(textfield_constr))

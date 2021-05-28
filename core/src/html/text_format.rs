@@ -698,14 +698,8 @@ impl TextFormat {
         &self,
         activation: &mut Avm2Activation<'_, 'gc, '_>,
     ) -> Result<Avm2Object<'gc>, Avm2Error> {
-        let mut proto = activation.context.avm2.prototypes().textformat;
-        let constr = proto
-            .get_property(
-                proto,
-                &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let proto = activation.context.avm2.prototypes().textformat;
+        let constr = activation.context.avm2.constructors().textformat;
         let mut object = Avm2ScriptObject::object(activation.context.gc_context, proto);
 
         constr.call(Some(object), &[], activation, Some(constr))?;
@@ -850,14 +844,8 @@ impl TextFormat {
         if let Some(ts) = &self.tab_stops {
             let tab_stop_storage = ts.iter().copied().collect();
 
-            let mut array_proto = activation.avm2().prototypes().array;
-            let array_constr = array_proto
-                .get_property(
-                    array_proto,
-                    &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
+            let array_proto = activation.avm2().prototypes().array;
+            let array_constr = activation.avm2().constructors().array;
 
             let tab_stops = Avm2ArrayObject::from_array(
                 tab_stop_storage,

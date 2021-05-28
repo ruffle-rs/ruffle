@@ -39,14 +39,8 @@ pub fn current_domain<'gc>(
 ) -> Result<Value<'gc>, Error> {
     let globals = activation.scope().map(|s| s.read().globals());
     let appdomain = globals.and_then(|g| g.as_application_domain());
-    let mut appdomain_proto = activation.avm2().prototypes().application_domain;
-    let appdomain_constr = appdomain_proto
-        .get_property(
-            appdomain_proto,
-            &QName::new(Namespace::public(), "constructor"),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
+    let appdomain_proto = activation.avm2().prototypes().application_domain;
+    let appdomain_constr = activation.avm2().constructors().application_domain;
 
     if let Some(appdomain) = appdomain {
         return Ok(DomainObject::from_domain(
@@ -69,14 +63,8 @@ pub fn parent_domain<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
         if let Some(parent_domain) = appdomain.parent_domain() {
-            let mut appdomain_proto = activation.avm2().prototypes().application_domain;
-            let appdomain_constr = appdomain_proto
-                .get_property(
-                    appdomain_proto,
-                    &QName::new(Namespace::public(), "constructor"),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
+            let appdomain_proto = activation.avm2().prototypes().application_domain;
+            let appdomain_constr = activation.avm2().constructors().application_domain;
 
             return Ok(DomainObject::from_domain(
                 activation.context.gc_context,

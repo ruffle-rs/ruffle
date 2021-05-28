@@ -4,7 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
-use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{DomainObject, Object, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
@@ -147,18 +146,8 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let mut activation = Activation::from_nothing(uc.reborrow());
-
-        let mut global_proto = activation.context.avm2.prototypes().global;
-        let global_constr = global_proto
-            .get_property(
-                global_proto,
-                &QName::new(Namespace::public(), "constructor"),
-                &mut activation,
-            )?
-            .coerce_to_object(&mut activation)?;
-
-        drop(activation);
+        let global_proto = uc.avm2.prototypes().global;
+        let global_constr = uc.avm2.constructors().global;
 
         let global =
             DomainObject::from_domain(uc.gc_context, global_constr, Some(global_proto), domain);

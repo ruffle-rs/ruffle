@@ -209,19 +209,13 @@ pub fn exec<'gc>(
                 None => return Ok(Value::Null),
             };
 
-            let mut regexp_proto = activation.avm2().prototypes().array;
-            let regexp_constr = regexp_proto
-                .get_property(
-                    regexp_proto,
-                    &QName::new(Namespace::public(), "constructor"),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
+            let array_proto = activation.avm2().prototypes().array;
+            let array_constr = activation.avm2().constructors().array;
 
             let object = ArrayObject::from_array(
                 storage,
-                regexp_constr,
-                regexp_proto,
+                array_constr,
+                array_proto,
                 activation.context.gc_context,
             );
 

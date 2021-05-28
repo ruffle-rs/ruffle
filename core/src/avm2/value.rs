@@ -205,18 +205,8 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
         | AbcDefaultValue::Private(ns) => {
-            let mut activation = Activation::from_nothing(uc.reborrow());
-
-            let mut ns_proto = activation.avm2().prototypes().namespace;
-            let ns_constr = ns_proto
-                .get_property(
-                    ns_proto,
-                    &QName::new(Namespace::public(), "constructor"),
-                    &mut activation,
-                )?
-                .coerce_to_object(&mut activation)?;
-
-            drop(activation);
+            let ns_proto = uc.avm2.prototypes().namespace;
+            let ns_constr = uc.avm2.constructors().namespace;
 
             Ok(NamespaceObject::from_namespace(
                 Namespace::from_abc_namespace(translation_unit, ns.clone(), uc.gc_context)?,
@@ -579,7 +569,7 @@ impl<'gc> Value<'gc> {
             _ => {}
         };
 
-        let mut proto = match self {
+        let proto = match self {
             Value::Bool(_) => activation.avm2().prototypes().boolean,
             Value::Number(_) => activation.avm2().prototypes().number,
             Value::Unsigned(_) => activation.avm2().prototypes().uint,
@@ -587,13 +577,14 @@ impl<'gc> Value<'gc> {
             Value::String(_) => activation.avm2().prototypes().string,
             _ => unreachable!(),
         };
-        let constr = proto
-            .get_property(
-                proto,
-                &QName::new(Namespace::public(), "constructor"),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let constr = match self {
+            Value::Bool(_) => activation.avm2().constructors().boolean,
+            Value::Number(_) => activation.avm2().constructors().number,
+            Value::Unsigned(_) => activation.avm2().constructors().uint,
+            Value::Integer(_) => activation.avm2().constructors().int,
+            Value::String(_) => activation.avm2().constructors().string,
+            _ => unreachable!(),
+        };
 
         PrimitiveObject::from_primitive(self.clone(), constr, proto, activation.context.gc_context)
     }

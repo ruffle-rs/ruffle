@@ -66,14 +66,8 @@ pub fn application_domain<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
-            let mut appdomain_proto = activation.avm2().prototypes().application_domain;
-            let appdomain_constr = appdomain_proto
-                .get_property(
-                    appdomain_proto,
-                    &QName::new(Namespace::public(), "constructor"),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
+            let appdomain_proto = activation.avm2().prototypes().application_domain;
+            let appdomain_constr = activation.avm2().constructors().application_domain;
 
             match &*loader_stream {
                 LoaderStream::Stage => {
@@ -301,14 +295,8 @@ pub fn bytes<'gc>(
                     return Err("Error: The stage's loader info does not have a bytestream".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let mut ba_proto = activation.context.avm2.prototypes().bytearray;
-                    let ba_constr = ba_proto
-                        .get_property(
-                            ba_proto,
-                            &QName::new(Namespace::public(), "constructor"),
-                            activation,
-                        )?
-                        .coerce_to_object(activation)?;
+                    let ba_proto = activation.context.avm2.prototypes().bytearray;
+                    let ba_constr = activation.context.avm2.constructors().bytearray;
 
                     let ba = ByteArrayObject::construct(
                         activation.context.gc_context,

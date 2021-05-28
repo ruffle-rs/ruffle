@@ -270,14 +270,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 unreachable!();
             };
 
-            let mut array_proto = activation.avm2().prototypes().array;
-            let array_constr = array_proto
-                .get_property(
-                    array_proto,
-                    &QName::new(Namespace::public(), "constructor"),
-                    &mut activation,
-                )?
-                .coerce_to_object(&mut activation)?;
+            let array_proto = activation.avm2().prototypes().array;
+            let array_constr = activation.avm2().constructors().array;
             let mut args_object = ArrayObject::from_array(
                 args_array,
                 array_constr,
@@ -813,14 +807,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         value: Index<AbcNamespace>,
     ) -> Result<FrameControl<'gc>, Error> {
         let ns = self.pool_namespace(method, value, self.context.gc_context)?;
-        let mut ns_proto = self.context.avm2.prototypes().namespace;
-        let ns_constr = ns_proto
-            .get_property(
-                ns_proto,
-                &QName::new(Namespace::public(), "constructor"),
-                self,
-            )?
-            .coerce_to_object(self)?;
+        let ns_proto = self.context.avm2.prototypes().namespace;
+        let ns_constr = self.context.avm2.constructors().namespace;
 
         self.context.avm2.push(NamespaceObject::from_namespace(
             ns,
@@ -1587,14 +1575,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_new_array(&mut self, num_args: u32) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(num_args);
         let array = ArrayStorage::from_args(&args[..]);
-        let mut array_proto = self.context.avm2.prototypes().array;
-        let array_constr = array_proto
-            .get_property(
-                array_proto,
-                &QName::new(Namespace::public(), "constructor"),
-                self,
-            )?
-            .coerce_to_object(self)?;
+        let array_proto = self.context.avm2.prototypes().array;
+        let array_constr = self.context.avm2.constructors().array;
 
         let array_obj =
             ArrayObject::from_array(array, array_constr, array_proto, self.context.gc_context);

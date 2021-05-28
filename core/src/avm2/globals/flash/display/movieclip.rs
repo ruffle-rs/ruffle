@@ -24,12 +24,9 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let mut proto = this
-                .proto()
-                .ok_or("Attempted to construct bare-object MovieClip")?;
-            let constr = proto
-                .get_property(proto, &QName::dynamic_name("constructor"), activation)?
-                .coerce_to_object(activation)?;
+            let constr = this
+                .as_constr()
+                .ok_or("Attempted to construct non-instance MovieClip")?;
             let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
             let new_do = MovieClip::new_with_avm2(
                 SwfSlice::empty(movie),
@@ -162,16 +159,9 @@ fn labels_for_scene<'gc>(
         start: scene_start,
         length: scene_length,
     } = scene;
-    let mut frame_label_proto = activation.context.avm2.prototypes().framelabel;
+    let frame_label_constr = activation.context.avm2.constructors().framelabel;
     let labels = mc.labels_in_range(*scene_start, scene_start + scene_length);
     let mut frame_labels = Vec::with_capacity(labels.len());
-    let frame_label_constr = frame_label_proto
-        .get_property(
-            frame_label_proto,
-            &QName::new(Namespace::public(), "constructor"),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
 
     for (name, frame) in labels {
         let name: Value<'gc> = AvmString::new(activation.context.gc_context, name).into();
@@ -182,14 +172,8 @@ fn labels_for_scene<'gc>(
         frame_labels.push(Some(frame_label.into()));
     }
 
-    let mut array_proto = activation.avm2().prototypes().array;
-    let array_constr = array_proto
-        .get_property(
-            array_proto,
-            &QName::new(Namespace::public(), "constructor"),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
+    let array_proto = activation.avm2().prototypes().array;
+    let array_constr = activation.avm2().constructors().array;
 
     Ok((
         scene_name.to_string(),
@@ -240,14 +224,7 @@ pub fn current_scene<'gc>(
             length: mc.total_frames(),
         });
         let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc, &scene)?;
-        let mut scene_proto = activation.context.avm2.prototypes().scene;
-        let scene_constr = scene_proto
-            .get_property(
-                scene_proto,
-                &QName::new(Namespace::public(), "constructor"),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let scene_constr = activation.context.avm2.constructors().scene;
         let args = [
             AvmString::new(activation.context.gc_context, scene_name).into(),
             scene_labels.into(),
@@ -285,14 +262,7 @@ pub fn scenes<'gc>(
         for scene in mc_scenes {
             let (scene_name, scene_length, scene_labels) =
                 labels_for_scene(activation, mc, &scene)?;
-            let mut scene_proto = activation.context.avm2.prototypes().scene;
-            let scene_constr = scene_proto
-                .get_property(
-                    scene_proto,
-                    &QName::new(Namespace::public(), "constructor"),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
+            let scene_constr = activation.context.avm2.constructors().scene;
             let args = [
                 AvmString::new(activation.context.gc_context, scene_name).into(),
                 scene_labels.into(),
@@ -304,14 +274,8 @@ pub fn scenes<'gc>(
             scene_objects.push(Some(scene.into()));
         }
 
-        let mut array_proto = activation.avm2().prototypes().array;
-        let array_constr = array_proto
-            .get_property(
-                array_proto,
-                &QName::new(Namespace::public(), "constructor"),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let array_proto = activation.context.avm2.prototypes().array;
+        let array_constr = activation.context.avm2.constructors().array;
 
         return Ok(ArrayObject::from_array(
             ArrayStorage::from_storage(scene_objects),
