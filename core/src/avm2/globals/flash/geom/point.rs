@@ -14,7 +14,6 @@ fn create_point<'gc>(
 
     let args = [Value::Number(coords.0), Value::Number(coords.1)];
     let new_point = point_constr.construct(activation, &args)?;
-    instance_init(activation, Some(new_point), &args)?;
 
     Ok(new_point.into())
 }
