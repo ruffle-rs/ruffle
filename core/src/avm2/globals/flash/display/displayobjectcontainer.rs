@@ -14,6 +14,15 @@ use std::cmp::min;
 
 /// Implements `flash.display.DisplayObjectContainer`'s instance constructor.
 pub fn instance_init<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("You cannot construct DisplayObjectContainer directly.".into())
+}
+
+/// Implements `flash.display.DisplayObjectContainer`'s native instance constructor.
+pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -584,6 +593,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     );
 
     let mut write = class.write(mc);
+
+    write.set_native_instance_init(Method::from_builtin(native_instance_init));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
         &[("numChildren", Some(num_children), None)];

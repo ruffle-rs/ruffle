@@ -531,7 +531,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         // TODO: We should only do this if the movie is actually an AVM2 movie.
         // This is necessary for EventDispatcher super-constructor to run.
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
-        if let Err(e) = stage_constr.call(
+        if let Err(e) = stage_constr.call_native_initializer(
             Some(avm2_stage.into()),
             &[],
             &mut activation,

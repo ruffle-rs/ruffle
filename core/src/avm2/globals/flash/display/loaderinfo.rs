@@ -23,6 +23,19 @@ pub fn instance_init<'gc>(
     Err("LoaderInfo cannot be constructed".into())
 }
 
+/// Implements `flash.display.LoaderInfo`'s native instance constructor.
+pub fn native_instance_init<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        activation.super_init(this, &[])?;
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `flash.display.LoaderInfo`'s class constructor.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -419,6 +432,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
     write.set_instance_deriver(loaderinfo_deriver);
+    write.set_native_instance_init(Method::from_builtin(native_instance_init));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("actionScriptVersion", Some(action_script_version), None),

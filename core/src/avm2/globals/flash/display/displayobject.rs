@@ -16,6 +16,15 @@ use swf::Twips;
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.
 pub fn instance_init<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("You cannot construct DisplayObject directly.".into())
+}
+
+/// Implements `flash.display.DisplayObject`'s native instance constructor.
+pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -603,6 +612,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.set_instance_deriver(stage_deriver);
+    write.set_native_instance_init(Method::from_builtin(native_instance_init));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("alpha", Some(alpha), Some(set_alpha)),
