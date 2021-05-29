@@ -46,11 +46,10 @@ impl<'gc> ArrayObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
-    fn get_local(
+    fn get_data(
         &self,
-        name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        name: &str,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if name == "length" {
             if let Some(length) = self.0.read().length {
@@ -58,18 +57,18 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        self.0.read().base.get_local(name, activation, this)
-    }
-
-    fn get_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> Value<'gc> {
         self.0.read().base.get_data(activation, name)
     }
 
-    fn set(
+    fn call_getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+        self.0.read().base.call_getter(name, activation)
+    }
+
+    fn set_data(
         &self,
+        activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         if name == "length" {
             let length = if let Value::Number(number) = value {
@@ -97,11 +96,11 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        self.0.read().base.set(name, value, activation)
+        self.0.read().base.set_data(activation, name, value)
     }
 
-    fn set_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str, value: Value<'gc>) {
-        self.0.read().base.set_data(activation, name, value)
+    fn call_setter(&self, name: &str, value: Value<'gc>, activation: &mut Activation<'_, 'gc, '_>) {
+        self.0.read().base.call_setter(name, value, activation)
     }
 
     fn call(
@@ -116,15 +115,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             .read()
             .base
             .call(name, activation, this, base_proto, args)
-    }
-
-    fn call_setter(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().base.call_setter(name, value, activation)
     }
 
     fn create_bare_object(

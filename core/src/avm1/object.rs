@@ -93,20 +93,13 @@ pub mod xml_object;
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
     /// Retrieve a named property from this object exclusively.
     ///
-    /// This function takes a redundant `this` parameter which should be
-    /// the object's own `GcCell`, so that it can pass it to user-defined
-    /// overrides that may need to interact with the underlying object.
-    ///
-    /// This function should not inspect prototype chains. Instead, use `get`
-    /// to do ordinary property look-up and resolution.
-    fn get_local(
+    /// This function does not inspect the prototype chain. Instead, use `get`
+    /// to do ordinary property lookup and resolution.
+    fn get_data(
         &self,
-        name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        name: &str,
     ) -> Result<Value<'gc>, Error<'gc>>;
-
-    fn get_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> Value<'gc>;
 
     /// Retrieve a named property from the object, or its prototype.
     fn get(
@@ -114,11 +107,31 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if self.has_own_property(activation, name) {
-            self.get_local(name, activation, (*self).into())
-        } else {
-            Ok(search_prototype(self.proto(), name, activation, (*self).into())?.0)
+        // TODO: Handle name.is_empty()?
+
+        if name == "__proto__" {
+            return Ok(self.proto());
         }
+
+        let mut proto = Value::Object((*self).into());
+        while let Value::Object(this_proto) = proto {
+            if this_proto.has_own_virtual(activation, name) {
+                return Ok(this_proto.call_getter(name, activation));
+            }
+            proto = this_proto.proto();
+        }
+
+        let mut proto = Value::Object((*self).into());
+        while let Value::Object(this_proto) = proto {
+            if this_proto.has_own_property(activation, name) {
+                return this_proto.get_data(activation, name);
+            }
+            proto = this_proto.proto();
+        }
+
+        // TODO: __resolve
+
+        Ok(Value::Undefined)
     }
 
     /// Set a named property on this object, or its prototype.
@@ -127,9 +140,42 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>>;
+    ) -> Result<(), Error<'gc>> {
+        if name.is_empty() {
+            return Ok(());
+        }
 
-    fn set_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str, value: Value<'gc>);
+        if name == "__proto__" {
+            self.set_proto(activation.context.gc_context, value);
+            return Ok(());
+        }
+
+        let mut proto = Value::Object((*self).into());
+        while let Value::Object(this_proto) = proto {
+            if this_proto.has_own_virtual(activation, name) {
+                this_proto.call_setter(name, value, activation);
+                return Ok(());
+            }
+            proto = this_proto.proto();
+        }
+
+        let mut proto = Value::Object((*self).into());
+        while let Value::Object(this_proto) = proto {
+            if this_proto.has_own_property(activation, name) {
+                return this_proto.set_data(activation, name, value);
+            }
+            proto = this_proto.proto();
+        }
+
+        self.set_data(activation, name, value)
+    }
+
+    fn set_data(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+        value: Value<'gc>,
+    ) -> Result<(), Error<'gc>>;
 
     /// Call the underlying object.
     ///
@@ -192,6 +238,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         method.call(name, activation, (*self).into(), base_proto, args)
     }
 
+    fn call_getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc>;
+
     /// Call a setter defined in this object.
     ///
     /// This function may return a `Executable` of the function to call; it
@@ -201,12 +249,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The setter will be invoked with the provided `this`. It is assumed that
     /// this function is being called on the appropriate `base_proto` and
     /// `super` will be invoked following said guidance.
-    fn call_setter(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>>;
+    fn call_setter(&self, name: &str, value: Value<'gc>, activation: &mut Activation<'_, 'gc, '_>);
 
     /// Construct a host object of some kind and return its cell.
     ///
@@ -543,12 +586,13 @@ impl<'gc> Object<'gc> {
     /// Gets the length of this object, as if it were an array.
     pub fn length(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
         self.get_data(activation, "length")
+            .unwrap()
             .coerce_to_i32(activation)
     }
 
     /// Sets the length of this object, as if it were an array.
     pub fn set_length(&self, activation: &mut Activation<'_, 'gc, '_>, length: i32) {
-        self.set_data(activation, "length", length.into())
+        self.set_data(activation, "length", length.into()).unwrap()
     }
 
     /// Checks if this object has an element.
@@ -558,7 +602,7 @@ impl<'gc> Object<'gc> {
 
     /// Gets a property of this object, as if it were an array.
     pub fn get_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc> {
-        self.get_data(activation, &index.to_string())
+        self.get_data(activation, &index.to_string()).unwrap()
     }
 
     /// Sets a property of this object, as if it were an array.
@@ -569,6 +613,7 @@ impl<'gc> Object<'gc> {
         value: Value<'gc>,
     ) {
         self.set_data(activation, &index.to_string(), value)
+            .unwrap()
     }
 
     /// Deletes a property of this object as if it were an array.
@@ -590,7 +635,7 @@ pub fn search_prototype<'gc>(
     mut proto: Value<'gc>,
     name: &str,
     activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
+    _this: Object<'gc>,
 ) -> Result<(Value<'gc>, Option<Object<'gc>>), Error<'gc>> {
     let mut depth = 0;
 
@@ -600,7 +645,7 @@ pub fn search_prototype<'gc>(
         }
 
         if p.has_own_property(activation, name) {
-            return Ok((p.get_local(name, activation, this)?, Some(p)));
+            return Ok((p.get_data(activation, name)?, Some(p)));
         }
 
         proto = p.proto();

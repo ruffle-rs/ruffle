@@ -3,7 +3,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
-use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
@@ -162,10 +161,10 @@ impl fmt::Debug for StageObject<'_> {
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
-    fn get(
+    fn get_data(
         &self,
-        name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let obj = self.0.read();
         let props = activation.context.avm1.display_properties;
@@ -173,7 +172,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         // Property search order for DisplayObjects:
         if self.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
-            self.get_local(name, activation, (*self).into())
+            self.0.read().base.get_data(activation, name)
         } else if let Some(level) =
             Self::get_level_by_path(name, &mut activation.context, case_sensitive)
         {
@@ -188,33 +187,21 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             Ok(child.object())
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 4) Display object properties such as _x, _y
-            let val = property.get(activation, obj.display_object)?;
-            Ok(val)
+            property.get(activation, obj.display_object)
         } else {
-            // 5) Prototype
-            Ok(search_prototype(self.proto(), name, activation, (*self).into())?.0)
+            Ok(Value::Undefined)
         }
-        // 6) TODO: __resolve?
     }
 
-    fn get_local(
+    fn call_getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+        self.0.read().base.call_getter(name, activation)
+    }
+
+    fn set_data(
         &self,
-        name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0.read().base.get_local(name, activation, this)
-    }
-
-    fn get_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> Value<'gc> {
-        self.0.read().base.get_data(activation, name)
-    }
-
-    fn set(
-        &self,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         let obj = self.0.read();
         let props = activation.context.avm1.display_properties;
@@ -238,31 +225,17 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
         if base.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
-            base.internal_set(
-                name,
-                value,
-                activation,
-                (*self).into(),
-                Some((*self).into()),
-            )
+            base.set_data(activation, name, value)
         } else if let Some(property) = props.read().get_by_name(&name) {
             // 2) Display object properties such as _x, _y
-            property.set(activation, display_object, value)?;
-            Ok(())
+            property.set(activation, display_object, value)
         } else {
-            // 3) TODO: Prototype
-            base.internal_set(
-                name,
-                value,
-                activation,
-                (*self).into(),
-                Some((*self).into()),
-            )
+            base.set_data(activation, name, value)
         }
     }
 
-    fn set_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str, value: Value<'gc>) {
-        self.0.read().base.set_data(activation, name, value)
+    fn call_setter(&self, name: &str, value: Value<'gc>, activation: &mut Activation<'_, 'gc, '_>) {
+        self.0.read().base.call_setter(name, value, activation)
     }
 
     fn call(
@@ -277,15 +250,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .read()
             .base
             .call(name, activation, this, base_proto, args)
-    }
-
-    fn call_setter(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().base.call_setter(name, value, activation)
     }
 
     fn create_bare_object(

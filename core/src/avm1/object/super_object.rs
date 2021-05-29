@@ -78,30 +78,30 @@ impl<'gc> SuperObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for SuperObject<'gc> {
-    fn get_local(
+    fn get_data(
         &self,
-        _name: &str,
         _activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        _name: &str,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Undefined)
     }
 
-    fn get_data(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: &str) -> Value<'gc> {
-        Value::Undefined
+    fn call_getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+        self.0.read().child.call_getter(name, activation)
     }
 
-    fn set(
+    fn set_data(
         &self,
+        _activation: &mut Activation<'_, 'gc, '_>,
         _name: &str,
         _value: Value<'gc>,
-        _activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
-        //TODO: What happens if you set `super.__proto__`?
+        // TODO: What happens if you set `super.__proto__`?
         Ok(())
     }
 
-    fn set_data(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: &str, _value: Value<'gc>) {
+    fn call_setter(&self, name: &str, value: Value<'gc>, activation: &mut Activation<'_, 'gc, '_>) {
+        self.0.read().child.call_setter(name, value, activation)
     }
 
     fn call(
@@ -137,15 +137,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         }
 
         method.call(name, activation, child, base_proto, args)
-    }
-
-    fn call_setter(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().child.call_setter(name, value, activation)
     }
 
     fn create_bare_object(

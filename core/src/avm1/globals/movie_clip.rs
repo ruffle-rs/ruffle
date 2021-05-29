@@ -1083,14 +1083,14 @@ fn local_to_global<'gc>(
         // localToGlobal does no coercion; it fails if the properties are not numbers.
         // It does not search the prototype chain.
         if let (Value::Number(x), Value::Number(y)) = (
-            point.get_data(activation, "x"),
-            point.get_data(activation, "y"),
+            point.get_data(activation, "x")?,
+            point.get_data(activation, "y")?,
         ) {
             let x = Twips::from_pixels(x);
             let y = Twips::from_pixels(y);
             let (out_x, out_y) = movie_clip.local_to_global((x, y));
-            point.set_data(activation, "x", out_x.to_pixels().into());
-            point.set_data(activation, "y", out_y.to_pixels().into());
+            point.set_data(activation, "x", out_x.to_pixels().into())?;
+            point.set_data(activation, "y", out_y.to_pixels().into())?;
         } else {
             avm_warn!(
                 activation,
@@ -1214,14 +1214,14 @@ fn global_to_local<'gc>(
         // globalToLocal does no coercion; it fails if the properties are not numbers.
         // It does not search the prototype chain.
         if let (Value::Number(x), Value::Number(y)) = (
-            point.get_data(activation, "x"),
-            point.get_data(activation, "y"),
+            point.get_data(activation, "x")?,
+            point.get_data(activation, "y")?,
         ) {
             let x = Twips::from_pixels(x);
             let y = Twips::from_pixels(y);
             let (out_x, out_y) = movie_clip.global_to_local((x, y));
-            point.set_data(activation, "x", out_x.to_pixels().into());
-            point.set_data(activation, "y", out_y.to_pixels().into());
+            point.set_data(activation, "x", out_x.to_pixels().into())?;
+            point.set_data(activation, "y", out_y.to_pixels().into())?;
         } else {
             avm_warn!(
                 activation,

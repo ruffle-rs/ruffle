@@ -5,30 +5,30 @@ macro_rules! impl_custom_object {
     };
 
     (@extra $field:ident set(proto: self)) => {
-        fn set(
+        fn call_setter(
             &self,
             name: &str,
             value: crate::avm1::Value<'gc>,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-        ) -> Result<(), crate::avm1::Error<'gc>> {
-            self.0.read().$field.set(name, value, activation)
+        ) {
+            self.0.read().$field.call_setter(name, value, activation)
         }
     };
 
     (@extra $field:ident set(proto: $proto:ident)) => {
-        fn set(
+        fn call_setter(
             &self,
             name: &str,
             value: crate::avm1::Value<'gc>,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-        ) -> Result<(), crate::avm1::Error<'gc>> {
+        ) {
             let base = self.0.read().$field;
-            base.internal_set(
+            base.call_setter(
                 name,
                 value,
                 activation,
-                (*self).into(),
-                Some(activation.context.avm1.prototypes.$proto),
+                // (*self).into(),
+                // Some(activation.context.avm1.prototypes.$proto),
             )
         }
     };
@@ -56,20 +56,15 @@ macro_rules! impl_custom_object {
             crate::impl_custom_object!(@extra $field $extra_name($($extra)*));
         )*
 
-        fn get_local(
-            &self,
-            name: &str,
-            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-            this: crate::avm1::Object<'gc>,
-        ) -> Result<crate::avm1::Value<'gc>, crate::avm1::Error<'gc>> {
-            self.0.read().$field.get_local(name, activation, this)
-        }
-
-        fn get_data(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, name: &str) -> crate::avm1::Value<'gc> {
+        fn get_data(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, name: &str) -> Result<crate::avm1::Value<'gc>, crate::avm1::Error<'gc>> {
             self.0.read().$field.get_data(activation, name)
         }
 
-        fn set_data(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, name: &str, value: crate::avm1::Value<'gc>) {
+        fn call_getter(&self, name: &str, activation: &mut crate::avm1::Activation<'_, 'gc, '_>) -> crate::avm1::Value<'gc> {
+            self.0.read().$field.call_getter(name, activation)
+        }
+
+        fn set_data(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, name: &str, value: crate::avm1::Value<'gc>) -> Result<(), crate::avm1::Error<'gc>> {
             self.0.read().$field.set_data(activation, name, value)
         }
 
@@ -85,15 +80,6 @@ macro_rules! impl_custom_object {
                 .read()
                 .$field
                 .call(name, activation, this, base_proto, args)
-        }
-
-        fn call_setter(
-            &self,
-            name: &str,
-            value: crate::avm1::Value<'gc>,
-            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-        ) -> Option<crate::avm1::object::Object<'gc>> {
-            self.0.read().$field.call_setter(name, value, activation)
         }
 
         fn delete(

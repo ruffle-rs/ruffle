@@ -56,11 +56,10 @@ impl fmt::Debug for XmlAttributesObject<'_> {
 }
 
 impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
-    fn get_local(
+    fn get_data(
         &self,
-        name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        name: &str,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self
             .node()
@@ -69,26 +68,26 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
             .unwrap_or_else(|| Value::Undefined))
     }
 
-    fn get_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> Value<'gc> {
-        self.base().get_data(activation, name)
+    fn call_getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+        self.base().call_getter(name, activation)
     }
 
-    fn set(
+    fn set_data(
         &self,
+        activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         self.node().set_attribute_value(
             activation.context.gc_context,
             &XmlName::from_str(name),
             &value.coerce_to_string(activation)?,
         );
-        self.base().set(name, value, activation)
+        self.base().set_data(activation, name, value)
     }
 
-    fn set_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str, value: Value<'gc>) {
-        self.base().set_data(activation, name, value)
+    fn call_setter(&self, name: &str, value: Value<'gc>, activation: &mut Activation<'_, 'gc, '_>) {
+        self.base().call_setter(name, value, activation)
     }
 
     fn call(
@@ -100,15 +99,6 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().call(name, activation, this, base_proto, args)
-    }
-
-    fn call_setter(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.base().call_setter(name, value, activation)
     }
 
     fn create_bare_object(
