@@ -40,6 +40,9 @@ pub struct ClassObjectData<'gc> {
 
     /// The instance constructor function
     instance_constr: Executable<'gc>,
+
+    /// The native instance constructor function
+    native_instance_constr: Executable<'gc>,
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -126,6 +129,12 @@ impl<'gc> ClassObject<'gc> {
             None,
             activation.context.gc_context,
         );
+        let native_instance_constr = Executable::from_method(
+            class.read().native_instance_init(),
+            scope,
+            None,
+            activation.context.gc_context,
+        );
 
         let mut constr: Object<'gc> = ClassObject(GcCell::allocate(
             activation.context.gc_context,
@@ -138,6 +147,7 @@ impl<'gc> ClassObject<'gc> {
                 scope,
                 base_class_constr,
                 instance_constr,
+                native_instance_constr,
             },
         ))
         .into();
@@ -176,6 +186,8 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let instance_constr =
             Executable::from_method(class.read().instance_init(), scope, None, mc);
+        let native_instance_constr =
+            Executable::from_method(class.read().native_instance_init(), scope, None, mc);
         let mut base: Object<'gc> = ClassObject(GcCell::allocate(
             mc,
             ClassObjectData {
@@ -187,6 +199,7 @@ impl<'gc> ClassObject<'gc> {
                 scope,
                 base_class_constr,
                 instance_constr,
+                native_instance_constr,
             },
         ))
         .into();
@@ -238,6 +251,30 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         instance_constr.exec(receiver, arguments, activation, base_constr, self.into())
     }
 
+    fn call_initializer(
+        self,
+        receiver: Option<Object<'gc>>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+        base_constr: Option<Object<'gc>>,
+    ) -> Result<Value<'gc>, Error> {
+        let instance_constr = self.0.read().instance_constr;
+
+        instance_constr.exec(receiver, arguments, activation, base_constr, self.into())
+    }
+
+    fn call_native_initializer(
+        self,
+        receiver: Option<Object<'gc>>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+        base_constr: Option<Object<'gc>>,
+    ) -> Result<Value<'gc>, Error> {
+        let native_instance_constr = self.0.read().native_instance_constr;
+
+        native_instance_constr.exec(receiver, arguments, activation, base_constr, self.into())
+    }
+
     fn construct(
         mut self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -255,9 +292,8 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .coerce_to_object(activation)?;
 
         let instance = deriver(constr, prototype, activation)?;
-        let instance_constr = self.0.read().instance_constr;
 
-        instance_constr.exec(Some(instance), arguments, activation, Some(constr), constr)?;
+        self.call_initializer(Some(instance), arguments, activation, Some(constr))?;
 
         Ok(instance)
     }

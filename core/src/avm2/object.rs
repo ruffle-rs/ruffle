@@ -704,6 +704,32 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Err("Object is not callable".into())
     }
 
+    /// Call the instance initializer.
+    fn call_initializer(
+        self,
+        _reciever: Option<Object<'gc>>,
+        _arguments: &[Value<'gc>],
+        _activation: &mut Activation<'_, 'gc, '_>,
+        _base_constr: Option<Object<'gc>>,
+    ) -> Result<Value<'gc>, Error> {
+        Err("Object is not a Class constructor".into())
+    }
+
+    /// Call the instance's native initializer.
+    ///
+    /// The native initializer is called when native code needs to construct an
+    /// object, or when supercalling into a parent constructor (as there are
+    /// classes that cannot be constructed but can be supercalled).
+    fn call_native_initializer(
+        self,
+        _reciever: Option<Object<'gc>>,
+        _arguments: &[Value<'gc>],
+        _activation: &mut Activation<'_, 'gc, '_>,
+        _base_constr: Option<Object<'gc>>,
+    ) -> Result<Value<'gc>, Error> {
+        Err("Object is not a Class constructor".into())
+    }
+
     /// Call an instance method by name.
     ///
     /// Intended to be called on the current base constructor used for

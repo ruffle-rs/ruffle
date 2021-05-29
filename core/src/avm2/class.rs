@@ -137,6 +137,20 @@ pub struct Class<'gc> {
     /// Must be called each time a new class instance is constructed.
     instance_init: Method<'gc>,
 
+    /// The native instance initializer for this class.
+    ///
+    /// This may be provided to allow natively-constructed classes to
+    /// initialize themselves in a different manner from user-constructed ones.
+    /// For example, the user-accessible constructor may error out (as it's not
+    /// a valid class to construct for users), but native code may still call
+    /// it's constructor stack.
+    ///
+    /// By default, a class's `native_instance_init` will be initialized to the
+    /// same method as the regular one. You must specify a separate native
+    /// initializer to change initialization behavior based on what code is
+    /// constructing the class.
+    native_instance_init: Method<'gc>,
+
     /// Instance traits for a given class.
     ///
     /// These are accessed as normal instance properties; they should not be
@@ -232,6 +246,8 @@ impl<'gc> Class<'gc> {
         class_init: Method<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Self> {
+        let native_instance_init = instance_init.clone();
+
         GcCell::allocate(
             mc,
             Self {
@@ -242,6 +258,7 @@ impl<'gc> Class<'gc> {
                 interfaces: Vec::new(),
                 instance_deriver: Deriver(implicit_deriver),
                 instance_init,
+                native_instance_init,
                 instance_traits: Vec::new(),
                 class_init,
                 class_traits: Vec::new(),
@@ -310,6 +327,7 @@ impl<'gc> Class<'gc> {
         }
 
         let instance_init = unit.load_method(abc_instance.init_method.0, mc)?;
+        let native_instance_init = instance_init.clone();
         let class_init = unit.load_method(abc_class.init_method.0, mc)?;
 
         let mut attributes = ClassAttributes::empty();
@@ -327,6 +345,7 @@ impl<'gc> Class<'gc> {
                 interfaces,
                 instance_deriver: Deriver(implicit_deriver),
                 instance_init,
+                native_instance_init,
                 instance_traits: Vec::new(),
                 class_init,
                 class_traits: Vec::new(),
@@ -402,6 +421,7 @@ impl<'gc> Class<'gc> {
                 interfaces: Vec::new(),
                 instance_deriver: Deriver(implicit_deriver),
                 instance_init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
+                native_instance_init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
                 instance_traits: traits,
                 class_init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
                 class_traits: Vec::new(),
@@ -648,6 +668,16 @@ impl<'gc> Class<'gc> {
     /// Get this class's instance initializer.
     pub fn instance_init(&self) -> Method<'gc> {
         self.instance_init.clone()
+    }
+
+    /// Get this class's native-code instance initializer.
+    pub fn native_instance_init(&self) -> Method<'gc> {
+        self.native_instance_init.clone()
+    }
+
+    /// Set a native-code instance initializer for this class.
+    pub fn set_native_instance_init(&mut self, new_native_init: Method<'gc>) {
+        self.native_instance_init = new_native_init;
     }
 
     /// Get this class's class initializer.
