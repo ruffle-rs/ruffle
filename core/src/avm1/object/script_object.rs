@@ -259,13 +259,6 @@ impl<'gc> ScriptObject<'gc> {
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// Get the value of a particular property on this object.
-    ///
-    /// The `avm`, `context`, and `this` parameters exist so that this object
-    /// can call virtual properties. Furthermore, since some virtual properties
-    /// may resolve on the AVM stack, this function may return `None` instead
-    /// of a `Value`. *This is not equivalent to `undefined`.* Instead, it is a
-    /// signal that your value will be returned on the ActionScript stack, and
-    /// that you should register a stack continuation in order to get it.
     fn get_local(
         &self,
         name: &str,
@@ -276,48 +269,42 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             return Ok(self.proto());
         }
 
-        let mut getter = None;
-
-        if let Some(value) = self
+        match self
             .0
             .read()
             .values
             .get(name, activation.is_case_sensitive())
         {
-            match value {
-                Property::Virtual { get, .. } => getter = Some(get.to_owned()),
-                Property::Stored { value, .. } => return Ok(value.to_owned()),
-            }
-        }
-
-        if let Some(getter) = getter {
-            if let Some(exec) = getter.as_executable() {
-                // Errors, even fatal ones, are completely and silently ignored here.
-                match exec.exec(
-                    "[Getter]",
-                    activation,
-                    this,
-                    Some((*self).into()),
-                    &[],
-                    ExecutionReason::Special,
-                    getter,
-                ) {
-                    Ok(value) => Ok(value),
-                    Err(_) => Ok(Value::Undefined),
+            Some(Property::Virtual { get, .. }) => {
+                if let Some(exec) = get.as_executable() {
+                    // Errors, even fatal ones, are completely and silently ignored here.
+                    exec.exec(
+                        "[Getter]",
+                        activation,
+                        this,
+                        Some((*self).into()),
+                        &[],
+                        ExecutionReason::Special,
+                        get.to_owned(),
+                    )
+                    .or(Ok(Value::Undefined))
+                } else {
+                    Ok(Value::Undefined)
                 }
-            } else {
-                Ok(Value::Undefined)
             }
-        } else {
-            Ok(Value::Undefined)
+            Some(Property::Stored { value, .. }) => Ok(value.to_owned()),
+            None => Ok(Value::Undefined),
+        }
+    }
+
+    fn get_data(&self, name: &str) -> Value<'gc> {
+        match self.0.read().values.get(name, true) {
+            Some(Property::Stored { value, .. }) => value.to_owned(),
+            _ => Value::Undefined,
         }
     }
 
     /// Set a named property on the object.
-    ///
-    /// This function takes a redundant `this` parameter which should be
-    /// the object's own `GcCell`, so that it can pass it to user-defined
-    /// overrides that may need to interact with the underlying object.
     fn set(
         &self,
         name: &str,
@@ -334,10 +321,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Call the underlying object.
-    ///
-    /// This function takes a redundant `this` parameter which should be
-    /// the object's own `GcCell`, so that it can pass it to user-defined
-    /// overrides that may need to interact with the underlying object.
     fn call(
         &self,
         _name: &str,
@@ -378,14 +361,17 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     ///
     /// Returns false if the property cannot be deleted.
     fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
-        let mut object = self.0.write(activation.context.gc_context);
-        if let Some(prop) = object.values.get(name, activation.is_case_sensitive()) {
-            if prop.can_delete() {
-                object.values.remove(name, activation.is_case_sensitive());
+        if let Entry::Occupied(mut entry) = self
+            .0
+            .write(activation.context.gc_context)
+            .values
+            .entry(name, activation.is_case_sensitive())
+        {
+            if entry.get_mut().can_delete() {
+                entry.remove_entry();
                 return true;
             }
         }
-
         false
     }
 

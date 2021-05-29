@@ -74,6 +74,10 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         }
     }
 
+    fn get_data(&self, name: &str) -> Value<'gc> {
+        self.base().get_data(name)
+    }
+
     fn set(
         &self,
         name: &str,
@@ -82,6 +86,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         self.base().set(name, value, activation)
     }
+
     fn call(
         &self,
         name: &str,

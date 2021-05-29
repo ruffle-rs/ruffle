@@ -61,6 +61,10 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().base.get_local(name, activation, this)
     }
 
+    fn get_data(&self, name: &str) -> Value<'gc> {
+        self.0.read().base.get_data(name)
+    }
+
     fn set(
         &self,
         name: &str,
@@ -73,6 +77,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             } else {
                 None
             };
+            // TODO: delete elements in new_length..old_length
             self.0.write(activation.context.gc_context).length = length;
             if length.is_none() {
                 self.0.read().base.define_value(

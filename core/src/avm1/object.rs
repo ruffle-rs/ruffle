@@ -1,13 +1,8 @@
 //! Object trait to expose objects to AVM
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::shared_object::SharedObject;
-use crate::avm1::object::super_object::SuperObject;
-use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::property::Attribute;
-
-use crate::avm1::activation::Activation;
 use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::bevel_filter::BevelFilterObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
@@ -21,10 +16,14 @@ use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
 use crate::avm1::object::glow_filter::GlowFilterObject;
 use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
 use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
+use crate::avm1::object::shared_object::SharedObject;
+use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::transform_object::TransformObject;
+use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
 use crate::avm1::object::xml_object::XmlObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::{ScriptObject, SoundObject, StageObject, Value};
 use crate::avm_warn;
 use crate::display_object::DisplayObject;
@@ -106,6 +105,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>>;
+
+    fn get_data(&self, name: &str) -> Value<'gc>;
 
     /// Retrieve a named property from the object, or its prototype.
     fn get(
@@ -557,12 +558,8 @@ impl<'gc> Object<'gc> {
     }
 
     /// Gets a property of this object, as if it were an array.
-    pub fn get_element(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        index: i32,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.get(&index.to_string(), activation)
+    pub fn get_element(&self, index: i32) -> Value<'gc> {
+        self.get_data(&index.to_string())
     }
 
     /// Sets a property of this object, as if it were an array.

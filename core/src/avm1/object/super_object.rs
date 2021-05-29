@@ -87,6 +87,10 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         Ok(Value::Undefined)
     }
 
+    fn get_data(&self, _name: &str) -> Value<'gc> {
+        Value::Undefined
+    }
+
     fn set(
         &self,
         _name: &str,

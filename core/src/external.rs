@@ -131,9 +131,9 @@ impl Value {
                     .is_prototype_of(object)
                 {
                     let length = object.length(activation)?;
-                    let values: Result<Vec<Value>, Avm1Error<'gc>> = (0..length)
+                    let values: Result<Vec<_>, Avm1Error<'gc>> = (0..length)
                         .map(|i| {
-                            let element = object.get_element(activation, i)?;
+                            let element = object.get_element(i);
                             Value::from_avm1(activation, element)
                         })
                         .collect();

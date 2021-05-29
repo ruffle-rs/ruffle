@@ -216,8 +216,8 @@ pub fn set_matrix<'gc>(
             let arr_len = obj
                 .length(activation)?
                 .max(filter.matrix_x() as i32 * filter.matrix_y() as i32);
-            let new_matrix: Result<Vec<f64>, Error<'gc>> = (0..arr_len)
-                .map(|i| obj.get_element(activation, i)?.coerce_to_f64(activation))
+            let new_matrix: Result<Vec<_>, Error<'gc>> = (0..arr_len)
+                .map(|i| obj.get_element(i).coerce_to_f64(activation))
                 .collect();
             filter.set_matrix(activation.context.gc_context, new_matrix?);
         } else {

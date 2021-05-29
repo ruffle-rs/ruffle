@@ -129,7 +129,7 @@ pub fn unshift<'gc>(
         let from = old_length - i - 1;
         let to = new_length - i - 1;
         if this.has_element(activation, from) {
-            let element = this.get_element(activation, from)?;
+            let element = this.get_element(from);
             this.set_element(activation, to, element)?;
         } else {
             this.delete_element(activation, to);
@@ -154,11 +154,11 @@ pub fn shift<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let first = this.get_element(activation, 0)?;
+    let first = this.get_element(0);
 
     for i in 1..length {
         if this.has_element(activation, i) {
-            let element = this.get_element(activation, i)?;
+            let element = this.get_element(i);
             this.set_element(activation, i - 1, element)?;
         } else {
             this.delete_element(activation, i - 1);
@@ -182,7 +182,7 @@ pub fn pop<'gc>(
     }
 
     let new_length = old_length - 1;
-    let last = this.get_element(activation, new_length)?;
+    let last = this.get_element(new_length);
     this.delete_element(activation, new_length);
     this.set_length(activation, new_length)?;
     Ok(last)
@@ -197,7 +197,7 @@ pub fn reverse<'gc>(
     for lower_index in 0..length / 2 {
         let has_lower = this.has_element(activation, lower_index);
         let lower_value = if has_lower {
-            this.get_element(activation, lower_index)?
+            this.get_element(lower_index)
         } else {
             Value::Undefined
         };
@@ -205,7 +205,7 @@ pub fn reverse<'gc>(
         let upper_index = length / 2 - lower_index - 1;
         let has_upper = this.has_element(activation, upper_index);
         let upper_value = if has_upper {
-            this.get_element(activation, upper_index)?
+            this.get_element(upper_index)
         } else {
             Value::Undefined
         };
@@ -253,7 +253,7 @@ pub fn join<'gc>(
 
     let mut parts = Vec::with_capacity(length as usize);
     for i in 0..length {
-        let element = this.get_element(activation, i)?;
+        let element = this.get_element(i);
         parts.push(element.coerce_to_string(activation)?.to_string());
     }
 
@@ -299,7 +299,7 @@ pub fn slice<'gc>(
 
     for i in start..end {
         if this.has_element(activation, i) {
-            let element = this.get_element(activation, i)?;
+            let element = this.get_element(i);
             array.set_element(activation, i - start, element)?;
         }
     }
@@ -332,7 +332,7 @@ pub fn splice<'gc>(
     .into();
     for i in 0..delete_count {
         if this.has_element(activation, start + i) {
-            let element = this.get_element(activation, start + i)?;
+            let element = this.get_element(start + i);
             result_array.set_element(activation, i, element)?;
         }
     }
@@ -346,7 +346,7 @@ pub fn splice<'gc>(
     };
     for i in from..=to {
         if this.has_element(activation, i) {
-            let element = this.get_element(activation, i)?;
+            let element = this.get_element(i);
             this.set_element(activation, i - delete_count + items.len() as i32, element)?;
         } else {
             this.delete_element(activation, i - delete_count + items.len() as i32);
@@ -394,7 +394,7 @@ pub fn concat<'gc>(
             let length = array_object.length(activation)?;
             for i in 0..length {
                 if array_object.has_element(activation, i) {
-                    let element = array_object.get_element(activation, i)?;
+                    let element = array_object.get_element(i);
                     result_array.set_element(activation, index, element)?;
                     index += 1;
                 }
@@ -475,7 +475,7 @@ fn sort_on<'gc>(
             let field_names: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
                     Ok(array
-                        .get_element(activation, i)?
+                        .get_element(i)
                         .coerce_to_string(activation)?
                         .to_string())
                 })
@@ -499,12 +499,10 @@ fn sort_on<'gc>(
             // Array of field names.
             let length = array.length(activation)?;
             if length as usize == fields.len() {
-                let flags: Result<Vec<SortFlags>, Error<'gc>> = (0..length)
+                let flags: Result<Vec<_>, Error<'gc>> = (0..length)
                     .map(|i| {
                         Ok(SortFlags::from_bits_truncate(
-                            array
-                                .get_element(activation, i)?
-                                .coerce_to_i32(activation)?,
+                            array.get_element(i).coerce_to_i32(activation)?,
                         ))
                     })
                     .collect();
@@ -561,10 +559,7 @@ fn sort_with_function<'gc>(
     flags: SortFlags,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length(activation)?;
-    let values: Result<Vec<(i32, Value<'gc>)>, Error<'gc>> = (0..length)
-        .map(|i| Ok((i, this.get_element(activation, i)?)))
-        .collect();
-    let mut values = values?;
+    let mut values: Vec<_> = (0..length).map(|i| (i, this.get_element(i))).collect();
 
     let mut is_unique = true;
     values.sort_unstable_by(|(_, a), (_, b)| {

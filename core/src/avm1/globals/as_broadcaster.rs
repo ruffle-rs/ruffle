@@ -70,7 +70,7 @@ pub fn add_listener<'gc>(
 
         let mut position = None;
         for i in 0..length {
-            let other_listener = listeners.get_element(activation, i)?;
+            let other_listener = listeners.get_element(i);
             if new_listener == other_listener {
                 position = Some(i);
                 break;
@@ -100,7 +100,7 @@ pub fn remove_listener<'gc>(
 
         let mut position = None;
         for i in 0..length {
-            let other_listener = listeners.get_element(activation, i)?;
+            let other_listener = listeners.get_element(i);
             if old_listener == other_listener {
                 position = Some(i);
                 break;
@@ -111,7 +111,7 @@ pub fn remove_listener<'gc>(
             if length > 0 {
                 let new_length = length - 1;
                 for i in position..new_length {
-                    let element = listeners.get_element(activation, i + 1)?;
+                    let element = listeners.get_element(i + 1);
                     listeners.set_element(activation, i, element)?;
                 }
 
@@ -153,7 +153,7 @@ pub fn broadcast_internal<'gc>(
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
         for i in 0..length {
-            let listener = listeners.get_element(activation, i)?;
+            let listener = listeners.get_element(i);
 
             if let Value::Object(listener) = listener {
                 listener.call_method(method_name, call_args, activation)?;

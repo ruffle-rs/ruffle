@@ -65,7 +65,6 @@ impl<V> PropertyMap<V> {
     }
 
     /// Gets a mutable reference to the value for the specified property.
-    #[allow(dead_code)]
     pub fn get_mut(&mut self, key: &str, case_sensitive: bool) -> Option<&mut V> {
         if case_sensitive {
             self.0.get_mut(&CaseSensitiveStr(key))

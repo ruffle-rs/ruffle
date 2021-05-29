@@ -206,6 +206,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.get_local(name, activation, this)
     }
 
+    fn get_data(&self, name: &str) -> Value<'gc> {
+        self.0.read().base.get_data(name)
+    }
+
     fn set(
         &self,
         name: &str,

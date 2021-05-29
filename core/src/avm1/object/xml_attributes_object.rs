@@ -69,6 +69,10 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
             .unwrap_or_else(|| Value::Undefined))
     }
 
+    fn get_data(&self, name: &str) -> Value<'gc> {
+        self.base().get_data(name)
+    }
+
     fn set(
         &self,
         name: &str,
@@ -82,6 +86,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         );
         self.base().set(name, value, activation)
     }
+
     fn call(
         &self,
         name: &str,

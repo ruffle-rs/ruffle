@@ -365,17 +365,15 @@ fn begin_gradient_fill<'gc>(
             return Ok(Value::Undefined);
         }
 
-        let records: Result<Vec<GradientRecord>, Error<'gc>> = (0..colors_length)
+        let records: Result<Vec<_>, Error<'gc>> = (0..colors_length)
             .map(|i| {
                 let ratio = ratios_object
-                    .get_element(activation, i)?
+                    .get_element(i)
                     .coerce_to_f64(activation)?
                     .clamp(0.0, 255.0) as u8;
-                let rgb = colors_object
-                    .get_element(activation, i)?
-                    .coerce_to_u32(activation)?;
+                let rgb = colors_object.get_element(i).coerce_to_u32(activation)?;
                 let alpha = alphas_object
-                    .get_element(activation, i)?
+                    .get_element(i)
                     .coerce_to_f64(activation)?
                     .clamp(0.0, 100.0);
                 Ok(GradientRecord {

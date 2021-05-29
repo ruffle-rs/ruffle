@@ -112,7 +112,7 @@ pub fn copy<'gc>(
         .coerce_to_object(activation);
 
     for i in 0..custom_items.length(activation)? {
-        let element = custom_items.get_element(activation, i)?;
+        let element = custom_items.get_element(i);
         custom_items_copy.set_element(activation, i, element)?;
     }
 
@@ -229,11 +229,7 @@ pub fn make_context_menu_state<'gc>(
         if let Ok(Value::Object(custom_items)) = menu.get("customItems", activation) {
             if let Ok(length) = custom_items.length(activation) {
                 for i in 0..length {
-                    let item = if let Ok(item) = custom_items.get_element(activation, i) {
-                        item
-                    } else {
-                        continue;
-                    };
+                    let item = custom_items.get_element(i);
                     if let Value::Object(item) = item {
                         let caption =
                             if let Ok(Value::String(caption)) = item.get("caption", activation) {

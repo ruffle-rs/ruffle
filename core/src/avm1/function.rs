@@ -533,6 +533,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.base.get_local(name, activation, this)
     }
 
+    fn get_data(&self, name: &str) -> Value<'gc> {
+        self.base.get_data(name)
+    }
+
     fn set(
         &self,
         name: &str,

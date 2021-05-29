@@ -181,8 +181,8 @@ fn getfloatarray_from_avm1_object<'gc>(
         v => {
             let v = v.coerce_to_object(activation);
             let length = v.length(activation)?;
-            let output: Result<Vec<f64>, Avm1Error<'gc>> = (0..length)
-                .map(|i| v.get_element(activation, i)?.coerce_to_f64(activation))
+            let output: Result<Vec<_>, Avm1Error<'gc>> = (0..length)
+                .map(|i| v.get_element(i).coerce_to_f64(activation))
                 .collect();
             Some(output?)
         }
