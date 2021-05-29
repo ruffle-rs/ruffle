@@ -120,7 +120,7 @@ pub fn colors<'gc>(
         .into();
 
         for (i, item) in filter.colors().iter().copied().enumerate() {
-            array.set_element(activation, i as i32, item.into())?;
+            array.set_element(activation, i as i32, item.into());
         }
 
         return Ok(array.into());
@@ -145,7 +145,7 @@ pub fn set_colors<'gc>(
             let mut alphas_arr = Vec::with_capacity(arr_len as usize);
 
             for i in 0..arr_len {
-                let col = obj.get_element(i).coerce_to_u32(activation)?;
+                let col = obj.get_element(activation, i).coerce_to_u32(activation)?;
 
                 let alpha = if let Some(alpha) = old_alphas.get(i as usize) {
                     *alpha
@@ -183,7 +183,7 @@ pub fn alphas<'gc>(
         .into();
 
         for (i, item) in filter.alphas().iter().copied().enumerate() {
-            array.set_element(activation, i as i32, item.into())?;
+            array.set_element(activation, i as i32, item.into());
         }
 
         return Ok(array.into());
@@ -206,7 +206,7 @@ pub fn set_alphas<'gc>(
             let alphas: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
                     Ok(obj
-                        .get_element(i as i32)
+                        .get_element(activation, i as i32)
                         .coerce_to_f64(activation)?
                         .clamp(0.0, 1.0))
                 })
@@ -239,7 +239,7 @@ pub fn ratios<'gc>(
         .into();
 
         for (i, item) in filter.ratios().iter().copied().enumerate() {
-            array.set_element(activation, i as i32, item.into())?;
+            array.set_element(activation, i as i32, item.into());
         }
 
         return Ok(array.into());
@@ -262,7 +262,7 @@ pub fn set_ratios<'gc>(
             let ratios: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
                     Ok(obj
-                        .get_element(i as i32)
+                        .get_element(activation, i as i32)
                         .coerce_to_i32(activation)?
                         .clamp(0, 255) as u8)
                 })

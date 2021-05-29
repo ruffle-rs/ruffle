@@ -368,12 +368,14 @@ fn begin_gradient_fill<'gc>(
         let records: Result<Vec<_>, Error<'gc>> = (0..colors_length)
             .map(|i| {
                 let ratio = ratios_object
-                    .get_element(i)
+                    .get_element(activation, i)
                     .coerce_to_f64(activation)?
                     .clamp(0.0, 255.0) as u8;
-                let rgb = colors_object.get_element(i).coerce_to_u32(activation)?;
+                let rgb = colors_object
+                    .get_element(activation, i)
+                    .coerce_to_u32(activation)?;
                 let alpha = alphas_object
-                    .get_element(i)
+                    .get_element(activation, i)
                     .coerce_to_f64(activation)?
                     .clamp(0.0, 100.0);
                 Ok(GradientRecord {
@@ -1081,14 +1083,14 @@ fn local_to_global<'gc>(
         // localToGlobal does no coercion; it fails if the properties are not numbers.
         // It does not search the prototype chain.
         if let (Value::Number(x), Value::Number(y)) = (
-            point.get_local("x", activation, *point)?,
-            point.get_local("y", activation, *point)?,
+            point.get_data(activation, "x"),
+            point.get_data(activation, "y"),
         ) {
             let x = Twips::from_pixels(x);
             let y = Twips::from_pixels(y);
             let (out_x, out_y) = movie_clip.local_to_global((x, y));
-            point.set("x", out_x.to_pixels().into(), activation)?;
-            point.set("y", out_y.to_pixels().into(), activation)?;
+            point.set_data(activation, "x", out_x.to_pixels().into());
+            point.set_data(activation, "y", out_y.to_pixels().into());
         } else {
             avm_warn!(
                 activation,
@@ -1212,14 +1214,14 @@ fn global_to_local<'gc>(
         // globalToLocal does no coercion; it fails if the properties are not numbers.
         // It does not search the prototype chain.
         if let (Value::Number(x), Value::Number(y)) = (
-            point.get_local("x", activation, *point)?,
-            point.get_local("y", activation, *point)?,
+            point.get_data(activation, "x"),
+            point.get_data(activation, "y"),
         ) {
             let x = Twips::from_pixels(x);
             let y = Twips::from_pixels(y);
             let (out_x, out_y) = movie_clip.global_to_local((x, y));
-            point.set("x", out_x.to_pixels().into(), activation)?;
-            point.set("y", out_y.to_pixels().into(), activation)?;
+            point.set_data(activation, "x", out_x.to_pixels().into());
+            point.set_data(activation, "y", out_y.to_pixels().into());
         } else {
             avm_warn!(
                 activation,

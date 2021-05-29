@@ -61,8 +61,8 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().base.get_local(name, activation, this)
     }
 
-    fn get_data(&self, name: &str) -> Value<'gc> {
-        self.0.read().base.get_data(name)
+    fn get_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> Value<'gc> {
+        self.0.read().base.get_data(activation, name)
     }
 
     fn set(
@@ -98,6 +98,10 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         }
 
         self.0.read().base.set(name, value, activation)
+    }
+
+    fn set_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str, value: Value<'gc>) {
+        self.0.read().base.set_data(activation, name, value)
     }
 
     fn call(

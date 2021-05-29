@@ -133,7 +133,7 @@ impl Value {
                     let length = object.length(activation)?;
                     let values: Result<Vec<_>, Avm1Error<'gc>> = (0..length)
                         .map(|i| {
-                            let element = object.get_element(i);
+                            let element = object.get_element(activation, i);
                             Value::from_avm1(activation, element)
                         })
                         .collect();
@@ -177,7 +177,7 @@ impl Value {
                 .into();
                 for (i, value) in values.iter().enumerate() {
                     let element = value.to_owned().into_avm1(activation);
-                    array.set_element(activation, i as i32, element).unwrap();
+                    array.set_element(activation, i as i32, element);
                 }
                 array.into()
             }

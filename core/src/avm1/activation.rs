@@ -1484,7 +1484,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .into();
             for i in 0..num_elements as i32 {
                 let element = self.context.avm1.pop();
-                array.set_element(self, i, element)?;
+                array.set_element(self, i, element);
             }
             array.into()
         };

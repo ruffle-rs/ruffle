@@ -376,7 +376,7 @@ pub fn xmlnode_child_nodes<'gc>(
                         Some(activation.context.avm1.prototypes.xml_node),
                     )
                     .into(),
-            )?;
+            );
 
             compatible_nodes += 1;
         }

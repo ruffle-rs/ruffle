@@ -297,8 +297,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
     }
 
-    fn get_data(&self, name: &str) -> Value<'gc> {
-        match self.0.read().values.get(name, true) {
+    fn get_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> Value<'gc> {
+        match self
+            .0
+            .read()
+            .values
+            .get(name, activation.is_case_sensitive())
+        {
             Some(Property::Stored { value, .. }) => value.to_owned(),
             _ => Value::Undefined,
         }
@@ -318,6 +323,17 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             (*self).into(),
             Some((*self).into()),
         )
+    }
+
+    fn set_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str, value: Value<'gc>) {
+        if let Some(Property::Stored { value: v, .. }) = self
+            .0
+            .write(activation.context.gc_context)
+            .values
+            .get_mut(name, activation.is_case_sensitive())
+        {
+            *v = value;
+        }
     }
 
     /// Call the underlying object.

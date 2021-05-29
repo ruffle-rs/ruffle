@@ -1231,7 +1231,7 @@ impl<'gc> EditText<'gc> {
                 if length == 0 {
                     // Add the TextField as its own listener to match Flash's behavior
                     // This makes it so that the TextField's handlers are called before other listeners'.
-                    listeners.set_element(activation, 0, object.into()).unwrap();
+                    listeners.set_element(activation, 0, object.into());
                 } else {
                     log::warn!("_listeners should be empty, but its length is {}", length);
                 }

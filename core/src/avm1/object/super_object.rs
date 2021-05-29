@@ -87,7 +87,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         Ok(Value::Undefined)
     }
 
-    fn get_data(&self, _name: &str) -> Value<'gc> {
+    fn get_data(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: &str) -> Value<'gc> {
         Value::Undefined
     }
 
@@ -100,6 +100,10 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //TODO: What happens if you set `super.__proto__`?
         Ok(())
     }
+
+    fn set_data(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: &str, _value: Value<'gc>) {
+    }
+
     fn call(
         &self,
         name: &str,

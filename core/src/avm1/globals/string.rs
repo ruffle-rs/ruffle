@@ -322,7 +322,7 @@ fn split<'gc>(
                 activation,
                 i as i32,
                 AvmString::new(activation.context.gc_context, token.to_string()).into(),
-            )?;
+            );
         }
     } else {
         // When using an empty "" delimiter, Rust's str::split adds an extra beginning and trailing item, but Flash does not.
@@ -333,7 +333,7 @@ fn split<'gc>(
                 activation,
                 i as i32,
                 AvmString::new(activation.context.gc_context, token.to_string()).into(),
-            )?;
+            );
         }
     }
     Ok(array.into())

@@ -33,7 +33,7 @@ pub fn matrix<'gc>(
         .into();
 
         for (i, item) in filter.matrix().iter().copied().enumerate() {
-            array.set_element(activation, i as i32, item.into())?;
+            array.set_element(activation, i as i32, item.into());
         }
 
         return Ok(array.into());
@@ -54,7 +54,9 @@ pub fn set_matrix<'gc>(
         let mut arr = [0.0; 4 * 5];
 
         for (i, item) in arr.iter_mut().enumerate().take(length as usize) {
-            *item = obj.get_element(i as i32).coerce_to_f64(activation)?;
+            *item = obj
+                .get_element(activation, i as i32)
+                .coerce_to_f64(activation)?;
         }
 
         if let Some(filter) = this.as_color_matrix_filter_object() {

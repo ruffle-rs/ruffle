@@ -31,7 +31,7 @@ pub fn constructor<'gc>(
         Value::Object(listeners),
         Attribute::DONT_ENUM,
     );
-    listeners.set_element(activation, 0, this.into())?;
+    listeners.set_element(activation, 0, this.into());
 
     Ok(this.into())
 }

@@ -65,8 +65,12 @@ macro_rules! impl_custom_object {
             self.0.read().$field.get_local(name, activation, this)
         }
 
-        fn get_data(&self, name: &str) -> crate::avm1::Value<'gc> {
-            self.0.read().$field.get_data(name)
+        fn get_data(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, name: &str) -> crate::avm1::Value<'gc> {
+            self.0.read().$field.get_data(activation, name)
+        }
+
+        fn set_data(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, name: &str, value: crate::avm1::Value<'gc>) {
+            self.0.read().$field.set_data(activation, name, value)
         }
 
         fn call(

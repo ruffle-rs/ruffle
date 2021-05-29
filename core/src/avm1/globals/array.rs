@@ -81,10 +81,10 @@ pub fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Number(length)] = *args {
         let length = ArrayObject::as_array_length(length).unwrap_or(i32::MIN);
-        this.set_length(activation, length)?;
+        this.set_length(activation, length);
     } else {
         for (i, &arg) in args.iter().enumerate() {
-            this.set_element(activation, i as i32, arg)?;
+            this.set_element(activation, i as i32, arg);
         }
     }
     Ok(this.into())
@@ -110,11 +110,11 @@ pub fn push<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let old_length = this.length(activation)?;
     for (i, &arg) in args.iter().enumerate() {
-        this.set_element(activation, old_length + i as i32, arg)?;
+        this.set_element(activation, old_length + i as i32, arg);
     }
 
     let new_length = old_length + args.len() as i32;
-    this.set_length(activation, new_length)?;
+    this.set_length(activation, new_length);
     Ok(new_length.into())
 }
 
@@ -129,18 +129,18 @@ pub fn unshift<'gc>(
         let from = old_length - i - 1;
         let to = new_length - i - 1;
         if this.has_element(activation, from) {
-            let element = this.get_element(from);
-            this.set_element(activation, to, element)?;
+            let element = this.get_element(activation, from);
+            this.set_element(activation, to, element);
         } else {
             this.delete_element(activation, to);
         }
     }
 
     for (i, &arg) in args.iter().enumerate() {
-        this.set_element(activation, i as i32, arg)?;
+        this.set_element(activation, i as i32, arg);
     }
 
-    this.set_length(activation, new_length)?;
+    this.set_length(activation, new_length);
     Ok(new_length.into())
 }
 
@@ -154,12 +154,12 @@ pub fn shift<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let first = this.get_element(0);
+    let first = this.get_element(activation, 0);
 
     for i in 1..length {
         if this.has_element(activation, i) {
-            let element = this.get_element(i);
-            this.set_element(activation, i - 1, element)?;
+            let element = this.get_element(activation, i);
+            this.set_element(activation, i - 1, element);
         } else {
             this.delete_element(activation, i - 1);
         }
@@ -167,7 +167,7 @@ pub fn shift<'gc>(
 
     this.delete_element(activation, length - 1);
 
-    this.set_length(activation, length - 1)?;
+    this.set_length(activation, length - 1);
     Ok(first)
 }
 
@@ -182,9 +182,9 @@ pub fn pop<'gc>(
     }
 
     let new_length = old_length - 1;
-    let last = this.get_element(new_length);
+    let last = this.get_element(activation, new_length);
     this.delete_element(activation, new_length);
-    this.set_length(activation, new_length)?;
+    this.set_length(activation, new_length);
     Ok(last)
 }
 
@@ -197,7 +197,7 @@ pub fn reverse<'gc>(
     for lower_index in 0..length / 2 {
         let has_lower = this.has_element(activation, lower_index);
         let lower_value = if has_lower {
-            this.get_element(lower_index)
+            this.get_element(activation, lower_index)
         } else {
             Value::Undefined
         };
@@ -205,22 +205,22 @@ pub fn reverse<'gc>(
         let upper_index = length / 2 - lower_index - 1;
         let has_upper = this.has_element(activation, upper_index);
         let upper_value = if has_upper {
-            this.get_element(upper_index)
+            this.get_element(activation, upper_index)
         } else {
             Value::Undefined
         };
 
         match (has_lower, has_upper) {
             (true, true) => {
-                this.set_element(activation, lower_index, upper_value)?;
-                this.set_element(activation, upper_index, lower_value)?;
+                this.set_element(activation, lower_index, upper_value);
+                this.set_element(activation, upper_index, lower_value);
             }
             (true, false) => {
                 this.delete_element(activation, lower_index);
-                this.set_element(activation, upper_index, lower_value)?;
+                this.set_element(activation, upper_index, lower_value);
             }
             (false, true) => {
-                this.set_element(activation, lower_index, upper_value)?;
+                this.set_element(activation, lower_index, upper_value);
                 this.delete_element(activation, upper_index);
             }
             (false, false) => {
@@ -253,7 +253,7 @@ pub fn join<'gc>(
 
     let mut parts = Vec::with_capacity(length as usize);
     for i in 0..length {
-        let element = this.get_element(i);
+        let element = this.get_element(activation, i);
         parts.push(element.coerce_to_string(activation)?.to_string());
     }
 
@@ -299,8 +299,8 @@ pub fn slice<'gc>(
 
     for i in start..end {
         if this.has_element(activation, i) {
-            let element = this.get_element(i);
-            array.set_element(activation, i - start, element)?;
+            let element = this.get_element(activation, i);
+            array.set_element(activation, i - start, element);
         }
     }
 
@@ -332,11 +332,11 @@ pub fn splice<'gc>(
     .into();
     for i in 0..delete_count {
         if this.has_element(activation, start + i) {
-            let element = this.get_element(start + i);
-            result_array.set_element(activation, i, element)?;
+            let element = this.get_element(activation, start + i);
+            result_array.set_element(activation, i, element);
         }
     }
-    result_array.set_length(activation, delete_count)?;
+    result_array.set_length(activation, delete_count);
 
     let items = if args.len() > 2 { &args[2..] } else { &[] };
     let (from, to) = if items.len() as i32 > delete_count {
@@ -346,17 +346,17 @@ pub fn splice<'gc>(
     };
     for i in from..=to {
         if this.has_element(activation, i) {
-            let element = this.get_element(i);
-            this.set_element(activation, i - delete_count + items.len() as i32, element)?;
+            let element = this.get_element(activation, i);
+            this.set_element(activation, i - delete_count + items.len() as i32, element);
         } else {
             this.delete_element(activation, i - delete_count + items.len() as i32);
         }
     }
 
     for (i, &item) in items.iter().enumerate() {
-        this.set_element(activation, start + i as i32, item)?;
+        this.set_element(activation, start + i as i32, item);
     }
-    this.set_length(activation, length - delete_count + items.len() as i32)?;
+    this.set_length(activation, length - delete_count + items.len() as i32);
 
     Ok(result_array.into())
 }
@@ -394,13 +394,13 @@ pub fn concat<'gc>(
             let length = array_object.length(activation)?;
             for i in 0..length {
                 if array_object.has_element(activation, i) {
-                    let element = array_object.get_element(i);
-                    result_array.set_element(activation, index, element)?;
+                    let element = array_object.get_element(activation, i);
+                    result_array.set_element(activation, index, element);
                     index += 1;
                 }
             }
         } else {
-            result_array.set_element(activation, index, value)?;
+            result_array.set_element(activation, index, value);
             index += 1;
         }
     }
@@ -475,7 +475,7 @@ fn sort_on<'gc>(
             let field_names: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
                     Ok(array
-                        .get_element(i)
+                        .get_element(activation, i)
                         .coerce_to_string(activation)?
                         .to_string())
                 })
@@ -502,7 +502,7 @@ fn sort_on<'gc>(
                 let flags: Result<Vec<_>, Error<'gc>> = (0..length)
                     .map(|i| {
                         Ok(SortFlags::from_bits_truncate(
-                            array.get_element(i).coerce_to_i32(activation)?,
+                            array.get_element(activation, i).coerce_to_i32(activation)?,
                         ))
                     })
                     .collect();
@@ -559,7 +559,9 @@ fn sort_with_function<'gc>(
     flags: SortFlags,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length(activation)?;
-    let mut values: Vec<_> = (0..length).map(|i| (i, this.get_element(i))).collect();
+    let mut values: Vec<_> = (0..length)
+        .map(|i| (i, this.get_element(activation, i)))
+        .collect();
 
     let mut is_unique = true;
     values.sort_unstable_by(|(_, a), (_, b)| {
@@ -586,16 +588,16 @@ fn sort_with_function<'gc>(
             Some(activation.context.avm1.prototypes.array),
         )
         .into();
-        array.set_length(activation, length)?;
+        array.set_length(activation, length);
         for (i, (index, _)) in values.into_iter().enumerate() {
-            array.set_element(activation, i as i32, index.into())?;
+            array.set_element(activation, i as i32, index.into());
         }
         Ok(array.into())
     } else {
         // Standard sort modifies the original array, and returns it.
         // AS2 reference incorrectly states this returns nothing, but it returns the original array, sorted.
         for (i, (_, value)) in values.into_iter().enumerate() {
-            this.set_element(activation, i as i32, value)?;
+            this.set_element(activation, i as i32, value);
         }
         Ok(this.into())
     }

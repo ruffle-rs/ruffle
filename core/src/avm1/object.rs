@@ -106,7 +106,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>>;
 
-    fn get_data(&self, name: &str) -> Value<'gc>;
+    fn get_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> Value<'gc>;
 
     /// Retrieve a named property from the object, or its prototype.
     fn get(
@@ -128,6 +128,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>>;
+
+    fn set_data(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str, value: Value<'gc>);
 
     /// Call the underlying object.
     ///
@@ -540,26 +542,23 @@ impl<'gc> Object<'gc> {
 
     /// Gets the length of this object, as if it were an array.
     pub fn length(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
-        self.get("length", activation)?.coerce_to_i32(activation)
+        self.get_data(activation, "length")
+            .coerce_to_i32(activation)
     }
 
     /// Sets the length of this object, as if it were an array.
-    pub fn set_length(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        length: i32,
-    ) -> Result<(), Error<'gc>> {
-        self.set("length", length.into(), activation)
+    pub fn set_length(&self, activation: &mut Activation<'_, 'gc, '_>, length: i32) {
+        self.set_data(activation, "length", length.into())
     }
 
     /// Checks if this object has an element.
     pub fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
-        self.has_property(activation, &index.to_string())
+        self.has_own_property(activation, &index.to_string())
     }
 
     /// Gets a property of this object, as if it were an array.
-    pub fn get_element(&self, index: i32) -> Value<'gc> {
-        self.get_data(&index.to_string())
+    pub fn get_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc> {
+        self.get_data(activation, &index.to_string())
     }
 
     /// Sets a property of this object, as if it were an array.
@@ -568,12 +567,13 @@ impl<'gc> Object<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         index: i32,
         value: Value<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.set(&index.to_string(), value, activation)
+    ) {
+        self.set_data(activation, &index.to_string(), value)
     }
 
     /// Deletes a property of this object as if it were an array.
     pub fn delete_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
+        // TODO: delete_data?
         self.delete(activation, &index.to_string())
     }
 }

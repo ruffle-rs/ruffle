@@ -195,7 +195,7 @@ pub fn matrix<'gc>(
         .into();
 
         for (i, item) in filter.matrix().iter().copied().enumerate() {
-            array.set_element(activation, i as i32, item.into())?;
+            array.set_element(activation, i as i32, item.into());
         }
 
         return Ok(array.into());
@@ -217,7 +217,7 @@ pub fn set_matrix<'gc>(
                 .length(activation)?
                 .max(filter.matrix_x() as i32 * filter.matrix_y() as i32);
             let new_matrix: Result<Vec<_>, Error<'gc>> = (0..arr_len)
-                .map(|i| obj.get_element(i).coerce_to_f64(activation))
+                .map(|i| obj.get_element(activation, i).coerce_to_f64(activation))
                 .collect();
             filter.set_matrix(activation.context.gc_context, new_matrix?);
         } else {

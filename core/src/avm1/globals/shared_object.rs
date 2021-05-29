@@ -140,7 +140,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
                     let value = deserialize_value(activation, entry.value());
 
                     if let Ok(i) = entry.name().parse::<i32>() {
-                        obj.set_element(activation, i, value).unwrap();
+                        obj.set_element(activation, i, value);
                     } else {
                         obj.define_value(
                             activation.context.gc_context,
@@ -290,7 +290,7 @@ fn deserialize_array_json<'gc>(
         for entry in json_obj.iter() {
             let value = recursive_deserialize_json(entry.1.clone(), activation);
             if let Ok(i) = entry.0.parse::<i32>() {
-                obj.set_element(activation, i, value).unwrap();
+                obj.set_element(activation, i, value);
             } else {
                 obj.define_value(
                     activation.context.gc_context,

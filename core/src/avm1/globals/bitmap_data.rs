@@ -687,7 +687,7 @@ pub fn perlin_noise<'gc>(
 
             let octave_offsets: Result<Vec<_>, Error<'gc>> = (0..num_octaves)
                 .map(|i| {
-                    if let Value::Object(e) = offsets.get_element(i as i32) {
+                    if let Value::Object(e) = offsets.get_element(activation, i as i32) {
                         let x = e.get("x", activation)?.coerce_to_f64(activation)?;
                         let y = e.get("y", activation)?.coerce_to_f64(activation)?;
                         Ok((x, y))
@@ -998,7 +998,8 @@ pub fn palette_map<'gc>(
                 let mut array = [0_u32; 256];
                 for (i, item) in array.iter_mut().enumerate() {
                     *item = if let Value::Object(arg) = arg {
-                        arg.get_element(i as i32).coerce_to_u32(activation)?
+                        arg.get_element(activation, i as i32)
+                            .coerce_to_u32(activation)?
                     } else {
                         // This is an "identity mapping", fulfilling the part of the spec that
                         // says that channels which have no array provided are simply copied.
