@@ -345,13 +345,19 @@ fn substr<'gc>(
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
     let this_len = this.encode_utf16().count();
-    let start_index_raw = args.get(0).unwrap().coerce_to_i32(activation)?;
-    let start_index = string_wrapping_index(start_index_raw, this_len);
+    let start_index = string_wrapping_index(
+        args.get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?,
+        this_len,
+    );
 
     let len = match args.get(1) {
-        None | Some(Value::Undefined) => this_len,
-        Some(n) => string_index_substr(start_index_raw, n.coerce_to_i32(activation)?, this_len),
+        None | Some(Value::Undefined) => this_len as i32,
+        Some(n) => n.coerce_to_i32(activation)?,
     };
+    let end_index = string_wrapping_index((start_index as i32) + len, this_len);
+    let len = end_index.saturating_sub(start_index);
 
     let ret = string_utils::utf16_iter_to_string(this.encode_utf16().skip(start_index).take(len));
     Ok(AvmString::new(activation.context.gc_context, ret).into())
@@ -441,15 +447,10 @@ fn to_upper_case<'gc>(
 /// Normalizes an  index parameter used in `String` functions such as `substring`.
 /// The returned index will be within the range of `[0, len]`.
 fn string_index(i: i32, len: usize) -> usize {
-    if i > 0 {
-        let i = i as usize;
-        if i < len {
-            i
-        } else {
-            len
-        }
-    } else {
+    if i < 0 {
         0
+    } else {
+        (i as usize).min(len)
     }
 }
 
@@ -457,41 +458,10 @@ fn string_index(i: i32, len: usize) -> usize {
 /// Negative values will count backwards from `len`.
 /// The returned index will be within the range of `[0, len]`.
 fn string_wrapping_index(i: i32, len: usize) -> usize {
-    if i >= 0 {
-        let i = i as usize;
-        if i < len {
-            i
-        } else {
-            len
-        }
+    if i < 0 {
+        let offset = i as isize;
+        len.saturating_sub((-offset) as usize)
     } else {
-        let i = (-i) as usize;
-        if i <= len {
-            len - i
-        } else {
-            len
-        }
-    }
-}
-
-/// Normalizes an index parameter used in substr.
-/// If start + length is not less than zero, the parameter is zero,
-/// otherwise negative values will count backwards from `len`.
-/// The returned index will be within the range of `[0, len]`.
-fn string_index_substr(s: i32, e: i32, len: usize) -> usize {
-    if e >= 0 {
-        string_index(e, len)
-    } else {
-        let t = s + e;
-        if t >= 0 {
-            0
-        } else {
-            let e = (-e) as usize;
-            if e <= len {
-                len - e
-            } else {
-                len
-            }
-        }
+        (i as usize).min(len)
     }
 }
