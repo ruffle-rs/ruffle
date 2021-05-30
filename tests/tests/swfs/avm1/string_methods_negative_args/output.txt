@@ -1,0 +1,241 @@
+// var str = hello world
+// str.substr(0, -1)
+hello worl
+// str.substr(0, -4)
+hello w
+// str.substr(8, -4)
+
+// str.substr(3, -3)
+
+// str.substr(3, -4)
+lo worl
+// str.substr(3, -5)
+lo wor
+// str.substr(4, -4)
+
+// str.substr(4, -5)
+o worl
+// str.substr(null, -1)
+hello worl
+// str.substr(undefined, -1)
+hello worl
+// text.substr(-5)
+abcd
+// text.substr(-5,-5)
+
+// text.substr(-5,-4)
+
+// text.substr(-5,-3)
+a
+// text.substr(-5,-2)
+ab
+// text.substr(-5,-1)
+abc
+// text.substr(-5,0)
+
+// text.substr(-5,1)
+a
+// text.substr(-5,2)
+ab
+// text.substr(-5,3)
+abc
+// text.substr(-5,4)
+abcd
+// text.substr(-4)
+abcd
+// text.substr(-4,-5)
+
+// text.substr(-4,-4)
+
+// text.substr(-4,-3)
+a
+// text.substr(-4,-2)
+ab
+// text.substr(-4,-1)
+abc
+// text.substr(-4,0)
+
+// text.substr(-4,1)
+a
+// text.substr(-4,2)
+ab
+// text.substr(-4,3)
+abc
+// text.substr(-4,4)
+abcd
+// text.substr(-3)
+bcd
+// text.substr(-3,-5)
+
+// text.substr(-3,-4)
+
+// text.substr(-3,-3)
+b
+// text.substr(-3,-2)
+bc
+// text.substr(-3,-1)
+
+// text.substr(-3,0)
+
+// text.substr(-3,1)
+b
+// text.substr(-3,2)
+bc
+// text.substr(-3,3)
+bcd
+// text.substr(-3,4)
+bcd
+// text.substr(-2)
+cd
+// text.substr(-2,-5)
+
+// text.substr(-2,-4)
+
+// text.substr(-2,-3)
+c
+// text.substr(-2,-2)
+
+// text.substr(-2,-1)
+
+// text.substr(-2,0)
+
+// text.substr(-2,1)
+c
+// text.substr(-2,2)
+cd
+// text.substr(-2,3)
+cd
+// text.substr(-2,4)
+cd
+// text.substr(-1)
+d
+// text.substr(-1,-5)
+
+// text.substr(-1,-4)
+
+// text.substr(-1,-3)
+
+// text.substr(-1,-2)
+
+// text.substr(-1,-1)
+
+// text.substr(-1,0)
+
+// text.substr(-1,1)
+d
+// text.substr(-1,2)
+d
+// text.substr(-1,3)
+d
+// text.substr(-1,4)
+d
+// text.substr(0)
+abcd
+// text.substr(0,-5)
+
+// text.substr(0,-4)
+
+// text.substr(0,-3)
+a
+// text.substr(0,-2)
+ab
+// text.substr(0,-1)
+abc
+// text.substr(0,0)
+
+// text.substr(0,1)
+a
+// text.substr(0,2)
+ab
+// text.substr(0,3)
+abc
+// text.substr(0,4)
+abcd
+// text.substr(1)
+bcd
+// text.substr(1,-5)
+
+// text.substr(1,-4)
+
+// text.substr(1,-3)
+b
+// text.substr(1,-2)
+bc
+// text.substr(1,-1)
+
+// text.substr(1,0)
+
+// text.substr(1,1)
+b
+// text.substr(1,2)
+bc
+// text.substr(1,3)
+bcd
+// text.substr(1,4)
+bcd
+// text.substr(2)
+cd
+// text.substr(2,-5)
+
+// text.substr(2,-4)
+
+// text.substr(2,-3)
+c
+// text.substr(2,-2)
+
+// text.substr(2,-1)
+
+// text.substr(2,0)
+
+// text.substr(2,1)
+c
+// text.substr(2,2)
+cd
+// text.substr(2,3)
+cd
+// text.substr(2,4)
+cd
+// text.substr(3)
+d
+// text.substr(3,-5)
+
+// text.substr(3,-4)
+
+// text.substr(3,-3)
+
+// text.substr(3,-2)
+
+// text.substr(3,-1)
+
+// text.substr(3,0)
+
+// text.substr(3,1)
+d
+// text.substr(3,2)
+d
+// text.substr(3,3)
+d
+// text.substr(3,4)
+d
+// text.substr(4)
+
+// text.substr(4,-5)
+
+// text.substr(4,-4)
+
+// text.substr(4,-3)
+
+// text.substr(4,-2)
+
+// text.substr(4,-1)
+
+// text.substr(4,0)
+
+// text.substr(4,1)
+
+// text.substr(4,2)
+
+// text.substr(4,3)
+
+// text.substr(4,4)
+
