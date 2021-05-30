@@ -991,7 +991,7 @@ impl Ruffle {
             let metadata = MovieMetadata {
                 width: width.to_pixels(),
                 height: height.to_pixels(),
-                frame_rate: swf_header.frame_rate(),
+                frame_rate: swf_header.frame_rate().to_f32(),
                 num_frames: swf_header.num_frames(),
                 swf_version: swf_header.version(),
                 background_color,

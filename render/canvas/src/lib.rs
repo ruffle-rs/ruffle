@@ -973,7 +973,7 @@ fn swf_shape_to_svg(
 
                         let mut svg_gradient = RadialGradient::new()
                             .set("id", format!("f{}", num_defs))
-                            .set("fx", focal_point / 2.0)
+                            .set("fx", focal_point.to_f32() / 2.0)
                             .set("gradientUnits", "userSpaceOnUse")
                             .set("cx", "0")
                             .set("cy", "0")
@@ -1155,7 +1155,7 @@ fn swf_shape_to_svg(
                     );
 
                 if let LineJoinStyle::Miter(miter_limit) = style.join_style {
-                    svg_path = svg_path.set("stroke-miterlimit", miter_limit);
+                    svg_path = svg_path.set("stroke-miterlimit", miter_limit.to_f32());
                 }
 
                 let mut data = Data::new();
@@ -1411,7 +1411,7 @@ fn swf_shape_to_canvas_commands(
                 let (line_join, miter_limit) = match style.join_style {
                     LineJoinStyle::Round => ("round", 999_999.0),
                     LineJoinStyle::Bevel => ("bevel", 999_999.0),
-                    LineJoinStyle::Miter(ml) => ("miter", ml),
+                    LineJoinStyle::Miter(ml) => ("miter", ml.to_f32()),
                 };
 
                 let path = Path2d::new().unwrap();

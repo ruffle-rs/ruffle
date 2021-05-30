@@ -20,8 +20,8 @@ use crate::vminterface::Instantiator;
 use gc_arena::MutationContext;
 use std::borrow::Cow;
 use swf::{
-    FillStyle, Gradient, GradientInterpolation, GradientRecord, GradientSpread, LineCapStyle,
-    LineJoinStyle, LineStyle, Twips,
+    FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
+    LineCapStyle, LineJoinStyle, LineStyle, Twips,
 };
 
 macro_rules! mc_method {
@@ -277,9 +277,10 @@ fn line_style<'gc>(
         {
             Some("miter") => {
                 if let Some(limit) = args.get(7) {
-                    LineJoinStyle::Miter(limit.coerce_to_f64(activation)?.max(0.0).min(255.0) as f32)
+                    let limit = limit.coerce_to_f64(activation)?.max(0.0).min(255.0);
+                    LineJoinStyle::Miter(Fixed8::from_f64(limit))
                 } else {
-                    LineJoinStyle::Miter(3.0)
+                    LineJoinStyle::Miter(Fixed8::from_f32(3.0))
                 }
             }
             Some("bevel") => LineJoinStyle::Bevel,
@@ -401,7 +402,7 @@ fn begin_gradient_fill<'gc>(
                 if let Some(focal_point) = args.get(7) {
                     FillStyle::FocalGradient {
                         gradient,
-                        focal_point: focal_point.coerce_to_f64(activation)? as f32,
+                        focal_point: Fixed8::from_f64(focal_point.coerce_to_f64(activation)?),
                     }
                 } else {
                     FillStyle::RadialGradient(gradient)

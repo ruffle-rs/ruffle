@@ -6,7 +6,7 @@ use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::sync::Arc;
-use swf::Twips;
+use swf::{Fixed8, Twips};
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -369,7 +369,7 @@ fn lerp_fill(start: &swf::FillStyle, end: &swf::FillStyle, a: f32, b: f32) -> sw
             },
         ) => FillStyle::FocalGradient {
             gradient: lerp_gradient(start, end, a, b),
-            focal_point: a * start_focal + b * end_focal,
+            focal_point: *start_focal * Fixed8::from_f32(a) + *end_focal * Fixed8::from_f32(b),
         },
 
         // All other combinations should not occur, because SWF stores the start/end fill as the same type, always.

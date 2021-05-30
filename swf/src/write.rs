@@ -25,7 +25,7 @@ use std::io::{self, Write};
 ///         compression: Compression::Zlib,
 ///         version: 6,
 ///         stage_size: Rectangle { x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0), y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0) },
-///         frame_rate: 60.0,
+///         frame_rate: Fixed8::from_f32(60.0),
 ///         num_frames: 1,
 ///     };
 /// let tags = [
@@ -281,12 +281,12 @@ impl<W: Write> Writer<W> {
         }
     }
 
-    fn write_fixed8(&mut self, n: f32) -> io::Result<()> {
-        self.write_i16((n * 256f32) as i16)
+    fn write_fixed8(&mut self, n: Fixed8) -> io::Result<()> {
+        self.write_i16(n.get())
     }
 
-    fn write_fixed16(&mut self, n: f64) -> io::Result<()> {
-        self.write_i32((n * 65536f64) as i32)
+    fn write_fixed16(&mut self, n: Fixed16) -> io::Result<()> {
+        self.write_i32(n.get())
     }
 
     fn write_encoded_u32(&mut self, mut n: u32) -> Result<()> {
@@ -2660,7 +2660,7 @@ mod tests {
                     y_min: Twips::from_pixels(0.0),
                     y_max: Twips::from_pixels(480.0),
                 },
-                frame_rate: 60.0,
+                frame_rate: Fixed8::from_f32(60.0),
                 num_frames: 1,
             };
             write_swf(&header, &[], &mut buf)?;
@@ -2687,10 +2687,10 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
-            writer.write_fixed8(0f32).unwrap();
-            writer.write_fixed8(1f32).unwrap();
-            writer.write_fixed8(6.5f32).unwrap();
-            writer.write_fixed8(-20.75f32).unwrap();
+            writer.write_fixed8(Fixed8::ZERO).unwrap();
+            writer.write_fixed8(Fixed8::ONE).unwrap();
+            writer.write_fixed8(Fixed8::from_f32(6.5)).unwrap();
+            writer.write_fixed8(Fixed8::from_f32(-20.75)).unwrap();
         }
         assert_eq!(
             buf,

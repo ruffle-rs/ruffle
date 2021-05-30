@@ -3,7 +3,7 @@ use crate::vminterface::AvmType;
 use gc_arena::Collect;
 use std::path::Path;
 use std::sync::Arc;
-use swf::{HeaderExt, Rectangle, TagCode, Twips};
+use swf::{Fixed8, HeaderExt, Rectangle, TagCode, Twips};
 
 pub type Error = Box<dyn std::error::Error>;
 pub type DecodeResult = Result<(), Error>;
@@ -173,7 +173,7 @@ impl SwfMovie {
         self.header.num_frames()
     }
 
-    pub fn frame_rate(&self) -> f32 {
+    pub fn frame_rate(&self) -> Fixed8 {
         self.header.frame_rate()
     }
 }
