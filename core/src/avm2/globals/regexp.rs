@@ -209,15 +209,7 @@ pub fn exec<'gc>(
                 None => return Ok(Value::Null),
             };
 
-            let array_proto = activation.avm2().prototypes().array;
-            let array_constr = activation.avm2().constructors().array;
-
-            let object = ArrayObject::from_array(
-                storage,
-                array_constr,
-                array_proto,
-                activation.context.gc_context,
-            );
+            let object = ArrayObject::from_storage(activation, storage)?;
 
             object.set_property_local(
                 object,

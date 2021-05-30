@@ -172,18 +172,10 @@ fn labels_for_scene<'gc>(
         frame_labels.push(Some(frame_label.into()));
     }
 
-    let array_proto = activation.avm2().prototypes().array;
-    let array_constr = activation.avm2().constructors().array;
-
     Ok((
         scene_name.to_string(),
         *scene_length,
-        ArrayObject::from_array(
-            ArrayStorage::from_storage(frame_labels),
-            array_constr,
-            array_proto,
-            activation.context.gc_context,
-        ),
+        ArrayObject::from_storage(activation, ArrayStorage::from_storage(frame_labels))?,
     ))
 }
 
@@ -274,15 +266,10 @@ pub fn scenes<'gc>(
             scene_objects.push(Some(scene.into()));
         }
 
-        let array_proto = activation.context.avm2.prototypes().array;
-        let array_constr = activation.context.avm2.constructors().array;
-
-        return Ok(ArrayObject::from_array(
+        return Ok(ArrayObject::from_storage(
+            activation,
             ArrayStorage::from_storage(scene_objects),
-            array_constr,
-            array_proto,
-            activation.context.gc_context,
-        )
+        )?
         .into());
     }
 

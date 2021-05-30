@@ -96,16 +96,7 @@ pub fn build_array<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     array: ArrayStorage<'gc>,
 ) -> Result<Value<'gc>, Error> {
-    let array_proto = activation.avm2().prototypes().array;
-    let array_constr = activation.avm2().constructors().array;
-
-    Ok(ArrayObject::from_array(
-        array,
-        array_constr,
-        array_proto,
-        activation.context.gc_context,
-    )
-    .into())
+    Ok(ArrayObject::from_storage(activation, array)?.into())
 }
 
 /// Implements `Array.concat`

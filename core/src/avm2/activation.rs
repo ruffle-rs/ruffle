@@ -270,14 +270,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 unreachable!();
             };
 
-            let array_proto = activation.avm2().prototypes().array;
-            let array_constr = activation.avm2().constructors().array;
-            let mut args_object = ArrayObject::from_array(
-                args_array,
-                array_constr,
-                array_proto,
-                activation.context.gc_context,
-            );
+            let mut args_object = ArrayObject::from_storage(&mut activation, args_array)?;
 
             if method.method().needs_arguments_object {
                 args_object.set_property(
@@ -1575,11 +1568,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_new_array(&mut self, num_args: u32) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(num_args);
         let array = ArrayStorage::from_args(&args[..]);
-        let array_proto = self.context.avm2.prototypes().array;
-        let array_constr = self.context.avm2.constructors().array;
-
-        let array_obj =
-            ArrayObject::from_array(array, array_constr, array_proto, self.context.gc_context);
+        let array_obj = ArrayObject::from_storage(self, array)?;
 
         self.context.avm2.push(array_obj);
 

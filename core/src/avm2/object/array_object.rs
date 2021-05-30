@@ -21,7 +21,16 @@ pub fn array_deriver<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    ArrayObject::derive(constr, proto, activation.context.gc_context)
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+
+    Ok(ArrayObject(GcCell::allocate(
+        activation.context.gc_context,
+        ArrayObjectData {
+            base,
+            array: ArrayStorage::new(0),
+        },
+    ))
+    .into())
 }
 
 /// An Object which stores numerical properties in an array.
@@ -40,55 +49,32 @@ pub struct ArrayObjectData<'gc> {
 }
 
 impl<'gc> ArrayObject<'gc> {
-    /// Construct a fresh array.
-    pub fn construct(
-        constr: Object<'gc>,
-        proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Object<'gc> {
-        let base =
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
-
-        ArrayObject(GcCell::allocate(
-            mc,
-            ArrayObjectData {
-                base,
-                array: ArrayStorage::new(0),
-            },
-        ))
-        .into()
+    /// Construct an empty array.
+    pub fn empty_array(activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
+        Self::from_storage(activation, ArrayStorage::new(0))
     }
 
-    /// Construct a primitive subclass.
-    pub fn derive(
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
-        let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
-
-        Ok(ArrayObject(GcCell::allocate(
-            mc,
-            ArrayObjectData {
-                base,
-                array: ArrayStorage::new(0),
-            },
-        ))
-        .into())
-    }
-
-    /// Wrap an existing array in an object.
-    pub fn from_array(
+    /// Build an array object from storage.
+    ///
+    /// This will produce an instance of the system `Array` class.
+    pub fn from_storage(
+        activation: &mut Activation<'_, 'gc, '_>,
         array: ArrayStorage<'gc>,
-        constr: Object<'gc>,
-        proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Object<'gc> {
+    ) -> Result<Object<'gc>, Error> {
+        let constr = activation.avm2().constructors().array;
+        let proto = activation.avm2().prototypes().array;
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-        ArrayObject(GcCell::allocate(mc, ArrayObjectData { base, array })).into()
+        let instance = ArrayObject(GcCell::allocate(
+            activation.context.gc_context,
+            ArrayObjectData { base, array },
+        ))
+        .into();
+
+        constr.call_native_initializer(Some(instance), &[], activation, Some(constr))?;
+
+        Ok(instance)
     }
 }
 

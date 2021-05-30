@@ -844,15 +844,7 @@ impl TextFormat {
         if let Some(ts) = &self.tab_stops {
             let tab_stop_storage = ts.iter().copied().collect();
 
-            let array_proto = activation.avm2().prototypes().array;
-            let array_constr = activation.avm2().constructors().array;
-
-            let tab_stops = Avm2ArrayObject::from_array(
-                tab_stop_storage,
-                array_constr,
-                array_proto,
-                activation.context.gc_context,
-            );
+            let tab_stops = Avm2ArrayObject::from_storage(activation, tab_stop_storage)?;
 
             object.set_property(
                 object,
