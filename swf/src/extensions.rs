@@ -1,6 +1,7 @@
 use crate::byteorder::{LittleEndian, ReadBytesExt};
 use crate::error::Result;
 use crate::string::SwfStr;
+use crate::{Fixed16, Fixed8};
 use std::io::{self, Read};
 
 pub trait ReadSwfExt<'a> {
@@ -66,13 +67,13 @@ pub trait ReadSwfExt<'a> {
     }
 
     #[inline]
-    fn read_fixed8(&mut self) -> Result<f32> {
-        Ok((self.read_i16()? as f32) / 256.0)
+    fn read_fixed8(&mut self) -> Result<Fixed8> {
+        Ok(Fixed8::from_bits(self.read_i16()?))
     }
 
     #[inline]
-    fn read_fixed16(&mut self) -> Result<f64> {
-        Ok((self.read_i32()? as f64) / 65536.0)
+    fn read_fixed16(&mut self) -> Result<Fixed16> {
+        Ok(Fixed16::from_bits(self.read_i32()?))
     }
 
     #[inline]

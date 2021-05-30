@@ -87,7 +87,7 @@ impl ShapeTessellator {
                             DrawType::Gradient(swf_gradient_to_uniforms(
                                 GradientType::Linear,
                                 gradient,
-                                0.0,
+                                swf::Fixed8::ZERO,
                             )),
                             &mut mesh,
                             &mut lyon_mesh,
@@ -117,7 +117,7 @@ impl ShapeTessellator {
                             DrawType::Gradient(swf_gradient_to_uniforms(
                                 GradientType::Radial,
                                 gradient,
-                                0.0,
+                                swf::Fixed8::ZERO,
                             )),
                             &mut mesh,
                             &mut lyon_mesh,
@@ -232,6 +232,7 @@ impl ShapeTessellator {
                         swf::LineJoinStyle::Bevel => tessellation::LineJoin::Bevel,
                         swf::LineJoinStyle::Miter(limit) => {
                             // Avoid lyon assert with small miter limits.
+                            let limit = limit.to_f32();
                             if limit >= StrokeOptions::MINIMUM_MITER_LIMIT {
                                 options = options.with_miter_limit(limit);
                                 tessellation::LineJoin::MiterClip
@@ -299,7 +300,7 @@ pub struct Gradient {
     pub colors: Vec<[f32; 4]>,
     pub num_colors: usize,
     pub repeat_mode: swf::GradientSpread,
-    pub focal_point: f32,
+    pub focal_point: swf::Fixed8,
     pub interpolation: swf::GradientInterpolation,
 }
 
@@ -415,7 +416,7 @@ const MAX_GRADIENT_COLORS: usize = 15;
 fn swf_gradient_to_uniforms(
     gradient_type: GradientType,
     gradient: &swf::Gradient,
-    focal_point: f32,
+    focal_point: swf::Fixed8,
 ) -> Gradient {
     let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
     let mut ratios: Vec<f32> = Vec::with_capacity(8);

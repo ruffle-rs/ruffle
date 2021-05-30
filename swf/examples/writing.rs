@@ -10,7 +10,7 @@ fn main() {
             y_min: Twips::from_pixels(0.0),
             y_max: Twips::from_pixels(400.0),
         },
-        frame_rate: 60.0,
+        frame_rate: Fixed8::from_f32(60.0),
         num_frames: 1,
     };
     let tags = [

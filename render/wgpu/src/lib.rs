@@ -202,7 +202,7 @@ impl From<TessGradient> for GradientUniforms {
                 swf::GradientSpread::Reflect => 2,
             },
             interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
-            focal_point: gradient.focal_point,
+            focal_point: gradient.focal_point.to_f32(),
         }
     }
 }

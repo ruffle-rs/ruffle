@@ -40,7 +40,7 @@ pub struct Header {
     pub compression: Compression,
     pub version: u8,
     pub stage_size: Rectangle,
-    pub frame_rate: f32,
+    pub frame_rate: Fixed8,
     pub num_frames: u16,
 }
 
@@ -50,7 +50,7 @@ impl Header {
             compression: Compression::None,
             version,
             stage_size: Default::default(),
-            frame_rate: 1.0,
+            frame_rate: Fixed8::ONE,
             num_frames: 0,
         }
     }
@@ -100,7 +100,7 @@ impl HeaderExt {
 
     /// The frame rate of the SWF, in frames per second.
     #[inline]
-    pub fn frame_rate(&self) -> f32 {
+    pub fn frame_rate(&self) -> Fixed8 {
         self.header.frame_rate
     }
 
@@ -590,11 +590,11 @@ pub enum Filter {
 #[derive(Debug, PartialEq, Clone)]
 pub struct DropShadowFilter {
     pub color: Color,
-    pub blur_x: f64,
-    pub blur_y: f64,
-    pub angle: f64,
-    pub distance: f64,
-    pub strength: f32,
+    pub blur_x: Fixed16,
+    pub blur_y: Fixed16,
+    pub angle: Fixed16,
+    pub distance: Fixed16,
+    pub strength: Fixed8,
     pub is_inner: bool,
     pub is_knockout: bool,
     pub num_passes: u8,
@@ -602,17 +602,17 @@ pub struct DropShadowFilter {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct BlurFilter {
-    pub blur_x: f64,
-    pub blur_y: f64,
+    pub blur_x: Fixed16,
+    pub blur_y: Fixed16,
     pub num_passes: u8,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct GlowFilter {
     pub color: Color,
-    pub blur_x: f64,
-    pub blur_y: f64,
-    pub strength: f32,
+    pub blur_x: Fixed16,
+    pub blur_y: Fixed16,
+    pub strength: Fixed8,
     pub is_inner: bool,
     pub is_knockout: bool,
     pub num_passes: u8,
@@ -622,11 +622,11 @@ pub struct GlowFilter {
 pub struct BevelFilter {
     pub shadow_color: Color,
     pub highlight_color: Color,
-    pub blur_x: f64,
-    pub blur_y: f64,
-    pub angle: f64,
-    pub distance: f64,
-    pub strength: f32,
+    pub blur_x: Fixed16,
+    pub blur_y: Fixed16,
+    pub angle: Fixed16,
+    pub distance: Fixed16,
+    pub strength: Fixed8,
     pub is_inner: bool,
     pub is_knockout: bool,
     pub is_on_top: bool,
@@ -636,11 +636,11 @@ pub struct BevelFilter {
 #[derive(Debug, PartialEq, Clone)]
 pub struct GradientGlowFilter {
     pub colors: Vec<GradientRecord>,
-    pub blur_x: f64,
-    pub blur_y: f64,
-    pub angle: f64,
-    pub distance: f64,
-    pub strength: f32,
+    pub blur_x: Fixed16,
+    pub blur_y: Fixed16,
+    pub angle: Fixed16,
+    pub distance: Fixed16,
+    pub strength: Fixed8,
     pub is_inner: bool,
     pub is_knockout: bool,
     pub is_on_top: bool,
@@ -651,9 +651,9 @@ pub struct GradientGlowFilter {
 pub struct ConvolutionFilter {
     pub num_matrix_rows: u8,
     pub num_matrix_cols: u8,
-    pub matrix: Vec<f64>,
-    pub divisor: f64,
-    pub bias: f64,
+    pub matrix: Vec<Fixed16>,
+    pub divisor: Fixed16,
+    pub bias: Fixed16,
     pub default_color: Color,
     pub is_clamped: bool,
     pub is_preserve_alpha: bool,
@@ -661,17 +661,17 @@ pub struct ConvolutionFilter {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ColorMatrixFilter {
-    pub matrix: [f64; 20],
+    pub matrix: [Fixed16; 20],
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct GradientBevelFilter {
     pub colors: Vec<GradientRecord>,
-    pub blur_x: f64,
-    pub blur_y: f64,
-    pub angle: f64,
-    pub distance: f64,
-    pub strength: f32,
+    pub blur_x: Fixed16,
+    pub blur_y: Fixed16,
+    pub angle: Fixed16,
+    pub distance: Fixed16,
+    pub strength: Fixed8,
     pub is_inner: bool,
     pub is_knockout: bool,
     pub is_on_top: bool,
@@ -973,7 +973,7 @@ pub enum FillStyle {
     RadialGradient(Gradient),
     FocalGradient {
         gradient: Gradient,
-        focal_point: f32,
+        focal_point: Fixed8,
     },
     Bitmap {
         id: CharacterId,
@@ -1052,7 +1052,7 @@ pub enum LineCapStyle {
 pub enum LineJoinStyle {
     Round,
     Bevel,
-    Miter(f32),
+    Miter(Fixed8),
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -1394,7 +1394,7 @@ pub struct VideoFrame<'a> {
 pub struct DefineBitsJpeg3<'a> {
     pub id: CharacterId,
     pub version: u8,
-    pub deblocking: f32,
+    pub deblocking: Fixed8,
     pub data: &'a [u8],
     pub alpha_data: &'a [u8],
 }

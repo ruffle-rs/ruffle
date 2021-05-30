@@ -2288,7 +2288,7 @@ impl<'a> Reader<'a> {
                 }))
             }
             6 => {
-                let mut matrix = [0f64; 20];
+                let mut matrix = [Fixed16::ZERO; 20];
                 for m in &mut matrix {
                     *m = self.read_fixed16()?;
                 }
@@ -2625,7 +2625,7 @@ impl<'a> Reader<'a> {
         let deblocking = if version >= 4 {
             self.read_fixed8()?
         } else {
-            0.0
+            Fixed8::ZERO
         };
         let data = self.read_slice(data_size)?;
         let alpha_data = self.read_slice_to_end();
@@ -2890,10 +2890,10 @@ pub mod tests {
             0b11101011,
         ];
         let mut reader = Reader::new(&buf[..], 1);
-        assert_eq!(reader.read_fixed8().unwrap(), 0f32);
-        assert_eq!(reader.read_fixed8().unwrap(), 1f32);
-        assert_eq!(reader.read_fixed8().unwrap(), 6.5f32);
-        assert_eq!(reader.read_fixed8().unwrap(), -20.75f32);
+        assert_eq!(reader.read_fixed8().unwrap(), Fixed8::from_f32(0.0));
+        assert_eq!(reader.read_fixed8().unwrap(), Fixed8::from_f32(1.0));
+        assert_eq!(reader.read_fixed8().unwrap(), Fixed8::from_f32(6.5));
+        assert_eq!(reader.read_fixed8().unwrap(), Fixed8::from_f32(-20.75));
     }
 
     #[test]

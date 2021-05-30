@@ -10,7 +10,7 @@ use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use crate::shape_utils::DrawCommand;
 use gc_arena::{GcCell, MutationContext};
-use swf::{Color, FillStyle, LineCapStyle, LineJoinStyle, LineStyle, Twips};
+use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
 
 /// Implements `flash.display.Graphics`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -151,14 +151,14 @@ fn caps_to_cap_style<'gc>(
 fn joints_to_join_style<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     joints: Value<'gc>,
-    miter_limit: f32,
+    miter_limit: f64,
 ) -> Result<LineJoinStyle, Error> {
     let joints_string = joints.coerce_to_string(activation);
     let joints_str = joints_string.as_deref();
 
     match (joints, joints_str) {
         (Value::Null, _) | (_, Ok("round")) => Ok(LineJoinStyle::Round),
-        (_, Ok("miter")) => Ok(LineJoinStyle::Miter(miter_limit)),
+        (_, Ok("miter")) => Ok(LineJoinStyle::Miter(Fixed8::from_f64(miter_limit))),
         (_, Ok("bevel")) => Ok(LineJoinStyle::Bevel),
         (_, Ok(_)) => Err("ArgumentError: joints is invalid".into()),
         (_, Err(_)) => Err(joints_string.unwrap_err()),
@@ -223,7 +223,7 @@ pub fn line_style<'gc>(
 
             let width = Twips::from_pixels(thickness.min(255.0).max(0.0));
             let color = color_from_args(color, alpha);
-            let join_style = joints_to_join_style(activation, joints, miter_limit as f32)?;
+            let join_style = joints_to_join_style(activation, joints, miter_limit)?;
             let (allow_scale_x, allow_scale_y) = scale_mode_to_allow_scale_bits(&scale_mode)?;
 
             let line_style = LineStyle {
