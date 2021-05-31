@@ -19,7 +19,16 @@ pub fn bytearray_deriver<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    ByteArrayObject::derive(constr, proto, activation.context.gc_context)
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+
+    Ok(ByteArrayObject(GcCell::allocate(
+        activation.context.gc_context,
+        ByteArrayObjectData {
+            base,
+            storage: ByteArrayStorage::new(),
+        },
+    ))
+    .into())
 }
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -35,49 +44,6 @@ pub struct ByteArrayObjectData<'gc> {
     storage: ByteArrayStorage,
 }
 
-impl<'gc> ByteArrayObject<'gc> {
-    pub fn new(
-        mc: MutationContext<'gc, '_>,
-        constr: Object<'gc>,
-        proto: Option<Object<'gc>>,
-    ) -> ByteArrayObject<'gc> {
-        let base = ScriptObjectData::base_new(proto, ScriptObjectClass::ClassInstance(constr));
-
-        ByteArrayObject(GcCell::allocate(
-            mc,
-            ByteArrayObjectData {
-                base,
-                storage: ByteArrayStorage::new(),
-            },
-        ))
-    }
-
-    pub fn construct(
-        mc: MutationContext<'gc, '_>,
-        constr: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
-    ) -> Object<'gc> {
-        Self::new(mc, constr, base_proto).into()
-    }
-
-    pub fn derive(
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
-        let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
-
-        Ok(ByteArrayObject(GcCell::allocate(
-            mc,
-            ByteArrayObjectData {
-                base,
-                storage: ByteArrayStorage::new(),
-            },
-        ))
-        .into())
-    }
-}
 impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     impl_avm2_custom_object!(base);
 

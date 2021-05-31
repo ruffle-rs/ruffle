@@ -196,21 +196,18 @@ impl<'gc> Domain<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let bytearray_proto = activation.avm2().prototypes().bytearray;
         let bytearray_constr = activation.avm2().constructors().bytearray;
 
-        let domain_memory = ByteArrayObject::new(
-            activation.context.gc_context,
-            bytearray_constr,
-            Some(bytearray_proto),
-        );
+        let domain_memory = bytearray_constr.construct(activation, &[])?;
         domain_memory
             .as_bytearray_mut(activation.context.gc_context)
             .unwrap()
             .set_length(1024);
 
         let mut write = self.0.write(activation.context.gc_context);
-        write.domain_memory.get_or_insert(domain_memory);
+        write
+            .domain_memory
+            .get_or_insert(domain_memory.as_bytearray_object().unwrap());
 
         Ok(())
     }

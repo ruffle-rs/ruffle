@@ -6,7 +6,7 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
-    loaderinfo_deriver, ByteArrayObject, DomainObject, LoaderStream, Object, ScriptObject, TObject,
+    loaderinfo_deriver, DomainObject, LoaderStream, Object, ScriptObject, TObject,
 };
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
@@ -308,14 +308,9 @@ pub fn bytes<'gc>(
                     return Err("Error: The stage's loader info does not have a bytestream".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let ba_proto = activation.context.avm2.prototypes().bytearray;
                     let ba_constr = activation.context.avm2.constructors().bytearray;
 
-                    let ba = ByteArrayObject::construct(
-                        activation.context.gc_context,
-                        ba_constr,
-                        Some(ba_proto),
-                    );
+                    let ba = ba_constr.construct(activation, &[])?;
                     let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
 
                     // First, write a fake header corresponding to an
