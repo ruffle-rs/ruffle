@@ -14,7 +14,7 @@ fnv = "1.0.7"
 js-sys = "0.3.50"
 log = "0.4"
 ruffle_web_common = { path = "../../web/common" }
-svg = "0.9.1"
+svg = "0.9.2"
 percent-encoding = "2.1.0"
 png = "0.16.8"
 wasm-bindgen = "=0.2.73"
