@@ -79,31 +79,21 @@ pub fn application_domain<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
-            let appdomain_proto = activation.avm2().prototypes().application_domain;
-            let appdomain_constr = activation.avm2().constructors().application_domain;
-
             match &*loader_stream {
                 LoaderStream::Stage => {
                     return Ok(DomainObject::from_domain(
-                        activation.context.gc_context,
-                        appdomain_constr,
-                        Some(appdomain_proto),
+                        activation,
                         activation.context.avm2.global_domain(),
-                    )
+                    )?
                     .into());
                 }
                 LoaderStream::Swf(movie, _) => {
-                    let library = activation
+                    let domain = activation
                         .context
                         .library
-                        .library_for_movie_mut(movie.clone());
-                    return Ok(DomainObject::from_domain(
-                        activation.context.gc_context,
-                        appdomain_constr,
-                        Some(appdomain_proto),
-                        library.avm2_domain(),
-                    )
-                    .into());
+                        .library_for_movie_mut(movie.clone())
+                        .avm2_domain();
+                    return Ok(DomainObject::from_domain(activation, domain)?.into());
                 }
             }
         }

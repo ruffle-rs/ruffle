@@ -146,11 +146,9 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let global_proto = uc.avm2.prototypes().global;
-        let global_constr = uc.avm2.constructors().global;
-
-        let global =
-            DomainObject::from_domain(uc.gc_context, global_constr, Some(global_proto), domain);
+        let mut activation = Activation::from_nothing(uc.reborrow());
+        let global = DomainObject::script_global(&mut activation, domain)?;
+        drop(activation);
 
         let mut script = Script::from_abc_index(self, script_index, global, uc.gc_context)?;
         self.0

@@ -39,17 +39,9 @@ pub fn current_domain<'gc>(
 ) -> Result<Value<'gc>, Error> {
     let globals = activation.scope().map(|s| s.read().globals());
     let appdomain = globals.and_then(|g| g.as_application_domain());
-    let appdomain_proto = activation.avm2().prototypes().application_domain;
-    let appdomain_constr = activation.avm2().constructors().application_domain;
 
     if let Some(appdomain) = appdomain {
-        return Ok(DomainObject::from_domain(
-            activation.context.gc_context,
-            appdomain_constr,
-            Some(appdomain_proto),
-            appdomain,
-        )
-        .into());
+        return Ok(DomainObject::from_domain(activation, appdomain)?.into());
     }
 
     Ok(Value::Undefined)
@@ -63,16 +55,7 @@ pub fn parent_domain<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
         if let Some(parent_domain) = appdomain.parent_domain() {
-            let appdomain_proto = activation.avm2().prototypes().application_domain;
-            let appdomain_constr = activation.avm2().constructors().application_domain;
-
-            return Ok(DomainObject::from_domain(
-                activation.context.gc_context,
-                appdomain_constr,
-                Some(appdomain_proto),
-                parent_domain,
-            )
-            .into());
+            return Ok(DomainObject::from_domain(activation, parent_domain)?.into());
         }
     }
 

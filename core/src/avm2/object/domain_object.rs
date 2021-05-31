@@ -28,8 +28,13 @@ pub fn appdomain_deriver<'gc>(
         .globals()
         .as_application_domain()
         .ok_or("Constructor scope must have an appdomain at the bottom of it's scope stack")?;
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-    DomainObject::derive(constr, proto, domain, activation.context.gc_context)
+    Ok(DomainObject(GcCell::allocate(
+        activation.context.gc_context,
+        DomainObjectData { base, domain },
+    ))
+    .into())
 }
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -58,28 +63,53 @@ impl<'gc> DomainObject<'gc> {
         DomainObject(GcCell::allocate(mc, DomainObjectData { base, domain })).into()
     }
 
+    /// Create a new object for a given domain.
+    ///
+    /// This function will call instance initializers. You do not need to do so
+    /// yourself.
     pub fn from_domain(
-        mc: MutationContext<'gc, '_>,
-        constr: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        activation: &mut Activation<'_, 'gc, '_>,
         domain: Domain<'gc>,
-    ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::ClassInstance(constr));
+    ) -> Result<Object<'gc>, Error> {
+        let constr = activation.avm2().constructors().application_domain;
+        let proto = activation.avm2().prototypes().application_domain;
+        let base =
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+        let this = DomainObject(GcCell::allocate(
+            activation.context.gc_context,
+            DomainObjectData { base, domain },
+        ))
+        .into();
 
-        DomainObject(GcCell::allocate(mc, DomainObjectData { base, domain })).into()
+        constr.call_initializer(Some(this), &[], activation, Some(constr))?;
+
+        Ok(this)
     }
 
-    /// Construct a primitive subclass.
-    pub fn derive(
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
+    /// Create a new object for a given script's global scope.
+    ///
+    /// The `domain` object will serve as the scope of last resort should the
+    /// global scope not have a particular name defined.
+    ///
+    /// This function will call instance initializers. You do not need to do so
+    /// yourself.
+    pub fn script_global(
+        activation: &mut Activation<'_, 'gc, '_>,
         domain: Domain<'gc>,
-        mc: MutationContext<'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
+        let constr = activation.avm2().constructors().global;
+        let proto = activation.avm2().prototypes().global;
         let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+        let this = DomainObject(GcCell::allocate(
+            activation.context.gc_context,
+            DomainObjectData { base, domain },
+        ))
+        .into();
 
-        Ok(DomainObject(GcCell::allocate(mc, DomainObjectData { base, domain })).into())
+        constr.call_initializer(Some(this), &[], activation, Some(constr))?;
+
+        Ok(this)
     }
 }
 
@@ -107,11 +137,6 @@ impl<'gc> TObject<'gc> for DomainObject<'gc> {
             )?
             .coerce_to_object(activation)?;
 
-        Ok(DomainObject::from_domain(
-            activation.context.gc_context,
-            constr,
-            Some(this),
-            activation.context.avm2.global_domain(),
-        ))
+        appdomain_deriver(constr, this, activation)
     }
 }
